@@ -33,7 +33,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(client, common, commonTest, gui)
+    aggregate(client, common, commonTest, gui, server, test)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
@@ -63,5 +63,14 @@ object Build extends sbt.Build {
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn client
+  )
+
+  lazy val server = (Project(id = "server", base = file("coinffeine-server"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(common % "compile->compile;test->test", commonTest % "test->compile")
+  )
+
+  lazy val test = (Project(id = "test", base = file("coinffeine-test"))
+    dependsOn(client, server, common, commonTest % "compile->compile;test->compile")
   )
 }
