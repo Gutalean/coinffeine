@@ -7,28 +7,27 @@ import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
 import scalafx.scene.text.Font
-import scalafx.stage.Stage
+import scalafx.stage.{StageStyle, Stage}
 
 /** Step-by-step wizard that accumulates information of type Data.
   *
   * @param steps        Sequence of wizard steps
   * @param initialData  Initial value for the wizard
-  * @param title        Wizard title
+  * @param wizardTitle  Wizard title
   * @param width        Window width
   * @param height       Window height
   * @tparam Data        Type of the wizard result
   */
-class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
-                   width: Double = 540, height: Double = 320) {
-
+class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: String,
+                   width: Double = 540, height: Double = 320) extends Stage(StageStyle.UTILITY) {
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
   private val stepNumber = steps.size
-  private val currentStep = new IntegerProperty(this, "currentStep", 1)
+  private val currentStep = new IntegerProperty(this, "currentStep", 0)
+  private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
-  steps.foreach(page => page.bindTo(data))
-
-  def show(): Data = {
-    stage.showAndWait()
+  def run(): Data = {
+    initializeSteps()
+    showAndWait()
     data.value
   }
 
@@ -46,23 +45,23 @@ class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
     }
   }
 
+  private val backButton = new Button("< Back") {
+    visible <== currentStep =!= 1
+    handleEvent(ActionEvent.ACTION) { () => changeToStep(currentStep.value - 1) }
+  }
+
+  private val nextButton = new Button {
+    text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
+    disable = true
+    handleEvent(ActionEvent.ACTION) { () =>
+      if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else close()
+    }
+  }
+
   private val wizardFooter = {
-    val backButton = new Button("< Back") {
-      visible <== currentStep =!= 1
-      handleEvent(ActionEvent.ACTION) { () => changeToStep(currentStep.value - 1) }
-    }
-
-    val nextButton = new Button {
-      text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
-      handleEvent(ActionEvent.ACTION) { () =>
-        if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else stage.close()
-      }
-    }
-
     val buttonBox = new HBox(spacing = 5) {
       content = Seq(backButton, nextButton)
     }
-
     new AnchorPane {
       prefHeight = 44
       prefWidth = Wizard.this.width
@@ -74,20 +73,29 @@ class Wizard[Data](steps: Seq[Step[Data]], initialData: Data, title: String,
 
   private val rootWizardPane: BorderPane = new BorderPane {
     top = wizardHeader
-    center = steps.head.pane
+    center = steps.head
     bottom = wizardFooter
   }
 
-  private val stage = new Stage {
-    title = Wizard.this.title
-    scene = new Scene(Wizard.this.width, Wizard.this.height) {
-      root = rootWizardPane
+  title = Wizard.this.wizardTitle
+  resizable = false
+  scene = new Scene(Wizard.this.width, Wizard.this.height) {
+    root = rootWizardPane
+  }
+
+  private def initializeSteps(): Unit = {
+    steps.foreach(page => page.bindTo(data))
+    currentStep.onChange {
+      val stepPane = steps(currentStep.value - 1)
+      currentStepPane.value = stepPane
+      rootWizardPane.center = stepPane
+      nextButton.disable <== stepPane.canContinue.not()
     }
+    currentStep.value = 1
   }
 
   private def changeToStep(index: Int): Unit = {
     currentStep.value = index
-    rootWizardPane.center = steps(index - 1).pane
   }
 }
 
