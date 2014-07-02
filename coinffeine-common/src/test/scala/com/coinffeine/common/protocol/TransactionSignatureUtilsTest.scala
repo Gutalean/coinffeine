@@ -2,9 +2,8 @@ package com.coinffeine.common.protocol
 
 import java.math.BigInteger
 
-import com.google.bitcoin.crypto.TransactionSignature
-
 import com.coinffeine.common.UnitTest
+import com.coinffeine.common.bitcoin.TransactionSignature
 
 class TransactionSignatureUtilsTest extends UnitTest {
 
@@ -23,5 +22,14 @@ class TransactionSignatureUtilsTest extends UnitTest {
     val s2 = new TransactionSignature(BigInteger.ONE, BigInteger.ZERO)
     TransactionSignatureUtils.equals(s1, s1) should be (true)
     TransactionSignatureUtils.equals(s1, s2) should be (false)
+  }
+
+  it should "have the same hash code when equal" in {
+    val signature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+    val sameSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+    val otherSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
+    TransactionSignatureUtils.hashCode(signature) should (
+      be (TransactionSignatureUtils.hashCode(sameSignature)) and
+      not be TransactionSignatureUtils.hashCode(otherSignature))
   }
 }

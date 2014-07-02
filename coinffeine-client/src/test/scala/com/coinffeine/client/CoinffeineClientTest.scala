@@ -1,19 +1,16 @@
 package com.coinffeine.client
 
-import akka.testkit.{ImplicitSender, TestProbe}
+import akka.testkit.TestProbe
 
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
+import com.coinffeine.common.{AkkaSpec, FiatCurrency, PeerConnection}
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with WithSampleExchangeInfo with ImplicitSender {
+  extends AkkaSpec(systemName) with SampleExchange {
 
   val gateway = TestProbe()
-  val counterpart: PeerConnection
-  val broker: PeerConnection
-
-  def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpart)
 
   def fromBroker(message: PublicMessage) = ReceiveMessage(message, broker)
 
@@ -36,4 +33,24 @@ abstract class CoinffeineClientTest(systemName: String)
   }
 
   def shouldForwardAll = new ValidateAllMessagesWithPeer
+}
+
+object CoinffeineClientTest {
+
+  trait Perspective {
+    def exchange: OngoingExchange[FiatCurrency]
+    def userRole: Role
+    def user = exchange.participants(userRole)
+    def counterpart = exchange.participants(userRole.counterpart)
+    def counterpartConnection = exchange.connections(userRole.counterpart)
+    def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
+  }
+
+  trait BuyerPerspective extends Perspective {
+    val userRole = BuyerRole
+  }
+
+  trait SellerPerspective extends Perspective {
+    val userRole = SellerRole
+  }
 }

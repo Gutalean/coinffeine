@@ -19,14 +19,14 @@ class RefundUnsignedDefaultHandshakeActorTest
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
     givenActorIsInitialized()
-    val result = listener.expectMsgClass(classOf[HandshakeResult]).refundSig
-    result should be ('failure)
+    listener.expectMsgClass(classOf[HandshakeFailure])
     listener.expectTerminated(actor)
   }
 
   it must "notify the broker that the exchange is rejected" in {
+    val broker = exchange.broker.connection
     gateway.fishForMessage() {
-      case ForwardMessage(ExchangeRejection("id", _), handshake.exchangeInfo.`broker`) => true
+      case ForwardMessage(ExchangeRejection(exchange.`id`, _), `broker`) => true
       case _ => false
     }
   }

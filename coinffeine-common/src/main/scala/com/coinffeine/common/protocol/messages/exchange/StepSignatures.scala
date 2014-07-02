@@ -1,25 +1,31 @@
 package com.coinffeine.common.protocol.messages.exchange
 
-import com.google.bitcoin.crypto.TransactionSignature
-
-import com.coinffeine.common.protocol.messages.PublicMessage
+import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.TransactionSignatureUtils
+import com.coinffeine.common.protocol.messages.PublicMessage
 
-case class StepSignatures(
-    exchangeId: String, idx0Signature: TransactionSignature, idx1Signature: TransactionSignature)
+/** This message contains the seller's signatures for a step in a specific exchange
+  * @param exchangeId The exchange id for which the signatures are valid
+  * @param step The step number for which the signatures are valid
+  * @param signatures The signatures for buyer and seller inputs for the step
+  */
+case class StepSignatures(exchangeId: Exchange.Id, step: Int, signatures: Signatures)
   extends PublicMessage {
 
-  override def equals(that: Any) = that match {
-    case newStepStart: StepSignatures => (newStepStart.exchangeId == exchangeId) &&
-      TransactionSignatureUtils.equals(newStepStart.idx0Signature, idx0Signature) &&
-      TransactionSignatureUtils.equals(newStepStart.idx1Signature, idx1Signature)
+  override def equals(other: Any) = other match {
+    case that: StepSignatures =>
+      (that.exchangeId == exchangeId) && (that.step == step) &&
+      TransactionSignatureUtils.equals(
+        that.signatures.buyer, signatures.buyer) &&
+      TransactionSignatureUtils.equals(
+        that.signatures.seller, signatures.seller)
     case _ => false
   }
-}
 
-object StepSignatures {
-  def apply(
-      exchangeId: String,
-      signatures: (TransactionSignature, TransactionSignature)): StepSignatures =
-    StepSignatures(exchangeId, signatures._1, signatures._2)
+  override def hashCode(): Int = {
+    val state = Seq(exchangeId.hashCode(), step.hashCode()) ++
+      signatures.toSeq.map(TransactionSignatureUtils.hashCode)
+    state.foldLeft(0)((a, b) => 31 * a + b)
+  }
 }

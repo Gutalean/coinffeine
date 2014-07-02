@@ -1,35 +1,88 @@
 package com.coinffeine.common.paymentprocessor
 
-import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import akka.actor.Props
+import akka.util.Timeout
 
 import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
-trait PaymentProcessor {
+object PaymentProcessor {
 
-  /** Unique identifier of this payment processor */
-  def id: String
+  /** The ID of the payment processor. */
+  type Id = String
 
-  /** Send a payment from any of your wallets to someone.
+  /** The ID type of a user account in the payment processor. */
+  type AccountId = String
+
+  /** The credentials of a user account in the payment processor. */
+  type AccountCredentials = String
+
+  /** The ID type of a payment registered by the payment processor. */
+  type PaymentId = String
+
+  /** A message sent to the payment processor in order to identify itself. */
+  case object Identify
+
+  /** A message sent by the payment processor identifying itself. */
+  case class Identified(id: Id)
+
+  /** A message sent to the payment processor ordering a new pay.
     *
-    * @param receiverId account id of receiver of payment
-    * @param amount amount to send
-    * @param comment to specify additional information
-    * @tparam C The currency the payment is specified
-    * @return a Payment object containing the information of payment (receiverId and senderId
-    *         properties are not provided)
+    * @param to The ID of the receiver account
+    * @param amount The amount of fiat currency to pay
+    * @param comment The comment to be attached to the payment
+    * @tparam C The fiat currency of the payment amount
     */
-  def sendPayment[C <: FiatCurrency](receiverId: String, amount: CurrencyAmount[C], comment: String): Future[Payment[C]]
+  case class Pay[C <: FiatCurrency](to: AccountId,
+                                    amount: CurrencyAmount[C],
+                                    comment: String)
 
-  /** Find a specific payment by id.
-    *
-    * @param paymentId PaymentID to search.
-    * @return The payment wanted.
-    */
-  def findPayment(paymentId: String): Future[Option[AnyPayment]]
+  /** A message sent by the payment processor in order to notify of a successful payment. */
+  case class Paid[C <: FiatCurrency](payment: Payment[C])
 
-  /** Returns the current balance in the given currency.
+  /** A message sent by the payment processor to notify a payment failure.
     *
-    * @return The current balance for currency C
+    * @param request The original pay message that cannot be processed.
+    * @param error The error that prevented the request to be processed
+    * @tparam C The fiat currency of the payment amount
     */
-  def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]]
+  case class PaymentFailed[C <: FiatCurrency](request: Pay[C], error: Throwable)
+
+  /** A message sent to the payment processor in order to find a payment. */
+  case class FindPayment(payment: PaymentId)
+
+  /** A message sent by the payment processor to notify a found payment. */
+  case class PaymentFound[C <: FiatCurrency](payment: Payment[C])
+
+  /** A message sent by the payment processor to notify a not found payment. */
+  case class PaymentNotFound(payment: PaymentId)
+
+  /** A message sent by the payment processor to notify an error while finding a payment. */
+  case class FindPaymentFailed(payment: PaymentId, error: Throwable)
+
+  /** A message sent to the payment processor to retrieve the current balance
+    * in the given currency.
+    * */
+  case class RetrieveBalance[C <: FiatCurrency](currency: C)
+
+  /** A message sent by the payment processor reporting the current balance in the
+    * given currency.
+    * */
+  case class BalanceRetrieved[C <: FiatCurrency](balance: CurrencyAmount[C])
+
+  /** A message sent by the payment processor reporting that the current balance in the
+    * given currency cannot be retrieved.
+    */
+  case class BalanceRetrievalFailed[C <: FiatCurrency](currency: C, error: Throwable)
+
+  /** Payment processor requests should be considered to have failed after this period */
+  val RequestTimeout = Timeout(5.seconds)
+
+  /** A component able to provide the Akka properties needed to instantiate a new
+    * Payment processor actor.
+    */
+  trait Component {
+    def paymentProcessorProps(account: AccountId, credentials: AccountCredentials): Props
+  }
 }

@@ -1,11 +1,10 @@
 package com.coinffeine.common.protocol.messages.arbitration
 
-import com.google.bitcoin.core.Sha256Hash
-
+import com.coinffeine.common.bitcoin.Hash
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class CommitmentNotification(
-  exchangeId: String,
-  buyerTxId: Sha256Hash,
-  sellerTxId: Sha256Hash
+  exchangeId: Exchange.Id,
+  bothCommitments: Both[Hash]
 ) extends PublicMessage

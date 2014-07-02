@@ -1,14 +1,12 @@
 package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
-import scala.util.Success
 
-import com.google.bitcoin.core.Sha256Hash
-import com.google.bitcoin.crypto.TransactionSignature
-
-import com.coinffeine.client.handshake.HandshakeActor.HandshakeResult
+import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.blockchain.BlockchainActor._
+import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -26,17 +24,20 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
     gateway.expectNoMsg()
     givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val relevantSignatureRequest = RefundTxSignatureRequest("id", handshake.counterpartRefund)
+    val otherId = Exchange.Id("other-id")
+    val relevantSignatureRequest =
+      PeerHandshake(exchange.id, ImmutableTransaction(handshake.counterpartRefund), "foo")
     val irrelevantSignatureRequest =
-      RefundTxSignatureRequest("other-id", handshake.counterpartRefund)
+      PeerHandshake(otherId, ImmutableTransaction(handshake.counterpartRefund), "foo")
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
     filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
-    filter(fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification("id", mock[Sha256Hash], mock[Sha256Hash]))) should be (true)
-    filter(fromBroker(ExchangeAborted("id", "failed"))) should be (true)
-    filter(fromCounterpart(ExchangeAborted("id", "failed"))) should be (false)
-    filter(fromBroker(ExchangeAborted("other", "failed"))) should be (false)
+    filter(fromCounterpart(
+      PeerHandshakeAccepted(exchange.id, handshake.refundSignature))) should be (true)
+    filter(fromBroker(CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))) should be (true)
+    filter(fromBroker(ExchangeAborted(exchange.id, "failed"))) should be (true)
+    filter(fromCounterpart(ExchangeAborted(exchange.id, "failed"))) should be (false)
+    filter(fromBroker(ExchangeAborted(otherId, "failed"))) should be (false)
   }
 
   it should "and requesting refund transaction signature" in {
@@ -44,8 +45,9 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
-    val invalidRequest = RefundTxSignatureRequest("id", handshake.invalidRefundTransaction)
-    gateway.send(actor, ReceiveMessage(invalidRequest, handshake.exchangeInfo.counterpart))
+    val invalidRequest =
+      PeerHandshake(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction), "invalid")
+    gateway.send(actor, fromCounterpart(invalidRequest))
     gateway.expectNoMsg(100 millis)
   }
 
@@ -54,42 +56,49 @@ class HappyPathDefaultHandshakeActorTest extends DefaultHandshakeActorTest("happ
   }
 
   it should "don't be fooled by invalid refund TX or source and resubmit signature request" in {
-    gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", mock[TransactionSignature])))
+    gateway.send(
+      actor, fromCounterpart(PeerHandshakeAccepted(exchange.id, mock[TransactionSignature])))
     shouldForwardRefundSignatureRequest()
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
-    gateway.send(actor, fromCounterpart(RefundTxSignatureResponse("id", handshake.refundSignature)))
-    shouldForward (ExchangeCommitment("id", handshake.commitmentTransaction)) to broker
+    gateway.send(
+      actor, fromCounterpart(PeerHandshakeAccepted(exchange.id, handshake.refundSignature)))
+    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) to broker
   }
 
   it should "sign counterpart refund after having our refund signed" in {
     shouldSignCounterpartRefund()
   }
 
-  val publishedTransactions = Set(
-    handshake.commitmentTransaction.getHash,
-    handshake.counterpartCommitmentTransaction.getHash
-  )
-
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
     gateway.send(actor, fromBroker(CommitmentNotification(
-      "id",
-      handshake.commitmentTransaction.getHash,
-      handshake.counterpartCommitmentTransaction.getHash
+      exchange.id,
+      Both(
+        handshake.myDeposit.get.getHash,
+        handshake.counterpartCommitmentTransaction.getHash
+      )
     )))
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
-      NotifyWhenConfirmed(handshake.commitmentTransaction.getHash, confirmations),
-      NotifyWhenConfirmed(handshake.counterpartCommitmentTransaction.getHash, confirmations)
+      WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
+      WatchTransactionConfirmation(handshake.counterpartCommitmentTransaction.getHash, confirmations)
     )
   }
 
   it should "wait until commitments are confirmed" in {
     listener.expectNoMsg(100 millis)
-    publishedTransactions.foreach(tx => blockchain.send(actor, TransactionConfirmed(tx, 1)))
-    listener.expectMsg(HandshakeResult(Success(handshake.refundSignature)))
+    for (tx <- Seq(
+      handshake.myDeposit.get.getHash,
+      handshake.counterpartCommitmentTransaction.getHash
+    )) {
+      blockchain.send(actor, TransactionConfirmed(tx, 1))
+    }
+    val result = listener.expectMsgClass(classOf[HandshakeSuccess])
+    result.refundTransaction should be (handshake.mySignedRefund)
+    result.bothCommitments.buyer should be (handshake.myDeposit.get.getHash)
+    result.bothCommitments.seller should be (handshake.counterpartCommitmentTransaction.getHash)
   }
 
   it should "finally terminate himself" in {
