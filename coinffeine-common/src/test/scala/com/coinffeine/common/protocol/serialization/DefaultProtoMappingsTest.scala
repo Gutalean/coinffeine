@@ -2,23 +2,23 @@ package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger
 
-import com.google.bitcoin.core.{Sha256Hash, Transaction}
-import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.network.UnitTestNetworkComponent
+import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
 
-class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
+class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
-  val commitmentTransaction = new Transaction(network)
+  val commitmentTransaction = ImmutableTransaction(new MutableTransaction(network))
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
   import testMappings._
@@ -39,7 +39,8 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     }
   }
 
-  val sampleTxId = new Sha256Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleExchangeId = Exchange.Id.random()
 
   val btcAmount = 1.1 BTC
   val btcAmountMessage = msg.BtcAmount.newBuilder
@@ -73,13 +74,9 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
     orderSet, orderSetMessage)
 
-  val commitmentNotification = CommitmentNotification(
-    exchangeId = "1234",
-    buyerTxId = sampleTxId,
-    sellerTxId = sampleTxId
-  )
+  val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setBuyerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .setSellerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .build()
@@ -87,17 +84,17 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
 
-  val commitment = ExchangeCommitment(exchangeId = "1234", commitmentTransaction)
+  val commitment = ExchangeCommitment(sampleExchangeId, commitmentTransaction)
   val commitmentMessage = msg.ExchangeCommitment.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
     .build()
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted("1234", "a reason")
+  val exchangeAborted = ExchangeAborted(Exchange.Id(sampleExchangeId.value), "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")
     .build()
 
@@ -105,10 +102,10 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     exchangeAborted, exchangeAbortedMessage)
 
   val exchangeRejection = ExchangeRejection(
-    exchangeId = "1234",
+    exchangeId = sampleExchangeId,
     reason = "a reason")
   val exchangeRejectionMessage = msg.ExchangeRejection.newBuilder()
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")
     .build()
 
@@ -116,14 +113,16 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
     exchangeRejection, exchangeRejectionMessage)
 
   val orderMatch = OrderMatch(
-    exchangeId = "1234",
+    exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
-    buyer = PeerConnection("buyer", 8080),
-    seller = PeerConnection("seller", 1234)
+    participants = Both(
+      buyer = PeerConnection("buyer", 8080),
+      seller = PeerConnection("seller", 1234)
+    )
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setExchangeId("1234")
+    .setExchangeId(sampleExchangeId.value)
     .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
     .setBuyer("coinffeine://buyer:8080/")
@@ -152,26 +151,23 @@ class DefaultProtoMappingsTest extends UnitTest with UnitTestNetworkComponent {
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val refundTx = new Transaction(UnitTestParams.get())
-  val refundTxSignatureRequest = RefundTxSignatureRequest(exchangeId = "1234", refundTx = refundTx)
-  val refundTxSignatureRequestMessage = msg.RefundTxSignatureRequest.newBuilder()
-    .setExchangeId("1234")
-    .setRefundTx(ByteString.copyFrom(refundTx.bitcoinSerialize()))
+  val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
+  val peerHandshake = PeerHandshake(sampleExchangeId, refundTx, "accountId")
+  val peerHandshakeMessage = msg.PeerHandshake.newBuilder()
+    .setExchangeId(sampleExchangeId.value)
+    .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
+    .setPaymentProcessorAccount("accountId")
     .build()
 
-  "Refund TX signature request" must behave like thereIsAMappingBetween(
-    refundTxSignatureRequest, refundTxSignatureRequestMessage)
+  "Peer handshake" must behave like thereIsAMappingBetween(peerHandshake, peerHandshakeMessage)
 
   val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
-  val refundTxSignatureResponse = RefundTxSignatureResponse(
-    exchangeId = "1234",
-    refundSignature = refundTxSignature
-  )
-  val refundTxSignatureResponseMessage = msg.RefundTxSignatureResponse.newBuilder()
-    .setExchangeId("1234")
+  val peerHandshakeResponse = PeerHandshakeAccepted(sampleExchangeId, refundTxSignature)
+  val peerHandshakeResponseMessage = msg.PeerHandshakeAccepted.newBuilder()
+    .setExchangeId(sampleExchangeId.value)
     .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
     .build()
 
-  "Refund TX signature response" must behave like thereIsAMappingBetween(
-    refundTxSignatureResponse, refundTxSignatureResponseMessage)
+  "Peer handshake response" must behave like thereIsAMappingBetween(
+    peerHandshakeResponse, peerHandshakeResponseMessage)
 }

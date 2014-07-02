@@ -4,11 +4,13 @@ import java.math.BigDecimal
 import java.util.Currency
 import scala.collection.JavaConverters._
 
-import com.google.bitcoin.core.Sha256Hash
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, PeerConnection, BitcoinAmount}
+import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
 import com.coinffeine.common.Currency.Bitcoin
+import com.coinffeine.common.bitcoin.Hash
+import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.exchange._
@@ -22,16 +24,18 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     new ProtoMapping[CommitmentNotification, msg.CommitmentNotification] {
 
       override def fromProtobuf(commitment: msg.CommitmentNotification) = CommitmentNotification(
-        exchangeId = commitment.getExchangeId,
-        buyerTxId = new Sha256Hash(commitment.getBuyerTxId.toByteArray),
-        sellerTxId = new Sha256Hash(commitment.getSellerTxId.toByteArray)
+        exchangeId = Exchange.Id(commitment.getExchangeId),
+        bothCommitments = Both(
+          buyer = new Hash(commitment.getBuyerTxId.toByteArray),
+          seller = new Hash(commitment.getSellerTxId.toByteArray)
+        )
       )
 
       override def toProtobuf(commitment: CommitmentNotification) =
         msg.CommitmentNotification.newBuilder
-          .setExchangeId(commitment.exchangeId)
-          .setBuyerTxId(ByteString.copyFrom(commitment.buyerTxId.getBytes))
-          .setSellerTxId(ByteString.copyFrom(commitment.sellerTxId.getBytes))
+          .setExchangeId(commitment.exchangeId.value)
+          .setBuyerTxId(ByteString.copyFrom(commitment.bothCommitments.buyer.getBytes))
+          .setSellerTxId(ByteString.copyFrom(commitment.bothCommitments.seller.getBytes))
           .build
     }
 
@@ -40,23 +44,23 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       override def fromProtobuf(enter: msg.ExchangeCommitment) = ExchangeCommitment(
         commitmentTransaction = txSerialization.deserializeTransaction(
           enter.getCommitmentTransaction),
-        exchangeId = enter.getExchangeId
+        exchangeId = Exchange.Id(enter.getExchangeId)
       )
 
       override def toProtobuf(enter: ExchangeCommitment) = msg.ExchangeCommitment.newBuilder
-        .setExchangeId(enter.exchangeId)
+        .setExchangeId(enter.exchangeId.value)
         .setCommitmentTransaction(txSerialization.serialize(enter.commitmentTransaction)).build
     }
 
   implicit val exchangeAbortedMapping = new ProtoMapping[ExchangeAborted, msg.ExchangeAborted] {
 
     override def fromProtobuf(exchangeAborted: msg.ExchangeAborted) = ExchangeAborted(
-      exchangeId = exchangeAborted.getExchangeId,
+      exchangeId = Exchange.Id(exchangeAborted.getExchangeId),
       reason = exchangeAborted.getReason
     )
 
     override def toProtobuf(exchangeAborted: ExchangeAborted) = msg.ExchangeAborted.newBuilder
-      .setExchangeId(exchangeAborted.exchangeId)
+      .setExchangeId(exchangeAborted.exchangeId.value)
       .setReason(exchangeAborted.reason)
       .build
   }
@@ -64,12 +68,12 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val exchangeRejectionMapping = new ProtoMapping[ExchangeRejection, msg.ExchangeRejection] {
 
     override def fromProtobuf(rejection: msg.ExchangeRejection) = ExchangeRejection(
-      exchangeId = rejection.getExchangeId,
+      exchangeId = Exchange.Id(rejection.getExchangeId),
       reason = rejection.getReason
     )
 
     override def toProtobuf(rejection: ExchangeRejection) = msg.ExchangeRejection.newBuilder
-      .setExchangeId(rejection.exchangeId)
+      .setExchangeId(rejection.exchangeId.value)
       .setReason(rejection.reason)
       .build
   }
@@ -147,19 +151,21 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
-      exchangeId = orderMatch.getExchangeId,
+      exchangeId = Exchange.Id(orderMatch.getExchangeId),
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
-      buyer = PeerConnection.parse(orderMatch.getBuyer),
-      seller = PeerConnection.parse(orderMatch.getSeller)
+      participants = Both(
+        buyer = PeerConnection.parse(orderMatch.getBuyer),
+        seller = PeerConnection.parse(orderMatch.getSeller)
+      )
     )
 
     override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
-      .setExchangeId(orderMatch.exchangeId)
+      .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
-      .setBuyer(orderMatch.buyer.toString)
-      .setSeller(orderMatch.seller.toString)
+      .setBuyer(orderMatch.participants.buyer.toString)
+      .setSeller(orderMatch.participants.seller.toString)
       .build
   }
 
@@ -204,32 +210,34 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val refundTxSignatureRequestMapping =
-    new ProtoMapping[RefundTxSignatureRequest, msg.RefundTxSignatureRequest] {
+  implicit val peerHandshakeMapping =
+    new ProtoMapping[PeerHandshake, msg.PeerHandshake] {
 
-      override def fromProtobuf(request: msg.RefundTxSignatureRequest) = RefundTxSignatureRequest(
-        refundTx = txSerialization.deserializeTransaction(request.getRefundTx),
-        exchangeId = request.getExchangeId
+      override def fromProtobuf(message: msg.PeerHandshake) = PeerHandshake(
+        refundTx = txSerialization.deserializeTransaction(message.getRefundTx),
+        exchangeId = Exchange.Id(message.getExchangeId),
+        paymentProcessorAccount = message.getPaymentProcessorAccount
       )
 
-      override def toProtobuf(request: RefundTxSignatureRequest) =
-        msg.RefundTxSignatureRequest.newBuilder
-          .setExchangeId(request.exchangeId)
-          .setRefundTx(txSerialization.serialize(request.refundTx))
+      override def toProtobuf(message: PeerHandshake) =
+        msg.PeerHandshake.newBuilder
+          .setExchangeId(message.exchangeId.value)
+          .setRefundTx(txSerialization.serialize(message.refundTx))
+          .setPaymentProcessorAccount(message.paymentProcessorAccount)
           .build
     }
 
-  implicit val refundTxSignatureResponseMapping =
-    new ProtoMapping[RefundTxSignatureResponse, msg.RefundTxSignatureResponse] {
+  implicit val peerHandshakeResponseMapping =
+    new ProtoMapping[PeerHandshakeAccepted, msg.PeerHandshakeAccepted] {
 
-      override def fromProtobuf(response: msg.RefundTxSignatureResponse) = RefundTxSignatureResponse(
-        exchangeId = response.getExchangeId,
+      override def fromProtobuf(response: msg.PeerHandshakeAccepted) = PeerHandshakeAccepted(
+        exchangeId = Exchange.Id(response.getExchangeId),
         refundSignature = txSerialization.deserializeSignature(response.getTransactionSignature)
       )
 
-      override def toProtobuf(response: RefundTxSignatureResponse) =
-        msg.RefundTxSignatureResponse.newBuilder
-          .setExchangeId(response.exchangeId)
+      override def toProtobuf(response: PeerHandshakeAccepted) =
+        msg.PeerHandshakeAccepted.newBuilder
+          .setExchangeId(response.exchangeId.value)
           .setTransactionSignature(txSerialization.serialize(response.refundSignature))
           .build()
     }
@@ -237,27 +245,33 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val offerSignatureMapping = new ProtoMapping[StepSignatures, msg.StepSignature] {
 
     override def fromProtobuf(message: msg.StepSignature) = StepSignatures(
-      exchangeId = message.getExchangeId,
-      idx0Signature = txSerialization.deserializeSignature(message.getIdx0Signature),
-      idx1Signature = txSerialization.deserializeSignature(message.getIdx1Signature)
+      exchangeId = Exchange.Id(message.getExchangeId),
+      step = message.getStep,
+      signatures = Signatures(
+        buyer =
+          txSerialization.deserializeSignature(message.getBuyerDepositSignature),
+        seller =
+          txSerialization.deserializeSignature(message.getSellerDepositSignature)
+      )
     )
 
     override def toProtobuf(obj: StepSignatures) = msg.StepSignature.newBuilder
-      .setExchangeId(obj.exchangeId)
-      .setIdx0Signature(txSerialization.serialize(obj.idx0Signature))
-      .setIdx1Signature(txSerialization.serialize(obj.idx1Signature))
+      .setExchangeId(obj.exchangeId.value)
+      .setStep(obj.step)
+      .setBuyerDepositSignature(txSerialization.serialize(obj.signatures.buyer))
+      .setSellerDepositSignature(txSerialization.serialize(obj.signatures.seller))
       .build()
   }
 
   implicit val paymentProofMapping = new ProtoMapping[PaymentProof, msg.PaymentProof] {
 
     override def fromProtobuf(message: msg.PaymentProof) = PaymentProof(
-      exchangeId = message.getExchangeId,
+      exchangeId = Exchange.Id(message.getExchangeId),
       paymentId = message.getPaymentId
     )
 
     override def toProtobuf(obj: PaymentProof): msg.PaymentProof = msg.PaymentProof.newBuilder
-      .setExchangeId(obj.exchangeId)
+      .setExchangeId(obj.exchangeId.value)
       .setPaymentId(obj.paymentId)
       .build()
   }

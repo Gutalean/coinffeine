@@ -2,10 +2,11 @@ package com.coinffeine.gui.setup
 
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.Event
-import scalafx.geometry.Insets
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
 import scalafx.scene.paint.Color
+import scalafx.scene.text.TextAlignment
 
 import com.coinffeine.gui.wizard.StepPane
 
@@ -18,7 +19,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
 
   private val group = new ToggleGroup()
   private val usePasswordButton = new RadioButton {
-    text = "Use a password to protect Coinffeine information"
+    text = "Use a password"
     toggleGroup = group
     selected = true
     handleEvent(Event.ANY) { () => handlePasswordChange()  }
@@ -40,7 +41,9 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   }
   private val passwordWarningLabel = new Label() {
     textFill = Color.web("#da4100")
-    wrapText = true
+    textAlignment = TextAlignment.CENTER
+    alignment = Pos.TOP_CENTER
+    prefHeight = 35
     disable <== noPasswordProperty
   }
 
@@ -59,12 +62,22 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
     add(passwordField, 1, 0)
     add(new Label("Repeat password") { disable <== noPasswordProperty }, 0, 1)
     add(repeatPasswordField, 1, 1)
-    add(passwordWarningLabel, 1, 2)
+    add(passwordWarningLabel, 0, 2, 2, 1)
   }
 
-  content = new VBox(spacing = 10) {
-    maxWidth = 400
-    content = Seq(usePasswordButton, passwordPane, noPasswordButton)
+  content = new VBox(spacing = 5) {
+    padding = Insets(10, 50, 10, 50)
+    content = Seq(
+      new Label("Choose a password") { styleClass.add("stepTitle") },
+      new Label("You can use a password to protect the information that " +
+         "Coinffeine saves in your computer.") {
+        wrapText = true
+      },
+      new VBox() {
+        padding = Insets(5, 10, 0, 10)
+        content = Seq(usePasswordButton, passwordPane, noPasswordButton)
+      }
+    )
   }
 
   /** Translates updates on the password property to the setupConfig property */

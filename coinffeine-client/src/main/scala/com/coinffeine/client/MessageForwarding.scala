@@ -6,13 +6,18 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.exchange.{Exchange, Role}
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 class MessageForwarding(messageGateway: ActorRef,
                         counterpart: PeerConnection,
                         broker: PeerConnection) {
+
+  def this(messageGateway: ActorRef, exchange: Exchange[FiatCurrency], role: Role) =
+    this(messageGateway, exchange.connections(role.counterpart),
+      exchange.broker.connection)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)
@@ -32,7 +37,7 @@ class MessageForwarding(messageGateway: ActorRef,
     messageGateway ! ForwardMessage(message, address)
 
   def forwardMessage(message: Future[PublicMessage], address: PeerConnection)
-                              (implicit context: ActorContext): Unit = {
+                    (implicit context: ActorContext): Unit = {
     implicit val executionContext = ExecutionContexts.global()
     message.map(ForwardMessage(_, address)).pipeTo(messageGateway)(context.self)
   }
