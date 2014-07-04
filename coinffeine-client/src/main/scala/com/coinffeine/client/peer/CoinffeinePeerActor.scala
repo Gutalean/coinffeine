@@ -13,6 +13,7 @@ import com.coinffeine.common.{Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
+import com.coinffeine.common.protocol.messages.brokerage
 import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
@@ -80,6 +81,11 @@ object CoinffeinePeerActor {
     * @param order  Order to cancel
     */
   case class CancelOrder(order: Order)
+
+  /** Ask for the currently open orders. To be replied with an
+    * [[com.coinffeine.common.protocol.messages.brokerage.OpenOrders]].
+    */
+  type OpenOrdersRequest = brokerage.OpenOrdersRequest
 
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
