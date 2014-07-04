@@ -3,7 +3,6 @@ package com.coinffeine.client.api
 import scala.concurrent.Future
 
 import com.coinffeine.common._
-import com.coinffeine.common.protocol.messages.brokerage.Quote
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
