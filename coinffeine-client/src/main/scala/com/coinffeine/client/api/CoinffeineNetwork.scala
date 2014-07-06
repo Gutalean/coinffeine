@@ -3,7 +3,6 @@ package com.coinffeine.client.api
 import scala.concurrent.Future
 
 import com.coinffeine.common._
-import com.coinffeine.common.protocol.messages.brokerage.Quote
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
@@ -27,9 +26,6 @@ trait CoinffeineNetwork {
 
   /** Notify exchange events. */
   def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
-
-  /** Check current prices for a given payment form */
-  def currentQuote[C <: FiatCurrency](currency: C): Future[Quote[C]]
 
   /** Submit an order to buy bitcoins.
     *
