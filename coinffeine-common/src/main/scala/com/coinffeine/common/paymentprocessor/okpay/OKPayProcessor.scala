@@ -1,17 +1,14 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
 import java.util.{Currency => JavaCurrency}
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
-import scalaxb.Soap11Fault
 
-import com.coinffeine.common._
-import com.coinffeine.common.paymentprocessor.{AnyPayment, Payment, PaymentProcessor, PaymentProcessorException}
+import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
+import com.coinffeine.common.paymentprocessor._
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
 class OKPayProcessor(
@@ -34,8 +31,8 @@ class OKPayProcessor(
 
   private def sendPayment[C <: FiatCurrency](requester: ActorRef,
                                              pay: PaymentProcessor.Pay[C]): Unit = {
-    Future {
-      val response = getResponse(service.send_Money(
+    (for {
+      response <- service.send_Money(
         walletID = Some(Some(account)),
         securityToken = Some(Some(buildCurrentToken())),
         receiver = Some(Some(pay.to)),
@@ -44,18 +41,9 @@ class OKPayProcessor(
         comment = Some(Some(pay.comment)),
         isReceiverPaysFees = Some(false),
         invoice = None
-      ))
-      val payment = response
-        .Send_MoneyResult
-        .flatten
-        .flatMap(parseTransactionInfo)
-        .getOrElse(throw new PaymentProcessorException("Cannot parse the sent payment: " + response))
-      val expectedCurrency = pay.amount.currency
-      val actualCurrency = payment.amount.currency
-      if (actualCurrency != expectedCurrency) throw new PaymentProcessorException(
-        s"payment is expressed in $actualCurrency, but $expectedCurrency was expected")
-      else payment.asInstanceOf[Payment[C]]
-    }.onComplete {
+      )
+    } yield parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, pay.amount.currency)
+    ).onComplete {
       case Success(payment) =>
         requester ! PaymentProcessor.Paid(payment)
       case Failure(error) =>
@@ -63,13 +51,15 @@ class OKPayProcessor(
     }
   }
 
-  private def findPayment(requester: ActorRef, paymentId: String): Unit = Future {
-    getResponse(service.transaction_Get(
+  private def findPayment(requester: ActorRef, paymentId: String): Unit = {
+    service.transaction_Get(
       walletID = Some(Some(this.account)),
       securityToken = Some(Some(buildCurrentToken())),
       txnID = Some(paymentId.toLong),
-      invoice = None)
-    ).Transaction_GetResult.flatten.flatMap(parseTransactionInfo)
+      invoice = None
+    ).map { result =>
+      result.Transaction_GetResult.flatten.map(parsePayment)
+    }
   }.onComplete {
     case Success(Some(payment)) => requester ! PaymentProcessor.PaymentFound(payment)
     case Success(None) => requester ! PaymentProcessor.PaymentNotFound(paymentId)
@@ -77,20 +67,20 @@ class OKPayProcessor(
   }
 
   private def currentBalance[C <: FiatCurrency](requester: ActorRef,
-                                                currency: C): Unit = Future {
-    val token: String = buildCurrentToken()
-    val response = getResponse(service.wallet_Get_Balance(
+                                                currency: C): Unit = {
+    service.wallet_Get_Balance(
       walletID = Some(Some(this.account)),
-      securityToken = Some(Some(token))
-    ))
-    response.Wallet_Get_BalanceResult.flatten.map(b => parseArrayOfBalance(b, currency))
-      .getOrElse(throw new PaymentProcessorException("Cannot parse balances: " + response))
-  }.onComplete {
-    case Success(balance) => requester ! PaymentProcessor.BalanceRetrieved(balance)
-    case Failure(error) => requester ! PaymentProcessor.BalanceRetrievalFailed(currency, error)
+      securityToken = Some(Some(buildCurrentToken()))
+    ).map { response =>
+      response.Wallet_Get_BalanceResult.flatten.map(b => parseArrayOfBalance(b, currency))
+        .getOrElse(throw new PaymentProcessorException("Cannot parse balances: " + response))
+    }.onComplete {
+      case Success(balance) => requester ! PaymentProcessor.BalanceRetrieved(balance)
+      case Failure(error) => requester ! PaymentProcessor.BalanceRetrievalFailed(currency, error)
+    }
   }
 
-  private def parseTransactionInfo(txInfo: TransactionInfo): Option[AnyPayment] = {
+  private def parsePayment(txInfo: TransactionInfo): AnyPayment = {
     txInfo match {
       case TransactionInfo(
         Some(amount),
@@ -109,9 +99,19 @@ class OKPayProcessor(
         val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
         val amount = currency.amount(net)
         val date = DateTimeFormat.forPattern(OKPayProcessor.DateFormat).parseDateTime(rawDate)
-        Some(Payment(paymentId.toString, senderId, receiverId, amount, date, description))
-      case _ => None
+        Payment(paymentId.toString, senderId, receiverId, amount, date, description)
+      case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }
+  }
+
+  private def parsePaymentOfCurrency[C <: FiatCurrency](
+      txInfo: TransactionInfo, expectedCurrency: C): Payment[C] = {
+    val payment = parsePayment(txInfo)
+    if (payment.amount.currency != expectedCurrency) {
+      throw new PaymentProcessorException(
+        s"payment is expressed in ${payment.amount.currency}, but $expectedCurrency was expected")
+    }
+    payment.asInstanceOf[Payment[C]]
   }
 
   private object WalletId {
@@ -121,11 +121,6 @@ class OKPayProcessor(
   private object Flatten {
     def unapply[T](option: Option[Option[T]]): Option[T] = option.flatten
   }
-
-  private def getResponse[T](response: Either[Soap11Fault[Any], T]): T = response.fold(
-    msg => throw new PaymentProcessorException("Error when sending the payment: "  + msg),
-    identity
-  )
 
   private def parseArrayOfBalance[C <: FiatCurrency](
       balances: ArrayOfBalance, expectedCurrency: C): CurrencyAmount[C] = {

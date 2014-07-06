@@ -6,9 +6,12 @@ ScoverageKeys.excludedPackages in ScoverageCompile :=
 libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.bitcoinj,
   Dependencies.h2 % "test",
-  Dependencies.dispatch,
   Dependencies.jodaConvert,
   Dependencies.netty,
   Dependencies.protobufRpc,
-  Dependencies.reflections % "test"
+  Dependencies.reflections % "test",
+  // Support libraries for scalaxb
+  Dependencies.dispatch,
+  Dependencies.scalaParser,
+  Dependencies.scalaXml
 )
