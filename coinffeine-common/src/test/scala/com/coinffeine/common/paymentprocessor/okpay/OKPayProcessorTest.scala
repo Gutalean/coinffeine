@@ -9,9 +9,10 @@ import org.mockito.BDDMockito.given
 import org.mockito.Matchers.any
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.common.{AkkaSpec, Currency}
+import com.coinffeine.common.Currency
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.paymentprocessor.okpay.generated._
+import com.coinffeine.common.test.AkkaSpec
 
 class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 

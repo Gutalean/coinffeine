@@ -6,11 +6,12 @@ import akka.actor.Props
 
 import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common._
-import com.coinffeine.common.Currency.{UsDollar, Euro}
+import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.test.AkkaSpec
 
 class OrdersActorTest extends AkkaSpec {
 

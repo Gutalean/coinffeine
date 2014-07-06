@@ -1,5 +1,7 @@
 package com.coinffeine.common
 
+import com.coinffeine.common.test.UnitTest
+
 class PeerConnectionTest extends UnitTest {
 
   "A peer connection" should "be parsed from a chain with hostname and port" in {

@@ -1,15 +1,14 @@
 package com.coinffeine.gui
 
-import javafx.scene
-
 import scala.concurrent.duration.FiniteDuration
 
 import com.google.common.base.Predicate
+import javafx.scene
 import javafx.scene.{Node => jfxNode}
 import org.loadui.testfx
 import scalafx.scene.{Node, Parent}
 
-import com.coinffeine.common.UnitTest
+import com.coinffeine.common.test.UnitTest
 
 abstract class GuiTest[TestObject <: Parent] extends UnitTest { self =>
 

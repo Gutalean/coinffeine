@@ -7,12 +7,13 @@ import akka.testkit.{TestActorRef, TestProbe}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import com.coinffeine.common.{AkkaSpec, DefaultTcpPortAllocator, PeerConnection}
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.{ProtocolConstants, TestClient}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BoundTo, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.protocol.serialization._
+import com.coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 
 class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
   with Eventually with IntegrationPatience {

@@ -3,9 +3,10 @@ package com.coinffeine.common.bitcoin
 import akka.actor.Props
 import org.scalatest.concurrent.Eventually
 
-import com.coinffeine.common.{system, AkkaSpec, BitcoinjTest}
+import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.Implicits._
+import com.coinffeine.common.test.AkkaSpec
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
