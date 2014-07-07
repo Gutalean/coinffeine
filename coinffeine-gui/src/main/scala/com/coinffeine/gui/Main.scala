@@ -49,8 +49,7 @@ object Main extends JFXApp with ProductionCoinffeineApp.Component {
   private def onOrderSubmitted(order: Order): Unit = {
     val progress =
       ProgressDialog("Submitting order", "Submitting order to the broker...") {
-        val submission = app.broker.submitOrder(order)
-        Await.ready(submission, 10.seconds) // TODO: obtain this timeout from config
+        app.network.submitOrder(order)
       }
     progress.show()
   }
