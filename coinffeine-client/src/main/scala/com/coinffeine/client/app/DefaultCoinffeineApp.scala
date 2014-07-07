@@ -26,6 +26,10 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
   override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
 
   override def close(): Unit = system.shutdown()
+
+  override def observe(handler: EventHandler): Unit = {
+    ???
+  }
 }
 
 object DefaultCoinffeineApp {

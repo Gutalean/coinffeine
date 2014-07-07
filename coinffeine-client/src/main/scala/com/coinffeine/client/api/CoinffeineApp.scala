@@ -7,10 +7,19 @@ import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Coinffeine application interface */
 trait CoinffeineApp extends Closeable {
+
   def network: CoinffeineNetwork
   def wallet: CoinffeineWallet
   def paymentProcessors: Set[PaymentProcessor.Component]
   def marketStats: MarketStats
   def protocolConstants: ProtocolConstants
+
+  def observe(handler: EventHandler): Unit
+}
+
+object CoinffeineApp {
+
+  /** A marking trait used to define Coinffeine events. */
+  sealed trait Event
 }
 
