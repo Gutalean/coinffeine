@@ -14,7 +14,7 @@ import com.coinffeine.common.protocol.messages.brokerage.{Market, OpenOrdersRequ
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
-class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
+class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   val address = PeerConnection("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
