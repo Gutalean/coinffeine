@@ -14,7 +14,7 @@ import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage
-import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
+import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, Market, QuoteRequest}
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
@@ -22,7 +22,7 @@ import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 class CoinffeinePeerActor(address: PeerInfo,
                           brokerAddress: PeerConnection,
                           gatewayProps: Props,
-                          quoteRequestProps: Props,
+                          marketInfoProps: Props,
                           ordersActorProps: Props) extends Actor with ActorLogging {
 
   import context.dispatcher
@@ -31,6 +31,11 @@ class CoinffeinePeerActor(address: PeerInfo,
   val ordersActorRef = {
     val ref = context.actorOf(ordersActorProps, "orders")
     ref ! OrdersActor.Initialize(gatewayRef, brokerAddress)
+    ref
+  }
+  val marketInfoRef = {
+    val ref = context.actorOf(marketInfoProps)
+    ref ! MarketInfoActor.Start(brokerAddress, gatewayRef)
     ref
   }
 
@@ -48,8 +53,9 @@ class CoinffeinePeerActor(address: PeerInfo,
       context.stop(self)
 
     case QuoteRequest(currency) =>
-      val request = QuoteRequestActor.StartRequest(currency, gatewayRef, brokerAddress)
-      context.actorOf(quoteRequestProps) forward request
+      marketInfoRef.tell(MarketInfoActor.RequestQuote(Market(currency)), sender())
+    case OpenOrdersRequest(currency) =>
+      marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(Market(currency)), sender())
 
     case openOrder: OpenOrder => ordersActorRef ! openOrder
     case cancelOrder: CancelOrder => ordersActorRef ! cancelOrder
@@ -93,9 +99,8 @@ object CoinffeinePeerActor {
 
   private val ConnectionTimeout = Timeout(10.seconds)
 
-  trait Component {
-    this: QuoteRequestActor.Component with OrdersActor.Component
-      with MessageGateway.Component with ConfigComponent =>
+  trait Component { this: OrdersActor.Component with MarketInfoActor.Component
+    with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
       val peerInfo = new PeerInfo(config.getString(HostSetting), config.getInt(PortSetting))
@@ -104,7 +109,7 @@ object CoinffeinePeerActor {
         peerInfo,
         brokerAddress,
         gatewayProps = messageGatewayProps,
-        quoteRequestProps = quoteRequestProps,
+        marketInfoProps,
         ordersActorProps = ordersActorProps
       ))
     }
