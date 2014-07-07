@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 
-import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._

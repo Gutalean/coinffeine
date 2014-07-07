@@ -9,7 +9,7 @@ import com.coinffeine.common.bitcoin.ImmutableTransaction
   * - Return a reference to the BlockchainActor that contains the blockchain derived from the peers
   * - Broadcast a transaction to the peers
   */
-object PeerActor {
+object BitcoinPeerActor {
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.
     *

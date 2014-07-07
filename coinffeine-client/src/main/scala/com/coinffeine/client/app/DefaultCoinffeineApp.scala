@@ -3,7 +3,7 @@ package com.coinffeine.client.app
 import akka.actor.{ActorSystem, Props}
 
 import com.coinffeine.client.api._
-import com.coinffeine.client.peer.PeerActor
+import com.coinffeine.client.peer.CoinffeinePeerActor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -30,7 +30,7 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
 
 object DefaultCoinffeineApp {
   trait Component extends CoinffeineAppComponent {
-    this: PeerActor.Component with ProtocolConstants.Component =>
+    this: CoinffeinePeerActor.Component with ProtocolConstants.Component =>
 
     override lazy val app = new DefaultCoinffeineApp(peerProps, protocolConstants)
   }
