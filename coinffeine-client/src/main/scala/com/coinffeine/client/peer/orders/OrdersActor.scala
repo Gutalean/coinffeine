@@ -54,7 +54,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
     private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(OrderSubmissionActor.props(protocolConstants))
-      newDelegate ! OrderSubmissionActor.Initialize(market, gateway, brokerAddress)
+      newDelegate ! OrderSubmissionActor.Initialize(market, eventChannel, gateway, brokerAddress)
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
@@ -72,7 +72,10 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
 object OrdersActor {
 
-  case class Initialize(ownAddress: PeerConnection, brokerAddress: PeerConnection, gateway: ActorRef)
+  case class Initialize(ownAddress: PeerConnection,
+                        brokerAddress: PeerConnection,
+                        eventChannel: ActorRef,
+                        gateway: ActorRef)
 
   trait Component { this: ProtocolConstants.Component =>
     lazy val ordersActorProps = Props(new OrdersActor(protocolConstants))

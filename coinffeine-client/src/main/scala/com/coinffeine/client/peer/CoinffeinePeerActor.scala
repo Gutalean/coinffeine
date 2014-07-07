@@ -32,7 +32,7 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
     val ref = context.actorOf(ordersActorProps, "orders")
-    ref ! OrdersActor.Initialize(ownAddress, brokerAddress, gatewayRef)
+    ref ! OrdersActor.Initialize(ownAddress, brokerAddress, eventChannel, gatewayRef)
     ref
   }
   val marketInfoRef = {
