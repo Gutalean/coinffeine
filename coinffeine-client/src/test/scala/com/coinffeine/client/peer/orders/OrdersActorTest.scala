@@ -4,13 +4,13 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
-import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
 import com.coinffeine.common.test.AkkaSpec
 
 class OrdersActorTest extends AkkaSpec {
@@ -23,6 +23,7 @@ class OrdersActorTest extends AkkaSpec {
   val broker = PeerConnection("broker")
   val eurOrder1 = Order(Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(Ask, 0.7.BTC, 640.EUR)
+  val usdOrder = Order(Ask, 0.5.BTC, 500.USD)
   val noEurOrders = OrderSet.empty(Market(Euro))
   val firstEurOrder = noEurOrders.addOrder(Bid, 1.3.BTC, 556.EUR)
   val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC, 640.EUR)
@@ -53,7 +54,7 @@ class OrdersActorTest extends AkkaSpec {
 
   it must "group orders by target market" in new Fixture {
     actor ! OpenOrder(eurOrder1)
-    actor ! OpenOrder(Order(Ask, 0.5.BTC, 500.USD))
+    actor ! OpenOrder(usdOrder)
 
     def currencyOfNextOrderSet(): FiatCurrency =
       gateway.expectForwardingPF(broker, constants.orderExpirationInterval) {
@@ -81,5 +82,19 @@ class OrdersActorTest extends AkkaSpec {
     actor ! CancelOrder(eurOrder1)
     gateway.expectForwarding(noEurOrders, broker)
     gateway.expectNoMsg(constants.orderExpirationInterval)
+  }
+
+  it must "retrieve an empty OpenOrders when there is no open orders" in new Fixture {
+    actor ! RetrieveOpenOrders
+    expectMsg(RetrievedOpenOrders(Set.empty))
+  }
+
+  it must "retrieve open orders" in new Fixture {
+    actor ! OpenOrder(eurOrder1)
+    actor ! OpenOrder(usdOrder)
+    val eurMarket = Market(Euro)
+    val usdMarket = Market(UsDollar)
+    actor ! RetrieveOpenOrders
+    expectMsg(RetrievedOpenOrders(Set(eurOrder1, usdOrder)))
   }
 }

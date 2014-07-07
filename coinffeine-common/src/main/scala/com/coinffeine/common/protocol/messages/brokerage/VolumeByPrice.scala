@@ -1,8 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.BitcoinAmount
+import com.coinffeine.common._
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
 
 case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], BitcoinAmount)]) {
 
@@ -30,6 +29,9 @@ case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bi
     else copy(entries = (entryMap - price).toSeq)
   }
 
+  def toOrders(orderType: OrderType): Seq[Order] = entries.collect {
+    case (price, amount) => Order(orderType, amount, price)
+  }
 
   private def requirePositiveValues(): Unit = {
     entries.foreach { case (price, amount) =>
