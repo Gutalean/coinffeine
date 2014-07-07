@@ -9,8 +9,8 @@ import akka.pattern._
 
 import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
-import com.coinffeine.client.peer.PeerActor
-import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.client.peer.CoinffeinePeerActor
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.common.Order
 
 private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
@@ -27,9 +27,9 @@ private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     */
   override def connect(): Future[Connected.type] = {
     _status = Connecting
-    val bindResult = (peer ? PeerActor.Connect).flatMap {
-      case PeerActor.Connected => Future.successful(Connected)
-      case PeerActor.ConnectionFailed(cause) => Future.failed(ConnectException(cause))
+    val bindResult = (peer ? CoinffeinePeerActor.Connect).flatMap {
+      case CoinffeinePeerActor.Connected => Future.successful(Connected)
+      case CoinffeinePeerActor.ConnectionFailed(cause) => Future.failed(ConnectException(cause))
     }
     bindResult.onComplete {
       case Success(connected) => _status = connected

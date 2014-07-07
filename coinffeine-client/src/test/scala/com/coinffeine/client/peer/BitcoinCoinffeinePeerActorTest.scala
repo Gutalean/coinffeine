@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 import com.googlecode.protobuf.pro.duplex.PeerInfo
 
-import com.coinffeine.client.peer.PeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common._
@@ -15,14 +15,14 @@ import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
-class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
+class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   val address = new PeerInfo("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
   val gatewayProbe = TestProbe()
   val requestsProbe = TestProbe()
   val ordersProbe = TestProbe()
-  val peer = system.actorOf(Props(new PeerActor(address, brokerAddress,
+  val peer = system.actorOf(Props(new CoinffeinePeerActor(address, brokerAddress,
     MockActor.props(gatewayProbe), MockActor.props(requestsProbe),
     MockActor.props(ordersProbe))))
   var gatewayRef: ActorRef = _
@@ -42,20 +42,20 @@ class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "make the message gateway start listening when connecting" in {
     gatewayProbe.expectNoMsg()
-    peer ! PeerActor.Connect
+    peer ! CoinffeinePeerActor.Connect
     gatewayProbe.expectMsgPF() {
       case MockReceived(_, sender, Bind(`address`)) => sender ! BoundTo(address)
     }
-    expectMsg(PeerActor.Connected)
+    expectMsg(CoinffeinePeerActor.Connected)
   }
 
   it must "propagate failures when connecting" in {
-    peer ! PeerActor.Connect
+    peer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
     gatewayProbe.expectMsgPF() {
       case MockReceived(_, sender, Bind(`address`)) => sender ! BindingError(cause)
     }
-    expectMsg(PeerActor.ConnectionFailed(cause))
+    expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
   }
 
   it must "delegate quote requests" in {

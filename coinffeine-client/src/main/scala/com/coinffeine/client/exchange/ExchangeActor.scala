@@ -9,7 +9,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, Wallet}
-import com.coinffeine.common.bitcoin.peers.PeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
+import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants

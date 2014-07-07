@@ -11,7 +11,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, G
 import com.coinffeine.common.akka.ConstantValueActor
 import com.coinffeine.common.akka.ConstantValueActor.SetValue
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.bitcoin.peers.PeerActor._
+import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -20,7 +20,7 @@ class ExchangeTransactionBroadcastActor(
 
   override val receive: Receive = {
     case msg: StartBroadcastHandling =>
-      msg.peerActor ! RetrieveBlockchainActor
+      msg.bitcoinPeerActor ! RetrieveBlockchainActor
       context.become(waitForBlockchain(msg))
   }
 
@@ -71,7 +71,7 @@ class ExchangeTransactionBroadcastActor(
 
     private def readyForBroadcast(offer: ImmutableTransaction): Receive = {
       case ReadyForBroadcast =>
-        peerActor ! PublishTransaction(offer)
+        bitcoinPeerActor ! PublishTransaction(offer)
         context.become(broadcastCompleted(offer))
     }
 
@@ -114,7 +114,7 @@ object ExchangeTransactionBroadcastActor {
     * there are no better alternatives (like broadcasting the successful exchange transaction)
     */
   case class StartBroadcastHandling(
-    refund: ImmutableTransaction, peerActor: ActorRef, resultListeners: Set[ActorRef])
+    refund: ImmutableTransaction, bitcoinPeerActor: ActorRef, resultListeners: Set[ActorRef])
 
   /** Sets the micropayment actor, which will be queried for transactions which are deemed better
     * than the refund transaction.

@@ -17,7 +17,7 @@ import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.bitcoin.peers.PeerActor.{TransactionPublished, BlockchainActorReference, RetrieveBlockchainActor}
+import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{TransactionPublished, BlockchainActorReference, RetrieveBlockchainActor}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.{MockExchangeProtocol, Both}
 import com.coinffeine.common.protocol.ProtocolConstants
