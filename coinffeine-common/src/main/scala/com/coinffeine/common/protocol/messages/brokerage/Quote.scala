@@ -5,7 +5,7 @@ import com.coinffeine.common.protocol.Spread
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class Quote[+C <: FiatCurrency](
-    currency: C,
+    market: Market[C],
     spread: Spread[C] = (None, None),
     lastPrice: Option[CurrencyAmount[C]] = None) extends PublicMessage {
   override def toString = "Quote(spread = (%s, %s), last = %s)".format(
@@ -16,13 +16,13 @@ case class Quote[+C <: FiatCurrency](
 }
 
 object Quote {
-  def empty[C <: FiatCurrency](currency: C): Quote[C] = Quote(currency)
+  def empty[C <: FiatCurrency](market: Market[C]): Quote[C] = Quote(market)
 
   /** Utility constructor for the case of having all prices defined */
   def apply[C <: FiatCurrency](
       spread: (CurrencyAmount[C], CurrencyAmount[C]), lastPrice: CurrencyAmount[C]): Quote[C] =
     Quote(
-      currency = lastPrice.currency,
+      market = Market(lastPrice.currency),
       spread = Some(spread._1) -> Some(spread._2),
       lastPrice = Some(lastPrice)
     )

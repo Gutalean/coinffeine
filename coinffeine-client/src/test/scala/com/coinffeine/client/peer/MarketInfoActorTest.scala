@@ -13,7 +13,7 @@ class MarketInfoActorTest extends AkkaSpec {
 
   "A market info actor" should "retrieve a market quote" in new Fixture {
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    gateway.expectForwarding(QuoteRequest(Euro), broker)
+    gateway.expectForwarding(QuoteRequest(eurMarket), broker)
     gateway.relayMessage(sampleEurQuote, broker)
     expectMsg(sampleEurQuote)
   }
@@ -22,7 +22,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val concurrentRequester = TestProbe()
 
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    gateway.expectForwarding(QuoteRequest(Euro), broker)
+    gateway.expectForwarding(QuoteRequest(eurMarket), broker)
 
     concurrentRequester.send(actor, MarketInfoActor.RequestQuote(eurMarket))
     gateway.expectNoMsg()
@@ -34,7 +34,7 @@ class MarketInfoActorTest extends AkkaSpec {
 
   it should "retrieve open orders" in new Fixture {
     actor ! MarketInfoActor.RequestOpenOrders(eurMarket)
-    gateway.expectForwarding(OpenOrdersRequest(Euro), broker)
+    gateway.expectForwarding(OpenOrdersRequest(eurMarket), broker)
     gateway.relayMessage(sampleOpenOrders, broker)
     expectMsg(sampleOpenOrders)
   }
@@ -43,7 +43,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val concurrentRequester = TestProbe()
 
     actor ! MarketInfoActor.RequestOpenOrders(eurMarket)
-    gateway.expectForwarding(OpenOrdersRequest(Euro), broker)
+    gateway.expectForwarding(OpenOrdersRequest(eurMarket), broker)
 
     concurrentRequester.send(actor, MarketInfoActor.RequestOpenOrders(eurMarket))
     gateway.expectNoMsg()
@@ -55,11 +55,11 @@ class MarketInfoActorTest extends AkkaSpec {
 
   it should "handle different markets" in new Fixture {
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    gateway.expectForwarding(QuoteRequest(Euro), broker)
+    gateway.expectForwarding(QuoteRequest(eurMarket), broker)
 
     val usdRequester = TestProbe()
     usdRequester.send(actor, MarketInfoActor.RequestQuote(usdMarket))
-    gateway.expectForwarding(QuoteRequest(UsDollar), broker)
+    gateway.expectForwarding(QuoteRequest(usdMarket), broker)
 
     gateway.relayMessage(sampleEurQuote, broker)
     expectMsg(sampleEurQuote)

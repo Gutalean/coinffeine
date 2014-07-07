@@ -38,16 +38,16 @@ class MarketInfoActor extends Actor {
     private val initializedReceive: Receive = {
       case request @ RequestQuote(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessage(QuoteRequest(market.currency), broker)
+          gateway ! ForwardMessage(QuoteRequest(market), broker)
         }
 
       case request @ RequestOpenOrders(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessage(OpenOrdersRequest(market.currency), broker)
+          gateway ! ForwardMessage(OpenOrdersRequest(market), broker)
         }
 
       case ReceiveMessage(quote: Quote[FiatCurrency], _) =>
-        completeRequest(RequestQuote(Market(quote.currency)), quote)
+        completeRequest(RequestQuote(quote.market), quote)
 
       case ReceiveMessage(openOrders: OpenOrders[_], _) =>
         completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)

@@ -47,8 +47,8 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
   it must "throw when deserializing messages of a different protocol version" in {
     val message = CoinffeineMessage.newBuilder
       .setVersion(protoVersion.toBuilder.setMajor(42))
-      .setPayload(
-        proto.Payload.newBuilder.setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD")))
+      .setPayload(proto.Payload.newBuilder.setExchangeAborted(
+        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason")))
       .build
     val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(message)
@@ -79,7 +79,8 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
       .setVersion(protoVersion)
       .setPayload(proto.Payload.newBuilder
         .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
-        .setQuoteRequest(proto.QuoteRequest.newBuilder.setCurrency("USD")))
+        .setQuoteRequest(proto.QuoteRequest.newBuilder
+          .setMarket(proto.Market.newBuilder().setCurrency("USD"))))
       .build
     val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(multiMessage)
@@ -106,14 +107,14 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerConnection)),
         orderSet,
-        QuoteRequest(UsDollar),
+        QuoteRequest(Market(UsDollar)),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),
         PeerHandshake(exchangeId, transaction, "paymentAccount"),
         PeerHandshakeAccepted(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
         PaymentProof(exchangeId, "paymentId"),
-        OpenOrdersRequest(UsDollar),
+        OpenOrdersRequest(Market(UsDollar)),
         OpenOrders(orderSet)
       )
     }

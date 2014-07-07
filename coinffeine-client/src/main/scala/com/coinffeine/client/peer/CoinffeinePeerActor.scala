@@ -14,7 +14,7 @@ import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage
-import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, Market, QuoteRequest}
+import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
@@ -52,10 +52,10 @@ class CoinffeinePeerActor(address: PeerInfo,
       log.error(cause, "Cannot start peer")
       context.stop(self)
 
-    case QuoteRequest(currency) =>
-      marketInfoRef.tell(MarketInfoActor.RequestQuote(Market(currency)), sender())
-    case OpenOrdersRequest(currency) =>
-      marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(Market(currency)), sender())
+    case QuoteRequest(market) =>
+      marketInfoRef.tell(MarketInfoActor.RequestQuote(market), sender())
+    case OpenOrdersRequest(market) =>
+      marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(market), sender())
 
     case openOrder: OpenOrder => ordersActorRef ! openOrder
     case cancelOrder: CancelOrder => ordersActorRef ! cancelOrder

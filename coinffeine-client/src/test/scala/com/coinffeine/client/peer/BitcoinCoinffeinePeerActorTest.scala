@@ -68,8 +68,8 @@ class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest
   }
 
   it must "delegate quote requests" in {
-    peer ! QuoteRequest(Euro)
-    peer ! OpenOrdersRequest(UsDollar)
+    peer ! QuoteRequest(Market(Euro))
+    peer ! OpenOrdersRequest(Market(UsDollar))
     for (message <- Seq(RequestQuote(Market(Euro)), RequestOpenOrders(Market(UsDollar)))) {
       marketInfoProbe.expectMsgPF() {
         case MockReceived(_, _, `message`) =>

@@ -178,21 +178,20 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         if (quote.hasLowestAsk) Some(ProtoMapping.fromProtobuf(quote.getLowestAsk)) else None
       val lastPriceOption =
         if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
-      val currency = FiatCurrency(Currency.getInstance(quote.getCurrency))
+      val market = ProtoMapping.fromProtobuf(quote.getMarket)
       def requireCorrectCurrency(amount: Option[CurrencyAmount[FiatCurrency]]): Unit = {
-        require(amount.forall(_.currency == currency),
-          s"Incorrect currency. Expected $currency, received ${amount.get.currency}")
+        require(amount.forall(_.currency == market.currency),
+          s"Incorrect currency. Expected ${market.currency}, received ${amount.get.currency}")
       }
       requireCorrectCurrency(bidOption)
       requireCorrectCurrency(askOption)
       requireCorrectCurrency(lastPriceOption)
-      Quote(currency, bidOption -> askOption, lastPriceOption)
+      Quote(market, bidOption -> askOption, lastPriceOption)
     }
 
     override def toProtobuf(quote: Quote[FiatCurrency]): msg.Quote = {
-      val Quote(currency, (bidOption, askOption), lastPriceOption) = quote
-      val builder = msg.Quote.newBuilder
-        .setCurrency(currency.javaCurrency.getCurrencyCode)
+      val Quote(market, (bidOption, askOption), lastPriceOption) = quote
+      val builder = msg.Quote.newBuilder.setMarket(ProtoMapping.toProtobuf(market))
       bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid)))
       askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask)))
       lastPriceOption.foreach(lastPrice => builder.setLastPrice(ProtoMapping.toProtobuf(lastPrice)))
@@ -202,15 +201,13 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
   implicit val openOrdersRequestMapping = new ProtoMapping[OpenOrdersRequest, msg.OpenOrdersRequest] {
 
-    override def fromProtobuf(openOrdersRequest: msg.OpenOrdersRequest): OpenOrdersRequest = {
-      val currency = FiatCurrency(Currency.getInstance(openOrdersRequest.getCurrency))
-      OpenOrdersRequest(currency)
-    }
+    override def fromProtobuf(openOrdersRequest: msg.OpenOrdersRequest): OpenOrdersRequest =
+      OpenOrdersRequest(ProtoMapping.fromProtobuf(openOrdersRequest.getMarket))
 
-    override def toProtobuf(openOrdersRequest: OpenOrdersRequest): msg.OpenOrdersRequest = {
-      msg.OpenOrdersRequest.newBuilder.setCurrency(
-        openOrdersRequest.currency.javaCurrency.getCurrencyCode).build
-    }
+    override def toProtobuf(openOrdersRequest: OpenOrdersRequest): msg.OpenOrdersRequest =
+      msg.OpenOrdersRequest.newBuilder
+        .setMarket(ProtoMapping.toProtobuf(openOrdersRequest.market))
+        .build
   }
 
   implicit val openOrdersMapping = new ProtoMapping[OpenOrders[FiatCurrency], msg.OpenOrders] {
@@ -228,10 +225,10 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val quoteRequestMapping = new ProtoMapping[QuoteRequest, msg.QuoteRequest] {
 
     override def fromProtobuf(request: msg.QuoteRequest): QuoteRequest =
-      QuoteRequest(FiatCurrency(Currency.getInstance(request.getCurrency)))
+      QuoteRequest(ProtoMapping.fromProtobuf(request.getMarket))
 
     override def toProtobuf(request: QuoteRequest): msg.QuoteRequest = msg.QuoteRequest.newBuilder
-      .setCurrency(request.currency.javaCurrency.getCurrencyCode)
+      .setMarket(ProtoMapping.toProtobuf(request.market))
       .build
   }
 
