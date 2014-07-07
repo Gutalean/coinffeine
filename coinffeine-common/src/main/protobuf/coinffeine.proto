@@ -34,11 +34,11 @@ message OrderSet {
 }
 
 message QuoteRequest {
-    required string currency = 1;
+    required Market market = 1;
 }
 
 message Quote {
-    required string currency = 1;
+    required Market market = 1;
     optional FiatAmount highestBid = 2;
     optional FiatAmount lowestAsk = 3;
     optional FiatAmount lastPrice = 4;
@@ -53,7 +53,7 @@ message OrderMatch {
 }
 
 message OpenOrdersRequest {
-    required string currency = 1;
+    required Market market = 1;
 }
 
 message OpenOrders {

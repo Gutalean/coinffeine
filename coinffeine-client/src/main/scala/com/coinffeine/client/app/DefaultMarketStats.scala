@@ -15,8 +15,8 @@ private[app] class DefaultMarketStats(override val peer: ActorRef)
   extends MarketStats with PeerActorWrapper {
 
   override def currentQuote[C <: FiatCurrency](market: Market[C]): Future[Quote[C]] =
-    (peer ? QuoteRequest(market.currency)).mapTo[Quote[C]]
+    (peer ? QuoteRequest(market)).mapTo[Quote[C]]
 
   override def openOrders[C <: FiatCurrency](market: Market[C]): Future[OrderSet[C]] =
-    (peer ? OpenOrdersRequest(market.currency)).mapTo[OpenOrders[C]].map(_.orders)
+    (peer ? OpenOrdersRequest(market)).mapTo[OpenOrders[C]].map(_.orders)
 }

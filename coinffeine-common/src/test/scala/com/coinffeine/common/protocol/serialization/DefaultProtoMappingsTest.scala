@@ -131,8 +131,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 
-  val emptyQuoteMessage = msg.Quote.newBuilder.setCurrency(Euro.javaCurrency.getCurrencyCode).build
-  val emptyQuote = Quote.empty(Euro)
+  val emptyQuoteMessage = msg.Quote.newBuilder
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
+    .build
+  val emptyQuote = Quote.empty(Market(Euro))
   "Empty quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
     emptyQuote, emptyQuoteMessage)
 
@@ -145,9 +147,9 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
     quote, quoteMessage)
 
-  val quoteRequest = QuoteRequest(Euro)
+  val quoteRequest = QuoteRequest(Market(Euro))
   val quoteRequestMessage = msg.QuoteRequest.newBuilder
-    .setCurrency("EUR")
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
     .build
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
