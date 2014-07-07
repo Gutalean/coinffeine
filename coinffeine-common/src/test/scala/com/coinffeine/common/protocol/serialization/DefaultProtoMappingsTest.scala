@@ -15,6 +15,7 @@ import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotificatio
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.protocol.messages.handshake._
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => msg}
+import com.coinffeine.common.test.UnitTest
 
 class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 

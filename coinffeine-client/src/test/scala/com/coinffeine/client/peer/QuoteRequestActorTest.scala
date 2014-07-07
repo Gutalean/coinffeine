@@ -3,10 +3,11 @@ package com.coinffeine.client.peer
 import akka.actor._
 
 import com.coinffeine.client.peer.QuoteRequestActor.StartRequest
-import com.coinffeine.common.{AkkaSpec, PeerConnection}
+import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.messages.brokerage.{Quote, QuoteRequest}
+import com.coinffeine.common.test.AkkaSpec
 
 class QuoteRequestActorTest extends AkkaSpec(ActorSystem("RequestActorTest")) {
 

@@ -1,9 +1,8 @@
 package com.coinffeine.common.akka
 
 import akka.actor.Props
-
-import com.coinffeine.common.AkkaSpec
 import com.coinffeine.common.akka.ConstantValueActor.{UnsetValue, SetValue}
+import com.coinffeine.common.test.AkkaSpec
 
 class ConstantValueActorTest extends AkkaSpec("ConstantValueActorTest") {
   val instance = system.actorOf(Props[ConstantValueActor])

@@ -1,4 +1,4 @@
-package com.coinffeine.common
+package com.coinffeine.common.test
 
 trait EqualityBehaviors { this: UnitTest =>
 

@@ -1,5 +1,6 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.Props
@@ -8,9 +9,10 @@ import org.mockito.BDDMockito.given
 import org.mockito.Matchers.any
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.common.{AkkaSpec, Currency}
+import com.coinffeine.common.Currency
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.paymentprocessor.okpay.generated._
+import com.coinffeine.common.test.AkkaSpec
 
 class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
@@ -57,7 +59,7 @@ class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(fakeClient.wallet_Get_Balance(
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token))
-    )).willReturn(Right(Wallet_Get_BalanceResponse(Some(Some(balanceArray)))))
+    )).willReturn(Future.successful(Wallet_Get_BalanceResponse(Some(Some(balanceArray)))))
     processor ! PaymentProcessor.RetrieveBalance(Currency.UsDollar)
     expectMsg(PaymentProcessor.BalanceRetrieved(`amount`))
   }
@@ -71,7 +73,7 @@ class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       amount = Some(amount.value),
       comment = Some(Some("comment")),
       isReceiverPaysFees = Some(false),
-      invoice = None)).willReturn(Right(Send_MoneyResponse(Some(Some(txInfo)))))
+      invoice = None)).willReturn(Future.successful(Send_MoneyResponse(Some(Some(txInfo)))))
     processor ! PaymentProcessor.Pay(receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessor.Paid(Payment(
@@ -84,7 +86,7 @@ class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token)),
       txnID = Some(250092L),
-      invoice = None)).willReturn(Right(Transaction_GetResponse(Some(Some(txInfo)))))
+      invoice = None)).willReturn(Future.successful(Transaction_GetResponse(Some(Some(txInfo)))))
     processor ! PaymentProcessor.FindPayment("250092")
     expectMsgPF() {
       case PaymentProcessor.PaymentFound(Payment(

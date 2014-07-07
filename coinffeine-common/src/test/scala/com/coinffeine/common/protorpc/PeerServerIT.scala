@@ -6,9 +6,9 @@ import scala.collection.JavaConversions._
 import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.{PeerInfo, RpcClientChannel}
 
-import com.coinffeine.common.{DefaultTcpPortAllocator, UnitTest}
 import com.coinffeine.common.protocol.protobuf.TestProtocol
 import com.coinffeine.common.protocol.protobuf.TestProtocol.{Request, Response, SimpleService}
+import com.coinffeine.common.test.{DefaultTcpPortAllocator, UnitTest}
 
 class PeerServerIT extends UnitTest {
 

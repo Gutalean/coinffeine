@@ -15,6 +15,7 @@ import org.scalatest.BeforeAndAfterAll
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
+import com.coinffeine.common.test.UnitTest
 
 /** Base class for testing against an in-memory, validated blockchain.  */
 trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component with BeforeAndAfterAll {

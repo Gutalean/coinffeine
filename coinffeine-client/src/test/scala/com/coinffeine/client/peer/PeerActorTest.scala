@@ -10,9 +10,10 @@ import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.QuoteRequest
+import com.coinffeine.common.test.{AkkaSpec, MockActor}
+import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
 class PeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 

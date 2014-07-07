@@ -1,7 +1,7 @@
-package com.coinffeine.common
+package com.coinffeine.common.test
 
 import akka.actor._
-import akka.testkit.{TestKitExtension, ImplicitSender, TestKit}
+import akka.testkit.{ImplicitSender, TestKit, TestKitExtension}
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures

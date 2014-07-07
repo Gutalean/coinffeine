@@ -2,9 +2,9 @@ package com.coinffeine.common.protocol.messages.handshake
 
 import java.math.BigInteger
 
-import com.coinffeine.common.{EqualityBehaviors, UnitTest}
 import com.coinffeine.common.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.Exchange
+import com.coinffeine.common.test.{EqualityBehaviors, UnitTest}
 
 class PeerHandshakeAcceptedTest extends UnitTest with EqualityBehaviors {
   val sig1 = new TransactionSignature(BigInteger.valueOf(0), BigInteger.valueOf(1))

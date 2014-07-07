@@ -1,6 +1,6 @@
 name := "Coinffeine Common Test"
 
-libraryDependencies in ThisBuild ++= Dependencies.akka ++ Seq(
+libraryDependencies ++= Dependencies.akka ++ Dependencies.akkaTest ++ Seq(
   Dependencies.protobufRpc,
   Dependencies.scalatest
 )
