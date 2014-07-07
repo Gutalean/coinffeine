@@ -3,24 +3,44 @@ digraph {
 
 	ProtoRpcMessageGateway1[label="ProtoRpcMessageGateway"];
 	ProtoRpcMessageGateway2[label="ProtoRpcMessageGateway"];
+	ProtoRpcMessageGateway1 -> ProtoRpcMessageGateway2 [style=dotted];
+	ProtoRpcMessageGateway2 -> ProtoRpcMessageGateway1 [style=dotted];
 
+	BitcoinPeerActor1[label="BitcoinPeerActor"];
+	BlockchainActor1[label="BlockchainActor"];
+	BitcoinPeerActor1 -> BlockchainActor1;
+	BitcoinPeerActor2[label="BitcoinPeerActor"];
+	BlockchainActor2[label="BlockchainActor"];
+	BitcoinPeerActor2 -> BlockchainActor2;
+
+	#############################################################
 	# Client side
-	DefaultPeerActor -> ProtoRpcMessageGateway1, OrderSupervisorActor;	
+	CoinffeinePeerActor -> ProtoRpcMessageGateway1, OrdersActor,
+                               BitcoinPeerActor1, PaymentProcessor;
+	CoinffeinePeerActor -> MarketInfoActor;	
 
-	# Client order book
-	OrderSupervisorActor -> OrderSubmissionActor;
+	MarketInfoActor -> ProtoRpcMessageGateway1[style=dotted];
+	OrdersActor -> OrderSubmissionActor [label="per market"];
+	OrdersActor -> ExchangeActor [label="per exchange"];
 	OrderSubmissionActor -> ProtoRpcMessageGateway1[style=dotted];
 
 	# Client exchange
-	DefaultPeerActor -> ExchangeSupervisorActor;
-	ExchangeSupervisorActor -> BuyerExchangeActor, SellerExchangeActor;
-	BuyerExchangeActor -> ProtoRpcMessageGateway1[style=dotted];
-	SellerExchangeActor -> ProtoRpcMessageGateway1[style=dotted];
+	ExchangeActor -> HandshakeActor, 
+		         BuyerMicroPaymentChannelActor, 
+		         SellerMicroPaymentChannelActor, 
+			 TransactionBroadcastActor;
+	HandshakeActor -> ProtoRpcMessageGateway1, BlockchainActor1 [style=dotted];
+	TransactionBroadcastActor -> BitcoinPeerActor1 [style=dotted];
+	BuyerMicroPaymentChannelActor -> ProtoRpcMessageGateway1, PaymentProcessor [style=dotted];
+	SellerMicroPaymentChannelActor -> ProtoRpcMessageGateway1, PaymentProcessor [style=dotted];
 
+
+	#############################################################
 	# Server side
-	BrokerSupervisorActor -> BrokerActor, ProtoRpcMessageGateway2, BlockchainActor;
+	BrokerSupervisorActor -> BrokerActor, ProtoRpcMessageGateway2,
+ 			         BitcoinPeerActor2;
 	BrokerActor -> ProtoRpcMessageGateway2[style=dotted];
 	BrokerActor -> HandshakeArbiterActor;
 	HandshakeArbiterActor -> ProtoRpcMessageGateway2[style=dotted];
-	HandshakeArbiterActor -> BlockchainActor[style=dotted];
+	HandshakeArbiterActor -> BlockchainActor2[style=dotted];
 }
