@@ -37,20 +37,12 @@ object Main extends JFXApp with ProductionCoinffeineApp.Component {
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView(onOrderSubmitted)))
+    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView(app)))
   }
   stage.show()
 
 
   override def stopApp(): Unit = {
     app.close()
-  }
-
-  private def onOrderSubmitted(order: Order): Unit = {
-    val progress =
-      ProgressDialog("Submitting order", "Submitting order to the broker...") {
-        app.network.submitOrder(order)
-      }
-    progress.show()
   }
 }

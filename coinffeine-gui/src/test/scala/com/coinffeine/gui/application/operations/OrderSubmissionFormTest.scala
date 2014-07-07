@@ -4,16 +4,18 @@ import javafx.scene.Node
 import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
+import com.coinffeine.client.api.MockCoinffeineApp
 import com.coinffeine.common.{Bid, Order}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.gui.GuiTest
-import com.coinffeine.gui.application.operations.OperationsView.OKPay
 
-class OperationsViewTest extends GuiTest[Pane] with Eventually {
-  var maybeFormData: Option[Order] = None
+class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
+
+  val app = new MockCoinffeineApp
+
   override def createRootNode(): Pane = {
-    maybeFormData = None
-    new OperationsView(d => maybeFormData = Some(d)).centerPane
+    new OperationsView(app).centerPane
+    new OrderSubmissionForm(app).root
   }
 
   "The operations view" should "not let the user submit if the bitcoin amount is zero" in new Fixture {
@@ -42,12 +44,10 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     doubleClick("#amount").`type`("0.1")
     doubleClick("#limit").`type`("100")
     find[Node]("#submit") should not be ('disabled)
-    maybeFormData should be (None)
+
     click("#submit")
-    maybeFormData should be ('defined)
-    val formData = maybeFormData.get
-    formData.amount should be (0.1 BTC)
-    formData.price should be (100 EUR)
-    formData.orderType should be (Bid)
+
+    val expectedOrder = Order(orderType = Bid, amount = 0.1.BTC, price = 100.EUR)
+    app.network.orders should contain(expectedOrder)
   }
 }
