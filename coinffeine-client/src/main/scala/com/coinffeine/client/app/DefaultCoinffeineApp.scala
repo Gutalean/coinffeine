@@ -26,8 +26,6 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
   override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
 
   override def close(): Unit = system.shutdown()
-
-  override def broker = new DefaultBroker(peerRef)
 }
 
 object DefaultCoinffeineApp {
