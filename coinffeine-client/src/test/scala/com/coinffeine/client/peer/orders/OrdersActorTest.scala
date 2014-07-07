@@ -19,6 +19,7 @@ class OrdersActorTest extends AkkaSpec {
     orderExpirationInterval = 6.seconds,
     orderResubmitInterval = 4.seconds
   )
+  val address = PeerConnection("peer")
   val broker = PeerConnection("broker")
   val eurOrder1 = Order(Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(Ask, 0.7.BTC, 640.EUR)
@@ -29,7 +30,7 @@ class OrdersActorTest extends AkkaSpec {
   trait Fixture {
     val gateway = new GatewayProbe()
     val actor = system.actorOf(Props(new OrdersActor(constants)))
-    actor ! OrdersActor.Initialize(gateway.ref, broker)
+    actor ! OrdersActor.Initialize(address, broker, gateway.ref)
   }
 
   "An order submission actor" must "keep silent as long as there is no open orders" in new Fixture {

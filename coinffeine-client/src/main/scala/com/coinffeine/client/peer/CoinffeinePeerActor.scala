@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern._
 import akka.util.Timeout
-import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.orders.OrdersActor
@@ -19,7 +18,7 @@ import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, Quo
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(address: PeerInfo,
+class CoinffeinePeerActor(ownAddress: PeerConnection,
                           brokerAddress: PeerConnection,
                           gatewayProps: Props,
                           marketInfoProps: Props,
@@ -30,7 +29,7 @@ class CoinffeinePeerActor(address: PeerInfo,
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
     val ref = context.actorOf(ordersActorProps, "orders")
-    ref ! OrdersActor.Initialize(gatewayRef, brokerAddress)
+    ref ! OrdersActor.Initialize(ownAddress, brokerAddress, gatewayRef)
     ref
   }
   val marketInfoRef = {
@@ -43,7 +42,7 @@ class CoinffeinePeerActor(address: PeerInfo,
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-      (gatewayRef ? Bind(address)).map {
+      (gatewayRef ? Bind(ownAddress)).map {
         case BoundTo(_) => CoinffeinePeerActor.Connected
         case BindingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
@@ -103,10 +102,10 @@ object CoinffeinePeerActor {
     with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
-      val peerInfo = new PeerInfo(config.getString(HostSetting), config.getInt(PortSetting))
+      val ownAddress = PeerConnection(config.getString(HostSetting), config.getInt(PortSetting))
       val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
       Props(new CoinffeinePeerActor(
-        peerInfo,
+        ownAddress,
         brokerAddress,
         gatewayProps = messageGatewayProps,
         marketInfoProps,

@@ -2,7 +2,6 @@ package com.coinffeine.client.peer
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
-import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.MarketInfoActor.{RequestOpenOrders, RequestQuote}
@@ -17,7 +16,7 @@ import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
 class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
-  val address = new PeerInfo("localhost", 8080)
+  val address = PeerConnection("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
   val gatewayProbe = TestProbe()
   val marketInfoProbe = TestProbe()
@@ -37,7 +36,7 @@ class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest
     ordersRef = ordersProbe.expectMsgClass(classOf[MockStarted]).ref
     val gw = gatewayRef
     ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrdersActor.Initialize(`gw`, _)) =>
+      case MockReceived(_, _, OrdersActor.Initialize(_, _, `gw`)) =>
     }
   }
 

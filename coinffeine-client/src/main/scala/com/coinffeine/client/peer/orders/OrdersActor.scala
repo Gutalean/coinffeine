@@ -11,11 +11,12 @@ import com.coinffeine.common.protocol.messages.brokerage._
 class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case OrdersActor.Initialize(gateway, brokerAddress) =>
-      new InitializedOrdersActor(gateway, brokerAddress).start()
+    case init: OrdersActor.Initialize =>
+      new InitializedOrdersActor(init).start()
   }
 
-  private class InitializedOrdersActor(gateway: ActorRef, broker: PeerConnection) {
+  private class InitializedOrdersActor(init: OrdersActor.Initialize) {
+    import init._
 
     private var delegatesByMarket = Map.empty[Market[FiatCurrency], ActorRef]
 
@@ -38,7 +39,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
     private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(OrderSubmissionActor.props(protocolConstants))
-      newDelegate ! OrderSubmissionActor.Initialize(market, gateway, broker)
+      newDelegate ! OrderSubmissionActor.Initialize(market, gateway, brokerAddress)
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
@@ -47,7 +48,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
 object OrdersActor {
 
-  case class Initialize(gateway: ActorRef, brokerAddress: PeerConnection)
+  case class Initialize(ownAddress: PeerConnection, brokerAddress: PeerConnection, gateway: ActorRef)
 
   trait Component { this: ProtocolConstants.Component =>
     lazy val ordersActorProps = Props(new OrdersActor(protocolConstants))

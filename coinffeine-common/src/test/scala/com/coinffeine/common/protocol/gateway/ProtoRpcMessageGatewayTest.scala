@@ -80,41 +80,40 @@ class ProtoRpcMessageGatewayTest extends AkkaSpec("MessageGatewaySystem")
       with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component
       with ProtocolConstants.DefaultComponent {
     val (localPeerAddress, gateway) = createGateway()
-    val (remotePeerAddress, remotePeer) = createRemotePeer(localPeerAddress)
-    val remotePeerConnection = new PeerConnection(
-      remotePeerAddress.getHostName, remotePeerAddress.getPort)
+    val (remotePeerConnection, remotePeer) = createRemotePeer(localPeerAddress)
     val testGateway = createGatewayTestActor
 
-    private def createGateway(): (PeerInfo, ActorRef) = {
-      val peerInfo = allocateLocalPeerInfo()
+    private def createGateway(): (PeerConnection, ActorRef) = {
+      val peerConnection = allocateLocalPeerConnection()
       val ref = system.actorOf(messageGatewayProps)
       eventually {
-        ref ! Bind(peerInfo)
-        expectMsg(BoundTo(peerInfo))
+        ref ! Bind(peerConnection)
+        expectMsg(BoundTo(peerConnection))
       }
-      (peerInfo, ref)
+      (peerConnection, ref)
     }
 
     private def createGatewayTestActor: TestActorRef[ProtoRpcMessageGateway] = {
-      val peerInfo = allocateLocalPeerInfo()
+      val peerConnection = allocateLocalPeerConnection()
       val ref = TestActorRef(new ProtoRpcMessageGateway(protocolSerialization))
       eventually {
-        ref ! Bind(peerInfo)
-        expectMsg(BoundTo(peerInfo))
+        ref ! Bind(peerConnection)
+        expectMsg(BoundTo(peerConnection))
       }
       ref
     }
 
-    private def createRemotePeer(localPeerAddress: PeerInfo): (PeerInfo, TestClient) = {
-      val peerInfo = allocateLocalPeerInfo()
+    private def createRemotePeer(localPeerAddress: PeerConnection): (PeerConnection, TestClient) = {
+      val peerConnection = allocateLocalPeerConnection()
+      val localPeerInfo = new PeerInfo(localPeerAddress.hostname, localPeerAddress.port)
       eventually {
-        val client = new TestClient(peerInfo.getPort, localPeerAddress, protocolSerialization)
+        val client = new TestClient(peerConnection.port, localPeerInfo, protocolSerialization)
         client.connectToServer()
-        (peerInfo, client)
+        (peerConnection, client)
       }
     }
 
-    private def allocateLocalPeerInfo() =
-      new PeerInfo("localhost", DefaultTcpPortAllocator.allocatePort())
+    private def allocateLocalPeerConnection() =
+      PeerConnection("localhost", DefaultTcpPortAllocator.allocatePort())
   }
 }

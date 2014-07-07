@@ -1,7 +1,6 @@
 package com.coinffeine.common.protocol.gateway
 
 import akka.actor.Props
-import com.googlecode.protobuf.pro.duplex.PeerInfo
 
 import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -9,8 +8,8 @@ import com.coinffeine.common.protocol.messages.PublicMessage
 object MessageGateway {
 
   /** Initialization message for the gateway. */
-  case class Bind(address: PeerInfo)
-  case class BoundTo(address: PeerInfo)
+  case class Bind(address: PeerConnection)
+  case class BoundTo(address: PeerConnection)
   case class BindingError(cause: Throwable)
 
   /** A message sent in order to forward another message to a given destination. */

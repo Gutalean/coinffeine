@@ -52,7 +52,7 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
 
   private val forwardingMessages: Receive = {
     case m @ ForwardMessage(msg, dest) =>
-      forward(sender, dest, msg)
+      forward(sender(), dest, msg)
   }
 
   private val managingSubscriptions: Receive = {
@@ -66,7 +66,7 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
 
   private def binding(startFuture: ChannelFuture, listener: ActorRef): Receive = {
     case ServerStarted if startFuture.isSuccess =>
-      listener ! BoundTo(serverInfo)
+      listener ! BoundTo(PeerConnection(serverInfo.getHostName, serverInfo.getPort))
       context.become(forwardingMessages orElse managingSubscriptions)
       log.info(s"Message gateway started on $serverInfo")
     case ServerStarted =>
@@ -77,9 +77,10 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
   }
 
   private val waitingForInitialization: Receive = {
-    case Bind(address) =>
+    case Bind(peerConnection) =>
+      val address = new PeerInfo(peerConnection.hostname, peerConnection.port)
       val startFuture = startServer(address)
-      context.become(binding(startFuture, sender) orElse managingSubscriptions)
+      context.become(binding(startFuture, sender()) orElse managingSubscriptions)
   }
 
   private def forward(from: ActorRef, to: PeerConnection, message: PublicMessage): Unit =
