@@ -2,7 +2,7 @@ package com.coinffeine.client.peer
 
 import scala.concurrent.duration._
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
@@ -19,11 +19,15 @@ import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, Quo
   */
 class CoinffeinePeerActor(ownAddress: PeerConnection,
                           brokerAddress: PeerConnection,
+                          eventChannelProps: Props,
                           gatewayProps: Props,
                           marketInfoProps: Props,
                           ordersActorProps: Props) extends Actor with ActorLogging {
+
   import CoinffeinePeerActor._
   import context.dispatcher
+
+  val eventChannel: ActorRef = context.actorOf(eventChannelProps)
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
@@ -38,6 +42,11 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
   }
 
   override def receive: Receive = {
+
+    case command @ CoinffeinePeerActor.Subscribe =>
+      eventChannel.forward(command)
+    case command @ CoinffeinePeerActor.Unsubscribe =>
+      eventChannel.forward(command)
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
@@ -63,6 +72,12 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
 
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
+
+  /** A message sent to request the subscription to events for the sender. */
+  case object Subscribe
+
+  /** A message sent to request the unsubscription to events for the sender. */
+  case object Unsubscribe
 
   /** Start peer connection to the network. The sender of this message will receive either
     * a [[Connected]] or [[ConnectionFailed]] message in response. */
@@ -111,6 +126,7 @@ object CoinffeinePeerActor {
       Props(new CoinffeinePeerActor(
         ownAddress,
         brokerAddress,
+        eventChannelProps = EventChannelActor.props(),
         gatewayProps = messageGatewayProps,
         marketInfoProps,
         ordersActorProps = ordersActorProps
