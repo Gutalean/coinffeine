@@ -27,7 +27,7 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
   import CoinffeinePeerActor._
   import context.dispatcher
 
-  val eventChannel: ActorRef = context.actorOf(eventChannelProps)
+  val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
