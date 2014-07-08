@@ -3,7 +3,7 @@ package com.coinffeine.client.app
 import akka.actor.{ActorSystem, Props}
 
 import com.coinffeine.client.api._
-import com.coinffeine.client.peer.CoinffeinePeerActor
+import com.coinffeine.client.peer.{CoinffeinePeerActor, EventObserverActor}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -26,6 +26,11 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
   override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
 
   override def close(): Unit = system.shutdown()
+
+  override def observe(handler: EventHandler): Unit = {
+    val observer = system.actorOf(EventObserverActor.props(handler))
+    peerRef.tell(CoinffeinePeerActor.Subscribe, observer)
+  }
 }
 
 object DefaultCoinffeineApp {

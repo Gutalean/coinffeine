@@ -16,4 +16,8 @@ class MockCoinffeineApp extends CoinffeineApp {
   override def paymentProcessors: Set[Component] = ???
 
   override def close(): Unit = ???
+
+  override def observe(handler: EventHandler): Unit = {
+    ???
+  }
 }

@@ -3,8 +3,9 @@ package com.coinffeine.client.peer.orders
 import scala.concurrent.duration._
 
 import akka.actor.Props
+import akka.testkit.TestProbe
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
+import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
@@ -29,9 +30,10 @@ class OrdersActorTest extends AkkaSpec {
   val bothEurOrders = firstEurOrder.addOrder(Ask, 0.7.BTC, 640.EUR)
 
   trait Fixture {
+    val eventChannel = TestProbe()
     val gateway = new GatewayProbe()
     val actor = system.actorOf(Props(new OrdersActor(constants)))
-    actor ! OrdersActor.Initialize(address, broker, gateway.ref)
+    actor ! OrdersActor.Initialize(address, broker, eventChannel.ref, gateway.ref)
   }
 
   "An order submission actor" must "keep silent as long as there is no open orders" in new Fixture {

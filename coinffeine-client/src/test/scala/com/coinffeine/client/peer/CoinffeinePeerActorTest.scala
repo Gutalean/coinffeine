@@ -14,16 +14,18 @@ import com.coinffeine.common.protocol.messages.brokerage.{Market, OpenOrdersRequ
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
-class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
+class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   val address = PeerConnection("localhost", 8080)
   val brokerAddress = PeerConnection("host", 8888)
+  val eventChannelProbe = TestProbe()
   val gatewayProbe = TestProbe()
   val marketInfoProbe = TestProbe()
   val ordersProbe = TestProbe()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(address, brokerAddress,
-    MockActor.props(gatewayProbe), MockActor.props(marketInfoProbe),
-    MockActor.props(ordersProbe))))
+    MockActor.props(eventChannelProbe), MockActor.props(gatewayProbe),
+    MockActor.props(marketInfoProbe), MockActor.props(ordersProbe))))
+  var eventChannelRef: ActorRef = _
   var gatewayRef: ActorRef = _
   var ordersRef: ActorRef = _
   var marketInfoRef: ActorRef = _
@@ -32,11 +34,16 @@ class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest
     gatewayRef = gatewayProbe.expectMsgClass(classOf[MockStarted]).ref
   }
 
+  it must "start the event channel actor" in {
+    eventChannelRef = eventChannelProbe.expectMsgClass(classOf[MockStarted]).ref
+  }
+
   it must "start the order submissions actor" in {
     ordersRef = ordersProbe.expectMsgClass(classOf[MockStarted]).ref
     val gw = gatewayRef
+    val ec = eventChannelRef
     ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrdersActor.Initialize(_, _, `gw`)) =>
+      case MockReceived(_, _, OrdersActor.Initialize(_, _, `ec`, `gw`)) =>
     }
   }
 
@@ -93,6 +100,26 @@ class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest
     val sender = self
     delegate.expectMsgPF() {
       case MockReceived(_, `sender`, `message`) =>
+    }
+  }
+
+  it must "forward subscription commands to the event channel" in {
+    val subscriber = TestProbe()
+    val subscriberRef = subscriber.ref
+    subscriber.send(peer, CoinffeinePeerActor.Subscribe)
+
+    eventChannelProbe.expectMsgPF() {
+      case MockReceived(_, `subscriberRef`, CoinffeinePeerActor.Subscribe) =>
+    }
+  }
+
+  it must "forward unsubscription commands to the event channel" in {
+    val subscriber = TestProbe()
+    val subscriberRef = subscriber.ref
+    subscriber.send(peer, CoinffeinePeerActor.Unsubscribe)
+
+    eventChannelProbe.expectMsgPF() {
+      case MockReceived(_, `subscriberRef`, CoinffeinePeerActor.Unsubscribe) =>
     }
   }
 }
