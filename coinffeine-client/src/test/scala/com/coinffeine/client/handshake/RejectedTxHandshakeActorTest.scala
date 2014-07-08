@@ -7,7 +7,6 @@ import com.coinffeine.common.blockchain.BlockchainActor.TransactionRejected
 import com.coinffeine.common.exchange.Both
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
-import com.coinffeine.common.protocol.messages.handshake.PeerHandshakeAccepted
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
@@ -19,8 +18,8 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   "Handshakes in which TX are rejected" should "have a failed handshake result" in {
     givenActorIsInitialized()
-    gateway.send(
-      actor, fromCounterpart(PeerHandshakeAccepted(exchange.id, handshake.refundSignature)))
+    givenCounterpartPeerHandshake()
+    givenValidRefundSignatureResponse()
     gateway.send(actor, fromBroker(CommitmentNotification(
       exchange.id,
       Both(handshake.myDeposit.get.getHash, handshake.counterpartCommitmentTransaction.getHash)

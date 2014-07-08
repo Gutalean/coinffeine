@@ -7,9 +7,7 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.coinffeine.common.{BitcoinjTest, Currency}
 import com.coinffeine.common.Currency.Implicits._
 
-class TransactionProcessorTest extends BitcoinjTest {
-
-  import com.coinffeine.common.exchange.impl.Samples._
+class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
 
   val buyerKey = exchange.participants.buyer.bitcoinKey
   val sellerKey = exchange.participants.seller.bitcoinKey

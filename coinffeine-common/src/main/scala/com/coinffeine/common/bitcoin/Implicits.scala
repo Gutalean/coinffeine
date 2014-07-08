@@ -118,4 +118,9 @@ object Implicits {
     }
   }
 
+  implicit class PimpMyKeyPair(val keyPair: KeyPair) extends AnyVal {
+
+    /** Copies just the public key */
+    def publicKey: PublicKey = new PublicKey(null, keyPair.getPubKey)
+  }
 }

@@ -5,29 +5,29 @@ import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction, 
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
-private[impl] class DefaultHandshake(
-   exchange: OngoingExchange[FiatCurrency],
-   role: Role,
-   override val myDeposit: ImmutableTransaction) extends Handshake {
+private[impl] class DefaultHandshake[C <: FiatCurrency](
+   override val exchange: HandshakingExchange[C],
+   override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,
-    outputKey = exchange.participants(role).bitcoinKey,
-    outputAmount = role.myRefundAmount(exchange.amounts),
+    outputKey = exchange.user.bitcoinKey,
+    outputAmount = exchange.role.myRefundAmount(exchange.amounts),
     lockTime = exchange.parameters.lockTime,
     network = exchange.parameters.network
   )
 
   @throws[InvalidRefundTransaction]
-  override def signHerRefund(herRefund: ImmutableTransaction): TransactionSignature = {
-    signRefundTransaction(herRefund.get, expectedAmount = role.herRefundAmount(exchange.amounts))
-  }
+  override def signHerRefund(herRefund: ImmutableTransaction) = signRefundTransaction(
+    tx = herRefund.get,
+    expectedAmount = exchange.role.herRefundAmount(exchange.amounts)
+  )
 
   @throws[InvalidRefundSignature]
   override def signMyRefund(herSignature: TransactionSignature) = {
     if (!TransactionProcessor.isValidSignature(
         myUnsignedRefund.get, index = 0, herSignature,
-        signerKey = exchange.participants(role.counterpart).bitcoinKey,
+        signerKey = exchange.counterpart.bitcoinKey,
         exchange.requiredSignatures.toSeq)) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
@@ -35,9 +35,9 @@ private[impl] class DefaultHandshake(
       val tx = myUnsignedRefund.get
       val mySignature = signRefundTransaction(
         tx,
-        expectedAmount = role.myRefundAmount(exchange.amounts))
-      val buyerSignature = role.buyer(mySignature, herSignature)
-      val sellerSignature = role.seller(mySignature, herSignature)
+        expectedAmount = exchange.role.myRefundAmount(exchange.amounts))
+      val buyerSignature = exchange.role.buyer(mySignature, herSignature)
+      val sellerSignature = exchange.role.seller(mySignature, herSignature)
       TransactionProcessor.setMultipleSignatures(tx, 0, buyerSignature, sellerSignature)
       tx
     }
@@ -49,7 +49,7 @@ private[impl] class DefaultHandshake(
     TransactionProcessor.signMultiSignedOutput(
       multiSignedDeposit = tx,
       index = 0,
-      signAs = exchange.participants(role).bitcoinKey,
+      signAs = exchange.user.bitcoinKey,
       exchange.requiredSignatures.toSeq
     )
   }

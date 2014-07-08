@@ -9,6 +9,7 @@ import com.coinffeine.common._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -154,23 +155,33 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
-  val peerHandshake = PeerHandshake(sampleExchangeId, refundTx, "accountId")
+  val publicKey = new KeyPair().publicKey
+  val peerHandshake = PeerHandshake(sampleExchangeId, publicKey, "accountId")
   val peerHandshakeMessage = msg.PeerHandshake.newBuilder()
     .setExchangeId(sampleExchangeId.value)
-    .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
+    .setPublicKey(ByteString.copyFrom(publicKey.getPubKey))
     .setPaymentProcessorAccount("accountId")
     .build()
 
   "Peer handshake" must behave like thereIsAMappingBetween(peerHandshake, peerHandshakeMessage)
 
+  val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
+  val refundSignatureRequest = RefundSignatureRequest(sampleExchangeId, refundTx)
+  val refundSignatureRequestMessage = msg.RefundSignatureRequest.newBuilder()
+    .setExchangeId(sampleExchangeId.value)
+    .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
+    .build()
+
+  "Refund signature request" must behave like thereIsAMappingBetween(
+    refundSignatureRequest, refundSignatureRequestMessage)
+
   val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
-  val peerHandshakeResponse = PeerHandshakeAccepted(sampleExchangeId, refundTxSignature)
-  val peerHandshakeResponseMessage = msg.PeerHandshakeAccepted.newBuilder()
+  val refundSignatureResponse = RefundSignatureResponse(sampleExchangeId, refundTxSignature)
+  val refundSignatureResponseMessage = msg.RefundSignatureResponse.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
     .build()
 
-  "Peer handshake response" must behave like thereIsAMappingBetween(
-    peerHandshakeResponse, peerHandshakeResponseMessage)
+  "Refund signature response" must behave like thereIsAMappingBetween(
+    refundSignatureResponse, refundSignatureResponseMessage)
 }

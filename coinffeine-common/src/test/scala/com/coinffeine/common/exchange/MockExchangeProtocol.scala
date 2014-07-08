@@ -11,11 +11,10 @@ import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
-  override def createHandshake(
-      exchange: OngoingExchange[FiatCurrency],
-      role: Role,
+  override def createHandshake[C <: FiatCurrency](
+      exchange: HandshakingExchange[C],
       unspentOutputs: Seq[UnspentOutput],
-      changeAddress: Address) = new MockHandshake(exchange, role)
+      changeAddress: Address) = new MockHandshake(exchange)
 
   override def createMicroPaymentChannel(exchange: OngoingExchange[FiatCurrency],
                                          role: Role, deposits: Exchange.Deposits) =
@@ -52,4 +51,7 @@ object MockExchangeProtocol {
 
   /** Magic signature that is always rejected */
   val InvalidSignature = new TransactionSignature(BigInteger.valueOf(42), BigInteger.valueOf(42))
+
+  val RefundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
+  val CounterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
 }

@@ -5,6 +5,7 @@ import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, Wallet}
 import com.coinffeine.common.exchange._
+import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
@@ -15,8 +16,7 @@ trait ExchangeTest extends BitcoinjTest {
     Bitcoin.fromSatoshi(tx.get.getValueSentToMe(wallet))
 
   /** Fixture with just a fresh protocol object */
-  trait FreshInstance {
-    val exchange = Samples.exchange
+  trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
     val protocol = new DefaultExchangeProtocol()
   }
 
@@ -25,7 +25,7 @@ trait ExchangeTest extends BitcoinjTest {
     val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.2.BTC)
     val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
     val buyerHandshake =
-      protocol.createHandshake(exchange, BuyerRole, buyerFunds, buyerWallet.getChangeAddress)
+      protocol.createHandshake(buyerExchange, buyerFunds, buyerWallet.getChangeAddress)
   }
 
   /** Fixture with a seller handshake with the right amount of funds */
@@ -33,7 +33,7 @@ trait ExchangeTest extends BitcoinjTest {
     val sellerWallet = createWallet(exchange.participants.seller.bitcoinKey, 1.1.BTC)
     val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
     val sellerHandshake =
-      protocol.createHandshake(exchange, SellerRole, sellerFunds, sellerWallet.getChangeAddress)
+      protocol.createHandshake(sellerExchange, sellerFunds, sellerWallet.getChangeAddress)
   }
 
   /** Fixture with buyer and seller channels created after a successful handshake */

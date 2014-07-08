@@ -65,10 +65,9 @@ class ExchangeActor[C <: FiatCurrency](
     private def startHandshake(): Unit = {
       // TODO: ask the wallet actor for funds
       val funds = UnspentOutput.collect(role.myDepositAmount(exchange.amounts), userWallet)
-      val handshake =
-        exchangeProtocol.createHandshake(exchange, role, funds, userWallet.getChangeAddress)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange, role, handshake, constants, messageGateway, blockchain, resultListeners = Set(self)
+        exchange, role, exchange.participants(role), funds, userWallet.getChangeAddress, constants,
+        messageGateway, blockchain, resultListeners = Set(self)
       )
     }
 

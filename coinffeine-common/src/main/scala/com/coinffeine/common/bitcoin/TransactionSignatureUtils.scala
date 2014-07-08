@@ -1,6 +1,4 @@
-package com.coinffeine.common.protocol
-
-import com.coinffeine.common.bitcoin.TransactionSignature
+package com.coinffeine.common.bitcoin
 
 object TransactionSignatureUtils {
 

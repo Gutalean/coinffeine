@@ -1,8 +1,8 @@
 package com.coinffeine.common.protocol.messages.exchange
 
+import com.coinffeine.common.bitcoin.TransactionSignatureUtils
 import com.coinffeine.common.exchange.Exchange
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
-import com.coinffeine.common.protocol.TransactionSignatureUtils
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** This message contains the seller's signatures for a step in a specific exchange

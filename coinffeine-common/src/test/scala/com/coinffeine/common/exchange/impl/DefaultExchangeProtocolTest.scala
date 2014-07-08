@@ -24,7 +24,7 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
     val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.1.BTC)
     val funds = UnspentOutput.collect(0.1.BTC, buyerWallet)
     an [IllegalArgumentException] should be thrownBy {
-      protocol.createHandshake(exchange, BuyerRole, funds, buyerWallet.getChangeAddress)
+      protocol.createHandshake(buyerExchange, funds, buyerWallet.getChangeAddress)
     }
   }
 }
