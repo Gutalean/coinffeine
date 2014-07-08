@@ -10,6 +10,7 @@ import com.coinffeine.common.{BitcoinjTest, Currency, PeerConnection}
 import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.exchange.{Both, Exchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.Version
@@ -110,8 +111,9 @@ class DefaultProtocolSerializationTest extends BitcoinjTest {
         QuoteRequest(Market(UsDollar)),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),
-        PeerHandshake(exchangeId, transaction, "paymentAccount"),
-        PeerHandshakeAccepted(exchangeId, transactionSignature),
+        PeerHandshake(exchangeId, new KeyPair().publicKey, "paymentAccount"),
+        RefundSignatureRequest(exchangeId, transaction),
+        RefundSignatureResponse(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
         PaymentProof(exchangeId, "paymentId"),
         OpenOrdersRequest(Market(UsDollar)),

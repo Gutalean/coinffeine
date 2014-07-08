@@ -50,8 +50,10 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setExchangeRejection(ProtoMapping.toProtobuf(m))
       case m: PeerHandshake =>
         builder.setPeerHandshake(ProtoMapping.toProtobuf(m))
-      case m: PeerHandshakeAccepted =>
-        builder.setPeerHandshakeAccepted(ProtoMapping.toProtobuf(m))
+      case m: RefundSignatureRequest =>
+        builder.setRefundSignatureRequest(ProtoMapping.toProtobuf(m))
+      case m: RefundSignatureResponse =>
+        builder.setRefundSignatureResponse(ProtoMapping.toProtobuf(m))
       case m: StepSignatures =>
         builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
@@ -101,8 +103,10 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getExchangeRejection)
       case PEERHANDSHAKE_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getPeerHandshake)
-      case PEERHANDSHAKEACCEPTED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerHandshakeAccepted)
+      case REFUNDSIGNATUREREQUEST_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureRequest)
+      case REFUNDSIGNATURERESPONSE_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureResponse)
       case STEPSIGNATURE_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getStepSignature)
       case PAYMENTPROOF_FIELD_NUMBER =>
