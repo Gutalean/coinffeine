@@ -1,14 +1,21 @@
 package com.coinffeine.client.peer.orders
 
-import akka.actor._
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.{Order, FiatCurrency, PeerConnection}
+import akka.actor._
+import akka.pattern._
+import akka.util.Timeout
+
+import com.coinffeine.client.peer.CoinffeinePeerActor._
+import com.coinffeine.common.{FiatCurrency, Order, PeerConnection}
 import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.messages.brokerage._
+import com.coinffeine.common.protocol.messages.brokerage.Market
 
 /** Manages open orders */
 class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+
+  import context.dispatcher
 
   override def receive: Receive = {
     case init: OrdersActor.Initialize =>
@@ -25,10 +32,18 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
     }
 
     private val waitingForOrders: Receive = {
+
       case message @ OpenOrder(order) =>
         getOrCreateDelegate(marketOf(order)) forward message
+
       case message @ CancelOrder(order) =>
         getOrCreateDelegate(marketOf(order)) forward message
+
+      case RetrieveOpenOrders =>
+        val listener = sender()
+        for (orders <- collectOpenOrders()) {
+          listener ! RetrievedOpenOrders(orders)
+        }
     }
 
     private def marketOf(order: Order) = Market(currency = order.price.currency)
@@ -42,6 +57,15 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
       newDelegate ! OrderSubmissionActor.Initialize(market, gateway, brokerAddress)
       delegatesByMarket += market -> newDelegate
       newDelegate
+    }
+
+    private def collectOpenOrders(): Future[Set[Order]] = {
+      implicit val timeout = Timeout(1.second)
+      for {
+        results <- Future.sequence(delegatesByMarket.values.map { ref =>
+          (ref ? RetrieveOpenOrders).mapTo[Set[Order]]
+        })
+      } yield results.foldLeft(Set.empty[Order])(_ union _)
     }
   }
 }

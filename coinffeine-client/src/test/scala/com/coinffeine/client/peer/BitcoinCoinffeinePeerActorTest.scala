@@ -3,7 +3,7 @@ package com.coinffeine.client.peer
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
 import com.coinffeine.client.peer.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common._
@@ -77,14 +77,22 @@ class BitcoinCoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest
   }
 
   it must "delegate order placement" in {
-    val delegatedMessage = OpenOrder(Order(Bid, 10.BTC, 300.EUR))
-    peer ! delegatedMessage
-    ordersProbe.expectMsg(MockReceived(ordersRef, peer, delegatedMessage))
+    shouldDelegateMessage(OpenOrder(Order(Bid, 10.BTC, 300.EUR)), ordersProbe)
+  }
+
+  it must "delegate retrieve open orders request" in {
+    shouldDelegateMessage(RetrieveOpenOrders, ordersProbe)
   }
 
   it must "delegate order cancellation" in {
-    val delegatedMessage = CancelOrder(Order(Bid, 10.BTC, 300.EUR))
-    peer ! delegatedMessage
-    ordersProbe.expectMsg(MockReceived(ordersRef, peer, delegatedMessage))
+    shouldDelegateMessage(CancelOrder(Order(Bid, 10.BTC, 300.EUR)), ordersProbe)
+  }
+
+  def shouldDelegateMessage(message: Any, delegate: TestProbe): Unit = {
+    peer ! message
+    val sender = self
+    delegate.expectMsgPF() {
+      case MockReceived(_, `sender`, `message`) =>
+    }
   }
 }

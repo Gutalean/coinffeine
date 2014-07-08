@@ -6,7 +6,6 @@ import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
@@ -23,7 +22,7 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
                           gatewayProps: Props,
                           marketInfoProps: Props,
                           ordersActorProps: Props) extends Actor with ActorLogging {
-
+  import CoinffeinePeerActor._
   import context.dispatcher
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
@@ -56,8 +55,9 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
     case OpenOrdersRequest(market) =>
       marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(market), sender())
 
-    case openOrder: OpenOrder => ordersActorRef ! openOrder
-    case cancelOrder: CancelOrder => ordersActorRef ! cancelOrder
+    case openOrder: OpenOrder => ordersActorRef forward openOrder
+    case cancelOrder: CancelOrder => ordersActorRef forward cancelOrder
+    case message @ RetrieveOpenOrders => ordersActorRef forward message
   }
 }
 
@@ -87,10 +87,14 @@ object CoinffeinePeerActor {
     */
   case class CancelOrder(order: Order)
 
-  /** Ask for the currently open orders. To be replied with an
-    * [[com.coinffeine.common.protocol.messages.brokerage.OpenOrders]].
-    */
-  type OpenOrdersRequest = brokerage.OpenOrdersRequest
+  /** Ask for own orders opened in any market. */
+  case object RetrieveOpenOrders
+
+  /** Reply to [[RetrieveOpenOrders]] message. */
+  case class RetrievedOpenOrders(orders: Set[Order])
+
+  /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
+  type RetrieveMarketOrders = brokerage.OpenOrdersRequest
 
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"

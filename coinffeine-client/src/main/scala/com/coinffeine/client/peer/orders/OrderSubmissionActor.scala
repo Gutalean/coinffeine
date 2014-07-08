@@ -2,8 +2,8 @@ package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
-import com.coinffeine.common.{Order, FiatCurrency, PeerConnection}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -27,7 +27,8 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
     private val waitingForOrders: Receive = handleOpenOrders(OrderSet.empty(market))
 
     private def keepingOpenOrders(orderSet: OrderSet[FiatCurrency]): Receive =
-      handleOpenOrders(orderSet).orElse{
+      handleOpenOrders(orderSet).orElse {
+
         case CancelOrder(order) =>
           val reducedOrderSet = orderSet.cancelOrder(
             order.orderType, order.amount, order.price)
@@ -47,6 +48,8 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
           order.orderType, order.amount, order.price)
         forwardOrders(mergedOrderSet)
         context.become(keepingOpenOrders(mergedOrderSet))
+
+      case RetrieveOpenOrders => sender() ! orderSet.orders.toSet
     }
 
     private def forwardOrders(orderSet: OrderSet[FiatCurrency]): Unit = {
@@ -54,10 +57,6 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
   }
-
-  private def orderToOrderSet(order: Order) =
-    OrderSet.empty(Market(order.price.currency)).addOrder(
-      order.orderType, order.amount, order.price)
 }
 
 private[orders] object OrderSubmissionActor {
