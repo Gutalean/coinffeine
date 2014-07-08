@@ -8,7 +8,12 @@ import com.coinffeine.common.network.NetworkComponent
 
 trait SampleExchange { this: NetworkComponent =>
 
-  val exchange = CompleteExchange(
+  val participants = Both(
+    buyer = Exchange.PeerInfo("buyerAccount", new KeyPair()),
+    seller = Exchange.PeerInfo("sellerAccount", new KeyPair())
+  )
+
+  val exchange = NonStartedExchange(
     id = Exchange.Id("id"),
     amounts = Exchange.Amounts(
       bitcoinAmount = 1.BTC,
@@ -17,18 +22,14 @@ trait SampleExchange { this: NetworkComponent =>
     ),
     parameters = Exchange.Parameters(lockTime = 10, network),
     connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
-    participants = Both(
-      buyer = Exchange.PeerInfo("buyerAccount", new KeyPair()),
-      seller = Exchange.PeerInfo("sellerAccount", new KeyPair())
-    ),
     broker = Exchange.BrokerInfo(PeerConnection("broker"))
   )
 
-  val buyerExchange = HandshakingExchange(BuyerRole, exchange.participants.buyer,
-    exchange.participants.seller, exchange)
+  val buyerExchange =
+    HandshakingExchange(BuyerRole, participants.buyer, participants.seller, exchange)
 
-  val sellerExchange = HandshakingExchange(SellerRole, exchange.participants.seller,
-    exchange.participants.buyer, exchange)
+  val sellerExchange =
+    HandshakingExchange(SellerRole, participants.seller, participants.buyer, exchange)
 }
 
 object SampleExchange {

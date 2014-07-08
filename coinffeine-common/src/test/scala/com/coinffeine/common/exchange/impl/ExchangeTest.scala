@@ -22,7 +22,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
-    val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.2.BTC)
+    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.2.BTC)
     val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
     val buyerHandshake =
       protocol.createHandshake(buyerExchange, buyerFunds, buyerWallet.getChangeAddress)
@@ -30,7 +30,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
-    val sellerWallet = createWallet(exchange.participants.seller.bitcoinKey, 1.1.BTC)
+    val sellerWallet = createWallet(participants.seller.bitcoinKey, 1.1.BTC)
     val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
     val sellerHandshake =
       protocol.createHandshake(sellerExchange, sellerFunds, sellerWallet.getChangeAddress)
@@ -43,9 +43,11 @@ trait ExchangeTest extends BitcoinjTest {
       seller = sellerHandshake.myDeposit
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
-    val deposits = protocol.validateDeposits(commitments, exchange).get
-    val buyerChannel = protocol.createMicroPaymentChannel(exchange, BuyerRole, deposits)
-    val sellerChannel = protocol.createMicroPaymentChannel(exchange, SellerRole, deposits)
+    val deposits = protocol.validateDeposits(commitments, buyerExchange).get
+    val buyerRunningExchange = RunningExchange(deposits, buyerExchange)
+    val sellerRunningExchange = RunningExchange(deposits, sellerExchange)
+    val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)
+    val sellerChannel = protocol.createMicroPaymentChannel(sellerRunningExchange)
     val totalSteps = exchange.amounts.breakdown.totalSteps
     val buyerChannels = Seq.iterate(buyerChannel, totalSteps)(_.nextStep)
     val sellerChannels = Seq.iterate(sellerChannel, totalSteps)(_.nextStep)

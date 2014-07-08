@@ -3,7 +3,7 @@ package com.coinffeine.common.exchange.impl
 import scala.util.Try
 
 import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction, PublicKey}
+import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
 import com.coinffeine.common.exchange._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
@@ -24,9 +24,8 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     new DefaultHandshake(exchange, myDeposit)
   }
 
-  override def createMicroPaymentChannel(
-      exchange: OngoingExchange[FiatCurrency], role: Role, deposits: Exchange.Deposits) =
-    new DefaultMicroPaymentChannel(exchange, role, deposits)
+  override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
+    new DefaultMicroPaymentChannel(exchange)
 
   override def validateCommitments(transactions: Both[ImmutableTransaction],
                                    amounts: Exchange.Amounts[FiatCurrency]): Try[Unit] = for {
@@ -37,7 +36,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
   } yield ()
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: OngoingExchange[FiatCurrency]) =
+                                exchange: HandshakingExchange[FiatCurrency]) =
     new DepositValidator(exchange.amounts, exchange.requiredSignatures).validate(transactions)
 }
 
