@@ -21,8 +21,8 @@ trait Exchange[+C <: FiatCurrency] {
   val broker: Exchange.BrokerInfo
 }
 
-/** Relevant information for an ongoing exchange. This point fo view is only held by the parts
-  * as contains information not make public to everyone on the network.
+/** Relevant information for an ongoing exchange. This point of view is only held by the parts
+  * as contains information not made public to everyone on the network.
   */
 trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
   /** Information about the parts */
@@ -31,9 +31,39 @@ trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
   def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
 }
 
+/** Relevant information during the handshake of an exchange. This point of view is only held by
+  * the parts as contains information not made public to everyone on the network. */
+case class HandshakingExchange[+C <: FiatCurrency](
+  role: Role,
+  override val id: Exchange.Id,
+  override val amounts: Exchange.Amounts[C],
+  override val parameters: Exchange.Parameters,
+  override val connections: Both[PeerConnection],
+  override val broker: Exchange.BrokerInfo,
+  override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C] {
+
+  val user = participants(role)
+  val counterpart = participants(role.counterpart)
+
+  require(user.bitcoinKey.hasPrivKey)
+}
+
+object HandshakingExchange {
+  def apply[C <: FiatCurrency](role: Role, user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo,
+                               exchange: Exchange[C]): HandshakingExchange[C] = {
+    val participants = Both(
+      buyer = role.buyer(user, counterpart),
+      seller = role.seller(user, counterpart)
+    )
+    HandshakingExchange(role, exchange.id, exchange.amounts, exchange.parameters,
+      exchange.connections, exchange.broker, participants)
+  }
+}
+
 /** TODO: create different implementations of Exchange and OngoingExchange to limit what information
   * is available during the exchange by splitting this class.
   */
+@deprecated
 case class CompleteExchange[+C <: FiatCurrency] (
   override val id: Exchange.Id,
   override val amounts: Exchange.Amounts[C],

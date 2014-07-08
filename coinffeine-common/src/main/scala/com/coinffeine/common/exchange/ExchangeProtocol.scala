@@ -9,17 +9,15 @@ trait ExchangeProtocol {
 
   /** Start a handshake for this exchange protocol.
     *
-    * @param role            Role played in the protocol
     * @param exchange        Exchange description
     * @param unspentOutputs  Inputs for the deposit to create during the handshake
     * @param changeAddress   Address to return the excess of funds in unspentOutputs
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when funds are insufficient")
-  def createHandshake(exchange: OngoingExchange[FiatCurrency], // TODO: use Exchange instead
-                      role: Role,
-                      unspentOutputs: Seq[UnspentOutput],
-                      changeAddress: Address): Handshake
+  def createHandshake[C <: FiatCurrency](exchange: HandshakingExchange[C],
+                                         unspentOutputs: Seq[UnspentOutput],
+                                         changeAddress: Address): Handshake[C]
 
   /** Validate buyer and seller commitment transactions from the point of view of a broker */
   def validateCommitments(transactions: Both[ImmutableTransaction],

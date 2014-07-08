@@ -1,9 +1,12 @@
 package com.coinffeine.common.exchange
 
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
-trait Handshake {
+trait Handshake[C <: FiatCurrency] {
+
+  val exchange: HandshakingExchange[C]
 
   /** Ready to be broadcast deposit */
   def myDeposit: ImmutableTransaction

@@ -1,7 +1,5 @@
 package com.coinffeine.common.exchange
 
-import java.math.BigInteger
-
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
@@ -9,9 +7,10 @@ import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, Invalid
 /** Create a mock handshake with random transactions.
   *
   * @param exchange       Info about the exchange being mocked
-  * @param role           Role being played
   */
-class MockHandshake(exchange: Exchange[FiatCurrency], role: Role) extends Handshake {
+class MockHandshake[C <: FiatCurrency](override val exchange: HandshakingExchange[C])
+  extends Handshake[C] {
+
   override val myDeposit = dummyImmutableTransaction(1)
   override val myUnsignedRefund = dummyImmutableTransaction(2)
   val mySignedRefund = dummyImmutableTransaction(3)
@@ -19,15 +18,12 @@ class MockHandshake(exchange: Exchange[FiatCurrency], role: Role) extends Handsh
   val counterpartRefund = dummyTransaction(5)
   val invalidRefundTransaction = dummyTransaction(6)
 
-  val refundSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
-  val counterpartRefundSignature = new TransactionSignature(BigInteger.ONE, BigInteger.ONE)
-
   override def signHerRefund(txToSign: ImmutableTransaction) =
-    if (txToSign.get == counterpartRefund) counterpartRefundSignature
+    if (txToSign.get == counterpartRefund) MockExchangeProtocol.CounterpartRefundSignature
     else throw new InvalidRefundTransaction(txToSign, "Invalid refundSig")
 
   override def signMyRefund(sig: TransactionSignature) =
-    if (sig == refundSignature) mySignedRefund
+    if (sig == MockExchangeProtocol.RefundSignature) mySignedRefund
     else throw new InvalidRefundSignature(myUnsignedRefund, sig)
 
   private def dummyImmutableTransaction(lockTime: Int) =
