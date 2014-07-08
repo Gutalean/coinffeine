@@ -40,6 +40,7 @@ object CoinffeineClientTest {
 
   trait Perspective {
     def exchange: OngoingExchange[FiatCurrency]
+    def handshakingExchange = HandshakingExchange(userRole, user, counterpart, exchange)
     def userRole: Role
     def user = exchange.participants(userRole)
     def counterpart = exchange.participants(userRole.counterpart)
