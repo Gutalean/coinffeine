@@ -29,8 +29,7 @@ class SellerMicroPaymentChannelActorFailureTest
   "The seller exchange actor" should "return a failure message if the buyer does not provide the" +
     " necessary payment proof within the specified timeout" in new Fixture{
     actor ! StartMicroPaymentChannel(
-      exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
-      paymentProcessor.ref, gateway.ref, Set(listener.ref)
+      runningExchange, protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref)
     )
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.cause shouldBe a [TimeoutException]

@@ -9,7 +9,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{MockMicroPaymentChannel, MockExchangeProtocol, BuyerRole}
+import com.coinffeine.common.exchange.MockExchangeProtocol
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.exchange.StepSignatures
@@ -28,8 +28,8 @@ class BuyerMicroPaymentChannelActorFailureTest
     listener.watch(actor)
 
     def startMicroPaymentChannel(): Unit = {
-      actor ! StartMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits,
-        protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
+      actor ! StartMicroPaymentChannel(runningExchange, protocolConstants, paymentProcessor.ref,
+        gateway.ref, Set(listener.ref))
     }
   }
 

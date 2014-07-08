@@ -10,16 +10,16 @@ import org.scalatest.concurrent.Eventually
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.ExchangeActor._
-import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast =>_, _}
+import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{TransactionPublished, BlockchainActorReference, RetrieveBlockchainActor}
+import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{MockExchangeProtocol, Both}
+import com.coinffeine.common.exchange.{Both, MockExchangeProtocol}
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
@@ -73,7 +73,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def startExchange(): Unit = {
       actor ! StartExchange(
-        exchange, userRole, wallet, dummyPaymentProcessor, gateway.ref, peers.ref
+        exchange, userRole, user, wallet, dummyPaymentProcessor, gateway.ref, peers.ref
       )
       peers.expectMsg(RetrieveBlockchainActor)
       peers.reply(BlockchainActorReference(blockchain.ref))
@@ -82,7 +82,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenHandshakeSuccess(): Unit = {
       withActor(HandshakeActorName) { handshakeActor =>
         handshakeActorMessageQueue.expectMsgClass[StartHandshake[_]]()
-        actor.tell(HandshakeSuccess(deposits, dummyTx), handshakeActor)
+        actor.tell(HandshakeSuccess(handshakingExchange, deposits, dummyTx), handshakeActor)
       }
       transactionBroadcastActorMessageQueue.expectMsg(
         StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
@@ -115,8 +115,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenMicropaymentChannelSuccess(): Unit =
       withActor(MicroPaymentChannelActorName) { micropaymentChannelActor =>
         micropaymentChannelActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
-          exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
-          dummyPaymentProcessor, gateway.ref, Set(actor)
+          runningExchange, protocolConstants, dummyPaymentProcessor, gateway.ref, Set(actor)
         ))
         actor.tell(MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx)), micropaymentChannelActor)
       }
@@ -176,8 +175,7 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val error = new Error("exchange failure")
     withActor(MicroPaymentChannelActorName) { micropaymentChannelActor =>
       micropaymentChannelActorMessageQueue.expectMsg(MicroPaymentChannelActor.StartMicroPaymentChannel(
-        exchange, userRole, MockExchangeProtocol.DummyDeposits, protocolConstants,
-        dummyPaymentProcessor, gateway.ref, Set(actor)
+        runningExchange, protocolConstants, dummyPaymentProcessor, gateway.ref, Set(actor)
       ))
       actor.tell(MicroPaymentChannelActor.ExchangeFailure(error), micropaymentChannelActor)
     }

@@ -39,18 +39,18 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
     import init.constants.exchangeSignatureTimeout
 
     private val forwarding =
-      new MessageForwarding(messageGateway, exchange, role)
+      new MessageForwarding(messageGateway, exchange, exchange.role)
     private var lastSignedOffer: Option[ImmutableTransaction] = None
 
     def startExchange(): Unit = {
       subscribeToMessages()
-      val channel = exchangeProtocol.createMicroPaymentChannel(exchange, role, deposits)
+      val channel = exchangeProtocol.createMicroPaymentChannel(exchange)
       context.become(waitForNextStepSignature(channel) orElse handleLastOfferQueries)
       log.info(s"Exchange ${exchange.id}: Exchange started")
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = exchange.connections(role.counterpart)
+      val counterpart = exchange.connections(exchange.role.counterpart)
       messageGateway ! Subscribe {
         case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) => true
         case _ => false
@@ -61,7 +61,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       case GetLastOffer => sender ! LastOffer(lastSignedOffer)
     }
 
-    private def withStepTimeout(channel: MicroPaymentChannel)(receive: Receive): Receive = {
+    private def withStepTimeout(channel: MicroPaymentChannel[C])(receive: Receive): Receive = {
       scheduleStepTimeouts(exchangeSignatureTimeout)
       receive.andThen(_ => cancelTimeout()).orElse(handleTimeout(channel.currentStep))
     }
@@ -74,7 +74,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
         finishWith(ExchangeFailure(TimeoutException(errorMsg)))
     }
 
-    private def waitForNextStepSignature(channel: MicroPaymentChannel): Receive =
+    private def waitForNextStepSignature(channel: MicroPaymentChannel[C]): Receive =
       withStepTimeout(channel) {
         waitForValidSignature(channel) { signatures =>
           lastSignedOffer = Some(channel.closingTransaction(signatures))
@@ -89,7 +89,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
         }
       }
 
-    private def waitForValidSignature(channel: MicroPaymentChannel)
+    private def waitForValidSignature(channel: MicroPaymentChannel[C])
                                      (body: Signatures => Unit): Receive = {
       case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
         channel.validateCurrentTransactionSignatures(signatures) match {
@@ -113,7 +113,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       implicit val timeout = PaymentProcessor.RequestTimeout
 
       val paymentRequest = PaymentProcessor.Pay(
-        exchange.participants(role.counterpart).paymentProcessorAccount,
+        exchange.counterpart.paymentProcessorAccount,
         exchange.amounts.stepFiatAmount,
         PaymentDescription(exchange.id, step)
       )

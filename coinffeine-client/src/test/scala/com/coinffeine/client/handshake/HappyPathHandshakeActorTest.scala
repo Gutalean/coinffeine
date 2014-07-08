@@ -3,7 +3,7 @@ package com.coinffeine.client.handshake
 import scala.concurrent.duration._
 
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.{FiatCurrency, PeerConnection}
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.blockchain.BlockchainActor._
@@ -104,7 +104,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     )) {
       blockchain.send(actor, TransactionConfirmed(tx, 1))
     }
-    val result = listener.expectMsgClass(classOf[HandshakeSuccess])
+    val result = listener.expectMsgClass(classOf[HandshakeSuccess[FiatCurrency]])
     result.refundTransaction should be (handshake.mySignedRefund)
     result.bothCommitments.buyer should be (handshake.myDeposit.get.getHash)
     result.bothCommitments.seller should be (handshake.counterpartCommitmentTransaction.getHash)

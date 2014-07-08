@@ -37,27 +37,27 @@ class ExchangeActor[C <: FiatCurrency](
     }
 
     def start(): Unit = {
-      require(userWallet.getKeys.contains(exchange.participants(role).bitcoinKey))
+      require(userWallet.getKeys.contains(user.bitcoinKey))
       log.info(s"Starting exchange ${exchange.id}")
       bitcoinPeers ! RetrieveBlockchainActor
       context.become(retrievingBlockchain)
     }
 
     private val inHandshake: Receive = {
-      case HandshakeSuccess(commitmentTxIds, refundTx) =>
+      case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
         context.child(HandshakeActorName).map(context.stop)
         _txBroadcaster = context.actorOf(
           transactionBroadcastActorProps, TransactionBroadcastActorName)
+        watchForDepositKeys(handshakingExchange)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeers, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
-        context.become(receiveTransaction(commitmentTxIds))
+        context.become(receiveTransaction(handshakingExchange, commitmentTxIds))
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
     private val retrievingBlockchain: Receive = {
       case BlockchainActorReference(blockchainRef) =>
         blockchain = blockchainRef
-        watchForDepositKeys()
         startHandshake()
         context.become(inHandshake)
     }
@@ -66,7 +66,7 @@ class ExchangeActor[C <: FiatCurrency](
       // TODO: ask the wallet actor for funds
       val funds = UnspentOutput.collect(role.myDepositAmount(exchange.amounts), userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange, role, exchange.participants(role), funds, userWallet.getChangeAddress, constants,
+        exchange, role, user, funds, userWallet.getChangeAddress, constants,
         messageGateway, blockchain, resultListeners = Set(self)
       )
     }
@@ -103,15 +103,17 @@ class ExchangeActor[C <: FiatCurrency](
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
     }
 
-    private def receiveTransaction(commitmentTxIds: Both[Hash]): Receive = {
+    private def receiveTransaction(handshakingExchange: HandshakingExchange[C],
+                                   commitmentTxIds: Both[Hash]): Receive = {
       def withReceivedTxs(receivedTxs: Map[Hash, ImmutableTransaction]): Receive = {
         case TransactionFound(id, tx) =>
           val newTxs = receivedTxs.updated(id, tx)
           if (commitmentTxIds.toSeq.forall(newTxs.keySet.contains)) {
             // TODO: what if counterpart deposit is not valid?
-            val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), exchange).get
+            val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), handshakingExchange).get
+            val runningExchange = RunningExchange(deposits, handshakingExchange)
             val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            ref ! StartMicroPaymentChannel[C](exchange, role, deposits, constants,
+            ref ! StartMicroPaymentChannel[C](runningExchange, constants,
               paymentProcessor, messageGateway, resultListeners = Set(self))
             txBroadcaster ! SetMicropaymentActor(ref)
             context.become(inMicropaymentChannel)
@@ -129,8 +131,8 @@ class ExchangeActor[C <: FiatCurrency](
       context.stop(self)
     }
 
-    private def watchForDepositKeys(): Unit = {
-      exchange.participants.toSeq.foreach { p =>
+    private def watchForDepositKeys(ongoingExchange: OngoingExchange[C]): Unit = {
+      ongoingExchange.participants.toSeq.foreach { p =>
         blockchain ! WatchPublicKey(p.bitcoinKey)
       }
     }
@@ -146,8 +148,9 @@ object ExchangeActor {
 
   /** This is a request for the actor to start the exchange */
   case class StartExchange[C <: FiatCurrency](
-    exchange: OngoingExchange[C], // TODO: reduce visibility to Exchange[C]
+    exchange: Exchange[C],
     role: Role,
+    user: Exchange.PeerInfo,
     userWallet: Wallet,
     paymentProcessor: ActorRef,
     messageGateway: ActorRef,

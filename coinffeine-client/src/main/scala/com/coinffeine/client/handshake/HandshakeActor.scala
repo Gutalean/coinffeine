@@ -131,7 +131,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
           if (stillPending.nonEmpty) {
             context.become(waitForPendingConfirmations(stillPending))
           } else {
-            finishWithResult(Success(HandshakeSuccess(bothCommitments, refund)))
+            finishWithResult(Success(HandshakeSuccess(handshake.exchange, bothCommitments, refund)))
           }
 
         case TransactionRejected(tx) =>
@@ -182,7 +182,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
       forwarding.forwardToCounterpart(RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund))
     }
 
-    private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
+    private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
       log.info("Handshake {}: handshake finished with result {}", exchange.id, result)
       resultListeners.foreach(_ ! result.recover {
         case e => HandshakeFailure(e)
@@ -222,7 +222,9 @@ object HandshakeActor {
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
-  case class HandshakeSuccess(bothCommitments: Both[Hash], refundTransaction: ImmutableTransaction)
+  case class HandshakeSuccess[C <: FiatCurrency](exchange: HandshakingExchange[C],
+                                                 bothCommitments: Both[Hash],
+                                                 refundTransaction: ImmutableTransaction)
 
   case class HandshakeFailure(e: Throwable)
 
