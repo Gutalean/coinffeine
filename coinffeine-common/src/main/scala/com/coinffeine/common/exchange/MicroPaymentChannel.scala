@@ -2,15 +2,18 @@ package com.coinffeine.common.exchange
 
 import scala.util.Try
 
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.exchange.Exchange.StepBreakdown
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-trait MicroPaymentChannel {
+trait MicroPaymentChannel[C <: FiatCurrency] {
+
+  val exchange: RunningExchange[C]
 
   val currentStep: Step
 
-  def nextStep: MicroPaymentChannel
+  def nextStep: MicroPaymentChannel[C]
 
   /** Check signature validity for the current step.
     *

@@ -5,6 +5,7 @@ import scala.util.Random
 
 import com.coinffeine.common._
 import com.coinffeine.common.bitcoin._
+import com.coinffeine.common.exchange.Exchange.Deposits
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 
 /** All the necessary information to start an exchange between two peers. This is the point of view
@@ -25,22 +26,12 @@ trait Exchange[+C <: FiatCurrency] {
   * as contains information not made public to everyone on the network.
   */
 trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
+  val role: Role
+
   /** Information about the parts */
   val participants: Both[Exchange.PeerInfo]
 
   def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
-}
-
-/** Relevant information during the handshake of an exchange. This point of view is only held by
-  * the parts as contains information not made public to everyone on the network. */
-case class HandshakingExchange[+C <: FiatCurrency](
-  role: Role,
-  override val id: Exchange.Id,
-  override val amounts: Exchange.Amounts[C],
-  override val parameters: Exchange.Parameters,
-  override val connections: Both[PeerConnection],
-  override val broker: Exchange.BrokerInfo,
-  override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C] {
 
   val user = participants(role)
   val counterpart = participants(role.counterpart)
@@ -48,29 +39,57 @@ case class HandshakingExchange[+C <: FiatCurrency](
   require(user.bitcoinKey.hasPrivKey)
 }
 
+case class NonStartedExchange[+C <: FiatCurrency](
+    override val id: Exchange.Id,
+    override val amounts: Exchange.Amounts[C],
+    override val parameters: Exchange.Parameters,
+    override val connections: Both[PeerConnection],
+    override val broker: Exchange.BrokerInfo) extends Exchange[C]
+
+/** Relevant information during the handshake of an exchange. This point of view is only held by
+  * the parts as contains information not made public to everyone on the network. */
+case class HandshakingExchange[+C <: FiatCurrency](
+    override val role: Role,
+    override val id: Exchange.Id,
+    override val amounts: Exchange.Amounts[C],
+    override val parameters: Exchange.Parameters,
+    override val connections: Both[PeerConnection],
+    override val broker: Exchange.BrokerInfo,
+    override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C] {
+}
+
 object HandshakingExchange {
   def apply[C <: FiatCurrency](role: Role, user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo,
                                exchange: Exchange[C]): HandshakingExchange[C] = {
+    import exchange._
     val participants = Both(
       buyer = role.buyer(user, counterpart),
       seller = role.seller(user, counterpart)
     )
-    HandshakingExchange(role, exchange.id, exchange.amounts, exchange.parameters,
-      exchange.connections, exchange.broker, participants)
+    HandshakingExchange(role, id, amounts, parameters, connections, broker, participants)
   }
 }
 
-/** TODO: create different implementations of Exchange and OngoingExchange to limit what information
-  * is available during the exchange by splitting this class.
-  */
-@deprecated
-case class CompleteExchange[+C <: FiatCurrency] (
+case class RunningExchange[+C <: FiatCurrency](
+  override val role: Role,
   override val id: Exchange.Id,
   override val amounts: Exchange.Amounts[C],
   override val parameters: Exchange.Parameters,
   override val connections: Both[PeerConnection],
   override val broker: Exchange.BrokerInfo,
-  override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C]
+  override val participants: Both[Exchange.PeerInfo],
+  deposits: Deposits) extends OngoingExchange[C] {
+
+}
+
+object RunningExchange {
+
+  def apply[C <: FiatCurrency](deposits: Deposits,
+                               exchange: HandshakingExchange[C]): RunningExchange[C] = {
+    import exchange._
+    RunningExchange(role, id, amounts, parameters, connections, broker, participants, deposits)
+  }
+}
 
 object Exchange {
 

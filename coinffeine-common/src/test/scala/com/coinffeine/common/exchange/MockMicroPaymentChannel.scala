@@ -6,10 +6,10 @@ import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
-class MockMicroPaymentChannel private (exchange: OngoingExchange[FiatCurrency], step: Step)
-  extends MicroPaymentChannel {
+class MockMicroPaymentChannel[C <: FiatCurrency] private (
+     override val exchange: RunningExchange[C],  step: Step) extends MicroPaymentChannel[C] {
 
-  def this(exchange: OngoingExchange[FiatCurrency]) =
+  def this(exchange: RunningExchange[C]) =
     this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   override val currentStep = step

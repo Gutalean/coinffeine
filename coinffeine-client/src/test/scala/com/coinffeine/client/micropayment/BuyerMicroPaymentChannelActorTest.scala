@@ -34,8 +34,7 @@ class BuyerMicroPaymentChannelActorTest
   )
   val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
   val expectedLastOffer = {
-    val initialChannel = exchangeProtocol
-      .createMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits)
+    val initialChannel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val lastChannel = Seq.iterate(
       initialChannel, exchange.amounts.breakdown.totalSteps)(_.nextStep).last
     lastChannel.closingTransaction(signatures)
@@ -44,8 +43,8 @@ class BuyerMicroPaymentChannelActorTest
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(exchange, userRole, MockExchangeProtocol.DummyDeposits,
-      protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(runningExchange, protocolConstants, paymentProcessor.ref,
+      gateway.ref, Set(listener.ref))
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = Exchange.Id("other-id")

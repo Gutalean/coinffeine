@@ -25,17 +25,14 @@ trait ExchangeProtocol {
 
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
-                       exchange: OngoingExchange[FiatCurrency]): Try[Exchange.Deposits]
+                       exchange: HandshakingExchange[FiatCurrency]): Try[Exchange.Deposits]
 
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.
     *
     * @param exchange   Exchange description
-    * @param role       Role played on the exchange
-    * @param deposits   Already compromised deposits for buyer and seller
     */
-  def createMicroPaymentChannel(exchange: OngoingExchange[FiatCurrency],
-                                role: Role, deposits: Exchange.Deposits): MicroPaymentChannel
+  def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]): MicroPaymentChannel[C]
 }
 
 object ExchangeProtocol {

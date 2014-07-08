@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.{Exchange, OngoingExchange, Role}
+import com.coinffeine.common.exchange.RunningExchange
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -15,9 +15,7 @@ object MicroPaymentChannelActor {
 
   /** Sent to the the actor to start the actual exchange through the micropayment channel. */
   case class StartMicroPaymentChannel[C <: FiatCurrency](
-      exchange: OngoingExchange[C],
-      role: Role,
-      deposits: Exchange.Deposits,
+      exchange: RunningExchange[C],
       constants: ProtocolConstants,
       paymentProcessor: ActorRef,
       messageGateway: ActorRef,

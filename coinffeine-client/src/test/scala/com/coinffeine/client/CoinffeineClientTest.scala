@@ -39,11 +39,13 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    def exchange: OngoingExchange[FiatCurrency]
+    def exchange: Exchange[FiatCurrency]
+    def participants: Both[Exchange.PeerInfo]
     def handshakingExchange = HandshakingExchange(userRole, user, counterpart, exchange)
+    def runningExchange = RunningExchange(MockExchangeProtocol.DummyDeposits, handshakingExchange)
     def userRole: Role
-    def user = exchange.participants(userRole)
-    def counterpart = exchange.participants(userRole.counterpart)
+    def user = participants(userRole)
+    def counterpart = participants(userRole.counterpart)
     def counterpartConnection = exchange.connections(userRole.counterpart)
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }

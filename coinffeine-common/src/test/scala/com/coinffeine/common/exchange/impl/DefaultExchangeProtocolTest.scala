@@ -2,7 +2,7 @@ package com.coinffeine.common.exchange.impl
 
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{BuyerRole, UnspentOutput}
+import com.coinffeine.common.exchange.UnspentOutput
 
 class DefaultExchangeProtocolTest extends ExchangeTest {
 
@@ -21,7 +21,7 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
     }
 
   it should "require the unspent outputs to have a minimum amount" in new FreshInstance {
-    val buyerWallet = createWallet(exchange.participants.buyer.bitcoinKey, 0.1.BTC)
+    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.1.BTC)
     val funds = UnspentOutput.collect(0.1.BTC, buyerWallet)
     an [IllegalArgumentException] should be thrownBy {
       protocol.createHandshake(buyerExchange, funds, buyerWallet.getChangeAddress)
