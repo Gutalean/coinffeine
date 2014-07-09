@@ -23,12 +23,9 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
 
   import ProtoRpcMessageGateway._
 
-  /** Metadata on message subscription requested by an actor. */
-  private case class MessageSubscription(filter: Filter)
-
+  private val subscriptionsActor = context.actorOf(SubscriptionManagerActor.props)
   private var server: PeerServer = _
   private var serverInfo: PeerInfo = _
-  private var subscriptions = Map.empty[ActorRef, MessageSubscription]
   private var sessions = Map.empty[PeerConnection, PeerSession]
 
   override def postStop(): Unit = {
@@ -39,12 +36,9 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
   override def receive = waitingForInitialization orElse managingSubscriptions
 
   private val managingSubscriptions: Receive = {
-    case Subscribe(filter) =>
-      subscriptions += sender -> MessageSubscription(filter)
-    case Unsubscribe =>
-      subscriptions -= sender
-    case Terminated(actor) =>
-      subscriptions -= actor
+    case msg: Subscribe => subscriptionsActor forward msg
+    case msg @ Unsubscribe => subscriptionsActor forward msg
+    case Terminated(actor) => subscriptionsActor.tell(Unsubscribe, actor)
   }
 
   private def binding(startFuture: ChannelFuture, ownId: PeerId, brokerId: PeerId,
@@ -110,7 +104,7 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
       case PeerServiceImpl.ReceiveMessage(protoMessage, senderConnection) =>
         val (message, senderId) = serialization.fromProtobuf(protoMessage)
         self ! PeerIdResolved(senderId, senderConnection)
-        dispatchToSubscriptions(message, senderId)
+        subscriptionsActor ! ReceiveMessage(message, senderId)
     }
 
     private def forward(to: PeerId, message: PublicMessage): Unit = {
@@ -132,13 +126,6 @@ private[gateway] class ProtoRpcMessageGateway(serialization: ProtocolSerializati
       } catch {
         case e: IOException =>
           throw ForwardException(s"cannot forward message $message to $to: ${e.getMessage}", e)
-      }
-    }
-
-    private def dispatchToSubscriptions(msg: PublicMessage, sender: PeerId): Unit = {
-      val notification = ReceiveMessage(msg, sender)
-      for ((actor, MessageSubscription(filter)) <- subscriptions if filter(notification)) {
-        actor ! notification
       }
     }
 
