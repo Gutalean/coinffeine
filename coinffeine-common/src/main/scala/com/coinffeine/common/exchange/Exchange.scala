@@ -17,9 +17,9 @@ trait Exchange[+C <: FiatCurrency] {
   val amounts: Exchange.Amounts[C]
   /** Configurable parameters */
   val parameters: Exchange.Parameters
-  /** PeerConnection of the buyer and the seller */
-  val connections: Both[PeerConnection]
-  val broker: Exchange.BrokerInfo
+  /** Identifiers of the buyer and the seller */
+  val peerIds: Both[PeerId]
+  val brokerId: PeerId
 }
 
 /** Relevant information for an ongoing exchange. This point of view is only held by the parts
@@ -43,8 +43,8 @@ case class NonStartedExchange[+C <: FiatCurrency](
     override val id: Exchange.Id,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
-    override val connections: Both[PeerConnection],
-    override val broker: Exchange.BrokerInfo) extends Exchange[C]
+    override val peerIds: Both[PeerId],
+    override val brokerId: PeerId) extends Exchange[C]
 
 /** Relevant information during the handshake of an exchange. This point of view is only held by
   * the parts as contains information not made public to everyone on the network. */
@@ -53,8 +53,8 @@ case class HandshakingExchange[+C <: FiatCurrency](
     override val id: Exchange.Id,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
-    override val connections: Both[PeerConnection],
-    override val broker: Exchange.BrokerInfo,
+    override val peerIds: Both[PeerId],
+    override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C] {
 }
 
@@ -66,7 +66,7 @@ object HandshakingExchange {
       buyer = role.buyer(user, counterpart),
       seller = role.seller(user, counterpart)
     )
-    HandshakingExchange(role, id, amounts, parameters, connections, broker, participants)
+    HandshakingExchange(role, id, amounts, parameters, peerIds, brokerId, participants)
   }
 }
 
@@ -75,8 +75,8 @@ case class RunningExchange[+C <: FiatCurrency](
   override val id: Exchange.Id,
   override val amounts: Exchange.Amounts[C],
   override val parameters: Exchange.Parameters,
-  override val connections: Both[PeerConnection],
-  override val broker: Exchange.BrokerInfo,
+  override val peerIds: Both[PeerId],
+  override val brokerId: PeerId,
   override val participants: Both[Exchange.PeerInfo],
   deposits: Deposits) extends OngoingExchange[C] {
 
@@ -87,7 +87,7 @@ object RunningExchange {
   def apply[C <: FiatCurrency](deposits: Deposits,
                                exchange: HandshakingExchange[C]): RunningExchange[C] = {
     import exchange._
-    RunningExchange(role, id, amounts, parameters, connections, broker, participants, deposits)
+    RunningExchange(role, id, amounts, parameters, peerIds, brokerId, participants, deposits)
   }
 }
 
@@ -111,8 +111,6 @@ object Exchange {
   case class Parameters(lockTime: Long, network: Network)
 
   case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
-
-  case class BrokerInfo(connection: PeerConnection)
 
   /** How the exchange is break down into steps */
   case class StepBreakdown(intermediateSteps: Int) {

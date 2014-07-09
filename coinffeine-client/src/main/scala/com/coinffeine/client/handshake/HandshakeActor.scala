@@ -145,14 +145,13 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
-      val broker = exchange.broker.connection
-      val counterpart = exchange.connections(role.counterpart)
+      val counterpart = exchange.peerIds(role.counterpart)
       messageGateway ! Subscribe {
         case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
         case ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) => true
         case ReceiveMessage(RefundSignatureResponse(`id`, _), `counterpart`) => true
-        case ReceiveMessage(CommitmentNotification(`id`, _), `broker`) => true
-        case ReceiveMessage(ExchangeAborted(`id`, _), `broker`) => true
+        case ReceiveMessage(CommitmentNotification(`id`, _), exchange.`brokerId`) => true
+        case ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) => true
         case _ => false
       }
     }

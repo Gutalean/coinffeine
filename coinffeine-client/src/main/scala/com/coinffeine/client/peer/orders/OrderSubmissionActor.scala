@@ -5,7 +5,8 @@ import akka.actor._
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.event.EventProducer
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -15,15 +16,14 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
   extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case OrderSubmissionActor.Initialize(market, eventChannel, gateway, brokerAddress) =>
-      new InitializedOrderSubmission(market, eventChannel, gateway, brokerAddress).start()
+    case init: OrderSubmissionActor.Initialize =>
+      new InitializedOrderSubmission(init).start()
   }
 
-  private class InitializedOrderSubmission(
-      market: Market[FiatCurrency],
-      eventChannel: ActorRef,
-      gateway: ActorRef,
-      broker: PeerConnection) extends EventProducer(eventChannel) {
+  private class InitializedOrderSubmission(init: OrderSubmissionActor.Initialize)
+    extends EventProducer(init.eventChannel) {
+
+    import init._
 
     def start(): Unit = {
       context.become(waitingForOrders)
@@ -61,7 +61,7 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
     }
 
     private def forwardOrders(orderSet: OrderSet[FiatCurrency]): Unit = {
-      gateway ! ForwardMessage(orderSet, broker)
+      gateway ! ForwardMessage(orderSet, brokerId)
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
   }
@@ -72,7 +72,7 @@ private[orders] object OrderSubmissionActor {
   case class Initialize(market: Market[FiatCurrency],
                         eventChannel: ActorRef,
                         gateway: ActorRef,
-                        brokerAddress: PeerConnection)
+                        brokerId: PeerId)
 
   def props(constants: ProtocolConstants) = Props(new OrderSubmissionActor(constants))
 }

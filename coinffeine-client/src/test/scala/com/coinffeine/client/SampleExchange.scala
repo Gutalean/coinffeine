@@ -1,14 +1,13 @@
 package com.coinffeine.client
 
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
-  val broker = PeerConnection("broker")
+  val brokerId = PeerId("broker")
 
   val participants = Both(
     buyer = Exchange.PeerInfo(
@@ -29,8 +28,8 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
       breakdown = Exchange.StepBreakdown(intermediateSteps = 10)
     ),
     parameters = Exchange.Parameters(lockTime = 25, network),
-    connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
-    broker = Exchange.BrokerInfo(broker)
+    peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller")),
+    brokerId
   )
 
   val buyerRunningExchange = RunningExchange(

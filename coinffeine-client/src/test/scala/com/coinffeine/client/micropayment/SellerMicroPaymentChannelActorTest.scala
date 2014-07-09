@@ -12,9 +12,8 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel, PeerId}
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
@@ -43,7 +42,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val anotherPeer = PeerConnection("some-random-peer")
+    val anotherPeer = PeerId("some-random-peer")
     val relevantPayment = PaymentProof(exchange.id, null)
     val irrelevantPayment = PaymentProof(Exchange.Id("another-id"), null)
     filter(fromCounterpart(relevantPayment)) should be (true)

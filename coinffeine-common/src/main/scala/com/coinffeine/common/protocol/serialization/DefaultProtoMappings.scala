@@ -6,10 +6,10 @@ import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency, PeerConnection}
+import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin.Hash
-import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -154,9 +154,9 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       exchangeId = Exchange.Id(orderMatch.getExchangeId),
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
-      participants = Both(
-        buyer = PeerConnection.parse(orderMatch.getBuyer),
-        seller = PeerConnection.parse(orderMatch.getSeller)
+      peers = Both(
+        buyer = PeerId(orderMatch.getBuyer),
+        seller = PeerId(orderMatch.getSeller)
       )
     )
 
@@ -164,8 +164,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
-      .setBuyer(orderMatch.participants.buyer.toString)
-      .setSeller(orderMatch.participants.seller.toString)
+      .setBuyer(orderMatch.peers.buyer.value)
+      .setSeller(orderMatch.peers.seller.value)
       .build
   }
 

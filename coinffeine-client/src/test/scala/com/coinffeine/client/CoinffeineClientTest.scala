@@ -2,7 +2,7 @@ package com.coinffeine.client
 
 import akka.testkit.TestProbe
 
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage
@@ -13,22 +13,22 @@ abstract class CoinffeineClientTest(systemName: String)
 
   val gateway = TestProbe()
 
-  def fromBroker(message: PublicMessage) = ReceiveMessage(message, broker)
+  def fromBroker(message: PublicMessage) = ReceiveMessage(message, brokerId)
 
-  protected class ValidateWithPeer(validation: PeerConnection => Unit) {
-    def to(receiver: PeerConnection): Unit = validation(receiver)
+  protected class ValidateWithPeer(validation: PeerId => Unit) {
+    def to(receiver: PeerId): Unit = validation(receiver)
   }
 
   def shouldForward(message: PublicMessage) =
     new ValidateWithPeer(receiver => gateway.expectMsg(ForwardMessage(message, receiver)))
 
   protected class ValidateAllMessagesWithPeer {
-    private var messages: List[PeerConnection => Any] = List.empty
+    private var messages: List[PeerId => Any] = List.empty
     def message(msg: PublicMessage): ValidateAllMessagesWithPeer = {
-      messages = ((receiver: PeerConnection) => ForwardMessage(msg, receiver)) :: messages
+      messages = ((receiver: PeerId) => ForwardMessage(msg, receiver)) :: messages
       this
     }
-    def to(receiver: PeerConnection): Unit = {
+    def to(receiver: PeerId): Unit = {
       gateway.expectMsgAllOf(messages.map(_(receiver)): _*)
     }
   }
@@ -46,7 +46,7 @@ object CoinffeineClientTest {
     def userRole: Role
     def user = participants(userRole)
     def counterpart = participants(userRole.counterpart)
-    def counterpartConnection = exchange.connections(userRole.counterpart)
+    def counterpartConnection = exchange.peerIds(userRole.counterpart)
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }
 

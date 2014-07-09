@@ -6,37 +6,32 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
-import com.coinffeine.common.exchange.{Exchange, Role}
+import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.{Exchange, PeerId, Role}
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.PublicMessage
 
-class MessageForwarding(messageGateway: ActorRef,
-                        counterpart: PeerConnection,
-                        broker: PeerConnection) {
+class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId, broker: PeerId) {
 
   def this(messageGateway: ActorRef, exchange: Exchange[FiatCurrency], role: Role) =
-    this(messageGateway, exchange.connections(role.counterpart),
-      exchange.broker.connection)
+    this(messageGateway, exchange.peerIds(role.counterpart), exchange.brokerId)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)
 
-  def forwardToCounterpart(message: Future[PublicMessage])
-                                    (implicit context: ActorContext): Unit =
+  def forwardToCounterpart(message: Future[PublicMessage])(implicit context: ActorContext): Unit =
     forwardMessage(message, counterpart)
 
   def forwardToBroker(message: PublicMessage): Unit =
     forwardMessage(message, broker)
 
-  def forwardToBroker(message: Future[PublicMessage])
-                               (implicit context: ActorContext): Unit =
+  def forwardToBroker(message: Future[PublicMessage])(implicit context: ActorContext): Unit =
     forwardMessage(message, broker)
 
-  def forwardMessage(message: PublicMessage, address: PeerConnection): Unit =
+  def forwardMessage(message: PublicMessage, address: PeerId): Unit =
     messageGateway ! ForwardMessage(message, address)
 
-  def forwardMessage(message: Future[PublicMessage], address: PeerConnection)
+  def forwardMessage(message: Future[PublicMessage], address: PeerId)
                     (implicit context: ActorContext): Unit = {
     implicit val executionContext = ExecutionContexts.global()
     message.map(ForwardMessage(_, address)).pipeTo(messageGateway)(context.self)

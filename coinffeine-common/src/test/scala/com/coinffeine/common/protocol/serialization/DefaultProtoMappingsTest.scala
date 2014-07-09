@@ -10,7 +10,7 @@ import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.bitcoin.Implicits._
-import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
 import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._
@@ -118,17 +118,14 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
-    participants = Both(
-      buyer = PeerConnection("buyer", 8080),
-      seller = PeerConnection("seller", 1234)
-    )
+    peers = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setExchangeId(sampleExchangeId.value)
     .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
-    .setBuyer("coinffeine://buyer:8080/")
-    .setSeller("coinffeine://seller:1234/")
+    .setBuyer("buyer")
+    .setSeller("seller")
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 
