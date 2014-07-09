@@ -38,6 +38,9 @@ private[orders] class OrderSubmissionActor(protocolConstants: ProtocolConstants)
           val reducedOrderSet = orderSet.cancelOrder(
             order.orderType, order.amount, order.price)
           forwardOrders(reducedOrderSet)
+
+          produceEvent(CoinffeineApp.OrderCancelledEvent(order))
+
           context.become(
             if (reducedOrderSet.isEmpty) waitingForOrders
             else keepingOpenOrders(reducedOrderSet)

@@ -25,5 +25,8 @@ object CoinffeineApp {
 
   /** An event triggered each time a new order is submitted. */
   case class OrderSubmittedEvent(order: Order) extends Event
+
+  /** An event triggered each time an order is cancelled. */
+  case class OrderCancelledEvent(order: Order) extends Event
 }
 
