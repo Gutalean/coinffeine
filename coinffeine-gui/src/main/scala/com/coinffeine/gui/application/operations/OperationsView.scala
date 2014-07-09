@@ -19,6 +19,7 @@ class OperationsView(app: CoinffeineApp) extends ApplicationView {
   val props = new ApplicationProperties(app)
 
   private val orderTable = new TableView[OrderProperties](props.ordersProperty) {
+    id = "ordersTable"
     placeholder = new Label("No orders found")
     columns ++= List(
       new TableColumn[OrderProperties, OrderType] {
@@ -42,6 +43,7 @@ class OperationsView(app: CoinffeineApp) extends ApplicationView {
   private val orderSelectionProperty = orderTable.selectionModel.value.selectedItemProperty()
 
   private val newOrderButton = new Button {
+    id = "newOrderBtn"
     text = "New order"
     handleEvent(ActionEvent.ACTION) { () =>
       val form = new OrderSubmissionForm(app)
@@ -50,6 +52,7 @@ class OperationsView(app: CoinffeineApp) extends ApplicationView {
   }
 
   private val cancelOrderButton = new Button {
+    id = "cancelOrderBtn"
     text = "Cancel order"
     disable <== orderSelectionProperty.isNull
     handleEvent(ActionEvent.ACTION) { () =>
