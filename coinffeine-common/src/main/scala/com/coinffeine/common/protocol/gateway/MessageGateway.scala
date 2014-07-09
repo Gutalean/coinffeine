@@ -9,7 +9,7 @@ import com.coinffeine.common.protocol.messages.PublicMessage
 object MessageGateway {
 
   /** Initialization message for the gateway. */
-  case class Bind(id: PeerId, address: PeerConnection, brokerId: PeerId,
+  case class Bind(ownId: PeerId, connection: PeerConnection, brokerId: PeerId,
                   brokerConnection: PeerConnection)
   case class BoundTo(address: PeerConnection)
   case class BindingError(cause: Throwable)

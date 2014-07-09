@@ -13,7 +13,7 @@ import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardException
 import com.coinffeine.common.protocol.gateway.PeerServiceImpl.ResolvePeerId
-import com.coinffeine.common.protocol.gateway.ProtoRpcMessageGateway.PeerWith
+import com.coinffeine.common.protocol.gateway.ProtobufServerActor.PeerWith
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.PeerIdResolution
 import com.coinffeine.common.protorpc.PeerSession

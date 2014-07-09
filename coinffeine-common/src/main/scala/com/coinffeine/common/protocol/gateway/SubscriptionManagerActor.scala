@@ -1,6 +1,7 @@
 package com.coinffeine.common.protocol.gateway
 
 import akka.actor._
+
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.PublicMessage
 
