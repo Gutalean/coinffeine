@@ -19,7 +19,7 @@ private[gateway] class PeerServiceImpl(ref: ActorRef)
                            message: proto.CoinffeineMessage,
                            done: RpcCallback[proto.Void]): Unit = {
     done.run(VoidResponse)
-    ref ! ReceiveMessage(message, clientPeerConnection(controller))
+    ref ! ReceiveProtoMessage(message, clientPeerConnection(controller))
   }
 
   private def clientPeerConnection(controller: RpcController) = {
@@ -39,5 +39,5 @@ private[gateway] object PeerServiceImpl {
 
   case class ResolvePeerId(peerId: PeerId, callback: RpcCallback[PeerIdResolution])
 
-  case class ReceiveMessage(message: proto.CoinffeineMessage, senderConnection: PeerConnection)
+  case class ReceiveProtoMessage(message: proto.CoinffeineMessage, senderConnection: PeerConnection)
 }
