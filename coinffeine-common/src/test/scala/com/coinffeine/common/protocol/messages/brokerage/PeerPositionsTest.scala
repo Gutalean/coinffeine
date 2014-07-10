@@ -9,7 +9,7 @@ class PeerPositionsTest extends UnitTest {
 
   "Peer positions" should "have the same currency" in {
     an [IllegalArgumentException] shouldBe thrownBy {
-      PeerPositions(Market(Euro), Set(Order(OrderId.random(), Bid, 1.BTC, 400.USD)))
+      PeerPositions(Market(Euro), Seq(Order(OrderId.random(), Bid, 1.BTC, 400.USD)))
     }
   }
 }

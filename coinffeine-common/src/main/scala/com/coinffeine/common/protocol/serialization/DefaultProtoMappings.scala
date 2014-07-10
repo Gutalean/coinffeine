@@ -112,7 +112,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val orderMapping = new ProtoMapping[Order, msg.Order] {
+  implicit val orderMapping = new ProtoMapping[Order[FiatAmount], msg.Order] {
 
     override def fromProtobuf(order: msg.Order) = Order(
       id = OrderId(order.getId),
@@ -124,7 +124,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       price = ProtoMapping.fromProtobuf(order.getPrice)
     )
 
-    override def toProtobuf(order: Order) = msg.Order.newBuilder
+    override def toProtobuf(order: Order[FiatAmount]) = msg.Order.newBuilder
       .setId(order.id.id)
       .setOrderType(order.orderType match {
         case Bid => msg.Order.OrderType.BID
@@ -135,18 +135,24 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions, msg.PeerPositions] {
+  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions[FiatCurrency], msg.PeerPositions] {
 
-    override def fromProtobuf(positions: msg.PeerPositions) = PeerPositions(
-      market = ProtoMapping.fromProtobuf(positions.getMarket),
-      positions = positions.getPositionsList.asScala.map(ProtoMapping.fromProtobuf[Order, msg.Order]).toSet
-    )
+    override def fromProtobuf(message: msg.PeerPositions) = {
+      val market = ProtoMapping.fromProtobuf(message.getMarket)
+      val protobufPositions = message.getPositionsList.asScala
+      val positions = for (protoPos <- protobufPositions) yield {
+        val pos = ProtoMapping.fromProtobuf[Order[FiatAmount], msg.Order](protoPos)
+        require(pos.price.currency == market.currency, s"Mixed currencies on $message")
+        pos
+      }
+      PeerPositions(market, positions)
+    }
 
-    override def toProtobuf(positions: PeerPositions) = {
+    override def toProtobuf(positions: PeerPositions[FiatCurrency]) = {
       val builder = msg.PeerPositions.newBuilder
         .setMarket(ProtoMapping.toProtobuf(positions.market))
       for (pos <- positions.positions) {
-        builder.addPositions(ProtoMapping.toProtobuf[Order, msg.Order](pos))
+        builder.addPositions(ProtoMapping.toProtobuf[Order[FiatAmount], msg.Order](pos))
       }
       builder.build
     }

@@ -8,7 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.orders.OrdersActor
-import com.coinffeine.common.{Order, PeerConnection}
+import com.coinffeine.common.{FiatAmount, Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
@@ -96,7 +96,7 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: Order)
+  case class OpenOrder(order: Order[FiatAmount])
 
   /** Cancel an order
     *
@@ -104,13 +104,13 @@ object CoinffeinePeerActor {
     *
     * @param order  Order to cancel
     */
-  case class CancelOrder(order: Order)
+  case class CancelOrder(order: Order[FiatAmount])
 
   /** Ask for own orders opened in any market. */
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Set[Order])
+  case class RetrievedOpenOrders(orders: Set[Order[FiatAmount]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest

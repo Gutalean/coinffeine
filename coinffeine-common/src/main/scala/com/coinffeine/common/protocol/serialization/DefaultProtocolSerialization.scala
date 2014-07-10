@@ -64,7 +64,7 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m))
       case m: OpenOrders[FiatCurrency] =>
         builder.setOpenOrders(ProtoMapping.toProtobuf(m))
-      case m: PeerPositions =>
+      case m: PeerPositions[FiatCurrency] =>
         builder.setPeerPositions(ProtoMapping.toProtobuf(m))
       case _ => throw new IllegalArgumentException("Unsupported message: " + message)
     }

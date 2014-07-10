@@ -34,7 +34,7 @@ case class OrderSet[+C <: FiatCurrency](
       case Ask => copy(asks = asks.decrease(price, amount))
     }
 
-  def orders: Seq[Order] = bids.toOrders(Bid) ++ asks.toOrders(Ask)
+  def orders: Seq[Order[FiatAmount]] = bids.toOrders(Bid) ++ asks.toOrders(Ask)
 
   private def requireNotCrossed(): Unit = {
     val priceCrossed = (highestBid, lowestAsk) match {

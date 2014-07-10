@@ -3,11 +3,11 @@ package com.coinffeine.client.api
 import scala.concurrent.Future
 
 import com.coinffeine.client.api.CoinffeineNetwork._
-import com.coinffeine.common.Order
+import com.coinffeine.common.{FiatAmount, Order}
 
 class MockCoinffeineNetwork extends CoinffeineNetwork {
 
-  private var _orders: Set[Order] = Set.empty
+  private var _orders: Set[Order[FiatAmount]] = Set.empty
 
   override def status: Status = ???
 
@@ -17,13 +17,13 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def orders: Set[Order] = _orders
+  override def orders: Set[Order[FiatAmount]] = _orders
 
-  override def cancelOrder(order: Order): Unit = {
+  override def cancelOrder(order: Order[FiatAmount]): Unit = {
     _orders -= order
   }
 
-  override def submitOrder(order: Order): Order = {
+  override def submitOrder[F <: FiatAmount](order: Order[F]): Order[F] = {
     _orders += order
     order
   }
