@@ -2,7 +2,8 @@ package com.coinffeine.client.peer
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage._
 
@@ -72,7 +73,7 @@ object MarketInfoActor {
   val props: Props = Props(new MarketInfoActor)
 
   /** Initialize the actor to subscribe for market information */
-  case class Start(broker: PeerConnection, gateway: ActorRef)
+  case class Start(broker: PeerId, gateway: ActorRef)
 
   sealed trait InfoRequest
 

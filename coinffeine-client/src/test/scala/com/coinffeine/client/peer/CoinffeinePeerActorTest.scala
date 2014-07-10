@@ -9,6 +9,7 @@ import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
@@ -16,13 +17,15 @@ import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
+  val ownId = PeerId("peerId")
   val address = PeerConnection("localhost", 8080)
+  val brokerId = PeerId("broker")
   val brokerAddress = PeerConnection("host", 8888)
   val eventChannelProbe = TestProbe()
   val gatewayProbe = TestProbe()
   val marketInfoProbe = TestProbe()
   val ordersProbe = TestProbe()
-  val peer = system.actorOf(Props(new CoinffeinePeerActor(address, brokerAddress,
+  val peer = system.actorOf(Props(new CoinffeinePeerActor(ownId, address, brokerId, brokerAddress,
     MockActor.props(eventChannelProbe), MockActor.props(gatewayProbe),
     MockActor.props(marketInfoProbe), MockActor.props(ordersProbe))))
   var eventChannelRef: ActorRef = _
@@ -51,14 +54,14 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gatewayProbe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
     gatewayProbe.expectMsgPF() {
-      case MockReceived(_, sender, Bind(`address`)) => sender ! BoundTo(address)
+      case MockReceived(_, sender, Bind(_, `address`, _, _)) => sender ! BoundTo(address)
     }
     expectMsg(CoinffeinePeerActor.Connected)
   }
 
   it must "start the market info actor" in {
     marketInfoRef = marketInfoProbe.expectMsgClass(classOf[MockStarted]).ref
-    val expectedInitialization = MarketInfoActor.Start(brokerAddress, gatewayRef)
+    val expectedInitialization = MarketInfoActor.Start(brokerId, gatewayRef)
     marketInfoProbe.expectMsgPF() {
      case MockReceived(_, _, `expectedInitialization`) =>
     }
@@ -68,7 +71,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     peer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
     gatewayProbe.expectMsgPF() {
-      case MockReceived(_, sender, Bind(`address`)) => sender ! BindingError(cause)
+      case MockReceived(_, sender, Bind(_, `address`, _, _)) => sender ! BindingError(cause)
     }
     expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
   }

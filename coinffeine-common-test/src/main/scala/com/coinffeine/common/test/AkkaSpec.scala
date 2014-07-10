@@ -35,6 +35,7 @@ object AkkaSpec {
         |akka {
         |   loggers = ["akka.testkit.TestEventListener"]
         |   mode = "test"
+        |   akka.test.filter-leeway = 10s
         |}
       """.stripMargin
     ))

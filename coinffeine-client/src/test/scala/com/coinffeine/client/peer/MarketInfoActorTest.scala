@@ -2,9 +2,10 @@ package com.coinffeine.client.peer
 
 import akka.testkit.TestProbe
 
-import com.coinffeine.common.{Bid, PeerConnection}
+import com.coinffeine.common.Bid
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.test.AkkaSpec
@@ -71,7 +72,7 @@ class MarketInfoActorTest extends AkkaSpec {
   trait Fixture {
     val eurMarket = Market(Euro)
     val usdMarket = Market(UsDollar)
-    val broker = PeerConnection("broker")
+    val broker = PeerId("broker")
     val gateway = new GatewayProbe()
     val actor = system.actorOf(MarketInfoActor.props)
     val sampleEurQuote = Quote(spread = 900.EUR -> 905.EUR, lastPrice = 904.EUR)

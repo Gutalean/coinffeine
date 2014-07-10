@@ -8,12 +8,11 @@ import org.joda.time.DateTime
 
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, GetLastOffer, LastOffer, StartMicroPaymentChannel}
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol}
+import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, PeerId}
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -50,7 +49,7 @@ class BuyerMicroPaymentChannelActorTest
     val otherId = Exchange.Id("other-id")
     val relevantOfferAccepted = StepSignatures(exchange.id, 5, signatures)
     val irrelevantOfferAccepted = StepSignatures(otherId, 2, signatures)
-    val anotherPeer = PeerConnection("some-random-peer")
+    val anotherPeer = PeerId("some-random-peer")
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)

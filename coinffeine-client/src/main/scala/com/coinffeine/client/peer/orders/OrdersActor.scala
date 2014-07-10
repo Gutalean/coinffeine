@@ -8,7 +8,8 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.CoinffeinePeerActor._
-import com.coinffeine.common.{FiatCurrency, Order, PeerConnection}
+import com.coinffeine.common.{FiatCurrency, Order}
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage.Market
 
@@ -54,7 +55,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
     private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(OrderSubmissionActor.props(protocolConstants))
-      newDelegate ! OrderSubmissionActor.Initialize(market, eventChannel, gateway, brokerAddress)
+      newDelegate ! OrderSubmissionActor.Initialize(market, eventChannel, gateway, brokerId)
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
@@ -72,8 +73,8 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
 object OrdersActor {
 
-  case class Initialize(ownAddress: PeerConnection,
-                        brokerAddress: PeerConnection,
+  case class Initialize(ownId: PeerId,
+                        brokerId: PeerId,
                         eventChannel: ActorRef,
                         gateway: ActorRef)
 

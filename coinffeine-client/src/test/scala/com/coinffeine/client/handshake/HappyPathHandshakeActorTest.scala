@@ -3,11 +3,11 @@ package com.coinffeine.client.handshake
 import scala.concurrent.duration._
 
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
-import com.coinffeine.common.{FiatCurrency, PeerConnection}
+import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{Both, Exchange, MockExchangeProtocol}
+import com.coinffeine.common.exchange.{Both, Exchange, MockExchangeProtocol, PeerId}
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -35,7 +35,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     filter(fromCounterpart(relevantPeerHandshake)) should be (true)
     filter(fromBroker(relevantPeerHandshake)) should be (false)
     filter(fromCounterpart(relevantSignatureRequest)) should be (true)
-    filter(ReceiveMessage(relevantSignatureRequest, PeerConnection("other"))) should be (false)
+    filter(ReceiveMessage(relevantSignatureRequest, PeerId("other"))) should be (false)
     filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
     filter(fromCounterpart(
       RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature))) should be (true)
@@ -73,7 +73,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     givenValidRefundSignatureResponse()
-    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) to broker
+    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) to brokerId
   }
 
   it should "sign counterpart refund after having our refund signed" in {

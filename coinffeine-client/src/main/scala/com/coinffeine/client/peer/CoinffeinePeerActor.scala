@@ -1,6 +1,7 @@
 package com.coinffeine.client.peer
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
@@ -9,6 +10,7 @@ import akka.util.Timeout
 import com.coinffeine.client.peer.orders.OrdersActor
 import com.coinffeine.common.{Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage
@@ -17,14 +19,16 @@ import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, Quo
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(ownAddress: PeerConnection,
+class CoinffeinePeerActor(ownId: PeerId,
+                          listenAddress: PeerConnection,
+                          brokerId: PeerId,
                           brokerAddress: PeerConnection,
                           eventChannelProps: Props,
                           gatewayProps: Props,
                           marketInfoProps: Props,
                           ordersActorProps: Props) extends Actor with ActorLogging {
 
-  import CoinffeinePeerActor._
+  import com.coinffeine.client.peer.CoinffeinePeerActor._
   import context.dispatcher
 
   val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
@@ -32,12 +36,12 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
     val ref = context.actorOf(ordersActorProps, "orders")
-    ref ! OrdersActor.Initialize(ownAddress, brokerAddress, eventChannel, gatewayRef)
+    ref ! OrdersActor.Initialize(ownId, brokerId, eventChannel, gatewayRef)
     ref
   }
   val marketInfoRef = {
     val ref = context.actorOf(marketInfoProps)
-    ref ! MarketInfoActor.Start(brokerAddress, gatewayRef)
+    ref ! MarketInfoActor.Start(brokerId, gatewayRef)
     ref
   }
 
@@ -50,7 +54,7 @@ class CoinffeinePeerActor(ownAddress: PeerConnection,
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-      (gatewayRef ? Bind(ownAddress)).map {
+      (gatewayRef ? Bind(ownId, listenAddress, brokerId, brokerAddress)).map {
         case BoundTo(_) => CoinffeinePeerActor.Connected
         case BindingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
@@ -113,6 +117,7 @@ object CoinffeinePeerActor {
 
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
+  private val BrokerIdSetting = "coinffeine.broker.id"
   private val BrokerAddressSetting = "coinffeine.broker.address"
 
   private val ConnectionTimeout = Timeout(10.seconds)
@@ -121,10 +126,14 @@ object CoinffeinePeerActor {
     with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
+      val ownId = PeerId("client" + Random.nextInt(1000))
       val ownAddress = PeerConnection(config.getString(HostSetting), config.getInt(PortSetting))
+      val brokerId = PeerId(config.getString(BrokerIdSetting))
       val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
       Props(new CoinffeinePeerActor(
+        ownId,
         ownAddress,
+        brokerId,
         brokerAddress,
         eventChannelProps = EventChannelActor.props(),
         gatewayProps = messageGatewayProps,

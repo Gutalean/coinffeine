@@ -1,12 +1,12 @@
 package com.coinffeine.common.protocol.gateway
 
-import scala.concurrent.duration.{FiniteDuration, Duration}
+import scala.concurrent.duration.{Duration, FiniteDuration}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
 
-import com.coinffeine.common.PeerConnection
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.PublicMessage
 
@@ -27,17 +27,17 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     } catch {
       case ex: AssertionError => fail("Expected subscription failed", ex)
     }
-    val currentSubscription = subscriptions.getOrElse(probe.sender, Set.empty)
-    subscriptions = subscriptions.updated(probe.sender, currentSubscription + subscription.filter)
+    val currentSubscription = subscriptions.getOrElse(probe.sender(), Set.empty)
+    subscriptions = subscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
     subscription
   }
 
-  def expectForwarding(payload: Any, dest: PeerConnection, timeout: Duration = Duration.Undefined): Unit =
+  def expectForwarding(payload: Any, dest: PeerId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
     }
 
-  def expectForwardingPF[T](dest: PeerConnection, timeout: Duration = Duration.Undefined)
+  def expectForwardingPF[T](dest: PeerId, timeout: Duration = Duration.Undefined)
                            (payloadMatcher: PartialFunction[Any, T]): T =
     probe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
@@ -49,14 +49,14 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
   def expectNoMsg(timeout: FiniteDuration): Unit = probe.expectNoMsg(timeout)
 
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: PublicMessage, origin: PeerConnection): Unit = {
+  def relayMessage(message: PublicMessage, origin: PeerId): Unit = {
     val notification = ReceiveMessage(message, origin)
     val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters
       if filter(notification)
     } yield ref
-    assert(!targets.isEmpty, s"No one is expecting $notification, check subscription filters")
+    assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
       probe.send(target, notification)
     }

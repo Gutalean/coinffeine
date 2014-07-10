@@ -1,27 +1,21 @@
 package com.coinffeine.gui
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import scala.util.Random
 
-import com.typesafe.config.ConfigFactory
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
 import com.coinffeine.client.app.ProductionCoinffeineApp
-import com.coinffeine.common.Order
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView
 import com.coinffeine.gui.application.operations.OperationsView
 import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import com.coinffeine.gui.setup.CredentialsValidator.Result
-import com.coinffeine.gui.util.ProgressDialog
 
 object Main extends JFXApp with ProductionCoinffeineApp.Component {
-
-  override val config = ConfigFactory.load()
 
   JFXApp.AUTO_SHOW = false
 

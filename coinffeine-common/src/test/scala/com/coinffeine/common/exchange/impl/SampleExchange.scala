@@ -21,8 +21,8 @@ trait SampleExchange { this: NetworkComponent =>
       breakdown = Exchange.StepBreakdown(SampleExchange.IntermediateSteps)
     ),
     parameters = Exchange.Parameters(lockTime = 10, network),
-    connections = Both(buyer = PeerConnection("buyer"), seller = PeerConnection("seller")),
-    broker = Exchange.BrokerInfo(PeerConnection("broker"))
+    peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller")),
+    brokerId = PeerId("broker")
   )
 
   val buyerExchange =

@@ -3,6 +3,7 @@ package com.coinffeine.common.protocol.serialization
 import com.google.protobuf.Descriptors.FieldDescriptor
 
 import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
@@ -24,9 +25,10 @@ private[serialization] class DefaultProtocolSerialization(
   private val mappings = new DefaultProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: PublicMessage): proto.CoinffeineMessage =
+  override def toProtobuf(message: PublicMessage, id: PeerId): proto.CoinffeineMessage =
     proto.CoinffeineMessage.newBuilder()
       .setVersion(protoVersion)
+      .setPeerId(id.value)
       .setPayload(toPayload(message)).build()
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
@@ -67,9 +69,9 @@ private[serialization] class DefaultProtocolSerialization(
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): PublicMessage = {
+  override def fromProtobuf(message: proto.CoinffeineMessage): (PublicMessage, PeerId) = {
     requireSameVersion(message.getVersion)
-    fromPayload(message.getPayload)
+    fromPayload(message.getPayload) -> PeerId(message.getPeerId)
   }
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {

@@ -2,10 +2,9 @@ package com.coinffeine.common.protocol.serialization
 
 import scala.util.Random
 
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{Both, Exchange}
+import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
@@ -19,18 +18,18 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   override lazy val protocolSerialization = new TestProtocolSerialization(protocolConstants.version)
 
-  def randomMessageAndSerialization(): (PublicMessage, CoinffeineMessage) = {
-    val message = randomMessage()
-    (message, protocolSerialization.toProtobuf(message))
+  def randomMessageAndSerialization(senderId: PeerId): (PublicMessage, CoinffeineMessage) = {
+    val message = randomOrderMatch()
+    (message, protocolSerialization.toProtobuf(message, senderId))
   }
 
-  def randomMessage(): OrderMatch = OrderMatch(
+  def randomOrderMatch(): OrderMatch = OrderMatch(
     exchangeId = Exchange.Id.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
-    participants = Both(
-      buyer = PeerConnection("bob", randomPort()),
-      seller = PeerConnection("sam", randomPort())
+    peers = Both(
+      buyer = PeerId("bob"),
+      seller = PeerId("sam")
     )
   )
 
@@ -40,6 +39,4 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   private def randomEuros() =
     Math.round(Random.nextDouble() * 100) / 100
-
-  private def randomPort() = Random.nextInt(50000) + 10000
 }
