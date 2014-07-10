@@ -3,17 +3,14 @@ package com.coinffeine.common.blockchain
 import java.util
 import scala.collection.JavaConversions._
 
-import akka.actor.{ActorRef, ActorLogging, Actor, Props}
-import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
-import com.google.common.util.concurrent.{FutureCallback, Futures}
+import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
 
 import com.coinffeine.common.bitcoin._
 
-class BlockchainActor(
-    network: NetworkParameters,
-    blockchain: AbstractBlockChain,
-    transactionBroadcaster: TransactionBroadcaster) extends Actor with ActorLogging {
+class BlockchainActor(network: NetworkParameters,blockchain: AbstractBlockChain)
+    extends Actor with ActorLogging {
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
 
@@ -114,28 +111,12 @@ class BlockchainActor(
         case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
-    case BlockchainActor.PublishTransaction(tx) =>
-      broadcastTransaction(sender, tx)
     case BlockchainActor.WatchBlockchainHeight(height) =>
       heightNotifications += HeightNotification(height, sender())
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
-
-  private def broadcastTransaction(requester: ActorRef, tx: ImmutableTransaction): Unit = {
-    Futures.addCallback(
-      transactionBroadcaster.broadcastTransaction(tx.get),
-      new FutureCallback[MutableTransaction] {
-        override def onSuccess(result: MutableTransaction): Unit = {
-          requester ! BlockchainActor.TransactionPublished(ImmutableTransaction(result))
-        }
-        override def onFailure(error: Throwable): Unit = {
-          requester ! BlockchainActor.TransactionPublishingError(tx, error)
-        }
-      },
-      context.dispatcher)
-  }
 }
 
 /** A BlockchainActor keeps a blockchain and can:
@@ -164,21 +145,6 @@ object BlockchainActor {
 
   /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
   case class TransactionRejected(transactionHash: Hash)
-
-  /** A message sent to the blockchain actor to request the given transaction to be
-    * published (broadcast).
-    */
-  case class PublishTransaction(tx: ImmutableTransaction)
-
-  /** A message sent by the blockchain actor to indicate a transaction has been successfully
-    * published.
-    */
-  case class TransactionPublished(tx: ImmutableTransaction)
-
-  /** A message sent by the blockchain actor indicating that something was wrong while publishing
-    * the given transaction.
-    */
-  case class TransactionPublishingError(tx: ImmutableTransaction, error: Throwable)
 
   /** A message sent to the blockchain actor requesting to be notified when the best block in the
     * blockchain reaches a specified height.

@@ -92,19 +92,6 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     expectMsg(BlockchainActor.BlockchainHeightReached(50))
   }
 
-  it must "broadcast a transaction when published" in new Fixture {
-    transactionBroadcaster.givenSuccessOnTransactionBroadcast()
-    instance ! BlockchainActor.PublishTransaction(immutableTx)
-    expectMsg(BlockchainActor.TransactionPublished(immutableTx))
-  }
-
-  it must "fail to broadcast a transaction when publishing fails" in new Fixture {
-    val error = new RuntimeException("failure")
-    transactionBroadcaster.givenErrorOnTransactionBroadcast(error)
-    instance ! BlockchainActor.PublishTransaction(immutableTx)
-    expectMsg(BlockchainActor.TransactionPublishingError(immutableTx, error))
-  }
-
   trait Fixture {
     val keyPair = new KeyPair()
     val otherKeyPair = new KeyPair()
@@ -114,7 +101,6 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val tx = wallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
-    val instance = system.actorOf(
-      Props(new BlockchainActor(network, chain, transactionBroadcaster)))
+    val instance = system.actorOf(Props(new BlockchainActor(network, chain)))
   }
 }
