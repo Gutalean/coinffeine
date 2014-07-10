@@ -14,7 +14,7 @@ import com.coinffeine.gui.application.properties.OrderProperties
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
-  val sampleOrder = Order(Bid, 1.BTC, 561.EUR)
+  val sampleOrder = Order(null, Bid, 1.BTC, 561.EUR)
   val app = new MockCoinffeineApp
 
   override def createRootNode(): Pane = {

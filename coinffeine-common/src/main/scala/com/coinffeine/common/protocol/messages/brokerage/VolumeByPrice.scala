@@ -30,7 +30,7 @@ case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bi
   }
 
   def toOrders(orderType: OrderType): Seq[Order] = entries.collect {
-    case (price, amount) => Order(orderType, amount, price)
+    case (price, amount) => Order(null, orderType, amount, price)
   }
 
   private def requirePositiveValues(): Unit = {

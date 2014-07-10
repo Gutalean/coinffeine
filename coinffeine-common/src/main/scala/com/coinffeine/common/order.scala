@@ -20,14 +20,14 @@ case object Ask extends OrderType {
 }
 
 /** Request for an interchange. */
-case class Order(orderType: OrderType, amount: BitcoinAmount, price: FiatAmount) {
+case class Order(id: OrderId, orderType: OrderType, amount: BitcoinAmount, price: FiatAmount) {
   require(amount.isPositive, "Amount ordered must be strictly positive")
   require(price.isPositive, "Price must be strictly positive")
 }
 
 object Order {
   implicit val naturalOrdering: Ordering[Order] = Ordering.by[Order, BigDecimal] {
-    case Order(Bid, _, price) => -price.value
-    case Order(Ask, _, price) => price.value
+    case Order(_, Bid, _, price) => -price.value
+    case Order(_, Ask, _, price) => price.value
   }
 }

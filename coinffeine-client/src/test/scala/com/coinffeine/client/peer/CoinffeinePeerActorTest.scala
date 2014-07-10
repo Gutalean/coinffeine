@@ -87,7 +87,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order placement" in {
-    shouldDelegateMessage(OpenOrder(Order(Bid, 10.BTC, 300.EUR)), ordersProbe)
+    shouldDelegateMessage(OpenOrder(Order(null, Bid, 10.BTC, 300.EUR)), ordersProbe)
   }
 
   it must "delegate retrieve open orders request" in {
@@ -95,7 +95,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order cancellation" in {
-    shouldDelegateMessage(CancelOrder(Order(Bid, 10.BTC, 300.EUR)), ordersProbe)
+    shouldDelegateMessage(CancelOrder(Order(null, Bid, 10.BTC, 300.EUR)), ordersProbe)
   }
 
   def shouldDelegateMessage(message: Any, delegate: TestProbe): Unit = {

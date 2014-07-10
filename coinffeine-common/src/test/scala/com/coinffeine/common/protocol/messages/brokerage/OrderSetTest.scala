@@ -39,8 +39,8 @@ class OrderSetTest extends UnitTest {
       .addOrder(Bid, 11.BTC, 1000.EUR)
       .addOrder(Ask, 1.BTC, 1100.EUR)
     orderSet.orders.toSet should be (Set(
-      Order(Bid, 11.BTC, 1000.EUR),
-      Order(Ask, 1.BTC, 1100.EUR)
+      Order(null, Bid, 11.BTC, 1000.EUR),
+      Order(null, Ask, 1.BTC, 1100.EUR)
     ))
   }
 }
