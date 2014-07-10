@@ -19,15 +19,16 @@ message Market {
     required string currency = 1;
 }
 
-message Order {
+message OrderSetEntry {
     required BtcAmount amount = 1;
     required FiatAmount price = 2;
 }
 
 message OrderSet {
     required Market market = 1;
-    repeated Order bids = 2;
-    repeated Order asks = 3;
+    repeated OrderSetEntry bids = 2;
+    repeated OrderSetEntry asks = 3;
+}
 }
 
 message QuoteRequest {

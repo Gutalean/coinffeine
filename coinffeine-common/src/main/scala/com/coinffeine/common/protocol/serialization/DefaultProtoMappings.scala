@@ -117,7 +117,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def fromProtobuf(orderSet: msg.OrderSet): OrderSet[FiatCurrency] = {
       val market = ProtoMapping.fromProtobuf(orderSet.getMarket)
 
-      def volumeFromProtobuf(entries: Seq[msg.Order]): VolumeByPrice[FiatCurrency] = {
+      def volumeFromProtobuf(entries: Seq[msg.OrderSetEntry]): VolumeByPrice[FiatCurrency] = {
         val accum = VolumeByPrice.empty[FiatCurrency]
         entries.foldLeft(accum) { (volume, entry) => volume.increase(
             ProtoMapping.fromProtobuf(entry.getPrice),
@@ -142,7 +142,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     private def volumeToProtobuf(volume: VolumeByPrice[FiatCurrency]) = for {
       (price, amount) <- volume.entries
-    } yield msg.Order.newBuilder
+    } yield msg.OrderSetEntry.newBuilder
         .setPrice(ProtoMapping.toProtobuf(price))
         .setAmount(ProtoMapping.toProtobuf(amount))
         .build

@@ -60,10 +60,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   val orderSetMessage = msg.OrderSet.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
-    .addBids(msg.Order.newBuilder
+    .addBids(msg.OrderSetEntry.newBuilder
       .setAmount(msg.BtcAmount.newBuilder.setValue(1).setScale(0))
       .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
-    ).addAsks(msg.Order.newBuilder
+    ).addAsks(msg.OrderSetEntry.newBuilder
       .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
       .setPrice(msg.FiatAmount.newBuilder.setValue(500).setScale(0).setCurrency("EUR"))
     ).build
