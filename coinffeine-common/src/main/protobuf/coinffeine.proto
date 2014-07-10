@@ -19,15 +19,31 @@ message Market {
     required string currency = 1;
 }
 
-message Order {
+message OrderSetEntry {
     required BtcAmount amount = 1;
     required FiatAmount price = 2;
 }
 
 message OrderSet {
     required Market market = 1;
-    repeated Order bids = 2;
-    repeated Order asks = 3;
+    repeated OrderSetEntry bids = 2;
+    repeated OrderSetEntry asks = 3;
+}
+
+message Order {
+    enum OrderType {
+        BID = 0;
+        ASK = 1;
+    }
+    required string id = 1;
+    required OrderType orderType = 2;
+    required BtcAmount amount = 3;
+    required FiatAmount price = 4;
+}
+
+message PeerPositions {
+    required Market market = 1;
+    repeated Order positions = 2;
 }
 
 message QuoteRequest {
@@ -122,6 +138,7 @@ message Payload {
     optional PaymentProof paymentProof = 13;
     optional OpenOrdersRequest openOrderRequest = 14;
     optional OpenOrders openOrders = 15;
+    optional PeerPositions peerPositions = 16;
 }
 
 message ProtocolVersion {

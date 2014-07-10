@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import com.coinffeine.common._
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin.Hash
 import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
@@ -112,12 +112,52 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
+  implicit val orderMapping = new ProtoMapping[Order, msg.Order] {
+
+    override def fromProtobuf(order: msg.Order) = Order(
+      id = OrderId(order.getId),
+      orderType = order.getOrderType match {
+        case msg.Order.OrderType.BID => Bid
+        case msg.Order.OrderType.ASK => Ask
+      },
+      amount = ProtoMapping.fromProtobuf(order.getAmount),
+      price = ProtoMapping.fromProtobuf(order.getPrice)
+    )
+
+    override def toProtobuf(order: Order) = msg.Order.newBuilder
+      .setId(order.id.id)
+      .setOrderType(order.orderType match {
+        case Bid => msg.Order.OrderType.BID
+        case Ask => msg.Order.OrderType.ASK
+      })
+      .setAmount(ProtoMapping.toProtobuf(order.amount))
+      .setPrice(ProtoMapping.toProtobuf(order.price))
+      .build
+  }
+
+  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions, msg.PeerPositions] {
+
+    override def fromProtobuf(positions: msg.PeerPositions) = PeerPositions(
+      market = ProtoMapping.fromProtobuf(positions.getMarket),
+      positions = positions.getPositionsList.asScala.map(ProtoMapping.fromProtobuf[Order, msg.Order]).toSet
+    )
+
+    override def toProtobuf(positions: PeerPositions) = {
+      val builder = msg.PeerPositions.newBuilder
+        .setMarket(ProtoMapping.toProtobuf(positions.market))
+      for (pos <- positions.positions) {
+        builder.addPositions(ProtoMapping.toProtobuf[Order, msg.Order](pos))
+      }
+      builder.build
+    }
+  }
+
   implicit val orderSetMapping = new ProtoMapping[OrderSet[FiatCurrency], msg.OrderSet] {
 
     override def fromProtobuf(orderSet: msg.OrderSet): OrderSet[FiatCurrency] = {
       val market = ProtoMapping.fromProtobuf(orderSet.getMarket)
 
-      def volumeFromProtobuf(entries: Seq[msg.Order]): VolumeByPrice[FiatCurrency] = {
+      def volumeFromProtobuf(entries: Seq[msg.OrderSetEntry]): VolumeByPrice[FiatCurrency] = {
         val accum = VolumeByPrice.empty[FiatCurrency]
         entries.foldLeft(accum) { (volume, entry) => volume.increase(
             ProtoMapping.fromProtobuf(entry.getPrice),
@@ -142,7 +182,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     private def volumeToProtobuf(volume: VolumeByPrice[FiatCurrency]) = for {
       (price, amount) <- volume.entries
-    } yield msg.Order.newBuilder
+    } yield msg.OrderSetEntry.newBuilder
         .setPrice(ProtoMapping.toProtobuf(price))
         .setAmount(ProtoMapping.toProtobuf(amount))
         .build

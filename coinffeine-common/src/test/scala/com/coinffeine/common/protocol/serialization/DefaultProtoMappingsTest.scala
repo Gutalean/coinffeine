@@ -60,10 +60,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   val orderSetMessage = msg.OrderSet.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
-    .addBids(msg.Order.newBuilder
+    .addBids(msg.OrderSetEntry.newBuilder
       .setAmount(msg.BtcAmount.newBuilder.setValue(1).setScale(0))
       .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
-    ).addAsks(msg.Order.newBuilder
+    ).addAsks(msg.OrderSetEntry.newBuilder
       .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
       .setPrice(msg.FiatAmount.newBuilder.setValue(500).setScale(0).setCurrency("EUR"))
     ).build
@@ -75,6 +75,24 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
     orderSet, orderSetMessage)
+
+  val order = Order(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
+  val orderMessage = msg.Order.newBuilder
+    .setId("orderId")
+    .setOrderType(msg.Order.OrderType.BID)
+    .setAmount(msg.BtcAmount.newBuilder.setValue(10).setScale(0))
+    .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
+    .build
+
+  "Order" should behave like thereIsAMappingBetween(order, orderMessage)
+
+  val positions = PeerPositions(Market(Euro), Set(order))
+  val positionsMessage = msg.PeerPositions.newBuilder
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
+    .addPositions(orderMessage)
+    .build
+
+  "Peer positions" should behave like thereIsAMappingBetween(positions, positionsMessage)
 
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
