@@ -29,7 +29,7 @@ case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bi
     else copy(entries = (entryMap - price).toSeq)
   }
 
-  def toOrders(orderType: OrderType): Seq[Order] = entries.collect {
+  def toOrders(orderType: OrderType): Seq[Order[CurrencyAmount[C]]] = entries.collect {
     case (price, amount) => Order(null, orderType, amount, price)
   }
 

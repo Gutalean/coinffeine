@@ -20,14 +20,17 @@ case object Ask extends OrderType {
 }
 
 /** Request for an interchange. */
-case class Order(id: OrderId, orderType: OrderType, amount: BitcoinAmount, price: FiatAmount) {
+case class Order[+F <: FiatAmount](
+    id: OrderId, orderType: OrderType, amount: BitcoinAmount, price: F) {
   require(amount.isPositive, "Amount ordered must be strictly positive")
   require(price.isPositive, "Price must be strictly positive")
 }
 
 object Order {
-  implicit val naturalOrdering: Ordering[Order] = Ordering.by[Order, BigDecimal] {
-    case Order(_, Bid, _, price) => -price.value
-    case Order(_, Ask, _, price) => price.value
-  }
+  /** Gets the natural order for orders on a given currency. */
+  def ordering[C <: FiatCurrency](currency: C): Ordering[Order[CurrencyAmount[C]]] =
+    Ordering.by[Order[CurrencyAmount[C]], BigDecimal] {
+      case Order(_, Bid, _, price) => -price.value
+      case Order(_, Ask, _, price) => price.value
+    }
 }

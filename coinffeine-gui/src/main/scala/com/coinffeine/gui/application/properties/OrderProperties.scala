@@ -4,7 +4,7 @@ import com.coinffeine.common._
 
 import scalafx.beans.property.ObjectProperty
 
-case class OrderProperties(order: Order) {
+case class OrderProperties(order: Order[FiatAmount]) {
   val orderTypeProperty = new ObjectProperty[OrderType](this, "orderType", order.orderType)
   val amountProperty = new ObjectProperty[BitcoinAmount](this, "amount", order.amount)
   val priceProperty = new ObjectProperty[FiatAmount](this, "price", order.price)

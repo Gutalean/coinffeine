@@ -1,6 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
 import com.coinffeine.common.{Ask, Bid, Order}
+import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.test.UnitTest
 
@@ -26,7 +27,7 @@ class OrderTest extends UnitTest {
       Order(null, Bid, 10 BTC, 950 EUR),
       Order(null, Bid, 0.5 BTC, 980 EUR),
       Order(null, Bid, 1 BTC, 950 EUR)
-    ).sorted should equal (Seq(
+    ).sorted(Order.ordering(Euro)) should equal (Seq(
       Order(null, Bid, 0.5 BTC, 980 EUR),
       Order(null, Bid, 0.5 BTC, 980 EUR),
       Order(null, Bid, 10 BTC, 950 EUR),
@@ -40,7 +41,7 @@ class OrderTest extends UnitTest {
       Order(null, Ask, 10 BTC, 940 EUR),
       Order(null, Ask, 0.5 BTC, 930 EUR),
       Order(null, Ask, 1 BTC, 940 EUR)
-    ).sorted should equal (Seq(
+    ).sorted(Order.ordering(Euro)) should equal (Seq(
       Order(null, Ask, 0.5 BTC, 930 EUR),
       Order(null, Ask, 0.5 BTC, 930 EUR),
       Order(null, Ask, 10 BTC, 940 EUR),

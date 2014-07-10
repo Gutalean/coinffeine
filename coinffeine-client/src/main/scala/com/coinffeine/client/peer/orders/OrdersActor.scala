@@ -8,7 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.CoinffeinePeerActor._
-import com.coinffeine.common.{FiatCurrency, Order}
+import com.coinffeine.common.{FiatAmount, FiatCurrency, Order}
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage.Market
@@ -47,7 +47,7 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
         }
     }
 
-    private def marketOf(order: Order) = Market(currency = order.price.currency)
+    private def marketOf(order: Order[FiatAmount]) = Market(currency = order.price.currency)
 
     private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
       delegatesByMarket.getOrElse(market, createDelegate(market))
@@ -60,13 +60,13 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
       newDelegate
     }
 
-    private def collectOpenOrders(): Future[Set[Order]] = {
+    private def collectOpenOrders(): Future[Set[Order[FiatAmount]]] = {
       implicit val timeout = Timeout(1.second)
       for {
         results <- Future.sequence(delegatesByMarket.values.map { ref =>
-          (ref ? RetrieveOpenOrders).mapTo[Set[Order]]
+          (ref ? RetrieveOpenOrders).mapTo[Set[Order[FiatAmount]]]
         })
-      } yield results.foldLeft(Set.empty[Order])(_ union _)
+      } yield results.foldLeft(Set.empty[Order[FiatAmount]])(_ union _)
     }
   }
 }

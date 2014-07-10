@@ -5,7 +5,7 @@ import akka.actor._
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.event.EventProducer
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
-import com.coinffeine.common.FiatCurrency
+import com.coinffeine.common.{Order, FiatCurrency}
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
