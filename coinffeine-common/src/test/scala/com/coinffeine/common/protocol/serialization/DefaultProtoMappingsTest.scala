@@ -86,6 +86,14 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Order" should behave like thereIsAMappingBetween(order, orderMessage)
 
+  val positions = PeerPositions(Market(Euro), Set(order))
+  val positionsMessage = msg.PeerPositions.newBuilder
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
+    .addPositions(orderMessage)
+    .build
+
+  "Peer positions" should behave like thereIsAMappingBetween(positions, positionsMessage)
+
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
     .setExchangeId(sampleExchangeId.value)

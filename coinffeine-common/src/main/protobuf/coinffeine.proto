@@ -40,6 +40,10 @@ message Order {
     required BtcAmount amount = 3;
     required FiatAmount price = 4;
 }
+
+message PeerPositions {
+    required Market market = 1;
+    repeated Order positions = 2;
 }
 
 message QuoteRequest {
@@ -134,6 +138,7 @@ message Payload {
     optional PaymentProof paymentProof = 13;
     optional OpenOrdersRequest openOrderRequest = 14;
     optional OpenOrders openOrders = 15;
+    optional PeerPositions peerPositions = 16;
 }
 
 message ProtocolVersion {

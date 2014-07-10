@@ -5,7 +5,7 @@ import scala.collection.JavaConversions
 
 import org.reflections.Reflections
 
-import com.coinffeine.common.Currency
+import com.coinffeine.common._
 import com.coinffeine.common.Currency.UsDollar
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin._
@@ -101,8 +101,9 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
       ImmutableTransaction(tx)
     }
     val sampleMessages = {
+      val market = Market(UsDollar)
       val orderSet: OrderSet[UsDollar.type] = OrderSet(
-        market = Market(Currency.UsDollar),
+        market,
         bids = VolumeByPrice(100.USD -> 1.3.BTC),
         asks = VolumeByPrice(200.USD -> 0.3.BTC,
           250.USD -> 0.4.BTC)
@@ -113,7 +114,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerId)),
         orderSet,
-        QuoteRequest(Market(UsDollar)),
+        QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),
         PeerHandshake(exchangeId, new KeyPair().publicKey, "paymentAccount"),
@@ -121,8 +122,12 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         RefundSignatureResponse(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
         PaymentProof(exchangeId, "paymentId"),
-        OpenOrdersRequest(Market(UsDollar)),
-        OpenOrders(orderSet)
+        OpenOrdersRequest(market),
+        OpenOrders(orderSet),
+        PeerPositions(market, Set(
+          Order(OrderId.random(), Bid, 1.BTC, 400.USD),
+          Order(OrderId.random(), Ask, 0.4.BTC, 600.USD)
+        ))
       )
     }
 

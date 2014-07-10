@@ -135,6 +135,23 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
+  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions, msg.PeerPositions] {
+
+    override def fromProtobuf(positions: msg.PeerPositions) = PeerPositions(
+      market = ProtoMapping.fromProtobuf(positions.getMarket),
+      positions = positions.getPositionsList.asScala.map(ProtoMapping.fromProtobuf[Order, msg.Order]).toSet
+    )
+
+    override def toProtobuf(positions: PeerPositions) = {
+      val builder = msg.PeerPositions.newBuilder
+        .setMarket(ProtoMapping.toProtobuf(positions.market))
+      for (pos <- positions.positions) {
+        builder.addPositions(ProtoMapping.toProtobuf[Order, msg.Order](pos))
+      }
+      builder.build
+    }
+  }
+
   implicit val orderSetMapping = new ProtoMapping[OrderSet[FiatCurrency], msg.OrderSet] {
 
     override def fromProtobuf(orderSet: msg.OrderSet): OrderSet[FiatCurrency] = {

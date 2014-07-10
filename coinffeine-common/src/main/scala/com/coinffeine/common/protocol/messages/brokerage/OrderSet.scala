@@ -9,6 +9,7 @@ import com.coinffeine.common.protocol.messages.PublicMessage
   * @param bids     Bid orders
   * @param asks     Ask orders
   */
+@deprecated("Use PeerPositions instead")
 case class OrderSet[+C <: FiatCurrency](
     market: Market[C], bids: VolumeByPrice[C], asks: VolumeByPrice[C]) extends PublicMessage {
 
