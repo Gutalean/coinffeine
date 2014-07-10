@@ -9,7 +9,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, Wallet}
-import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
+import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -39,7 +39,7 @@ class ExchangeActor[C <: FiatCurrency](
     def start(): Unit = {
       require(userWallet.getKeys.contains(user.bitcoinKey))
       log.info(s"Starting exchange ${exchange.id}")
-      bitcoinPeers ! RetrieveBlockchainActor
+      bitcoinPeer ! RetrieveBlockchainActor
       context.become(retrievingBlockchain)
     }
 
@@ -49,7 +49,7 @@ class ExchangeActor[C <: FiatCurrency](
         _txBroadcaster = context.actorOf(
           transactionBroadcastActorProps, TransactionBroadcastActorName)
         watchForDepositKeys(handshakingExchange)
-        txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeers, resultListeners = Set(self))
+        txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
         context.become(receiveTransaction(handshakingExchange, commitmentTxIds))
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
@@ -154,7 +154,7 @@ object ExchangeActor {
     userWallet: Wallet,
     paymentProcessor: ActorRef,
     messageGateway: ActorRef,
-    bitcoinPeers: ActorRef
+    bitcoinPeer: ActorRef
   )
 
   /** This is a message sent to the listeners to indicate that an exchange succeeded */
