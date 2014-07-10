@@ -6,7 +6,7 @@ import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import com.coinffeine.common._
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.bitcoin.Hash
 import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
@@ -109,6 +109,29 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def toProtobuf(market: Market[FiatCurrency]): msg.Market = msg.Market.newBuilder
       .setCurrency(market.currency.javaCurrency.getCurrencyCode)
+      .build
+  }
+
+  implicit val orderMapping = new ProtoMapping[Order, msg.Order] {
+
+    override def fromProtobuf(order: msg.Order) = Order(
+      id = OrderId(order.getId),
+      orderType = order.getOrderType match {
+        case msg.Order.OrderType.BID => Bid
+        case msg.Order.OrderType.ASK => Ask
+      },
+      amount = ProtoMapping.fromProtobuf(order.getAmount),
+      price = ProtoMapping.fromProtobuf(order.getPrice)
+    )
+
+    override def toProtobuf(order: Order) = msg.Order.newBuilder
+      .setId(order.id.id)
+      .setOrderType(order.orderType match {
+        case Bid => msg.Order.OrderType.BID
+        case Ask => msg.Order.OrderType.ASK
+      })
+      .setAmount(ProtoMapping.toProtobuf(order.amount))
+      .setPrice(ProtoMapping.toProtobuf(order.price))
       .build
   }
 

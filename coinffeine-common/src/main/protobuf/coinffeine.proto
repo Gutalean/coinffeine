@@ -29,6 +29,17 @@ message OrderSet {
     repeated OrderSetEntry bids = 2;
     repeated OrderSetEntry asks = 3;
 }
+
+message Order {
+    enum OrderType {
+        BID = 0;
+        ASK = 1;
+    }
+    required string id = 1;
+    required OrderType orderType = 2;
+    required BtcAmount amount = 3;
+    required FiatAmount price = 4;
+}
 }
 
 message QuoteRequest {
