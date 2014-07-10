@@ -1,8 +1,45 @@
 package com.coinffeine.common.bitcoin.peers
 
-import akka.actor.ActorRef
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import com.google.bitcoin.core.PeerGroup
+import com.google.common.util.concurrent.{FutureCallback, Futures}
 
-import com.coinffeine.common.bitcoin.ImmutableTransaction
+import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
+import com.coinffeine.common.blockchain.BlockchainActor
+import com.coinffeine.common.network.NetworkComponent
+
+class BitcoinPeerActor(
+    peerGroup: PeerGroup, blockchainProps: Props) extends Actor with ActorLogging {
+
+  import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
+
+  val blockchain = context.actorOf(blockchainProps, "blockchain")
+
+  override def receive: Receive = {
+    case PublishTransaction(tx) =>
+      log.info(s"Publishing transaction $tx to the Bitcoin network")
+      Futures.addCallback(
+        peerGroup.broadcastTransaction(tx.get),
+        new TxBroadcastCallback(tx, sender()),
+        context.dispatcher)
+    case RetrieveBlockchainActor =>
+      sender ! BlockchainActorReference(blockchain)
+  }
+
+  private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
+      extends FutureCallback[MutableTransaction] {
+
+    override def onSuccess(result: MutableTransaction): Unit = {
+      log.info(s"Transaction $originalTx successfully broadcast to the Bitcoin network")
+      respondTo ! TransactionPublished(originalTx, ImmutableTransaction(result))
+    }
+
+    override def onFailure(error: Throwable): Unit = {
+      log.error(error, s"Transaction $originalTx failed to be broadcast to the Bitcoin network")
+      respondTo ! TransactionNotPublished(originalTx, error)
+    }
+  }
+}
 
 /** A PeerActor handles connections to other peers in the bitcoin network and can:
   *
@@ -10,6 +47,7 @@ import com.coinffeine.common.bitcoin.ImmutableTransaction
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.
     *
@@ -42,4 +80,12 @@ object BitcoinPeerActor {
   case class BlockchainActorReference(ref: ActorRef)
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
+
+  trait Component {
+
+    this: NetworkComponent with BlockchainActor.Component =>
+
+    def bitcoinPeerActorProps: Props = Props(new BitcoinPeerActor(
+      new PeerGroup(network), blockchainActorProps))
+  }
 }
