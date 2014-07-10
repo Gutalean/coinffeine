@@ -169,6 +169,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
 
   private def submit(): Unit = {
     val order = Order(
+      id = null,
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = limitAmount.get)

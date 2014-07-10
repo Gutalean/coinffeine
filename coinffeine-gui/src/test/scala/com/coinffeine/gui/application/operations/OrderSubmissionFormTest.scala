@@ -40,11 +40,11 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
   it should "provide the form's data upon submission" in new Fixture {
     doubleClick("#amount").`type`("0.1")
     doubleClick("#limit").`type`("100")
-    find[Node]("#submit") should not be ('disabled)
+    find[Node]("#submit") should not be 'disabled
 
     click("#submit")
 
-    val expectedOrder = Order(orderType = Bid, amount = 0.1.BTC, price = 100.EUR)
+    val expectedOrder = Order(null, orderType = Bid, amount = 0.1.BTC, price = 100.EUR)
     app.network.orders should contain(expectedOrder)
   }
 }
