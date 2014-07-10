@@ -2,7 +2,7 @@ package com.coinffeine.common.protocol.gateway
 
 import java.io.IOException
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 import akka.actor._
 import akka.pattern._
@@ -69,27 +69,38 @@ private class PeerIdResolverActor extends Actor with ActorLogging {
     }
 
     private def externalLookup(session: PeerSession, peerId: PeerId, requester: ActorRef): Unit = {
-
       log.info(s"Asking the broker to resolve $peerId")
-      val callback = new RpcCallback[proto.PeerIdResolution] {
-        override def run(resolution: proto.PeerIdResolution): Unit = {
-          if (resolution.hasPeerConnection) {
-            val connection = PeerConnection.parse(resolution.getPeerConnection)
-            self ! AddMapping(peerId, connection)
-            requester ! connection
-          } else {
-            log.error(s"$peerId is unknown to the broker")
-            requester ! Status.Failure(new ForwardException(s"$peerId is unknown to the broker"))
-          }
-        }
-      }
-
       try {
         proto.PeerService.newStub(session.channel).resolvePeerId(
-          session.controller, proto.PeerId.newBuilder.setPeerId(peerId.value).build(), callback)
+          session.controller, proto.PeerId.newBuilder.setPeerId(peerId.value).build(),
+          new ExternalLookupCallback(peerId, requester))
       } catch {
         case e: IOException => throw ForwardException(s"cannot ask for $peerId resolution", e)
       }
+    }
+
+    private class ExternalLookupCallback(peerId: PeerId, requester: ActorRef)
+      extends RpcCallback[proto.PeerIdResolution] {
+
+      override def run(resolution: proto.PeerIdResolution): Unit = {
+        requireValidConnection(resolution) match {
+          case Success(connection) =>
+            self ! AddMapping(peerId, connection)
+            requester ! connection
+          case Failure(cause) =>
+            requester ! Status.Failure(cause)
+        }
+      }
+
+      private def requireValidConnection(resolution: proto.PeerIdResolution): Try[PeerConnection] =
+        for {
+          rawConnection <- requireExistingConnection(resolution)
+          parsedConnection <- Try(PeerConnection.parse(rawConnection))
+        } yield parsedConnection
+
+      private def requireExistingConnection(resolution: proto.PeerIdResolution): Try[String] =
+        if (resolution.hasPeerConnection) Success(resolution.getPeerConnection)
+        else Failure(new ForwardException(s"$peerId is unknown to the broker"))
     }
   }
 }
@@ -99,7 +110,11 @@ private[gateway] object PeerIdResolverActor {
 
   case class Start(brokerId: PeerId, brokerConnection: PeerConnection, sessionManager: ActorRef)
 
+  /** Enriches the resolver with a new mapping. */
   case class AddMapping(peerId: PeerId, peerConnection: PeerConnection)
 
+  /** Asks for the PeerConnection of a peer. Either a PeerConnection or an Status.Failure
+    * will be sent back.
+    */
   case class LookupMapping(peerId: PeerId)
 }

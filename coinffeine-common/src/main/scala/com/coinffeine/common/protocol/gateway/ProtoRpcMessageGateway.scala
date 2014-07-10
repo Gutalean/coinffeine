@@ -32,7 +32,9 @@ private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
   override def receive = waitingForInitialization orElse managingSubscriptions
 
   private val managingSubscriptions: Receive = {
-    case msg: Subscribe => subscriptions forward msg
+    case msg: Subscribe =>
+      context.watch(sender())
+      subscriptions forward msg
     case msg @ Unsubscribe => subscriptions forward msg
     case Terminated(actor) => subscriptions.tell(Unsubscribe, actor)
   }

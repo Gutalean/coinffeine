@@ -68,5 +68,6 @@ private[gateway] object ProtobufServerActor {
 
   private case object ServerStarted
 
+  /** Ask for a session. A PeerSession will be sent back. */
   case class PeerWith(connection: PeerConnection)
 }
