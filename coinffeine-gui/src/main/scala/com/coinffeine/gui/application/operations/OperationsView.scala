@@ -62,8 +62,7 @@ class OperationsView(app: CoinffeineApp) extends ApplicationView {
         .actions(Actions.YES, Actions.NO)
         .showConfirm()
       if (confirm == Actions.YES) {
-        val order = orderSelectionProperty.getValue.order
-        app.network.cancelOrder(order)
+        app.network.cancelOrder(orderSelectionProperty.getValue.order.id)
       }
     }
   }

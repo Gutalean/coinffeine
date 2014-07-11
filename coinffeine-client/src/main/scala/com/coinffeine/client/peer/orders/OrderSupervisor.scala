@@ -39,8 +39,8 @@ class OrderSupervisor(orderActorProps: Props,
         ref ! OrderActor.Initialize(order, submission)
         orders += order.id -> ref
 
-      case CancelOrder(order) =>
-        orders.get(order.id).foreach(_ ! OrderActor.CancelOrder)
+      case CancelOrder(orderId) =>
+        orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
 
       case RetrieveOpenOrders =>
         import context.dispatcher

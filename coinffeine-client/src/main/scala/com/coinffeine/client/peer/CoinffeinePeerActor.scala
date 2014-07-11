@@ -104,7 +104,7 @@ object CoinffeinePeerActor {
     *
     * @param order  Order to cancel
     */
-  case class CancelOrder(order: Order[FiatAmount])
+  case class CancelOrder(order: OrderId)
 
   /** Ask for own orders opened in any market. */
   case object RetrieveOpenOrders

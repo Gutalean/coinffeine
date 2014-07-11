@@ -95,7 +95,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order cancellation" in {
-    shouldDelegateMessage(CancelOrder(Order(null, Bid, 10.BTC, 300.EUR)), ordersProbe)
+    shouldDelegateMessage(CancelOrder(OrderId.random()), ordersProbe)
   }
 
   def shouldDelegateMessage(message: Any, delegate: TestProbe): Unit = {

@@ -43,7 +43,7 @@ class OrderSupervisorTest extends AkkaSpec {
   it should "cancel an order when requested" in new Fixture {
     givenOrderSupervisorIsInitialized()
     givenOpenOrder(order1)
-    actor ! CancelOrder(order1)
+    actor ! CancelOrder(order1.id)
     orderActorProbe.expectMsg(OrderActor.CancelOrder)
   }
 
