@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import com.coinffeine.client.peer.orders.OrdersActor
+import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common.{CurrencyAmount, FiatAmount, Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.exchange.PeerId
@@ -26,7 +26,7 @@ class CoinffeinePeerActor(ownId: PeerId,
                           eventChannelProps: Props,
                           gatewayProps: Props,
                           marketInfoProps: Props,
-                          ordersActorProps: Props) extends Actor with ActorLogging {
+                          orderSupervisorProps: Props) extends Actor with ActorLogging {
 
   import com.coinffeine.client.peer.CoinffeinePeerActor._
   import context.dispatcher
@@ -35,8 +35,8 @@ class CoinffeinePeerActor(ownId: PeerId,
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
   val ordersActorRef = {
-    val ref = context.actorOf(ordersActorProps, "orders")
-    ref ! OrdersActor.Initialize(ownId, brokerId, eventChannel, gatewayRef)
+    val ref = context.actorOf(orderSupervisorProps, "orders")
+    ref ! OrderSupervisor.Initialize(ownId, brokerId, eventChannel, gatewayRef)
     ref
   }
   val marketInfoRef = {
@@ -122,7 +122,7 @@ object CoinffeinePeerActor {
 
   private val ConnectionTimeout = Timeout(10.seconds)
 
-  trait Component { this: OrdersActor.Component with MarketInfoActor.Component
+  trait Component { this: OrderSupervisor.Component with MarketInfoActor.Component
     with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
@@ -138,7 +138,7 @@ object CoinffeinePeerActor {
         eventChannelProps = EventChannelActor.props(),
         gatewayProps = messageGatewayProps,
         marketInfoProps,
-        ordersActorProps = ordersActorProps
+        orderSupervisorProps
       ))
     }
   }

@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
 import com.coinffeine.client.peer.MarketInfoActor.{RequestOpenOrders, RequestQuote}
-import com.coinffeine.client.peer.orders.OrdersActor
+import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
 import com.coinffeine.common.Currency.Implicits._
@@ -46,7 +46,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val gw = gatewayRef
     val ec = eventChannelRef
     ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrdersActor.Initialize(_, _, `ec`, `gw`)) =>
+      case MockReceived(_, _, OrderSupervisor.Initialize(_, _, `ec`, `gw`)) =>
     }
   }
 

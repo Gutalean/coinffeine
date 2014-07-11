@@ -69,6 +69,6 @@ object SubmissionSupervisor {
   case class StopSubmitting(orderId: OrderId)
 
   trait Component { this: ProtocolConstants.Component =>
-    lazy val ordersActorProps = Props(new SubmissionSupervisor(protocolConstants))
+    lazy val submissionSupervisorProps = Props(new SubmissionSupervisor(protocolConstants))
   }
 }
