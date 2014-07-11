@@ -8,7 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.orders.OrdersActor
-import com.coinffeine.common.{FiatAmount, Order, PeerConnection}
+import com.coinffeine.common.{CurrencyAmount, FiatAmount, Order, PeerConnection}
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
@@ -110,7 +110,7 @@ object CoinffeinePeerActor {
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Set[Order[FiatAmount]])
+  case class RetrievedOpenOrders(orders: Seq[Order[FiatAmount]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest

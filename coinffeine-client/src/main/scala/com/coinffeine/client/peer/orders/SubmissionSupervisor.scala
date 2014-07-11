@@ -3,27 +3,28 @@ package com.coinffeine.client.peer.orders
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.actor._
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import com.coinffeine.client.peer.CoinffeinePeerActor._
-import com.coinffeine.common.{FiatAmount, FiatCurrency, Order}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{RetrievedOpenOrders, RetrieveOpenOrders}
+import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import com.coinffeine.common.{FiatAmount, FiatCurrency, Order, OrderId}
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage.Market
 
-/** Manages open orders */
-class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging{
 
   import context.dispatcher
+  private implicit val timeout = Timeout(1.second)
 
   override def receive: Receive = {
-    case init: OrdersActor.Initialize =>
-      new InitializedOrdersActor(init).start()
+    case init: SubmissionSupervisor.Initialize =>
+      new InitializedSubmissionSupervisor(init).start()
   }
 
-  private class InitializedOrdersActor(init: OrdersActor.Initialize) {
+  private class InitializedSubmissionSupervisor(init: SubmissionSupervisor.Initialize) {
     import init._
 
     private var delegatesByMarket = Map.empty[Market[FiatCurrency], ActorRef]
@@ -34,23 +35,17 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
 
     private val waitingForOrders: Receive = {
 
-      case message @ OpenOrder(order) =>
+      case message @ KeepSubmitting(order) =>
         getOrCreateDelegate(marketOf(order)) forward message
 
-      case message @ CancelOrder(order) =>
-        getOrCreateDelegate(marketOf(order)) forward message
-
-      case RetrieveOpenOrders =>
-        val listener = sender()
-        for (orders <- collectOpenOrders()) {
-          listener ! RetrievedOpenOrders(orders.toSeq)
-        }
+      case message @ StopSubmitting(order) =>
+      delegatesByMarket.values.foreach(_ forward message)
     }
 
     private def marketOf(order: Order[FiatAmount]) = Market(currency = order.price.currency)
 
     private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
-      delegatesByMarket.getOrElse(market, createDelegate(market))
+    delegatesByMarket.getOrElse(market, createDelegate(market))
 
     private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
@@ -59,26 +54,21 @@ class OrdersActor(protocolConstants: ProtocolConstants) extends Actor with Actor
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
-
-    private def collectOpenOrders(): Future[Set[Order[FiatAmount]]] = {
-      implicit val timeout = Timeout(1.second)
-      for {
-        results <- Future.sequence(delegatesByMarket.values.map { ref =>
-          (ref ? RetrieveOpenOrders).mapTo[Set[Order[FiatAmount]]]
-        })
-      } yield results.foldLeft(Set.empty[Order[FiatAmount]])(_ union _)
-    }
   }
 }
 
-object OrdersActor {
+object SubmissionSupervisor {
 
   case class Initialize(ownId: PeerId,
                         brokerId: PeerId,
                         eventChannel: ActorRef,
                         gateway: ActorRef)
 
+  case class KeepSubmitting(order: Order[FiatAmount])
+
+  case class StopSubmitting(orderId: OrderId)
+
   trait Component { this: ProtocolConstants.Component =>
-    lazy val ordersActorProps = Props(new OrdersActor(protocolConstants))
+    lazy val ordersActorProps = Props(new SubmissionSupervisor(protocolConstants))
   }
 }

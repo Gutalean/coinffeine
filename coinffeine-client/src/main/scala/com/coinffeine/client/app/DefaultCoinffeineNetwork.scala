@@ -45,7 +45,7 @@ private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   override def onExchangeChanged(listener: ExchangeListener): Unit = ???
 
   override def orders: Set[Order[FiatAmount]] =
-    Await.result((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders], timeout.duration).orders
+    Await.result((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders], timeout.duration).orders.toSet
 
   override def submitOrder[F <: FiatAmount](order: Order[F]): Order[F] = {
     peer ! OpenOrder(order)

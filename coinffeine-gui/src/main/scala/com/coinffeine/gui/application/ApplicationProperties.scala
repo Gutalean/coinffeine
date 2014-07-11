@@ -14,7 +14,7 @@ class ApplicationProperties(app: CoinffeineApp) {
     case CoinffeineApp.OrderSubmittedEvent(order) =>
       ordersProperty.add(OrderProperties(order))
     case CoinffeineApp.OrderCancelledEvent(order) =>
-      ordersProperty.remove(OrderProperties(order))
+      ordersProperty.remove(order.id)
   }
 
   app.observe(eventHandler)
