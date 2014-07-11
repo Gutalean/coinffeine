@@ -46,7 +46,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val gw = gatewayRef
     val ec = eventChannelRef
     ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrderSupervisor.Initialize(_, _, `ec`, `gw`)) =>
+      case MockReceived(_, _, OrderSupervisor.Initialize(_, `ec`, `gw`)) =>
     }
   }
 

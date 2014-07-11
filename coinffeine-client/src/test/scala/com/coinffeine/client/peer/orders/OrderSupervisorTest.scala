@@ -9,7 +9,7 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
-import com.coinffeine.common.test.MockActor.MockStarted
+import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 
 class OrderSupervisorTest extends AkkaSpec {
 
@@ -67,10 +67,16 @@ class OrderSupervisorTest extends AkkaSpec {
     val order2 = Order(Ask, 2.BTC, 800.EUR)
     
     def givenOrderSupervisorIsInitialized(): Unit = {
-      val initMessage = OrderSupervisor.Initialize(
-        PeerId("Peer_1"), PeerId("Broker"), eventChannel.ref, gateway.ref)
+      val brokerId = PeerId("Broker")
+      val initMessage = OrderSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref)
       actor ! initMessage
       submissionProbe.expectMsgClass(classOf[MockStarted])
+      val eventChannelRef = eventChannel.ref
+      val gatewayRef = gateway.ref
+      submissionProbe.expectMsgPF() {
+        case MockReceived(_, _, SubmissionSupervisor.Initialize(
+          `brokerId`, `eventChannelRef`, `gatewayRef`)) =>
+      }
     }
    
     def givenOpenOrder(order: Order[FiatAmount]): Unit = {

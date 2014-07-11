@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.{Euro, UsDollar}
@@ -13,7 +12,7 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
-import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet, PeerPositions}
+import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerPositions}
 import com.coinffeine.common.test.AkkaSpec
 
 class SubmissionSupervisorTest extends AkkaSpec {
@@ -22,7 +21,6 @@ class SubmissionSupervisorTest extends AkkaSpec {
     orderExpirationInterval = 6.seconds,
     orderResubmitInterval = 4.seconds
   )
-  val ownId = PeerId("peer")
   val brokerId = PeerId("broker")
   val eurOrder1 = Order(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
@@ -35,7 +33,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
     val eventChannel = TestProbe()
     val gateway = new GatewayProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(ownId, brokerId, eventChannel.ref, gateway.ref)
+    actor ! SubmissionSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref)
   }
 
   "An order submission actor" must "keep silent as long as there is no open orders" in new Fixture {

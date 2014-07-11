@@ -1,13 +1,10 @@
 package com.coinffeine.client.peer.orders
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern._
 import akka.util.Timeout
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{RetrievedOpenOrders, RetrieveOpenOrders}
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common.{FiatAmount, FiatCurrency, Order, OrderId}
 import com.coinffeine.common.exchange.PeerId
@@ -15,8 +12,6 @@ import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage.Market
 
 class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging{
-
-  import context.dispatcher
   private implicit val timeout = Timeout(1.second)
 
   override def receive: Receive = {
@@ -59,10 +54,7 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
 
 object SubmissionSupervisor {
 
-  case class Initialize(ownId: PeerId,
-                        brokerId: PeerId,
-                        eventChannel: ActorRef,
-                        gateway: ActorRef)
+  case class Initialize(brokerId: PeerId, eventChannel: ActorRef, gateway: ActorRef)
 
   case class KeepSubmitting(order: Order[FiatAmount])
 

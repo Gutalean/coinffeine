@@ -8,7 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.orders.OrderSupervisor
-import com.coinffeine.common.{CurrencyAmount, FiatAmount, Order, PeerConnection}
+import com.coinffeine.common._
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
@@ -34,9 +34,9 @@ class CoinffeinePeerActor(ownId: PeerId,
   val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
-  val ordersActorRef = {
+  val orderSupervisorRef = {
     val ref = context.actorOf(orderSupervisorProps, "orders")
-    ref ! OrderSupervisor.Initialize(ownId, brokerId, eventChannel, gatewayRef)
+    ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef)
     ref
   }
   val marketInfoRef = {
@@ -68,9 +68,9 @@ class CoinffeinePeerActor(ownId: PeerId,
     case OpenOrdersRequest(market) =>
       marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(market), sender())
 
-    case openOrder: OpenOrder => ordersActorRef forward openOrder
-    case cancelOrder: CancelOrder => ordersActorRef forward cancelOrder
-    case message @ RetrieveOpenOrders => ordersActorRef forward message
+    case openOrder: OpenOrder => orderSupervisorRef forward openOrder
+    case cancelOrder: CancelOrder => orderSupervisorRef forward cancelOrder
+    case message @ RetrieveOpenOrders => orderSupervisorRef forward message
   }
 }
 
