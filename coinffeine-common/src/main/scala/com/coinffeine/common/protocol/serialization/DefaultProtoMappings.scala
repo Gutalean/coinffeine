@@ -163,21 +163,19 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
+      orderId = OrderId(orderMatch.getOrderId),
       exchangeId = Exchange.Id(orderMatch.getExchangeId),
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
-      peers = Both(
-        buyer = PeerId(orderMatch.getBuyer),
-        seller = PeerId(orderMatch.getSeller)
-      )
+      counterpart = PeerId(orderMatch.getCounterpart)
     )
 
     override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
+      .setOrderId(orderMatch.orderId.value)
       .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
-      .setBuyer(orderMatch.peers.buyer.value)
-      .setSeller(orderMatch.peers.seller.value)
+      .setCounterpart(orderMatch.counterpart.value)
       .build
   }
 

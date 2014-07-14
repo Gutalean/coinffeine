@@ -42,6 +42,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   }
 
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
+  val sampleOrderId = OrderId.random()
   val sampleExchangeId = Exchange.Id.random()
 
   val btcAmount = 1.1 BTC
@@ -118,17 +119,18 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeRejection, exchangeRejectionMessage)
 
   val orderMatch = OrderMatch(
+    orderId = sampleOrderId,
     exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
-    peers = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
+    counterpart = PeerId("buyer")
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
+    .setOrderId(sampleOrderId.value)
     .setExchangeId(sampleExchangeId.value)
     .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
-    .setBuyer("buyer")
-    .setSeller("seller")
+    .setCounterpart("buyer")
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
 

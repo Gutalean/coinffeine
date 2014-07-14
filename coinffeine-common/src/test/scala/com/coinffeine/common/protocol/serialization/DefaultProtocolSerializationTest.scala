@@ -26,6 +26,7 @@ import com.coinffeine.common.test.UnitTest
 class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
   val peerId = PeerId("peer")
+  val orderId = OrderId.random()
   val exchangeId = Exchange.Id.random()
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
@@ -110,7 +111,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         ExchangeAborted(exchangeId, "reason"),
         ExchangeCommitment(exchangeId, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
-        OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerId)),
+        OrderMatch(orderId, exchangeId, btcAmount, fiatAmount, peerId),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),

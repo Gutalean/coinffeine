@@ -2,9 +2,10 @@ package com.coinffeine.common.protocol.serialization
 
 import scala.util.Random
 
+import com.coinffeine.common.OrderId
 import com.coinffeine.common.Currency.Bitcoin
 import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
+import com.coinffeine.common.exchange.{Exchange, PeerId}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
@@ -24,13 +25,11 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
   }
 
   def randomOrderMatch(): OrderMatch = OrderMatch(
+    orderId = OrderId.random(),
     exchangeId = Exchange.Id.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
-    peers = Both(
-      buyer = PeerId("bob"),
-      seller = PeerId("sam")
-    )
+    counterpart = PeerId("bob")
   )
 
   private def randomSatoshi() =
