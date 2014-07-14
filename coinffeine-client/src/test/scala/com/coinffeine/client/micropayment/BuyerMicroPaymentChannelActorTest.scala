@@ -17,7 +17,7 @@ import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage.{Market, OrderSet}
+import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest
@@ -53,7 +53,7 @@ class BuyerMicroPaymentChannelActorTest
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
-    val randomMessage = OrderSet.empty(Market(Euro))
+    val randomMessage = PeerOrderRequests.empty(Market(Euro))
     filter(ReceiveMessage(randomMessage, counterpartConnection)) should be (false)
   }
 

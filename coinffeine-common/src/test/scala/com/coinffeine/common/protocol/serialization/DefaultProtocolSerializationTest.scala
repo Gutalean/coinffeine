@@ -102,18 +102,15 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
     }
     val sampleMessages = {
       val market = Market(UsDollar)
-      val orderSet: OrderSet[UsDollar.type] = OrderSet(
-        market,
-        bids = VolumeByPrice(100.USD -> 1.3.BTC),
-        asks = VolumeByPrice(200.USD -> 0.3.BTC,
-          250.USD -> 0.4.BTC)
-      )
+      val peerOrderRequests = PeerOrderRequests(market, Seq(
+        OrderBookEntry(Bid, 1.BTC, 400.USD),
+        OrderBookEntry(Ask, 0.4.BTC, 600.USD)
+      ))
       Seq(
         ExchangeAborted(exchangeId, "reason"),
         ExchangeCommitment(exchangeId, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         OrderMatch(exchangeId, btcAmount, fiatAmount, Both.fill(peerId)),
-        orderSet,
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),
@@ -123,11 +120,8 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         StepSignatures(exchangeId, 1, Signatures(transactionSignature, transactionSignature)),
         PaymentProof(exchangeId, "paymentId"),
         OpenOrdersRequest(market),
-        OpenOrders(orderSet),
-        PeerOrderRequests(market, Seq(
-          OrderBookEntry(Bid, 1.BTC, 400.USD),
-          OrderBookEntry(Ask, 0.4.BTC, 600.USD)
-        ))
+        OpenOrders(peerOrderRequests),
+        peerOrderRequests
       )
     }
 

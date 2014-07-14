@@ -42,8 +42,6 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: OrderMatch =>
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
-      case m: OrderSet[FiatCurrency] =>
-        builder.setOrderSet(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
       case m: Quote[FiatCurrency] =>
@@ -97,8 +95,6 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
       case ORDERMATCH_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOrderMatch)
-      case ORDERSET_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOrderSet)
       case QUOTEREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getQuoteRequest)
       case QUOTE_FIELD_NUMBER =>
