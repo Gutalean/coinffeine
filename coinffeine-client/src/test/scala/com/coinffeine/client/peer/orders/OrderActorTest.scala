@@ -30,11 +30,13 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait Fixture {
+    val messageGatewayProbe = TestProbe()
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
     val order = OrderBookEntry(Ask, 5.BTC, 500.EUR)
     val submissionProbe = TestProbe()
 
-    actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref)
+    actor ! OrderActor.Initialize(
+      order, submissionProbe.ref, eventChannelProbe.ref, messageGatewayProbe.ref)
   }
 }

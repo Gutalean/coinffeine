@@ -80,7 +80,7 @@ class OrderSupervisorTest extends AkkaSpec {
     def givenOpenOrder(order: OrderBookEntry[FiatAmount]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
-        case OrderActor.Initialize(`order`, _, _) =>
+        case OrderActor.Initialize(`order`, _, _, _) =>
       }
     }
   }

@@ -37,8 +37,10 @@ class OrderActor extends Actor {
 
 object OrderActor {
 
-  case class Initialize(order: OrderBookEntry[FiatAmount], submissionSupervisor: ActorRef,
-                        eventChannel: ActorRef)
+  case class Initialize(order: OrderBookEntry[FiatAmount],
+                        submissionSupervisor: ActorRef,
+                        eventChannel: ActorRef,
+                        messageGateway: ActorRef)
 
   case object CancelOrder
 
