@@ -7,6 +7,8 @@ import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common.{Ask, OrderBookEntry}
 import com.coinffeine.common.Currency.Implicits._
+import com.coinffeine.common.exchange.{Exchange, PeerId}
+import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.test.AkkaSpec
 
 class OrderActorTest extends AkkaSpec {
@@ -27,6 +29,19 @@ class OrderActorTest extends AkkaSpec {
     eventChannelProbe.expectMsg(CoinffeineApp.OrderSubmittedEvent(order))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsg(CoinffeineApp.OrderCancelledEvent(order.id))
+  }
+
+  it should "stop submitting to the broker & send event once matching is received" in new Fixture {
+    actor ! OrderMatch(
+      order.id, Exchange.Id.random(), order.amount, order.price, PeerId.apply("counterpart"))
+    submissionProbe.fishForMessage() {
+      case StopSubmitting(order.`id`) => true
+      case _ => false
+    }
+    eventChannelProbe.fishForMessage() {
+      case CoinffeineApp.OrderCancelledEvent(order.id) => true
+      case _ => false
+    }
   }
 
   trait Fixture {
