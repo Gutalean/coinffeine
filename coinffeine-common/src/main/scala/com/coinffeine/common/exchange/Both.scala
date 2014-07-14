@@ -5,7 +5,7 @@ package com.coinffeine.common.exchange
   * This class follows the convention for the buyer-seller ordering. Use only with immutable
   * classes.
   */
-case class Both[T](buyer: T, seller: T) {
+case class Both[+T](buyer: T, seller: T) {
 
   /** Access to a value by role */
   def apply(role: Role): T = role match {
@@ -30,18 +30,18 @@ case class Both[T](buyer: T, seller: T) {
 
   def forall(pred: T => Boolean): Boolean = pred(buyer) && pred(seller)
 
-  def roleOf(value: T): Option[Role] = value match {
+  def roleOf[T1 >: T](value: T1): Option[Role] = value match {
     case `buyer` => Some(BuyerRole)
     case `seller` => Some(SellerRole)
     case _ => None
   }
 
-  def updated(role: Role, value: T): Both[T] = role match {
+  def updated[T1 >: T](role: Role, value: T1): Both[T1] = role match {
     case BuyerRole => copy(buyer = value)
     case SellerRole => copy(seller = value)
   }
 
-  def toSet: Set[T] = Set(buyer, seller)
+  def toSet[T1 >: T]: Set[T1] = Set(buyer, seller)
 
   def toSeq: Seq[T] = Seq(buyer, seller)
 
