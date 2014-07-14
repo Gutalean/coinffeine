@@ -8,17 +8,15 @@ import com.coinffeine.common.{FiatAmount, Order}
 
 class OrderActor extends Actor {
 
-  var submissionSupervisor: ActorRef = _
-  var order: Order[FiatAmount] = _
-
   override def receive: Receive = {
     case init: Initialize =>
-      submissionSupervisor = init.submissionSupervisor
-      order = init.order
-      submissionSupervisor ! KeepSubmitting(order)
+      init.submissionSupervisor ! KeepSubmitting(init.order)
+      context.become(manageOrder(init.order, init.submissionSupervisor))
+  }
 
+  def manageOrder(order: Order[FiatAmount], supervisor: ActorRef): Receive = {
     case CancelOrder =>
-      submissionSupervisor ! StopSubmitting(order.id)
+      supervisor ! StopSubmitting(order.id)
 
     case RetrieveStatus =>
       sender() ! order
