@@ -33,4 +33,7 @@ object Order {
       case Order(_, Bid, _, price) => -price.value
       case Order(_, Ask, _, price) => price.value
     }
+
+  def apply[F <: FiatAmount](orderType: OrderType, amount: BitcoinAmount, price: F): Order[F] =
+    Order(OrderId.random(), orderType, amount, price)
 }

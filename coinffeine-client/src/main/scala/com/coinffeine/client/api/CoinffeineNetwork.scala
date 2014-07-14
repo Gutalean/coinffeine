@@ -34,7 +34,7 @@ trait CoinffeineNetwork {
     * @return                    A new exchange if submitted successfully
     */
   def submitBuyOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): Order[F] =
-    submitOrder(Order(null, Bid, btcAmount, fiatAmount))
+    submitOrder(Order(Bid, btcAmount, fiatAmount))
 
   /** Submit an order to sell bitcoins.
     *
@@ -43,21 +43,12 @@ trait CoinffeineNetwork {
     * @return                    A new exchange if submitted successfully
     */
   def submitSellOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): Order[F] =
-    submitOrder(Order(null, Ask, btcAmount, fiatAmount))
+    submitOrder(Order(Ask, btcAmount, fiatAmount))
 
   /** Submit an order. */
   def submitOrder[F <: FiatAmount](order: Order[F]): Order[F]
 
-  def cancelBuyOrder(btcAmount: BitcoinAmount, fiatAmount: FiatAmount): Unit = {
-    cancelOrder(Order(null, Bid, btcAmount, fiatAmount))
-  }
-
-  def cancelSellOrder(btcAmount: BitcoinAmount, fiatAmount: FiatAmount): Unit = {
-    cancelOrder(Order(null, Ask, btcAmount, fiatAmount))
-  }
-
-  /** Cancel an unmatched order. */
-  def cancelOrder(order: Order[FiatAmount]): Unit
+  def cancelOrder(order: OrderId): Unit
 }
 
 object CoinffeineNetwork {

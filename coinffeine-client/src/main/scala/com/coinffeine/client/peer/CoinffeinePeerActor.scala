@@ -7,8 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import com.coinffeine.client.peer.orders.OrdersActor
-import com.coinffeine.common.{FiatAmount, Order, PeerConnection}
+import com.coinffeine.client.peer.orders.OrderSupervisor
+import com.coinffeine.common._
 import com.coinffeine.common.config.ConfigComponent
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
@@ -26,7 +26,7 @@ class CoinffeinePeerActor(ownId: PeerId,
                           eventChannelProps: Props,
                           gatewayProps: Props,
                           marketInfoProps: Props,
-                          ordersActorProps: Props) extends Actor with ActorLogging {
+                          orderSupervisorProps: Props) extends Actor with ActorLogging {
 
   import com.coinffeine.client.peer.CoinffeinePeerActor._
   import context.dispatcher
@@ -34,9 +34,9 @@ class CoinffeinePeerActor(ownId: PeerId,
   val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
 
   val gatewayRef = context.actorOf(gatewayProps, "gateway")
-  val ordersActorRef = {
-    val ref = context.actorOf(ordersActorProps, "orders")
-    ref ! OrdersActor.Initialize(ownId, brokerId, eventChannel, gatewayRef)
+  val orderSupervisorRef = {
+    val ref = context.actorOf(orderSupervisorProps, "orders")
+    ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef)
     ref
   }
   val marketInfoRef = {
@@ -68,9 +68,9 @@ class CoinffeinePeerActor(ownId: PeerId,
     case OpenOrdersRequest(market) =>
       marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(market), sender())
 
-    case openOrder: OpenOrder => ordersActorRef forward openOrder
-    case cancelOrder: CancelOrder => ordersActorRef forward cancelOrder
-    case message @ RetrieveOpenOrders => ordersActorRef forward message
+    case openOrder: OpenOrder => orderSupervisorRef forward openOrder
+    case cancelOrder: CancelOrder => orderSupervisorRef forward cancelOrder
+    case message @ RetrieveOpenOrders => orderSupervisorRef forward message
   }
 }
 
@@ -104,13 +104,13 @@ object CoinffeinePeerActor {
     *
     * @param order  Order to cancel
     */
-  case class CancelOrder(order: Order[FiatAmount])
+  case class CancelOrder(order: OrderId)
 
   /** Ask for own orders opened in any market. */
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Set[Order[FiatAmount]])
+  case class RetrievedOpenOrders(orders: Seq[Order[FiatAmount]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
@@ -122,7 +122,7 @@ object CoinffeinePeerActor {
 
   private val ConnectionTimeout = Timeout(10.seconds)
 
-  trait Component { this: OrdersActor.Component with MarketInfoActor.Component
+  trait Component { this: OrderSupervisor.Component with MarketInfoActor.Component
     with MessageGateway.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
@@ -138,7 +138,7 @@ object CoinffeinePeerActor {
         eventChannelProps = EventChannelActor.props(),
         gatewayProps = messageGatewayProps,
         marketInfoProps,
-        ordersActorProps = ordersActorProps
+        orderSupervisorProps
       ))
     }
   }

@@ -1,5 +1,7 @@
 package com.coinffeine.gui.application
 
+import com.coinffeine.common.OrderId
+
 import scalafx.collections.ObservableBuffer
 
 import com.coinffeine.client.api.{CoinffeineApp, EventHandler}
@@ -12,10 +14,17 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private val eventHandler: EventHandler = FxEventHandler {
     case CoinffeineApp.OrderSubmittedEvent(order) =>
+      require(!orderExist(order.id), s"Duplicated OrderId: ${order.id}")
       ordersProperty.add(OrderProperties(order))
-    case CoinffeineApp.OrderCancelledEvent(order) =>
-      ordersProperty.remove(OrderProperties(order))
+    case CoinffeineApp.OrderCancelledEvent(orderId) =>
+      ordersProperty.zipWithIndex.foreach { t =>
+        if(t._1.order.id == orderId) {
+          ordersProperty.remove(t._2)
+        }
+      }
   }
+
+  private def orderExist(orderId: OrderId): Boolean = ordersProperty.forall(_.order.id != orderId)
 
   app.observe(eventHandler)
 }

@@ -11,7 +11,7 @@ import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.CoinffeinePeerActor
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
-import com.coinffeine.common.{FiatAmount, Order}
+import com.coinffeine.common.{FiatAmount, Order, OrderId}
 
 private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {
@@ -45,14 +45,14 @@ private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   override def onExchangeChanged(listener: ExchangeListener): Unit = ???
 
   override def orders: Set[Order[FiatAmount]] =
-    Await.result((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders], timeout.duration).orders
+    Await.result((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders], timeout.duration).orders.toSet
 
   override def submitOrder[F <: FiatAmount](order: Order[F]): Order[F] = {
     peer ! OpenOrder(order)
     order
   }
 
-  override def cancelOrder(order: Order[FiatAmount]): Unit = {
+  override def cancelOrder(order: OrderId): Unit = {
     peer ! CancelOrder(order)
   }
 }

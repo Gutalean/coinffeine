@@ -1,7 +1,7 @@
 package com.coinffeine.client.app
 
 import com.coinffeine.client.peer.{CoinffeinePeerActor, MarketInfoActor}
-import com.coinffeine.client.peer.orders.OrdersActor
+import com.coinffeine.client.peer.orders.{OrderActor, OrderSupervisor, SubmissionSupervisor}
 import com.coinffeine.common.config.FileConfigComponent
 import com.coinffeine.common.network.MainNetComponent
 import com.coinffeine.common.protocol.ProtocolConstants
@@ -15,7 +15,9 @@ object ProductionCoinffeineApp {
     with CoinffeinePeerActor.Component
     with MarketInfoActor.Component
     with ProtocolConstants.DefaultComponent
-    with OrdersActor.Component
+    with OrderSupervisor.Component
+    with OrderActor.Component
+    with SubmissionSupervisor.Component
     with ProtoRpcMessageGateway.Component
     with DefaultProtocolSerializationComponent
     with MainNetComponent

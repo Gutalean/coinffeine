@@ -34,7 +34,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   it must "stop showing an order once cancelled" in new OrderIsPresentFixture {
-    app.produceEvent(CoinffeineApp.OrderCancelledEvent(sampleOrder))
+    app.produceEvent(CoinffeineApp.OrderCancelledEvent(sampleOrder.id))
     eventually { ordersTable.itemsProperty().get() should be ('empty) }
   }
 

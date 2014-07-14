@@ -125,7 +125,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     )
 
     override def toProtobuf(order: Order[FiatAmount]) = msg.Order.newBuilder
-      .setId(order.id.id)
+      .setId(order.id.value)
       .setOrderType(order.orderType match {
         case Bid => msg.Order.OrderType.BID
         case Ask => msg.Order.OrderType.ASK
