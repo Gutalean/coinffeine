@@ -69,7 +69,9 @@ private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
     }
 
     private val forwardingMessages: Receive = {
-      case m @ ForwardMessage(msg, destId) => forward(destId, msg)
+      case m @ ForwardMessage(msg, destId) =>
+        log.debug(s"Forwarding message $msg to $destId")
+        forward(destId, msg)
 
       case ReceiveProtoMessage(protoMessage, senderConnection) =>
         val (message, senderId) = serialization.fromProtobuf(protoMessage)
