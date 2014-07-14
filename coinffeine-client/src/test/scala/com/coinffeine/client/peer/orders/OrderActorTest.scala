@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.{Ask, Order}
+import com.coinffeine.common.{Ask, OrderBookEntry}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.test.AkkaSpec
 
@@ -32,7 +32,7 @@ class OrderActorTest extends AkkaSpec {
   trait Fixture {
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
-    val order = Order(Ask, 5.BTC, 500.EUR)
+    val order = OrderBookEntry(Ask, 5.BTC, 500.EUR)
     val submissionProbe = TestProbe()
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref)

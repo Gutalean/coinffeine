@@ -30,7 +30,7 @@ message OrderSet {
     repeated OrderSetEntry asks = 3;
 }
 
-message Order {
+message OrderBookEntry {
     enum OrderType {
         BID = 0;
         ASK = 1;
@@ -41,9 +41,9 @@ message Order {
     required FiatAmount price = 4;
 }
 
-message PeerPositions {
+message PeerOrderRequests {
     required Market market = 1;
-    repeated Order positions = 2;
+    repeated OrderBookEntry entries = 2;
 }
 
 message QuoteRequest {
@@ -138,7 +138,7 @@ message Payload {
     optional PaymentProof paymentProof = 13;
     optional OpenOrdersRequest openOrderRequest = 14;
     optional OpenOrders openOrders = 15;
-    optional PeerPositions peerPositions = 16;
+    optional PeerOrderRequests peerOrderRequests = 16;
 }
 
 message ProtocolVersion {

@@ -5,7 +5,7 @@ import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
 import com.coinffeine.client.api.MockCoinffeineApp
-import com.coinffeine.common.{Bid, Order}
+import com.coinffeine.common.{Bid, OrderBookEntry}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.gui.GuiTest
 
@@ -26,12 +26,12 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
     find[Node]("#submit") should be ('disabled)
   }
 
-  it should "forbid to submit if the limit value is zero" in new Fixture {
+  it should "forbid submission if the limit value is zero" in new Fixture {
     doubleClick("#amount").`type`("0.1")
     find[Node]("#submit") should be ('disabled)
   }
 
-  it should "forbid to submit if the limit value is invalid" in new Fixture {
+  it should "forbid submission if the limit value is invalid" in new Fixture {
     doubleClick("#amount").`type`("0.5")
     doubleClick("#limit").`type`("0.001")
     find[Node]("#submit") should be ('disabled)
@@ -44,7 +44,10 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
 
     click("#submit")
 
-    val expectedOrder = Order(null, orderType = Bid, amount = 0.1.BTC, price = 100.EUR)
-    app.network.orders should contain(expectedOrder)
+    val expectedAmount = 0.1.BTC
+    val expectedPrice = 100.EUR
+    app.network.orders.collect {
+      case OrderBookEntry(_, Bid, `expectedAmount`, `expectedPrice`) =>
+    } should not be 'empty
   }
 }

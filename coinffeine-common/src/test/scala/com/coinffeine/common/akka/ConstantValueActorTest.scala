@@ -1,7 +1,8 @@
 package com.coinffeine.common.akka
 
 import akka.actor.Props
-import com.coinffeine.common.akka.ConstantValueActor.{UnsetValue, SetValue}
+
+import com.coinffeine.common.akka.ConstantValueActor.{SetValue, UnsetValue}
 import com.coinffeine.common.test.AkkaSpec
 
 class ConstantValueActorTest extends AkkaSpec("ConstantValueActorTest") {
@@ -18,7 +19,7 @@ class ConstantValueActorTest extends AkkaSpec("ConstantValueActorTest") {
     expectMsg(9)
   }
 
-  it should "stop replyint to incoming messages after the value is unseta " in {
+  it should "stop replying to incoming messages after the value is unset" in {
     instance ! UnsetValue
     instance ! "Hello"
     expectNoMsg()

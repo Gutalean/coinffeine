@@ -29,17 +29,12 @@ case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bi
     else copy(entries = (entryMap - price).toSeq)
   }
 
-  def toOrders(orderType: OrderType): Seq[Order[CurrencyAmount[C]]] = entries.collect {
-    case (price, amount) => Order(null, orderType, amount, price)
-  }
-
   private def requirePositiveValues(): Unit = {
     entries.foreach { case (price, amount) =>
         require(amount.isPositive, "Amount ordered must be strictly positive")
         require(price.isPositive, "Price must be strictly positive")
     }
   }
-
 }
 
 object VolumeByPrice {

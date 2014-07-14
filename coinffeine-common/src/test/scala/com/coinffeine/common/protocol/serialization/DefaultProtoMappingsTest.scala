@@ -76,25 +76,26 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
     orderSet, orderSetMessage)
 
-  val order = Order(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
-  val orderMessage = msg.Order.newBuilder
+  val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
+  val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
-    .setOrderType(msg.Order.OrderType.BID)
+    .setOrderType(msg.OrderBookEntry.OrderType.BID)
     .setAmount(msg.BtcAmount.newBuilder.setValue(10).setScale(0))
     .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
     .build
 
-  "Order" should behave like
-    thereIsAMappingBetween[Order[FiatAmount], msg.Order](order, orderMessage)
+  "Order" should behave like thereIsAMappingBetween[OrderBookEntry[FiatAmount], msg.OrderBookEntry](
+    orderBookEntry, orderBookEntryMessage)
 
-  val positions = PeerPositions(Market(Euro), Seq(order))
-  val positionsMessage = msg.PeerPositions.newBuilder
+  val positions = PeerOrderRequests(Market(Euro), Seq(orderBookEntry))
+  val positionsMessage = msg.PeerOrderRequests.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
-    .addPositions(orderMessage)
+    .addEntries(orderBookEntryMessage)
     .build
 
   "Peer positions" should behave like
-    thereIsAMappingBetween[PeerPositions[FiatCurrency], msg.PeerPositions](positions, positionsMessage)
+    thereIsAMappingBetween[PeerOrderRequests[FiatCurrency], msg.PeerOrderRequests](
+      positions, positionsMessage)
 
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()

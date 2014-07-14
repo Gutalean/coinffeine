@@ -124,9 +124,9 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         PaymentProof(exchangeId, "paymentId"),
         OpenOrdersRequest(market),
         OpenOrders(orderSet),
-        PeerPositions(market, Seq(
-          Order(OrderId.random(), Bid, 1.BTC, 400.USD),
-          Order(OrderId.random(), Ask, 0.4.BTC, 600.USD)
+        PeerOrderRequests(market, Seq(
+          OrderBookEntry(Bid, 1.BTC, 400.USD),
+          OrderBookEntry(Ask, 0.4.BTC, 600.USD)
         ))
       )
     }

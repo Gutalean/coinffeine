@@ -16,6 +16,10 @@ resolvers in ThisBuild ++= Seq(
   "typesafe" at "http://repo.typesafe.com/typesafe/releases/"
 )
 
+addCommandAlias("test", "test-only * -- -l UITest")
+
+addCommandAlias("test-gui", "test-only * -- -n UITest")
+
 libraryDependencies in ThisBuild ++= Seq(
   Dependencies.jodaTime,
   Dependencies.logbackClassic,

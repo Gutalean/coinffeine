@@ -96,7 +96,7 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: Order[FiatAmount])
+  case class OpenOrder(order: OrderBookEntry[FiatAmount])
 
   /** Cancel an order
     *
@@ -110,7 +110,7 @@ object CoinffeinePeerActor {
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Seq[Order[FiatAmount]])
+  case class RetrievedOpenOrders(orders: Seq[OrderBookEntry[FiatAmount]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
