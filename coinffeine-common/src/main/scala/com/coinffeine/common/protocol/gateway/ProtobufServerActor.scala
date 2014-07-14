@@ -2,7 +2,7 @@ package com.coinffeine.common.protocol.gateway
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.googlecode.protobuf.pro.duplex.PeerInfo
-import io.netty.channel.ChannelFuture
+import io.netty.channel.{Channel, ChannelFuture}
 import io.netty.util.concurrent.{Future, GenericFutureListener}
 
 import com.coinffeine.common.PeerConnection
@@ -15,10 +15,13 @@ private class ProtobufServerActor extends Actor with ActorLogging {
 
   private var server: PeerServer = _
   private var sessions = Map.empty[PeerConnection, PeerSession]
+  private var serverChannel: Channel = _
 
   override def postStop(): Unit = {
     log.info("Shutting down the protobuf server")
     Option(server).foreach(_.shutdown())
+    sessions.mapValues(_.close())
+    Option(serverChannel).foreach(_.close())
   }
 
   override def receive: Receive = {
@@ -32,6 +35,7 @@ private class ProtobufServerActor extends Actor with ActorLogging {
     {
       case ServerStarted if startFuture.isSuccess =>
         listener ! BoundTo(PeerConnection(address.getHostName, address.getPort))
+        serverChannel = startFuture.channel()
         context.become(managingSessions)
 
       case ServerStarted =>
