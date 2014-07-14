@@ -11,7 +11,7 @@ import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.GatewayProbe
-import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerPositions}
+import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import com.coinffeine.common.test.AkkaSpec
 
 class SubmissionSupervisorTest extends AkkaSpec {
@@ -24,7 +24,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
   val eurOrder1 = Order(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = Order(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
   val usdOrder = Order(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
-  val noEurOrders = PeerPositions.empty(Market(Euro))
+  val noEurOrders = PeerOrderRequests.empty(Market(Euro))
   val firstEurOrder = noEurOrders.addOrder(eurOrder1)
   val bothEurOrders = firstEurOrder.addOrder(eurOrder2)
 
@@ -58,7 +58,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
 
     def currencyOfNextOrderSet(): FiatCurrency =
       gateway.expectForwardingPF(brokerId, constants.orderExpirationInterval) {
-        case PeerPositions(Market(currency), _) => currency
+        case PeerOrderRequests(Market(currency), _) => currency
       }
 
     val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())

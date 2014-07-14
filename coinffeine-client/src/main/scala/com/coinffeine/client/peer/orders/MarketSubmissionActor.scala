@@ -27,14 +27,14 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
       context.become(waitingForOrders)
     }
 
-    private val waitingForOrders: Receive = handleOpenOrders(PeerPositions.empty(market))
+    private val waitingForOrders: Receive = handleOpenOrders(PeerOrderRequests.empty(market))
 
-    private def keepingOpenOrders(positions: PeerPositions[FiatCurrency]): Receive =
+    private def keepingOpenOrders(positions: PeerOrderRequests[FiatCurrency]): Receive =
       handleOpenOrders(positions).orElse {
 
         case StopSubmitting(orderId) =>
           val reducedOrderSet =
-            PeerPositions(market, positions.positions.filterNot(_.id == orderId))
+            PeerOrderRequests(market, positions.positions.filterNot(_.id == orderId))
           forwardOrders(reducedOrderSet)
 
           context.become(
@@ -46,7 +46,7 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
           forwardOrders(positions)
       }
 
-    private def handleOpenOrders(positions: PeerPositions[FiatCurrency]): Receive = {
+    private def handleOpenOrders(positions: PeerOrderRequests[FiatCurrency]): Receive = {
 
       case KeepSubmitting(order) =>
         val mergedOrderSet = positions.addOrder(order)
@@ -54,7 +54,7 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
         context.become(keepingOpenOrders(mergedOrderSet))
     }
 
-    private def forwardOrders(orderSet: PeerPositions[FiatCurrency]): Unit = {
+    private def forwardOrders(orderSet: PeerOrderRequests[FiatCurrency]): Unit = {
       gateway ! ForwardMessage(orderSet, brokerId)
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
