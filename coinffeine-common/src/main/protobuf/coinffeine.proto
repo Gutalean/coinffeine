@@ -47,11 +47,11 @@ message Quote {
 }
 
 message OrderMatch {
-    required string exchangeId = 1;
-    required BtcAmount amount = 2;
-    required FiatAmount price = 3;
-    required string buyer = 4;
-    required string seller = 5;
+    required string orderId = 1;
+    required string exchangeId = 2;
+    required BtcAmount amount = 3;
+    required FiatAmount price = 4;
+    required string counterpart = 5;
 }
 
 message OpenOrdersRequest {

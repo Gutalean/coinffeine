@@ -6,6 +6,8 @@ import com.coinffeine.client.event.EventProducer
 
 import com.coinffeine.client.peer.orders.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import com.coinffeine.common.protocol.gateway.MessageGateway
+import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.{FiatAmount, OrderBookEntry}
 
 class OrderActor extends Actor {
@@ -19,6 +21,10 @@ class OrderActor extends Actor {
     import init._
 
     def start(): Unit = {
+      messageGateway ! MessageGateway.Subscribe {
+        case o: OrderMatch if o.orderId == order.id => true
+        case _ => false
+      }
       produceEvent(CoinffeineApp.OrderSubmittedEvent(order))
       init.submissionSupervisor ! KeepSubmitting(init.order)
       context.become(manageOrder)
@@ -31,14 +37,23 @@ class OrderActor extends Actor {
 
       case RetrieveStatus =>
         sender() ! order
+
+      case orderMatch: OrderMatch =>
+        init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
+        /* TODO: send a more appropriate event since this is not a
+         * cancellation but an exchange-started event
+         */
+        produceEvent(CoinffeineApp.OrderCancelledEvent(orderMatch.orderId))
     }
   }
 }
 
 object OrderActor {
 
-  case class Initialize(order: OrderBookEntry[FiatAmount], submissionSupervisor: ActorRef,
-                        eventChannel: ActorRef)
+  case class Initialize(order: OrderBookEntry[FiatAmount],
+                        submissionSupervisor: ActorRef,
+                        eventChannel: ActorRef,
+                        messageGateway: ActorRef)
 
   case object CancelOrder
 
