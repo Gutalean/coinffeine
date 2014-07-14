@@ -1,5 +1,6 @@
 package com.coinffeine.client.app
 
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import akka.actor.ActorRef
@@ -9,14 +10,12 @@ import com.coinffeine.client.api.MarketStats
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.messages.brokerage._
 
-import scala.concurrent.Future
-
 private[app] class DefaultMarketStats(override val peer: ActorRef)
   extends MarketStats with PeerActorWrapper {
 
   override def currentQuote[C <: FiatCurrency](market: Market[C]): Future[Quote[C]] =
     (peer ? QuoteRequest(market)).mapTo[Quote[C]]
 
-  override def openOrders[C <: FiatCurrency](market: Market[C]): Future[OrderSet[C]] =
-    (peer ? OpenOrdersRequest(market)).mapTo[OpenOrders[C]].map(_.orders)
+  override def openOrders[C <: FiatCurrency](market: Market[C]) =
+    (peer ? OpenOrdersRequest(market)).mapTo[OpenOrders[C]].map(_.orders.entries.toSet)
 }

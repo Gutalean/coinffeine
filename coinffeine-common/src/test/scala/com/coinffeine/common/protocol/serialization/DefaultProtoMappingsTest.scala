@@ -58,24 +58,6 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .build
   )
 
-  val orderSetMessage = msg.OrderSet.newBuilder
-    .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
-    .addBids(msg.OrderSetEntry.newBuilder
-      .setAmount(msg.BtcAmount.newBuilder.setValue(1).setScale(0))
-      .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
-    ).addAsks(msg.OrderSetEntry.newBuilder
-      .setAmount(msg.BtcAmount.newBuilder.setValue(2).setScale(0))
-      .setPrice(msg.FiatAmount.newBuilder.setValue(500).setScale(0).setCurrency("EUR"))
-    ).build
-  val orderSet = OrderSet(
-    market = Market(Currency.Euro),
-    bids = VolumeByPrice(400.EUR -> 1.BTC),
-    asks = VolumeByPrice(500.EUR -> 2.BTC)
-  )
-
-  "OrderSet" should behave like thereIsAMappingBetween[OrderSet[FiatCurrency], msg.OrderSet](
-    orderSet, orderSetMessage)
-
   val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
   val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
