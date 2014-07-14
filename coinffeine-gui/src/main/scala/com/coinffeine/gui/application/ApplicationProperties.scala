@@ -24,7 +24,7 @@ class ApplicationProperties(app: CoinffeineApp) {
       }
   }
 
-  private def orderExist(orderId: OrderId): Boolean = ordersProperty.forall(_.order.id != orderId)
+  private def orderExist(orderId: OrderId): Boolean = ordersProperty.exists(_.order.id == orderId)
 
   app.observe(eventHandler)
 }
