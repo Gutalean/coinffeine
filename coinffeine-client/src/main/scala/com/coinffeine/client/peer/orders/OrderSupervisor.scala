@@ -43,6 +43,9 @@ class OrderSupervisor(orderActorProps: Props,
 
       case CancelOrder(orderId) =>
         orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
+        orders = orders.collect {
+          case pair @ (id, _) if id != orderId => pair
+        }
 
       case RetrieveOpenOrders =>
         import context.dispatcher
