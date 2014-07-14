@@ -11,10 +11,10 @@ class ApplicationProperties(app: CoinffeineApp) {
   val ordersProperty = ObservableBuffer[OrderProperties]()
 
   private val eventHandler: EventHandler = FxEventHandler {
-    case CoinffeineApp.OrderSubmittedEvent(order) =>
-      ordersProperty.add(OrderProperties(order))
-    case CoinffeineApp.OrderCancelledEvent(order) =>
-      ordersProperty.remove(order.id)
+    case CoinffeineApp.OrderSubmittedEvent(orderId) =>
+      ordersProperty.add(OrderProperties(orderId))
+    case CoinffeineApp.OrderCancelledEvent(orderId) =>
+      ordersProperty.remove(orderId)
   }
 
   app.observe(eventHandler)

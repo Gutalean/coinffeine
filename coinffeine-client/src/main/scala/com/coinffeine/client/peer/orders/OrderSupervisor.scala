@@ -37,7 +37,7 @@ class OrderSupervisor(orderActorProps: Props,
     private val waitingForOrders: Receive = {
 
       case OpenOrder(order) =>
-        val ref = context.actorOf(orderActorProps, s"order-${order.id.id}")
+        val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
         ref ! OrderActor.Initialize(order, submission)
         orders += order.id -> ref
 
