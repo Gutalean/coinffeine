@@ -13,10 +13,6 @@ fork := true
 
 // testOptions in Test += Tests.Argument("-l", "UITest")
 
-addCommandAlias("test", "test-only * -- -l UITest")
-
-addCommandAlias("test-gui", "test-only * -- -n UITest")
-
 jfxSettings
 
 JFX.mainClass := Some("com.coinffeine.gui.Main")
