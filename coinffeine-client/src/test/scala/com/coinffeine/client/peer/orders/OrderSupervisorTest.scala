@@ -3,7 +3,7 @@ package com.coinffeine.client.peer.orders
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{RetrieveOpenOrders, CancelOrder, OpenOrder, RetrievedOpenOrders}
+import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import com.coinffeine.common._
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.exchange.PeerId
@@ -71,18 +71,16 @@ class OrderSupervisorTest extends AkkaSpec {
       val initMessage = OrderSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref)
       actor ! initMessage
       submissionProbe.expectMsgClass(classOf[MockStarted])
-      val eventChannelRef = eventChannel.ref
       val gatewayRef = gateway.ref
       submissionProbe.expectMsgPF() {
-        case MockReceived(_, _, SubmissionSupervisor.Initialize(
-          `brokerId`, `eventChannelRef`, `gatewayRef`)) =>
+        case MockReceived(_, _, SubmissionSupervisor.Initialize(`brokerId`, `gatewayRef`)) =>
       }
     }
    
     def givenOpenOrder(order: Order[FiatAmount]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
-        case OrderActor.Initialize(`order`, _) =>
+        case OrderActor.Initialize(`order`, _, _) =>
       }
     }
   }

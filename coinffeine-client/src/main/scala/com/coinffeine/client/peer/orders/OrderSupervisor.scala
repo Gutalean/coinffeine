@@ -30,7 +30,7 @@ class OrderSupervisor(orderActorProps: Props,
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(brokerId, eventChannel, gateway)
+      submission ! SubmissionSupervisor.Initialize(brokerId, gateway)
       context.become(waitingForOrders)
     }
 
@@ -38,7 +38,7 @@ class OrderSupervisor(orderActorProps: Props,
 
       case OpenOrder(order) =>
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
-        ref ! OrderActor.Initialize(order, submission)
+        ref ! OrderActor.Initialize(order, submission, eventChannel)
         orders += order.id -> ref
 
       case CancelOrder(orderId) =>

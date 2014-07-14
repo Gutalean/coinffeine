@@ -3,7 +3,6 @@ package com.coinffeine.client.peer.orders
 import scala.concurrent.duration._
 
 import akka.actor.Props
-import akka.testkit.TestProbe
 
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common._
@@ -30,10 +29,9 @@ class SubmissionSupervisorTest extends AkkaSpec {
   val bothEurOrders = firstEurOrder.addOrder(eurOrder2)
 
   trait Fixture {
-    val eventChannel = TestProbe()
     val gateway = new GatewayProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref)
+    actor ! SubmissionSupervisor.Initialize(brokerId, gateway.ref)
   }
 
   "An order submission actor" must "keep silent as long as there is no open orders" in new Fixture {

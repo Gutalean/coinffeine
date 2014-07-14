@@ -2,8 +2,6 @@ package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
-import com.coinffeine.client.api.CoinffeineApp
-import com.coinffeine.client.event.EventProducer
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.exchange.PeerId
@@ -20,8 +18,8 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
       new InitializedOrderSubmission(init).start()
   }
 
-  private class InitializedOrderSubmission[C <: FiatCurrency](init: MarketSubmissionActor.Initialize[C])
-    extends EventProducer(init.eventChannel) {
+  private class InitializedOrderSubmission[C <: FiatCurrency](
+      init: MarketSubmissionActor.Initialize[C]) {
 
     import init._
 
@@ -39,8 +37,6 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
             PeerPositions(market, positions.positions.filterNot(_.id == orderId))
           forwardOrders(reducedOrderSet)
 
-          produceEvent(CoinffeineApp.OrderCancelledEvent(orderId))
-
           context.become(
             if (reducedOrderSet.positions.isEmpty) waitingForOrders
             else keepingOpenOrders(reducedOrderSet)
@@ -55,9 +51,6 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
       case KeepSubmitting(order) =>
         val mergedOrderSet = positions.addOrder(order)
         forwardOrders(mergedOrderSet)
-
-        produceEvent(CoinffeineApp.OrderSubmittedEvent(order))
-
         context.become(keepingOpenOrders(mergedOrderSet))
     }
 
@@ -71,7 +64,6 @@ private[orders] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 private[orders] object MarketSubmissionActor {
 
   case class Initialize[C <: FiatCurrency](market: Market[C],
-                                           eventChannel: ActorRef,
                                            gateway: ActorRef,
                                            brokerId: PeerId)
 
