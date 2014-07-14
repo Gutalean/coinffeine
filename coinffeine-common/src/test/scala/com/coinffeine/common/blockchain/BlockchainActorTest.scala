@@ -1,12 +1,12 @@
 package com.coinffeine.common.blockchain
 
 import akka.actor.Props
+import org.scalatest.mock.MockitoSugar
 
 import com.coinffeine.common.BitcoinjTest
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
 import com.coinffeine.common.test.AkkaSpec
-import org.scalatest.mock.MockitoSugar
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     with BitcoinjTest with MockitoSugar {
@@ -76,21 +76,22 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     expectMsg(BlockchainActor.TransactionFound(tx.getHash, ImmutableTransaction(tx)))
   }
 
-  it must "fail to retrieve unexisting transaction in blockchain" in new Fixture {
+  it must "fail to retrieve nonexistent transaction in blockchain" in new Fixture {
     instance ! BlockchainActor.WatchPublicKey(keyPair)
     instance ! BlockchainActor.RetrieveTransaction(tx.getHash)
     expectMsg(BlockchainActor.TransactionNotFound(tx.getHash))
   }
 
-  it must "report blockchain height after the blockchain reaches the notification threshold" in new Fixture {
-    instance ! BlockchainActor.WatchBlockchainHeight(50)
-    for (currentHeight <- chain.getBestChainHeight to 48) {
+  it must "report blockchain height after the blockchain reaches the notification threshold" in
+    new Fixture {
+      instance ! BlockchainActor.WatchBlockchainHeight(50)
+      for (currentHeight <- chain.getBestChainHeight to 48) {
+        mineBlock()
+      }
+      expectNoMsg()
       mineBlock()
+      expectMsg(BlockchainActor.BlockchainHeightReached(50))
     }
-    expectNoMsg()
-    mineBlock()
-    expectMsg(BlockchainActor.BlockchainHeightReached(50))
-  }
 
   trait Fixture {
     val keyPair = new KeyPair()
