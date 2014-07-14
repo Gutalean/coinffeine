@@ -18,6 +18,16 @@ case class Both[T](buyer: T, seller: T) {
     seller = f(seller)
   )
 
+  def zip[S](other: Both[S]): Both[(T, S)] = Both(
+    buyer = (buyer, other.buyer),
+    seller = (seller, other.seller)
+  )
+
+  def foreach(f: T => Unit): Unit = {
+    f(buyer)
+    f(seller)
+  }
+
   def forall(pred: T => Boolean): Boolean = pred(buyer) && pred(seller)
 
   def roleOf(value: T): Option[Role] = value match {
