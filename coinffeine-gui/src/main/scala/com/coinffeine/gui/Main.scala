@@ -1,7 +1,8 @@
 package com.coinffeine.gui
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
 import scala.util.Random
 
 import scalafx.application.JFXApp
@@ -28,6 +29,8 @@ object Main extends JFXApp with ProductionCoinffeineApp.Component {
   }
   val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
   val setupConfig = new SetupWizard(sampleAddress, validator).run()
+
+  Await.result(app.network.connect(), Duration.Inf)
 
   stage = new PrimaryStage {
     title = "Coinffeine"
