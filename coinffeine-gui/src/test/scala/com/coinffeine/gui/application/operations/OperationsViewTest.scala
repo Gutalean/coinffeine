@@ -7,14 +7,14 @@ import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
 import com.coinffeine.client.api.{CoinffeineApp, MockCoinffeineApp}
-import com.coinffeine.common.{Bid, Order}
+import com.coinffeine.common.{Bid, OrderBookEntry}
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.gui.GuiTest
 import com.coinffeine.gui.application.properties.OrderProperties
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
-  val sampleOrder = Order(null, Bid, 1.BTC, 561.EUR)
+  val sampleOrder = OrderBookEntry(Bid, 1.BTC, 561.EUR)
   val app = new MockCoinffeineApp
 
   override def createRootNode(): Pane = {
@@ -41,7 +41,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   it must "enable cancel button when an order is selected" in new OrderIsPresentFixture {
     cancelButton should be ('disabled)
     eventually { click(ordersTableRow(0)) }
-    cancelButton should not be ('disabled)
+    cancelButton should not be 'disabled
   }
 
   private def cancelButton = find[Button]("#cancelOrderBtn")

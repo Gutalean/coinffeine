@@ -125,8 +125,8 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         OpenOrdersRequest(market),
         OpenOrders(orderSet),
         PeerOrderRequests(market, Seq(
-          Order(OrderId.random(), Bid, 1.BTC, 400.USD),
-          Order(OrderId.random(), Ask, 0.4.BTC, 600.USD)
+          OrderBookEntry(Bid, 1.BTC, 400.USD),
+          OrderBookEntry(Ask, 0.4.BTC, 600.USD)
         ))
       )
     }

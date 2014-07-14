@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.{FiatAmount, FiatCurrency, Order, OrderId}
+import com.coinffeine.common.{FiatAmount, FiatCurrency, OrderBookEntry, OrderId}
 import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.brokerage.Market
@@ -37,7 +37,7 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
       delegatesByMarket.values.foreach(_ forward message)
     }
 
-    private def marketOf(order: Order[FiatAmount]) = Market(currency = order.price.currency)
+    private def marketOf(order: OrderBookEntry[FiatAmount]) = Market(currency = order.price.currency)
 
     private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
     delegatesByMarket.getOrElse(market, createDelegate(market))
@@ -56,7 +56,7 @@ object SubmissionSupervisor {
 
   case class Initialize(brokerId: PeerId, gateway: ActorRef)
 
-  case class KeepSubmitting(order: Order[FiatAmount])
+  case class KeepSubmitting(order: OrderBookEntry[FiatAmount])
 
   case class StopSubmitting(orderId: OrderId)
 

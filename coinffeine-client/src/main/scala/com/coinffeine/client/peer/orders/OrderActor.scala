@@ -6,7 +6,7 @@ import com.coinffeine.client.event.EventProducer
 
 import com.coinffeine.client.peer.orders.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.{FiatAmount, Order}
+import com.coinffeine.common.{FiatAmount, OrderBookEntry}
 
 class OrderActor extends Actor {
 
@@ -37,10 +37,15 @@ class OrderActor extends Actor {
 
 object OrderActor {
 
-  case class Initialize(order: Order[FiatAmount], submissionSupervisor: ActorRef, eventChannel: ActorRef)
+  case class Initialize(order: OrderBookEntry[FiatAmount], submissionSupervisor: ActorRef,
+                        eventChannel: ActorRef)
+
   case object CancelOrder
 
-  /** Ask for order status. To be replied with an [[com.coinffeine.common.Order]]. */
+  /** Ask for order status. To be replied with an [[com.coinffeine.common.OrderBookEntry]].
+    *
+    * TODO: return an Order instead of an OrderBookEntry
+    */
   case object RetrieveStatus
 
   trait Component {

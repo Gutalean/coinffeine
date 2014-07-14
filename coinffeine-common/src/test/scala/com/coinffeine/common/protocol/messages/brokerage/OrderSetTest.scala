@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.{Ask, Bid, Order}
+import com.coinffeine.common.{Ask, Bid, OrderBookEntry}
 import com.coinffeine.common.Currency.Euro
 import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.test.UnitTest
@@ -31,16 +31,6 @@ class OrderSetTest extends UnitTest {
       market = eurMarket,
       bids = VolumeByPrice(1000.EUR -> 11.BTC),
       asks = VolumeByPrice(1100.EUR -> 1.BTC)
-    ))
-  }
-
-  it should "be converted to orders" in {
-    val orderSet = OrderSet.empty(eurMarket)
-      .addOrder(Bid, 11.BTC, 1000.EUR)
-      .addOrder(Ask, 1.BTC, 1100.EUR)
-    orderSet.orders.toSet should be (Set(
-      Order(null, Bid, 11.BTC, 1000.EUR),
-      Order(null, Ask, 1.BTC, 1100.EUR)
     ))
   }
 }

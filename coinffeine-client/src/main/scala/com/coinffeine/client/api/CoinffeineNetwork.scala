@@ -21,7 +21,7 @@ trait CoinffeineNetwork {
     */
   def disconnect(): Future[CoinffeineNetwork.Disconnected.type]
 
-  def orders: Set[Order[FiatAmount]]
+  def orders: Set[OrderBookEntry[FiatAmount]]
   def exchanges: Set[Exchange]
 
   /** Notify exchange events. */
@@ -33,8 +33,8 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitBuyOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): Order[F] =
-    submitOrder(Order(Bid, btcAmount, fiatAmount))
+  def submitBuyOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): OrderBookEntry[F] =
+    submitOrder(OrderBookEntry(Bid, btcAmount, fiatAmount))
 
   /** Submit an order to sell bitcoins.
     *
@@ -42,11 +42,11 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): Order[F] =
-    submitOrder(Order(Ask, btcAmount, fiatAmount))
+  def submitSellOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): OrderBookEntry[F] =
+    submitOrder(OrderBookEntry(Ask, btcAmount, fiatAmount))
 
   /** Submit an order. */
-  def submitOrder[F <: FiatAmount](order: Order[F]): Order[F]
+  def submitOrder[F <: FiatAmount](order: OrderBookEntry[F]): OrderBookEntry[F]
 
   def cancelOrder(order: OrderId): Unit
 }

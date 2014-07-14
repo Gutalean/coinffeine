@@ -21,12 +21,12 @@ class SubmissionSupervisorTest extends AkkaSpec {
     orderResubmitInterval = 4.seconds
   )
   val brokerId = PeerId("broker")
-  val eurOrder1 = Order(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
-  val eurOrder2 = Order(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
-  val usdOrder = Order(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
+  val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
+  val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
+  val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
   val noEurOrders = PeerOrderRequests.empty(Market(Euro))
-  val firstEurOrder = noEurOrders.addOrder(eurOrder1)
-  val bothEurOrders = firstEurOrder.addOrder(eurOrder2)
+  val firstEurOrder = noEurOrders.addEntry(eurOrder1)
+  val bothEurOrders = firstEurOrder.addEntry(eurOrder2)
 
   trait Fixture {
     val gateway = new GatewayProbe()

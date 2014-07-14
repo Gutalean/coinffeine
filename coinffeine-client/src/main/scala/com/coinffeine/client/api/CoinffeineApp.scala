@@ -2,7 +2,7 @@ package com.coinffeine.client.api
 
 import java.io.Closeable
 
-import com.coinffeine.common.{FiatAmount, Order, OrderId}
+import com.coinffeine.common.{FiatAmount, OrderBookEntry, OrderId}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 
@@ -24,7 +24,7 @@ object CoinffeineApp {
   sealed trait Event
 
   /** An event triggered each time a new order is submitted. */
-  case class OrderSubmittedEvent(order: Order[FiatAmount]) extends Event
+  case class OrderSubmittedEvent(order: OrderBookEntry[FiatAmount]) extends Event
 
   /** An event triggered each time an order is cancelled. */
   case class OrderCancelledEvent(orderId: OrderId) extends Event

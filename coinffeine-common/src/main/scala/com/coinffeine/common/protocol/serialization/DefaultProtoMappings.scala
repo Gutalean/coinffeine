@@ -112,26 +112,26 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val orderMapping = new ProtoMapping[Order[FiatAmount], msg.Order] {
+  implicit val orderBookEntryMapping = new ProtoMapping[OrderBookEntry[FiatAmount], msg.OrderBookEntry] {
 
-    override def fromProtobuf(order: msg.Order) = Order(
-      id = OrderId(order.getId),
-      orderType = order.getOrderType match {
-        case msg.Order.OrderType.BID => Bid
-        case msg.Order.OrderType.ASK => Ask
+    override def fromProtobuf(entry: msg.OrderBookEntry) = OrderBookEntry(
+      id = OrderId(entry.getId),
+      orderType = entry.getOrderType match {
+        case msg.OrderBookEntry.OrderType.BID => Bid
+        case msg.OrderBookEntry.OrderType.ASK => Ask
       },
-      amount = ProtoMapping.fromProtobuf(order.getAmount),
-      price = ProtoMapping.fromProtobuf(order.getPrice)
+      amount = ProtoMapping.fromProtobuf(entry.getAmount),
+      price = ProtoMapping.fromProtobuf(entry.getPrice)
     )
 
-    override def toProtobuf(order: Order[FiatAmount]) = msg.Order.newBuilder
-      .setId(order.id.value)
-      .setOrderType(order.orderType match {
-        case Bid => msg.Order.OrderType.BID
-        case Ask => msg.Order.OrderType.ASK
+    override def toProtobuf(entry: OrderBookEntry[FiatAmount]) = msg.OrderBookEntry.newBuilder
+      .setId(entry.id.value)
+      .setOrderType(entry.orderType match {
+        case Bid => msg.OrderBookEntry.OrderType.BID
+        case Ask => msg.OrderBookEntry.OrderType.ASK
       })
-      .setAmount(ProtoMapping.toProtobuf(order.amount))
-      .setPrice(ProtoMapping.toProtobuf(order.price))
+      .setAmount(ProtoMapping.toProtobuf(entry.amount))
+      .setPrice(ProtoMapping.toProtobuf(entry.price))
       .build
   }
 
@@ -140,20 +140,20 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def fromProtobuf(message: msg.PeerOrderRequests) = {
       val market = ProtoMapping.fromProtobuf(message.getMarket)
-      val protobufPositions = message.getPositionsList.asScala
-      val positions = for (protoPos <- protobufPositions) yield {
-        val pos = ProtoMapping.fromProtobuf[Order[FiatAmount], msg.Order](protoPos)
+      val protobufEntries = message.getEntriesList.asScala
+      val positions = for (protoEntry <- protobufEntries) yield {
+        val pos = ProtoMapping.fromProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](protoEntry)
         require(pos.price.currency == market.currency, s"Mixed currencies on $message")
         pos
       }
       PeerOrderRequests(market, positions)
     }
 
-    override def toProtobuf(positions: PeerOrderRequests[FiatCurrency]) = {
+    override def toProtobuf(requests: PeerOrderRequests[FiatCurrency]) = {
       val builder = msg.PeerOrderRequests.newBuilder
-        .setMarket(ProtoMapping.toProtobuf(positions.market))
-      for (pos <- positions.positions) {
-        builder.addPositions(ProtoMapping.toProtobuf[Order[FiatAmount], msg.Order](pos))
+        .setMarket(ProtoMapping.toProtobuf(requests.market))
+      for (entry <- requests.entries) {
+        builder.addEntries(ProtoMapping.toProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](entry))
       }
       builder.build
     }
@@ -332,10 +332,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       exchangeId = Exchange.Id(message.getExchangeId),
       step = message.getStep,
       signatures = Signatures(
-        buyer =
-          txSerialization.deserializeSignature(message.getBuyerDepositSignature),
-        seller =
-          txSerialization.deserializeSignature(message.getSellerDepositSignature)
+        buyer = txSerialization.deserializeSignature(message.getBuyerDepositSignature),
+        seller = txSerialization.deserializeSignature(message.getSellerDepositSignature)
       )
     )
 

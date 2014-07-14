@@ -30,7 +30,7 @@ message OrderSet {
     repeated OrderSetEntry asks = 3;
 }
 
-message Order {
+message OrderBookEntry {
     enum OrderType {
         BID = 0;
         ASK = 1;
@@ -43,7 +43,7 @@ message Order {
 
 message PeerOrderRequests {
     required Market market = 1;
-    repeated Order positions = 2;
+    repeated OrderBookEntry entries = 2;
 }
 
 message QuoteRequest {
