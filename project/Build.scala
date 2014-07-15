@@ -45,7 +45,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(client, common, model, commonTest, gui, server, test)
+    aggregate(client, common, protocol, model, commonTest, gui, server, test)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
@@ -55,23 +55,30 @@ object Build extends sbt.Build {
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
-  lazy val model = (Project(id = "model", base = file("coinffeine-model"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn(commonTest % "test->compile")
-  )
-
   lazy val common = (Project(
     id = "common",
     base = file("coinffeine-common"),
-      settings = Defaults.defaultSettings ++ PB.protobufSettings ++ scalaxbSettings ++ Seq(
+    settings = Defaults.defaultSettings ++ scalaxbSettings ++ Seq(
       sourceGenerators in Compile <+= scalaxb in Compile,
       packageName in (Compile, scalaxb) := "com.coinffeine.common.paymentprocessor.okpay.generated",
       dispatchVersion in (Compile, scalaxb) := Versions.dispatch,
       async in (Compile, scalaxb) := true
     ))
-      settings(ScoverageSbtPlugin.instrumentSettings: _*)
-      dependsOn(model % "compile->compile;test->test", commonTest % "test->compile")
-    )
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(protocol % "compile->compile;test->test",
+      model % "compile->compile;test->test", commonTest % "test->compile")
+  )
+
+  lazy val protocol = (Project(id = "protocol", base = file("coinffeine-protocol"))
+    settings(PB.protobufSettings: _*)
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(model % "compile->compile;test->test", commonTest % "test->compile")
+  )
+
+  lazy val model = (Project(id = "model", base = file("coinffeine-model"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(commonTest % "test->compile")
+  )
 
   lazy val commonTest = Project(
     id = "common-test",
