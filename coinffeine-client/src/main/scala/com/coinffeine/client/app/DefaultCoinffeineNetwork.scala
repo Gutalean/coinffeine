@@ -1,7 +1,5 @@
 package com.coinffeine.client.app
 
-import coinffeine.model.order.{OrderId, OrderBookEntry}
-
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{Failure, Success}
@@ -10,6 +8,7 @@ import akka.actor.ActorRef
 import akka.pattern._
 
 import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.CoinffeinePeerActor

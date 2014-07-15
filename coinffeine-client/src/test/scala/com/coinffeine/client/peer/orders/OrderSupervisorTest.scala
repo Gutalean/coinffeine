@@ -5,10 +5,9 @@ import akka.testkit.TestProbe
 
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.{Ask, Bid, OrderBookEntry}
 import com.coinffeine.client.peer.CoinffeinePeerActor._
-import com.coinffeine.common._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}

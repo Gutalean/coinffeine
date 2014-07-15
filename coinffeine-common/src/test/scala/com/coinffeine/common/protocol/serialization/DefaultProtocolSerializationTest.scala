@@ -1,21 +1,18 @@
 package com.coinffeine.common.protocol.serialization
 
 import java.math.BigInteger.ZERO
-import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.Currency
-import coinffeine.model.exchange.{Both, Exchange}
-import coinffeine.model.network.PeerId
-import coinffeine.model.order.{OrderId, Ask, Bid, OrderBookEntry}
-
 import scala.collection.JavaConversions
 
 import org.reflections.Reflections
 
-import com.coinffeine.common._
-import Currency.UsDollar
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.currency.Currency.UsDollar
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage

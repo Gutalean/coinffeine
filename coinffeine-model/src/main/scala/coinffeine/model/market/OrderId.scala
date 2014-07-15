@@ -1,4 +1,4 @@
-package coinffeine.model.order
+package coinffeine.model.market
 
 import java.util.UUID
 

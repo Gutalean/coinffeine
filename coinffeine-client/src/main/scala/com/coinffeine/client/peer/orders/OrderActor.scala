@@ -3,7 +3,7 @@ package com.coinffeine.client.peer.orders
 import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.FiatAmount
-import coinffeine.model.order.OrderBookEntry
+import coinffeine.model.market.OrderBookEntry
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.event.EventProducer
 import com.coinffeine.client.peer.orders.OrderActor.{CancelOrder, Initialize, RetrieveStatus}

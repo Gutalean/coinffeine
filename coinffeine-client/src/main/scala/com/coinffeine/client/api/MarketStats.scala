@@ -1,6 +1,6 @@
 package com.coinffeine.client.api
 
-import coinffeine.model.order.OrderBookEntry
+import coinffeine.model.market.OrderBookEntry
 
 import scala.concurrent.Future
 

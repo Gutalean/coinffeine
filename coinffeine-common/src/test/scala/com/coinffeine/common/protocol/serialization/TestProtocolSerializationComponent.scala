@@ -2,8 +2,8 @@ package com.coinffeine.common.protocol.serialization
 
 import coinffeine.model.currency.Currency
 import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.OrderId
 
 import scala.util.Random
 import Currency.Bitcoin

@@ -5,8 +5,8 @@ import akka.testkit.TestProbe
 
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.{OrderId, Bid, OrderBookEntry}
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
 import com.coinffeine.client.peer.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import com.coinffeine.client.peer.orders.OrderSupervisor

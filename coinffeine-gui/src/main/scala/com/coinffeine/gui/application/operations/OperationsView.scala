@@ -1,6 +1,6 @@
 package com.coinffeine.gui.application.operations
 
-import coinffeine.model.order.OrderType
+import coinffeine.model.market.OrderType
 import org.controlsfx.dialog.Dialogs
 import org.controlsfx.dialog.Dialog.Actions
 import scalafx.Includes._

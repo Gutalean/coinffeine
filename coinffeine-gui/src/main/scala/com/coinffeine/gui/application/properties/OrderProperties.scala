@@ -1,11 +1,9 @@
 package com.coinffeine.gui.application.properties
 
-import coinffeine.model.order.{OrderType, OrderBookEntry}
-
 import scalafx.beans.property.ObjectProperty
 
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
-import com.coinffeine.common._
+import coinffeine.model.market.{OrderBookEntry, OrderType}
 
 // TODO: use an Order instead of an OrderBookEntry
 case class OrderProperties(order: OrderBookEntry[FiatAmount]) {

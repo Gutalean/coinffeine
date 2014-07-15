@@ -1,13 +1,12 @@
 package com.coinffeine.client.peer.orders
 
-import coinffeine.model.order.{OrderId, OrderBookEntry}
-
 import scala.concurrent.duration._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common.protocol.ProtocolConstants

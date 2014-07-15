@@ -2,6 +2,7 @@ package coinffeine.model.order
 
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
 import com.coinffeine.common.test.UnitTest
 
 class OrderBookEntryTest extends UnitTest {

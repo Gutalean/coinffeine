@@ -2,8 +2,8 @@ package com.coinffeine.common.protocol.messages.brokerage
 
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.OrderId
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** Represents a coincidence of desires of both a buyer and a seller */

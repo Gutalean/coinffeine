@@ -1,7 +1,5 @@
 package com.coinffeine.client.peer
 
-import coinffeine.model.order.{OrderId, OrderBookEntry}
-
 import scala.concurrent.duration._
 import scala.util.Random
 
@@ -10,6 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common._

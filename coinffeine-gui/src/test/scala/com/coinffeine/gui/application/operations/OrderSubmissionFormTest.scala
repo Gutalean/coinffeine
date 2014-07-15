@@ -5,7 +5,7 @@ import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.order.{Bid, OrderBookEntry}
+import coinffeine.model.market.{Bid, OrderBookEntry}
 import com.coinffeine.client.api.MockCoinffeineApp
 import com.coinffeine.gui.GuiTest
 

@@ -1,7 +1,5 @@
 package com.coinffeine.client.peer.orders
 
-import coinffeine.model.order.{OrderId, OrderBookEntry}
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -10,6 +8,7 @@ import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.client.peer.orders.OrderActor.RetrieveStatus
