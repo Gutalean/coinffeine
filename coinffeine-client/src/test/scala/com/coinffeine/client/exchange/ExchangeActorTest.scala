@@ -1,5 +1,7 @@
 package com.coinffeine.client.exchange
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props, Terminated}
@@ -21,7 +23,6 @@ import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with SellerPerspective with BitcoinjTest with Eventually {

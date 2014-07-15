@@ -10,10 +10,10 @@ import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{Unexpec
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,

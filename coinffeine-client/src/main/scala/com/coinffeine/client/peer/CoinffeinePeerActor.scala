@@ -13,10 +13,10 @@ import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common._
 import com.coinffeine.common.config.ConfigComponent
-import com.coinffeine.common.protocol.gateway.MessageGateway
-import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage
-import com.coinffeine.common.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
+import coinffeine.protocol.gateway.{PeerConnection, MessageGateway}
+import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
+import coinffeine.protocol.messages.brokerage
+import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.

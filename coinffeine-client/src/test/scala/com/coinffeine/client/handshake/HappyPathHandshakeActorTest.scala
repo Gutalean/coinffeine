@@ -1,5 +1,7 @@
 package com.coinffeine.client.handshake
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
@@ -10,10 +12,10 @@ import coinffeine.model.network.PeerId
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
-import com.coinffeine.common.protocol.messages.handshake._
+import coinffeine.protocol._
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.handshake._
 
 class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 

@@ -4,8 +4,8 @@ import akka.actor.{ActorSystem, Props}
 
 import com.coinffeine.client.api._
 import com.coinffeine.client.peer.{CoinffeinePeerActor, EventObserverActor}
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Implements the coinffeine application API as an actor system.
   *

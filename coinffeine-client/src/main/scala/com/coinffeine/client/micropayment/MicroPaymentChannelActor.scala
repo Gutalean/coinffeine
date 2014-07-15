@@ -2,11 +2,10 @@ package com.coinffeine.client.micropayment
 
 import akka.actor.ActorRef
 
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.RunningExchange
-import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
-import com.coinffeine.common.protocol.ProtocolConstants
+import coinffeine.model.exchange.{Both, RunningExchange}
+import com.coinffeine.common.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.
@@ -38,6 +37,6 @@ object MicroPaymentChannelActor {
 
   case class TimeoutException(message: String) extends RuntimeException(message)
 
-  case class InvalidStepSignatures(step: Int, sigs: Signatures, cause: Throwable)
+  case class InvalidStepSignatures(step: Int, sigs: Both[TransactionSignature], cause: Throwable)
     extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)
 }

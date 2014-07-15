@@ -1,5 +1,7 @@
 package com.coinffeine.client.peer.orders
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -12,7 +14,6 @@ import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.client.peer.orders.OrderActor.RetrieveStatus
-import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Manages orders */
 class OrderSupervisor(orderActorProps: Props,

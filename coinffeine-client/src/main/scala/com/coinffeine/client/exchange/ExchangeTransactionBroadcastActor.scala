@@ -1,5 +1,7 @@
 package com.coinffeine.client.exchange
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -13,7 +15,6 @@ import com.coinffeine.common.akka.ConstantValueActor.SetValue
 import coinffeine.model.bitcoin.ImmutableTransaction
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeTransactionBroadcastActor(
     protocolConstants: ProtocolConstants) extends Actor with ActorLogging with Stash {

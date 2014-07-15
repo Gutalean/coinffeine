@@ -5,21 +5,21 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.testkit.TestProbe
 
+import coinffeine.model.bitcoin.TransactionSignature
+import coinffeine.model.exchange.Both
+import coinffeine.protocol.messages.exchange.StepSignatures
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
-import coinffeine.model.bitcoin.TransactionSignature
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.messages.exchange.StepSignatures
 
 class BuyerMicroPaymentChannelActorFailureTest
   extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {
 
   val protocolConstants = ProtocolConstants(exchangeSignatureTimeout = 0.5 seconds)
   val exchangeProtocol = new MockExchangeProtocol
-  val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+  val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
 
   trait Fixture {
     val listener = TestProbe()

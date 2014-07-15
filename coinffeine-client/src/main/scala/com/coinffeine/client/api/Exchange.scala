@@ -1,6 +1,6 @@
 package com.coinffeine.client.api
 
-import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.messages.brokerage.OrderMatch
 
 sealed trait Exchange {
   def id: String

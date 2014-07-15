@@ -1,5 +1,7 @@
 package com.coinffeine.client.peer.orders
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
@@ -9,8 +11,7 @@ import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.messages.brokerage.Market
+import coinffeine.protocol.messages.brokerage.Market
 
 class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging{
   private implicit val timeout = Timeout(1.second)

@@ -1,8 +1,7 @@
 package com.coinffeine.client.peer
 
+import coinffeine.protocol.gateway.PeerConnection
 import com.beust.jcommander.ParameterException
-
-import com.coinffeine.common.PeerConnection
 import com.coinffeine.common.test.UnitTest
 
 class PeerCommandLineTest extends UnitTest {

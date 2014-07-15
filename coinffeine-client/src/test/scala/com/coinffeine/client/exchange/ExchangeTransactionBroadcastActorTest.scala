@@ -12,8 +12,7 @@ import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, G
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{TransactionPublished, PublishTransaction, BlockchainActorReference, RetrieveBlockchainActor}
 import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction}
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.system
+import com.coinffeine.common.{ProtocolConstants, system}
 
 class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
 

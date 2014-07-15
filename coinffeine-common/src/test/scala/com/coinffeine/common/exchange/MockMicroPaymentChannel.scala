@@ -2,9 +2,9 @@ package com.coinffeine.common.exchange
 
 import scala.util.{Failure, Success}
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.RunningExchange
+import coinffeine.model.exchange.{Both, RunningExchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 class MockMicroPaymentChannel[C <: FiatCurrency] private (
@@ -17,15 +17,15 @@ class MockMicroPaymentChannel[C <: FiatCurrency] private (
 
   override def nextStep = new MockMicroPaymentChannel(exchange, step.next)
 
-  override def validateCurrentTransactionSignatures(signatures: Signatures) =
+  override def validateCurrentTransactionSignatures(signatures: Both[TransactionSignature]) =
     signatures match {
-      case Signatures(MockExchangeProtocol.InvalidSignature, _) |
-           Signatures(_, MockExchangeProtocol.InvalidSignature) =>
+      case Both(MockExchangeProtocol.InvalidSignature, _) |
+           Both(_, MockExchangeProtocol.InvalidSignature) =>
         Failure(new Error("Invalid signature"))
       case _ => Success {}
     }
 
-  override def closingTransaction(counterpartSignatures: Signatures) =
+  override def closingTransaction(counterpartSignatures: Both[TransactionSignature]) =
     buildDummyTransaction(step.value - 1)
 
   private def buildDummyTransaction(idx: Int) = {

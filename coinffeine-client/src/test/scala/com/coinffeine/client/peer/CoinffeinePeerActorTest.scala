@@ -7,12 +7,13 @@ import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.protocol.gateway.PeerConnection
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
 import com.coinffeine.client.peer.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common._
-import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import com.coinffeine.common.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
+import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
+import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 

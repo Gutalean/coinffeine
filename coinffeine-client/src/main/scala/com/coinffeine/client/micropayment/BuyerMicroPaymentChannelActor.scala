@@ -6,18 +6,19 @@ import scala.util.{Failure, Success}
 import akka.actor._
 import akka.pattern._
 
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Both
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -90,7 +91,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       }
 
     private def waitForValidSignature(channel: MicroPaymentChannel[C])
-                                     (body: Signatures => Unit): Receive = {
+                                     (body: Both[TransactionSignature] => Unit): Receive = {
       case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
         channel.validateCurrentTransactionSignatures(signatures) match {
           case Success(_) =>

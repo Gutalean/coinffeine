@@ -1,5 +1,7 @@
 package com.coinffeine.client.micropayment
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.Future
 import scala.util.{Failure, Try}
 
@@ -15,9 +17,8 @@ import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.PaymentFound
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.exchange._
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.exchange._
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm

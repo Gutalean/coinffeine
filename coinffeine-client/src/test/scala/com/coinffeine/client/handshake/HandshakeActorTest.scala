@@ -2,6 +2,7 @@ package com.coinffeine.client.handshake
 
 import akka.actor.Props
 import akka.testkit.TestProbe
+import com.coinffeine.common.ProtocolConstants
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
@@ -11,8 +12,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
 import com.coinffeine.common.exchange.{MockExchangeProtocol, MockHandshake}
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}
+import coinffeine.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class HandshakeActorTest(systemName: String)

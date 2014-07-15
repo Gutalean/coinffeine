@@ -1,5 +1,7 @@
 package com.coinffeine.client.micropayment
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -11,7 +13,6 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class SellerMicroPaymentChannelActorFailureTest
   extends CoinffeineClientTest("buyerExchange") with SellerPerspective {

@@ -5,7 +5,7 @@ import coinffeine.model.market.OrderBookEntry
 import scala.concurrent.Future
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import com.coinffeine.common.protocol.messages.brokerage.{Market, Quote}
+import coinffeine.protocol.messages.brokerage.{Market, Quote}
 
 /** Give access to current and historical prices and other market stats. */
 trait MarketStats {

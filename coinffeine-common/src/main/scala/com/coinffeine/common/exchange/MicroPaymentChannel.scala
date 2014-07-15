@@ -22,9 +22,9 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
     * @return               A success is everything is correct or a failure with an
     *                       [[InvalidSignaturesException]] otherwise
     */
-  def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit]
+  def validateCurrentTransactionSignatures(herSignatures: Both[TransactionSignature]): Try[Unit]
 
-  def signCurrentTransaction: Signatures
+  def signCurrentTransaction: Both[TransactionSignature]
 
   /** Given valid counterpart signatures it generates the closing transaction.
     *
@@ -39,7 +39,7 @@ trait MicroPaymentChannel[C <: FiatCurrency] {
     * @return               Ready to broadcast transaction
     */
   @throws[InvalidSignaturesException]("if herSignatures are not valid")
-  def closingTransaction(herSignatures: Signatures): ImmutableTransaction
+  def closingTransaction(herSignatures: Both[TransactionSignature]): ImmutableTransaction
 }
 
 object MicroPaymentChannel {
@@ -73,10 +73,6 @@ object MicroPaymentChannel {
     override def toString = s"step $value/$value"
   }
 
-  /** Signatures for a step transaction of both deposits. */
-  type Signatures = Both[TransactionSignature]
-  val Signatures = Both
-
-  case class InvalidSignaturesException(signatures: Signatures, cause: Throwable = null)
+  case class InvalidSignaturesException(signatures: Both[TransactionSignature], cause: Throwable = null)
     extends IllegalArgumentException(s"Invalid signatures $signatures", cause)
 }

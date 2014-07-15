@@ -1,10 +1,12 @@
 package com.coinffeine.client.handshake
 
+import com.coinffeine.common.ProtocolConstants
+
 import scala.concurrent.duration._
 
-import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.handshake.PeerHandshake
+import coinffeine.protocol._
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, Subscribe}
+import coinffeine.protocol.messages.handshake.PeerHandshake
 
 class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path") {
 

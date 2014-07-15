@@ -1,6 +1,6 @@
 package coinffeine.protocol.test;
 
-option java_package = "com.coinffeine.common.protocol.protobuf";
+option java_package = "coinffeine.common.test.protobuf";
 option java_outer_classname = "TestProtocol";
 option java_generic_services = true;
 

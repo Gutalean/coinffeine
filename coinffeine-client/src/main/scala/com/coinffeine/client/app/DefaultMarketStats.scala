@@ -8,7 +8,7 @@ import akka.pattern._
 
 import coinffeine.model.currency.FiatCurrency
 import com.coinffeine.client.api.MarketStats
-import com.coinffeine.common.protocol.messages.brokerage._
+import coinffeine.protocol.messages.brokerage._
 
 private[app] class DefaultMarketStats(override val peer: ActorRef)
   extends MarketStats with PeerActorWrapper {

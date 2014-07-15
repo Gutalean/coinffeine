@@ -1,0 +1,156 @@
+package coinffeine.protocol;
+
+option java_package = "coinffeine.protocol.protobuf";
+option java_outer_classname = "CoinffeineProtobuf";
+option java_generic_services = true;
+
+message BtcAmount {
+    required int64 value = 1;
+    required int32 scale = 2;
+}
+
+message FiatAmount {
+    required int64 value = 1;
+    required int32 scale = 2;
+    required string currency = 3;
+}
+
+message Market {
+    required string currency = 1;
+}
+
+message OrderBookEntry {
+    enum OrderType {
+        BID = 0;
+        ASK = 1;
+    }
+    required string id = 1;
+    required OrderType orderType = 2;
+    required BtcAmount amount = 3;
+    required FiatAmount price = 4;
+}
+
+message PeerOrderRequests {
+    required Market market = 1;
+    repeated OrderBookEntry entries = 2;
+}
+
+message QuoteRequest {
+    required Market market = 1;
+}
+
+message Quote {
+    required Market market = 1;
+    optional FiatAmount highestBid = 2;
+    optional FiatAmount lowestAsk = 3;
+    optional FiatAmount lastPrice = 4;
+}
+
+message OrderMatch {
+    required string orderId = 1;
+    required string exchangeId = 2;
+    required BtcAmount amount = 3;
+    required FiatAmount price = 4;
+    required string counterpart = 5;
+}
+
+message OpenOrdersRequest {
+    required Market market = 1;
+}
+
+message OpenOrders {
+    required PeerOrderRequests orders = 1;
+}
+
+message ExchangeAborted {
+    required string exchangeId = 1;
+    required string reason = 2;
+}
+
+message ExchangeRejection {
+    required string exchangeId = 1;
+    required string reason = 2;
+}
+
+message CommitmentNotification {
+    required string exchangeId = 1;
+    required bytes buyerTxId = 2;
+    required bytes sellerTxId = 3;
+}
+
+message PeerHandshake {
+    required string exchangeId = 1;
+    required bytes publicKey = 2;
+    required string paymentProcessorAccount = 3;
+}
+
+message RefundSignatureRequest {
+    required string exchangeId = 1;
+    required bytes refundTx = 2;
+}
+
+message RefundSignatureResponse {
+    required string exchangeId = 1;
+    required bytes transactionSignature = 2;
+}
+
+message ExchangeCommitment {
+    required string exchangeId = 1;
+    required bytes commitmentTransaction = 2;
+}
+
+message StepSignature {
+    required string exchangeId = 1;
+    required int32 step = 2;
+    required bytes buyerDepositSignature = 3;
+    required bytes sellerDepositSignature = 4;
+}
+
+message PaymentProof {
+    required string exchangeId = 1;
+    required string paymentId = 2;
+}
+
+message Payload {
+    optional ExchangeAborted exchangeAborted = 1;
+    optional ExchangeCommitment exchangeCommitment = 2;
+    optional CommitmentNotification commitmentNotification = 3;
+    optional OrderMatch orderMatch = 4;
+    optional PeerOrderRequests peerOrderRequests = 5;
+    optional QuoteRequest quoteRequest = 6;
+    optional Quote quote = 7;
+    optional ExchangeRejection exchangeRejection = 8;
+    optional PeerHandshake peerHandshake = 9;
+    optional RefundSignatureRequest refundSignatureRequest = 10;
+    optional RefundSignatureResponse refundSignatureResponse = 11;
+    optional StepSignature stepSignature = 12;
+    optional PaymentProof paymentProof = 13;
+    optional OpenOrdersRequest openOrderRequest = 14;
+    optional OpenOrders openOrders = 15;
+}
+
+message ProtocolVersion {
+    required int32 major = 1;
+    required int32 minor = 2;
+}
+
+message CoinffeineMessage {
+    required ProtocolVersion version = 1;
+    required string peerId = 2;
+    required Payload payload = 3;
+}
+
+message Void {}
+
+message PeerId {
+    required string peerId = 1;
+}
+
+message PeerIdResolution {
+    optional string peerConnection = 1;
+}
+
+service PeerService {
+    rpc SendMessage(CoinffeineMessage) returns (Void);
+    rpc ResolvePeerId(PeerId) returns (PeerIdResolution);
+}
