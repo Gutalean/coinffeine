@@ -4,7 +4,7 @@ package com.coinffeine.gui.application
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.model.market.OrderId
-import com.coinffeine.client.api.{CoinffeineApp, EventHandler}
+import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 import com.coinffeine.gui.application.properties.OrderProperties
 import com.coinffeine.gui.util.FxEventHandler
 

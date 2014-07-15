@@ -7,7 +7,7 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry}
-import com.coinffeine.client.api.MockCoinffeineApp
+import coinffeine.peer.api.mock.MockCoinffeineApp
 import com.coinffeine.gui.GuiTest
 
 class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {

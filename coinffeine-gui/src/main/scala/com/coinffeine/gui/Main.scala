@@ -7,7 +7,7 @@ import scala.util.Random
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
-import com.coinffeine.client.app.ProductionCoinffeineApp
+import coinffeine.peer.api.impl.ProductionCoinffeineApp
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView

@@ -13,7 +13,7 @@ import akka.util.Timeout
   * whose termination stops the application.
   */
 trait ActorSystemBootstrap {
-  import ActorSystemBootstrap._
+  import com.coinffeine.common.system.ActorSystemBootstrap._
 
   protected val supervisorProps: Props
 

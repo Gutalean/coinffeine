@@ -2,7 +2,7 @@ package com.coinffeine.gui.util
 
 import scalafx.application.Platform
 
-import com.coinffeine.client.api.{CoinffeineApp, EventHandler}
+import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 /** A event handler ready to be used in JavaFX/ScalaFX concurrency model.
   *
