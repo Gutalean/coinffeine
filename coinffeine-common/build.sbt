@@ -1,4 +1,4 @@
-name := "Coinffeine Common"
+name := "coinffeine-common"
 
 ScoverageKeys.excludedPackages in ScoverageCompile :=
   "scalaxb;soapenvelope11;.*generated.*;.*protobuf.*"

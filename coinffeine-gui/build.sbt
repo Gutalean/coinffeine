@@ -1,4 +1,4 @@
-name := "Coinffeine GUI"
+name := "coinffeine-gui"
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
 

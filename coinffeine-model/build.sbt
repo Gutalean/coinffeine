@@ -1,4 +1,4 @@
-name := "Coinffeine Model"
+name := "coinffeine-model"
 
 libraryDependencies ++= Seq(
   Dependencies.bitcoinj,
