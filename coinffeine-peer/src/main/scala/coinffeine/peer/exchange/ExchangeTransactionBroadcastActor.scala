@@ -7,13 +7,13 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.peer.bitcoin.BitcoinPeerActor._
+import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
+import coinffeine.peer.exchange.util.ConstantValueActor
+import coinffeine.peer.exchange.util.ConstantValueActor.SetValue
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.akka.ConstantValueActor
-import com.coinffeine.common.akka.ConstantValueActor.SetValue
-import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
-import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 
 class ExchangeTransactionBroadcastActor(
     protocolConstants: ProtocolConstants) extends Actor with ActorLogging with Stash {
@@ -61,7 +61,7 @@ class ExchangeTransactionBroadcastActor(
     }
 
     private def broadcastCompleted(txToPublish: ImmutableTransaction): Receive = {
-      case msg@TransactionPublished(`txToPublish`, _) =>
+      case msg @ TransactionPublished(`txToPublish`, _) =>
         finishWith(ExchangeFinished(msg))
       case TransactionPublished(_, unexpectedTx) =>
         finishWith(ExchangeFinishFailure(UnexpectedTxBroadcast(unexpectedTx)))

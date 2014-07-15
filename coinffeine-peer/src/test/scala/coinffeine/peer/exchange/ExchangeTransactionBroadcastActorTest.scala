@@ -7,12 +7,12 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.peer.bitcoin.BitcoinPeerActor._
+import coinffeine.peer.bitcoin.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
-import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 
 class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
 
@@ -40,7 +40,7 @@ class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroa
     peerActor.reply(BlockchainActorReference(blockchain.ref))
   }
 
-  private def expectPanicNofiticationRequest(): ActorRef = {
+  private def expectPanicNotificationRequest(): ActorRef = {
     blockchain.expectMsg(WatchBlockchainHeight(panicBlock))
     blockchain.sender()
   }
@@ -58,7 +58,7 @@ class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroa
   }
 
   private def givenPanicNotification(): Unit = {
-    val panicNotificationRequester = expectPanicNofiticationRequest()
+    val panicNotificationRequester = expectPanicNotificationRequest()
     blockchain.send(panicNotificationRequester, BlockchainHeightReached(panicBlock))
   }
 
@@ -82,7 +82,7 @@ class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroa
   it should "broadcast the refund transaction if it receives a finish exchange signal" in new Fixture {
     instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
     givenSuccessfulBlockchainRetrieval()
-    expectPanicNofiticationRequest()
+    expectPanicNotificationRequest()
     instance ! FinishExchange
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
     blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
@@ -107,7 +107,7 @@ class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroa
     instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
     instance ! SetMicropaymentActor(micropaymentChannel.ref)
     givenSuccessfulBlockchainRetrieval()
-    expectPanicNofiticationRequest()
+    expectPanicNotificationRequest()
     instance ! FinishExchange
     givenLastOffer(None)
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)

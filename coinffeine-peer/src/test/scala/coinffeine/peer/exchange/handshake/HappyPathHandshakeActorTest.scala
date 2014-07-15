@@ -7,12 +7,12 @@ import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignatur
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, WatchTransactionConfirmation}
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange.MockExchangeProtocol
 
 class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {

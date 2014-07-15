@@ -1,4 +1,4 @@
-package com.coinffeine.common.bitcoin
+package coinffeine.peer.bitcoin
 
 import akka.actor.Props
 import org.scalatest.concurrent.Eventually

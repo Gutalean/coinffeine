@@ -1,4 +1,4 @@
-package com.coinffeine.common.blockchain
+package coinffeine.peer.bitcoin
 
 import akka.actor.Props
 import org.scalatest.mock.MockitoSugar

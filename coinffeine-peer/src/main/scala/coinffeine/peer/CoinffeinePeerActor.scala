@@ -29,9 +29,8 @@ class CoinffeinePeerActor(ownId: PeerId,
                           gatewayProps: Props,
                           marketInfoProps: Props,
                           orderSupervisorProps: Props) extends Actor with ActorLogging {
+  import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
-
-import coinffeine.peer.CoinffeinePeerActor._
 
   val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
 

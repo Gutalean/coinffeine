@@ -1,4 +1,4 @@
-package com.coinffeine.common.blockchain
+package coinffeine.peer.bitcoin
 
 import java.util
 import scala.collection.JavaConversions._
@@ -14,15 +14,12 @@ class BlockchainActor(network: NetworkParameters,blockchain: AbstractBlockChain)
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
 
-  private case class Observation(
-                                  txHash: Sha256Hash,
-                                  requester: ActorRef,
-                                  requiredConfirmations: Int,
-                                  foundInBlock: Option[BlockIdentity] = None)
+  private case class Observation(txHash: Sha256Hash,
+                                 requester: ActorRef,
+                                 requiredConfirmations: Int,
+                                 foundInBlock: Option[BlockIdentity] = None)
 
-  private case class HeightNotification(
-                                         height: Long,
-                                         requester: ActorRef)
+  private case class HeightNotification(height: Long, requester: ActorRef)
 
   private var observations: Map[Sha256Hash, Observation] = Map.empty
   private var heightNotifications: Set[HeightNotification] = Set.empty

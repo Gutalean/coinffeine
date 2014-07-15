@@ -1,16 +1,14 @@
-package com.coinffeine.common.bitcoin.peers
+package coinffeine.peer.bitcoin
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.PeerGroup
 import com.google.common.util.concurrent.{FutureCallback, Futures}
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, NetworkComponent}
-import com.coinffeine.common.blockchain.BlockchainActor
 
 class BitcoinPeerActor(
     peerGroup: PeerGroup, blockchainProps: Props) extends Actor with ActorLogging {
-
-  import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
+  import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
   val blockchain = context.actorOf(blockchainProps, "blockchain")
 

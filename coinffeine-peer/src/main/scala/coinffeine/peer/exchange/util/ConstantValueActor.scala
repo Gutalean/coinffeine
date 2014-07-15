@@ -1,10 +1,10 @@
-package com.coinffeine.common.akka
+package coinffeine.peer.exchange.util
 
 import akka.actor.Actor
 
-import com.coinffeine.common.akka.ConstantValueActor.{SetValue, UnsetValue}
-
 class ConstantValueActor extends Actor {
+  import coinffeine.peer.exchange.util.ConstantValueActor._
+
   var response: Option[Any] = None
   override val receive: Receive = {
     case SetValue(v) => response = Some(v)

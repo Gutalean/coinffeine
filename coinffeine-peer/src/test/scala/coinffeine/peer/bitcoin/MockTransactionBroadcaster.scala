@@ -1,4 +1,4 @@
-package com.coinffeine.common.blockchain
+package coinffeine.peer.bitcoin
 
 import scala.util.control.NonFatal
 

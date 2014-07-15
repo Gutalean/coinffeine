@@ -10,7 +10,6 @@ import akka.util.Timeout
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.OrderActor.RetrieveStatus
 import com.coinffeine.common.ProtocolConstants
