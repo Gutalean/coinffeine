@@ -49,6 +49,11 @@ object Build extends sbt.Build {
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
+  lazy val server = (Project(id = "server", base = file("coinffeine-server"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(peer % "compile->compile;test->test", commonTest % "test->compile")
+  )
+
   lazy val peer = (Project(id = "peer", base = file("coinffeine-peer"))
     dependsOn(model % "compile->compile;test->test", common % "compile->compile;test->test",
       commonTest % "test->compile")
@@ -90,12 +95,6 @@ object Build extends sbt.Build {
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(peer % "compile->compile;test->test", commonTest)
-  )
-
-  lazy val server = (Project(id = "server", base = file("coinffeine-server"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn(model % "compile->compile;test->test", common % "compile->compile;test->test",
-      commonTest % "test->compile")
   )
 
   lazy val test = (Project(id = "test", base = file("coinffeine-test"))

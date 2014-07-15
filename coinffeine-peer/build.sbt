@@ -1,6 +1,6 @@
-name := "coinffeine-client"
+name := "coinffeine-peer"
 
-libraryDependencies ++= Seq(
+libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.h2 % "test",
   Dependencies.jcommander,
   Dependencies.netty
