@@ -1,7 +1,6 @@
 package com.coinffeine.gui.setup
 
 import java.net.URI
-
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.geometry.{Insets, Pos}

@@ -1,13 +1,13 @@
 package com.coinffeine.gui.qrcode
 
 import java.util.{HashMap => JavaHashMap}
+import scalafx.scene.image.{Image, PixelFormat, WritableImage}
+import scalafx.scene.paint.Color
 
-import com.google.zxing.{BarcodeFormat, EncodeHintType}
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
-import scalafx.scene.image.{Image, PixelFormat, WritableImage}
-import scalafx.scene.paint.Color
+import com.google.zxing.{BarcodeFormat, EncodeHintType}
 
 object QRCode {
 

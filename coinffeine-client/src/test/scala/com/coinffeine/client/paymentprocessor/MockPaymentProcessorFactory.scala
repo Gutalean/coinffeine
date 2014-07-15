@@ -3,10 +3,10 @@ package com.coinffeine.client.paymentprocessor
 import java.util.UUID
 
 import akka.actor.{Actor, ActorRef, Props}
-import coinffeine.model.payment.Payment
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.payment.Payment
 import com.coinffeine.common.paymentprocessor.{AnyPayment, PaymentProcessor}
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {

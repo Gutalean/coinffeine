@@ -2,8 +2,9 @@ package coinffeine.model.currency
 
 import java.util.{Currency => JavaCurrency}
 
-import coinffeine.model.currency.Currency.{Bitcoin, Euro, UsDollar}
 import org.scalatest.{FlatSpec, ShouldMatchers}
+
+import coinffeine.model.currency.Currency.{Bitcoin, Euro, UsDollar}
 
 class CurrencyTest extends FlatSpec with ShouldMatchers {
 

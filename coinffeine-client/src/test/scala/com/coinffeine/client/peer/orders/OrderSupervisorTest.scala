@@ -8,9 +8,9 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.CoinffeinePeerActor._
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.test.{AkkaSpec, MockActor}
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
+import com.coinffeine.common.test.{AkkaSpec, MockActor}
 
 class OrderSupervisorTest extends AkkaSpec {
 

@@ -2,7 +2,7 @@ package com.coinffeine.common.akka
 
 import akka.actor.Actor
 
-import com.coinffeine.common.akka.ConstantValueActor.{UnsetValue, SetValue}
+import com.coinffeine.common.akka.ConstantValueActor.{SetValue, UnsetValue}
 
 class ConstantValueActor extends Actor {
   var response: Option[Any] = None

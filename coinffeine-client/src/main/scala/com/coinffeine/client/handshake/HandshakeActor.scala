@@ -4,19 +4,19 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 
-import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, Role}
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.handshake._
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.blockchain.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
-import com.coinffeine.common.protocol.messages.handshake._
+import com.coinffeine.common.exchange._
 
 private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
   extends Actor with ActorLogging {

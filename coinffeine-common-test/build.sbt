@@ -1,4 +1,4 @@
-name := "Coinffeine Common Test"
+name := "coinffeine-common-test"
 
 libraryDependencies ++= Dependencies.akka ++ Dependencies.akkaTest ++ Seq(
   Dependencies.protobufRpc,

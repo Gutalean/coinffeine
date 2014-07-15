@@ -1,14 +1,12 @@
 package com.coinffeine.common.exchange
 
 import java.math.BigInteger
-import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-
 import scala.util.{Failure, Success, Try}
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
-import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
@@ -47,7 +45,7 @@ object MockExchangeProtocol {
     tx
   }
 
-  val DummySignatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+  val DummySignatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
 
   /** Magic signature that is always rejected */
   val InvalidSignature = new TransactionSignature(BigInteger.valueOf(42), BigInteger.valueOf(42))

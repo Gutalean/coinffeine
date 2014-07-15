@@ -1,7 +1,8 @@
 package coinffeine.model.bitcoin.test
 
-import coinffeine.model.bitcoin.NetworkComponent
 import com.google.bitcoin.params.UnitTestParams
+
+import coinffeine.model.bitcoin.NetworkComponent
 
 object CoinffeineUnitTestNetwork extends UnitTestParams {
   // Ensures difficulty stays at minimum level

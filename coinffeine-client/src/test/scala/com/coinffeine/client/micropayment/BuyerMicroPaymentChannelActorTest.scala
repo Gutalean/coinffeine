@@ -1,7 +1,5 @@
 package com.coinffeine.client.micropayment
 
-import coinffeine.model.payment.Payment
-
 import scala.concurrent.duration._
 
 import akka.actor.Props
@@ -11,18 +9,18 @@ import org.joda.time.DateTime
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.Payment
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
+import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerOrderRequests}
-import com.coinffeine.common.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest
   extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {
@@ -35,7 +33,7 @@ class BuyerMicroPaymentChannelActorTest
     Props(new BuyerMicroPaymentChannelActor(exchangeProtocol)),
     "buyer-exchange-actor"
   )
-  val signatures = Signatures(TransactionSignature.dummy, TransactionSignature.dummy)
+  val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
   val expectedLastOffer = {
     val initialChannel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val lastChannel = Seq.iterate(

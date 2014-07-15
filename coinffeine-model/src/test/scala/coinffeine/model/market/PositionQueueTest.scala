@@ -1,6 +1,5 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.Currency
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId

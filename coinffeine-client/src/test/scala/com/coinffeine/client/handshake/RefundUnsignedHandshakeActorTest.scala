@@ -2,9 +2,9 @@ package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
 
-import com.coinffeine.common.protocol.ProtocolConstants
-import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
-import com.coinffeine.common.protocol.messages.handshake.ExchangeRejection
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
+import coinffeine.protocol.messages.handshake.ExchangeRejection
+import com.coinffeine.common.ProtocolConstants
 
 class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
 

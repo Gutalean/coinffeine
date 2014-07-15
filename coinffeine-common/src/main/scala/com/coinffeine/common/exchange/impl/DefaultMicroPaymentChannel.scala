@@ -6,8 +6,8 @@ import scala.util.control.NonFatal
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
@@ -38,7 +38,8 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     )
   }
 
-  override def validateCurrentTransactionSignatures(herSignatures: Signatures): Try[Unit] = {
+  override def validateCurrentTransactionSignatures(
+      herSignatures: Both[TransactionSignature]): Try[Unit] = {
     val tx = currentUnsignedTransaction.get
     val herKey = exchange.counterpart.bitcoinKey
 
@@ -61,7 +62,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
   override def signCurrentTransaction = {
     val tx = currentUnsignedTransaction.get
     val signingKey = exchange.user.bitcoinKey
-    Signatures(
+    Both(
       buyer = TransactionProcessor.signMultiSignedOutput(
         tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq),
       seller = TransactionProcessor.signMultiSignedOutput(
@@ -71,7 +72,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
 
   override def nextStep = new DefaultMicroPaymentChannel(exchange, currentStep.next)
 
-  override def closingTransaction(herSignatures: Signatures) = {
+  override def closingTransaction(herSignatures: Both[TransactionSignature]) = {
     validateCurrentTransactionSignatures(herSignatures).get
     val tx = currentUnsignedTransaction.get
     val signatures = Seq(signCurrentTransaction, herSignatures)

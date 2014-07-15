@@ -1,15 +1,15 @@
 package com.coinffeine.gui.setup
 
-import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
-
-import org.slf4j.LoggerFactory
+import scala.util.{Failure, Success}
 import scalafx.Includes._
 import scalafx.beans.property.{BooleanProperty, ObjectProperty, StringProperty}
 import scalafx.event.ActionEvent
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control._
 import scalafx.scene.layout._
+
+import org.slf4j.LoggerFactory
 
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.concurrent.ScalaFxImplicits._

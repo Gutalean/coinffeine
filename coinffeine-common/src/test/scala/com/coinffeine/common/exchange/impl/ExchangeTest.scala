@@ -1,7 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
+import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._

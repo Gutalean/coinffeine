@@ -4,8 +4,8 @@ import java.util
 import scala.collection.JavaConversions._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.google.bitcoin.core._
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
+import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin._
 

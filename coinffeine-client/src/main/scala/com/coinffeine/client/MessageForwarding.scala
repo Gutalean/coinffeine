@@ -9,8 +9,8 @@ import akka.pattern.pipe
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Exchange, Role}
 import coinffeine.model.network.PeerId
-import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
-import com.coinffeine.common.protocol.messages.PublicMessage
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
+import coinffeine.protocol.messages.PublicMessage
 
 class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId, broker: PeerId) {
 

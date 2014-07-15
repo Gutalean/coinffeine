@@ -1,7 +1,7 @@
 package com.coinffeine.client.api
 
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Component
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class MockCoinffeineApp extends CoinffeineApp {
 

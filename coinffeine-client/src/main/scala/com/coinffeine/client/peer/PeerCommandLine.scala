@@ -4,7 +4,7 @@ import scala.util.control.NonFatal
 
 import com.beust.jcommander._
 
-import com.coinffeine.common.PeerConnection
+import coinffeine.protocol.gateway.PeerConnection
 import com.coinffeine.client.peer.PeerCommandLine.PeerConnectionConverter
 
 class PeerCommandLine {

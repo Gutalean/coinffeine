@@ -1,13 +1,12 @@
 package com.coinffeine.client.handshake
 
-import coinffeine.model.exchange.Both
-
 import scala.concurrent.duration._
 
+import coinffeine.model.exchange.Both
+import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.blockchain.BlockchainActor.TransactionRejected
-import com.coinffeine.common.protocol._
-import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 

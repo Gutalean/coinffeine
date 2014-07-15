@@ -4,8 +4,8 @@ import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.PeerId
-import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
-import com.coinffeine.common.protocol.messages.brokerage._
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
   * It avoid unnecessary multiple concurrent requests and notify listeners.

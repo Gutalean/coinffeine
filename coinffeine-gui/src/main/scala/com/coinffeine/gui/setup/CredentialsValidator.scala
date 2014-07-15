@@ -1,8 +1,8 @@
 package com.coinffeine.gui.setup
 
-import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
-
 import scala.concurrent.Future
+
+import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 
 /** Test OKPay credentials by contacting the service */
 trait CredentialsValidator {

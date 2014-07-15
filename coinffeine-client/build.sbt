@@ -1,4 +1,4 @@
-name := "Coinffeine Client"
+name := "coinffeine-client"
 
 libraryDependencies ++= Seq(
   Dependencies.h2 % "test",

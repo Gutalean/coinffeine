@@ -6,14 +6,14 @@ import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
 
+import coinffeine.model.bitcoin.ImmutableTransaction
 import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor._
-import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer}
+import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.akka.ConstantValueActor
 import com.coinffeine.common.akka.ConstantValueActor.SetValue
-import coinffeine.model.bitcoin.ImmutableTransaction
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
-import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeTransactionBroadcastActor(
     protocolConstants: ProtocolConstants) extends Actor with ActorLogging with Stash {
