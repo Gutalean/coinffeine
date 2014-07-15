@@ -4,9 +4,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.PeerGroup
 import com.google.common.util.concurrent.{FutureCallback, Futures}
 
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.model.bitcoin.{NetworkComponent, ImmutableTransaction, MutableTransaction}
 import com.coinffeine.common.blockchain.BlockchainActor
-import com.coinffeine.common.network.NetworkComponent
 
 class BitcoinPeerActor(
     peerGroup: PeerGroup, blockchainProps: Props) extends Actor with ActorLogging {

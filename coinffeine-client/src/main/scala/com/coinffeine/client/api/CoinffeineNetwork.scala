@@ -2,7 +2,8 @@ package com.coinffeine.client.api
 
 import scala.concurrent.Future
 
-import com.coinffeine.common._
+import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {

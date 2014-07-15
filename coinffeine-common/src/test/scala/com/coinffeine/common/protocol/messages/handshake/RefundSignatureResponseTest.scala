@@ -2,8 +2,8 @@ package com.coinffeine.common.protocol.messages.handshake
 
 import java.math.BigInteger
 
-import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.Exchange
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.bitcoin.TransactionSignature
 import com.coinffeine.common.test.{EqualityBehaviors, UnitTest}
 
 class RefundSignatureResponseTest extends UnitTest with EqualityBehaviors {

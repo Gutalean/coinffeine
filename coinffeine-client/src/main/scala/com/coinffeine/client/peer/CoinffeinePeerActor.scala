@@ -7,10 +7,12 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.OrderSupervisor
 import com.coinffeine.common._
 import com.coinffeine.common.config.ConfigComponent
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import com.coinffeine.common.protocol.messages.brokerage

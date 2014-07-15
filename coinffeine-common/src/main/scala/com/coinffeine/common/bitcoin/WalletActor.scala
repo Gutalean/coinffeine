@@ -2,10 +2,11 @@ package com.coinffeine.common.bitcoin
 
 import scala.util.control.NonFatal
 
-import akka.actor.{ActorLogging, Actor, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 
-import com.coinffeine.common.BitcoinAmount
-import com.coinffeine.common.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.currency.BitcoinAmount
 
 class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
 

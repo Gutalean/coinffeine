@@ -7,11 +7,12 @@ import scala.util.{Failure, Success}
 import akka.actor.ActorRef
 import akka.pattern._
 
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import com.coinffeine.client.api.{CoinffeineNetwork, Exchange}
 import com.coinffeine.client.api.CoinffeineNetwork._
 import com.coinffeine.client.peer.CoinffeinePeerActor
 import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
-import com.coinffeine.common.{FiatAmount, OrderBookEntry, OrderId}
 
 private[app] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {

@@ -1,7 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.common.exchange.UnspentOutput
 
 class DefaultExchangeProtocolTest extends ExchangeTest {

@@ -1,5 +1,8 @@
 package com.coinffeine.common.protocol.gateway
 
+import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.network.PeerId
+
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -8,8 +11,6 @@ import akka.pattern._
 import akka.util.Timeout
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.exchange.PeerId
-import com.coinffeine.common.network.NetworkComponent
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.gateway.PeerIdResolverActor.{AddMapping, LookupMapping}
 import com.coinffeine.common.protocol.gateway.PeerServiceImpl.ReceiveProtoMessage

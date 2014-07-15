@@ -1,6 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, OrderBookEntry}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.market.OrderBookEntry
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** Represents the set of orders placed by a peer for a given market. */

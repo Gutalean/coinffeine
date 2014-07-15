@@ -1,11 +1,13 @@
 package com.coinffeine.common.protocol.serialization
 
-import scala.util.Random
+import coinffeine.model.currency.Currency
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.OrderId
+import coinffeine.model.network.PeerId
 
-import com.coinffeine.common.OrderId
-import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{Exchange, PeerId}
+import scala.util.Random
+import Currency.Bitcoin
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch

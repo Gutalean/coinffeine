@@ -1,9 +1,9 @@
 package com.coinffeine.common.exchange.impl
 
+import coinffeine.model.currency.Implicits._
 import com.google.bitcoin.core.VerificationException
 
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin.ImmutableTransaction
 import com.coinffeine.common.exchange.Handshake.InvalidRefundTransaction
 
 class DefaultHandshakeTest extends ExchangeTest {

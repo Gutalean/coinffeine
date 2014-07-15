@@ -6,9 +6,9 @@ import javafx.scene.control.{Button, TableRow, TableView}
 import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Bid, OrderBookEntry}
 import com.coinffeine.client.api.{CoinffeineApp, MockCoinffeineApp}
-import com.coinffeine.common.{Bid, OrderBookEntry}
-import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.gui.GuiTest
 import com.coinffeine.gui.application.properties.OrderProperties
 

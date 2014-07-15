@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.serialization
 
-import com.coinffeine.common.network.NetworkComponent
+import coinffeine.model.bitcoin.NetworkComponent
 import com.coinffeine.common.protocol.ProtocolConstants
 
 trait DefaultProtocolSerializationComponent extends ProtocolSerializationComponent {

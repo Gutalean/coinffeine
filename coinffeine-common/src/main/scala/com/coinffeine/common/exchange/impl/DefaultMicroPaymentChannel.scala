@@ -3,8 +3,9 @@ package com.coinffeine.common.exchange.impl
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, RunningExchange}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._

@@ -1,7 +1,7 @@
 package com.coinffeine.common.exchange
 
-import com.coinffeine.common.BitcoinAmount
-import com.coinffeine.common.bitcoin._
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.BitcoinAmount
 import com.coinffeine.common.exchange.impl.TransactionProcessor
 
 /** An output not yet spent and the key to spend it.

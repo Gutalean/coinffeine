@@ -1,6 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.Currency
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.common.test.UnitTest
 
 class VolumeByPriceTest extends UnitTest {

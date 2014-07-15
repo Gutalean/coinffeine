@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.serialization
 
-import com.coinffeine.common.exchange.PeerId
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 

@@ -3,10 +3,11 @@ package com.coinffeine.client.peer.orders
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
-import com.coinffeine.client.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
-import com.coinffeine.common._
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.PeerId
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
+import coinffeine.model.network.PeerId
+import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}

@@ -6,8 +6,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorRef
 import akka.pattern._
 
+import coinffeine.model.currency.FiatCurrency
 import com.coinffeine.client.api.MarketStats
-import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.protocol.messages.brokerage._
 
 private[app] class DefaultMarketStats(override val peer: ActorRef)

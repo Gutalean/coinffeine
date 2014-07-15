@@ -1,13 +1,14 @@
 package com.coinffeine.common.exchange
 
 import java.math.BigInteger
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+
 import scala.util.{Failure, Success, Try}
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.Exchange.Deposits
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
-import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
@@ -20,8 +21,8 @@ class MockExchangeProtocol extends ExchangeProtocol {
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[FiatCurrency]): Try[Deposits] =
-    validateCommitments(transactions, null).map(_ => Deposits(transactions))
+                                exchange: HandshakingExchange[FiatCurrency]): Try[Exchange.Deposits] =
+    validateCommitments(transactions, null).map(_ => Exchange.Deposits(transactions))
 
   override def validateCommitments(transactions: Both[ImmutableTransaction],
                                    amounts: Exchange.Amounts[FiatCurrency]): Try[Unit] =

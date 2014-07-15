@@ -2,9 +2,9 @@ package com.coinffeine.client.micropayment
 
 import akka.actor.ActorRef
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.ImmutableTransaction
-import com.coinffeine.common.exchange.RunningExchange
+import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.RunningExchange
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants
 

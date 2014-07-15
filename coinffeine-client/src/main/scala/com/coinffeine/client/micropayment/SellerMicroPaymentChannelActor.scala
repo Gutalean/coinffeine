@@ -6,11 +6,11 @@ import scala.util.{Failure, Try}
 import akka.actor._
 import akka.pattern._
 
+import coinffeine.model.currency.FiatCurrency
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.client.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
-import com.coinffeine.common.FiatCurrency
 import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor

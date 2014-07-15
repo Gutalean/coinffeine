@@ -1,5 +1,6 @@
 package com.coinffeine.gui.application.operations
 
+import coinffeine.model.market.OrderType
 import org.controlsfx.dialog.Dialogs
 import org.controlsfx.dialog.Dialog.Actions
 import scalafx.Includes._
@@ -9,6 +10,7 @@ import scalafx.scene.control._
 import scalafx.scene.control.TableColumn._
 import scalafx.scene.layout._
 
+import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.common._
 import com.coinffeine.gui.application.{ApplicationProperties, ApplicationView}

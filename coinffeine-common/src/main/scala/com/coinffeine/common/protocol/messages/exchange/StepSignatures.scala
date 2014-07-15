@@ -1,7 +1,7 @@
 package com.coinffeine.common.protocol.messages.exchange
 
-import com.coinffeine.common.bitcoin.TransactionSignatureUtils
-import com.coinffeine.common.exchange.Exchange
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.bitcoin.TransactionSignatureUtils
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.PublicMessage
 

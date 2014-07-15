@@ -6,10 +6,12 @@ import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common._
-import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.bitcoin.Hash
-import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
+import coinffeine.model.bitcoin.Hash
+import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification
 import com.coinffeine.common.protocol.messages.brokerage._

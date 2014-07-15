@@ -4,11 +4,12 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, Role}
 import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.handshake.HandshakeActor._
-import com.coinffeine.common.{FiatCurrency, bitcoin}
-import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction}
-import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.blockchain.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
@@ -212,7 +213,7 @@ object HandshakeActor {
       role: Role,
       user: Exchange.PeerInfo,
       unspentOutputs: Seq[UnspentOutput],
-      changeAddress: bitcoin.Address,
+      changeAddress: coinffeine.model.bitcoin.Address,
       constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,

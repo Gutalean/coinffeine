@@ -1,9 +1,9 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import com.coinffeine.common.test.UnitTest
-import com.coinffeine.common.{Bid, OrderBookEntry, OrderId}
 
 class PeerOrderRequestsTest extends UnitTest {
 

@@ -7,8 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
 
-import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.network.{BlockchainComponent, NetworkComponent}
+import coinffeine.model.bitcoin._
 
 class BlockchainActor(network: NetworkParameters,blockchain: AbstractBlockChain)
     extends Actor with ActorLogging {

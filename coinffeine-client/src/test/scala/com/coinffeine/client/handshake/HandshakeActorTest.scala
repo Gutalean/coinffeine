@@ -4,12 +4,12 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin.test.BitcoinjTest
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.handshake.HandshakeActor.StartHandshake
-import com.coinffeine.common.BitcoinjTest
-import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
-import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.exchange.{MockExchangeProtocol, MockHandshake}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}

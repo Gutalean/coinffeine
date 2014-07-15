@@ -3,11 +3,12 @@ package com.coinffeine.client.peer.orders
 import akka.actor.Props
 import akka.testkit.TestProbe
 
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.{Ask, OrderBookEntry}
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.{Ask, OrderBookEntry}
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.{Exchange, PeerId}
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.test.AkkaSpec
 

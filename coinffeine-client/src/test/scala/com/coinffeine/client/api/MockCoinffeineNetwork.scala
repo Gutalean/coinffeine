@@ -2,8 +2,9 @@ package com.coinffeine.client.api
 
 import scala.concurrent.Future
 
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
 import com.coinffeine.client.api.CoinffeineNetwork._
-import com.coinffeine.common.{FiatAmount, OrderBookEntry, OrderId}
 
 class MockCoinffeineNetwork extends CoinffeineNetwork {
 

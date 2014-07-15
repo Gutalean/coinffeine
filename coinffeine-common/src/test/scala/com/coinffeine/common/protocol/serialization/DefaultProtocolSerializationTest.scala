@@ -5,14 +5,15 @@ import scala.collection.JavaConversions
 
 import org.reflections.Reflections
 
-import com.coinffeine.common._
-import com.coinffeine.common.Currency.UsDollar
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.bitcoin.Implicits._
-import com.coinffeine.common.exchange.{Both, Exchange, PeerId}
+import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.currency.Currency.UsDollar
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
-import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification

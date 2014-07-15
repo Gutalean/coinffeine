@@ -1,25 +1,16 @@
 package com.coinffeine.common.paymentprocessor
 
+import coinffeine.model.payment.Payment
+
 import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.util.Timeout
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessor {
-
-  /** The ID of the payment processor. */
-  type Id = String
-
-  /** The ID type of a user account in the payment processor. */
-  type AccountId = String
-
-  /** The credentials of a user account in the payment processor. */
-  type AccountCredentials = String
-
-  /** The ID type of a payment registered by the payment processor. */
-  type PaymentId = String
 
   /** A message sent to the payment processor in order to identify itself. */
   case object Identify

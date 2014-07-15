@@ -2,13 +2,14 @@ package com.coinffeine.client.exchange
 
 import akka.actor._
 
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, Wallet}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange._
 import com.coinffeine.client.exchange.ExchangeActor._
 import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import com.coinffeine.client.handshake.HandshakeActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, Wallet}
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor._
 import com.coinffeine.common.exchange._

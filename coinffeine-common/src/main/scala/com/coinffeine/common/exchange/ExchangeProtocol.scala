@@ -2,8 +2,9 @@ package com.coinffeine.common.exchange
 
 import scala.util.Try
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin._
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
 
 trait ExchangeProtocol {
 

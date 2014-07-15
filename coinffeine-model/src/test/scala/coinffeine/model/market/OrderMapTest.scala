@@ -1,0 +1,58 @@
+package coinffeine.model.market
+
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.network.PeerId
+import com.coinffeine.common.test.UnitTest
+
+class OrderMapTest extends UnitTest {
+  val peerA = PeerId("peerA")
+  val peerB = PeerId("peerB")
+  val posA1 = PositionId(peerA, OrderId("order1"))
+  val posA2 = PositionId(peerA, OrderId("order2"))
+  val posB = PositionId(peerB, OrderId("order1"))
+  val sampleMap = OrderMap(
+    Position.bid(2.BTC, 3.EUR, posA1),
+    Position.bid(1.BTC, 5.EUR, posB),
+    Position.bid(1.BTC, 3.EUR, posA2)
+  )
+
+  "An order map" should "order bid positions by descending price and insertion order" in {
+    OrderMap(
+      Position.bid(2.BTC, 3.EUR, posA1),
+      Position.bid(1.BTC, 5.EUR, posB),
+      Position.bid(1.BTC, 3.EUR, posA2)
+    ).positions should be (Seq(
+      Position.bid(1.BTC, 5.EUR, posB),
+      Position.bid(2.BTC, 3.EUR, posA1),
+      Position.bid(1.BTC, 3.EUR, posA2)
+    ))
+  }
+
+  it should "order ask positions by ascending price and insertion order" in {
+    OrderMap(
+      Position.ask(2.BTC, 3.EUR, posA1),
+      Position.ask(1.BTC, 5.EUR, posB),
+      Position.ask(1.BTC, 3.EUR, posA2)
+    ).positions should be (Seq(
+      Position.ask(2.BTC, 3.EUR, posA1),
+      Position.ask(1.BTC, 3.EUR, posA2),
+      Position.ask(1.BTC, 5.EUR, posB)
+    ))
+  }
+
+  it should "cancel a position by position id" in {
+    sampleMap.cancelPosition(posB) should be (OrderMap(
+      Position.bid(2.BTC, 3.EUR, posA1),
+      Position.bid(1.BTC, 3.EUR, posA2)
+    ))
+  }
+
+  it should "decrease a position amount" in {
+    val updatedMap = sampleMap.decreaseAmount(posA1, 1.BTC)
+    updatedMap should be (OrderMap(
+      Position.bid(1.BTC, 3.EUR, posA1),
+      Position.bid(1.BTC, 5.EUR, posB),
+      Position.bid(1.BTC, 3.EUR, posA2)
+    ))
+  }
+}

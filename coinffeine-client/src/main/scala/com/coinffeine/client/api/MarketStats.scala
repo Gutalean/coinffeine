@@ -1,8 +1,10 @@
 package com.coinffeine.client.api
 
+import coinffeine.model.market.OrderBookEntry
+
 import scala.concurrent.Future
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency, OrderBookEntry}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, Quote}
 
 /** Give access to current and historical prices and other market stats. */

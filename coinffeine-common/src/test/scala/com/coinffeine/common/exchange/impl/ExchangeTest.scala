@@ -1,11 +1,12 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.{BitcoinAmount, BitcoinjTest}
-import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Wallet}
+import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
+import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.{Both, RunningExchange}
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {

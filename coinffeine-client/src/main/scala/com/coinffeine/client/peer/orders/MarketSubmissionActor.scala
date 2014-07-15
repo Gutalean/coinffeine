@@ -2,9 +2,9 @@ package com.coinffeine.client.peer.orders
 
 import akka.actor._
 
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.brokerage._

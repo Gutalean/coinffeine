@@ -1,7 +1,7 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.BitcoinAmount
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, Network, PublicKey}
+import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
+import coinffeine.model.currency.BitcoinAmount
 
 private[impl] case class UnsignedRefundTransaction(
     deposit: ImmutableTransaction,

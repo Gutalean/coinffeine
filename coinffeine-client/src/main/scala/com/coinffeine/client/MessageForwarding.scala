@@ -6,8 +6,9 @@ import akka.actor.{ActorContext, ActorRef}
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.{Exchange, PeerId, Role}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Exchange, Role}
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardMessage
 import com.coinffeine.common.protocol.messages.PublicMessage
 

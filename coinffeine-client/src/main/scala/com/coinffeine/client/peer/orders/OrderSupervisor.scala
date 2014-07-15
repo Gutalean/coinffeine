@@ -7,10 +7,11 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.peer.CoinffeinePeerActor._
 import com.coinffeine.client.peer.orders.OrderActor.RetrieveStatus
-import com.coinffeine.common.{FiatAmount, OrderBookEntry, OrderId}
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.ProtocolConstants
 
 /** Manages orders */

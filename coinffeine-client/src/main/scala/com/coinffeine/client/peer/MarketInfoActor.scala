@@ -2,8 +2,8 @@ package com.coinffeine.client.peer
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.PeerId
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage._
 

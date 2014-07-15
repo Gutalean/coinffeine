@@ -1,11 +1,9 @@
 package com.coinffeine.client.api
 
-import java.security.interfaces.ECKey
-import com.coinffeine.common.bitcoin.{Hash, Address}
-
 import scala.concurrent.Future
 
-import com.coinffeine.common.BitcoinAmount
+import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
+import coinffeine.model.currency.BitcoinAmount
 
 trait CoinffeineWallet {
 
@@ -14,7 +12,7 @@ trait CoinffeineWallet {
   /** Where to transfer BTC funds to top-up Coinffeine */
   def depositAddress: Address
 
-  def importPrivateKey(address: Address, key: ECKey): Unit
+  def importPrivateKey(address: Address, key: KeyPair): Unit
 
   /** Transfer a given amount of BTC to an address if possible.
     *
