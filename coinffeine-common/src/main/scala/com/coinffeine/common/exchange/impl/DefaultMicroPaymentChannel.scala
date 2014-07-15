@@ -6,8 +6,8 @@ import scala.util.control.NonFatal
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.MicroPaymentChannel._
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.impl.DefaultMicroPaymentChannel._
 
 private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (

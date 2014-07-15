@@ -1,11 +1,5 @@
 package com.coinffeine.client.micropayment
 
-import coinffeine.model.currency.Currency
-import coinffeine.model.exchange.Exchange
-import coinffeine.model.network.PeerId
-import coinffeine.model.payment.Payment
-import com.coinffeine.common.ProtocolConstants
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -14,17 +8,22 @@ import akka.testkit.TestProbe
 import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.model.currency.Currency
+import Currency.Euro
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.network.PeerId
+import coinffeine.model.payment.Payment
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
+import coinffeine.protocol.messages.exchange._
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
-import Currency.Euro
-import com.coinffeine.common.exchange.{MockExchangeProtocol, MockMicroPaymentChannel}
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
+import com.coinffeine.common.exchange.{MockExchangeProtocol, MockMicroPaymentChannel}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
-import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
   with SellerPerspective with MockitoSugar {

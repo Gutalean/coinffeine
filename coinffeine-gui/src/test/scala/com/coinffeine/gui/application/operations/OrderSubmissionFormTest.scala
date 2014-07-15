@@ -1,8 +1,9 @@
 package com.coinffeine.gui.application.operations
 
 import javafx.scene.Node
-import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
+
+import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry}

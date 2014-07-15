@@ -1,12 +1,13 @@
 package coinffeine.protocol.gateway.protorpc
 
 import akka.actor.ActorRef
+import com.google.protobuf.{RpcCallback, RpcController}
+import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
+
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.PeerIdResolution
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import com.google.protobuf.{RpcCallback, RpcController}
-import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
 /** Adapter class that implements the protobuf server interface */
 private[gateway] class PeerServiceImpl(ref: ActorRef)

@@ -4,8 +4,8 @@ import scala.util.control.NonFatal
 
 import akka.actor.{Actor, ActorLogging, Props}
 
-import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
 
 class WalletActor(wallet: Wallet) extends Actor with ActorLogging {

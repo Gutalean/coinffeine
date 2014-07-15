@@ -1,7 +1,5 @@
 package com.coinffeine.client.micropayment
 
-import com.coinffeine.common.ProtocolConstants
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -12,6 +10,7 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
+import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MockExchangeProtocol
 
 class SellerMicroPaymentChannelActorFailureTest

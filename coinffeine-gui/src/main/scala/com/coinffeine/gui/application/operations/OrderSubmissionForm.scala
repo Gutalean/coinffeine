@@ -1,7 +1,6 @@
 package com.coinffeine.gui.application.operations
 
 import scala.util.Try
-
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.event.{ActionEvent, Event}
@@ -11,8 +10,8 @@ import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
 
-import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderType}
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.gui.control.DecimalNumberTextField

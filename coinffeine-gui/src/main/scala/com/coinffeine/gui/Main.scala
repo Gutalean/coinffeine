@@ -1,10 +1,9 @@
 package com.coinffeine.gui
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.util.Random
-
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
@@ -13,8 +12,8 @@ import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView
 import com.coinffeine.gui.application.operations.OperationsView
-import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import com.coinffeine.gui.setup.CredentialsValidator.Result
+import com.coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 
 object Main extends JFXApp with ProductionCoinffeineApp.Component {
 

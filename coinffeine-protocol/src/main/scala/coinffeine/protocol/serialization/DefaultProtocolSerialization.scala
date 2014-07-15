@@ -10,9 +10,9 @@ import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {

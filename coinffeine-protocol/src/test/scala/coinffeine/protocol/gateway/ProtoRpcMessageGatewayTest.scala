@@ -1,7 +1,5 @@
 package coinffeine.protocol.gateway
 
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
-
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
@@ -11,6 +9,7 @@ import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 import com.coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}

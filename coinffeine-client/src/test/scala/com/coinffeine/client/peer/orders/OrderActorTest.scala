@@ -7,9 +7,9 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.{Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
+import coinffeine.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.messages.brokerage.OrderMatch
 import com.coinffeine.common.test.AkkaSpec
 
 class OrderActorTest extends AkkaSpec {

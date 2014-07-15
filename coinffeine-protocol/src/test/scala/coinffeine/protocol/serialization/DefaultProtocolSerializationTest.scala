@@ -1,27 +1,26 @@
 package coinffeine.protocol.serialization
 
 import java.math.BigInteger.ZERO
-import coinffeine.protocol.Version
-
 import scala.collection.JavaConversions
 
 import org.reflections.Reflections
 
-import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.test.UnitTest
 
 class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {

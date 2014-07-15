@@ -1,6 +1,6 @@
 package com.coinffeine.client.event
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
 
 import com.coinffeine.client.api.CoinffeineApp
 

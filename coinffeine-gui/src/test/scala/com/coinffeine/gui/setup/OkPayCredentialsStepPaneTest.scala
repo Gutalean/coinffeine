@@ -2,12 +2,11 @@ package com.coinffeine.gui.setup
 
 import javafx.scene.Node
 import javafx.scene.control.Label
+import scala.concurrent.Future
 
 import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
 import com.coinffeine.gui.GuiTest
-import com.coinffeine.gui.setup.CredentialsValidator.{InvalidCredentials, ValidCredentials, Result}
-
-import scala.concurrent.Future
+import com.coinffeine.gui.setup.CredentialsValidator.{InvalidCredentials, Result, ValidCredentials}
 
 class OkPayCredentialsStepPaneTest extends GuiTest[OkPayCredentialsStepPane] {
   private var validationResult: Future[Result] = _

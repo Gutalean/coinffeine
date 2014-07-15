@@ -3,8 +3,8 @@ package com.coinffeine.common.exchange.impl
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import coinffeine.model.currency.{BitcoinAmount, Currency, FiatCurrency}
 import coinffeine.model.exchange.HandshakingExchange
-import com.coinffeine.common.exchange._
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
+import com.coinffeine.common.exchange._
 
 private[impl] class DefaultHandshake[C <: FiatCurrency](
    override val exchange: HandshakingExchange[C],

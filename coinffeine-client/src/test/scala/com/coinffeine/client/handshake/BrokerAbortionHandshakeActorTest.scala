@@ -1,11 +1,10 @@
 package com.coinffeine.client.handshake
 
-import com.coinffeine.common.ProtocolConstants
-
 import scala.concurrent.duration._
 
-import com.coinffeine.client.handshake.HandshakeActor._
 import coinffeine.protocol.messages.handshake.ExchangeAborted
+import com.coinffeine.client.handshake.HandshakeActor._
+import com.coinffeine.common.ProtocolConstants
 
 class BrokerAbortionHandshakeActorTest extends HandshakeActorTest("broker-aborts") {
 

@@ -5,9 +5,9 @@ import akka.testkit.TestProbe
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
-import com.coinffeine.common.exchange._
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.PublicMessage
+import com.coinffeine.common.exchange._
 import com.coinffeine.common.test.AkkaSpec
 
 abstract class CoinffeineClientTest(systemName: String)

@@ -2,7 +2,6 @@ package com.coinffeine.gui
 
 import java.util.concurrent.Executor
 import scala.concurrent.ExecutionContext
-
 import scalafx.application.Platform
 
 package object concurrent {

@@ -1,10 +1,11 @@
 package com.coinffeine.gui.application.operations
 
 import javafx.collections.ObservableList
-import javafx.scene.{Node, Parent}
 import javafx.scene.control.{Button, TableRow, TableView}
-import org.scalatest.concurrent.Eventually
+import javafx.scene.{Node, Parent}
 import scalafx.scene.layout.Pane
+
+import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry}

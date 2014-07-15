@@ -1,12 +1,13 @@
 package com.coinffeine.gui.application
 
-import org.controlsfx.control.SegmentedButton
 import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
-import scalafx.scene.{Parent, Scene}
 import scalafx.scene.control.{ToggleButton, ToolBar}
 import scalafx.scene.layout.BorderPane
+import scalafx.scene.{Parent, Scene}
+
+import org.controlsfx.control.SegmentedButton
 
 import com.coinffeine.gui.application.ApplicationScene._
 

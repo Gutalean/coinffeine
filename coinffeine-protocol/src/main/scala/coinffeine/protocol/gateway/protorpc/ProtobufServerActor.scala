@@ -5,8 +5,8 @@ import com.googlecode.protobuf.pro.duplex.PeerInfo
 import io.netty.channel.{Channel, ChannelFuture}
 import io.netty.util.concurrent.{Future, GenericFutureListener}
 
-import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
+import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 private class ProtobufServerActor extends Actor with ActorLogging {

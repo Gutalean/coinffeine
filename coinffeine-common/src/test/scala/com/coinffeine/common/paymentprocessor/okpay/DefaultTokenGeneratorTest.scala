@@ -1,8 +1,8 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.{FlatSpec, ShouldMatchers}
 import org.scalatest.mock.MockitoSugar
+import org.scalatest.{FlatSpec, ShouldMatchers}
 
 class DefaultTokenGeneratorTest extends FlatSpec with ShouldMatchers with MockitoSugar {
 

@@ -1,13 +1,12 @@
 package com.coinffeine.common.paymentprocessor
 
-import coinffeine.model.payment.Payment
-
 import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.util.Timeout
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessor {

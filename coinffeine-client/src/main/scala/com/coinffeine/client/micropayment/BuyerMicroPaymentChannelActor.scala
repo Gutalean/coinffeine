@@ -15,8 +15,8 @@ import com.coinffeine.client.MessageForwarding
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel._
+import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
 

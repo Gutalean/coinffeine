@@ -9,8 +9,8 @@ import akka.util.Timeout
 
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.protorpc.PeerIdResolverActor.{AddMapping, LookupMapping}
 import coinffeine.protocol.gateway.protorpc.PeerServiceImpl.ReceiveProtoMessage
 import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.PeerWith

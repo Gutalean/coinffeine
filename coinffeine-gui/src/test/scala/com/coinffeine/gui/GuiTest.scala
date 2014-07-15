@@ -1,12 +1,12 @@
 package com.coinffeine.gui
 
-import scala.concurrent.duration.FiniteDuration
-
-import com.google.common.base.Predicate
 import javafx.scene
 import javafx.scene.{Node => jfxNode}
-import org.loadui.testfx
+import scala.concurrent.duration.FiniteDuration
 import scalafx.scene.{Node, Parent}
+
+import com.google.common.base.Predicate
+import org.loadui.testfx
 
 import com.coinffeine.common.test.UnitTest
 

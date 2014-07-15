@@ -1,20 +1,20 @@
 package com.coinffeine.gui.application.operations
 
-import coinffeine.model.market.OrderType
-import org.controlsfx.dialog.Dialogs
-import org.controlsfx.dialog.Dialog.Actions
 import scalafx.Includes._
 import scalafx.event.ActionEvent
 import scalafx.geometry.Insets
-import scalafx.scene.control._
 import scalafx.scene.control.TableColumn._
+import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import org.controlsfx.dialog.Dialog.Actions
+import org.controlsfx.dialog.Dialogs
+
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
+import coinffeine.model.market.OrderType
 import com.coinffeine.client.api.CoinffeineApp
-import com.coinffeine.common._
-import com.coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import com.coinffeine.gui.application.properties.OrderProperties
+import com.coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 
 class OperationsView(app: CoinffeineApp) extends ApplicationView {
 

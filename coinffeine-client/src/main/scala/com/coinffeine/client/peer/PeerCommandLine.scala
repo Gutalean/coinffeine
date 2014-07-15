@@ -1,10 +1,10 @@
 package com.coinffeine.client.peer
 
-import coinffeine.protocol.gateway.PeerConnection
-
 import scala.util.control.NonFatal
 
 import com.beust.jcommander._
+
+import coinffeine.protocol.gateway.PeerConnection
 import com.coinffeine.client.peer.PeerCommandLine.PeerConnectionConverter
 
 class PeerCommandLine {

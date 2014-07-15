@@ -10,9 +10,9 @@ import com.googlecode.protobuf.pro.duplex.execute.ThreadPoolCallExecutor
 import com.googlecode.protobuf.pro.duplex.server.DuplexTcpServerPipelineFactory
 import com.googlecode.protobuf.pro.duplex.util.RenamingThreadFactoryProxy
 import io.netty.bootstrap.{Bootstrap, ServerBootstrap}
-import io.netty.channel.{ChannelFuture, ChannelOption, EventLoopGroup}
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.{NioServerSocketChannel, NioSocketChannel}
+import io.netty.channel.{ChannelFuture, ChannelOption, EventLoopGroup}
 import io.netty.util.concurrent.EventExecutorGroup
 
 class PeerServer(serverInfo: PeerInfo, service: Service) {

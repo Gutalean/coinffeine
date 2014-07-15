@@ -1,6 +1,6 @@
 package com.coinffeine.client.peer
 
-import akka.actor.{ActorLogging, Props, Actor, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import com.coinffeine.client.api.CoinffeineApp
 

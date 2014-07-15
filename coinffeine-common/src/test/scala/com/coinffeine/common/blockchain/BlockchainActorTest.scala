@@ -3,8 +3,8 @@ package com.coinffeine.common.blockchain
 import akka.actor.Props
 import org.scalatest.mock.MockitoSugar
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.Implicits._
 import com.coinffeine.common.test.AkkaSpec
 

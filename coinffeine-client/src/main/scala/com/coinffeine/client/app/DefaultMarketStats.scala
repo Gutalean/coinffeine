@@ -1,14 +1,14 @@
 package com.coinffeine.client.app
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 import akka.actor.ActorRef
 import akka.pattern._
 
 import coinffeine.model.currency.FiatCurrency
-import com.coinffeine.client.api.MarketStats
 import coinffeine.protocol.messages.brokerage._
+import com.coinffeine.client.api.MarketStats
 
 private[app] class DefaultMarketStats(override val peer: ActorRef)
   extends MarketStats with PeerActorWrapper {

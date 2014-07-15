@@ -1,8 +1,8 @@
-import sbt._
 import sbt.Keys._
+import sbt._
 import sbtprotobuf.{ProtobufPlugin => PB}
-import sbtscalaxb.Plugin.scalaxbSettings
 import sbtscalaxb.Plugin.ScalaxbKeys._
+import sbtscalaxb.Plugin.scalaxbSettings
 import scoverage.ScoverageSbtPlugin
 
 object Build extends sbt.Build {

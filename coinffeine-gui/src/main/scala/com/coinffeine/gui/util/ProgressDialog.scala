@@ -1,6 +1,7 @@
 package com.coinffeine.gui.util
 
 import javafx.concurrent.Task
+
 import org.controlsfx.dialog.Dialogs
 
 class ProgressDialog(title: String, message: String, actions: (() => Unit)*) {

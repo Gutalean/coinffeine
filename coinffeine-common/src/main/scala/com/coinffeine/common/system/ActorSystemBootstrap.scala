@@ -1,14 +1,13 @@
 package com.coinffeine.common.system
 
-import akka.util.Timeout
-
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.util.control.NonFatal
 
 import akka.Main
 import akka.actor.{ActorSystem, Props}
 import akka.pattern._
+import akka.util.Timeout
 
 /** Bootstrap of an actor system whose supervisor actor is configured from CLI arguments and
   * whose termination stops the application.

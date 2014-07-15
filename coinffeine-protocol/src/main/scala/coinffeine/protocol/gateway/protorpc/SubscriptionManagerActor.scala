@@ -1,6 +1,7 @@
 package coinffeine.protocol.gateway.protorpc
 
 import akka.actor._
+
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.PublicMessage
 

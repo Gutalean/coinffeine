@@ -1,8 +1,8 @@
 package com.coinffeine.gui.control
 
-import com.coinffeine.gui.GuiTest
-
 import scalafx.scene.input.KeyCode
+
+import com.coinffeine.gui.GuiTest
 
 class DecimalNumberTextFieldTest extends GuiTest[DecimalNumberTextField] {
   override def createRootNode(): DecimalNumberTextField = new DecimalNumberTextField(3.141592)

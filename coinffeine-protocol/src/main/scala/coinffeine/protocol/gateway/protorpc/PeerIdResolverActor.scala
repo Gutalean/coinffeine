@@ -10,16 +10,17 @@ import akka.util.Timeout
 import com.google.protobuf.RpcCallback
 
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.gateway.MessageGateway.ForwardException
+import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.gateway.protorpc.PeerServiceImpl.ResolvePeerId
 import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.PeerWith
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.PeerIdResolution
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 private class PeerIdResolverActor extends Actor with ActorLogging {
-  import coinffeine.protocol.gateway.protorpc.PeerIdResolverActor._
   import context.dispatcher
+
+import coinffeine.protocol.gateway.protorpc.PeerIdResolverActor._
 
   private var peerMap = Map.empty[PeerId, PeerConnection]
 

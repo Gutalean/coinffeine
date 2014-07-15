@@ -1,7 +1,6 @@
 package com.coinffeine.common.test
 
 import java.net.ServerSocket
-
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 

@@ -1,7 +1,5 @@
 package com.coinffeine.common
 
-import coinffeine.protocol.Version
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
 

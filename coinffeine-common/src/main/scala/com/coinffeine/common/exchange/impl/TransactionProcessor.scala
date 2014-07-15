@@ -6,8 +6,8 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinAmount, Currency}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency.{BitcoinAmount, Currency}
 
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
