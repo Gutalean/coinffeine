@@ -1,3 +1,5 @@
+import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin
+import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin.cxf._
 import sbt.Keys._
 import sbt._
 import sbtprotobuf.{ProtobufPlugin => PB}

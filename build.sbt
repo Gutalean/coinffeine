@@ -10,9 +10,12 @@ scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature", "-language:postfi
 
 javacOptions in ThisBuild ++= Seq("-source", "1.7")
 
+compileOrder in ThisBuild := CompileOrder.JavaThenScala
+
 resolvers in ThisBuild ++= Seq(
   "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
+  "Sonatype-repository" at "https://oss.sonatype.org/content/groups/public",
   "typesafe" at "http://repo.typesafe.com/typesafe/releases/"
 )
 
