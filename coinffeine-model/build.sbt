@@ -1,6 +1,6 @@
 name := "Coinffeine Model"
 
-libraryDependencies ++= Dependencies.akka ++ Seq(
+libraryDependencies ++= Seq(
   Dependencies.bitcoinj,
   Dependencies.h2 % "test",
   Dependencies.jodaConvert
