@@ -5,10 +5,10 @@ import scala.util.Success
 
 import com.google.bitcoin.core.Transaction.SigHash
 
-import com.coinffeine.common.BitcoinAmount
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair, MutableTransaction, PublicKey}
-import com.coinffeine.common.exchange.Both
+import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair, MutableTransaction, PublicKey}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.Both
 
 class DepositValidatorTest extends ExchangeTest {
 

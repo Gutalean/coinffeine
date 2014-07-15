@@ -2,12 +2,14 @@ package com.coinffeine.client.handshake
 
 import scala.concurrent.duration._
 
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.handshake.HandshakeActor.HandshakeSuccess
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
-import com.coinffeine.common.bitcoin.Implicits._
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{Both, Exchange, MockExchangeProtocol, PeerId}
+import com.coinffeine.common.exchange.MockExchangeProtocol
 import com.coinffeine.common.protocol._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification

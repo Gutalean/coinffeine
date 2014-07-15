@@ -8,7 +8,7 @@ import akka.testkit.TestProbe
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
-import com.coinffeine.common.bitcoin.TransactionSignature
+import coinffeine.model.bitcoin.TransactionSignature
 import com.coinffeine.common.exchange.MockExchangeProtocol
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
 import com.coinffeine.common.protocol.ProtocolConstants

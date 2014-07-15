@@ -2,7 +2,8 @@ package com.coinffeine.client.api
 
 import java.io.Closeable
 
-import com.coinffeine.common.{FiatAmount, OrderBookEntry, OrderId}
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.order.{OrderId, OrderBookEntry}
 import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 

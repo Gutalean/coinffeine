@@ -1,12 +1,12 @@
 package com.coinffeine.common.protocol.gateway
 
+import coinffeine.model.network.PeerId
+
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
-
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.PublicMessage
 

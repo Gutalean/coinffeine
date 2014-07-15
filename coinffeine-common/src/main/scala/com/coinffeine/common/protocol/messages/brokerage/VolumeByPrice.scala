@@ -1,7 +1,7 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common._
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.Implicits._
 
 case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], BitcoinAmount)]) {
 
@@ -18,12 +18,15 @@ case class VolumeByPrice[+C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bi
   def isEmpty = entries.isEmpty
 
   /** Volume at a given price */
-  def volumeAt[B >: C <: FiatCurrency](price: CurrencyAmount[B]): BitcoinAmount = entryMap.getOrElse(price, 0.BTC)
+  def volumeAt[B >: C <: FiatCurrency](price: CurrencyAmount[B]): BitcoinAmount =
+    entryMap.getOrElse(price, 0.BTC)
 
-  def increase[B >: C <: FiatCurrency](price: CurrencyAmount[B], amount: BitcoinAmount): VolumeByPrice[B] =
+  def increase[B >: C <: FiatCurrency](price: CurrencyAmount[B],
+                                       amount: BitcoinAmount): VolumeByPrice[B] =
     copy(entries = entryMap.updated(price, volumeAt(price) + amount).toSeq)
 
-  def decrease[B >: C <: FiatCurrency](price: CurrencyAmount[B], amount: BitcoinAmount): VolumeByPrice[B] = {
+  def decrease[B >: C <: FiatCurrency](price: CurrencyAmount[B],
+                                       amount: BitcoinAmount): VolumeByPrice[B] = {
     val previousAmount = volumeAt(price)
     if (previousAmount > amount) copy(entries = entryMap.updated(price, previousAmount - amount).toSeq)
     else copy(entries = (entryMap - price).toSeq)

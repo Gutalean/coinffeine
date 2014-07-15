@@ -1,5 +1,8 @@
 package com.coinffeine.common.protocol.gateway
 
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.network.PeerId
+
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
@@ -7,8 +10,6 @@ import akka.testkit.{EventFilter, TestProbe}
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.exchange.PeerId
-import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway._
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch

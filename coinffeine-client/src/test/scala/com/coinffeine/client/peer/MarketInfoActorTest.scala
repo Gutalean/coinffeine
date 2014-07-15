@@ -1,11 +1,11 @@
 package com.coinffeine.client.peer
 
 import akka.testkit.TestProbe
-
-import com.coinffeine.common.Bid
-import com.coinffeine.common.Currency.{Euro, UsDollar}
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.exchange.PeerId
+import coinffeine.model.currency.Currency
+import coinffeine.model.network.PeerId
+import Currency.{Euro, UsDollar}
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.order.Bid
 import com.coinffeine.common.protocol.gateway.GatewayProbe
 import com.coinffeine.common.protocol.messages.brokerage._
 import com.coinffeine.common.test.AkkaSpec

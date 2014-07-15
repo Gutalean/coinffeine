@@ -2,7 +2,9 @@ package com.coinffeine.client
 
 import akka.testkit.TestProbe
 
-import com.coinffeine.common.FiatCurrency
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange._
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.protocol.messages.PublicMessage

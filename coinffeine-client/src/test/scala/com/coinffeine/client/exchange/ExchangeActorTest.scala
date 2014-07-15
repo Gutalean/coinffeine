@@ -7,6 +7,10 @@ import akka.testkit.{TestActor, TestProbe}
 import akka.util.Timeout
 import org.scalatest.concurrent.Eventually
 
+import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.exchange.Both
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.ExchangeActor._
@@ -14,12 +18,9 @@ import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{Unexpec
 import com.coinffeine.client.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
-import com.coinffeine.common.BitcoinjTest
-import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.bitcoin._
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import com.coinffeine.common.blockchain.BlockchainActor._
-import com.coinffeine.common.exchange.{Both, MockExchangeProtocol}
+import com.coinffeine.common.exchange.MockExchangeProtocol
 import com.coinffeine.common.protocol.ProtocolConstants
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")

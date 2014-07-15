@@ -1,10 +1,9 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.KeyPair
-import com.coinffeine.common.exchange._
-import com.coinffeine.common.network.NetworkComponent
+import coinffeine.model.bitcoin.{KeyPair, NetworkComponent}
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange._
+import coinffeine.model.network.PeerId
 
 trait SampleExchange { this: NetworkComponent =>
 

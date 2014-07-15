@@ -1,14 +1,15 @@
 package com.coinffeine.client.peer.orders
 
 import akka.actor.{Actor, ActorRef, Props}
+
+import coinffeine.model.currency.FiatAmount
+import coinffeine.model.order.OrderBookEntry
 import com.coinffeine.client.api.CoinffeineApp
 import com.coinffeine.client.event.EventProducer
-
 import com.coinffeine.client.peer.orders.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import com.coinffeine.client.peer.orders.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import com.coinffeine.common.protocol.gateway.MessageGateway
 import com.coinffeine.common.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.{FiatAmount, OrderBookEntry}
 
 class OrderActor extends Actor {
 
@@ -57,7 +58,7 @@ object OrderActor {
 
   case object CancelOrder
 
-  /** Ask for order status. To be replied with an [[com.coinffeine.common.OrderBookEntry]].
+  /** Ask for order status. To be replied with an [[OrderBookEntry]].
     *
     * TODO: return an Order instead of an OrderBookEntry
     */

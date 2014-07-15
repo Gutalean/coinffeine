@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.{FiatCurrency, CurrencyAmount}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import com.coinffeine.common.protocol.Spread
 import com.coinffeine.common.protocol.messages.PublicMessage
 

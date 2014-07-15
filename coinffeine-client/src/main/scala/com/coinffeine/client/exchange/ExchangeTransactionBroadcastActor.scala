@@ -10,7 +10,7 @@ import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor._
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer}
 import com.coinffeine.common.akka.ConstantValueActor
 import com.coinffeine.common.akka.ConstantValueActor.SetValue
-import com.coinffeine.common.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin.ImmutableTransaction
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor._
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import com.coinffeine.common.protocol.ProtocolConstants

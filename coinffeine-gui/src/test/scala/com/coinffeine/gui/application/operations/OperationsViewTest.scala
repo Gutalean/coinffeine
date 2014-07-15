@@ -3,12 +3,13 @@ package com.coinffeine.gui.application.operations
 import javafx.collections.ObservableList
 import javafx.scene.{Node, Parent}
 import javafx.scene.control.{Button, TableRow, TableView}
+import coinffeine.model.currency.Currency
+import coinffeine.model.order.{Bid, OrderBookEntry}
 import org.scalatest.concurrent.Eventually
 import scalafx.scene.layout.Pane
 
 import com.coinffeine.client.api.{CoinffeineApp, MockCoinffeineApp}
-import com.coinffeine.common.{Bid, OrderBookEntry}
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.gui.GuiTest
 import com.coinffeine.gui.application.properties.OrderProperties
 

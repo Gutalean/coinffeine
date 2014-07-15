@@ -1,6 +1,6 @@
 package com.coinffeine.gui.application
 
-import com.coinffeine.common.OrderId
+import coinffeine.model.order.OrderId
 
 import scalafx.collections.ObservableBuffer
 

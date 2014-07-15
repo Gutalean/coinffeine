@@ -3,9 +3,9 @@ package com.coinffeine.common.blockchain
 import akka.actor.Props
 import org.scalatest.mock.MockitoSugar
 
-import com.coinffeine.common.BitcoinjTest
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, KeyPair}
+import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
+import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.common.test.AkkaSpec
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")

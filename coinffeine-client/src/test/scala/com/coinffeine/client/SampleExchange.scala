@@ -1,9 +1,11 @@
 package com.coinffeine.client
 
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.{KeyPair, PublicKey}
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.bitcoin.{KeyPair, PublicKey}
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange._
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.exchange._
-import com.coinffeine.common.network.CoinffeineUnitTestNetwork
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 

@@ -1,20 +1,24 @@
 package com.coinffeine.client.micropayment
 
+import coinffeine.model.payment.Payment
+
 import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
 
+import coinffeine.model.bitcoin.TransactionSignature
+import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.network.PeerId
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.BuyerPerspective
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor._
-import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin.TransactionSignature
-import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, PeerId}
+import com.coinffeine.common.exchange.MockExchangeProtocol
 import com.coinffeine.common.exchange.MicroPaymentChannel.Signatures
-import com.coinffeine.common.paymentprocessor.{Payment, PaymentProcessor}
+import com.coinffeine.common.paymentprocessor.PaymentProcessor
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import com.coinffeine.common.protocol.messages.brokerage.{Market, PeerOrderRequests}

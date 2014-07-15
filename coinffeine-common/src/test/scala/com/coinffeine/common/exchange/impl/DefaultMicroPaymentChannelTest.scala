@@ -1,6 +1,6 @@
 package com.coinffeine.common.exchange.impl
 
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.currency.Implicits._
 
 class DefaultMicroPaymentChannelTest extends ExchangeTest {
 

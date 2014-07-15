@@ -2,11 +2,11 @@ package com.coinffeine.common.exchange.impl
 
 import scala.util.{Failure, Success, Try}
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.Currency.Bitcoin
-import com.coinffeine.common.bitcoin._
-import com.coinffeine.common.exchange.{Both, Exchange}
-import com.coinffeine.common.exchange.Exchange.Deposits
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.Exchange.Deposits
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
                                      requiredSignatures: Both[PublicKey]) {

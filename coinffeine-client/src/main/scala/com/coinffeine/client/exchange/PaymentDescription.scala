@@ -1,6 +1,6 @@
 package com.coinffeine.client.exchange
 
-import com.coinffeine.common.exchange.Exchange
+import coinffeine.model.exchange.Exchange
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 
 /** Payment description formatter */

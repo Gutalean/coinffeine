@@ -1,6 +1,9 @@
 package com.coinffeine.common.protocol.gateway
 
 import java.io.IOException
+
+import coinffeine.model.network.PeerId
+
 import scala.concurrent.duration._
 import scala.util.{Try, Failure, Success}
 
@@ -10,7 +13,6 @@ import akka.util.Timeout
 import com.google.protobuf.RpcCallback
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.gateway.MessageGateway.ForwardException
 import com.coinffeine.common.protocol.gateway.PeerServiceImpl.ResolvePeerId
 import com.coinffeine.common.protocol.gateway.ProtobufServerActor.PeerWith

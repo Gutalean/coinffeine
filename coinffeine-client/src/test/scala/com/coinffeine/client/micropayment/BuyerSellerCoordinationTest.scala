@@ -4,10 +4,10 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.model.currency.Implicits._
 import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import com.coinffeine.client.paymentprocessor.MockPaymentProcessorFactory
-import com.coinffeine.common.Currency.Implicits._
 import com.coinffeine.common.exchange._
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}

@@ -1,7 +1,7 @@
 package com.coinffeine.common.protocol.messages.handshake
 
-import com.coinffeine.common.bitcoin.{TransactionSignatureUtils, TransactionSignature}
-import com.coinffeine.common.exchange.Exchange
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.bitcoin.{TransactionSignatureUtils, TransactionSignature}
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 case class RefundSignatureResponse(exchangeId: Exchange.Id, refundSignature: TransactionSignature)

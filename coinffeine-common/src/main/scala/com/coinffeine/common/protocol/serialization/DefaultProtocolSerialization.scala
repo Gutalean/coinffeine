@@ -2,8 +2,8 @@ package com.coinffeine.common.protocol.serialization
 
 import com.google.protobuf.Descriptors.FieldDescriptor
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.exchange.PeerId
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.network.PeerId
 import com.coinffeine.common.protocol.Version
 import com.coinffeine.common.protocol.messages.PublicMessage
 import com.coinffeine.common.protocol.messages.arbitration.CommitmentNotification

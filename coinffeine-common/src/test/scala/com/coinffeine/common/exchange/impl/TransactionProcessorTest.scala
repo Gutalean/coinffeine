@@ -4,8 +4,9 @@ import scala.collection.JavaConverters._
 
 import com.google.bitcoin.core.Transaction.SigHash
 
-import com.coinffeine.common.{BitcoinjTest, Currency}
-import com.coinffeine.common.Currency.Implicits._
+import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.currency.Currency
+import coinffeine.model.currency.Implicits._
 
 class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
 

@@ -1,11 +1,11 @@
 package com.coinffeine.common.protocol.gateway
 
 import akka.actor.ActorRef
+import coinffeine.model.network.PeerId
 import com.google.protobuf.{RpcCallback, RpcController}
 import com.googlecode.protobuf.pro.duplex.execute.ServerRpcController
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.protobuf.{CoinffeineProtobuf => proto}
 import com.coinffeine.common.protocol.protobuf.CoinffeineProtobuf.PeerIdResolution
 

@@ -2,7 +2,7 @@ package com.coinffeine.common.protocol.serialization
 
 import com.google.protobuf.ByteString
 
-import com.coinffeine.common.bitcoin._
+import coinffeine.model.bitcoin._
 
 private[serialization] class TransactionSerialization(network: Network) {
 

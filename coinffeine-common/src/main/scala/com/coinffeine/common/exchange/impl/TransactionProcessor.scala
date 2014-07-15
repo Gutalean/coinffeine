@@ -5,9 +5,9 @@ import scala.collection.JavaConversions._
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
-import com.coinffeine.common.{BitcoinAmount, Currency}
-import com.coinffeine.common.Currency.Implicits._
-import com.coinffeine.common.bitcoin._
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.{BitcoinAmount, Currency}
+import coinffeine.model.currency.Implicits._
 
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {

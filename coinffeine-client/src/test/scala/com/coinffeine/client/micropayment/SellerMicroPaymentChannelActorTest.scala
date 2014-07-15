@@ -1,5 +1,10 @@
 package com.coinffeine.client.micropayment
 
+import coinffeine.model.currency.Currency
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.network.PeerId
+import coinffeine.model.payment.Payment
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -12,10 +17,9 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.CoinffeineClientTest.SellerPerspective
 import com.coinffeine.client.exchange.PaymentDescription
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
-import com.coinffeine.common.Currency.Euro
-import com.coinffeine.common.exchange.{Exchange, MockExchangeProtocol, MockMicroPaymentChannel, PeerId}
+import Currency.Euro
+import com.coinffeine.common.exchange.{MockExchangeProtocol, MockMicroPaymentChannel}
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
-import com.coinffeine.common.paymentprocessor.Payment
 import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}

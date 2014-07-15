@@ -2,8 +2,9 @@ package com.coinffeine.common.exchange
 
 import scala.util.{Failure, Success}
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.RunningExchange
 import com.coinffeine.common.exchange.MicroPaymentChannel._
 
 class MockMicroPaymentChannel[C <: FiatCurrency] private (

@@ -1,7 +1,8 @@
 package com.coinffeine.common.exchange
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.HandshakingExchange
 import com.coinffeine.common.exchange.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 trait Handshake[C <: FiatCurrency] {

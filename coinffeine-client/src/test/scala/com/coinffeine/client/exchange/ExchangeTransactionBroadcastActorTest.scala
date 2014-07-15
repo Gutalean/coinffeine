@@ -10,7 +10,7 @@ import com.coinffeine.client.CoinffeineClientTest
 import com.coinffeine.client.exchange.ExchangeTransactionBroadcastActor.{SetMicropaymentActor, FinishExchange, ExchangeFinished, StartBroadcastHandling}
 import com.coinffeine.client.micropayment.MicroPaymentChannelActor.{LastOffer, GetLastOffer}
 import com.coinffeine.common.bitcoin.peers.BitcoinPeerActor.{TransactionPublished, PublishTransaction, BlockchainActorReference, RetrieveBlockchainActor}
-import com.coinffeine.common.bitcoin.{MutableTransaction, ImmutableTransaction}
+import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction}
 import com.coinffeine.common.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import com.coinffeine.common.protocol.ProtocolConstants
 import com.coinffeine.common.system

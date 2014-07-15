@@ -1,9 +1,9 @@
 package com.coinffeine.common.protocol.gateway
 
 import akka.actor.Props
+import coinffeine.model.network.PeerId
 
 import com.coinffeine.common.PeerConnection
-import com.coinffeine.common.exchange.PeerId
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 object MessageGateway {

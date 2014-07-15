@@ -2,8 +2,9 @@ package com.coinffeine.common.exchange.impl
 
 import scala.util.Try
 
-import com.coinffeine.common.FiatCurrency
-import com.coinffeine.common.bitcoin.{Address, ImmutableTransaction}
+import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange._
 import com.coinffeine.common.exchange._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {

@@ -1,13 +1,16 @@
 package com.coinffeine.common.paymentprocessor.okpay
 
 import java.util.{Currency => JavaCurrency}
+import coinffeine.model.payment.Payment
+
 import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
 
-import com.coinffeine.common.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.payment.PaymentProcessor.{AccountCredentials, AccountId}
 import com.coinffeine.common.paymentprocessor._
 import com.coinffeine.common.paymentprocessor.okpay.generated._
 
@@ -142,8 +145,8 @@ object OKPayProcessor {
 
     this: TokenGenerator.Component with OKPayClient.Component =>
 
-    override def paymentProcessorProps(account: PaymentProcessor.AccountId,
-                                       credentials: PaymentProcessor.AccountCredentials): Props =
+    override def paymentProcessorProps(account: AccountId,
+                                       credentials: AccountCredentials): Props =
       Props(new OKPayProcessor(account, okPayClient, createTokenGenerator(credentials)))
   }
 

@@ -1,6 +1,6 @@
 package com.coinffeine.common.protocol.messages.brokerage
 
-import com.coinffeine.common.FiatCurrency
+import coinffeine.model.currency.FiatCurrency
 import com.coinffeine.common.protocol.messages.PublicMessage
 
 /** Used to ask about the current quote of bitcoin traded in a given currency */
