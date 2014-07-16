@@ -1,5 +1,6 @@
 package coinffeine.peer.api.impl
 
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
@@ -12,4 +13,6 @@ private[impl] trait PeerActorWrapper {
 
   /** Default timeout when asking things to the peer */
   implicit protected val timeout = Timeout(3.seconds)
+
+  protected def await[T](future: Future[T]): T = Await.result(future, timeout.duration)
 }

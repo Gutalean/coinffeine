@@ -1,7 +1,7 @@
 package coinffeine.peer.api.impl
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 import akka.actor.ActorRef
@@ -46,7 +46,7 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   override def onExchangeChanged(listener: ExchangeListener): Unit = ???
 
   override def orders: Set[OrderBookEntry[FiatAmount]] =
-    Await.result((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders], timeout.duration).orders.toSet
+    await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
 
   override def submitOrder[F <: FiatAmount](order: OrderBookEntry[F]): OrderBookEntry[F] = {
     peer ! OpenOrder(order)
