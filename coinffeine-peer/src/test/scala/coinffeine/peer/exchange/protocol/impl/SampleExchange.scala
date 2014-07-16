@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.{KeyPair, NetworkComponent}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
+import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange { this: NetworkComponent =>
 

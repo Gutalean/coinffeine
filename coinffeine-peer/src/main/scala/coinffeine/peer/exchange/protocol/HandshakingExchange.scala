@@ -1,6 +1,7 @@
-package coinffeine.model.exchange
+package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 
 /** Relevant information during the handshake of an exchange. This point of view is only held by
