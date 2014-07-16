@@ -45,7 +45,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(peer, common, protocol, model, commonTest, gui, server, test)
+    aggregate(peer, protocol, model, commonTest, gui, server, test)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
@@ -65,15 +65,9 @@ object Build extends sbt.Build {
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(
       model % "compile->compile;test->test",
-      common % "compile->compile;test->test",
+      protocol % "compile->compile;test->test",
       commonTest % "test->compile"
     )
-  )
-
-  lazy val common = (Project(id = "common", base = file("coinffeine-common"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn(protocol % "compile->compile;test->test",
-      model % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val protocol = (Project(id = "protocol", base = file("coinffeine-protocol"))
@@ -98,6 +92,6 @@ object Build extends sbt.Build {
   )
 
   lazy val test = (Project(id = "test", base = file("coinffeine-test"))
-    dependsOn(peer, server, common, commonTest % "compile->compile;test->compile")
+    dependsOn(peer, server, commonTest % "compile->compile;test->compile")
   )
 }
