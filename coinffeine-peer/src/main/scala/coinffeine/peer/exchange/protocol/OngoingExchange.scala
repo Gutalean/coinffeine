@@ -15,8 +15,8 @@ trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
 
   def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
 
-  val user = role(participants)
-  val counterpart = role.counterpart(participants)
+  val user = role.select(participants)
+  val counterpart = role.counterpart.select(participants)
 
   require(user.bitcoinKey.hasPrivKey)
 }

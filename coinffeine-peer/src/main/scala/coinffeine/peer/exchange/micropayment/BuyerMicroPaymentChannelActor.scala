@@ -50,7 +50,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
     }
 
     private def subscribeToMessages(): Unit = {
-      val counterpart = exchange.role.counterpart(exchange.peerIds)
+      val counterpart = exchange.role.counterpart.select(exchange.peerIds)
       messageGateway ! Subscribe {
         case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) => true
         case _ => false

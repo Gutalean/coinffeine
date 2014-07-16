@@ -4,7 +4,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange.Both
 
 sealed trait Role {
-  def apply[A](both: Both[A]): A
+  def select[A](both: Both[A]): A
   def counterpart: Role
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
@@ -25,7 +25,7 @@ object Role {
 
 object BuyerRole extends Role {
 
-  override def apply[A](both: Both[A]) = both.buyer
+  override def select[A](both: Both[A]) = both.buyer
 
   override def counterpart = SellerRole
 
@@ -49,7 +49,7 @@ object BuyerRole extends Role {
 
 object SellerRole extends Role {
 
-  override def apply[A](both: Both[A]) = both.seller
+  override def select[A](both: Both[A]) = both.seller
 
   override def counterpart = BuyerRole
 

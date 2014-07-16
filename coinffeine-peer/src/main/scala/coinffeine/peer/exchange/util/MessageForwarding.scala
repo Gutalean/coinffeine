@@ -15,7 +15,7 @@ import coinffeine.protocol.messages.PublicMessage
 class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId, broker: PeerId) {
 
   def this(messageGateway: ActorRef, exchange: Exchange[FiatCurrency], role: Role) =
-    this(messageGateway, role.counterpart(exchange.peerIds), exchange.brokerId)
+    this(messageGateway, role.counterpart.select(exchange.peerIds), exchange.brokerId)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)
