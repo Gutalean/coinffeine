@@ -8,7 +8,7 @@ import scalafx.scene.{Node, Parent}
 import com.google.common.base.Predicate
 import org.loadui.testfx
 
-import com.coinffeine.common.test.UnitTest
+import coinffeine.common.test.UnitTest
 
 abstract class GuiTest[TestObject <: Parent] extends UnitTest { self =>
 

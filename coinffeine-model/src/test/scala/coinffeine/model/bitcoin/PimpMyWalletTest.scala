@@ -2,10 +2,10 @@ package coinffeine.model.bitcoin
 
 import scala.util.Random
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Implicits._
-import com.coinffeine.common.test.UnitTest
 
 class PimpMyWalletTest extends UnitTest with BitcoinjTest {
 

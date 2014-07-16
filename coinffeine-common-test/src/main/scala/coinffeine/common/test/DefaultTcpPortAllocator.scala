@@ -1,4 +1,4 @@
-package com.coinffeine.common.test
+package coinffeine.common.test
 
 /** Default instance of TcpPortAllocator */
 object DefaultTcpPortAllocator extends TcpPortAllocator(5000)

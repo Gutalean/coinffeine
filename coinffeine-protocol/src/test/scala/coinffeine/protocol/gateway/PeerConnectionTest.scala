@@ -1,6 +1,6 @@
 package coinffeine.protocol.gateway
 
-import com.coinffeine.common.test.UnitTest
+import coinffeine.common.test.UnitTest
 
 class PeerConnectionTest extends UnitTest {
 

@@ -1,4 +1,4 @@
-package com.coinffeine.common.test
+package coinffeine.common.test
 
 import java.net.ServerSocket
 import scala.annotation.tailrec

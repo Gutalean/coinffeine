@@ -3,6 +3,7 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
+import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.{Ask, OrderBookEntry}
@@ -10,7 +11,6 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage.OrderMatch
-import com.coinffeine.common.test.AkkaSpec
 
 class OrderActorTest extends AkkaSpec {
 

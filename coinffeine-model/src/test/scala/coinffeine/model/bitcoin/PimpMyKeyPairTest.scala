@@ -1,7 +1,7 @@
 package coinffeine.model.bitcoin
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
-import com.coinffeine.common.test.UnitTest
 
 class PimpMyKeyPairTest extends UnitTest {
 

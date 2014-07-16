@@ -8,7 +8,7 @@ import com.googlecode.protobuf.pro.duplex.{PeerInfo, RpcClientChannel}
 
 import coinffeine.common.test.protobuf.TestProtocol
 import coinffeine.common.test.protobuf.TestProtocol.{Request, Response, SimpleService}
-import com.coinffeine.common.test.{DefaultTcpPortAllocator, UnitTest}
+import coinffeine.common.test.{DefaultTcpPortAllocator, UnitTest}
 
 class PeerServerIT extends UnitTest {
 

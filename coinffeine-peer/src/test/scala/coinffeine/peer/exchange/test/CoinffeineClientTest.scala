@@ -2,13 +2,13 @@ package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
 
+import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.PublicMessage
-import com.coinffeine.common.test.AkkaSpec
 
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange {

@@ -1,4 +1,4 @@
-package com.coinffeine.common.test
+package coinffeine.common.test
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKitExtension

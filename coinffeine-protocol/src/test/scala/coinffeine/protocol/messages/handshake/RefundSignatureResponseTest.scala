@@ -2,9 +2,9 @@ package coinffeine.protocol.messages.handshake
 
 import java.math.BigInteger
 
+import coinffeine.common.test.{EqualityBehaviors, UnitTest}
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.exchange.Exchange
-import com.coinffeine.common.test.{EqualityBehaviors, UnitTest}
 
 class RefundSignatureResponseTest extends UnitTest with EqualityBehaviors {
   val sig1 = new TransactionSignature(BigInteger.valueOf(0), BigInteger.valueOf(1))

@@ -5,6 +5,7 @@ import java.math.BigInteger
 import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -18,7 +19,6 @@ import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => msg}
-import com.coinffeine.common.test.UnitTest
 
 class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 

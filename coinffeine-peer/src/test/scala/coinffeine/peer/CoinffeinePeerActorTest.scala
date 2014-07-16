@@ -3,6 +3,8 @@ package coinffeine.peer
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 
+import coinffeine.common.test.MockActor.{MockReceived, MockStarted}
+import coinffeine.common.test.{AkkaSpec, MockActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
@@ -13,8 +15,6 @@ import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
-import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
-import com.coinffeine.common.test.{AkkaSpec, MockActor}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 

@@ -2,8 +2,8 @@ package coinffeine.peer.exchange.util
 
 import akka.actor.Props
 
+import coinffeine.common.test.AkkaSpec
 import coinffeine.peer.exchange.util.ConstantValueActor.{SetValue, UnsetValue}
-import com.coinffeine.common.test.AkkaSpec
 
 class ConstantValueActorTest extends AkkaSpec("ConstantValueActorTest") {
   val instance = system.actorOf(Props[ConstantValueActor])

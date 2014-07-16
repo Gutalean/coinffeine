@@ -3,11 +3,11 @@ package coinffeine.peer.bitcoin
 import akka.actor.Props
 import org.scalatest.concurrent.Eventually
 
+import coinffeine.common.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Implicits._
-import com.coinffeine.common.test.AkkaSpec
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
