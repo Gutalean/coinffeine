@@ -1,4 +1,4 @@
-package com.coinffeine.common.paymentprocessor.okpay
+package coinffeine.peer.payment.okpay
 
 import java.util.{Currency => JavaCurrency}
 import scala.util.{Failure, Success}
@@ -10,10 +10,10 @@ import org.joda.time.{DateTime, DateTimeZone}
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountCredentials, AccountId}
-import com.coinffeine.common.paymentprocessor._
-import com.coinffeine.common.paymentprocessor.okpay.generated._
+import coinffeine.peer.payment._
+import coinffeine.peer.payment.okpay.generated._
 
-class OKPayProcessor(
+class OKPayProcessorActor(
     account: String,
     client: OKPayClient,
     tokenGenerator: TokenGenerator) extends Actor {
@@ -22,7 +22,7 @@ class OKPayProcessor(
 
   override def receive: Receive = {
     case PaymentProcessor.Identify =>
-      sender ! PaymentProcessor.Identified(OKPayProcessor.Id)
+      sender ! PaymentProcessor.Identified(OKPayProcessorActor.Id)
     case pay: PaymentProcessor.Pay[_] =>
       sendPayment(sender(), pay)
     case PaymentProcessor.FindPayment(paymentId) =>
@@ -100,7 +100,7 @@ class OKPayProcessor(
       ) =>
         val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
         val amount = currency.amount(net)
-        val date = DateTimeFormat.forPattern(OKPayProcessor.DateFormat).parseDateTime(rawDate)
+        val date = DateTimeFormat.forPattern(OKPayProcessorActor.DateFormat).parseDateTime(rawDate)
         Payment(paymentId.toString, senderId, receiverId, amount, date, description)
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }
@@ -136,7 +136,7 @@ class OKPayProcessor(
 
 }
 
-object OKPayProcessor {
+object OKPayProcessorActor {
 
   val Id = "OKPAY"
 
@@ -146,7 +146,7 @@ object OKPayProcessor {
 
     override def paymentProcessorProps(account: AccountId,
                                        credentials: AccountCredentials): Props =
-      Props(new OKPayProcessor(account, okPayClient, createTokenGenerator(credentials)))
+      Props(new OKPayProcessorActor(account, okPayClient, createTokenGenerator(credentials)))
   }
 
   private val DateFormat = "yyyy-MM-dd HH:mm:ss"

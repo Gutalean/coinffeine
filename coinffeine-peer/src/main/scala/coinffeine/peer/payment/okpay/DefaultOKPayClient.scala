@@ -1,8 +1,8 @@
-package com.coinffeine.common.paymentprocessor.okpay
+package coinffeine.peer.payment.okpay
 
 import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync}
 
-import com.coinffeine.common.paymentprocessor.okpay.generated._
+import coinffeine.peer.payment.okpay.generated._
 
 object DefaultOKPayClient extends OKPayClient {
 

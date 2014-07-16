@@ -21,7 +21,7 @@ import coinffeine.protocol.messages.exchange._
 import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
 import com.coinffeine.common.exchange.{MockExchangeProtocol, MockMicroPaymentChannel}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
+import coinffeine.peer.payment.PaymentProcessor.{FindPayment, PaymentFound}
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
   with SellerPerspective with MockitoSugar {

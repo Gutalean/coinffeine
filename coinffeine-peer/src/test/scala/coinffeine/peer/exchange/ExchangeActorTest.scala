@@ -19,7 +19,7 @@ import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, Hand
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.exchange.test.{CoinffeineClientTest, TestMessageQueue}
-import coinffeine.peer.paymentprocessor.MockPaymentProcessorFactory
+import coinffeine.peer.payment.MockPaymentProcessorFactory
 import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MockExchangeProtocol
 

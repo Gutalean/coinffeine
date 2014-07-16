@@ -15,8 +15,8 @@ import coinffeine.protocol.messages.exchange._
 import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.paymentprocessor.PaymentProcessor.PaymentFound
+import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor.PaymentFound
 
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm

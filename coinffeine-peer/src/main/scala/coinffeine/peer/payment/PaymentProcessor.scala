@@ -1,4 +1,4 @@
-package com.coinffeine.common.paymentprocessor
+package coinffeine.peer.payment
 
 import scala.concurrent.duration._
 

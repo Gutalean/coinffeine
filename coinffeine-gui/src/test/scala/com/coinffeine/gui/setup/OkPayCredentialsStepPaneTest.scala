@@ -4,7 +4,7 @@ import javafx.scene.Node
 import javafx.scene.control.Label
 import scala.concurrent.Future
 
-import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
+import coinffeine.peer.payment.okpay.OkPayCredentials
 import com.coinffeine.gui.GuiTest
 import com.coinffeine.gui.setup.CredentialsValidator.{InvalidCredentials, Result, ValidCredentials}
 

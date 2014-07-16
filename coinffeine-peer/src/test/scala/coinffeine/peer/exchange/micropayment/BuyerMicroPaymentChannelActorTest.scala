@@ -20,7 +20,7 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange.MockExchangeProtocol
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor
 
 class BuyerMicroPaymentChannelActorTest
   extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {

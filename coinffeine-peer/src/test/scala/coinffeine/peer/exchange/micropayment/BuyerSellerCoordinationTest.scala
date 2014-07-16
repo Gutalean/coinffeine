@@ -7,7 +7,7 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
-import coinffeine.peer.paymentprocessor.MockPaymentProcessorFactory
+import coinffeine.peer.payment.MockPaymentProcessorFactory
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.exchange._

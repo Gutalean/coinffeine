@@ -55,20 +55,22 @@ object Build extends sbt.Build {
   )
 
   lazy val peer = (Project(id = "peer", base = file("coinffeine-peer"))
-    dependsOn(model % "compile->compile;test->test", common % "compile->compile;test->test",
-      commonTest % "test->compile")
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
-  )
-
-  lazy val common = (Project(
-    id = "common",
-    base = file("coinffeine-common"),
-    settings = Defaults.defaultSettings ++ scalaxbSettings ++ Seq(
+    settings(scalaxbSettings: _*)
+    settings(
       sourceGenerators in Compile <+= scalaxb in Compile,
-      packageName in (Compile, scalaxb) := "com.coinffeine.common.paymentprocessor.okpay.generated",
+      packageName in (Compile, scalaxb) := "coinffeine.peer.payment.okpay.generated",
       dispatchVersion in (Compile, scalaxb) := Versions.dispatch,
       async in (Compile, scalaxb) := true
-    ))
+    )
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(
+      model % "compile->compile;test->test",
+      common % "compile->compile;test->test",
+      commonTest % "test->compile"
+    )
+  )
+
+  lazy val common = (Project(id = "common", base = file("coinffeine-common"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(protocol % "compile->compile;test->test",
       model % "compile->compile;test->test", commonTest % "test->compile")
@@ -85,11 +87,9 @@ object Build extends sbt.Build {
     dependsOn(commonTest % "test->compile")
   )
 
-  lazy val commonTest = Project(
-    id = "common-test",
-    base = file("coinffeine-common-test"),
-    settings = Defaults.defaultSettings ++ PB.protobufSettings ++
-      ScoverageSbtPlugin.instrumentSettings
+  lazy val commonTest = (Project(id = "common-test", base = file("coinffeine-common-test"))
+    settings(PB.protobufSettings: _*)
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))

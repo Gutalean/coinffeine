@@ -1,4 +1,4 @@
-package com.coinffeine.common.paymentprocessor.okpay
+package coinffeine.peer.payment.okpay
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -11,11 +11,11 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.currency.Currency
 import coinffeine.model.payment.Payment
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.paymentprocessor.okpay.generated._
+import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.okpay.generated._
 import com.coinffeine.common.test.AkkaSpec
 
-class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
+class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   val futureTimeout = 5.seconds
   val senderAccount = "OK12345"
@@ -42,7 +42,7 @@ class OKPayProcessorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val fakeClient = mock[I_OkPayAPI]
     val fakeTokenGenerator = mock[TokenGenerator]
     given(fakeTokenGenerator.build(any[DateTime])).willReturn(token)
-    val processor = system.actorOf(Props(new OKPayProcessor(
+    val processor = system.actorOf(Props(new OKPayProcessorActor(
       account = senderAccount,
       client = new OKPayClient {
         override def service: I_OkPayAPI = fakeClient

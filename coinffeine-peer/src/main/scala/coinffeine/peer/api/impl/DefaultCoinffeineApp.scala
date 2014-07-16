@@ -6,7 +6,7 @@ import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
 import coinffeine.peer.event.EventObserverActor
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor
 
 /** Implements the coinffeine application API as an actor system.
   *

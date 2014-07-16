@@ -1,6 +1,6 @@
 package com.coinffeine.gui.setup
 
-import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
+import coinffeine.peer.payment.okpay.OkPayCredentials
 
 /** Initial setup configuration.
   *

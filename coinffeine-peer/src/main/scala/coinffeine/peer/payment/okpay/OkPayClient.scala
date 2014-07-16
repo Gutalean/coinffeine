@@ -1,6 +1,6 @@
-package com.coinffeine.common.paymentprocessor.okpay
+package coinffeine.peer.payment.okpay
 
-import com.coinffeine.common.paymentprocessor.okpay.generated._
+import coinffeine.peer.payment.okpay.generated._
 
 trait OKPayClient {
 

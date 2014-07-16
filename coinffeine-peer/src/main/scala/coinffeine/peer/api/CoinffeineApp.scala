@@ -5,7 +5,7 @@ import java.io.Closeable
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor
 
 /** Coinffeine application interface */
 trait CoinffeineApp extends Closeable {

@@ -1,4 +1,4 @@
-package com.coinffeine.common.paymentprocessor.okpay
+package coinffeine.peer.payment.okpay
 
 import java.security.MessageDigest
 

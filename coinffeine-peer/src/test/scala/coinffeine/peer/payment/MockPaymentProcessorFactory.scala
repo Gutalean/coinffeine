@@ -1,4 +1,4 @@
-package coinffeine.peer.paymentprocessor
+package coinffeine.peer.payment
 
 import java.util.UUID
 
@@ -7,7 +7,7 @@ import org.joda.time.DateTime
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
-import com.coinffeine.common.paymentprocessor.{AnyPayment, PaymentProcessor}
+import coinffeine.peer.payment.{AnyPayment, PaymentProcessor}
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
 
