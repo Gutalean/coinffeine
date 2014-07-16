@@ -9,16 +9,14 @@ import org.joda.time.{DateTime, DateTimeZone}
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
-import coinffeine.model.payment.PaymentProcessor.{AccountCredentials, AccountId}
+import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.generated._
 
 class OKPayProcessorActor(
     account: String,
-    client: OKPayClient,
+    service: I_OkPayAPI,
     tokenGenerator: TokenGenerator) extends Actor {
-
-  private val service = client.service
 
   override def receive: Receive = {
     case PaymentProcessor.Identify =>
@@ -140,13 +138,12 @@ object OKPayProcessorActor {
 
   val Id = "OKPAY"
 
-  trait Component extends PaymentProcessor.Component {
-
-    this: TokenGenerator.Component with OKPayClient.Component =>
-
-    override def paymentProcessorProps(account: AccountId,
-                                       credentials: AccountCredentials): Props =
-      Props(new OKPayProcessorActor(account, okPayClient, createTokenGenerator(credentials)))
+  trait Component extends PaymentProcessor.Component { this: ConfigComponent =>
+    override lazy val paymentProcessorProps = Props {
+      val accountId = config.getString("coinffeine.okpay.id")
+      val token = config.getString("coinffeine.okpay.token")
+      new OKPayProcessorActor(accountId, new OKPayClient().service, new TokenGenerator(token))
+    }
   }
 
   private val DateFormat = "yyyy-MM-dd HH:mm:ss"

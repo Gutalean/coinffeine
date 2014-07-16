@@ -73,6 +73,6 @@ object PaymentProcessor {
     * Payment processor actor.
     */
   trait Component {
-    def paymentProcessorProps(account: AccountId, credentials: AccountCredentials): Props
+    def paymentProcessorProps: Props
   }
 }

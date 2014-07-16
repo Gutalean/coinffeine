@@ -4,9 +4,9 @@ import org.joda.time.format.DateTimeFormat
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
-class DefaultTokenGeneratorTest extends FlatSpec with ShouldMatchers with MockitoSugar {
+class TokenGeneratorTest extends FlatSpec with ShouldMatchers with MockitoSugar {
 
-  val instance = new DefaultTokenGenerator("seedToken")
+  val instance = new TokenGenerator("seedToken")
 
   "TokenGenerator" must "generate a valid token using a date" in {
     val formatter = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")

@@ -39,14 +39,12 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   val balanceArray = ArrayOfBalance(Some(Balance(Some(100), Some(Some("USD")))))
 
   private trait WithOkPayProcessor {
-    val fakeClient = mock[I_OkPayAPI]
+    val service = mock[I_OkPayAPI]
     val fakeTokenGenerator = mock[TokenGenerator]
     given(fakeTokenGenerator.build(any[DateTime])).willReturn(token)
     val processor = system.actorOf(Props(new OKPayProcessorActor(
       account = senderAccount,
-      client = new OKPayClient {
-        override def service: I_OkPayAPI = fakeClient
-      },
+      service = service,
       tokenGenerator = fakeTokenGenerator
     )))
   }
@@ -57,7 +55,7 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   }
 
   it must "be able to get the current balance" in new WithOkPayProcessor {
-    given(fakeClient.wallet_Get_Balance(
+    given(service.wallet_Get_Balance(
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token))
     )).willReturn(Future.successful(Wallet_Get_BalanceResponse(Some(Some(balanceArray)))))
@@ -66,7 +64,7 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   }
 
   it must "be able to send a payment" in new WithOkPayProcessor {
-    given(fakeClient.send_Money(
+    given(service.send_Money(
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token)),
       receiver = Some(Some(receiverAccount)),
@@ -83,7 +81,7 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   }
 
   it must "be able to retrieve a existing payment" in new WithOkPayProcessor {
-    given(fakeClient.transaction_Get(
+    given(service.transaction_Get(
       walletID = Some(Some(senderAccount)),
       securityToken = Some(Some(token)),
       txnID = Some(250092L),
