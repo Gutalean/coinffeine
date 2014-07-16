@@ -26,8 +26,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val marketInfo = new MockSupervisedActor()
   val orders = new MockSupervisedActor()
   val wallet = new MockSupervisedActor()
+  val paymentProcessor = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(ownId, address, brokerId, brokerAddress,
-    eventChannel.props, gateway.props, marketInfo.props, orders.props, wallet.props)))
+    eventChannel.props, gateway.props, marketInfo.props, orders.props, wallet.props,
+    paymentProcessor.props)))
 
   "A peer" must "start the message gateway" in {
     gateway.expectCreation()
@@ -44,6 +46,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the wallet actor" in {
     wallet.expectCreation()
+  }
+
+  it must "start the payment processor actor" in {
+    paymentProcessor.expectCreation()
   }
 
   it must "make the message gateway start listening when connecting" in {

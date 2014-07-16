@@ -14,6 +14,7 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
+import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import coinffeine.protocol.gateway.{MessageGateway, PeerConnection}
 import coinffeine.protocol.messages.brokerage
@@ -30,24 +31,25 @@ class CoinffeinePeerActor(ownId: PeerId,
                           gatewayProps: Props,
                           marketInfoProps: Props,
                           orderSupervisorProps: Props,
-                          walletProps: Props) extends Actor with ActorLogging {
+                          walletProps: Props,
+                          paymentProcessorProps: Props) extends Actor with ActorLogging {
   import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
 
-  val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
-
-  val gatewayRef = context.actorOf(gatewayProps, "gateway")
-  val orderSupervisorRef = {
+  private val eventChannel: ActorRef = context.actorOf(eventChannelProps, "eventChannel")
+  private val gatewayRef = context.actorOf(gatewayProps, "gateway")
+  private val orderSupervisorRef = {
     val ref = context.actorOf(orderSupervisorProps, "orders")
     ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef)
     ref
   }
-  val marketInfoRef = {
+  private val marketInfoRef = {
     val ref = context.actorOf(marketInfoProps)
     ref ! MarketInfoActor.Start(brokerId, gatewayRef)
     ref
   }
-  val walletRef = context.actorOf(walletProps)
+  private val walletRef = context.actorOf(walletProps)
+  private val paymentProcessorRef = context.actorOf(paymentProcessorProps)
 
   override def receive: Receive = {
 
@@ -130,8 +132,12 @@ object CoinffeinePeerActor {
 
   private val ConnectionTimeout = Timeout(10.seconds)
 
-  trait Component { this: OrderSupervisor.Component with MarketInfoActor.Component
-    with MessageGateway.Component with WalletActor.Component with ConfigComponent =>
+  trait Component { this: OrderSupervisor.Component
+    with MarketInfoActor.Component
+    with MessageGateway.Component
+    with WalletActor.Component
+    with PaymentProcessor.Component
+    with ConfigComponent =>
 
     lazy val peerProps: Props = {
       val ownId = PeerId("client" + Random.nextInt(1000))
@@ -147,7 +153,8 @@ object CoinffeinePeerActor {
         gatewayProps = messageGatewayProps,
         marketInfoProps,
         orderSupervisorProps,
-        walletActorProps
+        walletActorProps,
+        paymentProcessorProps
       ))
     }
   }
