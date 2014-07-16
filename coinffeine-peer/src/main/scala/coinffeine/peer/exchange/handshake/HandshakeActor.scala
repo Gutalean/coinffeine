@@ -146,7 +146,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
-      val counterpart = exchange.peerIds(role.counterpart)
+      val counterpart = role.counterpart(exchange.peerIds)
       messageGateway ! Subscribe {
         case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
         case ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) => true

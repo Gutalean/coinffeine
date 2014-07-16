@@ -7,12 +7,6 @@ package coinffeine.model.exchange
   */
 case class Both[+T](buyer: T, seller: T) {
 
-  /** Access to a value by role */
-  def apply(role: Role): T = role match {
-    case BuyerRole => buyer
-    case SellerRole => seller
-  }
-
   def map[S](f: T => S): Both[S] = Both(
     buyer = f(buyer),
     seller = f(seller)
@@ -29,17 +23,6 @@ case class Both[+T](buyer: T, seller: T) {
   }
 
   def forall(pred: T => Boolean): Boolean = pred(buyer) && pred(seller)
-
-  def roleOf[T1 >: T](value: T1): Option[Role] = value match {
-    case `buyer` => Some(BuyerRole)
-    case `seller` => Some(SellerRole)
-    case _ => None
-  }
-
-  def updated[T1 >: T](role: Role, value: T1): Both[T1] = role match {
-    case BuyerRole => copy(buyer = value)
-    case SellerRole => copy(seller = value)
-  }
 
   def toSet[T1 >: T]: Set[T1] = Set(buyer, seller)
 
