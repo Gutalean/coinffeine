@@ -49,7 +49,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   it must "make the message gateway start listening when connecting" in {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
-    gateway.expectAskReply {
+    gateway.expectAskWithReply {
       case Bind(_, `address`, _, _) => BoundTo(address)
     }
     expectMsg(CoinffeinePeerActor.Connected)
@@ -63,7 +63,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   it must "propagate failures when connecting" in {
     peer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
-    gateway.expectAskReply {
+    gateway.expectAskWithReply {
       case Bind(_, `address`, _, _) => BindingError(cause)
     }
     expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))

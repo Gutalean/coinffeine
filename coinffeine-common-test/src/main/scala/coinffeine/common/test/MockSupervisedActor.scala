@@ -30,7 +30,7 @@ class MockSupervisedActor(implicit system: ActorSystem) extends Assertions {
     }
   }
 
-  def expectAskReply(reply: PartialFunction[Any, Any]): Unit = {
+  def expectAskWithReply(reply: PartialFunction[Any, Any]): Unit = {
     probe.expectMsgPF() {
       case MockActor.MockReceived(_, sender, message) if reply.isDefinedAt(message) =>
         sender ! reply(message)
