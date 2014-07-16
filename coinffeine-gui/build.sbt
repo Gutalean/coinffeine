@@ -15,7 +15,7 @@ fork := true
 
 jfxSettings
 
-JFX.mainClass := Some("com.coinffeine.gui.Main")
+JFX.mainClass := Some("coinffeine.gui.Main")
 
 JFX.title := "Coinffeine"
 
