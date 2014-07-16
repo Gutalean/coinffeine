@@ -12,15 +12,15 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
+import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
+import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.MockExchangeProtocol
-import coinffeine.peer.payment.PaymentProcessor
 
 class BuyerMicroPaymentChannelActorTest
   extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {

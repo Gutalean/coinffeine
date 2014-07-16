@@ -5,7 +5,7 @@ import akka.actor.ActorRef
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
-import com.coinffeine.common.ProtocolConstants
+import coinffeine.peer.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.

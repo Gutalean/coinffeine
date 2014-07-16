@@ -7,7 +7,6 @@ import org.joda.time.DateTime
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
-import coinffeine.peer.payment.{AnyPayment, PaymentProcessor}
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
 

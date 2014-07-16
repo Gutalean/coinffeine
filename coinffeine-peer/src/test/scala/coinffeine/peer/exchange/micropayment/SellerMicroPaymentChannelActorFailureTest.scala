@@ -7,11 +7,11 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 import com.google.bitcoin.crypto.TransactionSignature
 
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
+import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.MockExchangeProtocol
 
 class SellerMicroPaymentChannelActorFailureTest
   extends CoinffeineClientTest("buyerExchange") with SellerPerspective {

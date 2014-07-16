@@ -9,15 +9,15 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
-import com.coinffeine.common.ProtocolConstants
 import com.coinffeine.common.test.AkkaSpec
 
 class SubmissionSupervisorTest extends AkkaSpec {
 
-  val constants = ProtocolConstants.DefaultConstants.copy(
+  val constants = ProtocolConstants.Default.copy(
     orderExpirationInterval = 6.seconds,
     orderResubmitInterval = 4.seconds
   )

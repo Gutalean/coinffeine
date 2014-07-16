@@ -8,7 +8,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import com.coinffeine.common.ProtocolConstants
+import coinffeine.peer.ProtocolConstants
 import com.coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 import com.coinffeine.common.test.{AkkaSpec, MockActor}
 

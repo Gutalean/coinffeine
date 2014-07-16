@@ -11,17 +11,17 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange.Both
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
+import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.exchange.test.{CoinffeineClientTest, TestMessageQueue}
 import coinffeine.peer.payment.MockPaymentProcessorFactory
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.MockExchangeProtocol
 
 class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with SellerPerspective with BitcoinjTest with Eventually {

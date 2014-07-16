@@ -7,12 +7,12 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.handshake.HandshakeActor.StartHandshake
+import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.{MockExchangeProtocol, MockHandshake}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class HandshakeActorTest(systemName: String)
