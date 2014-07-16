@@ -1,7 +1,8 @@
-package coinffeine.model.exchange
+package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.bitcoin.PublicKey
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Both
 
 /** Relevant information for an ongoing exchange. This point of view is only held by the parts
   * as contains information not made public to everyone on the network.
@@ -14,8 +15,8 @@ trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
 
   def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
 
-  val user = participants(role)
-  val counterpart = participants(role.counterpart)
+  val user = role.select(participants)
+  val counterpart = role.counterpart.select(participants)
 
   require(user.bitcoinKey.hasPrivKey)
 }

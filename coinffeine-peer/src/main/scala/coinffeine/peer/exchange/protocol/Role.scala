@@ -1,17 +1,31 @@
-package coinffeine.model.exchange
+package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.exchange.Both
 
 sealed trait Role {
+  def select[A](both: Both[A]): A
   def counterpart: Role
   def myDepositAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def myRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def herRefundAmount(amounts: Exchange.Amounts[_ <: FiatCurrency]): BitcoinAmount
   def buyer[A](mine: A, her: A): A
   def seller[A](mine: A, her: A): A
+  def update[A](both: Both[A], value: A): Both[A]
+}
+
+object Role {
+
+  def of[A](both: Both[A], elem: A): Option[Role] = elem match {
+    case both.`buyer` => Some(BuyerRole)
+    case both.`seller` => Some(SellerRole)
+    case _ => None
+  }
 }
 
 object BuyerRole extends Role {
+
+  override def select[A](both: Both[A]) = both.buyer
 
   override def counterpart = SellerRole
 
@@ -29,9 +43,13 @@ object BuyerRole extends Role {
   override def buyer[A](mine: A, her: A): A = mine
 
   override def seller[A](mine: A, her: A): A = her
+
+  override def update[A](both: Both[A], value: A) = both.copy(buyer = value)
 }
 
 object SellerRole extends Role {
+
+  override def select[A](both: Both[A]) = both.seller
 
   override def counterpart = BuyerRole
 
@@ -49,4 +67,6 @@ object SellerRole extends Role {
   override def buyer[A](mine: A, her: A): A = her
 
   override def seller[A](mine: A, her: A): A = mine
+
+  override def update[A](both: Both[A], value: A) = both.copy(seller = value)
 }

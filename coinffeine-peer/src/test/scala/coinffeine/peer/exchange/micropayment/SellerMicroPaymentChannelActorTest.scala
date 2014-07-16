@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
@@ -45,7 +45,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val anotherPeer = PeerId("some-random-peer")
     val relevantPayment = PaymentProof(exchange.id, null)
-    val irrelevantPayment = PaymentProof(Exchange.Id("another-id"), null)
+    val irrelevantPayment = PaymentProof(ExchangeId("another-id"), null)
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)

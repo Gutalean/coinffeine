@@ -1,10 +1,10 @@
 package coinffeine.protocol.messages.handshake
 
 import coinffeine.model.bitcoin.{TransactionSignature, TransactionSignatureUtils}
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
 
-case class RefundSignatureResponse(exchangeId: Exchange.Id, refundSignature: TransactionSignature)
+case class RefundSignatureResponse(exchangeId: ExchangeId, refundSignature: TransactionSignature)
   extends PublicMessage {
 
   override def equals(that: Any) = that match {

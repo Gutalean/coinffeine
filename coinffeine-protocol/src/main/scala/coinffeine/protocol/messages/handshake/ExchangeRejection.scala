@@ -1,9 +1,9 @@
 package coinffeine.protocol.messages.handshake
 
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
 
 case class ExchangeRejection (
-  exchangeId: Exchange.Id,
+  exchangeId: ExchangeId,
   reason: String
 ) extends PublicMessage

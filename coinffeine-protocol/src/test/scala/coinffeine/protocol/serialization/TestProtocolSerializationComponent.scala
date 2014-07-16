@@ -4,7 +4,7 @@ import scala.util.Random
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage
@@ -25,7 +25,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   def randomOrderMatch(): OrderMatch = OrderMatch(
     orderId = OrderId.random(),
-    exchangeId = Exchange.Id.random(),
+    exchangeId = ExchangeId.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
     counterpart = PeerId("bob")

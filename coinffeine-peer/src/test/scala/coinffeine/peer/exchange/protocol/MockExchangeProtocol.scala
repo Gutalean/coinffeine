@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
+import coinffeine.model.exchange.Both
 
 class MockExchangeProtocol extends ExchangeProtocol {
 

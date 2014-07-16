@@ -23,7 +23,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   )
 
   val exchange = NonStartedExchange(
-    id = Exchange.Id("id"),
+    id = ExchangeId("id"),
     amounts = Exchange.Amounts(
       bitcoinAmount = 10.BTC,
       fiatAmount = 10.EUR,

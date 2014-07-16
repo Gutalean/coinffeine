@@ -1,13 +1,14 @@
-package coinffeine.model.exchange
+package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 
 /** Relevant information during the handshake of an exchange. This point of view is only held by
   * the parts as contains information not made public to everyone on the network. */
 case class HandshakingExchange[+C <: FiatCurrency](
     override val role: Role,
-    override val id: Exchange.Id,
+    override val id: ExchangeId,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
     override val peerIds: Both[PeerId],

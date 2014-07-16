@@ -4,7 +4,7 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
+import coinffeine.model.exchange.Both
 
 trait ExchangeProtocol {
 

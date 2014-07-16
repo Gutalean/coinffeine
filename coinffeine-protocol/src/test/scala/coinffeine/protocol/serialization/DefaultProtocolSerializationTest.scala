@@ -11,7 +11,7 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version
@@ -27,7 +27,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   val peerId = PeerId("peer")
   val orderId = OrderId.random()
-  val exchangeId = Exchange.Id.random()
+  val exchangeId = ExchangeId.random()
   val transactionSignature = new TransactionSignature(ZERO, ZERO)
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val btcAmount = 1.BTC

@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 import coinffeine.common.test.{EqualityBehaviors, UnitTest}
 import coinffeine.model.bitcoin.TransactionSignature
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.{Both, ExchangeId}
 
 class StepSignaturesTest extends UnitTest with EqualityBehaviors {
 
@@ -13,14 +13,14 @@ class StepSignaturesTest extends UnitTest with EqualityBehaviors {
 
   "Step signatures" should behave like respectingEqualityProperties(equivalenceClasses = Seq(
     Seq(
-      StepSignatures(Exchange.Id("id"), 1, Both(buyer = sig1, seller = sig2)),
-      StepSignatures(Exchange.Id("id"), 1, Both(buyer = sig1, seller = sig2))
+      StepSignatures(ExchangeId("id"), 1, Both(buyer = sig1, seller = sig2)),
+      StepSignatures(ExchangeId("id"), 1, Both(buyer = sig1, seller = sig2))
     ),
     Seq(
-      StepSignatures(Exchange.Id("id"), 1, Both(buyer = sig1, seller = sig1)),
-      StepSignatures(Exchange.Id("id"), 1, Both(buyer = sig1, seller = sig1))
+      StepSignatures(ExchangeId("id"), 1, Both(buyer = sig1, seller = sig1)),
+      StepSignatures(ExchangeId("id"), 1, Both(buyer = sig1, seller = sig1))
     ),
-    Seq(StepSignatures(Exchange.Id("id2"), 1, Both(buyer = sig1, seller = sig2))),
-    Seq(StepSignatures(Exchange.Id("id"), 2, Both(buyer = sig1, seller = sig2)))
+    Seq(StepSignatures(ExchangeId("id2"), 1, Both(buyer = sig1, seller = sig2))),
+    Seq(StepSignatures(ExchangeId("id"), 2, Both(buyer = sig1, seller = sig2)))
   ))
 }

@@ -1,10 +1,10 @@
 package coinffeine.protocol.messages.handshake
 
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
 
 case class ExchangeCommitment(
-  exchangeId: Exchange.Id,
+  exchangeId: ExchangeId,
   commitmentTransaction: ImmutableTransaction
 ) extends PublicMessage

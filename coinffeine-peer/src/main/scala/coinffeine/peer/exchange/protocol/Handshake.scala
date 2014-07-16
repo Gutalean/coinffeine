@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.HandshakingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 trait Handshake[C <: FiatCurrency] {

@@ -4,7 +4,7 @@ import scala.util.{Failure, Success}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.exchange.Both
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
 class MockMicroPaymentChannel[C <: FiatCurrency] private (

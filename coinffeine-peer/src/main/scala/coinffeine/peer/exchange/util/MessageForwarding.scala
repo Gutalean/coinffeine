@@ -7,15 +7,15 @@ import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Exchange, Role}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.exchange.protocol.{Exchange, Role}
 import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.PublicMessage
 
 class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId, broker: PeerId) {
 
   def this(messageGateway: ActorRef, exchange: Exchange[FiatCurrency], role: Role) =
-    this(messageGateway, exchange.peerIds(role.counterpart), exchange.brokerId)
+    this(messageGateway, role.counterpart.select(exchange.peerIds), exchange.brokerId)
 
   def forwardToCounterpart(message: PublicMessage): Unit =
     forwardMessage(message, counterpart)

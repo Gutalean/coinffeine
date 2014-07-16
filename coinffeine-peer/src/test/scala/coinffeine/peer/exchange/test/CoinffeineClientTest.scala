@@ -46,9 +46,9 @@ object CoinffeineClientTest {
     def handshakingExchange = HandshakingExchange(userRole, user, counterpart, exchange)
     def runningExchange = RunningExchange(MockExchangeProtocol.DummyDeposits, handshakingExchange)
     def userRole: Role
-    def user = participants(userRole)
-    def counterpart = participants(userRole.counterpart)
-    def counterpartConnection = exchange.peerIds(userRole.counterpart)
+    def user = userRole.select(participants)
+    def counterpart = userRole.counterpart.select(participants)
+    def counterpartConnection = userRole.counterpart.select(exchange.peerIds)
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }
 

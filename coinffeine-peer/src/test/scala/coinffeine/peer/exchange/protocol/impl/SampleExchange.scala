@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.{KeyPair, NetworkComponent}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
+import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange { this: NetworkComponent =>
 
@@ -13,7 +14,7 @@ trait SampleExchange { this: NetworkComponent =>
   )
 
   val exchange = NonStartedExchange(
-    id = Exchange.Id("id"),
+    id = ExchangeId("id"),
     amounts = Exchange.Amounts(
       bitcoinAmount = 1.BTC,
       fiatAmount = 1000.EUR,

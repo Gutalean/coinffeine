@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import coinffeine.model.currency.{BitcoinAmount, Currency, FiatCurrency}
-import coinffeine.model.exchange.HandshakingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 
