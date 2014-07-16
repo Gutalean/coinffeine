@@ -8,7 +8,7 @@ import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders}
+import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
@@ -98,6 +98,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val subscriber = TestProbe()
     subscriber.send(peer, CoinffeinePeerActor.Unsubscribe)
     eventChannel.expectForward(CoinffeinePeerActor.Unsubscribe, subscriber.ref)
+  }
+
+  it must "delegate wallet balance requests" in {
+    shouldForwardMessage(RetrieveWalletBalance, wallet)
   }
 
   def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {

@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.model.currency.FiatAmount
+import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.WalletActor
@@ -62,19 +62,17 @@ class CoinffeinePeerActor(ownId: PeerId,
       log.error(cause, "Cannot start peer")
       context.stop(self)
 
-    case command @ CoinffeinePeerActor.Subscribe =>
-      eventChannel.forward(command)
-    case command @ CoinffeinePeerActor.Unsubscribe =>
-      eventChannel.forward(command)
+    case message @ (CoinffeinePeerActor.Subscribe | CoinffeinePeerActor.Unsubscribe) =>
+      eventChannel forward message
+    case message @ (OpenOrder(_) | CancelOrder(_) | RetrieveOpenOrders) =>
+      orderSupervisorRef forward message
+    case message @ RetrieveWalletBalance =>
+      walletRef forward message
 
     case QuoteRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
     case OpenOrdersRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestOpenOrders(market))
-
-    case openOrder: OpenOrder => orderSupervisorRef forward openOrder
-    case cancelOrder: CancelOrder => orderSupervisorRef forward cancelOrder
-    case message @ RetrieveOpenOrders => orderSupervisorRef forward message
   }
 }
 
@@ -118,6 +116,12 @@ object CoinffeinePeerActor {
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
+
+  /** Ask for the current wallet balance */
+  case object RetrieveWalletBalance
+
+  /** Response for [[RetrieveWalletBalance]] */
+  case class WalletBalance(amount: BitcoinAmount)
 
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
