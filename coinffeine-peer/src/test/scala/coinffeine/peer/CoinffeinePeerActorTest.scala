@@ -1,10 +1,9 @@
 package coinffeine.peer
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.MockActor.{MockReceived, MockStarted}
-import coinffeine.common.test.{AkkaSpec, MockActor}
+import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
@@ -22,108 +21,82 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val address = PeerConnection("localhost", 8080)
   val brokerId = PeerId("broker")
   val brokerAddress = PeerConnection("host", 8888)
-  val eventChannelProbe = TestProbe()
-  val gatewayProbe = TestProbe()
-  val marketInfoProbe = TestProbe()
-  val ordersProbe = TestProbe()
+  val eventChannel = new MockSupervisedActor()
+  val gateway = new MockSupervisedActor()
+  val marketInfo = new MockSupervisedActor()
+  val orders = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(ownId, address, brokerId, brokerAddress,
-    MockActor.props(eventChannelProbe), MockActor.props(gatewayProbe),
-    MockActor.props(marketInfoProbe), MockActor.props(ordersProbe))))
-  var eventChannelRef: ActorRef = _
-  var gatewayRef: ActorRef = _
-  var ordersRef: ActorRef = _
-  var marketInfoRef: ActorRef = _
+    eventChannel.props, gateway.props, marketInfo.props, orders.props)))
 
   "A peer" must "start the message gateway" in {
-    gatewayRef = gatewayProbe.expectMsgClass(classOf[MockStarted]).ref
+    gateway.expectCreation()
   }
 
   it must "start the event channel actor" in {
-    eventChannelRef = eventChannelProbe.expectMsgClass(classOf[MockStarted]).ref
+    eventChannel.expectCreation()
   }
 
   it must "start the order submissions actor" in {
-    ordersRef = ordersProbe.expectMsgClass(classOf[MockStarted]).ref
-    val gw = gatewayRef
-    val ec = eventChannelRef
-    ordersProbe.expectMsgPF() {
-      case MockReceived(_, _, OrderSupervisor.Initialize(_, `ec`, `gw`)) =>
-    }
+    orders.expectCreation()
+    orders.expectMsg(OrderSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref))
   }
 
   it must "make the message gateway start listening when connecting" in {
-    gatewayProbe.expectNoMsg()
+    gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
-    gatewayProbe.expectMsgPF() {
-      case MockReceived(_, sender, Bind(_, `address`, _, _)) => sender ! BoundTo(address)
+    gateway.expectAskReply {
+      case Bind(_, `address`, _, _) => BoundTo(address)
     }
     expectMsg(CoinffeinePeerActor.Connected)
   }
 
   it must "start the market info actor" in {
-    marketInfoRef = marketInfoProbe.expectMsgClass(classOf[MockStarted]).ref
-    val expectedInitialization = MarketInfoActor.Start(brokerId, gatewayRef)
-    marketInfoProbe.expectMsgPF() {
-     case MockReceived(_, _, `expectedInitialization`) =>
-    }
+    marketInfo.expectCreation()
+    marketInfo.expectMsg(MarketInfoActor.Start(brokerId, gateway.ref))
   }
 
   it must "propagate failures when connecting" in {
     peer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
-    gatewayProbe.expectMsgPF() {
-      case MockReceived(_, sender, Bind(_, `address`, _, _)) => sender ! BindingError(cause)
+    gateway.expectAskReply {
+      case Bind(_, `address`, _, _) => BindingError(cause)
     }
     expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
   }
 
   it must "delegate quote requests" in {
     peer ! QuoteRequest(Market(Euro))
+    marketInfo.expectForward(RequestQuote(Market(Euro)), self)
     peer ! OpenOrdersRequest(Market(UsDollar))
-    for (message <- Seq(RequestQuote(Market(Euro)), RequestOpenOrders(Market(UsDollar)))) {
-      marketInfoProbe.expectMsgPF() {
-        case MockReceived(_, _, `message`) =>
-      }
-    }
+    marketInfo.expectForward(RequestOpenOrders(Market(UsDollar)), self)
   }
 
   it must "delegate order placement" in {
-    shouldDelegateMessage(OpenOrder(OrderBookEntry(Bid, 10.BTC, 300.EUR)), ordersProbe)
+    shouldForwardMessage(OpenOrder(OrderBookEntry(Bid, 10.BTC, 300.EUR)), orders)
   }
 
   it must "delegate retrieve open orders request" in {
-    shouldDelegateMessage(RetrieveOpenOrders, ordersProbe)
+    shouldForwardMessage(RetrieveOpenOrders, orders)
   }
 
   it must "delegate order cancellation" in {
-    shouldDelegateMessage(CancelOrder(OrderId.random()), ordersProbe)
-  }
-
-  def shouldDelegateMessage(message: Any, delegate: TestProbe): Unit = {
-    peer ! message
-    val sender = self
-    delegate.expectMsgPF() {
-      case MockReceived(_, `sender`, `message`) =>
-    }
+    shouldForwardMessage(CancelOrder(OrderId.random()), orders)
   }
 
   it must "forward subscription commands to the event channel" in {
     val subscriber = TestProbe()
-    val subscriberRef = subscriber.ref
     subscriber.send(peer, CoinffeinePeerActor.Subscribe)
-
-    eventChannelProbe.expectMsgPF() {
-      case MockReceived(_, `subscriberRef`, CoinffeinePeerActor.Subscribe) =>
-    }
+    eventChannel.expectForward(CoinffeinePeerActor.Subscribe, subscriber.ref)
   }
 
   it must "forward unsubscription commands to the event channel" in {
     val subscriber = TestProbe()
-    val subscriberRef = subscriber.ref
     subscriber.send(peer, CoinffeinePeerActor.Unsubscribe)
-
-    eventChannelProbe.expectMsgPF() {
-      case MockReceived(_, `subscriberRef`, CoinffeinePeerActor.Unsubscribe) =>
-    }
+    eventChannel.expectForward(CoinffeinePeerActor.Unsubscribe, subscriber.ref)
+  }
+  
+  def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
+    peer ! message
+    delegate.expectForward(message, self)
   }
 }
