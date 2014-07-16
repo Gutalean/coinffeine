@@ -12,7 +12,7 @@ import org.controlsfx.dialog.Dialogs
 
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.market.OrderType
-import com.coinffeine.client.api.CoinffeineApp
+import coinffeine.peer.api.CoinffeineApp
 import com.coinffeine.gui.application.properties.OrderProperties
 import com.coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 

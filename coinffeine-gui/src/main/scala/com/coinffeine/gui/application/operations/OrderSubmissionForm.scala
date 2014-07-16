@@ -13,7 +13,7 @@ import scalafx.stage.{Modality, Stage, Window}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderType}
-import com.coinffeine.client.api.CoinffeineApp
+import coinffeine.peer.api.CoinffeineApp
 import com.coinffeine.gui.control.DecimalNumberTextField
 import com.coinffeine.gui.util.ProgressDialog
 

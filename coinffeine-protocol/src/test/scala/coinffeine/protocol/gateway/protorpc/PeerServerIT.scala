@@ -12,7 +12,7 @@ import com.coinffeine.common.test.{DefaultTcpPortAllocator, UnitTest}
 
 class PeerServerIT extends UnitTest {
 
-  import PeerServerIT._
+  import coinffeine.protocol.gateway.protorpc.PeerServerIT._
 
   "Peer server" must "publish synchronously" in new SamplePeers {
     withPeers { peers =>

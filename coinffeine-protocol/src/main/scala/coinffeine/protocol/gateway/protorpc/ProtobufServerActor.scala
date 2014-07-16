@@ -10,7 +10,7 @@ import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 private class ProtobufServerActor extends Actor with ActorLogging {
-  import ProtobufServerActor._
+  import coinffeine.protocol.gateway.protorpc.ProtobufServerActor._
 
   private var server: PeerServer = _
   private var sessions = Map.empty[PeerConnection, PeerSession]
