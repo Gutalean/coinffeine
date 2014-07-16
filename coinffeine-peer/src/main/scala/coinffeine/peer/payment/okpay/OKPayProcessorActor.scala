@@ -15,10 +15,8 @@ import coinffeine.peer.payment.okpay.generated._
 
 class OKPayProcessorActor(
     account: String,
-    client: OKPayClient,
+    service: I_OkPayAPI,
     tokenGenerator: TokenGenerator) extends Actor {
-
-  private val service = client.service
 
   override def receive: Receive = {
     case PaymentProcessor.Identify =>
@@ -141,12 +139,8 @@ object OKPayProcessorActor {
   val Id = "OKPAY"
 
   trait Component extends PaymentProcessor.Component {
-
-    this: TokenGenerator.Component with OKPayClient.Component =>
-
-    override def paymentProcessorProps(account: AccountId,
-                                       credentials: AccountCredentials): Props =
-      Props(new OKPayProcessorActor(account, okPayClient, createTokenGenerator(credentials)))
+    override def paymentProcessorProps(account: AccountId, credentials: AccountCredentials): Props =
+      Props(new OKPayProcessorActor(account, new OKPayClient().service, new TokenGenerator(credentials)))
   }
 
   private val DateFormat = "yyyy-MM-dd HH:mm:ss"
