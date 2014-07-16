@@ -21,7 +21,7 @@ class MockActor(master: ActorRef) extends Actor with ActorLogging {
     case MockSend(target, message) => target ! message
     case MockThrow(ex) => throw ex
     case message if sender != master =>
-      master ! MockReceived(self, sender, message)
+      master ! MockReceived(self, sender(), message)
     case unexpectedMessage =>
       log.warning("Unexpected message {} received by a mock actor", unexpectedMessage)
   }
