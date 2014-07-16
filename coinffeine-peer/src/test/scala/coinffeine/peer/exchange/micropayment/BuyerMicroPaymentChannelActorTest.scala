@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
@@ -48,7 +48,7 @@ class BuyerMicroPaymentChannelActorTest
       gateway.ref, Set(listener.ref))
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val otherId = Exchange.Id("other-id")
+    val otherId = ExchangeId("other-id")
     val relevantOfferAccepted = StepSignatures(exchange.id, 5, signatures)
     val irrelevantOfferAccepted = StepSignatures(otherId, 2, signatures)
     val anotherPeer = PeerId("some-random-peer")

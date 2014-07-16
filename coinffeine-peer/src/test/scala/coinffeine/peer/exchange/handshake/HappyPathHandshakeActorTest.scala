@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, WatchTransactionConfirmation}
@@ -27,7 +27,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     gateway.expectNoMsg()
     givenActorIsInitialized()
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
-    val otherId = Exchange.Id("other-id")
+    val otherId = ExchangeId("other-id")
     val relevantPeerHandshake =
       PeerHandshake(exchange.id, handshake.exchange.counterpart.bitcoinKey.publicKey, "foo")
     val relevantSignatureRequest =

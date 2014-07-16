@@ -13,7 +13,7 @@ import coinffeine.model.payment.PaymentProcessor
   */
 trait Exchange[+C <: FiatCurrency] {
   /** An identifier for the exchange */
-  val id: Exchange.Id
+  val id: ExchangeId
   val amounts: Exchange.Amounts[C]
   /** Configurable parameters */
   val parameters: Exchange.Parameters
@@ -23,16 +23,6 @@ trait Exchange[+C <: FiatCurrency] {
 }
 
 object Exchange {
-
-  case class Id(value: String) {
-    override def toString = s"exchange:$value"
-  }
-
-  object Id {
-    private val secureGenerator = new Random(new SecureRandom())
-
-    def random() = Id(value = secureGenerator.nextString(12))
-  }
 
   /** Configurable parameters of an exchange.
     *

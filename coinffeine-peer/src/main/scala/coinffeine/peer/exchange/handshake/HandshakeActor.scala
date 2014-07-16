@@ -7,7 +7,7 @@ import akka.actor._
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, Role}
+import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
@@ -228,15 +228,15 @@ object HandshakeActor {
 
   case class HandshakeFailure(e: Throwable)
 
-  case class RefundSignatureTimeoutException(exchangeId: Exchange.Id) extends RuntimeException(
+  case class RefundSignatureTimeoutException(exchangeId: ExchangeId) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")
 
   case class CommitmentTransactionRejectedException(
-       exchangeId: Exchange.Id, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
+       exchangeId: ExchangeId, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 
-  case class HandshakeAbortedException(exchangeId: Exchange.Id, reason: String)
+  case class HandshakeAbortedException(exchangeId: ExchangeId, reason: String)
     extends RuntimeException(s"Handshake $exchangeId aborted externally: $reason")
 
   /** Internal message to remind about resubmitting messages. */

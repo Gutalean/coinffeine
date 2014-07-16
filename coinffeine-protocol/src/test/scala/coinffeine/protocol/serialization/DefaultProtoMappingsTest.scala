@@ -12,7 +12,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
@@ -45,7 +45,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val sampleOrderId = OrderId.random()
-  val sampleExchangeId = Exchange.Id.random()
+  val sampleExchangeId = ExchangeId.random()
 
   val btcAmount = 1.1 BTC
   val btcAmountMessage = msg.BtcAmount.newBuilder
@@ -100,7 +100,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted(Exchange.Id(sampleExchangeId.value), "a reason")
+  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value), "a reason")
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
     .setExchangeId(sampleExchangeId.value)
     .setReason("a reason")

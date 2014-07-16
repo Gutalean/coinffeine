@@ -13,7 +13,7 @@ trait SampleExchange { this: NetworkComponent =>
   )
 
   val exchange = NonStartedExchange(
-    id = Exchange.Id("id"),
+    id = ExchangeId("id"),
     amounts = Exchange.Amounts(
       bitcoinAmount = 1.BTC,
       fiatAmount = 1000.EUR,

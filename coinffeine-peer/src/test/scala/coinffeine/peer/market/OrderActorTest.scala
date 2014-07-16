@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.{Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.CoinffeineApp
@@ -34,7 +34,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
     actor ! OrderMatch(
-      order.id, Exchange.Id.random(), order.amount, order.price, PeerId.apply("counterpart"))
+      order.id, ExchangeId.random(), order.amount, order.price, PeerId.apply("counterpart"))
     submissionProbe.fishForMessage() {
       case StopSubmitting(order.`id`) => true
       case _ => false

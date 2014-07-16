@@ -5,7 +5,7 @@ import coinffeine.model.network.PeerId
 
 case class RunningExchange[+C <: FiatCurrency](
     override val role: Role,
-    override val id: Exchange.Id,
+    override val id: ExchangeId,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
     override val peerIds: Both[PeerId],
