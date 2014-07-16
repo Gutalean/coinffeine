@@ -8,6 +8,7 @@ import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Implicits._
+import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -35,6 +36,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     eventually {
       wallet.balance() should be(initialFunds)
     }
+  }
+
+  it must "report wallet balance" in new Fixture {
+    instance ! RetrieveWalletBalance
+    expectMsg(WalletBalance(10.BTC))
   }
 
   trait Fixture {
