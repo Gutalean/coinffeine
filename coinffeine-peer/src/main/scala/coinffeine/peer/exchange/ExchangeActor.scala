@@ -5,6 +5,7 @@ import akka.actor._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, Wallet}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
@@ -12,8 +13,7 @@ import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxB
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange._
+import coinffeine.peer.exchange.protocol._
 
 class ExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,

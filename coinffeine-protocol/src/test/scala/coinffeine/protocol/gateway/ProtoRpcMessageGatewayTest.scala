@@ -6,13 +6,13 @@ import akka.actor.ActorRef
 import akka.testkit.{EventFilter, TestProbe}
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
+import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
-import com.coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 
 class ProtoRpcMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))

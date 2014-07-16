@@ -2,9 +2,9 @@ package coinffeine.protocol.messages.exchange
 
 import java.math.BigInteger
 
+import coinffeine.common.test.{EqualityBehaviors, UnitTest}
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.exchange.{Both, Exchange}
-import com.coinffeine.common.test.{EqualityBehaviors, UnitTest}
 
 class StepSignaturesTest extends UnitTest with EqualityBehaviors {
 

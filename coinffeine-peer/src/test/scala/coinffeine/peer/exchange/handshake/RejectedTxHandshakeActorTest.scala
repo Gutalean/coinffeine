@@ -3,10 +3,10 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.model.exchange.Both
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.TransactionRejected
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
-import com.coinffeine.common.ProtocolConstants
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 

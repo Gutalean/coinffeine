@@ -5,6 +5,7 @@ import scala.collection.JavaConversions
 
 import org.reflections.Reflections
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -21,7 +22,6 @@ import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import com.coinffeine.common.test.UnitTest
 
 class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 

@@ -1,0 +1,8 @@
+digraph {
+    server -> peer, commonTest;
+    peer -> model, protocol, commonTest;
+    protocol -> model, commonTest;
+    model -> commonTest;
+    gui -> peer;
+    test -> peer, server, commonTest;
+}

@@ -1,8 +1,8 @@
 package coinffeine.protocol.messages.handshake
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.exchange.Exchange
-import com.coinffeine.common.test.UnitTest
 
 class PeerHandshakeTest extends UnitTest {
 

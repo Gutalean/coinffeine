@@ -8,7 +8,7 @@ import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
-import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
+import coinffeine.peer.payment.okpay.OkPayCredentials
 import com.coinffeine.gui.application.ApplicationScene
 import com.coinffeine.gui.application.main.MainView
 import com.coinffeine.gui.application.operations.OperationsView

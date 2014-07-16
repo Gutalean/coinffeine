@@ -11,7 +11,7 @@ import scalafx.scene.layout._
 
 import org.slf4j.LoggerFactory
 
-import com.coinffeine.common.paymentprocessor.okpay.OkPayCredentials
+import coinffeine.peer.payment.okpay.OkPayCredentials
 import com.coinffeine.gui.concurrent.ScalaFxImplicits._
 import com.coinffeine.gui.wizard.StepPane
 

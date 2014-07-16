@@ -10,13 +10,13 @@ import akka.util.Timeout
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import coinffeine.protocol.gateway.{MessageGateway, PeerConnection}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
-import com.coinffeine.common.config.ConfigComponent
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.

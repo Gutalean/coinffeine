@@ -4,10 +4,10 @@ import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.PeerId
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.brokerage._
-import com.coinffeine.common.ProtocolConstants
 
 /** Submits and resubmits orders for a given market */
 private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants)

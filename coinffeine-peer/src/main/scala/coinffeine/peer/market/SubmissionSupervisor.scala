@@ -8,9 +8,9 @@ import akka.util.Timeout
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage.Market
-import com.coinffeine.common.ProtocolConstants
 
 class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging{
   private implicit val timeout = Timeout(1.second)

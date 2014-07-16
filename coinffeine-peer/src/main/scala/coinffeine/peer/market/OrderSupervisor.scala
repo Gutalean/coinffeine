@@ -11,8 +11,8 @@ import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.OrderActor.RetrieveStatus
-import com.coinffeine.common.ProtocolConstants
 
 /** Manages orders */
 class OrderSupervisor(orderActorProps: Props,

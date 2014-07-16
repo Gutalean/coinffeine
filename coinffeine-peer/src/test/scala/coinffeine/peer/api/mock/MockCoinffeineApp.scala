@@ -1,8 +1,8 @@
 package coinffeine.peer.api.mock
 
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.api._
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.paymentprocessor.PaymentProcessor.Component
+import coinffeine.peer.payment.PaymentProcessor.Component
 
 class MockCoinffeineApp extends CoinffeineApp {
 

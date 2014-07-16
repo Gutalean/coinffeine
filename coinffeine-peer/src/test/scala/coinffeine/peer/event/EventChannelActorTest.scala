@@ -3,9 +3,9 @@ package coinffeine.peer.event
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.common.test.AkkaSpec
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api.CoinffeineApp
-import com.coinffeine.common.test.AkkaSpec
 
 class EventChannelActorTest extends AkkaSpec with MockitoSugar {
 

@@ -5,7 +5,7 @@ import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
-import com.coinffeine.common.exchange._
+import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 

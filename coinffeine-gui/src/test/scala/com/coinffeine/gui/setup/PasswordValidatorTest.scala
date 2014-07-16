@@ -1,6 +1,6 @@
 package com.coinffeine.gui.setup
 
-import com.coinffeine.common.test.UnitTest
+import coinffeine.common.test.UnitTest
 
 class PasswordValidatorTest extends UnitTest {
 

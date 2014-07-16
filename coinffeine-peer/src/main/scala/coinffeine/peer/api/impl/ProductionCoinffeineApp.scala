@@ -1,12 +1,11 @@
 package coinffeine.peer.api.impl
 
 import coinffeine.model.bitcoin.MainNetComponent
-import coinffeine.peer.CoinffeinePeerActor
+import coinffeine.peer.config.FileConfigComponent
 import coinffeine.peer.market._
+import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.serialization.DefaultProtocolSerializationComponent
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.config.FileConfigComponent
 
 object ProductionCoinffeineApp {
 

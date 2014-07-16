@@ -7,12 +7,12 @@ import com.google.bitcoin.crypto.TransactionSignature
 import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
-import com.coinffeine.common.ProtocolConstants
 
 class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
 

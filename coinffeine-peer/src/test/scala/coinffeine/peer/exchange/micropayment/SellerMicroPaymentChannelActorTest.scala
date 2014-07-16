@@ -12,16 +12,16 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
+import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
+import coinffeine.peer.payment.PaymentProcessor.{FindPayment, PaymentFound}
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import coinffeine.protocol.messages.exchange._
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.MicroPaymentChannel.IntermediateStep
-import com.coinffeine.common.exchange.{MockExchangeProtocol, MockMicroPaymentChannel}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor.{FindPayment, PaymentFound}
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
   with SellerPerspective with MockitoSugar {

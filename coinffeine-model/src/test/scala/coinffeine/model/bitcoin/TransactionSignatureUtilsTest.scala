@@ -2,7 +2,7 @@ package coinffeine.model.bitcoin
 
 import java.math.BigInteger
 
-import com.coinffeine.common.test.UnitTest
+import coinffeine.common.test.UnitTest
 
 class TransactionSignatureUtilsTest extends UnitTest {
 

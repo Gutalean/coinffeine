@@ -1,8 +1,8 @@
 package coinffeine.protocol.messages.brokerage
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import com.coinffeine.common.test.UnitTest
 
 class QuoteTest extends UnitTest {
 

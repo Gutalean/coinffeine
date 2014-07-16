@@ -4,7 +4,7 @@ import scala.collection.JavaConversions._
 
 import com.google.bitcoin.script.ScriptBuilder
 
-import com.coinffeine.common.test.UnitTest
+import coinffeine.common.test.UnitTest
 
 class MultiSigInfoTest extends UnitTest {
 

@@ -12,11 +12,11 @@ import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
 import org.scalatest.BeforeAndAfterAll
 
+import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import com.coinffeine.common.test.UnitTest
 
 private object BitcoinjTest {
   /** Bitcoinj uses global state such as the TX fees than cannot be changed in isolation so we

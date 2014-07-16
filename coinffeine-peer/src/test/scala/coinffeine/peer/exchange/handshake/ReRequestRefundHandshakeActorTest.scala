@@ -2,9 +2,9 @@ package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.duration._
 
+import coinffeine.peer.ProtocolConstants
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, Subscribe}
 import coinffeine.protocol.messages.handshake.PeerHandshake
-import com.coinffeine.common.ProtocolConstants
 
 class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path") {
 

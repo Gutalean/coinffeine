@@ -9,15 +9,15 @@ import akka.pattern._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
+import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
+import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.exchange.util.MessageForwarding
+import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor.Paid
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
-import com.coinffeine.common.ProtocolConstants
-import com.coinffeine.common.exchange.MicroPaymentChannel._
-import com.coinffeine.common.exchange.{ExchangeProtocol, MicroPaymentChannel}
-import com.coinffeine.common.paymentprocessor.PaymentProcessor
-import com.coinffeine.common.paymentprocessor.PaymentProcessor.Paid
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
