@@ -57,7 +57,7 @@ object WalletActor {
     */
   case class ReleaseFunds(tx: MutableTransaction)
 
-  trait Component {
-    def walletActorProps(wallet: Wallet) = Props(new WalletActor(wallet))
+  trait Component { this: WalletComponent =>
+    def walletActorProps = Props(new WalletActor(wallet))
   }
 }

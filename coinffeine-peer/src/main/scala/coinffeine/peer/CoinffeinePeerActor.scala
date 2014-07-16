@@ -10,6 +10,7 @@ import akka.util.Timeout
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
@@ -28,7 +29,8 @@ class CoinffeinePeerActor(ownId: PeerId,
                           eventChannelProps: Props,
                           gatewayProps: Props,
                           marketInfoProps: Props,
-                          orderSupervisorProps: Props) extends Actor with ActorLogging {
+                          orderSupervisorProps: Props,
+                          walletProps: Props) extends Actor with ActorLogging {
   import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
 
@@ -45,13 +47,9 @@ class CoinffeinePeerActor(ownId: PeerId,
     ref ! MarketInfoActor.Start(brokerId, gatewayRef)
     ref
   }
+  val walletRef = context.actorOf(walletProps)
 
   override def receive: Receive = {
-
-    case command @ CoinffeinePeerActor.Subscribe =>
-      eventChannel.forward(command)
-    case command @ CoinffeinePeerActor.Unsubscribe =>
-      eventChannel.forward(command)
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
@@ -64,10 +62,15 @@ class CoinffeinePeerActor(ownId: PeerId,
       log.error(cause, "Cannot start peer")
       context.stop(self)
 
+    case command @ CoinffeinePeerActor.Subscribe =>
+      eventChannel.forward(command)
+    case command @ CoinffeinePeerActor.Unsubscribe =>
+      eventChannel.forward(command)
+
     case QuoteRequest(market) =>
-      marketInfoRef.tell(MarketInfoActor.RequestQuote(market), sender())
+      marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
     case OpenOrdersRequest(market) =>
-      marketInfoRef.tell(MarketInfoActor.RequestOpenOrders(market), sender())
+      marketInfoRef.forward(MarketInfoActor.RequestOpenOrders(market))
 
     case openOrder: OpenOrder => orderSupervisorRef forward openOrder
     case cancelOrder: CancelOrder => orderSupervisorRef forward cancelOrder
@@ -124,7 +127,7 @@ object CoinffeinePeerActor {
   private val ConnectionTimeout = Timeout(10.seconds)
 
   trait Component { this: OrderSupervisor.Component with MarketInfoActor.Component
-    with MessageGateway.Component with ConfigComponent =>
+    with MessageGateway.Component with WalletActor.Component with ConfigComponent =>
 
     lazy val peerProps: Props = {
       val ownId = PeerId("client" + Random.nextInt(1000))
@@ -139,7 +142,8 @@ object CoinffeinePeerActor {
         eventChannelProps = EventChannelActor.props(),
         gatewayProps = messageGatewayProps,
         marketInfoProps,
-        orderSupervisorProps
+        orderSupervisorProps,
+        walletActorProps
       ))
     }
   }

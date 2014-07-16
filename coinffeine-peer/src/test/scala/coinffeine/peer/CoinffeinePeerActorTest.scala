@@ -25,8 +25,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val gateway = new MockSupervisedActor()
   val marketInfo = new MockSupervisedActor()
   val orders = new MockSupervisedActor()
+  val wallet = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(ownId, address, brokerId, brokerAddress,
-    eventChannel.props, gateway.props, marketInfo.props, orders.props)))
+    eventChannel.props, gateway.props, marketInfo.props, orders.props, wallet.props)))
 
   "A peer" must "start the message gateway" in {
     gateway.expectCreation()
@@ -39,6 +40,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   it must "start the order submissions actor" in {
     orders.expectCreation()
     orders.expectMsg(OrderSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref))
+  }
+
+  it must "start the wallet actor" in {
+    wallet.expectCreation()
   }
 
   it must "make the message gateway start listening when connecting" in {
@@ -94,7 +99,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     subscriber.send(peer, CoinffeinePeerActor.Unsubscribe)
     eventChannel.expectForward(CoinffeinePeerActor.Unsubscribe, subscriber.ref)
   }
-  
+
   def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
     peer ! message
     delegate.expectForward(message, self)
