@@ -16,7 +16,8 @@ digraph {
 	#############################################################
 	# Client side
 	CoinffeinePeerActor -> ProtoRpcMessageGateway1, OrderSupervisor,
-                               BitcoinPeerActor1, PaymentProcessor, WalletActor;
+                               BitcoinPeerActor1, PaymentProcessor, WalletActor,
+			       OKPayProcessorActor;
 	CoinffeinePeerActor -> MarketInfoActor;
 
 	MarketInfoActor -> ProtoRpcMessageGateway1[style=dotted];
