@@ -51,8 +51,10 @@ class OrderActorTest extends AkkaSpec {
     val actor = system.actorOf(Props(new OrderActor))
     val order = OrderBookEntry(Ask, 5.BTC, 500.EUR)
     val submissionProbe = TestProbe()
+    val paymentProcessorProbe = TestProbe()
+    val walletProbe = TestProbe()
 
-    actor ! OrderActor.Initialize(
-      order, submissionProbe.ref, eventChannelProbe.ref, messageGatewayProbe.ref)
+    actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
+      messageGatewayProbe.ref, paymentProcessorProbe.ref, walletProbe.ref)
   }
 }

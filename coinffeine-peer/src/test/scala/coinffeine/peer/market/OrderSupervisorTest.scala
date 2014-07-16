@@ -61,6 +61,8 @@ class OrderSupervisorTest extends AkkaSpec {
     val submissionProbe = TestProbe()
     val eventChannel = TestProbe()
     val gateway = TestProbe()
+    val paymentProcessor = TestProbe()
+    val wallet = TestProbe()
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
       MockActor.props(submissionProbe), protocolConstants)))
 
@@ -69,7 +71,8 @@ class OrderSupervisorTest extends AkkaSpec {
 
     def givenOrderSupervisorIsInitialized(): Unit = {
       val brokerId = PeerId("Broker")
-      val initMessage = OrderSupervisor.Initialize(brokerId, eventChannel.ref, gateway.ref)
+      val initMessage = OrderSupervisor.Initialize(
+        brokerId, eventChannel.ref, gateway.ref, paymentProcessor.ref, wallet.ref)
       actor ! initMessage
       submissionProbe.expectMsgClass(classOf[MockStarted])
       val gatewayRef = gateway.ref
@@ -81,7 +84,7 @@ class OrderSupervisorTest extends AkkaSpec {
     def givenOpenOrder(order: OrderBookEntry[FiatAmount]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
-        case OrderActor.Initialize(`order`, _, _, _) =>
+        case OrderActor.Initialize(`order`, _, _, _, _, _) =>
       }
     }
   }
