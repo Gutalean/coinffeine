@@ -7,10 +7,12 @@ import akka.actor.{Actor, ActorLogging, Props}
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
+import coinffeine.peer.CoinffeinePeerActor.{WalletBalance, RetrieveWalletBalance}
 
 class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
 
   override val receive: Receive = {
+
     case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
       try {
         val tx = wallet.blockMultisignFunds(signatures, amount)
@@ -18,8 +20,12 @@ class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
       } catch {
         case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
       }
+
     case WalletActor.ReleaseFunds(tx) =>
       wallet.releaseFunds(tx)
+
+    case RetrieveWalletBalance =>
+      sender() ! WalletBalance(wallet.balance())
   }
 }
 
@@ -57,7 +63,7 @@ object WalletActor {
     */
   case class ReleaseFunds(tx: MutableTransaction)
 
-  trait Component {
-    def walletActorProps(wallet: Wallet) = Props(new WalletActor(wallet))
+  trait Component { this: WalletComponent =>
+    def walletActorProps = Props(new WalletActor(wallet))
   }
 }

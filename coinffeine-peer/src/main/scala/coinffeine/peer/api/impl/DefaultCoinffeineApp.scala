@@ -19,7 +19,7 @@ class DefaultCoinffeineApp(peerProps: Props, override val protocolConstants: Pro
 
   override val network = new DefaultCoinffeineNetwork(peerRef)
 
-  override lazy val wallet = ???
+  override lazy val wallet = new DefaultCoinffeineWallet(peerRef)
 
   override val marketStats = new DefaultMarketStats(peerRef)
 

@@ -1,7 +1,8 @@
 package coinffeine.peer.api.impl
 
 import coinffeine.model.bitcoin.MainNetComponent
-import coinffeine.peer.config.FileConfigComponent
+import coinffeine.peer.bitcoin.{DummyWalletComponent, MockBlockchainComponent, WalletActor}
+import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.market._
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
@@ -16,9 +17,13 @@ object ProductionCoinffeineApp {
     with ProtocolConstants.DefaultComponent
     with OrderSupervisor.Component
     with OrderActor.Component
+    with WalletActor.Component
+    with DummyWalletComponent
+    with MockBlockchainComponent
     with SubmissionSupervisor.Component
     with ProtoRpcMessageGateway.Component
     with DefaultProtocolSerializationComponent
     with MainNetComponent
     with FileConfigComponent
+    with ConfigComponent
 }
