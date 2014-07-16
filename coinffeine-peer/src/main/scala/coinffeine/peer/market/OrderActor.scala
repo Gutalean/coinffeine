@@ -54,7 +54,9 @@ object OrderActor {
   case class Initialize(order: OrderBookEntry[FiatAmount],
                         submissionSupervisor: ActorRef,
                         eventChannel: ActorRef,
-                        messageGateway: ActorRef)
+                        messageGateway: ActorRef,
+                        paymentProcessor: ActorRef,
+                        wallet: ActorRef)
 
   case object CancelOrder
 

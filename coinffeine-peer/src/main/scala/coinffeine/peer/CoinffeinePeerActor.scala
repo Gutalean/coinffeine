@@ -33,9 +33,11 @@ class CoinffeinePeerActor(ownId: PeerId,
 
   private val eventChannel: ActorRef = context.actorOf(props.eventChannel, "eventChannel")
   private val gatewayRef = context.actorOf(props.gateway, "gateway")
+  private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
+  private val walletRef = context.actorOf(props.wallet, "wallet")
   private val orderSupervisorRef = {
     val ref = context.actorOf(props.orderSupervisor, "orders")
-    ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef)
+    ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef, paymentProcessorRef, walletRef)
     ref
   }
   private val marketInfoRef = {
@@ -43,8 +45,6 @@ class CoinffeinePeerActor(ownId: PeerId,
     ref ! MarketInfoActor.Start(brokerId, gatewayRef)
     ref
   }
-  private val walletRef = context.actorOf(props.wallet, "wallet")
-  private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
 
   override def receive: Receive = {
 
