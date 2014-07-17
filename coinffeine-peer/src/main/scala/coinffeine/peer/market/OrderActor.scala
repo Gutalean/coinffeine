@@ -3,7 +3,7 @@ package coinffeine.peer.market
 import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.{FiatCurrency, FiatAmount}
-import coinffeine.model.market.{Order, OrderBookEntry}
+import coinffeine.model.market.{CancelledOrder, Order, OrderBookEntry}
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
@@ -21,6 +21,8 @@ class OrderActor extends Actor {
   private class InitializedOrderActor(init: Initialize) extends EventProducer(init.eventChannel) {
     import init._
 
+    var currentOrder = init.order
+
     def start(): Unit = {
       messageGateway ! MessageGateway.Subscribe {
         case o: OrderMatch if o.orderId == order.id => true
@@ -33,17 +35,17 @@ class OrderActor extends Actor {
 
     private val manageOrder: Receive = {
       case CancelOrder =>
-        submissionSupervisor ! StopSubmitting(order.id)
-        produceEvent(OrderCancelledEvent(order.id))
+        // TODO: determine the cancellation reason
+        currentOrder = currentOrder.withStatus(CancelledOrder("unknown reason"))
+        submissionSupervisor ! StopSubmitting(currentOrder.id)
+        produceEvent(OrderCancelledEvent(currentOrder.id))
 
       case RetrieveStatus =>
-        sender() ! order
+        sender() ! currentOrder
 
       case orderMatch: OrderMatch =>
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
-        /* TODO: send a more appropriate event since this is not a
-         * cancellation but an exchange-started event
-         */
+        // TODO: create the exchange, update currentOrder and send an OrderUpdatedEvent
         produceEvent(OrderCancelledEvent(orderMatch.orderId))
     }
   }
