@@ -16,9 +16,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.market.OrderType
 import coinffeine.peer.api.CoinffeineApp
 
-class OperationsView(app: CoinffeineApp) extends ApplicationView {
-
-  val props = new ApplicationProperties(app)
+class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
 
   private val orderTable = new TableView[OrderProperties](props.ordersProperty) {
     id = "ordersTable"
