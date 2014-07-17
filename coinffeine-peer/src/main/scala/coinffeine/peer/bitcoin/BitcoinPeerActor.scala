@@ -1,16 +1,39 @@
 package coinffeine.peer.bitcoin
 
+import java.net.InetAddress
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import com.google.bitcoin.core.PeerGroup
-import com.google.common.util.concurrent.{FutureCallback, Futures}
+import com.google.bitcoin.core._
+import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, NetworkComponent}
+import coinffeine.model.bitcoin._
+import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(
-    peerGroup: PeerGroup, blockchainProps: Props) extends Actor with ActorLogging {
+class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
+  extends Actor with ActorLogging {
+
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
-  val blockchain = context.actorOf(blockchainProps, "blockchain")
+  val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+
+  override def preStart(): Unit = {
+    Futures.addCallback(peerGroup.start(), new FutureCallback[Service.State] {
+      def onSuccess(result: Service.State): Unit = {
+        log.info("Connected to peer group, starting blockchain download")
+        peerGroup.startBlockChainDownload(new DownloadListener)
+      }
+
+      def onFailure(t: Throwable): Unit = {
+        log.error(t, "Cannot connect to peer group")
+      }
+    })
+  }
+
+  override def postStop(): Unit = {
+    log.info("Shutting down peer group")
+    peerGroup.stopAndWait()
+    log.info("Peer group stopped")
+  }
 
   override def receive: Receive = {
     case PublishTransaction(tx) =>
@@ -20,7 +43,7 @@ class BitcoinPeerActor(
         new TxBroadcastCallback(tx, sender()),
         context.dispatcher)
     case RetrieveBlockchainActor =>
-      sender ! BlockchainActorReference(blockchain)
+      sender ! BlockchainActorReference(blockchainRef)
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
@@ -79,10 +102,21 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Component {
+    this: NetworkComponent with BlockchainComponent with BlockchainActor.Component
+      with ConfigComponent =>
 
-    this: NetworkComponent with BlockchainActor.Component =>
+    lazy val peerGroup: PeerGroup = {
+      val group = new PeerGroup(network, blockchain)
+      group.addAddress(parseTestnetAddress())
+      group
+    }
 
-    def bitcoinPeerActorProps: Props = Props(new BitcoinPeerActor(
-      new PeerGroup(network), blockchainActorProps))
+    lazy val bitcoinPeerProps: Props =
+      Props(new BitcoinPeerActor(peerGroup, blockchainActorProps))
+
+    private def parseTestnetAddress() = new PeerAddress(
+      InetAddress.getByName(config.getString("coinffeine.testnet.address")),
+      config.getInt("coinffeine.testnet.port")
+    )
   }
 }

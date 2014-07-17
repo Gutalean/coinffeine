@@ -1,6 +1,7 @@
 package coinffeine.peer.bitcoin
 
 import akka.actor.Props
+import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.test.AkkaSpec
@@ -9,6 +10,7 @@ import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
+import coinffeine.peer.api.event.WalletBalanceChangeEvent
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -43,11 +45,23 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     expectMsg(WalletBalance(10.BTC))
   }
 
+  it must "produce balance change events" in new Fixture {
+    eventChannelProbe.expectMsg(WalletBalanceChangeEvent(initialFunds))
+    sendMoneyToWallet(wallet, 1.BTC)
+    val expectedBalance = initialFunds + 1.BTC
+    eventChannelProbe.fishForMessage() {
+      case WalletBalanceChangeEvent(balance) => balance == expectedBalance
+    }
+  }
+
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
     val wallet = createWallet(keyPair, 10.BTC)
     val initialFunds = wallet.balance()
+    val eventChannelProbe = TestProbe()
+
     val instance = system.actorOf(Props(new WalletActor(wallet)))
+    instance ! WalletActor.Initialize(eventChannelProbe.ref)
   }
 }

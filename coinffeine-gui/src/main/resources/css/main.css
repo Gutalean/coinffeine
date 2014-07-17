@@ -1,3 +1,19 @@
+Separator {
+    -fx-padding: 0 10;
+}
+
 #view-selector ToggleButton:disabled {
     -fx-color: black;
+}
+
+#wallet-widget {
+    -fx-border-style: solid;
+    -fx-border-radius: 5;
+}
+#wallet-widget .btc-label {
+    -fx-background-color: #AACCAA;
+    -fx-border-width: 0 1 0 0;
+    -fx-border-color: black;
+    -fx-border-style: solid;
+    -fx-border-radius: 5 0 0 5;
 }
