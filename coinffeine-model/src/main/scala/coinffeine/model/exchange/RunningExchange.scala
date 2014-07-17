@@ -12,7 +12,12 @@ case class RunningExchange[+C <: FiatCurrency](
     override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo],
     deposits: Exchange.Deposits,
-    override val progress: Exchange.Progress[C]) extends OngoingExchange[C]
+    override val progress: Exchange.Progress[C]) extends OngoingExchange[C] {
+
+  require(progress.bitcoinsTransferred <= amounts.bitcoinAmount,
+    "invalid running exchange instantiation: " +
+      s"progress $progress is inconsistent with amounts $amounts")
+}
 
 object RunningExchange {
 
