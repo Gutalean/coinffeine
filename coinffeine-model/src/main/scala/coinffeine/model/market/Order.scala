@@ -72,7 +72,7 @@ object Order {
                                orderType: OrderType,
                                amount: BitcoinAmount,
                                price: CurrencyAmount[C]): Order[C] =
-    Order(id, owner, orderType, status = LoadedOrder, amount, price, exchanges = Seq.empty)
+    Order(id, owner, orderType, status = OfflineOrder, amount, price, exchanges = Seq.empty)
 
   def apply[C <: FiatCurrency](owner: PeerId,
                                orderType: OrderType,

@@ -6,14 +6,14 @@ sealed trait OrderStatus {
   override def toString: String = name
 }
 
-/** The order has been loaded.
+/** The order is offline.
   *
   * This status indicates that the corresponding order has been loaded in the system (either just
   * created or loaded from the disk) but it is not still in the market. No matching should be
   * expected while the order is in this state.
   */
-case object LoadedOrder extends OrderStatus {
-  override val name = "loaded"
+case object OfflineOrder extends OrderStatus {
+  override val name = "offline"
 }
 
 /** The order is in the market.
