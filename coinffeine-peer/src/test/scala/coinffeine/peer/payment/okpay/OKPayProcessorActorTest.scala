@@ -10,10 +10,10 @@ import org.mockito.Matchers.any
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.AkkaSpec
-import coinffeine.model.currency.Currency
+import coinffeine.model.currency.Currency.UsDollar
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.Payment
 import coinffeine.peer.payment.PaymentProcessor
-import coinffeine.peer.payment.okpay.generated._
 
 class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
@@ -21,32 +21,21 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   val senderAccount = "OK12345"
   val receiverAccount = "OK54321"
   val token = "token"
-  val amount = Currency.UsDollar(100)
-  val txInfo = TransactionInfo(
-    Amount = Some(amount.value),
-    Comment = Some(Some("comment")),
-    Currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
-    Date = Some(Some("2014-01-20 14:00:00")),
-    Fees = Some(0),
-    ID = Some(250092),
-    Invoice = None,
-    Net = Some(amount.value),
-    OperationName = None,
-    Receiver = Some(Some(buildAccountInfo(receiverAccount))),
-    Sender = Some(Some(buildAccountInfo(senderAccount))),
-    Status = None
+  val amount = 100.USD
+  val payment = Payment(
+    id = "250092",
+    senderId = senderAccount,
+    receiverId = receiverAccount,
+    amount = amount,
+    date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
+    description = "comment"
   )
-  val balanceArray = ArrayOfBalance(Some(Balance(Some(100), Some(Some("USD")))))
 
   private trait WithOkPayProcessor {
-    val service = mock[I_OkPayAPI]
+    val client = mock[OkPayClient]
     val fakeTokenGenerator = mock[TokenGenerator]
     given(fakeTokenGenerator.build(any[DateTime])).willReturn(token)
-    val processor = system.actorOf(Props(new OKPayProcessorActor(
-      account = senderAccount,
-      service = service,
-      tokenGenerator = fakeTokenGenerator
-    )))
+    val processor = system.actorOf(Props(new OKPayProcessorActor(senderAccount, client)))
   }
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
@@ -55,44 +44,27 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   }
 
   it must "be able to get the current balance" in new WithOkPayProcessor {
-    given(service.wallet_Get_Balance(
-      walletID = Some(Some(senderAccount)),
-      securityToken = Some(Some(token))
-    )).willReturn(Future.successful(Wallet_Get_BalanceResponse(Some(Some(balanceArray)))))
-    processor ! PaymentProcessor.RetrieveBalance(Currency.UsDollar)
-    expectMsg(PaymentProcessor.BalanceRetrieved(`amount`))
+    given(client.currentBalance(UsDollar)).willReturn(Future.successful(amount))
+    processor ! PaymentProcessor.RetrieveBalance(UsDollar)
+    expectMsg(PaymentProcessor.BalanceRetrieved(amount))
   }
 
   it must "be able to send a payment" in new WithOkPayProcessor {
-    given(service.send_Money(
-      walletID = Some(Some(senderAccount)),
-      securityToken = Some(Some(token)),
-      receiver = Some(Some(receiverAccount)),
-      currency = Some(Some("USD")),
-      amount = Some(amount.value),
-      comment = Some(Some("comment")),
-      isReceiverPaysFees = Some(false),
-      invoice = None)).willReturn(Future.successful(Send_MoneyResponse(Some(Some(txInfo)))))
+    given(client.sendPayment(receiverAccount, amount, "comment"))
+      .willReturn(Future.successful(payment))
     processor ! PaymentProcessor.Pay(receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessor.Paid(Payment(
-        "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) => ()
+        "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
     }
   }
 
   it must "be able to retrieve a existing payment" in new WithOkPayProcessor {
-    given(service.transaction_Get(
-      walletID = Some(Some(senderAccount)),
-      securityToken = Some(Some(token)),
-      txnID = Some(250092L),
-      invoice = None)).willReturn(Future.successful(Transaction_GetResponse(Some(Some(txInfo)))))
+    given(client.findPayment("250092")).willReturn(Future.successful(Some(payment)))
     processor ! PaymentProcessor.FindPayment("250092")
     expectMsgPF() {
       case PaymentProcessor.PaymentFound(Payment(
-      "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) => ()
+      "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
     }
   }
-
-  def buildAccountInfo(walletId: String) =
-    AccountInfo(Some(1234), None, None, None, None, Some(Some(walletId)))
 }
