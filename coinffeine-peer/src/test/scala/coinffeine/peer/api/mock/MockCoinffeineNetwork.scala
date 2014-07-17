@@ -5,10 +5,11 @@ import scala.concurrent.Future
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
-class MockCoinffeineNetwork extends CoinffeineNetwork {
+class MockCoinffeineNetwork(override val peerId: PeerId) extends CoinffeineNetwork {
 
   private var _orders: Set[OrderBookEntry[FiatAmount]] = Set.empty
 

@@ -4,12 +4,15 @@ import scala.concurrent.Future
 
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.market._
+import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
 
   def status: CoinffeineNetwork.Status
+
+  def peerId: PeerId
 
   /** Start connection with the network.
     *

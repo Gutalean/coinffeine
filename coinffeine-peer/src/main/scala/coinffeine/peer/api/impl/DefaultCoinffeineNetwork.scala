@@ -10,12 +10,14 @@ import akka.pattern._
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
-private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
+private[impl] class DefaultCoinffeineNetwork(override val peerId: PeerId,
+                                             override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {
 
   private var _status: CoinffeineNetwork.Status = Disconnected
