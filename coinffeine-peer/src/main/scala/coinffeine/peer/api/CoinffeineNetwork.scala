@@ -2,8 +2,9 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market._
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork {
@@ -23,10 +24,7 @@ trait CoinffeineNetwork {
   def disconnect(): Future[CoinffeineNetwork.Disconnected.type]
 
   def orders: Set[OrderBookEntry[FiatAmount]]
-  def exchanges: Set[Exchange]
-
-  /** Notify exchange events. */
-  def onExchangeChanged(listener: CoinffeineNetwork.ExchangeListener): Unit
+  def exchanges: Set[Exchange[FiatCurrency]]
 
   /** Submit an order to buy bitcoins.
     *
@@ -61,9 +59,4 @@ object CoinffeineNetwork {
 
   case class ConnectException(cause: Throwable)
     extends Exception("Cannot connect to the P2P network", cause)
-
-  trait ExchangeListener {
-    def onNewExchange(exchange: Exchange): Unit
-    def onExchangeChange(exchange: Exchange): Unit
-  }
 }

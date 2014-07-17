@@ -8,11 +8,12 @@ import akka.actor.ActorRef
 import akka.pattern._
 
 import coinffeine.model.currency.FiatAmount
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
+import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
-import coinffeine.peer.api.{CoinffeineNetwork, Exchange}
 
 private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {
@@ -41,9 +42,7 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def exchanges: Set[Exchange] = Set.empty
-
-  override def onExchangeChanged(listener: ExchangeListener): Unit = ???
+  override def exchanges: Set[AnyExchange] = Set.empty
 
   override def orders: Set[OrderBookEntry[FiatAmount]] =
     await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
