@@ -1,7 +1,7 @@
 package coinffeine.peer.api.impl
 
 import coinffeine.model.bitcoin.NetworkComponent
-import coinffeine.peer.bitcoin.{DummyWalletComponent, MockBlockchainComponent, WalletActor}
+import coinffeine.peer.bitcoin._
 import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.market._
 import coinffeine.peer.payment.okpay.OKPayProcessorActor
@@ -20,6 +20,7 @@ object ProductionCoinffeineApp {
     with OrderActor.Component
     with WalletActor.Component
     with DummyWalletComponent
+    with BitcoinPeerActor.Component
     with MockBlockchainComponent
     with OKPayProcessorActor.Component
     with SubmissionSupervisor.Component

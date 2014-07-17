@@ -2,34 +2,66 @@ package coinffeine.peer.bitcoin
 
 import scala.util.control.NonFatal
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor._
+import com.google.bitcoin.core.AbstractWalletEventListener
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
-import coinffeine.peer.CoinffeinePeerActor.{WalletBalance, RetrieveWalletBalance}
+import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
+import coinffeine.peer.api.event.WalletBalanceChangeEvent
+import coinffeine.peer.event.EventProducer
 
 class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
 
-  override val receive: Receive = {
+  import coinffeine.peer.bitcoin.WalletActor._
 
-    case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
-      try {
-        val tx = wallet.blockMultisignFunds(signatures, amount)
-        sender ! WalletActor.FundsBlocked(req, tx)
-      } catch {
-        case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
+  override def preStart(): Unit = {
+    wallet.addEventListener(new AbstractWalletEventListener {
+      override def onChange(): Unit = {
+        self ! WalletChanged
       }
+    }, context.dispatcher)
+  }
 
-    case WalletActor.ReleaseFunds(tx) =>
-      wallet.releaseFunds(tx)
+  override val receive: Receive = {
+    case Initialize(eventChannel) => new InitializedWalletActor(eventChannel).start()
+  }
 
-    case RetrieveWalletBalance =>
-      sender() ! WalletBalance(wallet.balance())
+  private class InitializedWalletActor(channel: ActorRef) extends EventProducer(channel) {
+
+    def start(): Unit = {
+      produceEvent(WalletBalanceChangeEvent(wallet.balance()))
+      context.become(manageWallet)
+    }
+
+    private val manageWallet: Receive = {
+
+      case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
+        try {
+          val tx = wallet.blockMultisignFunds(signatures, amount)
+          sender ! WalletActor.FundsBlocked(req, tx)
+        } catch {
+          case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
+        }
+
+      case WalletActor.ReleaseFunds(tx) =>
+        wallet.releaseFunds(tx)
+
+      case RetrieveWalletBalance =>
+        sender() ! WalletBalance(wallet.balance())
+
+      case WalletChanged =>
+        produceEvent(WalletBalanceChangeEvent(wallet.balance()))
+    }
   }
 }
 
 object WalletActor {
+
+  private case object WalletChanged
+
+  case class Initialize(eventChannel: ActorRef)
 
   /** A message sent to the wallet actor in order to block some funds in a multisign transaction.
     *

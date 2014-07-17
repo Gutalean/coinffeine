@@ -9,6 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
@@ -25,6 +26,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val gateway = new MockSupervisedActor()
   val marketInfo = new MockSupervisedActor()
   val orders = new MockSupervisedActor()
+  val bitcoinPeer = new MockSupervisedActor()
   val wallet = new MockSupervisedActor()
   val paymentProcessor = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(
@@ -34,7 +36,8 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       marketInfo = marketInfo.props,
       orderSupervisor = orders.props,
       wallet = wallet.props,
-      paymentProcessor = paymentProcessor.props))))
+      paymentProcessor = paymentProcessor.props,
+      bitcoinPeer = bitcoinPeer.props))))
 
   "A peer" must "start the message gateway" in {
     gateway.expectCreation()
@@ -44,9 +47,13 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     eventChannel.expectCreation()
   }
 
+  it must "start the bitcoin peer actor" in {
+    bitcoinPeer.expectCreation()
+  }
 
   it must "start the wallet actor" in {
     wallet.expectCreation()
+    wallet.expectMsg(WalletActor.Initialize(eventChannel.ref))
   }
 
   it must "start the payment processor actor" in {

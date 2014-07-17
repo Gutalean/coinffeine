@@ -10,7 +10,7 @@ import akka.util.Timeout
 import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, FiatAmount}
 import coinffeine.model.market.{Order, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
@@ -34,7 +34,12 @@ class CoinffeinePeerActor(ownId: PeerId,
   private val eventChannel: ActorRef = context.actorOf(props.eventChannel, "eventChannel")
   private val gatewayRef = context.actorOf(props.gateway, "gateway")
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
-  private val walletRef = context.actorOf(props.wallet, "wallet")
+  private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
+  private val walletRef = {
+    val ref = context.actorOf(props.wallet, "wallet")
+    ref ! WalletActor.Initialize(eventChannel)
+    ref
+  }
   private val orderSupervisorRef = {
     val ref = context.actorOf(props.orderSupervisor, "orders")
     ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef, paymentProcessorRef, walletRef)
@@ -132,12 +137,14 @@ object CoinffeinePeerActor {
                             gateway: Props,
                             marketInfo: Props,
                             orderSupervisor: Props,
+                            bitcoinPeer: Props,
                             wallet: Props,
                             paymentProcessor: Props)
 
   trait Component { this: OrderSupervisor.Component
     with MarketInfoActor.Component
     with MessageGateway.Component
+    with BitcoinPeerActor.Component
     with WalletActor.Component
     with PaymentProcessor.Component
     with ConfigComponent =>
@@ -152,6 +159,7 @@ object CoinffeinePeerActor {
         messageGatewayProps,
         marketInfoProps,
         orderSupervisorProps,
+        bitcoinPeerProps,
         walletActorProps,
         paymentProcessorProps
       )
