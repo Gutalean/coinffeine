@@ -35,7 +35,10 @@ object Main extends JFXApp
 
   stage = new PrimaryStage {
     title = "Coinffeine"
-    scene = new ApplicationScene(views = Seq(new MainView, new OperationsView(app)))
+    scene = new ApplicationScene(
+      views = Seq(new MainView, new OperationsView(app)),
+      toolbarWidgets = Seq()
+    )
   }
   stage.show()
 

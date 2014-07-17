@@ -3,9 +3,9 @@ package coinffeine.gui.application
 import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
-import scalafx.scene.control.{ToggleButton, ToolBar}
+import scalafx.scene.control.{Separator, ToggleButton, ToolBar}
 import scalafx.scene.layout.BorderPane
-import scalafx.scene.{Parent, Scene}
+import scalafx.scene.{Node, Parent, Scene}
 
 import org.controlsfx.control.SegmentedButton
 
@@ -15,7 +15,7 @@ import coinffeine.gui.application.ApplicationScene._
   *
   * @param views  Available application views. The first one is visible at application start.
   */
-class ApplicationScene(views: Seq[ApplicationView])
+class ApplicationScene(views: Seq[ApplicationView], toolbarWidgets: Seq[Node])
   extends Scene(width = DefaultWidth, height = DefaultHeight) {
 
   require(views.nonEmpty, "At least one view is required")
@@ -38,7 +38,7 @@ class ApplicationScene(views: Seq[ApplicationView])
   }
 
   private val toolbarPane = new ToolBar {
-    content = Seq(viewSelector)
+    content = Seq(viewSelector, new Separator()) ++ toolbarWidgets
   }
 
   root = {

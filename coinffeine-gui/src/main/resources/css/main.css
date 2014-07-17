@@ -1,3 +1,7 @@
+Separator {
+    -fx-padding: 0 10;
+}
+
 #view-selector ToggleButton:disabled {
     -fx-color: black;
 }
