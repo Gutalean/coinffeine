@@ -1,6 +1,6 @@
 package coinffeine.peer.api.impl
 
-import coinffeine.model.bitcoin.MainNetComponent
+import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.peer.bitcoin.{DummyWalletComponent, MockBlockchainComponent, WalletActor}
 import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.market._
@@ -25,7 +25,7 @@ object ProductionCoinffeineApp {
     with SubmissionSupervisor.Component
     with ProtoRpcMessageGateway.Component
     with DefaultProtocolSerializationComponent
-    with MainNetComponent
     with FileConfigComponent
     with ConfigComponent
+    with NetworkComponent
 }

@@ -12,10 +12,12 @@ import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
+import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 import coinffeine.peer.payment.okpay.OkPayCredentials
 
-object Main extends JFXApp with ProductionCoinffeineApp.Component {
+object Main extends JFXApp
+  with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
 
   JFXApp.AUTO_SHOW = false
 
