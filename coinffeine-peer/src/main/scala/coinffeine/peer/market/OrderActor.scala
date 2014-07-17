@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.OrderBookEntry
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -26,7 +26,7 @@ class OrderActor extends Actor {
         case o: OrderMatch if o.orderId == order.id => true
         case _ => false
       }
-      produceEvent(CoinffeineApp.OrderSubmittedEvent(order))
+      produceEvent(OrderSubmittedEvent(order))
       init.submissionSupervisor ! KeepSubmitting(init.order)
       context.become(manageOrder)
     }
@@ -34,7 +34,7 @@ class OrderActor extends Actor {
     private val manageOrder: Receive = {
       case CancelOrder =>
         submissionSupervisor ! StopSubmitting(order.id)
-        produceEvent(CoinffeineApp.OrderCancelledEvent(order.id))
+        produceEvent(OrderCancelledEvent(order.id))
 
       case RetrieveStatus =>
         sender() ! order
@@ -44,7 +44,7 @@ class OrderActor extends Actor {
         /* TODO: send a more appropriate event since this is not a
          * cancellation but an exchange-started event
          */
-        produceEvent(CoinffeineApp.OrderCancelledEvent(orderMatch.orderId))
+        produceEvent(OrderCancelledEvent(orderMatch.orderId))
     }
   }
 }

@@ -8,7 +8,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.{Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
@@ -27,9 +27,9 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "notify order creation and cancellation" in new Fixture {
-    eventChannelProbe.expectMsg(CoinffeineApp.OrderSubmittedEvent(order))
+    eventChannelProbe.expectMsg(OrderSubmittedEvent(order))
     actor ! OrderActor.CancelOrder
-    eventChannelProbe.expectMsg(CoinffeineApp.OrderCancelledEvent(order.id))
+    eventChannelProbe.expectMsg(OrderCancelledEvent(order.id))
   }
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
@@ -40,7 +40,7 @@ class OrderActorTest extends AkkaSpec {
       case _ => false
     }
     eventChannelProbe.fishForMessage() {
-      case CoinffeineApp.OrderCancelledEvent(order.id) => true
+      case OrderCancelledEvent(order.id) => true
       case _ => false
     }
   }

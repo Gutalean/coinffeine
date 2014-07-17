@@ -11,7 +11,7 @@ import coinffeine.gui.GuiTest
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, OrderBookEntry}
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.api.mock.MockCoinffeineApp
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
@@ -29,14 +29,14 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   it must "show an order once submitted" in new Fixture {
-    app.produceEvent(CoinffeineApp.OrderSubmittedEvent(sampleOrder))
+    app.produceEvent(OrderSubmittedEvent(sampleOrder))
     eventually {
       ordersTable.itemsProperty().get() should contain (OrderProperties(sampleOrder))
     }
   }
 
   it must "stop showing an order once cancelled" in new OrderIsPresentFixture {
-    app.produceEvent(CoinffeineApp.OrderCancelledEvent(sampleOrder.id))
+    app.produceEvent(OrderCancelledEvent(sampleOrder.id))
     eventually { ordersTable.itemsProperty().get() should be ('empty) }
   }
 
@@ -77,7 +77,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   trait OrderIsPresentFixture extends Fixture {
-    app.produceEvent(CoinffeineApp.OrderSubmittedEvent(sampleOrder))
+    app.produceEvent(OrderSubmittedEvent(sampleOrder))
     eventually {
       ordersTable.itemsProperty().get() should contain (OrderProperties(sampleOrder))
     }

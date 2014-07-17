@@ -2,6 +2,7 @@ package coinffeine.peer.api.mock
 
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.api._
+import coinffeine.peer.api.event.CoinffeineAppEvent
 import coinffeine.peer.payment.PaymentProcessor.Component
 
 class MockCoinffeineApp extends CoinffeineApp {
@@ -24,7 +25,7 @@ class MockCoinffeineApp extends CoinffeineApp {
     handlers += handler
   }
 
-  def produceEvent(event: CoinffeineApp.Event): Unit = {
+  def produceEvent(event: CoinffeineAppEvent): Unit = {
     for (h <- handlers if h.isDefinedAt(event)) { h(event) }
   }
 }

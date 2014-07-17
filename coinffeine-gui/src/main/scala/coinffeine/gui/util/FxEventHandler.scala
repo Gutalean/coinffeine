@@ -2,7 +2,8 @@ package coinffeine.gui.util
 
 import scalafx.application.Platform
 
-import coinffeine.peer.api.{CoinffeineApp, EventHandler}
+import coinffeine.peer.api.EventHandler
+import coinffeine.peer.api.event.CoinffeineAppEvent
 
 /** A event handler ready to be used in JavaFX/ScalaFX concurrency model.
   *
@@ -17,9 +18,9 @@ import coinffeine.peer.api.{CoinffeineApp, EventHandler}
   */
 class FxEventHandler(delegate: EventHandler) extends EventHandler {
 
-  override def isDefinedAt(x: CoinffeineApp.Event) = delegate.isDefinedAt(x)
+  override def isDefinedAt(x: CoinffeineAppEvent) = delegate.isDefinedAt(x)
 
-  override def apply(event: CoinffeineApp.Event): Unit = {
+  override def apply(event: CoinffeineAppEvent): Unit = {
     Platform.runLater {
       delegate(event)
     }
@@ -27,6 +28,5 @@ class FxEventHandler(delegate: EventHandler) extends EventHandler {
 }
 
 object FxEventHandler {
-
   def apply(delegate: EventHandler) = new FxEventHandler(delegate)
 }
