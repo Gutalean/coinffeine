@@ -18,16 +18,3 @@ trait CoinffeineApp extends Closeable {
 
   def observe(handler: EventHandler): Unit
 }
-
-object CoinffeineApp {
-
-  /** A marking trait used to define Coinffeine events. */
-  sealed trait Event
-
-  /** An event triggered each time a new order is submitted. */
-  case class OrderSubmittedEvent(order: OrderBookEntry[FiatAmount]) extends Event
-
-  /** An event triggered each time an order is cancelled. */
-  case class OrderCancelledEvent(orderId: OrderId) extends Event
-}
-

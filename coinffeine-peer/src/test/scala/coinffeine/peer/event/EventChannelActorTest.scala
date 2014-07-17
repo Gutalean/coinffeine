@@ -5,12 +5,12 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.AkkaSpec
 import coinffeine.peer.CoinffeinePeerActor
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.event.CoinffeineAppEvent
 
 class EventChannelActorTest extends AkkaSpec with MockitoSugar {
 
   val channel = system.actorOf(EventChannelActor.props())
-  val event = mock[CoinffeineApp.Event]
+  val event = mock[CoinffeineAppEvent]
 
   "Event channel actor" must "forward events to its subscribers" in {
     val subs = givenSubscribers(2)
