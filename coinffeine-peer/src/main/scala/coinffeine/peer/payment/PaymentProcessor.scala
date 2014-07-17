@@ -2,7 +2,7 @@ package coinffeine.peer.payment
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import akka.util.Timeout
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
@@ -10,6 +10,9 @@ import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessor {
+
+  /** Initialize the payment processor actor */
+  case class Initialize(eventChannel: ActorRef)
 
   /** A message sent to the payment processor in order to identify itself. */
   case object Identify

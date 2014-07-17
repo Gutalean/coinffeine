@@ -1,14 +1,13 @@
 package coinffeine.peer
 
 import scala.concurrent.duration._
-import scala.util.Random
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, FiatAmount}
-import coinffeine.model.market.{Order, OrderBookEntry, OrderId}
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
 import coinffeine.peer.config.ConfigComponent
@@ -28,28 +27,21 @@ class CoinffeinePeerActor(ownId: PeerId,
                           brokerId: PeerId,
                           brokerAddress: PeerConnection,
                           props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging {
+
   import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
 
-  private val eventChannel: ActorRef = context.actorOf(props.eventChannel, "eventChannel")
-  private val gatewayRef = context.actorOf(props.gateway, "gateway")
-  private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
-  private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
-  private val walletRef = {
-    val ref = context.actorOf(props.wallet, "wallet")
-    ref ! WalletActor.Initialize(eventChannel)
-    ref
-  }
-  private val orderSupervisorRef = {
-    val ref = context.actorOf(props.orderSupervisor, "orders")
-    ref ! OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef, paymentProcessorRef, walletRef)
-    ref
-  }
-  private val marketInfoRef = {
-    val ref = context.actorOf(props.marketInfo, "marketInfo")
-    ref ! MarketInfoActor.Start(brokerId, gatewayRef)
-    ref
-  }
+  private val eventChannel = spawnDelegate(props.eventChannel, "eventChannel")
+  private val gatewayRef = spawnDelegate(props.gateway, "gateway")
+  private val paymentProcessorRef = spawnDelegate(
+    props.paymentProcessor, "paymentProcessor", PaymentProcessor.Initialize(eventChannel))
+  private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
+  private val walletRef = spawnDelegate(props.wallet, "wallet", WalletActor.Initialize(eventChannel))
+  private val orderSupervisorRef =
+    spawnDelegate(props.orderSupervisor, "orders",
+      OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef, paymentProcessorRef, walletRef))
+  private val marketInfoRef =
+    spawnDelegate(props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
 
   override def receive: Receive = {
 
@@ -75,6 +67,12 @@ class CoinffeinePeerActor(ownId: PeerId,
       marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
     case OpenOrdersRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestOpenOrders(market))
+  }
+
+  private def spawnDelegate(delegateProps: Props, name: String, initMessages: Any*): ActorRef = {
+    val ref = context.actorOf(delegateProps, name)
+    initMessages.foreach(ref ! _)
+    ref
   }
 }
 
