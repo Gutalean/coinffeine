@@ -7,9 +7,10 @@ import scala.util.Random
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
-import coinffeine.gui.application.ApplicationScene
+import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
+import coinffeine.gui.control.WalletBalanceWidget
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
@@ -33,11 +34,12 @@ object Main extends JFXApp
 
   Await.result(app.network.connect(), Duration.Inf)
 
+  val properties = new ApplicationProperties(app)
   stage = new PrimaryStage {
     title = "Coinffeine"
     scene = new ApplicationScene(
       views = Seq(new MainView, new OperationsView(app)),
-      toolbarWidgets = Seq()
+      toolbarWidgets = Seq(new WalletBalanceWidget(properties.walletBalanceProperty))
     )
   }
   stage.show()
