@@ -30,6 +30,7 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
     description = "comment"
   )
+  val cause = new Exception("Sample error")
 
   private trait WithOkPayProcessor {
     val client = mock[OkPayClient]
@@ -49,22 +50,47 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     expectMsg(PaymentProcessor.BalanceRetrieved(amount))
   }
 
+  it must "report failure to get the current balance" in new WithOkPayProcessor {
+    given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
+    processor ! PaymentProcessor.RetrieveBalance(UsDollar)
+    expectMsg(PaymentProcessor.BalanceRetrievalFailed(UsDollar, cause))
+  }
+
   it must "be able to send a payment" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment"))
       .willReturn(Future.successful(payment))
     processor ! PaymentProcessor.Pay(receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessor.Paid(Payment(
-        "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
+        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
     }
   }
 
+  it must "report failure to send a payment" in new WithOkPayProcessor {
+    given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
+    val payRequest = PaymentProcessor.Pay(receiverAccount, amount, "comment")
+    processor ! payRequest
+    expectMsg(PaymentProcessor.PaymentFailed(payRequest, cause))
+  }
+
   it must "be able to retrieve a existing payment" in new WithOkPayProcessor {
-    given(client.findPayment("250092")).willReturn(Future.successful(Some(payment)))
-    processor ! PaymentProcessor.FindPayment("250092")
+    given(client.findPayment(payment.id)).willReturn(Future.successful(Some(payment)))
+    processor ! PaymentProcessor.FindPayment(payment.id)
     expectMsgPF() {
       case PaymentProcessor.PaymentFound(Payment(
-      "250092", `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
+      payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
     }
+  }
+
+  it must "be able to check a payment does not exist"  in new WithOkPayProcessor {
+    given(client.findPayment(payment.id)).willReturn(Future.successful(None))
+    processor ! PaymentProcessor.FindPayment(payment.id)
+    expectMsg(PaymentProcessor.PaymentNotFound(payment.id))
+  }
+
+  it must "report failure to retrieve a payment" in new WithOkPayProcessor {
+    given(client.findPayment(payment.id)).willReturn(Future.failed(cause))
+    processor ! PaymentProcessor.FindPayment(payment.id)
+    expectMsg(PaymentProcessor.FindPaymentFailed(payment.id, cause))
   }
 }
