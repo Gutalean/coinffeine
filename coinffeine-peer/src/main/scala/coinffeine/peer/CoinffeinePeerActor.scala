@@ -120,6 +120,7 @@ object CoinffeinePeerActor {
   /** Response for [[RetrieveWalletBalance]] */
   case class WalletBalance(amount: BitcoinAmount)
 
+  private val IdSetting = "coinffeine.peer.id"
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
   private val BrokerIdSetting = "coinffeine.broker.id"
@@ -142,7 +143,7 @@ object CoinffeinePeerActor {
     with ConfigComponent =>
 
     lazy val peerProps: Props = {
-      val ownId = PeerId("client" + Random.nextInt(1000))
+      val ownId = PeerId(config.getString(IdSetting))
       val ownAddress = PeerConnection(config.getString(HostSetting), config.getInt(PortSetting))
       val brokerId = PeerId(config.getString(BrokerIdSetting))
       val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
