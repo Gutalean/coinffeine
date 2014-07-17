@@ -2,9 +2,9 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 
 /** Represents how the app takes part on the P2P network */
@@ -26,7 +26,7 @@ trait CoinffeineNetwork {
     */
   def disconnect(): Future[CoinffeineNetwork.Disconnected.type]
 
-  def orders: Set[OrderBookEntry[FiatAmount]]
+  def orders: Set[Order[FiatCurrency]]
   def exchanges: Set[Exchange[FiatCurrency]]
 
   /** Submit an order to buy bitcoins.
@@ -35,8 +35,9 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitBuyOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): OrderBookEntry[F] =
-    submitOrder(OrderBookEntry(Bid, btcAmount, fiatAmount))
+  def submitBuyOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
+                                        fiatAmount: CurrencyAmount[C]): Order[C] =
+    submitOrder(Order(peerId, Bid, btcAmount, fiatAmount))
 
   /** Submit an order to sell bitcoins.
     *
@@ -44,11 +45,12 @@ trait CoinffeineNetwork {
     * @param fiatAmount          Fiat money to use
     * @return                    A new exchange if submitted successfully
     */
-  def submitSellOrder[F <: FiatAmount](btcAmount: BitcoinAmount, fiatAmount: F): OrderBookEntry[F] =
-    submitOrder(OrderBookEntry(Ask, btcAmount, fiatAmount))
+  def submitSellOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
+                                         fiatAmount: CurrencyAmount[C]): Order[C] =
+    submitOrder(Order(peerId, Ask, btcAmount, fiatAmount))
 
   /** Submit an order. */
-  def submitOrder[F <: FiatAmount](order: OrderBookEntry[F]): OrderBookEntry[F]
+  def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C]
 
   def cancelOrder(order: OrderId): Unit
 }

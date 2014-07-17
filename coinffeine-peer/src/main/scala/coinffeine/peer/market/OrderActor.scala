@@ -2,8 +2,8 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.market.OrderBookEntry
+import coinffeine.model.currency.{FiatCurrency, FiatAmount}
+import coinffeine.model.market.{Order, OrderBookEntry}
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
@@ -27,7 +27,7 @@ class OrderActor extends Actor {
         case _ => false
       }
       produceEvent(OrderSubmittedEvent(order))
-      init.submissionSupervisor ! KeepSubmitting(init.order)
+      init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(init.order))
       context.become(manageOrder)
     }
 
@@ -51,7 +51,7 @@ class OrderActor extends Actor {
 
 object OrderActor {
 
-  case class Initialize(order: OrderBookEntry[FiatAmount],
+  case class Initialize(order: Order[FiatCurrency],
                         submissionSupervisor: ActorRef,
                         eventChannel: ActorRef,
                         messageGateway: ActorRef,
@@ -60,10 +60,7 @@ object OrderActor {
 
   case object CancelOrder
 
-  /** Ask for order status. To be replied with an [[OrderBookEntry]].
-    *
-    * TODO: return an Order instead of an OrderBookEntry
-    */
+  /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus
 
   trait Component {

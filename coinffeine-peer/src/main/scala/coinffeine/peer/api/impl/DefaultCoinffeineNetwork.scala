@@ -7,9 +7,9 @@ import scala.util.{Failure, Success}
 import akka.actor.ActorRef
 import akka.pattern._
 
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.exchange.AnyExchange
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
@@ -44,12 +44,12 @@ private[impl] class DefaultCoinffeineNetwork(override val peerId: PeerId,
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def exchanges: Set[AnyExchange] = Set.empty
+  override def exchanges: Set[Exchange[FiatCurrency]] = Set.empty
 
-  override def orders: Set[OrderBookEntry[FiatAmount]] =
+  override def orders: Set[Order[FiatCurrency]] =
     await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
 
-  override def submitOrder[F <: FiatAmount](order: OrderBookEntry[F]): OrderBookEntry[F] = {
+  override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
     peer ! OpenOrder(order)
     order
   }

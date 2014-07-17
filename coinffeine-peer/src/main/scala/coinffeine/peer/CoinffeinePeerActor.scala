@@ -7,8 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, FiatAmount}
+import coinffeine.model.market.{Order, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.config.ConfigComponent
@@ -95,7 +95,7 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: OrderBookEntry[FiatAmount])
+  case class OpenOrder(order: Order[FiatCurrency])
 
   /** Cancel an order
     *
@@ -109,7 +109,7 @@ object CoinffeinePeerActor {
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Seq[OrderBookEntry[FiatAmount]])
+  case class RetrievedOpenOrders(orders: Seq[Order[FiatCurrency]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
