@@ -5,7 +5,7 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{RunningExchange, Both}
 import coinffeine.peer.exchange.protocol._
 
 /** Base trait for testing the default exchange protocol */

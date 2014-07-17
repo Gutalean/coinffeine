@@ -1,8 +1,7 @@
-package coinffeine.peer.exchange.protocol
+package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 

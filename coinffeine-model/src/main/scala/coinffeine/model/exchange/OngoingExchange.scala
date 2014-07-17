@@ -1,8 +1,7 @@
-package coinffeine.peer.exchange.protocol
+package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin.PublicKey
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Both
 
 /** Relevant information for an ongoing exchange. This point of view is only held by the parts
   * as contains information not made public to everyone on the network.

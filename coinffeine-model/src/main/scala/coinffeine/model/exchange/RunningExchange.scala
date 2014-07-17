@@ -1,7 +1,6 @@
-package coinffeine.peer.exchange.protocol
+package coinffeine.model.exchange
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 
 case class RunningExchange[+C <: FiatCurrency](
