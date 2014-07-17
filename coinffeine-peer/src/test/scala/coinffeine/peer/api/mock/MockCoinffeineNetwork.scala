@@ -2,30 +2,30 @@ package coinffeine.peer.api.mock
 
 import scala.concurrent.Future
 
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.network.PeerId
+import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
-import coinffeine.peer.api.{CoinffeineNetwork, Exchange}
 
-class MockCoinffeineNetwork extends CoinffeineNetwork {
+class MockCoinffeineNetwork(override val peerId: PeerId) extends CoinffeineNetwork {
 
-  private var _orders: Set[OrderBookEntry[FiatAmount]] = Set.empty
+  private var _orders: Set[Order[FiatCurrency]] = Set.empty
 
   override def status: Status = ???
 
-  override def exchanges: Set[Exchange] = ???
-
-  override def onExchangeChanged(listener: ExchangeListener): Unit = ???
+  override def exchanges: Set[Exchange[FiatCurrency]] = ???
 
   override def disconnect(): Future[Disconnected.type] = ???
 
-  override def orders: Set[OrderBookEntry[FiatAmount]] = _orders
+  override def orders: Set[Order[FiatCurrency]] = _orders
 
   override def cancelOrder(orderId: OrderId): Unit = {
     _orders = _orders.filterNot(_.id == orderId)
   }
 
-  override def submitOrder[F <: FiatAmount](order: OrderBookEntry[F]): OrderBookEntry[F] = {
+  override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
     _orders += order
     order
   }

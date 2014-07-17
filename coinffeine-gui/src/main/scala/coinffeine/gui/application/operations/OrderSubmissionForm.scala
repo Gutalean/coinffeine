@@ -14,7 +14,7 @@ import coinffeine.gui.control.DecimalNumberTextField
 import coinffeine.gui.util.ProgressDialog
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderType}
+import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
 class OrderSubmissionForm(app: CoinffeineApp) {
@@ -168,8 +168,8 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   }
 
   private def submit(): Unit = {
-    // TODO: use an Order instead of an OrderBookEntry
-    val order = OrderBookEntry(
+    val order = Order(
+      owner = app.network.peerId,
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = limitAmount.get)

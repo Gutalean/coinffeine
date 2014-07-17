@@ -10,13 +10,14 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.gui.GuiTest
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Bid, OrderBookEntry}
+import coinffeine.model.market.{OrderId, Order, Bid, OrderBookEntry}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.api.mock.MockCoinffeineApp
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
-  val sampleOrder = OrderBookEntry(Bid, 1.BTC, 561.EUR)
+  val sampleOrder = Order(OrderId.random, PeerId("peer"), Bid, 1.BTC, 561.EUR)
   val app = new MockCoinffeineApp
 
   override def createRootNode(): Pane = {

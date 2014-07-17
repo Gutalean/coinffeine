@@ -4,8 +4,8 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Both
-import coinffeine.peer.exchange.protocol.Exchange.StepBreakdown
+import coinffeine.model.exchange.Exchange.StepBreakdown
+import coinffeine.model.exchange.{Both, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
 trait MicroPaymentChannel[C <: FiatCurrency] {

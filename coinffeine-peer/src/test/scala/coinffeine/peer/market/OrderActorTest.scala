@@ -6,7 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market.{Ask, OrderBookEntry}
+import coinffeine.model.market.{Order, Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -20,7 +20,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "keep submitting to the broker until been cancelled" in new Fixture {
-    submissionProbe.expectMsg(KeepSubmitting(order))
+    submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
     expectNoMsg()
     actor ! OrderActor.CancelOrder
     submissionProbe.expectMsg(StopSubmitting(order.id))
@@ -49,7 +49,7 @@ class OrderActorTest extends AkkaSpec {
     val messageGatewayProbe = TestProbe()
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
-    val order = OrderBookEntry(Ask, 5.BTC, 500.EUR)
+    val order = Order(PeerId("peer"), Ask, 5.BTC, 500.EUR)
     val submissionProbe = TestProbe()
     val paymentProcessorProbe = TestProbe()
     val walletProbe = TestProbe()

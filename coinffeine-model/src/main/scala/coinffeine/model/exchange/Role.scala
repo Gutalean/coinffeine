@@ -1,7 +1,6 @@
-package coinffeine.peer.exchange.protocol
+package coinffeine.model.exchange
 
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.Both
 
 sealed trait Role {
   def select[A](both: Both[A]): A

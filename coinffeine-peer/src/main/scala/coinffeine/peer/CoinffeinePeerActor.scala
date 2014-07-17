@@ -7,8 +7,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, FiatAmount}
+import coinffeine.model.market.{Order, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.config.ConfigComponent
@@ -95,7 +95,7 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: OrderBookEntry[FiatAmount])
+  case class OpenOrder(order: Order[FiatCurrency])
 
   /** Cancel an order
     *
@@ -109,7 +109,7 @@ object CoinffeinePeerActor {
   case object RetrieveOpenOrders
 
   /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Seq[OrderBookEntry[FiatAmount]])
+  case class RetrievedOpenOrders(orders: Seq[Order[FiatCurrency]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
@@ -120,6 +120,7 @@ object CoinffeinePeerActor {
   /** Response for [[RetrieveWalletBalance]] */
   case class WalletBalance(amount: BitcoinAmount)
 
+  private val IdSetting = "coinffeine.peer.id"
   private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
   private val BrokerIdSetting = "coinffeine.broker.id"
@@ -142,7 +143,7 @@ object CoinffeinePeerActor {
     with ConfigComponent =>
 
     lazy val peerProps: Props = {
-      val ownId = PeerId("client" + Random.nextInt(1000))
+      val ownId = PeerId(config.getString(IdSetting))
       val ownAddress = PeerConnection(config.getString(HostSetting), config.getInt(PortSetting))
       val brokerId = PeerId(config.getString(BrokerIdSetting))
       val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))

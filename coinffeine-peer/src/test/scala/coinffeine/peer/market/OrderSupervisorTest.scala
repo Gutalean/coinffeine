@@ -5,9 +5,9 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 import coinffeine.common.test.{AkkaSpec, MockActor}
-import coinffeine.model.currency.FiatAmount
+import coinffeine.model.currency.{FiatCurrency, FiatAmount}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
+import coinffeine.model.market.{Order, Ask, Bid, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
@@ -15,7 +15,7 @@ import coinffeine.peer.ProtocolConstants
 class OrderSupervisorTest extends AkkaSpec {
 
   class MockOrderActor(listener: ActorRef) extends Actor {
-    private var order: OrderBookEntry[FiatAmount] = _
+    private var order: Order[FiatCurrency] = _
 
     override def receive: Receive = {
       case init: OrderActor.Initialize =>
@@ -57,6 +57,7 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
+    val peerId = PeerId("peer")
     val orderActorProbe = TestProbe()
     val submissionProbe = TestProbe()
     val eventChannel = TestProbe()
@@ -66,8 +67,8 @@ class OrderSupervisorTest extends AkkaSpec {
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
       MockActor.props(submissionProbe), protocolConstants)))
 
-    val order1 = OrderBookEntry(Bid, 5.BTC, 500.EUR)
-    val order2 = OrderBookEntry(Ask, 2.BTC, 800.EUR)
+    val order1 = Order(peerId, Bid, 5.BTC, 500.EUR)
+    val order2 = Order(peerId, Ask, 2.BTC, 800.EUR)
 
     def givenOrderSupervisorIsInitialized(): Unit = {
       val brokerId = PeerId("Broker")
@@ -81,7 +82,7 @@ class OrderSupervisorTest extends AkkaSpec {
       }
     }
 
-    def givenOpenOrder(order: OrderBookEntry[FiatAmount]): Unit = {
+    def givenOpenOrder(order: Order[FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
         case OrderActor.Initialize(`order`, _, _, _, _, _) =>

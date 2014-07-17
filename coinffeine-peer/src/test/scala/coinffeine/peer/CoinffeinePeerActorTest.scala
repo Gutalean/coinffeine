@@ -6,7 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
@@ -90,7 +90,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order placement" in {
-    shouldForwardMessage(OpenOrder(OrderBookEntry(Bid, 10.BTC, 300.EUR)), orders)
+    shouldForwardMessage(OpenOrder(Order(ownId, Bid, 10.BTC, 300.EUR)), orders)
   }
 
   it must "delegate retrieve open orders request" in {

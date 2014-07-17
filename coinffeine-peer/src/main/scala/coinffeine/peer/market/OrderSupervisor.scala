@@ -7,8 +7,8 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
@@ -50,7 +50,7 @@ class OrderSupervisor(orderActorProps: Props,
         import context.dispatcher
         implicit val timeout = Timeout(1.second)
         Future.sequence(orders.values.toSeq.map { ref =>
-          (ref ? RetrieveStatus).mapTo[OrderBookEntry[FiatAmount]]
+          (ref ? RetrieveStatus).mapTo[Order[FiatCurrency]]
         }).map(RetrievedOpenOrders.apply).pipeTo(sender())
     }
   }
