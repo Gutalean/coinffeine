@@ -8,4 +8,7 @@ case class NonStartedExchange[+C <: FiatCurrency](
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
     override val peerIds: Both[PeerId],
-    override val brokerId: PeerId) extends Exchange[C]
+    override val brokerId: PeerId) extends Exchange[C] {
+
+  override val progress = Exchange.noProgress(amounts.currency)
+}

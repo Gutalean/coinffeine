@@ -1,7 +1,8 @@
 package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
@@ -17,6 +18,7 @@ trait Exchange[+C <: FiatCurrency] {
   /** Identifiers of the buyer and the seller */
   val peerIds: Both[PeerId]
   val brokerId: PeerId
+  val progress: Exchange.Progress[C]
 }
 
 object Exchange {
@@ -42,6 +44,8 @@ object Exchange {
     require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
 
+    val currency = fiatAmount.currency
+
     /** Amount of bitcoins to exchange per intermediate step */
     val stepBitcoinAmount: BitcoinAmount = bitcoinAmount / breakdown.intermediateSteps
     /** Amount of fiat to exchange per intermediate step */
@@ -59,4 +63,9 @@ object Exchange {
   }
 
   case class Deposits(transactions: Both[ImmutableTransaction])
+
+  case class Progress[+C <: FiatCurrency](
+    bitcoinsTransferred: BitcoinAmount, fiatTransferred: CurrencyAmount[C])
+
+  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, c.Zero)
 }

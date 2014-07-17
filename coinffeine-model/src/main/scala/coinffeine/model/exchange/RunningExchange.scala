@@ -11,13 +11,15 @@ case class RunningExchange[+C <: FiatCurrency](
     override val peerIds: Both[PeerId],
     override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo],
-    deposits: Exchange.Deposits) extends OngoingExchange[C]
+    deposits: Exchange.Deposits,
+    override val progress: Exchange.Progress[C]) extends OngoingExchange[C]
 
 object RunningExchange {
 
   def apply[C <: FiatCurrency](deposits: Exchange.Deposits,
                                exchange: HandshakingExchange[C]): RunningExchange[C] = {
     import exchange._
-    RunningExchange(role, id, amounts, parameters, peerIds, brokerId, participants, deposits)
+    RunningExchange(
+      role, id, amounts, parameters, peerIds, brokerId, participants, deposits, progress)
   }
 }
