@@ -9,20 +9,19 @@ import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.AkkaSpec
-import coinffeine.model.currency.Currency.UsDollar
+import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.Payment
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.payment.PaymentProcessor
 
-class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
+class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   private trait WithOkPayProcessor {
-    val futureTimeout = 5.seconds
+    def pollingInterval = 3.seconds
     val senderAccount = "OK12345"
     val receiverAccount = "OK54321"
-    val token = "token"
     val amount = 100.USD
     val payment = Payment(
       id = "250092",
@@ -35,7 +34,8 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
     val eventChannelProbe = TestProbe()
-    val processor = system.actorOf(Props(new OKPayProcessorActor(senderAccount, client)))
+    val processor = system.actorOf(Props(
+      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
     processor ! PaymentProcessor.Initialize(eventChannelProbe.ref)
   }
 
@@ -80,7 +80,7 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     expectMsg(PaymentProcessor.PaymentFailed(payRequest, cause))
   }
 
-  it must "be able to retrieve a existing payment" in new WithOkPayProcessor {
+  it must "be able to retrieve an existing payment" in new WithOkPayProcessor {
     given(client.findPayment(payment.id)).willReturn(Future.successful(Some(payment)))
     processor ! PaymentProcessor.FindPayment(payment.id)
     expectMsgPF() {
@@ -99,5 +99,14 @@ class OKPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.findPayment(payment.id)).willReturn(Future.failed(cause))
     processor ! PaymentProcessor.FindPayment(payment.id)
     expectMsg(PaymentProcessor.FindPaymentFailed(payment.id, cause))
+  }
+
+  it must "poll for EUR balance periodically" in new WithOkPayProcessor {
+    given(client.currentBalance(Euro)).willReturn(Future.successful(100.EUR))
+    override def pollingInterval = 1.second
+    eventChannelProbe.expectNoMsg(500.millis)
+    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
+    eventChannelProbe.expectNoMsg(500.millis)
+    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
   }
 }
