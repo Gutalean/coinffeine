@@ -10,6 +10,7 @@ import coinffeine.model.market.{Order, Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActorTest extends AkkaSpec {
@@ -33,8 +34,10 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
-    actor ! OrderMatch(
+    val orderMatch = OrderMatch(
       order.id, ExchangeId.random(), order.amount, order.price, PeerId.apply("counterpart"))
+    gatewayProbe.relayMessage(orderMatch, brokerId)
+    actor ! orderMatch
     submissionProbe.fishForMessage() {
       case StopSubmitting(order.`id`) => true
       case _ => false
@@ -46,7 +49,8 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait Fixture {
-    val messageGatewayProbe = TestProbe()
+    val gatewayProbe = new GatewayProbe()
+    val brokerId = PeerId("broker")
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
     val order = Order(PeerId("peer"), Ask, 5.BTC, 500.EUR)
@@ -55,6 +59,7 @@ class OrderActorTest extends AkkaSpec {
     val walletProbe = TestProbe()
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
-      messageGatewayProbe.ref, paymentProcessorProbe.ref, walletProbe.ref)
+      gatewayProbe.ref, paymentProcessorProbe.ref, walletProbe.ref, brokerId)
+    gatewayProbe.expectSubscription()
   }
 }
