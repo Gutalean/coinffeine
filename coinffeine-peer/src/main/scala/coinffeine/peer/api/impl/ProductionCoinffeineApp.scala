@@ -4,7 +4,7 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.peer.bitcoin._
 import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.market._
-import coinffeine.peer.payment.okpay.OKPayProcessorActor
+import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.serialization.DefaultProtocolSerializationComponent
@@ -22,7 +22,7 @@ object ProductionCoinffeineApp {
     with DummyWalletComponent
     with BitcoinPeerActor.Component
     with MockBlockchainComponent
-    with OKPayProcessorActor.Component
+    with OkPayProcessorActor.Component
     with SubmissionSupervisor.Component
     with ProtoRpcMessageGateway.Component
     with DefaultProtocolSerializationComponent
