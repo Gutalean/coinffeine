@@ -13,6 +13,7 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import coinffeine.protocol.gateway.PeerConnection
 import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
@@ -108,6 +109,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "delegate order cancellation" in {
     shouldForwardMessage(CancelOrder(OrderId.random()), orders)
+  }
+
+  it must "delegate fiat balance requests" in {
+    shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
   it must "forward subscription commands to the event channel" in {
