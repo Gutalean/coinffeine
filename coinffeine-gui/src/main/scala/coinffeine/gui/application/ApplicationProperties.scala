@@ -33,12 +33,11 @@ class ApplicationProperties(app: CoinffeineApp) {
       require(!orderExist(order.id), s"Duplicated OrderId: ${order.id}")
       ordersProperty.add(OrderProperties(order))
 
+    case OrderUpdatedEvent(order) =>
+      withOrder(order.id) { (o, _) => o.update(order) }
+
     case OrderCancelledEvent(orderId) =>
-      ordersProperty.zipWithIndex.foreach { t =>
-        if(t._1.order.id == orderId) {
-          ordersProperty.remove(t._2)
-        }
-      }
+      withOrder(orderId) { (_, i) => ordersProperty.remove(i) }
 
     case WalletBalanceChangeEvent(newBalance) =>
       _walletBalanceProperty.set(Some(newBalance))
@@ -48,6 +47,11 @@ class ApplicationProperties(app: CoinffeineApp) {
   }
 
   private def orderExist(orderId: OrderId): Boolean = ordersProperty.exists(_.order.id == orderId)
+
+  private def withOrder(orderId: OrderId)(f: (OrderProperties, Int) => Unit): Unit =
+    ordersProperty.zipWithIndex.foreach { case (prop, index) =>
+      if (prop.order.id == orderId) { f(prop, index) }
+    }
 
   app.observe(eventHandler)
 }
