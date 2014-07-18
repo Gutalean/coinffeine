@@ -3,9 +3,9 @@ package coinffeine.peer.market
 import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{CancelledOrder, InMarketOrder, Order, OrderBookEntry}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
+import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -47,7 +47,7 @@ class OrderActor extends Actor {
         // TODO: determine the cancellation reason
         currentOrder = currentOrder.withStatus(CancelledOrder("unknown reason"))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        produceEvent(OrderCancelledEvent(currentOrder.id))
+        produceEvent(OrderUpdatedEvent(currentOrder))
 
       case RetrieveStatus =>
         sender() ! currentOrder
@@ -55,7 +55,8 @@ class OrderActor extends Actor {
       case orderMatch: OrderMatch =>
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         // TODO: create the exchange, update currentOrder and send an OrderUpdatedEvent
-        produceEvent(OrderCancelledEvent(orderMatch.orderId))
+        currentOrder = currentOrder.withStatus(CompletedOrder)
+        produceEvent(OrderUpdatedEvent(currentOrder))
     }
   }
 }

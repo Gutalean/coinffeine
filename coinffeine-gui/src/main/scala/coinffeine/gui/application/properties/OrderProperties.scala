@@ -6,7 +6,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId, OrderStatus, OrderType}
 import coinffeine.model.network.PeerId
 
-case class OrderProperties(order: Order[FiatCurrency]) {
+class OrderProperties(order: Order[FiatCurrency]) {
   val idProperty = new ObjectProperty[OrderId](this, "id", order.id)
   val ownerProperty = new ObjectProperty[PeerId](this, "owner", order.owner)
   val orderTypeProperty = new ObjectProperty[OrderType](this, "orderType", order.orderType)

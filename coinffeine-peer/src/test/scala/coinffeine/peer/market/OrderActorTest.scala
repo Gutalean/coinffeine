@@ -6,9 +6,9 @@ import akka.testkit.TestProbe
 import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market.{InMarketOrder, Order, Ask, OrderBookEntry}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
+import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -30,7 +30,9 @@ class OrderActorTest extends AkkaSpec {
   it should "notify order creation and cancellation" in new Fixture {
     eventChannelProbe.expectMsg(OrderSubmittedEvent(inMarketOrder))
     actor ! OrderActor.CancelOrder
-    eventChannelProbe.expectMsg(OrderCancelledEvent(order.id))
+    eventChannelProbe.expectMsgPF() {
+      case OrderUpdatedEvent(Order(_, _, _, CancelledOrder(_), _, _, _)) =>
+    }
   }
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
@@ -43,7 +45,7 @@ class OrderActorTest extends AkkaSpec {
       case _ => false
     }
     eventChannelProbe.fishForMessage() {
-      case OrderCancelledEvent(order.id) => true
+      case OrderUpdatedEvent(Order(_, _, _, CompletedOrder, _, _, _)) => true
       case _ => false
     }
   }
