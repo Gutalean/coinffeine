@@ -4,5 +4,6 @@ digraph {
     protocol -> model, commonTest;
     model -> commonTest;
     gui -> peer;
-    test -> peer, server, commonTest;
+    test -> peer, server, commonTest, okpaymock;
+    okpaymock -> model, peer;
 }
