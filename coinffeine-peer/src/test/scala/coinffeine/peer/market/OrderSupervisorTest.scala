@@ -5,9 +5,9 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.test.MockActor.{MockReceived, MockStarted}
 import coinffeine.common.test.{AkkaSpec, MockActor}
-import coinffeine.model.currency.{FiatCurrency, FiatAmount}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Order, Ask, Bid, OrderBookEntry}
+import coinffeine.model.market.{Ask, Bid, Order}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
@@ -85,7 +85,7 @@ class OrderSupervisorTest extends AkkaSpec {
     def givenOpenOrder(order: Order[FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
-        case OrderActor.Initialize(`order`, _, _, _, _, _) =>
+        case OrderActor.Initialize(`order`, _, _, _, _, _, _) =>
       }
     }
   }

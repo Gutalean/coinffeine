@@ -39,7 +39,8 @@ class OrderSupervisor(orderActorProps: Props,
 
       case OpenOrder(order) =>
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
-        ref ! OrderActor.Initialize(order, submission, eventChannel, gateway, paymentProcessor, wallet)
+        ref ! OrderActor.Initialize(order, submission, eventChannel, gateway, paymentProcessor,
+          wallet, brokerId)
         orders += order.id -> ref
 
       case CancelOrder(orderId) =>

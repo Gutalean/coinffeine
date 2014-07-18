@@ -2,13 +2,15 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import coinffeine.model.currency.{FiatCurrency, FiatAmount}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{CancelledOrder, Order, OrderBookEntry}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActor extends Actor {
@@ -25,7 +27,7 @@ class OrderActor extends Actor {
 
     def start(): Unit = {
       messageGateway ! MessageGateway.Subscribe {
-        case o: OrderMatch if o.orderId == order.id => true
+        case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) => orderMatch.orderId == order.id
         case _ => false
       }
       produceEvent(OrderSubmittedEvent(order))
@@ -58,7 +60,8 @@ object OrderActor {
                         eventChannel: ActorRef,
                         messageGateway: ActorRef,
                         paymentProcessor: ActorRef,
-                        wallet: ActorRef)
+                        wallet: ActorRef,
+                        brokerId: PeerId)
 
   case object CancelOrder
 
