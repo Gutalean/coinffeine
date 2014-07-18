@@ -1,6 +1,8 @@
 package coinffeine.common.test
 
-import akka.actor.{ActorRef, Props, ActorSystem}
+import scala.reflect.ClassTag
+
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
 
@@ -22,6 +24,17 @@ class MockSupervisedActor(implicit system: ActorSystem) extends Assertions {
     probe.expectMsgPF() {
       case MockActor.MockReceived(_, _, `message`) =>
     }
+  }
+
+  def expectMsgPF[T](pattern: PartialFunction[Any, T]): Unit = {
+    probe.expectMsgPF() {
+      case MockActor.MockReceived(_, _, message) if pattern.isDefinedAt(message) => pattern(message)
+    }
+  }
+
+  def expectMsgType[T: ClassTag]: T = {
+    val msg = probe.expectMsgType[MockActor.MockReceived]
+    msg.message.asInstanceOf[T]
   }
 
   def expectForward(message: Any, expectedSender: ActorRef): Unit = {

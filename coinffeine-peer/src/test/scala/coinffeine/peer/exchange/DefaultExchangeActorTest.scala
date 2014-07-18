@@ -137,7 +137,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       givenTransactionsAreFound()
       givenMicropaymentChannelSuccess()
       givenTransactionIsCorrectlyBroadcast()
-      listener.expectMsg(ExchangeSuccess)
+      listener.expectMsg(ExchangeSuccess(null)) // TODO: figure out how the successful exchange looks like
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }

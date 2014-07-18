@@ -39,8 +39,8 @@ class CoinffeinePeerActor(ownId: PeerId,
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private val walletRef = spawnDelegate(props.wallet, "wallet", WalletActor.Initialize(eventChannel))
   private val orderSupervisorRef =
-    spawnDelegate(props.orderSupervisor, "orders",
-      OrderSupervisor.Initialize(brokerId, eventChannel, gatewayRef, paymentProcessorRef, walletRef))
+    spawnDelegate(props.orderSupervisor, "orders", OrderSupervisor.Initialize(brokerId,
+      eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
   private val marketInfoRef =
     spawnDelegate(props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
 

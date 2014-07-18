@@ -13,11 +13,12 @@ import coinffeine.peer.exchange.ExchangeActor
 class FakeExchangeActor extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case init: ExchangeActor.StartExchange =>
+    case init: ExchangeActor.StartExchange[_] =>
       new InitializedExchange(init, sender()).start()
   }
 
-  private class InitializedExchange(init: ExchangeActor.StartExchange, listener: ActorRef) {
+  private class InitializedExchange[C <: FiatCurrency](init: ExchangeActor.StartExchange[C],
+                                                       listener: ActorRef) {
     import init._
 
     def start(): Unit = {
