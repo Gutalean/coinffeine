@@ -7,13 +7,14 @@ import scala.util.Random
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 
-import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
+import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.WalletBalanceWidget
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
+import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 import coinffeine.peer.payment.okpay.OkPayCredentials
 
@@ -39,7 +40,10 @@ object Main extends JFXApp
     title = "Coinffeine"
     scene = new ApplicationScene(
       views = Seq(new MainView, new OperationsView(app, properties)),
-      toolbarWidgets = Seq(new WalletBalanceWidget(properties.walletBalanceProperty))
+      toolbarWidgets = Seq(
+        new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
+        new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
+      )
     )
   }
   stage.show()

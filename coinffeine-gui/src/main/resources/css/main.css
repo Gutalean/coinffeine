@@ -6,14 +6,19 @@ Separator {
     -fx-color: black;
 }
 
-#wallet-widget {
+#balance-widget {
     -fx-border-style: solid;
     -fx-border-radius: 5;
 }
-#wallet-widget .btc-label {
-    -fx-background-color: #AACCAA;
+#balance-widget .currency-label {
     -fx-border-width: 0 1 0 0;
     -fx-border-color: black;
     -fx-border-style: solid;
     -fx-border-radius: 5 0 0 5;
+}
+.BTC-label {
+    -fx-background-color: #AACCAA;
+}
+.EUR-label {
+    -fx-background-color: #99CCFF;
 }

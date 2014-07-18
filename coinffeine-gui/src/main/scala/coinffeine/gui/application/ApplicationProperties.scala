@@ -15,14 +15,16 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   val ordersProperty = ObservableBuffer[OrderProperties]()
 
-  def walletBalanceProperty: ReadOnlyObjectProperty[BitcoinAmount] = _walletBalanceProperty
+  def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinAmount]] =
+    _walletBalanceProperty
 
-  def fiatBalanceProperty: ReadOnlyObjectProperty[CurrencyAmount[Euro.type]] = _fiatBalanceProperty
+  def fiatBalanceProperty: ReadOnlyObjectProperty[Option[CurrencyAmount[Euro.type]]] =
+    _fiatBalanceProperty
 
-  private val _walletBalanceProperty = new ObjectProperty[BitcoinAmount](
-    this, "walletBalance", app.wallet.currentBalance())
+  private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinAmount]](
+    this, "walletBalance", None)
 
-  private val _fiatBalanceProperty = new ObjectProperty[CurrencyAmount[Euro.type]](
+  private val _fiatBalanceProperty = new ObjectProperty[Option[CurrencyAmount[Euro.type]]](
     this, "fiatBalance", app.paymentProcessor.currentBalance())
 
   private val eventHandler: EventHandler = FxEventHandler {
@@ -39,10 +41,10 @@ class ApplicationProperties(app: CoinffeineApp) {
       }
 
     case WalletBalanceChangeEvent(newBalance) =>
-      _walletBalanceProperty.set(newBalance)
+      _walletBalanceProperty.set(Some(newBalance))
 
     case FiatBalanceChangeEvent(newBalance @ CurrencyAmount(_, Euro)) =>
-      _fiatBalanceProperty.set(newBalance.asInstanceOf[CurrencyAmount[Euro.type]])
+      _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[CurrencyAmount[Euro.type]]))
   }
 
   private def orderExist(orderId: OrderId): Boolean = ordersProperty.exists(_.order.id == orderId)

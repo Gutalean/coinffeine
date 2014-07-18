@@ -5,5 +5,6 @@ import coinffeine.model.currency.CurrencyAmount
 
 /** Represents how the app interact with a payment processor */
 trait CoinffeinePaymentProcessor {
-  def currentBalance(): CurrencyAmount[Euro.type]
+  /** Get the current balance if possible */
+  def currentBalance(): Option[CurrencyAmount[Euro.type]]
 }
