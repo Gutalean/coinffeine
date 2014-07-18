@@ -2,6 +2,7 @@ package coinffeine.model.market
 
 sealed trait OrderStatus {
   def name: String
+  def isCancellable: Boolean
 
   override def toString: String = name
 }
@@ -14,6 +15,7 @@ sealed trait OrderStatus {
   */
 case object OfflineOrder extends OrderStatus {
   override val name = "offline"
+  override val isCancellable = true
 }
 
 /** The order is in the market.
@@ -23,6 +25,7 @@ case object OfflineOrder extends OrderStatus {
   */
 case object InMarketOrder extends OrderStatus {
   override val name = "in market"
+  override val isCancellable = true
 }
 
 /** The order is completed.
@@ -32,6 +35,7 @@ case object InMarketOrder extends OrderStatus {
   */
 case object CompletedOrder extends OrderStatus {
   override val name = "completed"
+  override val isCancellable = false
 }
 
 /** The order is cancelled.
@@ -43,6 +47,7 @@ case object CompletedOrder extends OrderStatus {
   */
 case class CancelledOrder(reason: String) extends OrderStatus {
   override val name = s"cancelled ($reason)"
+  override val isCancellable = false
 }
 
 

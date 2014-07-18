@@ -2,6 +2,9 @@ package coinffeine.peer.api.mock
 
 import java.util.UUID
 
+import coinffeine.model.bitcoin.{KeyPair, Address}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.api._
@@ -15,7 +18,12 @@ class MockCoinffeineApp extends CoinffeineApp {
 
   override val network = new MockCoinffeineNetwork(peerId)
 
-  override def wallet: CoinffeineWallet = ???
+  override def wallet: CoinffeineWallet = new CoinffeineWallet {
+    override def currentBalance() = 56.323523.BTC
+    override def transfer(amount: BitcoinAmount, address: Address) = ???
+    override def importPrivateKey(address: Address, key: KeyPair) = ???
+    override def depositAddress = ???
+  }
 
   override def protocolConstants: ProtocolConstants = ???
 
