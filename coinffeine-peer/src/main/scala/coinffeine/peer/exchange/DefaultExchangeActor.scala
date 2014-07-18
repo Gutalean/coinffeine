@@ -23,6 +23,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
+  // TODO: send back to the listener ExchangeProgress messages
+
   val receive: Receive = {
     case init: StartExchange[C] => new InitializedExchange(init, sender()).start()
   }
@@ -73,7 +75,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private def finishingExchange(
-        result: Any, expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
+        result: ExchangeResult, expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
       case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
           if expectedFinishingTx.exists(_ != originalTx) =>
         val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
@@ -95,7 +97,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
         log.info(s"Finishing exchange '${exchange.id}' successfully")
         txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeSuccess, successTx))
+        context.become(finishingExchange(ExchangeSuccess(null), successTx)) // TODO: send final Exchange[C]
       case MicroPaymentChannelActor.ExchangeFailure(e) =>
         log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         txBroadcaster ! FinishExchange

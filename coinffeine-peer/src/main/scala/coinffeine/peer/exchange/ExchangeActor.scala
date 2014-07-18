@@ -13,7 +13,9 @@ object ExchangeActor {
   val MicroPaymentChannelActorName = "exchange"
   val TransactionBroadcastActorName = "transactionBroadcast"
 
-  /** This is a request for the actor to start the exchange to be replied with the exchange result. */
+  /** This is a request for the actor to start the exchange to be replied with status updates and
+    * the exchange result.
+    */
   case class StartExchange[C <: FiatCurrency](exchange: Exchange[C],
                                               role: Role,
                                               user: Exchange.PeerInfo,
@@ -22,11 +24,16 @@ object ExchangeActor {
                                               messageGateway: ActorRef,
                                               bitcoinPeer: ActorRef)
 
-  /** This is a message sent to the listeners to indicate that an exchange succeeded */
-  case object ExchangeSuccess
+  /** This is sent back to listener to indicate exchange progress. */
+  case class ExchangeProgress(exchange: Exchange[FiatCurrency])
 
-  /** This is a message sent to the listeners to indicate that an exchange failed */
-  case class ExchangeFailure(e: Throwable)
+  sealed trait ExchangeResult
+
+  /** This is a message sent to the listener to indicate that an exchange succeeded */
+  case class ExchangeSuccess(exchange: Exchange[FiatCurrency]) extends ExchangeResult
+
+  /** This is a message sent to the listener to indicate that an exchange failed */
+  case class ExchangeFailure(e: Throwable) extends ExchangeResult
 
   case class CommitmentTxNotInBlockChain(txId: Hash) extends RuntimeException(
     s"Handshake reported that the commitment transaction with hash $txId was in " +
