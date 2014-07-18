@@ -21,7 +21,7 @@ class MockCoinffeineApp extends CoinffeineApp {
 
   override def marketStats: MarketStats = ???
 
-  override def paymentProcessors: Set[Component] = ???
+  override def paymentProcessor: CoinffeinePaymentProcessor = ???
 
   override def close(): Unit = ???
 

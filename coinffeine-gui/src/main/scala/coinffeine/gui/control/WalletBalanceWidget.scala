@@ -7,29 +7,33 @@ import scalafx.scene.control.Label
 import scalafx.scene.layout.HBox
 
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.{Currency, CurrencyAmount}
 
-class WalletBalanceWidget(balanceProperty: ReadOnlyObjectProperty[BitcoinAmount]) extends HBox {
-  id = "wallet-widget"
+class WalletBalanceWidget[C <: Currency](
+    currency: C, balanceProperty: ReadOnlyObjectProperty[Option[CurrencyAmount[C]]]) extends HBox {
+  val symbol = currency.toString
+  id = "balance-widget"
   prefHeight = 26
   alignment = Pos.CENTER
   content = Seq(
-    new Label("BTC") {
+    new Label(symbol) {
       prefWidth = 34
       prefHeight = 24
-      styleClass = Seq("btc-label")
+      styleClass = Seq("currency-label", s"$symbol-label")
       alignment = Pos.CENTER
     },
     new Label(formatBalance(balanceProperty.value)) {
       prefWidth = 100
-      id = "wallet-balance"
+      id = s"$symbol-balance"
       alignment = Pos.CENTER_RIGHT
       text <== balanceProperty.delegate.map(formatBalance)
     }
   )
 
-  private def formatBalance(balance: BitcoinAmount): String =
-    WalletBalanceWidget.BalanceFormat.format(balance.value)
+  private def formatBalance(balanceOpt: Option[CurrencyAmount[C]]): String =
+    balanceOpt.fold("-.--") { balance =>
+      WalletBalanceWidget.BalanceFormat.format(balance.value)
+    }
 }
 
 object WalletBalanceWidget {

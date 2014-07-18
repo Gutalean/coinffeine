@@ -14,6 +14,7 @@ import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
 import coinffeine.protocol.gateway.{MessageGateway, PeerConnection}
 import coinffeine.protocol.messages.brokerage
@@ -62,6 +63,8 @@ class CoinffeinePeerActor(ownId: PeerId,
       orderSupervisorRef forward message
     case message @ RetrieveWalletBalance =>
       walletRef forward message
+    case message @ RetrieveBalance(_) =>
+      paymentProcessorRef forward message
 
     case QuoteRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
