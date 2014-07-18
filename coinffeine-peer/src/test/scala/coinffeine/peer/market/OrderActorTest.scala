@@ -6,7 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.test.AkkaSpec
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market.{Order, Ask, OrderBookEntry}
+import coinffeine.model.market.{InMarketOrder, Order, Ask, OrderBookEntry}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderCancelledEvent, OrderSubmittedEvent}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -17,7 +17,7 @@ class OrderActorTest extends AkkaSpec {
 
   "An order actor" should "keep order info" in new Fixture {
     actor ! OrderActor.RetrieveStatus
-    expectMsg(order)
+    expectMsg(inMarketOrder)
   }
 
   it should "keep submitting to the broker until been cancelled" in new Fixture {
@@ -28,7 +28,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "notify order creation and cancellation" in new Fixture {
-    eventChannelProbe.expectMsg(OrderSubmittedEvent(order))
+    eventChannelProbe.expectMsg(OrderSubmittedEvent(inMarketOrder))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsg(OrderCancelledEvent(order.id))
   }
@@ -54,6 +54,7 @@ class OrderActorTest extends AkkaSpec {
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
     val order = Order(PeerId("peer"), Ask, 5.BTC, 500.EUR)
+    val inMarketOrder = order.withStatus(InMarketOrder)
     val submissionProbe = TestProbe()
     val paymentProcessorProbe = TestProbe()
     val walletProbe = TestProbe()
