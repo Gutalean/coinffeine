@@ -12,7 +12,7 @@ trait CoinffeineApp extends Closeable {
 
   def network: CoinffeineNetwork
   def wallet: CoinffeineWallet
-  def paymentProcessors: Set[PaymentProcessor.Component]
+  def paymentProcessor: CoinffeinePaymentProcessor
   def marketStats: MarketStats
   def protocolConstants: ProtocolConstants
 

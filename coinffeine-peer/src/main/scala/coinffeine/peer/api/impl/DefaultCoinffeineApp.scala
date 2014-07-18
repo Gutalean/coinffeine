@@ -6,13 +6,9 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
-import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 
-/** Implements the coinffeine application API as an actor system.
-  *
-  * FIXME: partial API implementation
-  */
+/** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(peerId: PeerId,
                            peerProps: Props,
                            override val protocolConstants: ProtocolConstants)
@@ -27,7 +23,7 @@ class DefaultCoinffeineApp(peerId: PeerId,
 
   override val marketStats = new DefaultMarketStats(peerRef)
 
-  override val paymentProcessors: Set[PaymentProcessor.Component] = Set.empty
+  override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(peerRef)
 
   override def close(): Unit = system.shutdown()
 
