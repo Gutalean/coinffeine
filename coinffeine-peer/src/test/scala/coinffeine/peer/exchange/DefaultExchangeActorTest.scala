@@ -23,7 +23,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.exchange.test.{CoinffeineClientTest, TestMessageQueue}
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 
-class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
+class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   with SellerPerspective with BitcoinjTest with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
@@ -54,13 +54,12 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val handshakeProps = TestActor.props(handshakeActorMessageQueue.queue)
     val micropaymentChannelProps = TestActor.props(micropaymentChannelActorMessageQueue.queue)
     val transactionBroadcastActorProps = TestActor.props(transactionBroadcastActorMessageQueue.queue)
-    val actor = system.actorOf(Props(new ExchangeActor[Euro.type](
+    val actor = system.actorOf(Props(new DefaultExchangeActor[Euro.type](
       handshakeProps,
       micropaymentChannelProps,
       transactionBroadcastActorProps,
       new MockExchangeProtocol,
-      protocolConstants,
-      Set(listener.ref)
+      protocolConstants
     )))
     listener.watch(actor)
 
@@ -73,9 +72,8 @@ class ExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     }
 
     def startExchange(): Unit = {
-      actor ! StartExchange(
-        exchange, userRole, user, wallet, dummyPaymentProcessor, gateway.ref, peers.ref
-      )
+      listener.send(actor,
+        StartExchange(exchange, userRole, user, wallet, dummyPaymentProcessor, gateway.ref, peers.ref))
       peers.expectMsg(RetrieveBlockchainActor)
       peers.reply(BlockchainActorReference(blockchain.ref))
     }

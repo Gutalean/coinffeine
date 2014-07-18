@@ -109,6 +109,8 @@ class ExchangeTransactionBroadcastActor(
   */
 object ExchangeTransactionBroadcastActor {
 
+  def props(constants: ProtocolConstants) = Props(new ExchangeTransactionBroadcastActor(constants))
+
   /** A request to the actor to start the necessary broadcast handling. It sets the refund
     * transaction to be used. This transaction will be broadcast as soon as its timelock expires if
     * there are no better alternatives (like broadcasting the successful exchange transaction)
