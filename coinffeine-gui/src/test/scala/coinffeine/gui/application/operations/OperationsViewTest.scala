@@ -16,7 +16,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, CancelledOrder, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
-import coinffeine.peer.api.mock.MockCoinffeineApp
+import coinffeine.peer.api.impl.MockCoinffeineApp
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
