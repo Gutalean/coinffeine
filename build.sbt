@@ -13,7 +13,8 @@ javacOptions in ThisBuild ++= Seq("-source", "1.7")
 resolvers in ThisBuild ++= Seq(
   "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
-  "typesafe" at "http://repo.typesafe.com/typesafe/releases/"
+  "typesafe" at "http://repo.typesafe.com/typesafe/releases/",
+  "tomp2p" at "http://tomp2p.net/dev/mvn/"
 )
 
 addCommandAlias("test", "test-only * -- -l UITest")

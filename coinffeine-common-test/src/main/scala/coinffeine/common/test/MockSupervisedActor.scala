@@ -1,5 +1,7 @@
 package coinffeine.common.test
 
+import scala.reflect.ClassTag
+
 import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
@@ -11,7 +13,7 @@ class MockSupervisedActor(implicit system: ActorSystem) extends Assertions {
 
   val props: Props = Props(new MockActor(probe.ref))
 
-  def ref: ActorRef = refOpt.getOrElse(fail("Mock was not yet created"))
+  def ref: ActorRef = refOpt.getOrElse(throw new Error("Mock was not yet created"))
 
   def expectCreation(): Unit = {
     val started = probe.expectMsgClass(classOf[MockActor.MockStarted])
@@ -22,6 +24,11 @@ class MockSupervisedActor(implicit system: ActorSystem) extends Assertions {
     probe.expectMsgPF() {
       case MockActor.MockReceived(_, _, `message`) =>
     }
+  }
+
+  def expectMsgType[T: ClassTag]: T = {
+    val msg = probe.expectMsgType[MockActor.MockReceived]
+    msg.message.asInstanceOf[T]
   }
 
   def expectForward(message: Any, expectedSender: ActorRef): Unit = {
