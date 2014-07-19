@@ -1,9 +1,10 @@
 package coinffeine.gui.control
 
+import java.text.DecimalFormat
+
 import javafx.scene.control.Label
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
-
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
@@ -17,7 +18,7 @@ class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]]
   override def createRootNode() = new WalletBalanceWidget(Bitcoin, balanceProperty)
 
   "A wallet balance widget" should "start with the provided value" in new Fixture {
-    find[Label]("#BTC-balance").getText should be ("0.00")
+    find[Label]("#BTC-balance").getText should be (formatNumber(0.0))
   }
 
   it should "reflect changes on the balance property" in new Fixture {
@@ -25,7 +26,7 @@ class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]]
       balanceProperty.set(Some(0.85.BTC))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be ("0.85")
+      find[Label]("#BTC-balance").getText should be (formatNumber(0.85))
     }
   }
 
@@ -34,7 +35,7 @@ class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]]
       balanceProperty.set(Some(0.12345678.BTC))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be ("0.12345678")
+      find[Label]("#BTC-balance").getText should be (formatNumber(0.12345678))
     }
   }
 
@@ -45,5 +46,12 @@ class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]]
     eventually {
       find[Label]("#BTC-balance").getText should be ("-.--")
     }
+  }
+
+  private def formatNumber(value: Double) = {
+    val formatter = new DecimalFormat
+    formatter.setMinimumFractionDigits(2)
+    formatter.setMaximumFractionDigits(8)
+    formatter.format(value)
   }
 }
