@@ -4,10 +4,9 @@ import scala.reflect.ClassTag
 
 import akka.actor.{ActorRef, Props, ActorSystem}
 import akka.testkit.TestProbe
-import org.scalatest.Assertions
 
 /** Utility class for testing supervisor actors */
-class MockSupervisedActor(implicit system: ActorSystem) extends Assertions {
+class MockSupervisedActor(implicit system: ActorSystem) {
 
   val probe = TestProbe()
 
