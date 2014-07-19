@@ -117,7 +117,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order placement" in {
-    shouldForwardMessage(OpenOrder(Order(PeerId("someId"), Bid, 10.BTC, 300.EUR)), orders)
+    shouldForwardMessage(OpenOrder(Order(Bid, 10.BTC, 300.EUR)), orders)
   }
 
   it must "delegate retrieve open orders request" in {

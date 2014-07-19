@@ -12,8 +12,6 @@ trait CoinffeineNetwork {
 
   def status: CoinffeineNetwork.Status
 
-  def peerId: PeerId
-
   /** Start connection with the network.
     *
     * @return The connected status in case of success or ConnectException otherwise
@@ -37,7 +35,7 @@ trait CoinffeineNetwork {
     */
   def submitBuyOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
                                         fiatAmount: CurrencyAmount[C]): Order[C] =
-    submitOrder(Order(peerId, Bid, btcAmount, fiatAmount))
+    submitOrder(Order(Bid, btcAmount, fiatAmount))
 
   /** Submit an order to sell bitcoins.
     *
@@ -47,7 +45,7 @@ trait CoinffeineNetwork {
     */
   def submitSellOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
                                          fiatAmount: CurrencyAmount[C]): Order[C] =
-    submitOrder(Order(peerId, Ask, btcAmount, fiatAmount))
+    submitOrder(Order(Ask, btcAmount, fiatAmount))
 
   /** Submit an order. */
   def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C]

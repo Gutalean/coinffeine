@@ -12,7 +12,6 @@ import coinffeine.model.network.PeerId
   * decentralized way. When one peer wants to perform a buy or sell operation, he emits
   * an order. Objects of this class represent the state of an order.
   *
-  * @param owner      The peer that owns the order
   * @param orderType  The type of order (bid or ask)
   * @param status     The current status of the order
   * @param amount     The amount of bitcoins to bid or ask
@@ -21,7 +20,6 @@ import coinffeine.model.network.PeerId
   */
 case class Order[+C <: FiatCurrency](
     id: OrderId,
-    owner: PeerId,
     orderType: OrderType,
     status: OrderStatus,
     amount: BitcoinAmount,
@@ -69,15 +67,13 @@ case class Order[+C <: FiatCurrency](
 object Order {
 
   def apply[C <: FiatCurrency](id: OrderId,
-                               owner: PeerId,
                                orderType: OrderType,
                                amount: BitcoinAmount,
                                price: CurrencyAmount[C]): Order[C] =
-    Order(id, owner, orderType, status = OfflineOrder, amount, price, exchanges = Map.empty)
+    Order(id, orderType, status = OfflineOrder, amount, price, exchanges = Map.empty)
 
-  def apply[C <: FiatCurrency](owner: PeerId,
-                               orderType: OrderType,
+  def apply[C <: FiatCurrency](orderType: OrderType,
                                amount: BitcoinAmount,
                                price: CurrencyAmount[C]): Order[C] =
-    Order(OrderId.random(), owner, orderType, amount, price)
+    Order(OrderId.random(), orderType, amount, price)
 }

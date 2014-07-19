@@ -57,14 +57,13 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
-    val peerId = PeerId("peer")
     val orderActorProbe, submissionProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer,
       wallet = TestProbe()
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
       MockActor.props(submissionProbe), protocolConstants)))
 
-    val order1 = Order(peerId, Bid, 5.BTC, 500.EUR)
-    val order2 = Order(peerId, Ask, 2.BTC, 800.EUR)
+    val order1 = Order(Bid, 5.BTC, 500.EUR)
+    val order2 = Order(Ask, 2.BTC, 800.EUR)
 
     def givenOrderSupervisorIsInitialized(): Unit = {
       val brokerId = PeerId("Broker")
