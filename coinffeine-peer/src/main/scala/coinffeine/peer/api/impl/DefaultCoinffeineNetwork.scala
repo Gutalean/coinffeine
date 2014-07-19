@@ -16,8 +16,7 @@ import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpen
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
-private[impl] class DefaultCoinffeineNetwork(override val peerId: PeerId,
-                                             override val peer: ActorRef)
+private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {
 
   private var _status: CoinffeineNetwork.Status = Disconnected

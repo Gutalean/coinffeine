@@ -8,7 +8,6 @@ import coinffeine.model.network.PeerId
 
 class OrderProperties(order: Order[FiatCurrency]) {
   val idProperty = new ObjectProperty[OrderId](this, "id", order.id)
-  val ownerProperty = new ObjectProperty[PeerId](this, "owner", order.owner)
   val orderTypeProperty = new ObjectProperty[OrderType](this, "orderType", order.orderType)
   val statusProperty = new ObjectProperty[OrderStatus](this, "status", order.status)
   val amountProperty = new ObjectProperty[BitcoinAmount](this, "amount", order.amount)
@@ -17,7 +16,6 @@ class OrderProperties(order: Order[FiatCurrency]) {
 
   def update(order: Order[FiatCurrency]): Unit = {
     idProperty.set(order.id)
-    ownerProperty.set(order.owner)
     orderTypeProperty.set(order.orderType)
     statusProperty.set(order.status)
     amountProperty.set(order.amount)

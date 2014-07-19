@@ -31,7 +31,7 @@ class OrderActorTest extends AkkaSpec {
     eventChannelProbe.expectMsg(OrderSubmittedEvent(inMarketOrder))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsgPF() {
-      case OrderUpdatedEvent(Order(_, _, _, CancelledOrder(_), _, _, _)) =>
+      case OrderUpdatedEvent(Order(_, _, CancelledOrder(_), _, _, _)) =>
     }
   }
 
@@ -45,7 +45,7 @@ class OrderActorTest extends AkkaSpec {
       case _ => false
     }
     eventChannelProbe.fishForMessage() {
-      case OrderUpdatedEvent(Order(_, _, _, CompletedOrder, _, _, _)) => true
+      case OrderUpdatedEvent(Order(_, _, CompletedOrder, _, _, _)) => true
       case _ => false
     }
   }
@@ -55,7 +55,7 @@ class OrderActorTest extends AkkaSpec {
     val brokerId = PeerId("broker")
     val eventChannelProbe = TestProbe()
     val actor = system.actorOf(Props(new OrderActor))
-    val order = Order(PeerId("peer"), Ask, 5.BTC, 500.EUR)
+    val order = Order(Ask, 5.BTC, 500.EUR)
     val inMarketOrder = order.withStatus(InMarketOrder)
     val submissionProbe = TestProbe()
     val paymentProcessorProbe = TestProbe()

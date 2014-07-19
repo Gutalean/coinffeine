@@ -13,10 +13,9 @@ import coinffeine.peer.payment.PaymentProcessor.Component
 
 class MockCoinffeineApp extends CoinffeineApp {
 
-  private val peerId = PeerId(s"test-user:${UUID.randomUUID()}")
   private var handlers: Set[EventHandler] = Set.empty
 
-  override val network = new MockCoinffeineNetwork(peerId)
+  override val network = new MockCoinffeineNetwork
 
   override def wallet: CoinffeineWallet = new CoinffeineWallet {
     override def currentBalance() = 56.323523.BTC
@@ -29,7 +28,7 @@ class MockCoinffeineApp extends CoinffeineApp {
 
   override def marketStats: MarketStats = ???
 
-  override def paymentProcessor: CoinffeinePaymentProcessor = ???
+  override def paymentProcessor: CoinffeinePaymentProcessor =
 
   override def close(): Unit = ???
 
@@ -40,4 +39,8 @@ class MockCoinffeineApp extends CoinffeineApp {
   def produceEvent(event: CoinffeineAppEvent): Unit = {
     for (h <- handlers if h.isDefinedAt(event)) { h(event) }
   }
+}
+
+object MockCoinffeineApp {
+  
 }
