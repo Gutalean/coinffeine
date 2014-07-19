@@ -11,7 +11,7 @@ import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, Bound}
+import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bind, BindingError, Bound}
 import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
@@ -33,38 +33,31 @@ private class ProtobufServerActor extends Actor with ActorLogging {
         .makeAndListen()
       me.put(me.getPeerID).setData(new Data(me.getPeerAddress.toByteArray)).start()
       val listener = sender()
-      me.setObjectDataReply(new ObjectDataReply {
-        override def reply(sender: PeerAddress, request: Any): AnyRef = {
-          context.dispatcher.execute(new Runnable {
-            override def run(): Unit = {
-              val msg = CoinffeineMessage.parseFrom(request.asInstanceOf[Array[Byte]])
-              listener ! ReceiveProtoMessage(msg, createPeerId(sender))
-            }
-          })
-          null
-        }
-      })
+      me.setObjectDataReply(new ReplyHandler(listener))
       if (bind.connectTo.isDefined) {
-        val brokerAddress = bind.connectTo.get
-        val bootstrapFuture = me.bootstrap()
-          .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-          .setPorts(brokerAddress.port)
-          .start()
-        import context.dispatcher
-        bootstrapFuture.onComplete {
-          case Success(future) =>
-            val broker = future.getBootstrapTo.head
-            succeedBinding(listener, createPeerId(broker))
-          case Failure(error) =>
-            listener ! BindingError(error)
-            log.info(s"Couldn't connect to Coinffeine network using " +
-              s"${brokerAddress.hostname}:${brokerAddress.port}")
-            context.become(receive)
-        }
-        context.become(Map.empty)
+        connectToBroker(bind.connectTo.get, listener)
       } else {
         succeedBinding(listener, createPeerId(me))
       }
+  }
+
+  private def connectToBroker(brokerAddress: BrokerAddress, listener: ActorRef): Unit = {
+    val bootstrapFuture = me.bootstrap()
+      .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
+      .setPorts(brokerAddress.port)
+      .start()
+    import context.dispatcher
+    bootstrapFuture.onComplete {
+      case Success(future) =>
+        val broker = future.getBootstrapTo.head
+        succeedBinding(listener, createPeerId(broker))
+      case Failure(error) =>
+        listener ! BindingError(error)
+        log.info(s"Couldn't connect to Coinffeine network using " +
+          s"${brokerAddress.hostname}:${brokerAddress.port}")
+        context.become(receive)
+    }
+    context.become(Map.empty)
   }
 
   private def succeedBinding(listener: ActorRef, brokerId: PeerId): Unit = {
@@ -82,6 +75,18 @@ private class ProtobufServerActor extends Actor with ActorLogging {
       sendMsg.onFailure { case err =>
         log.error(err, s"Failure when sending send message $msg to $to")
       }
+  }
+
+  private class ReplyHandler(listener: ActorRef) extends ObjectDataReply {
+    override def reply(sender: PeerAddress, request: Any): AnyRef = {
+      context.dispatcher.execute(new Runnable {
+        override def run(): Unit = {
+          val msg = CoinffeineMessage.parseFrom(request.asInstanceOf[Array[Byte]])
+          listener ! ReceiveProtoMessage(msg, createPeerId(sender))
+        }
+      })
+      null
+    }
   }
 
   private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString)
