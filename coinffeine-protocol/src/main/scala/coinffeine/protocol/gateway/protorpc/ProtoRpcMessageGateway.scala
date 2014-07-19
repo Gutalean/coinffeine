@@ -1,19 +1,16 @@
 package coinffeine.protocol.gateway.protorpc
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 import akka.actor._
-import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
-import coinffeine.protocol.gateway.protorpc.PeerIdResolverActor.{AddMapping, LookupMapping}
-import coinffeine.protocol.gateway.protorpc.PeerServiceImpl.ReceiveProtoMessage
-import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.PeerWith
+import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway.ReceiveProtoMessage
+import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.SendMessage
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
@@ -21,11 +18,9 @@ import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSeriali
 private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
   extends Actor with ActorLogging {
 
-  import context.dispatcher
   implicit private val timeout = Timeout(10.seconds)
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props, "subscriptions")
-  private val resolver = context.actorOf(PeerIdResolverActor.props, "resolver")
   private val server = context.actorOf(ProtobufServerActor.props, "server")
 
   override def receive = waitingForInitialization orElse managingSubscriptions
@@ -39,32 +34,27 @@ private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
   }
 
   private val waitingForInitialization: Receive = {
-    case bind @ Bind(ownId, peerConnection, brokerId, brokerConnection) =>
+    case bind: Bind =>
       server ! bind
-      context.become(binding(ownId, brokerId, brokerConnection, sender())
-        orElse managingSubscriptions)
+      context.become(binding(bind, sender()) orElse managingSubscriptions)
   }
 
-  private def binding(ownId: PeerId, brokerId: PeerId, brokerConnection: PeerConnection,
-                      listener: ActorRef): Receive = {
-
-    case boundTo @ BoundTo(ownConnection) =>
+  private def binding(bind: Bind, listener: ActorRef): Receive = {
+    case boundTo: Bound =>
       listener ! boundTo
-      new StartedGateway(ownId, ownConnection, brokerId, brokerConnection).start()
+      new StartedGateway(bind).start()
 
     case bindingError: BindingError =>
-      log.info(s"Message gateway $ownId couldn't start")
+      log.info(s"Message gateway couldn't start")
       listener ! bindingError
       context.become(receive)
   }
 
-  private class StartedGateway(ownId: PeerId, ownConnection: PeerConnection,
-                               brokerId: PeerId, brokerConnection: PeerConnection) {
+  private class StartedGateway(bind: Bind) {
 
     def start(): Unit = {
       context.become(forwardingMessages orElse managingSubscriptions)
-      resolver ! PeerIdResolverActor.Start(brokerId, brokerConnection, server)
-      log.info(s"Message gateway started on $ownConnection with id $ownId")
+      log.info(s"Message gateway started")
     }
 
     private val forwardingMessages: Receive = {
@@ -72,33 +62,19 @@ private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
         log.debug(s"Forwarding message $msg to $destId")
         forward(destId, msg)
 
-      case ReceiveProtoMessage(protoMessage, senderConnection) =>
-        val (message, senderId) = serialization.fromProtobuf(protoMessage)
-        resolver ! AddMapping(senderId, senderConnection)
+      case ReceiveProtoMessage(protoMessage, senderId) =>
+        val message = serialization.fromProtobuf(protoMessage)
         subscriptions ! ReceiveMessage(message, senderId)
     }
 
-    private def forward(to: PeerId, message: PublicMessage): Unit = {
-      (resolver ? LookupMapping(to)).mapTo[PeerConnection].onComplete {
-        case Success(connection) => forward(connection, message)
-        case Failure(cause) =>
-          log.error(s"Cannot resolve peer with id $to, dropping $message")
-      }
-    }
-
-    private def forward(to: PeerConnection, message: PublicMessage): Unit = {
-      (server ? PeerWith(to)).mapTo[PeerSession].map { s =>
-        proto.PeerService.newStub(s.channel).sendMessage(
-          s.controller,
-          serialization.toProtobuf(message, ownId),
-          Callbacks.noop[proto.Void]
-        )
-      }
-    }
+    private def forward(to: PeerId, message: PublicMessage): Unit =
+      server ! SendMessage(to, serialization.toProtobuf(message))
   }
 }
 
 object ProtoRpcMessageGateway {
+
+  case class ReceiveProtoMessage(message: proto.CoinffeineMessage, senderId: PeerId)
 
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with NetworkComponent=>

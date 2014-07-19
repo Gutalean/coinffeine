@@ -8,9 +8,9 @@ import coinffeine.protocol.messages.PublicMessage
 object MessageGateway {
 
   /** Initialization message for the gateway. */
-  case class Bind(ownId: PeerId, connection: PeerConnection, brokerId: PeerId,
-                  brokerConnection: PeerConnection)
-  case class BoundTo(address: PeerConnection)
+  case class Bind(listenToPort: Int, connectTo: Option[BrokerAddress])
+  case class BrokerAddress(hostname: String, port: Int)
+  case class Bound(brokerId: PeerId)
   case class BindingError(cause: Throwable)
 
   /** A message sent in order to forward another message to a given destination. */
