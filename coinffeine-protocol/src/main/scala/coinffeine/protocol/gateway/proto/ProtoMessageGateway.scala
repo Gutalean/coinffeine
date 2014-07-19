@@ -1,4 +1,4 @@
-package coinffeine.protocol.gateway.protorpc
+package coinffeine.protocol.gateway.proto
 
 import scala.concurrent.duration._
 
@@ -9,13 +9,13 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway.ReceiveProtoMessage
-import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.SendMessage
+import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
+import coinffeine.protocol.gateway.proto.ProtobufServerActor.SendMessage
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
-private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
+private class ProtoMessageGateway(serialization: ProtocolSerialization)
   extends Actor with ActorLogging {
 
   implicit private val timeout = Timeout(10.seconds)
@@ -72,13 +72,13 @@ private class ProtoRpcMessageGateway(serialization: ProtocolSerialization)
   }
 }
 
-object ProtoRpcMessageGateway {
+object ProtoMessageGateway {
 
   case class ReceiveProtoMessage(message: proto.CoinffeineMessage, senderId: PeerId)
 
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with NetworkComponent=>
 
-    override lazy val messageGatewayProps = Props(new ProtoRpcMessageGateway(protocolSerialization))
+    override lazy val messageGatewayProps = Props(new ProtoMessageGateway(protocolSerialization))
   }
 }

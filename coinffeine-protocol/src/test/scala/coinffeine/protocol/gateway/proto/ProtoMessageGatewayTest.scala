@@ -1,4 +1,4 @@
-package coinffeine.protocol.gateway
+package coinffeine.protocol.gateway.proto
 
 import scala.concurrent.duration._
 
@@ -9,12 +9,12 @@ import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 
-class ProtoRpcMessageGatewayTest
+class ProtoMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with Eventually with IntegrationPatience {
 
@@ -68,7 +68,7 @@ class ProtoRpcMessageGatewayTest
     expectMsgType[BindingError](5 seconds)
   }
 
-  trait FreshBrokerAndPeer extends ProtoRpcMessageGateway.Component
+  trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component {
     val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
     val (brokerGateway, brokerProbe, _) = createGateway(localPort = brokerAddress.port)

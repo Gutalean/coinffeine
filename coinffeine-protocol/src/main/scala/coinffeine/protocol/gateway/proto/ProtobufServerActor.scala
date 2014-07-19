@@ -1,4 +1,4 @@
-package coinffeine.protocol.gateway.protorpc
+package coinffeine.protocol.gateway.proto
 
 import java.net.InetAddress
 import scala.collection.JavaConversions._
@@ -12,7 +12,7 @@ import net.tomp2p.storage.Data
 
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bind, BindingError, Bound}
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway.ReceiveProtoMessage
+import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor extends Actor with ActorLogging {

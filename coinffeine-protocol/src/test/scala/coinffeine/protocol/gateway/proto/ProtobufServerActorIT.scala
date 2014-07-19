@@ -1,4 +1,4 @@
-package coinffeine.protocol.gateway.protorpc
+package coinffeine.protocol.gateway.proto
 
 import akka.actor.ActorRef
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
@@ -6,8 +6,8 @@ import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 import coinffeine.common.test.{DefaultTcpPortAllocator, AkkaSpec}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bound, Bind}
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway.ReceiveProtoMessage
-import coinffeine.protocol.gateway.protorpc.ProtobufServerActor.SendMessage
+import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
+import coinffeine.protocol.gateway.proto.ProtobufServerActor.SendMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.{ProtocolVersion, Payload, CoinffeineMessage}
 
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))

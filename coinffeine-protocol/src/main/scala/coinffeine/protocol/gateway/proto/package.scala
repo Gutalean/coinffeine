@@ -6,12 +6,12 @@ import scala.util.{Success, Failure, Try}
 
 import net.tomp2p.futures.{BaseFutureListener, BaseFuture}
 
-package object protorpc {
+package object proto {
 
   val BufferSize = 1048576
   val ConnectionTimeout = 10000
 
-  private[protorpc] implicit class PimpMyTomFuture[+T <: BaseFuture](future: T) extends Future[T] {
+  private[proto] implicit class PimpMyTomFuture[+T <: BaseFuture](future: T) extends Future[T] {
     override def onComplete[U](f: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
       future.addListener(new BaseFutureListener[T] {
         override def exceptionCaught(t: Throwable): Unit =
