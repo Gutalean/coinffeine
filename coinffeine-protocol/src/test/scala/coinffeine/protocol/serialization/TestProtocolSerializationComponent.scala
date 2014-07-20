@@ -18,9 +18,9 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   override lazy val protocolSerialization = new TestProtocolSerialization
 
-  def randomMessageAndSerialization(senderId: PeerId): (PublicMessage, CoinffeineMessage) = {
+  def randomMessageAndSerialization(): (PublicMessage, CoinffeineMessage) = {
     val message = randomOrderMatch()
-    (message, protocolSerialization.toProtobuf(message, senderId))
+    (message, protocolSerialization.toProtobuf(message))
   }
 
   def randomOrderMatch(): OrderMatch = OrderMatch(

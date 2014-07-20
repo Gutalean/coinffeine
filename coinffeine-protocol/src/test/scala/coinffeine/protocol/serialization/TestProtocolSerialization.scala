@@ -11,12 +11,12 @@ class TestProtocolSerialization extends ProtocolSerialization {
   var unserializableMessages = Set.empty[PublicMessage]
   var undeserializableMessages = Set.empty[CoinffeineMessage]
 
-  override def toProtobuf(message: PublicMessage, id: PeerId) =
+  override def toProtobuf(message: PublicMessage) =
     if (unserializableMessages.contains(message))
       throw new IllegalArgumentException("Cannot serialize")
-    else underlying.toProtobuf(message, id)
+    else underlying.toProtobuf(message)
 
-  override def fromProtobuf(protoMessage: CoinffeineMessage): (PublicMessage, PeerId) =
+  override def fromProtobuf(protoMessage: CoinffeineMessage): PublicMessage =
     if (undeserializableMessages.contains(protoMessage))
       throw new IllegalArgumentException("Cannot deserialize")
     else underlying.fromProtobuf(protoMessage)

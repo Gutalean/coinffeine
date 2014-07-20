@@ -6,7 +6,7 @@ import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.market._
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
-import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
+import coinffeine.protocol.gateway.proto.ProtoMessageGateway
 import coinffeine.protocol.serialization.DefaultProtocolSerializationComponent
 
 object ProductionCoinffeineApp {
@@ -24,7 +24,7 @@ object ProductionCoinffeineApp {
     with MockBlockchainComponent
     with OkPayProcessorActor.Component
     with SubmissionSupervisor.Component
-    with ProtoRpcMessageGateway.Component
+    with ProtoMessageGateway.Component
     with DefaultProtocolSerializationComponent
     with FileConfigComponent
     with ConfigComponent

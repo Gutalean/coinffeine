@@ -5,6 +5,6 @@ import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 trait ProtocolSerialization {
-  def fromProtobuf(protoMessage: CoinffeineMessage): (PublicMessage, PeerId)
-  def toProtobuf(message: PublicMessage, id: PeerId): CoinffeineMessage
+  def fromProtobuf(protoMessage: CoinffeineMessage): PublicMessage
+  def toProtobuf(message: PublicMessage): CoinffeineMessage
 }
