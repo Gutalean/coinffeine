@@ -3,9 +3,11 @@ package coinffeine.gui
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.Random
-import scalafx.application.JFXApp
+import scala.util.{Failure, Success, Random}
+import scalafx.application.{Platform, JFXApp}
 import scalafx.application.JFXApp.PrimaryStage
+
+import org.controlsfx.dialog.Dialogs
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
@@ -33,20 +35,29 @@ object Main extends JFXApp
   val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
   val setupConfig = new SetupWizard(sampleAddress, validator).run()
 
-  Await.result(app.network.connect(), Duration.Inf)
-
-  val properties = new ApplicationProperties(app)
-  stage = new PrimaryStage {
-    title = "Coinffeine"
-    scene = new ApplicationScene(
-      views = Seq(new MainView, new OperationsView(app, properties)),
-      toolbarWidgets = Seq(
-        new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
-        new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
-      )
-    )
+  val connectResult = app.network.connect()
+  Await.ready(connectResult, Duration.Inf)
+  connectResult.value.get match {
+    case Success(_) =>
+      val properties = new ApplicationProperties(app)
+      stage = new PrimaryStage {
+        title = "Coinffeine"
+        scene = new ApplicationScene(
+          views = Seq(new MainView, new OperationsView(app, properties)),
+          toolbarWidgets = Seq(
+            new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
+            new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
+          )
+        )
+      }
+      stage.show()
+    case Failure(err) =>
+      Dialogs.create()
+        .title("Connection error")
+        .message("Could not connect to the Coinffeine network. The application will now exit.")
+        .showException(err)
+      Platform.exit()
   }
-  stage.show()
 
 
   override def stopApp(): Unit = {
