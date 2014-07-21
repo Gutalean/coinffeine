@@ -197,6 +197,8 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
   */
 object HandshakeActor {
 
+  def props(exchangeProtocol: ExchangeProtocol) = Props(new HandshakeActor(exchangeProtocol))
+
   /** Sent to the actor to start the handshake
     *
     * @constructor
@@ -243,12 +245,4 @@ object HandshakeActor {
   private case object ResubmitRequest
   /** Internal message that aborts the handshake. */
   private case object RequestSignatureTimeout
-
-  trait Component {
-    /** Create the properties of a handshake actor.
-      *
-      * @return                 Actor properties
-      */
-    def handshakeActorProps[C <: FiatCurrency]: Props = Props[HandshakeActor[C]]
-  }
 }

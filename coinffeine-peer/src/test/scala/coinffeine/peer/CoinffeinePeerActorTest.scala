@@ -63,12 +63,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     paymentProcessor.expectMsg(PaymentProcessor.Initialize(eventChannel.ref))
   }
 
-  it must "start the order submissions actor" in {
-    orders.expectCreation()
-    orders.expectMsg(OrderSupervisor.Initialize(
-      brokerId, eventChannel.ref, gateway.ref, paymentProcessor.ref, wallet.ref))
-  }
-
   it must "make the message gateway start listening when connecting" in {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
@@ -76,6 +70,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       case Bind(_, `address`, _, _) => BoundTo(address)
     }
     expectMsg(CoinffeinePeerActor.Connected)
+  }
+
+  it must "start the order submissions actor" in {
+    orders.expectCreation()
+    orders.expectMsg(OrderSupervisor.Initialize(
+      brokerId, eventChannel.ref, gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref))
   }
 
   it must "start the market info actor" in {
