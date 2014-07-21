@@ -68,11 +68,14 @@ class OkPayWebServiceClient(account: String,
 
   override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
     service.wallet_Get_Balance(
-      walletID = Some(Some(this.account)),
+      walletID = Some(Some(account)),
       securityToken = Some(Some(buildCurrentToken()))
     ).map { response =>
-      response.Wallet_Get_BalanceResult.flatten.map(b => parseArrayOfBalance(b, currency))
-        .getOrElse(throw new PaymentProcessorException("Cannot parse balances: " + response))
+      (for {
+        arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
+        balance <- parseAndExtractBalance(arrayOfBalances, currency)
+      } yield balance).getOrElse(
+        throw new PaymentProcessorException(s"Cannot parse $currency balance in $response"))
     }
   }
 
@@ -110,12 +113,12 @@ class OkPayWebServiceClient(account: String,
     }
   }
 
-  private def parseArrayOfBalance[C <: FiatCurrency](
-      balances: ArrayOfBalance, expectedCurrency: C): CurrencyAmount[C] = {
-    val amounts = balances.Balance.collect {
-      case Some(Balance(a, c)) if c.get.get == expectedCurrency.javaCurrency.getCurrencyCode => a.get
+  private def parseAndExtractBalance[C <: FiatCurrency](
+      balances: ArrayOfBalance, currency: C): Option[CurrencyAmount[C]] = {
+    val currencyCode = currency.javaCurrency.getCurrencyCode
+    balances.Balance.collectFirst {
+      case Some(Balance(Some(amount), Flatten(`currencyCode`))) => currency.amount(amount)
     }
-    expectedCurrency.amount(amounts.sum)
   }
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
