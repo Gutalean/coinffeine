@@ -1,5 +1,6 @@
 package coinffeine.peer.payment.okpay
 
+import java.net.URI
 import java.util.{Currency => JavaCurrency}
 import scala.concurrent.Future
 import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync}
@@ -13,13 +14,32 @@ import coinffeine.model.payment.PaymentProcessor.{PaymentId, AccountId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.generated._
 
-private[okpay] class OkPayWebServiceClient(account: String, tokenGenerator: TokenGenerator)
-  extends OkPayClient
+/** SOAP client of OKPay service.
+  *
+  * @constructor
+  * @param account              Account, also known as wallet ID in OKPay terms
+  * @param tokenGenerator       Generator of valid request tokens
+  * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
+  */
+class OkPayWebServiceClient(account: String,
+                            tokenGenerator: TokenGenerator,
+                            baseAddressOverride: Option[URI]) extends OkPayClient
   with BasicHttpBinding_I_OkPayAPIBindings
   with Soap11ClientsAsync
   with DispatchHttpClientsAsync {
 
+  /** Alternative web service client constructor
+    *
+    * @param account              Account, also known as wallet ID in OKPay terms
+    * @param seedToken            Token used to generate request tokens
+    * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
+    */
+  def this(account: String, seedToken: String, baseAddressOverride: Option[URI] = None) =
+    this(account, new TokenGenerator(seedToken), baseAddressOverride)
+
   import coinffeine.peer.payment.okpay.OkPayWebServiceClient._
+
+  override val baseAddress: URI = baseAddressOverride.getOrElse(super.baseAddress)
 
   override def sendPayment[C <: FiatCurrency](
       to: AccountId, amount: CurrencyAmount[C], comment: String): Future[Payment[C]] =
