@@ -104,14 +104,15 @@ object OkPayProcessorActor {
   private case object PollBalance
 
   trait Component extends PaymentProcessor.Component { this: ConfigComponent =>
-    override lazy val paymentProcessorProps = Props {
-      val tokenGenerator = new TokenGenerator(config.getString("coinffeine.okpay.token"))
-      new OkPayProcessorActor(
+    override lazy val paymentProcessorProps = {
+      val account = config.getString("coinffeine.okpay.id")
+      val client = new OkPayWebServiceClient(
         account = config.getString("coinffeine.okpay.id"),
-        client = new OkPayWebServiceClient(config.getString("coinffeine.okpay.id"), tokenGenerator),
-        pollingInterval =
-          config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
+        seedToken = config.getString("coinffeine.okpay.token")
       )
+      val pollingInterval =
+        config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
+      Props(new OkPayProcessorActor(account, client, pollingInterval))
     }
   }
 }
