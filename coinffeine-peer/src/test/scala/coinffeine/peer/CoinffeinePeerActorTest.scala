@@ -14,7 +14,8 @@ import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
-import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bind, BindingError, Bound}
+import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
@@ -60,7 +61,8 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
     gateway.expectAskWithReply {
-      case Bind(`localPort`, Some(`brokerAddress`)) => Bound(brokerId)
+      case MessageGateway.Connect(`localPort`, `brokerAddress`) =>
+        MessageGateway.Connected(PeerId("peer id"), brokerId)
     }
     expectMsg(CoinffeinePeerActor.Connected)
   }
@@ -104,7 +106,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     uninitializedPeer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
     localGateway.expectAskWithReply {
-      case Bind(`localPort`, Some(`brokerAddress`)) => BindingError(cause)
+      case MessageGateway.Connect(`localPort`, `brokerAddress`) => ConnectingError(cause)
     }
     expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
   }

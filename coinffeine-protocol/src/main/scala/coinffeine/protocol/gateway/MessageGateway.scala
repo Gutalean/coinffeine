@@ -7,11 +7,27 @@ import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
 
-  /** Initialization message for the gateway. */
-  case class Bind(listenToPort: Int, connectTo: Option[BrokerAddress])
-  case class BrokerAddress(hostname: String, port: Int)
-  case class Bound(brokerId: PeerId)
+  case class BrokerAddress(hostname: String, port: Int) {
+    override def toString = s"$hostname:$port"
+  }
+
+  /** A request message to bind & create a new, empty P2P network. */
+  case class Bind(listenToPort: Int)
+
+  /** A request message to connect to an already existing network. */
+  case class Connect(localPort: Int, connectTo: BrokerAddress)
+
+  /** A response message indicating a success bind operation. */
+  case class Bound(ownId: PeerId)
+
+  /** A response message indicating a success connect operation. */
+  case class Connected(ownId: PeerId, brokerId: PeerId)
+
+  /** A response message indicating a binding error. */
   case class BindingError(cause: Throwable)
+
+  /** A response message indicating a connection error. */
+  case class ConnectingError(cause: Throwable)
 
   /** A message sent in order to forward another message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)

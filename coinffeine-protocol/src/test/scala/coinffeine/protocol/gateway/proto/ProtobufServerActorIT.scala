@@ -1,14 +1,14 @@
 package coinffeine.protocol.gateway.proto
 
 import akka.actor.ActorRef
-import org.scalatest.concurrent.{IntegrationPatience, Eventually}
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import coinffeine.common.test.{DefaultTcpPortAllocator, AkkaSpec}
+import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bound, Bind}
+import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.SendMessage
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.{ProtocolVersion, Payload, CoinffeineMessage}
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Payload, ProtocolVersion}
 
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
   with Eventually with IntegrationPatience {
@@ -20,15 +20,15 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
 
   "A peer" should "be able to send a message to another peer just with its peerId" in {
     val brokerPort = DefaultTcpPortAllocator.allocatePort()
-    val (broker, brokerId) = createServer(brokerPort, connectTo = None)
-    val brokerAddress = Some(BrokerAddress("localhost", brokerPort))
+    val (broker, brokerId) = createBroker(brokerPort)
+    val brokerAddress = BrokerAddress("localhost", brokerPort)
 
-    val (peer1, receivedBrokerId1) = createServer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
+    val (peer1, receivedBrokerId1) = createPeer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
     receivedBrokerId1 should be (brokerId)
     peer1 ! SendMessage(brokerId, msg)
     val peerId1 = expectMsgType[ReceiveProtoMessage].senderId
 
-    val (peer2, receivedBrokerId2) = createServer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
+    val (peer2, receivedBrokerId2) = createPeer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
     receivedBrokerId2 should be (brokerId)
     peer2 ! SendMessage(brokerId, msg)
     val peerId2 = expectMsgType[ReceiveProtoMessage].senderId
@@ -37,10 +37,17 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
     expectMsg(ReceiveProtoMessage(msg, peerId1))
   }
 
-  private def createServer(port: Int, connectTo: Option[BrokerAddress]): (ActorRef, PeerId) = {
+  private def createBroker(port: Int): (ActorRef, PeerId) = {
     val peer = system.actorOf(ProtobufServerActor.props)
-    peer ! Bind(port, connectTo)
+    peer ! Bind(port)
     val Bound(brokerId) = expectMsgType[Bound]
+    (peer, brokerId)
+  }
+
+  private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
+    val peer = system.actorOf(ProtobufServerActor.props)
+    peer ! Connect(port, connectTo)
+    val Connected(_, brokerId) = expectMsgType[Connected]
     (peer, brokerId)
   }
 }

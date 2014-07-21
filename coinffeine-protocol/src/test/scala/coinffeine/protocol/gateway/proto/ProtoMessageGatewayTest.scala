@@ -61,23 +61,33 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
   }
 
-  it must "report binding failures" in new FreshBrokerAndPeer {
+  it must "report connect failures" in new FreshBrokerAndPeer {
     val ref = system.actorOf(messageGatewayProps)
-    ref ! Bind(DefaultTcpPortAllocator.allocatePort(),
-      Some(BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())))
-    expectMsgType[BindingError](5 seconds)
+    ref ! Connect(
+      localPort = DefaultTcpPortAllocator.allocatePort(),
+      connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
+    expectMsgType[ConnectingError](5 seconds)
   }
 
   trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component {
     val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
-    val (brokerGateway, brokerProbe, _) = createGateway(localPort = brokerAddress.port)
-    val (peerGateway, peerProbe, brokerId) = createGateway(connectTo = Some(brokerAddress))
+    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
+    val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
-    def createGateway(localPort: Int = DefaultTcpPortAllocator.allocatePort(),
-                      connectTo: Option[BrokerAddress] = None): (ActorRef, TestProbe, PeerId) = {
+    def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
+      val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = system.actorOf(messageGatewayProps)
-      ref ! Bind(localPort, connectTo)
+      ref ! Connect(localPort, connectTo)
+      val Connected(_, _) = expectMsgType[Connected](5 seconds)
+      val probe = TestProbe()
+      probe.send(ref, Subscribe(_ => true))
+      (ref, probe)
+    }
+
+    def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
+      val ref = system.actorOf(messageGatewayProps)
+      ref ! Bind(localPort)
       val Bound(brokerId) = expectMsgType[Bound](5 seconds)
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))

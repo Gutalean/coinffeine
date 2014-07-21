@@ -14,8 +14,8 @@ import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
-import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, Bind, BindingError, Bound}
 import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.MessageGateway.{ConnectingError, BindingError, BrokerAddress}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
@@ -25,8 +25,8 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 class CoinffeinePeerActor(listenPort: Int,
                           brokerAddress: BrokerAddress,
                           props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging {
-  import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
+  import CoinffeinePeerActor._
 
   private val eventChannel = spawnDelegate(props.eventChannel, "eventChannel")
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
@@ -41,8 +41,8 @@ class CoinffeinePeerActor(listenPort: Int,
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-      (gatewayRef ? Bind(listenPort, Some(brokerAddress))).map {
-        case Bound(brokerId) =>
+      (gatewayRef ? MessageGateway.Connect(listenPort, brokerAddress)).map {
+        case MessageGateway.Connected(_, brokerId) =>
           orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
             OrderSupervisor.Initialize(
               brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
@@ -50,7 +50,7 @@ class CoinffeinePeerActor(listenPort: Int,
             props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
           context.become(handleMessages)
           CoinffeinePeerActor.Connected
-        case BindingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
+        case ConnectingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
 
     case BindingError(cause) =>

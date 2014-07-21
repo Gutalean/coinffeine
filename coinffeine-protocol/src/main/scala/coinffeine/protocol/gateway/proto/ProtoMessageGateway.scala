@@ -34,42 +34,35 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization)
   }
 
   private val waitingForInitialization: Receive = {
-    case bind: Bind =>
-      server ! bind
-      context.become(binding(bind, sender()) orElse managingSubscriptions)
+    case msg @ (Bind(_) | Connect(_, _)) =>
+      server ! msg
+      context.become(starting(sender()) orElse managingSubscriptions)
   }
 
-  private def binding(bind: Bind, listener: ActorRef): Receive = {
-    case boundTo: Bound =>
-      listener ! boundTo
-      new StartedGateway(bind).start()
+  private def starting(listener: ActorRef): Receive = {
+    case response @ (Bound(_) | Connected(_, _)) =>
+      listener ! response
+      log.info(s"Message gateway started")
+      context.become(forwardingMessages orElse managingSubscriptions)
 
-    case bindingError: BindingError =>
+    case error @ (BindingError(_) | ConnectingError(_)) =>
       log.info(s"Message gateway couldn't start")
-      listener ! bindingError
+      listener ! error
       context.become(receive)
   }
 
-  private class StartedGateway(bind: Bind) {
+  private val forwardingMessages: Receive = {
+    case m @ ForwardMessage(msg, destId) =>
+      log.debug(s"Forwarding message $msg to $destId")
+      forward(destId, msg)
 
-    def start(): Unit = {
-      context.become(forwardingMessages orElse managingSubscriptions)
-      log.info(s"Message gateway started")
-    }
-
-    private val forwardingMessages: Receive = {
-      case m @ ForwardMessage(msg, destId) =>
-        log.debug(s"Forwarding message $msg to $destId")
-        forward(destId, msg)
-
-      case ReceiveProtoMessage(protoMessage, senderId) =>
-        val message = serialization.fromProtobuf(protoMessage)
-        subscriptions ! ReceiveMessage(message, senderId)
-    }
-
-    private def forward(to: PeerId, message: PublicMessage): Unit =
-      server ! SendMessage(to, serialization.toProtobuf(message))
+    case ReceiveProtoMessage(protoMessage, senderId) =>
+      val message = serialization.fromProtobuf(protoMessage)
+      subscriptions ! ReceiveMessage(message, senderId)
   }
+
+  private def forward(to: PeerId, message: PublicMessage): Unit =
+    server ! SendMessage(to, serialization.toProtobuf(message))
 }
 
 object ProtoMessageGateway {
