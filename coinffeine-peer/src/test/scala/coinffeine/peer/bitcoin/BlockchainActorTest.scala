@@ -93,6 +93,11 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
       expectMsg(BlockchainActor.BlockchainHeightReached(50))
     }
 
+  it must "retrieve the blockchain height" in new Fixture {
+    instance ! BlockchainActor.RetrieveBlockchainHeight
+    expectMsg(BlockchainActor.BlockchainHeightReached(chain.getBestChainHeight))
+  }
+
   trait Fixture {
     val keyPair = new KeyPair()
     val otherKeyPair = new KeyPair()
