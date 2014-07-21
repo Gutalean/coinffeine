@@ -1,20 +1,20 @@
-package coinffeine.protocol.gateway.proto
+package coinffeine.protocol.gateway
 
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
-import akka.testkit.TestProbe
+import akka.testkit.{EventFilter, TestProbe}
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
 import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway.protorpc.ProtoRpcMessageGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 
-class ProtoMessageGatewayTest
+class ProtoRpcMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with Eventually with IntegrationPatience {
 
@@ -25,21 +25,28 @@ class ProtoMessageGatewayTest
   }
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
-    new FreshBrokerAndPeer {
+    new FreshPairOfGateways {
       val msg = randomOrderMatch()
       peerGateway ! ForwardMessage(msg, brokerId)
       brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
     }
 
   it must "send a known message twice reusing the connection to the remote peer" in
-    new FreshBrokerAndPeer {
+    new FreshPairOfGateways {
       val (msg1, msg2) = (randomOrderMatch(), randomOrderMatch())
       peerGateway ! ForwardMessage(msg1, brokerId)
       peerGateway ! ForwardMessage(msg2, brokerId)
       brokerProbe.expectMsgAllOf(ReceiveMessage(msg1, peerId), ReceiveMessage(msg2, peerId))
     }
 
-  it must "deliver messages to subscribers when filter match" in new FreshBrokerAndPeer {
+  it must "throw while forwarding when recipient was never connected" in new FreshGateway {
+    val msg = randomOrderMatch()
+    EventFilter[Throwable](occurrences = 1) intercept {
+      peerGateway ! ForwardMessage(msg, brokerId)
+    }
+  }
+
+  it must "deliver messages to subscribers when filter match" in new FreshPairOfGateways {
     val msg = randomOrderMatch()
     peerGateway ! subscribeToOrderMatches
     brokerGateway ! ForwardMessage(msg, peerId)
@@ -47,13 +54,13 @@ class ProtoMessageGatewayTest
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in
-    new FreshBrokerAndPeer {
+    new FreshPairOfGateways {
       peerGateway ! Subscribe(_ => false)
       brokerGateway ! ForwardMessage(randomOrderMatch(), peerId)
       expectNoMsg()
     }
 
-  it must "deliver messages to several subscribers when filter match" in new FreshBrokerAndPeer {
+  it must "deliver messages to several subscribers when filter match" in new FreshPairOfGateways {
     val msg = randomOrderMatch()
     val subs = for (i <- 1 to 5) yield TestProbe()
     subs.foreach(_.send(peerGateway, subscribeToOrderMatches))
@@ -61,32 +68,36 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
   }
 
-  it must "report binding failures" in new FreshBrokerAndPeer {
-    val ref = system.actorOf(messageGatewayProps)
-    ref ! Bind(DefaultTcpPortAllocator.allocatePort(),
-      Some(BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())))
-    expectMsgType[BindingError](5 seconds)
-  }
-
-  trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
+  trait FreshGateway extends ProtoRpcMessageGateway.Component
       with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component {
-    val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
-    val (brokerGateway, brokerProbe, _) = createGateway(localPort = brokerAddress.port)
-    val (peerGateway, peerProbe, brokerId) = createGateway(connectTo = Some(brokerAddress))
 
-    def createGateway(localPort: Int = DefaultTcpPortAllocator.allocatePort(),
-                      connectTo: Option[BrokerAddress] = None): (ActorRef, TestProbe, PeerId) = {
+    val brokerId = PeerId("broker")
+    val brokerConnection = allocateLocalPeerConnection()
+    val peerId = PeerId("peer")
+    val peerConnection = allocateLocalPeerConnection()
+
+    val (peerGateway, peerProbe) = createGateway(peerId, peerConnection)
+
+    def createGateway(peerId: PeerId, peerConnection: PeerConnection): (ActorRef, TestProbe) = {
       val ref = system.actorOf(messageGatewayProps)
-      ref ! Bind(localPort, connectTo)
-      val Bound(brokerId) = expectMsgType[Bound](5 seconds)
+      eventually {
+        ref ! Bind(peerId, peerConnection, brokerId, brokerConnection)
+        expectMsg(BoundTo(peerConnection))
+      }
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))
-      (ref, probe, brokerId)
+      (ref, probe)
     }
+
+    private def allocateLocalPeerConnection() =
+      PeerConnection("localhost", DefaultTcpPortAllocator.allocatePort())
+  }
+
+  trait FreshPairOfGateways extends FreshGateway {
+    val (brokerGateway, brokerProbe) = createGateway(brokerId, brokerConnection)
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
     peerGateway ! ForwardMessage(randomOrderMatch(), brokerId)
-    private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch]]
-    val peerId = msg.sender
+    brokerProbe.expectMsgClass(classOf[ReceiveMessage[OrderMatch]])
   }
 }

@@ -8,7 +8,7 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.gui.GuiTest
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Order, Bid, OrderBookEntry}
-import coinffeine.peer.api.impl.MockCoinffeineApp
+import coinffeine.peer.api.mock.MockCoinffeineApp
 
 class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
 
@@ -48,7 +48,7 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
     val expectedAmount = 0.1.BTC
     val expectedPrice = 100.EUR
     app.network.orders.collect {
-      case Order(_, Bid, _, `expectedAmount`, `expectedPrice`, _) =>
+      case Order(_, app.network.`peerId`, Bid, _, `expectedAmount`, `expectedPrice`, _) =>
     } should not be 'empty
   }
 }
