@@ -136,5 +136,21 @@ message ProtocolVersion {
 
 message CoinffeineMessage {
     required ProtocolVersion version = 1;
-    required Payload payload = 2;
+    required string peerId = 2;
+    required Payload payload = 3;
+}
+
+message Void {}
+
+message PeerId {
+    required string peerId = 1;
+}
+
+message PeerIdResolution {
+    optional string peerConnection = 1;
+}
+
+service PeerService {
+    rpc SendMessage(CoinffeineMessage) returns (Void);
+    rpc ResolvePeerId(PeerId) returns (PeerIdResolution);
 }
