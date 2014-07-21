@@ -17,6 +17,8 @@ import scala.language.postfixOps
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
   * @param orderResubmitInterval   Open orders should be resubmitted after this interval to avoid
   *                                being discarded
+  * @param refundLockTime         The number of blocks to wait for the refund transactions to be
+  *                               valid
   * @param refundSafetyBlockCount The number of blocks before the refund can be broadcast where we
   *                               want to finish the exchange forcefully.
   */
@@ -29,6 +31,7 @@ case class ProtocolConstants(
   exchangePaymentProofTimeout: FiniteDuration = 5 minutes,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,
+  refundLockTime: Int = 10,
   refundSafetyBlockCount: Int = 2
 )
 

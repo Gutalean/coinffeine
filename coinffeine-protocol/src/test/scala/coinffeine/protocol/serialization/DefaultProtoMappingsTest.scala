@@ -125,6 +125,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     exchangeId = sampleExchangeId,
     amount = 0.1 BTC,
     price = 10000 EUR,
+    lockTime = 310000L,
     counterpart = PeerId("buyer")
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
@@ -132,6 +133,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .setExchangeId(sampleExchangeId.value)
     .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
     .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
+    .setLockTime(310000L)
     .setCounterpart("buyer")
     .build
   "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)

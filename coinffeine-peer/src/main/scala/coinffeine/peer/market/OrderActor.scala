@@ -82,7 +82,12 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       val amounts = Exchange.Amounts(
         currentOrder.amount, fiatAmount, Exchange.StepBreakdown(intermediateSteps))
       NonStartedExchange(
-        orderMatch.exchangeId, amounts, Exchange.Parameters(0, network), peerIds = null, brokerId)
+        orderMatch.exchangeId,
+        amounts,
+        Exchange.Parameters(orderMatch.lockTime, network),
+        peerIds = null,
+        brokerId
+      )
     }
 
     private def spawnExchange(exchange: Exchange[FiatCurrency]): Unit = {

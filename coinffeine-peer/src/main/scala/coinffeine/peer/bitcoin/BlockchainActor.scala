@@ -9,7 +9,7 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin._
 
-class BlockchainActor(network: NetworkParameters,blockchain: AbstractBlockChain)
+class BlockchainActor(network: NetworkParameters, blockchain: AbstractBlockChain)
     extends Actor with ActorLogging {
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
@@ -91,23 +91,30 @@ class BlockchainActor(network: NetworkParameters,blockchain: AbstractBlockChain)
     }
 
     override def notifyTransactionIsInBlock(
-                                             txHash: Sha256Hash, block: StoredBlock,
-                                             blockType: NewBlockType, relativityOffset: Int): Boolean = observations.contains(txHash)
+        txHash: Sha256Hash, block: StoredBlock,
+        blockType: NewBlockType, relativityOffset: Int): Boolean = observations.contains(txHash)
   }
 
   blockchain.addListener(listener, context.dispatcher)
   blockchain.addWallet(wallet)
 
   override def receive: Receive = {
+
     case BlockchainActor.WatchPublicKey(key) =>
       wallet.addKey(key)
+
     case req @ BlockchainActor.WatchTransactionConfirmation(txHash, confirmations) =>
       observations += txHash -> Observation(txHash, sender(), confirmations)
+
     case BlockchainActor.RetrieveTransaction(txHash) =>
       transactionFor(txHash) match {
         case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
         case None => sender ! BlockchainActor.TransactionNotFound(txHash)
       }
+
+    case BlockchainActor.RetrieveBlockchainHeight =>
+      sender() ! BlockchainActor.BlockchainHeightReached(blockchain.getBestChainHeight)
+
     case BlockchainActor.WatchBlockchainHeight(height) =>
       heightNotifications += HeightNotification(height, sender())
   }
@@ -142,6 +149,10 @@ object BlockchainActor {
 
   /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
   case class TransactionRejected(transactionHash: Hash)
+
+  /** A message sent to the blockchain actor requesting the current chain height. To be replied
+    * with a [[BlockchainHeightReached]]. */
+  case object RetrieveBlockchainHeight
 
   /** A message sent to the blockchain actor requesting to be notified when the best block in the
     * blockchain reaches a specified height.

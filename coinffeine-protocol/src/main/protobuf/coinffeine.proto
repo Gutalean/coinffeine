@@ -51,7 +51,8 @@ message OrderMatch {
     required string exchangeId = 2;
     required BtcAmount amount = 3;
     required FiatAmount price = 4;
-    required string counterpart = 5;
+    required int64 lockTime = 5;
+    required string counterpart = 6;
 }
 
 message OpenOrdersRequest {
