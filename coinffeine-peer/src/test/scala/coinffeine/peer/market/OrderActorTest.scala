@@ -39,7 +39,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
     val orderMatch = OrderMatch(
-      order.id, ExchangeId.random(), order.amount, order.price, PeerId.apply("counterpart"))
+      order.id, ExchangeId.random(), order.amount, order.price, lockTime = 400000L, PeerId("counterpart"))
     gatewayProbe.relayMessage(orderMatch, brokerId)
     actor ! orderMatch
     submissionProbe.fishForMessage() {

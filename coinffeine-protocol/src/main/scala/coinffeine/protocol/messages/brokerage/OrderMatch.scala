@@ -12,5 +12,6 @@ case class OrderMatch(
     exchangeId: ExchangeId,
     amount: BitcoinAmount,
     price: FiatAmount,
+    lockTime: Long,
     counterpart: PeerId
 ) extends PublicMessage

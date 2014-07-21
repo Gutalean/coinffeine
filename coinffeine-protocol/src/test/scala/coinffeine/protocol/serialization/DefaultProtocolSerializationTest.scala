@@ -113,7 +113,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         ExchangeAborted(exchangeId, "reason"),
         ExchangeCommitment(exchangeId, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
-        OrderMatch(orderId, exchangeId, btcAmount, fiatAmount, peerId),
+        OrderMatch(orderId, exchangeId, btcAmount, fiatAmount, 310000L, peerId),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),

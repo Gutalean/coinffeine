@@ -168,6 +168,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       exchangeId = ExchangeId(orderMatch.getExchangeId),
       amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
       price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
+      lockTime = orderMatch.getLockTime,
       counterpart = PeerId(orderMatch.getCounterpart)
     )
 
@@ -176,6 +177,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
       .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
+      .setLockTime(orderMatch.lockTime)
       .setCounterpart(orderMatch.counterpart.value)
       .build
   }

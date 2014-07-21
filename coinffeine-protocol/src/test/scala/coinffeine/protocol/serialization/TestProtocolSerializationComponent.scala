@@ -28,6 +28,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
     exchangeId = ExchangeId.random(),
     amount = randomSatoshi() BTC,
     price = randomEuros() EUR,
+    lockTime = 42L,
     counterpart = PeerId("bob")
   )
 
