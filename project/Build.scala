@@ -1,3 +1,5 @@
+import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin
+import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin.cxf._
 import sbt.Keys._
 import sbt._
 import sbtprotobuf.{ProtobufPlugin => PB}
@@ -45,7 +47,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(peer, protocol, model, commonTest, gui, server, test)
+    aggregate(peer, protocol, model, commonTest, gui, server, test, okpaymock)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
@@ -93,5 +95,21 @@ object Build extends sbt.Build {
 
   lazy val test = (Project(id = "test", base = file("coinffeine-test"))
     dependsOn(peer, server, commonTest % "compile->compile;test->compile")
+  )
+
+  lazy val okpaymock = (Project(
+    id = "okpaymock",
+    base = file("coinffeine-okpaymock"),
+    settings = Defaults.defaultSettings ++ scalaxbSettings ++ CxfWsdl2JavaPlugin.cxf.settings ++ Seq(
+      sourceGenerators in Compile <+= wsdl2java in Compile,
+      wsdls := Seq(
+        Wsdl((resourceDirectory in Compile).value / "wsdl" / "Okpay.wsdl",
+          Seq("-p", "coinffeine.okpaymock", "-server", "-impl"),
+          "generated-sources-okpaymock"
+        )
+      )
+    ))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(model, peer, commonTest % "compile->compile;test->compile")
   )
 }
