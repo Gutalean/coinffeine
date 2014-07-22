@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
+import coinffeine.common.test.{IgnoredNetworkInterfaces, AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
@@ -70,7 +70,9 @@ class ProtoMessageGatewayTest
   }
 
   trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
-      with TestProtocolSerializationComponent with CoinffeineUnitTestNetwork.Component {
+      with TestProtocolSerializationComponent
+      with CoinffeineUnitTestNetwork.Component
+      with IgnoredNetworkInterfaces {
     val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
     val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)

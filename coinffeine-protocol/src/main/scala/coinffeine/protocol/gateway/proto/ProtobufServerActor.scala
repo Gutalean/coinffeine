@@ -1,14 +1,15 @@
 package coinffeine.protocol.gateway.proto
 
-import java.net.InetAddress
+import java.net.{InetAddress, NetworkInterface}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Random}
+import scala.util.{Failure, Random, Success}
 
-import akka.actor.{ActorRef, Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import net.tomp2p.connection.Bindings
 import net.tomp2p.futures.{FutureBootstrap, FutureDHT}
 import net.tomp2p.p2p.{Peer, PeerMaker}
-import net.tomp2p.peers.{PeerAddress, Number160}
+import net.tomp2p.peers.{Number160, PeerAddress}
 import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
@@ -17,7 +18,8 @@ import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-private class ProtobufServerActor extends Actor with ActorLogging {
+private class ProtobufServerActor(
+    ignoredNetworkInterfaces: Seq[NetworkInterface]) extends Actor with ActorLogging {
   import context.dispatcher
   import ProtobufServerActor._
 
@@ -47,8 +49,16 @@ private class ProtobufServerActor extends Actor with ActorLogging {
   }
 
   def initPeer(localPort: Int, listener: ActorRef): Unit = {
+    val bindings = new Bindings()
+    NetworkInterface.getNetworkInterfaces
+      .filterNot(ignoredNetworkInterfaces.contains)
+      .map(_.getName)
+      .foreach(iface => bindings.addInterface(iface))
+    val ifaces = bindings.getInterfaces.mkString(",")
+    log.info(s"Initiating a peer on port $localPort for interfaces $ifaces")
     me = new PeerMaker(Number160.createHash(Random.nextInt()))
       .setPorts(localPort)
+      .setBindings(bindings)
       .makeAndListen()
     me.setObjectDataReply(new ReplyHandler(listener))
   }
@@ -119,7 +129,8 @@ private class ProtobufServerActor extends Actor with ActorLogging {
 }
 
 private[gateway] object ProtobufServerActor {
-  val props: Props = Props[ProtobufServerActor]
+  def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
+    new ProtobufServerActor(ignoredNetworkInterfaces))
 
   /** Send a message to a peer */
   case class SendMessage(to: PeerId, msg: CoinffeineMessage)

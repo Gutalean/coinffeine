@@ -1,5 +1,6 @@
 package coinffeine.protocol.gateway.proto
 
+import java.net.NetworkInterface
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -15,13 +16,15 @@ import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
-private class ProtoMessageGateway(serialization: ProtocolSerialization)
+private class ProtoMessageGateway(serialization: ProtocolSerialization,
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
   extends Actor with ActorLogging {
 
   implicit private val timeout = Timeout(10.seconds)
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props, "subscriptions")
-  private val server = context.actorOf(ProtobufServerActor.props, "server")
+  private val server = context.actorOf(
+    ProtobufServerActor.props(ignoredNetworkInterfaces), "server")
 
   override def receive = waitingForInitialization orElse managingSubscriptions
 
@@ -70,8 +73,10 @@ object ProtoMessageGateway {
   case class ReceiveProtoMessage(message: proto.CoinffeineMessage, senderId: PeerId)
 
   trait Component extends MessageGateway.Component {
-    this: ProtocolSerializationComponent with NetworkComponent=>
+    this: ProtocolSerializationComponent with NetworkComponent =>
 
-    override lazy val messageGatewayProps = Props(new ProtoMessageGateway(protocolSerialization))
+    override lazy val messageGatewayProps = Props(
+      new ProtoMessageGateway(protocolSerialization, ignoredNetworkInterfaces))
+    def ignoredNetworkInterfaces: Seq[NetworkInterface]
   }
 }

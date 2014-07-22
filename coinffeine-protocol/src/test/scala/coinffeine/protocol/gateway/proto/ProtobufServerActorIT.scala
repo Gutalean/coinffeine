@@ -3,7 +3,7 @@ package coinffeine.protocol.gateway.proto
 import akka.actor.ActorRef
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import coinffeine.common.test.{AkkaSpec, DefaultTcpPortAllocator}
+import coinffeine.common.test.{IgnoredNetworkInterfaces, AkkaSpec, DefaultTcpPortAllocator}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
@@ -11,7 +11,7 @@ import coinffeine.protocol.gateway.proto.ProtobufServerActor.SendMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Payload, ProtocolVersion}
 
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
-  with Eventually with IntegrationPatience {
+  with Eventually with IntegrationPatience with IgnoredNetworkInterfaces {
 
   val msg = CoinffeineMessage.newBuilder()
     .setPayload(Payload.getDefaultInstance)
@@ -38,14 +38,14 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   }
 
   private def createBroker(port: Int): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props)
+    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
     peer ! Bind(port)
     val Bound(brokerId) = expectMsgType[Bound]
     (peer, brokerId)
   }
 
   private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props)
+    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
     peer ! Connect(port, connectTo)
     val Connected(_, brokerId) = expectMsgType[Connected]
     (peer, brokerId)
