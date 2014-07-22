@@ -9,6 +9,8 @@ import coinffeine.peer.payment.AnyPayment
 
 trait OkPayClient {
 
+  val accountId: AccountId
+
   def sendPayment[C <: FiatCurrency](to: AccountId, amount: CurrencyAmount[C],
                                      comment: String): Future[Payment[C]]
 

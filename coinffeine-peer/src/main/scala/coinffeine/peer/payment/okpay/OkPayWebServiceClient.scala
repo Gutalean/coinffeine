@@ -17,11 +17,11 @@ import coinffeine.peer.payment.okpay.generated._
 /** SOAP client of OKPay service.
   *
   * @constructor
-  * @param account              Account, also known as wallet ID in OKPay terms
+  * @param accountId            Account, also known as wallet ID in OKPay terms
   * @param tokenGenerator       Generator of valid request tokens
   * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
   */
-class OkPayWebServiceClient(account: String,
+class OkPayWebServiceClient(override val accountId: String,
                             tokenGenerator: TokenGenerator,
                             baseAddressOverride: Option[URI]) extends OkPayClient
   with BasicHttpBinding_I_OkPayAPIBindings
@@ -44,7 +44,7 @@ class OkPayWebServiceClient(account: String,
   override def sendPayment[C <: FiatCurrency](
       to: AccountId, amount: CurrencyAmount[C], comment: String): Future[Payment[C]] =
     service.send_Money(
-      walletID = Some(Some(account)),
+      walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken())),
       receiver = Some(Some(to)),
       currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
@@ -58,7 +58,7 @@ class OkPayWebServiceClient(account: String,
 
   override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
     service.transaction_Get(
-      walletID = Some(Some(account)),
+      walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken())),
       txnID = Some(paymentId.toLong),
       invoice = None
@@ -68,7 +68,7 @@ class OkPayWebServiceClient(account: String,
 
   override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
     service.wallet_Get_Balance(
-      walletID = Some(Some(account)),
+      walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken()))
     ).map { response =>
       (for {
@@ -124,7 +124,7 @@ class OkPayWebServiceClient(account: String,
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
 }
 
-private[okpay] object OkPayWebServiceClient {
+object OkPayWebServiceClient {
 
   val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 
