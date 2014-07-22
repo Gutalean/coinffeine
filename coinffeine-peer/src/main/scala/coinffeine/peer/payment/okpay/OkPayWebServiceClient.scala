@@ -103,11 +103,12 @@ class OkPayWebServiceClient(override val accountId: String,
           _,
           Flatten(WalletId(receiverId)),
           Flatten(WalletId(senderId)),
-          _) =>
+          statusOpt) =>
         val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
         val amount = currency.amount(net)
         val date = DateFormat.parseDateTime(rawDate)
-        Payment(paymentId.toString, senderId, receiverId, amount, date, description)
+        val isCompleted = statusOpt.getOrElse(NoneType) == Completed
+        Payment(paymentId.toString, senderId, receiverId, amount, date, description, isCompleted)
 
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }

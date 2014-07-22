@@ -10,5 +10,6 @@ case class Payment[+C <: FiatCurrency](
   receiverId: String,
   amount: CurrencyAmount[C],
   date: DateTime,
-  description: String
+  description: String,
+  completed: Boolean
 )

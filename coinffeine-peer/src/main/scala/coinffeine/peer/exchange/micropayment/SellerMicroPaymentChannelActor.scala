@@ -133,6 +133,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
           s"Payment $step is not coming from the buyer")
         require(payment.description == PaymentDescription(exchange.id, step),
           s"Payment $step does not have the required description")
+        require(payment.completed, s"Payment $step is not complete")
       }
     }
   }

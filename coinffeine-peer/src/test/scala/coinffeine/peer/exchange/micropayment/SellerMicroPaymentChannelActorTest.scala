@@ -58,7 +58,9 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     shouldForward(signatures) to counterpartConnection
   }
 
-  it should "not send the second step signature until payment proof has been provided" in {
+  it should "not send the second step signature until complete payment proof has been provided" in {
+    actor ! fromCounterpart(PaymentProof(exchange.id, "INCOMPLETE"))
+    expectPayment(firstStep, completed = false)
     gateway.expectNoMsg(100 milliseconds)
   }
 
@@ -92,7 +94,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     listener.expectMsg(ExchangeSuccess(None))
   }
 
-  private def expectPayment(step: IntermediateStep): Unit = {
+  private def expectPayment(step: IntermediateStep, completed: Boolean = true): Unit = {
     val FindPayment(paymentId) = paymentProcessor.expectMsgClass(classOf[FindPayment])
     paymentProcessor.reply(PaymentFound(Payment(
       id = paymentId,
@@ -100,7 +102,8 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
       receiverId = participants.seller.paymentProcessorAccount,
       description = PaymentDescription(exchange.id, step),
       amount = exchange.amounts.stepFiatAmount,
-      date = DateTime.now()
+      date = DateTime.now(),
+      completed = completed
     )))
   }
 }

@@ -64,7 +64,8 @@ class BuyerMicroPaymentChannelActorTest
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       paymentProcessor.expectMsgClass(classOf[PaymentProcessor.Pay[_]])
       paymentProcessor.reply(PaymentProcessor.Paid(
-        Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description")
+        Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
+          completed = true)
       ))
       shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartConnection
       gateway.expectNoMsg(100 milliseconds)
