@@ -25,6 +25,7 @@ object Build extends sbt.Build {
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.11.3"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
     lazy val h2 = "com.h2database" % "h2" % "1.3.175"
+    lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
     lazy val jcommander = "com.beust" % "jcommander" % "1.35"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
     lazy val jodaConvert = "org.joda" % "joda-convert" % "1.6"
@@ -103,7 +104,7 @@ object Build extends sbt.Build {
     settings = Defaults.defaultSettings ++ scalaxbSettings ++ CxfWsdl2JavaPlugin.cxf.settings ++ Seq(
       sourceGenerators in Compile <+= wsdl2java in Compile,
       wsdls := Seq(
-        Wsdl((resourceDirectory in Compile).value / "wsdl" / "Okpay.wsdl",
+        Wsdl((resourceDirectory in Compile).value / "okpay.wsdl",
           Seq("-p", "coinffeine.okpaymock", "-server", "-impl"),
           "generated-sources-okpaymock"
         )
