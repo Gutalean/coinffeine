@@ -5,7 +5,7 @@ import java.security.MessageDigest
 import org.joda.time.DateTime
 
 /** Generates crypto tokens based on current datetime */
-private[okpay] class TokenGenerator(seedToken: String) {
+class TokenGenerator(seedToken: String) {
 
   def build(currentTime: DateTime): String = {
     val date = currentTime.toString("yyyyMMdd")
