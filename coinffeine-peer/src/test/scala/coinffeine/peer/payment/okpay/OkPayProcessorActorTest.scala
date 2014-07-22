@@ -104,9 +104,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {
     given(client.currentBalance(Euro)).willReturn(Future.successful(100.EUR))
     override def pollingInterval = 1.second
-    eventChannelProbe.expectNoMsg(500.millis)
     eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
-    eventChannelProbe.expectNoMsg(500.millis)
     eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
   }
 }
