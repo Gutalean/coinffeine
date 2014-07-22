@@ -22,6 +22,7 @@ object Build extends sbt.Build {
     lazy val akkaTest = Seq(
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka
     )
+    lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.11.3"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
     lazy val h2 = "com.h2database" % "h2" % "1.3.175"
@@ -43,6 +44,7 @@ object Build extends sbt.Build {
     lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.7"
     lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
     lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+    lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.0.6"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
     lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
   }
