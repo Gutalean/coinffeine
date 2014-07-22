@@ -123,7 +123,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
       implicit val timeout = PaymentProcessor.RequestTimeout
       for {
         PaymentFound(payment) <- paymentProcessor
-          .ask(PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentFound[C]]
+          .ask(PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentFound]
       } yield {
         require(payment.amount == exchange.amounts.stepFiatAmount,
           s"Payment $step amount does not match expected amount")

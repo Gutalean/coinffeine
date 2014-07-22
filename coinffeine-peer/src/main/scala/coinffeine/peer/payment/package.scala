@@ -5,5 +5,5 @@ import coinffeine.model.payment.Payment
 
 package object payment {
 
-  type AnyPayment = Payment[_ <: FiatCurrency]
+  type AnyPayment = Payment[FiatCurrency]
 }
