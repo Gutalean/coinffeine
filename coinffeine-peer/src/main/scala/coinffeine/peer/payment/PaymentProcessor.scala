@@ -46,7 +46,7 @@ object PaymentProcessor {
   case class FindPayment(payment: PaymentId)
 
   /** A message sent by the payment processor to notify a found payment. */
-  case class PaymentFound[C <: FiatCurrency](payment: Payment[C])
+  case class PaymentFound(payment: Payment[FiatCurrency])
 
   /** A message sent by the payment processor to notify a not found payment. */
   case class PaymentNotFound(payment: PaymentId)

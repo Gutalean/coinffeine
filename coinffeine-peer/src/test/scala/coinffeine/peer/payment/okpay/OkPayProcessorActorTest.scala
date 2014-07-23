@@ -29,7 +29,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       receiverId = receiverAccount,
       amount = amount,
       date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
-      description = "comment"
+      description = "comment",
+      completed = true
     )
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
@@ -69,7 +70,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     processor ! PaymentProcessor.Pay(receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessor.Paid(Payment(
-        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
+        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
     }
   }
 
@@ -85,7 +86,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     processor ! PaymentProcessor.FindPayment(payment.id)
     expectMsgPF() {
       case PaymentProcessor.PaymentFound(Payment(
-      payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment")) =>
+        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
     }
   }
 
