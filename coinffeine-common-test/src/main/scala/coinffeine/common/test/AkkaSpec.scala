@@ -38,5 +38,5 @@ object AkkaSpec {
         |   akka.test.filter-leeway = 10s
         |}
       """.stripMargin
-    ))
+    ).withFallback(ConfigFactory.load()))
 }

@@ -1,22 +1,20 @@
-package coinffeine.peer.api.mock
+package coinffeine.peer.api.impl
 
-import java.util.UUID
-
-import coinffeine.model.bitcoin.{KeyPair, Address}
+import coinffeine.common.test.AkkaSpec
+import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.api._
 import coinffeine.peer.api.event.CoinffeineAppEvent
-import coinffeine.peer.payment.PaymentProcessor.Component
+import coinffeine.peer.api.mock.MockCoinffeineNetwork
+import coinffeine.peer.payment.MockPaymentProcessorFactory
 
-class MockCoinffeineApp extends CoinffeineApp {
+class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
-  private val peerId = PeerId(s"test-user:${UUID.randomUUID()}")
   private var handlers: Set[EventHandler] = Set.empty
 
-  override val network = new MockCoinffeineNetwork(peerId)
+  override val network = new MockCoinffeineNetwork
 
   override def wallet: CoinffeineWallet = new CoinffeineWallet {
     override def currentBalance() = 56.323523.BTC
@@ -40,4 +38,8 @@ class MockCoinffeineApp extends CoinffeineApp {
   def produceEvent(event: CoinffeineAppEvent): Unit = {
     for (h <- handlers if h.isDefinedAt(event)) { h(event) }
   }
+}
+
+object MockCoinffeineApp {
+  val paymentProcessorFactory = new MockPaymentProcessorFactory
 }

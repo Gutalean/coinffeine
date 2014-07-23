@@ -24,10 +24,9 @@ private[serialization] class DefaultProtocolSerialization(
   private val mappings = new DefaultProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: PublicMessage, id: PeerId): proto.CoinffeineMessage =
+  override def toProtobuf(message: PublicMessage): proto.CoinffeineMessage =
     proto.CoinffeineMessage.newBuilder()
       .setVersion(protoVersion)
-      .setPeerId(id.value)
       .setPayload(toPayload(message)).build()
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
@@ -68,9 +67,9 @@ private[serialization] class DefaultProtocolSerialization(
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): (PublicMessage, PeerId) = {
+  override def fromProtobuf(message: proto.CoinffeineMessage): PublicMessage = {
     requireSameVersion(message.getVersion)
-    fromPayload(message.getPayload) -> PeerId(message.getPeerId)
+    fromPayload(message.getPayload)
   }
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {

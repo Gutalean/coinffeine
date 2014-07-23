@@ -9,7 +9,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
-class MockCoinffeineNetwork(override val peerId: PeerId) extends CoinffeineNetwork {
+class MockCoinffeineNetwork extends CoinffeineNetwork {
 
   private var _orders: Set[Order[FiatCurrency]] = Set.empty
 

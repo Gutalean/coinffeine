@@ -10,7 +10,7 @@ import scoverage.ScoverageSbtPlugin
 object Build extends sbt.Build {
 
   object Versions {
-    val akka = "2.3.3"
+    val akka = "2.3.4"
     val dispatch = "0.11.1"
   }
 
@@ -35,7 +35,6 @@ object Build extends sbt.Build {
     lazy val mockito = "org.mockito" % "mockito-all" % "1.9.5"
     lazy val netty = "io.netty" % "netty-all" % "4.0.19.Final"
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
-    lazy val protobufRpc = "com.googlecode.protobuf-rpc-pro" % "protobuf-rpc-pro-duplex" % "3.0.8"
     lazy val reflections = "org.reflections" % "reflections" % "0.9.9-RC1"
     lazy val scalafx = Seq(
       "org.scalafx" %% "scalafx" % "8.0.0-R4",
@@ -46,6 +45,7 @@ object Build extends sbt.Build {
     lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
     lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.0.6"
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
+    lazy val tomp2p = "net.tomp2p" % "TomP2P" % "4.4"
     lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
   }
 

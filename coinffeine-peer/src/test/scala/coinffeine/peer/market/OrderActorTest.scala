@@ -35,7 +35,7 @@ class OrderActorTest extends AkkaSpec {
     eventChannelProbe.expectMsg(OrderSubmittedEvent(inMarketOrder))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsgPF() {
-      case OrderUpdatedEvent(Order(_, _, _, CancelledOrder(_), _, _, _)) =>
+      case OrderUpdatedEvent(Order(_, _, CancelledOrder(_), _, _, _)) =>
     }
   }
 
@@ -52,14 +52,14 @@ class OrderActorTest extends AkkaSpec {
     }
     exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
       id = exchangeId,
-      peerIds = Both(counterpart, order.owner),
+      peerIds = Both(counterpart, PeerId("me")),
       parameters = Exchange.Parameters(10, network),
       brokerId,
       amounts = Exchange.Amounts[FiatCurrency](
         order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10))
     )))
     eventChannelProbe.fishForMessage() {
-      case OrderUpdatedEvent(Order(_, _, _, CompletedOrder, _, _, _)) => true
+      case OrderUpdatedEvent(Order(_, _, CompletedOrder, _, _, _)) => true
       case _ => false
     }
   }
@@ -70,7 +70,7 @@ class OrderActorTest extends AkkaSpec {
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
-    val order = Order(PeerId("peer"), Ask, 5.BTC, 500.EUR)
+    val order = Order(Ask, 5.BTC, 500.EUR)
     val inMarketOrder = order.withStatus(InMarketOrder)
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,

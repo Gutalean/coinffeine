@@ -8,29 +8,25 @@ import akka.util.Timeout
 
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
-import coinffeine.protocol.gateway.MessageGateway.{Bind, BindingError, BoundTo}
-import coinffeine.protocol.gateway.{MessageGateway, PeerConnection}
+import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.MessageGateway.{ConnectingError, BindingError, BrokerAddress}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(ownId: PeerId,
-                          listenAddress: PeerConnection,
-                          brokerId: PeerId,
-                          brokerAddress: PeerConnection,
+class CoinffeinePeerActor(listenPort: Int,
+                          brokerAddress: BrokerAddress,
                           props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging {
-
-  import coinffeine.peer.CoinffeinePeerActor._
   import context.dispatcher
+  import CoinffeinePeerActor._
 
   private val eventChannel = spawnDelegate(props.eventChannel, "eventChannel")
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
@@ -38,25 +34,31 @@ class CoinffeinePeerActor(ownId: PeerId,
     props.paymentProcessor, "paymentProcessor", PaymentProcessor.Initialize(eventChannel))
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private val walletRef = spawnDelegate(props.wallet, "wallet", WalletActor.Initialize(eventChannel))
-  private val orderSupervisorRef =
-    spawnDelegate(props.orderSupervisor, "orders", OrderSupervisor.Initialize(brokerId,
-      eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
-  private val marketInfoRef =
-    spawnDelegate(props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
+  private var orderSupervisorRef: ActorRef = _
+  private var marketInfoRef: ActorRef = _
 
   override def receive: Receive = {
 
     case CoinffeinePeerActor.Connect =>
       implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-      (gatewayRef ? Bind(ownId, listenAddress, brokerId, brokerAddress)).map {
-        case BoundTo(_) => CoinffeinePeerActor.Connected
-        case BindingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
+      (gatewayRef ? MessageGateway.Connect(listenPort, brokerAddress)).map {
+        case MessageGateway.Connected(_, brokerId) =>
+          orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
+            OrderSupervisor.Initialize(
+              brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
+          marketInfoRef = spawnDelegate(
+            props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
+          context.become(handleMessages)
+          CoinffeinePeerActor.Connected
+        case ConnectingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
 
     case BindingError(cause) =>
       log.error(cause, "Cannot start peer")
       context.stop(self)
+  }
 
+  private val handleMessages: Receive = {
     case message @ (CoinffeinePeerActor.Subscribe | CoinffeinePeerActor.Unsubscribe) =>
       eventChannel forward message
     case message @ (OpenOrder(_) | CancelOrder(_) | RetrieveOpenOrders) =>
@@ -126,11 +128,9 @@ object CoinffeinePeerActor {
   /** Response for [[RetrieveWalletBalance]] */
   case class WalletBalance(amount: BitcoinAmount)
 
-  private val IdSetting = "coinffeine.peer.id"
-  private val HostSetting = "coinffeine.peer.host"
   private val PortSetting = "coinffeine.peer.port"
-  private val BrokerIdSetting = "coinffeine.broker.id"
-  private val BrokerAddressSetting = "coinffeine.broker.address"
+  private val BrokerHostnameSetting = "coinffeine.broker.hostname"
+  private val BrokerPortSetting = "coinffeine.broker.port"
 
   private val ConnectionTimeout = Timeout(10.seconds)
 
@@ -151,10 +151,9 @@ object CoinffeinePeerActor {
     with ConfigComponent =>
 
     lazy val peerProps: Props = {
-      val ownId = PeerId(config.getString(IdSetting))
-      val ownAddress = PeerConnection(config.getString(HostSetting), config.getInt(PortSetting))
-      val brokerId = PeerId(config.getString(BrokerIdSetting))
-      val brokerAddress = PeerConnection.parse(config.getString(BrokerAddressSetting))
+      val ownPort = config.getInt(PortSetting)
+      val brokerHostname = config.getString(BrokerHostnameSetting)
+      val brokerPort= config.getInt(BrokerPortSetting)
       val props = PropsCatalogue(
         EventChannelActor.props(),
         messageGatewayProps,
@@ -164,7 +163,7 @@ object CoinffeinePeerActor {
         walletActorProps,
         paymentProcessorProps
       )
-      Props(new CoinffeinePeerActor(ownId, ownAddress, brokerId, brokerAddress, props))
+      Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
     }
   }
 }
