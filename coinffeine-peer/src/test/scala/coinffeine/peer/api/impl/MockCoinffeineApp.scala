@@ -27,10 +27,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
   override def marketStats: MarketStats = ???
 
-  private val paymentProcessorActor = system.actorOf(
-    MockCoinffeineApp.paymentProcessorFactory.newProcessor("MyFiatAddress", Seq(10000 EUR)))
-  override def paymentProcessor: CoinffeinePaymentProcessor =
-    new DefaultCoinffeinePaymentProcessor(paymentProcessorActor)
+  override def paymentProcessor: CoinffeinePaymentProcessor = ???
 
   override def close(): Unit = ???
 
