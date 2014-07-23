@@ -82,8 +82,4 @@ object MarketInfoActor {
 
   /** The sender of this message will receive an [[OpenOrders]] in response */
   case class RequestOpenOrders(market: Market[FiatCurrency]) extends InfoRequest
-
-  trait Component {
-    lazy val marketInfoProps: Props = props
-  }
 }

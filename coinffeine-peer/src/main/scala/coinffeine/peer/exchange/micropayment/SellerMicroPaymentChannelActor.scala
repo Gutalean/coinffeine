@@ -13,8 +13,8 @@ import coinffeine.peer.exchange.micropayment.SellerMicroPaymentChannelActor.Paym
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.exchange.util.MessageForwarding
-import coinffeine.peer.payment.PaymentProcessor
-import coinffeine.peer.payment.PaymentProcessor.PaymentFound
+import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.exchange._
 
@@ -120,10 +120,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     }
 
     private def validatePayment(step: IntermediateStep, paymentId: String): Future[Unit] = {
-      implicit val timeout = PaymentProcessor.RequestTimeout
+      implicit val timeout = PaymentProcessorActor.RequestTimeout
       for {
         PaymentFound(payment) <- paymentProcessor
-          .ask(PaymentProcessor.FindPayment(paymentId)).mapTo[PaymentFound]
+          .ask(PaymentProcessorActor.FindPayment(paymentId)).mapTo[PaymentFound]
       } yield {
         require(payment.amount == exchange.amounts.stepFiatAmount,
           s"Payment $step amount does not match expected amount")

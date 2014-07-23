@@ -11,7 +11,7 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.CurrencyAmount
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
-import coinffeine.peer.payment.PaymentProcessor.{BalanceRetrieved, RetrieveBalance}
+import coinffeine.peer.payment.PaymentProcessorActor.{BalanceRetrieved, RetrieveBalance}
 
 private[impl] class DefaultCoinffeinePaymentProcessor(override val accountId: AccountId,
                                                       override val peer: ActorRef)

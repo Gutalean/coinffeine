@@ -18,7 +18,7 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.peer.payment.PaymentProcessor.{FindPayment, PaymentFound}
+import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, PaymentFound}
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import coinffeine.protocol.messages.exchange._

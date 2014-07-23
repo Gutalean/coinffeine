@@ -5,7 +5,7 @@ import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 
 import coinffeine.model.bitcoin.{BlockchainComponent, NetworkComponent}
 
-trait MockBlockchainComponent extends BlockchainActor.Component with BlockchainComponent {
+trait MockBlockchainComponent extends BlockchainComponent {
 
   this: NetworkComponent =>
 

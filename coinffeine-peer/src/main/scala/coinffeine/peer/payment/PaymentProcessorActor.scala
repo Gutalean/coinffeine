@@ -9,7 +9,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 
-object PaymentProcessor {
+object PaymentProcessorActor {
 
   /** Initialize the payment processor actor */
   case class Initialize(eventChannel: ActorRef)
@@ -71,11 +71,4 @@ object PaymentProcessor {
 
   /** Payment processor requests should be considered to have failed after this period */
   val RequestTimeout = Timeout(5.seconds)
-
-  /** A component able to provide the Akka properties needed to instantiate a new
-    * Payment processor actor.
-    */
-  trait Component {
-    def paymentProcessorProps: Props
-  }
 }
