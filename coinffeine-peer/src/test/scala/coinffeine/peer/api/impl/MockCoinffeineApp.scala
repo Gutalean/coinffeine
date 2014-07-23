@@ -4,7 +4,6 @@ import coinffeine.common.test.AkkaSpec
 import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
-import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.api._
 import coinffeine.peer.api.event.CoinffeineAppEvent
 import coinffeine.peer.api.mock.MockCoinffeineNetwork
@@ -22,8 +21,6 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def importPrivateKey(address: Address, key: KeyPair) = ???
     override def depositAddress = ???
   }
-
-  override def protocolConstants: ProtocolConstants = ???
 
   override def marketStats: MarketStats = ???
 

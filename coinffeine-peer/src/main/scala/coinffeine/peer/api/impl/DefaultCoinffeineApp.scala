@@ -2,18 +2,15 @@ package coinffeine.peer.api.impl
 
 import akka.actor.{ActorSystem, Props}
 
-import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
+import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
-import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(accountId: PaymentProcessor.AccountId,
-                           peerProps: Props,
-                           override val protocolConstants: ProtocolConstants)
-  extends CoinffeineApp {
+                           peerProps: Props) extends CoinffeineApp {
 
   private val system = ActorSystem()
   private val peerRef = system.actorOf(peerProps, "peer")
@@ -36,10 +33,10 @@ class DefaultCoinffeineApp(accountId: PaymentProcessor.AccountId,
 
 object DefaultCoinffeineApp {
   trait Component extends CoinffeineAppComponent {
-    this: CoinffeinePeerActor.Component with ProtocolConstants.Component with ConfigComponent =>
+    this: CoinffeinePeerActor.Component with ConfigComponent =>
 
     private val accountId = config.getString("coinffeine.okpay.id")
 
-    override lazy val app = new DefaultCoinffeineApp(accountId, peerProps, protocolConstants)
+    override lazy val app = new DefaultCoinffeineApp(accountId, peerProps)
   }
 }

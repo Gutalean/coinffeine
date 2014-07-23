@@ -14,7 +14,6 @@ trait CoinffeineApp extends Closeable {
   def wallet: CoinffeineWallet
   def paymentProcessor: CoinffeinePaymentProcessor
   def marketStats: MarketStats
-  def protocolConstants: ProtocolConstants
 
   def observe(handler: EventHandler): Unit
 }
