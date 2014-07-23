@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.{ExchangeId, Exchange}
 import coinffeine.model.network.PeerId
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
@@ -26,13 +26,14 @@ case class Order[+C <: FiatCurrency](
     status: OrderStatus,
     amount: BitcoinAmount,
     price: CurrencyAmount[C],
-    exchanges: Seq[Exchange[C]]) {
+    exchanges: Map[ExchangeId, Exchange[C]]) {
 
   /** Create a new copy of this order with the given status. */
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
 
-  /** Add a new exchange to this order. */
-  def add[C1 >: C <: FiatCurrency](exchange: Exchange[C1]): Order[C1] = copy(exchanges = exchanges :+ exchange)
+  /** Create a new copy of this order with the given exchange. */
+  def withExchange[C1 >: C <: FiatCurrency](exchange: Exchange[C1]): Order[C1] =
+    copy(exchanges = exchanges + (exchange.id -> exchange))
 
   /** Retrieve the total amount of bitcoins that were already transferred.
     *
@@ -61,7 +62,7 @@ case class Order[+C <: FiatCurrency](
 
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
-    exchanges.map(f).reduceOption(_ + _).getOrElse(zero)
+    exchanges.values.map(f).reduceOption(_ + _).getOrElse(zero)
 
 }
 
@@ -72,7 +73,7 @@ object Order {
                                orderType: OrderType,
                                amount: BitcoinAmount,
                                price: CurrencyAmount[C]): Order[C] =
-    Order(id, owner, orderType, status = OfflineOrder, amount, price, exchanges = Seq.empty)
+    Order(id, owner, orderType, status = OfflineOrder, amount, price, exchanges = Map.empty)
 
   def apply[C <: FiatCurrency](owner: PeerId,
                                orderType: OrderType,

@@ -5,8 +5,10 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.exchange.{Exchange, Both, CompletedExchange, ExchangeId}
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
@@ -38,15 +40,24 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
+    val exchangeId = ExchangeId.random()
+    val counterpart = PeerId("counterpart")
     val orderMatch = OrderMatch(
-      order.id, ExchangeId.random(), order.amount, order.price, lockTime = 400000L, PeerId("counterpart"))
+      order.id, exchangeId, order.amount, order.price, lockTime = 400000L, counterpart)
     gatewayProbe.relayMessage(orderMatch, brokerId)
     actor ! orderMatch
     submissionProbe.fishForMessage() {
       case StopSubmitting(order.`id`) => true
       case _ => false
     }
-    exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(null)) // TODO: use a CompletedExchange
+    exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
+      id = exchangeId,
+      peerIds = Both(counterpart, order.owner),
+      parameters = Exchange.Parameters(10, network),
+      brokerId,
+      amounts = Exchange.Amounts[FiatCurrency](
+        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10))
+    )))
     eventChannelProbe.fishForMessage() {
       case OrderUpdatedEvent(Order(_, _, _, CompletedOrder, _, _, _)) => true
       case _ => false
