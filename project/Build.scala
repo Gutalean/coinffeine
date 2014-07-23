@@ -97,7 +97,7 @@ object Build extends sbt.Build {
   )
 
   lazy val test = (Project(id = "test", base = file("coinffeine-test"))
-    dependsOn(peer, server, commonTest % "compile->compile;test->compile")
+    dependsOn(peer, server, okpaymock, commonTest % "compile->compile;test->compile")
   )
 
   lazy val okpaymock = (Project(
