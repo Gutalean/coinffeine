@@ -5,10 +5,16 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{5} - %msg%n</pattern>
         </encoder>
     </appender>
-    <logger name="com.lordofthejars.foo" level="INFO" additivity="false">
+
+    <logger name="coinffeine" level="DEBUG"/>
+
+    <logger name="com.google.bitcoin" level="ERROR"/>
+    <logger name="org.bitcoin" level="ERROR"/>
+    <logger name="org.bitcoinj" level="ERROR"/>
+
+    <logger name="com.googlecode.protobuf" level="ERROR"/>
+
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
-    </logger>
-    <root level="DEBUG">          
-        <appender-ref ref="STDOUT" />
-    </root>  
+    </root>
 </configuration>
