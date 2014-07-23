@@ -9,10 +9,12 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessor.{BalanceRetrieved, RetrieveBalance}
 
-private[impl] class DefaultCoinffeinePaymentProcessor(override val peer: ActorRef)
+private[impl] class DefaultCoinffeinePaymentProcessor(override val accountId: AccountId,
+                                                      override val peer: ActorRef)
   extends CoinffeinePaymentProcessor with PeerActorWrapper {
 
   override def currentBalance(): Option[CurrencyAmount[Euro.type]] =
