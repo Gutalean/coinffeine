@@ -3,10 +3,11 @@ package coinffeine.peer.payment.okpay
 import java.net.URI
 import java.util.{Currency => JavaCurrency}
 import scala.concurrent.Future
-import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync}
+import scalaxb.{Soap11Fault, DispatchHttpClientsAsync, Soap11ClientsAsync}
 
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
+import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
@@ -64,6 +65,8 @@ class OkPayWebServiceClient(override val accountId: String,
       invoice = None
     ).map { result =>
       result.Transaction_GetResult.flatten.map(parsePayment)
+    }.recover {
+      case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
     }
 
   override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
@@ -128,6 +131,8 @@ class OkPayWebServiceClient(override val accountId: String,
 object OkPayWebServiceClient {
 
   val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
+
+  private val TransactionNotFoundFault = "Transaction_Not_Found"
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten
