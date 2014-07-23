@@ -1,7 +1,6 @@
 package coinffeine.protocol.serialization
 
 import java.math.BigDecimal
-import java.util.Currency
 import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
@@ -82,8 +81,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val fiatAmountMapping = new ProtoMapping[CurrencyAmount[FiatCurrency], msg.FiatAmount] {
 
     override def fromProtobuf(amount: msg.FiatAmount): CurrencyAmount[FiatCurrency] =
-      FiatCurrency(Currency.getInstance(amount.getCurrency)).amount(
-        BigDecimal.valueOf(amount.getValue, amount.getScale))
+      FiatAmount(BigDecimal.valueOf(amount.getValue, amount.getScale), amount.getCurrency)
 
     override def toProtobuf(amount: CurrencyAmount[FiatCurrency]): msg.FiatAmount =
       msg.FiatAmount.newBuilder
@@ -107,7 +105,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val marketMapping = new ProtoMapping[Market[FiatCurrency], msg.Market] {
 
     override def fromProtobuf(market: msg.Market): Market[FiatCurrency] =
-      Market(FiatCurrency(Currency.getInstance(market.getCurrency)))
+      Market(FiatCurrency(market.getCurrency))
 
     override def toProtobuf(market: Market[FiatCurrency]): msg.Market = msg.Market.newBuilder
       .setCurrency(market.currency.javaCurrency.getCurrencyCode)

@@ -1,17 +1,16 @@
 package coinffeine.peer.payment.okpay
 
 import java.net.URI
-import java.util.{Currency => JavaCurrency}
 import scala.concurrent.Future
-import scalaxb.{Soap11Fault, DispatchHttpClientsAsync, Soap11ClientsAsync}
+import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync, Soap11Fault}
 
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import soapenvelope11.Fault
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
-import coinffeine.model.payment.PaymentProcessor.{PaymentId, AccountId}
+import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.generated._
 
@@ -107,8 +106,7 @@ class OkPayWebServiceClient(override val accountId: String,
           Flatten(WalletId(receiverId)),
           Flatten(WalletId(senderId)),
           statusOpt) =>
-        val currency = FiatCurrency(JavaCurrency.getInstance(txInfo.Currency.get.get))
-        val amount = currency.amount(net)
+        val amount = FiatAmount(net, txInfo.Currency.get.get)
         val date = DateFormat.parseDateTime(rawDate)
         val isCompleted = statusOpt.getOrElse(NoneType) == Completed
         Payment(paymentId.toString, senderId, receiverId, amount, date, description, isCompleted)
