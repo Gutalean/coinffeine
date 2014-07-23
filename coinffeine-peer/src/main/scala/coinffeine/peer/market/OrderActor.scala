@@ -103,7 +103,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
-      currentOrder = currentOrder.copy(exchanges = Seq(exchange))
+      currentOrder = currentOrder.withExchange(exchange)
       produceEvent(OrderUpdatedEvent(currentOrder))
     }
   }
