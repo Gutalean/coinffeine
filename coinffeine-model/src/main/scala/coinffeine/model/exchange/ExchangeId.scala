@@ -4,7 +4,7 @@ import java.util.UUID
 
 /** An identifier for a exchange. */
 case class ExchangeId(value: String) {
-  override def toString = s"exchange:$value"
+  override def toString = s"exchange $value"
 }
 
 object ExchangeId {

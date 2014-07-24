@@ -1,6 +1,6 @@
 package coinffeine.peer.market
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{ActorLogging, Actor, ActorRef, Props}
 import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
@@ -18,7 +18,7 @@ import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermediateSteps: Int)
-  extends Actor {
+  extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case init: Initialize =>
@@ -35,6 +35,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     private var currentOrder = init.order
 
     def start(): Unit = {
+      log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
       messageGateway ! MessageGateway.Subscribe {
         case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) =>
           orderMatch.orderId == currentOrder.id
@@ -54,24 +55,30 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
 
     private val manageOrder: Receive = {
       case CancelOrder =>
+        log.info(s"Order actor requested to cancel order ${currentOrder.id}")
         // TODO: determine the cancellation reason
         currentOrder = currentOrder.withStatus(CancelledOrder("unknown reason"))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
         produceEvent(OrderUpdatedEvent(currentOrder))
 
       case RetrieveStatus =>
+        log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
         sender() ! currentOrder
 
-      case orderMatch: OrderMatch =>
+      case ReceiveMessage(orderMatch: OrderMatch, _) =>
+        log.info(s"Order actor received a match for ${currentOrder.id} " +
+          s"with exchange ${orderMatch.exchangeId} and counterpart ${orderMatch.counterpart}")
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         val newExchange = buildExchange(orderMatch)
         spawnExchange(newExchange)
         updateExchangeInOrder(newExchange)
 
       case ExchangeActor.ExchangeProgress(exchange) =>
+        log.debug(s"Order actor received progress for exchange ${exchange.id}: ${exchange.progress}")
         updateExchangeInOrder(exchange)
 
       case ExchangeActor.ExchangeSuccess(exchange) =>
+        log.debug(s"Order actor received success for exchange ${exchange.id}")
         currentOrder = currentOrder.withStatus(CompletedOrder)
         updateExchangeInOrder(exchange)
     }

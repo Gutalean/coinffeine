@@ -45,7 +45,6 @@ class OrderActorTest extends AkkaSpec {
     val orderMatch = OrderMatch(
       order.id, exchangeId, order.amount, order.price, lockTime = 400000L, counterpart)
     gatewayProbe.relayMessage(orderMatch, brokerId)
-    actor ! orderMatch
     submissionProbe.fishForMessage() {
       case StopSubmitting(order.`id`) => true
       case _ => false
