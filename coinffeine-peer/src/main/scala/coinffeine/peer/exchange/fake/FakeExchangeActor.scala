@@ -31,7 +31,7 @@ class FakeExchangeActor extends Actor with ActorLogging {
     def handlingStep(step: Int): Receive = {
       case ReceiveTimeout if step == exchange.amounts.breakdown.totalSteps =>
         logEvent(s"Exchange finished successfully")
-        listener ! ExchangeActor.ExchangeSuccess
+        listener ! ExchangeActor.ExchangeSuccess(exchangeAtStep(exchange.amounts.breakdown.totalSteps))
         context.become(finished)
 
       case ReceiveTimeout =>
@@ -45,17 +45,19 @@ class FakeExchangeActor extends Actor with ActorLogging {
     }
 
     private def reportProgress(step: Int): Unit = {
-      listener ! ExchangeActor.ExchangeProgress(new Exchange[FiatCurrency] {
-        override val id = exchange.id
-        override val peerIds = exchange.peerIds
-        override val parameters = exchange.parameters
-        override val brokerId = exchange.brokerId
-        override val amounts = exchange.amounts
-        override val progress = Progress[FiatCurrency](
-          bitcoinsTransferred = exchange.amounts.stepBitcoinAmount * step,
-          fiatTransferred = exchange.amounts.stepFiatAmount * step
-        )
-      })
+      listener ! ExchangeActor.ExchangeProgress(exchangeAtStep(step))
+    }
+
+    private def exchangeAtStep(step: Int) = new Exchange[FiatCurrency] {
+      override val id = exchange.id
+      override val peerIds = exchange.peerIds
+      override val parameters = exchange.parameters
+      override val brokerId = exchange.brokerId
+      override val amounts = exchange.amounts
+      override val progress = Progress[FiatCurrency](
+        bitcoinsTransferred = exchange.amounts.stepBitcoinAmount * step,
+        fiatTransferred = exchange.amounts.stepFiatAmount * step
+      )
     }
 
     private def logEvent(message: String): Unit = {
