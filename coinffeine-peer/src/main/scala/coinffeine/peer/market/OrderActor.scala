@@ -65,7 +65,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
         sender() ! currentOrder
 
-      case orderMatch: OrderMatch =>
+      case ReceiveMessage(orderMatch: OrderMatch, _) =>
         log.info(s"Order actor received a match for ${currentOrder.id} " +
           s"with exchange ${orderMatch.exchangeId} and counterpart ${orderMatch.counterpart}")
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
