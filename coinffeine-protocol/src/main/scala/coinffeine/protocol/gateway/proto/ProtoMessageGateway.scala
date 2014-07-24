@@ -73,10 +73,13 @@ object ProtoMessageGateway {
   case class ReceiveProtoMessage(message: proto.CoinffeineMessage, senderId: PeerId)
 
   trait Component extends MessageGateway.Component {
-    this: ProtocolSerializationComponent with NetworkComponent =>
+    this: ProtocolSerializationComponent with NetworkComponent=>
 
-    override lazy val messageGatewayProps = Props(
-      new ProtoMessageGateway(protocolSerialization, ignoredNetworkInterfaces))
-    def ignoredNetworkInterfaces: Seq[NetworkInterface]
+    override def messageGatewayProps(ignoredNetworkInterfaceNames: Seq[String] = Seq.empty) = Props(
+      new ProtoMessageGateway(protocolSerialization,
+        networkInterfaces(ignoredNetworkInterfaceNames)))
+
+    private def networkInterfaces(interfaceNames: Seq[String]): Seq[NetworkInterface] =
+      interfaceNames.flatMap(iface => Option(NetworkInterface.getByName(iface))).toSeq
   }
 }
