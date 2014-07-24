@@ -4,7 +4,6 @@ import scalafx.beans.property.{DoubleProperty, ObjectProperty}
 
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId, OrderStatus, OrderType}
-import coinffeine.model.network.PeerId
 
 class OrderProperties(order: Order[FiatCurrency]) {
   val idProperty = new ObjectProperty[OrderId](this, "id", order.id)
