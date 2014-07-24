@@ -54,6 +54,6 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-    def messageGatewayProps: Props
+    def messageGatewayProps(ignoredNetworkInterfaces: Seq[String]): Props
   }
 }

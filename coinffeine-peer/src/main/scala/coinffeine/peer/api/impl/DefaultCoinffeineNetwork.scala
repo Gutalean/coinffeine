@@ -2,15 +2,16 @@ package coinffeine.peer.api.impl
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor.ActorRef
 import akka.pattern._
+import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import coinffeine.peer.api.CoinffeineNetwork
@@ -29,6 +30,7 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     * a port with a duplex RPC server.
     */
   override def connect(): Future[Connected.type] = {
+    implicit val timeout = Timeout(DefaultCoinffeineNetwork.ConnectionTimeout)
     _status = Connecting
     val bindResult = (peer ? CoinffeinePeerActor.Connect).flatMap {
       case CoinffeinePeerActor.Connected => Future.successful(Connected)
@@ -56,4 +58,8 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   override def cancelOrder(order: OrderId): Unit = {
     peer ! CancelOrder(order)
   }
+}
+
+object DefaultCoinffeineNetwork {
+  val ConnectionTimeout = 30.seconds
 }
