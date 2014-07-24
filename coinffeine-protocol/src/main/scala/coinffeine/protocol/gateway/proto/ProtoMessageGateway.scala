@@ -75,11 +75,7 @@ object ProtoMessageGateway {
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with NetworkComponent=>
 
-    override def messageGatewayProps(ignoredNetworkInterfaceNames: Seq[String] = Seq.empty) = Props(
-      new ProtoMessageGateway(protocolSerialization,
-        networkInterfaces(ignoredNetworkInterfaceNames)))
-
-    private def networkInterfaces(interfaceNames: Seq[String]): Seq[NetworkInterface] =
-      interfaceNames.flatMap(iface => Option(NetworkInterface.getByName(iface))).toSeq
+    override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface]) = Props(
+      new ProtoMessageGateway(protocolSerialization, ignoredNetworkInterfaces))
   }
 }

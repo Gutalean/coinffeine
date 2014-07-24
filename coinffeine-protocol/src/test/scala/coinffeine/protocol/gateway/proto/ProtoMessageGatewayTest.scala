@@ -62,7 +62,7 @@ class ProtoMessageGatewayTest
   }
 
   it must "report connect failures" in new FreshBrokerAndPeer {
-    val ref = system.actorOf(messageGatewayProps())
+    val ref = createMessageGateway()
     ref ! Connect(
       localPort = DefaultTcpPortAllocator.allocatePort(),
       connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
@@ -77,9 +77,11 @@ class ProtoMessageGatewayTest
     val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
+    def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
+
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
-      val ref = system.actorOf(messageGatewayProps())
+      val ref = createMessageGateway()
       ref ! Connect(localPort, connectTo)
       val Connected(_, _) = expectMsgType[Connected](5 seconds)
       val probe = TestProbe()
@@ -88,7 +90,7 @@ class ProtoMessageGatewayTest
     }
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
-      val ref = system.actorOf(messageGatewayProps())
+      val ref = createMessageGateway()
       ref ! Bind(localPort)
       val Bound(brokerId) = expectMsgType[Bound](5 seconds)
       val probe = TestProbe()

@@ -1,6 +1,10 @@
 package coinffeine.protocol.gateway
 
+import scala.collection.JavaConversions._
+import java.net.NetworkInterface
+
 import akka.actor.Props
+import com.typesafe.config.{ConfigException, Config}
 
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage
@@ -54,6 +58,17 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-    def messageGatewayProps(ignoredNetworkInterfaces: Seq[String]): Props
+
+    def messageGatewayProps(config: Config): Props =
+      messageGatewayProps(ignoredNetworkInterfaces(config))
+
+    def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props
+
+    private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
+      config.getStringList("coinffeine.peer.ifaces.ignore")
+        .flatMap(name => Option(NetworkInterface.getByName(name)))
+    } catch {
+      case _: ConfigException.Missing => Seq.empty
+    }
   }
 }
