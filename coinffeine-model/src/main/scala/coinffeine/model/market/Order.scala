@@ -2,8 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{ExchangeId, Exchange}
-import coinffeine.model.network.PeerId
+import coinffeine.model.exchange.{Exchange, ExchangeId}
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
   * the Coinffeine market.
@@ -60,7 +59,7 @@ case class Order[+C <: FiatCurrency](
 
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
-    exchanges.values.map(f).reduceOption(_ + _).getOrElse(zero)
+    exchanges.values.map(f).foldLeft(zero)(_ + _)
 
 }
 
