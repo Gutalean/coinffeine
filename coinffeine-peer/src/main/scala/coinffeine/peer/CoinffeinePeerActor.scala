@@ -1,12 +1,10 @@
 package coinffeine.peer
 
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
-import com.typesafe.config.ConfigException
 
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
@@ -161,7 +159,7 @@ object CoinffeinePeerActor {
       val brokerPort= config.getInt(BrokerPortSetting)
       val props = PropsCatalogue(
         EventChannelActor.props(),
-        messageGatewayProps(ignoredNetworkInterfaces),
+        messageGatewayProps(config),
         MarketInfoActor.props,
         OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants),
         bitcoinPeerProps,
@@ -169,12 +167,6 @@ object CoinffeinePeerActor {
         OkPayProcessorActor.props(config)
       )
       Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
-    }
-
-    private def ignoredNetworkInterfaces: Seq[String] = try {
-      config.getStringList("coinffeine.peer.ifaces.ignore")
-    } catch {
-      case _: ConfigException.Missing => Seq.empty
     }
   }
 }

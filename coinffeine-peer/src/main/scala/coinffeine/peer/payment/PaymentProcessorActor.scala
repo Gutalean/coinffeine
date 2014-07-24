@@ -59,15 +59,19 @@ object PaymentProcessorActor {
     * */
   case class RetrieveBalance[C <: FiatCurrency](currency: C)
 
+  sealed trait RetrieveBalanceResponse
+
   /** A message sent by the payment processor reporting the current balance in the
     * given currency.
     * */
   case class BalanceRetrieved[C <: FiatCurrency](balance: CurrencyAmount[C])
+    extends RetrieveBalanceResponse
 
   /** A message sent by the payment processor reporting that the current balance in the
     * given currency cannot be retrieved.
     */
   case class BalanceRetrievalFailed[C <: FiatCurrency](currency: C, error: Throwable)
+    extends RetrieveBalanceResponse
 
   /** Payment processor requests should be considered to have failed after this period */
   val RequestTimeout = Timeout(5.seconds)

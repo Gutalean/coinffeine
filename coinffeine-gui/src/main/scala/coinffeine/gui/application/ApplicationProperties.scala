@@ -22,7 +22,7 @@ class ApplicationProperties(app: CoinffeineApp) {
     _fiatBalanceProperty
 
   private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinAmount]](
-    this, "walletBalance", None)
+    this, "walletBalance", Some(app.wallet.currentBalance()))
 
   private val _fiatBalanceProperty = new ObjectProperty[Option[CurrencyAmount[Euro.type]]](
     this, "fiatBalance", app.paymentProcessor.currentBalance())

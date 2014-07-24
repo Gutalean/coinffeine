@@ -1,5 +1,6 @@
 package coinffeine.peer.payment.okpay
 
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
@@ -11,7 +12,6 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
-import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.payment._
 
@@ -106,9 +106,11 @@ object OkPayProcessorActor {
 
   def props(config: Config) = {
     val account = config.getString("coinffeine.okpay.id")
+    val endpoint = URI.create(config.getString("coinffeine.okpay.endpoint"))
     val client = new OkPayWebServiceClient(
       account = config.getString("coinffeine.okpay.id"),
-      seedToken = config.getString("coinffeine.okpay.token")
+      seedToken = config.getString("coinffeine.okpay.token"),
+      baseAddressOverride = Some(endpoint)
     )
     val pollingInterval =
       config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
