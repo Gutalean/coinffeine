@@ -53,7 +53,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
       new TableColumn[OrderProperties, String] {
         text = "Progress"
         cellValueFactory = { _.value.progressProperty.delegate.map { p =>
-          val percentage = p.intValue() * 100
+          val percentage = (p.doubleValue() * 100.0).toInt
           s"$percentage%"
         }}
         prefWidth = 80
