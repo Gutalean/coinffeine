@@ -65,7 +65,9 @@ object Exchange {
   case class Deposits(transactions: Both[ImmutableTransaction])
 
   case class Progress[+C <: FiatCurrency](
-    bitcoinsTransferred: BitcoinAmount, fiatTransferred: CurrencyAmount[C])
+      bitcoinsTransferred: BitcoinAmount, fiatTransferred: CurrencyAmount[C]) {
+    override def toString = s"progressed $bitcoinsTransferred by $fiatTransferred"
+  }
 
   def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, c.Zero)
 }
