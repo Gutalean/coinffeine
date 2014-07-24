@@ -17,7 +17,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
-import coinffeine.peer.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
@@ -62,8 +62,8 @@ class BuyerMicroPaymentChannelActorTest
   it should "respond to step signature messages by sending a payment until all steps are done" in {
     for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
-      paymentProcessor.expectMsgClass(classOf[PaymentProcessor.Pay[_]])
-      paymentProcessor.reply(PaymentProcessor.Paid(
+      paymentProcessor.expectMsgClass(classOf[PaymentProcessorActor.Pay[_]])
+      paymentProcessor.reply(PaymentProcessorActor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
           completed = true)
       ))

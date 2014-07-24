@@ -6,16 +6,19 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern._
 import akka.util.Timeout
 
+import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
+import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor, WalletComponent}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
+import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
-import coinffeine.peer.payment.PaymentProcessor
-import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
+import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
+import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ConnectingError, BindingError, BrokerAddress}
+import coinffeine.protocol.gateway.MessageGateway.{BindingError, BrokerAddress, ConnectingError}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
@@ -31,7 +34,7 @@ class CoinffeinePeerActor(listenPort: Int,
   private val eventChannel = spawnDelegate(props.eventChannel, "eventChannel")
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
   private val paymentProcessorRef = spawnDelegate(
-    props.paymentProcessor, "paymentProcessor", PaymentProcessor.Initialize(eventChannel))
+    props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize(eventChannel))
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private val walletRef = spawnDelegate(props.wallet, "wallet", WalletActor.Initialize(eventChannel))
   private var orderSupervisorRef: ActorRef = _
@@ -142,13 +145,13 @@ object CoinffeinePeerActor {
                             wallet: Props,
                             paymentProcessor: Props)
 
-  trait Component { this: OrderSupervisor.Component
-    with MarketInfoActor.Component
-    with MessageGateway.Component
+  trait Component { this: MessageGateway.Component
     with BitcoinPeerActor.Component
-    with WalletActor.Component
-    with PaymentProcessor.Component
-    with ConfigComponent =>
+    with ExchangeActor.Component
+    with WalletComponent
+    with ConfigComponent
+    with NetworkComponent
+    with ProtocolConstants.Component =>
 
     lazy val peerProps: Props = {
       val ownPort = config.getInt(PortSetting)
@@ -157,11 +160,11 @@ object CoinffeinePeerActor {
       val props = PropsCatalogue(
         EventChannelActor.props(),
         messageGatewayProps,
-        marketInfoProps,
-        orderSupervisorProps,
+        MarketInfoActor.props,
+        OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants),
         bitcoinPeerProps,
-        walletActorProps,
-        paymentProcessorProps
+        WalletActor.props(wallet),
+        OkPayProcessorActor.props(config)
       )
       Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
     }

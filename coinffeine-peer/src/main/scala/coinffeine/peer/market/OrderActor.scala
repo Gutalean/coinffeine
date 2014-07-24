@@ -2,14 +2,13 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 import com.google.bitcoin.core.NetworkParameters
+import com.typesafe.config.Config
 
-import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
-import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
@@ -125,10 +124,8 @@ object OrderActor {
   /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus
 
-  trait Component { this: ExchangeActor.Component with ConfigComponent with NetworkComponent =>
-    lazy val orderActorProps: Props = {
-      val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
-      Props(new OrderActor(exchangeActorProps, network, intermediateSteps))
-    }
+  def props(exchangeActorProps: Props, config: Config, network: NetworkParameters): Props = {
+    val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
+    Props(new OrderActor(exchangeActorProps, network, intermediateSteps))
   }
 }

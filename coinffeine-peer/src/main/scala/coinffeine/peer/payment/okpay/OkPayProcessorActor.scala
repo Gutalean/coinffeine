@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor._
+import com.typesafe.config.Config
 
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.FiatCurrency
@@ -21,7 +22,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
   import context.dispatcher
 
   override def receive: Receive = {
-    case PaymentProcessor.Initialize(eventChannel) =>
+    case PaymentProcessorActor.Initialize(eventChannel) =>
       new InitializedBehavior(eventChannel).start()
   }
 
@@ -47,43 +48,43 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     val managePayments: Receive = {
-      case PaymentProcessor.Identify =>
-        sender ! PaymentProcessor.Identified(OkPayProcessorActor.Id)
-      case pay: PaymentProcessor.Pay[_] =>
+      case PaymentProcessorActor.Identify =>
+        sender ! PaymentProcessorActor.Identified(OkPayProcessorActor.Id)
+      case pay: PaymentProcessorActor.Pay[_] =>
         sendPayment(sender(), pay)
-      case PaymentProcessor.FindPayment(paymentId) =>
+      case PaymentProcessorActor.FindPayment(paymentId) =>
         findPayment(sender(), paymentId)
-      case PaymentProcessor.RetrieveBalance(currency) =>
+      case PaymentProcessorActor.RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
       case PollBalance =>
         pollBalance()
     }
 
     private def sendPayment[C <: FiatCurrency](requester: ActorRef,
-                                               pay: PaymentProcessor.Pay[C]): Unit = {
+                                               pay: PaymentProcessorActor.Pay[C]): Unit = {
       client.sendPayment(pay.to, pay.amount, pay.comment).onComplete {
         case Success(payment) =>
-          requester ! PaymentProcessor.Paid(payment)
+          requester ! PaymentProcessorActor.Paid(payment)
         case Failure(error) =>
-          requester ! PaymentProcessor.PaymentFailed(pay, error)
+          requester ! PaymentProcessorActor.PaymentFailed(pay, error)
       }
     }
 
     private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
       client.findPayment(paymentId).onComplete {
-        case Success(Some(payment)) => requester ! PaymentProcessor.PaymentFound(payment)
-        case Success(None) => requester ! PaymentProcessor.PaymentNotFound(paymentId)
-        case Failure(error) => requester ! PaymentProcessor.FindPaymentFailed(paymentId, error)
+        case Success(Some(payment)) => requester ! PaymentProcessorActor.PaymentFound(payment)
+        case Success(None) => requester ! PaymentProcessorActor.PaymentNotFound(paymentId)
+        case Failure(error) => requester ! PaymentProcessorActor.FindPaymentFailed(paymentId, error)
       }
     }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
       client.currentBalance(currency).onComplete {
         case Success(balance) =>
-          requester ! PaymentProcessor.BalanceRetrieved(balance)
+          requester ! PaymentProcessorActor.BalanceRetrieved(balance)
           produceEvent(FiatBalanceChangeEvent(balance))
         case Failure(error) =>
-          requester ! PaymentProcessor.BalanceRetrievalFailed(currency, error)
+          requester ! PaymentProcessorActor.BalanceRetrievalFailed(currency, error)
       }
     }
 
@@ -103,16 +104,14 @@ object OkPayProcessorActor {
 
   private case object PollBalance
 
-  trait Component extends PaymentProcessor.Component { this: ConfigComponent =>
-    override lazy val paymentProcessorProps = {
-      val account = config.getString("coinffeine.okpay.id")
-      val client = new OkPayWebServiceClient(
-        account = config.getString("coinffeine.okpay.id"),
-        seedToken = config.getString("coinffeine.okpay.token")
-      )
-      val pollingInterval =
-        config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
-      Props(new OkPayProcessorActor(account, client, pollingInterval))
-    }
+  def props(config: Config) = {
+    val account = config.getString("coinffeine.okpay.id")
+    val client = new OkPayWebServiceClient(
+      account = config.getString("coinffeine.okpay.id"),
+      seedToken = config.getString("coinffeine.okpay.token")
+    )
+    val pollingInterval =
+      config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
+    Props(new OkPayProcessorActor(account, client, pollingInterval))
   }
 }

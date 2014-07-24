@@ -12,8 +12,8 @@ import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
-import coinffeine.peer.payment.PaymentProcessor
-import coinffeine.peer.payment.PaymentProcessor.RetrieveBalance
+import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
@@ -54,7 +54,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the payment processor actor" in {
     paymentProcessor.expectCreation()
-    paymentProcessor.expectMsg(PaymentProcessor.Initialize(eventChannel.ref))
+    paymentProcessor.expectMsg(PaymentProcessorActor.Initialize(eventChannel.ref))
   }
 
   it must "make the message gateway start listening when connecting" in {

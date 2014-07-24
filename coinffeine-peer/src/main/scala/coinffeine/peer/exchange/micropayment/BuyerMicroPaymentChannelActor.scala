@@ -14,8 +14,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.exchange.util.MessageForwarding
-import coinffeine.peer.payment.PaymentProcessor
-import coinffeine.peer.payment.PaymentProcessor.Paid
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
@@ -110,15 +109,16 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
 
     private def pay(step: IntermediateStep): Future[PaymentProof] = {
       import context.dispatcher
-      implicit val timeout = PaymentProcessor.RequestTimeout
+      implicit val timeout = PaymentProcessorActor.RequestTimeout
 
-      val paymentRequest = PaymentProcessor.Pay(
+      val paymentRequest = PaymentProcessorActor.Pay(
         exchange.counterpart.paymentProcessorAccount,
         exchange.amounts.stepFiatAmount,
         PaymentDescription(exchange.id, step)
       )
       for {
-        Paid(payment) <- paymentProcessor.ask(paymentRequest).mapTo[Paid[C]]
+        PaymentProcessorActor.Paid(payment) <- paymentProcessor.ask(paymentRequest)
+          .mapTo[PaymentProcessorActor.Paid[C]]
       } yield PaymentProof(exchange.id, payment.id)
     }
   }

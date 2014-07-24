@@ -101,9 +101,7 @@ object BitcoinPeerActor {
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
-  trait Component {
-    this: NetworkComponent with BlockchainComponent with BlockchainActor.Component
-      with ConfigComponent =>
+  trait Component { this: NetworkComponent with BlockchainComponent with ConfigComponent =>
 
     lazy val peerGroup: PeerGroup = {
       val group = new PeerGroup(network, blockchain)
@@ -112,7 +110,7 @@ object BitcoinPeerActor {
     }
 
     lazy val bitcoinPeerProps: Props =
-      Props(new BitcoinPeerActor(peerGroup, blockchainActorProps))
+      Props(new BitcoinPeerActor(peerGroup, BlockchainActor.props(network, blockchain)))
 
     private def parseTestnetAddress() = new PeerAddress(
       InetAddress.getByName(config.getString("coinffeine.testnet.address")),

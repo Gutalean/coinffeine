@@ -181,10 +181,6 @@ object BlockchainActor {
     */
   case class TransactionNotFound(hash: Hash)
 
-  trait Component {
-
-    this: NetworkComponent with BlockchainComponent =>
-
-    def blockchainActorProps: Props = Props(new BlockchainActor(network, blockchain))
-  }
+  def props(network: NetworkParameters, blockchain: AbstractBlockChain): Props =
+    Props(new BlockchainActor(network, blockchain))
 }

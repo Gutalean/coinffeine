@@ -6,6 +6,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
+import com.google.bitcoin.core.NetworkParameters
+import com.typesafe.config.Config
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
@@ -66,10 +68,10 @@ object OrderSupervisor {
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)
 
-  trait Component { this: SubmissionSupervisor.Component
-    with ProtocolConstants.Component
-    with OrderActor.Component =>
-    lazy val orderSupervisorProps = Props(
-      new OrderSupervisor(orderActorProps, submissionSupervisorProps, protocolConstants))
-  }
+  def props(exchangeActorProps: Props, config: Config, network: NetworkParameters,
+            constants: ProtocolConstants) = Props(new OrderSupervisor(
+      OrderActor.props(exchangeActorProps, config, network),
+      SubmissionSupervisor.props(constants),
+      constants
+    ))
 }

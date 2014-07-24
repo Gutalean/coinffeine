@@ -19,21 +19,21 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
     val id: String = "MockPay"
 
     override def receive: Receive = {
-      case PaymentProcessor.Identify =>
-        sender ! PaymentProcessor.Identified(id)
-      case pay: PaymentProcessor.Pay[_] =>
+      case PaymentProcessorActor.Identify =>
+        sender ! PaymentProcessorActor.Identified(id)
+      case pay: PaymentProcessorActor.Pay[_] =>
         sendPayment(sender(), pay)
-      case PaymentProcessor.FindPayment(paymentId) =>
+      case PaymentProcessorActor.FindPayment(paymentId) =>
         findPayment(sender(), paymentId)
-      case PaymentProcessor.RetrieveBalance(currency) =>
+      case PaymentProcessorActor.RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
     }
 
 
     private def findPayment(requester: ActorRef, paymentId: String): Unit =
       payments.find(_.id == paymentId) match {
-        case Some(payment) => requester ! PaymentProcessor.PaymentFound(payment)
-        case None => requester ! PaymentProcessor.PaymentNotFound(paymentId)
+        case Some(payment) => requester ! PaymentProcessorActor.PaymentFound(payment)
+        case None => requester ! PaymentProcessorActor.PaymentNotFound(paymentId)
       }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
@@ -46,11 +46,11 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
         case a: CurrencyAmount[C] => a
       }.getOrElse(currency.Zero)
       val balance = deltas.foldLeft(initial)(_ + _)
-      requester ! PaymentProcessor.BalanceRetrieved(balance)
+      requester ! PaymentProcessorActor.BalanceRetrieved(balance)
     }
 
     private def sendPayment[C <: FiatCurrency](
-        requester: ActorRef, pay: PaymentProcessor.Pay[C]): Unit =
+        requester: ActorRef, pay: PaymentProcessorActor.Pay[C]): Unit =
       if (initialBalances.map(_.currency).contains(pay.amount.currency)) {
         val payment = Payment(
           UUID.randomUUID().toString,
@@ -61,9 +61,9 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
           pay.comment,
           completed = true)
         payments = payment :: payments
-        requester ! PaymentProcessor.Paid(payment)
+        requester ! PaymentProcessorActor.Paid(payment)
       } else {
-        requester ! PaymentProcessor.PaymentFailed(
+        requester ! PaymentProcessorActor.PaymentFailed(
           pay, new Error("[MockPay] The user does not have an account with that currency."))
       }
   }
