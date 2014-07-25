@@ -134,10 +134,8 @@ object BitcoinPeerActor {
   trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
     with PrivateKeysComponent with ConfigComponent =>
 
-    lazy val peerGroup: PeerGroup = createPeerGroup(blockchain)
-
     lazy val bitcoinPeerProps: Props = Props(new BitcoinPeerActor(
-      peerGroup,
+      createPeerGroup(blockchain),
       BlockchainActor.props(network),
       WalletActor.props,
       keyPairs,
