@@ -1,26 +1,28 @@
 package coinffeine.peer.bitcoin
 
+import com.google.bitcoin.core.{PeerGroup, AbstractBlockChain}
 import com.typesafe.config.ConfigFactory
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.bitcoin.PeerGroupComponent
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.peer.config.ConfigComponent
 
 class DummyWalletComponentTest extends UnitTest {
 
-  class TestComponent(rawConfig: String) extends DummyWalletComponent with BitcoinPeerActor.Component
-    with MockBlockchainComponent with CoinffeineUnitTestNetwork.Component with ConfigComponent {
+  class TestComponent(rawConfig: String) extends DummyWalletComponent with PeerGroupComponent
+    with BitcoinPeerActor.Component with MockBlockchainComponent
+    with CoinffeineUnitTestNetwork.Component with ConfigComponent {
 
     override val config = ConfigFactory.parseString(rawConfig)
+
+    override def createPeerGroup(blockchain: AbstractBlockChain): PeerGroup =
+      new PeerGroup(network, blockchain)
   }
 
   "A dummy wallet component" should "provide a wallet with a private key taken from the config" in {
     val component = new TestComponent(
-      """
-        | coinffeine.wallet.key="cPbLnyzaxQeqWoaDyFmEgBVMoee7jXbHcCs1rQD7Ltj6d9Rqn8Uy"
-        | coinffeine.testnet.address = "localhost"
-        | coinffeine.testnet.port = 1234
-      """.stripMargin)
+      """coinffeine.wallet.key="cPbLnyzaxQeqWoaDyFmEgBVMoee7jXbHcCs1rQD7Ltj6d9Rqn8Uy" """)
 
     component.wallet.getKeys should have length 1
     val key = component.wallet.getKeys.get(0)

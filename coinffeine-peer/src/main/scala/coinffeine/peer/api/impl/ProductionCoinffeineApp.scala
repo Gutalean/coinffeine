@@ -1,6 +1,6 @@
 package coinffeine.peer.api.impl
 
-import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.bitcoin.{PeerGroupComponent, NetworkComponent}
 import coinffeine.peer.bitcoin._
 import coinffeine.peer.config.{ConfigComponent, FileConfigComponent}
 import coinffeine.peer.exchange.fake.FakeExchangeActor
@@ -20,7 +20,7 @@ object ProductionCoinffeineApp {
       with MockBlockchainComponent
       with ProtoMessageGateway.Component
       with DefaultProtocolSerializationComponent
-      with FileConfigComponent
-      with ConfigComponent
-      with NetworkComponent
+      with FileConfigComponent {
+    this: NetworkComponent with PeerGroupComponent =>
+  }
 }

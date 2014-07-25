@@ -1,7 +1,5 @@
 package coinffeine.peer.bitcoin
 
-import java.net.InetAddress
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
@@ -101,20 +99,12 @@ object BitcoinPeerActor {
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
-  trait Component { this: NetworkComponent with BlockchainComponent with ConfigComponent =>
+  trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
+    with ConfigComponent =>
 
-    lazy val peerGroup: PeerGroup = {
-      val group = new PeerGroup(network, blockchain)
-      group.addAddress(parseTestnetAddress())
-      group
-    }
+    lazy val peerGroup: PeerGroup = createPeerGroup(blockchain)
 
     lazy val bitcoinPeerProps: Props =
       Props(new BitcoinPeerActor(peerGroup, BlockchainActor.props(network, blockchain)))
-
-    private def parseTestnetAddress() = new PeerAddress(
-      InetAddress.getByName(config.getString("coinffeine.testnet.address")),
-      config.getInt("coinffeine.testnet.port")
-    )
   }
 }
