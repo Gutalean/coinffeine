@@ -7,7 +7,7 @@ import scala.util.{Failure, Random, Success}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import net.tomp2p.connection.Bindings
-import net.tomp2p.futures.{FutureBootstrap, FutureDHT}
+import net.tomp2p.futures.{FutureBootstrap, FutureDHT, FutureDiscover}
 import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.peers.{Number160, PeerAddress}
 import net.tomp2p.rpc.ObjectDataReply
@@ -22,6 +22,9 @@ private class ProtobufServerActor(
     ignoredNetworkInterfaces: Seq[NetworkInterface]) extends Actor with ActorLogging {
   import context.dispatcher
   import ProtobufServerActor._
+
+  private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
+    .filterNot(ignoredNetworkInterfaces.contains)
 
   private var me: Peer = _
 
@@ -50,16 +53,15 @@ private class ProtobufServerActor(
 
   def initPeer(localPort: Int, listener: ActorRef): Unit = {
     val bindings = new Bindings()
-    NetworkInterface.getNetworkInterfaces
-      .filterNot(ignoredNetworkInterfaces.contains)
-      .map(_.getName)
-      .foreach(iface => bindings.addInterface(iface))
+    acceptedNetworkInterfaces.map(_.getName).foreach(bindings.addInterface)
     val ifaces = bindings.getInterfaces.mkString(",")
     log.info(s"Initiating a peer on port $localPort for interfaces $ifaces")
+
     me = new PeerMaker(Number160.createHash(Random.nextInt()))
       .setPorts(localPort)
       .setBindings(bindings)
       .makeAndListen()
+    me.getConfiguration.setBehindFirewall(true)
     me.setObjectDataReply(new ReplyHandler(listener))
   }
 
@@ -67,9 +69,17 @@ private class ProtobufServerActor(
     .setData(new Data(me.getPeerAddress.toByteArray))
     .start()
 
-  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
-    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-    .setPorts(brokerAddress.port)
+  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = me.discover()
+    .setInetAddress(me.getPeerAddress.getInetAddress)
+    .setPeerAddress(new PeerAddress(
+      Number160.ZERO,
+      InetAddress.getByName(brokerAddress.hostname),
+      brokerAddress.port,
+      brokerAddress.port))
+    .start()
+
+  private def bootstrap(brokerAddress: PeerAddress): Future[FutureBootstrap] = me.bootstrap()
+    .setPeerAddress(brokerAddress)
     .start()
 
   private def bootstrapBroadcast(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
@@ -82,17 +92,24 @@ private class ProtobufServerActor(
     import context.dispatcher
 
     val futureBrokerId = for {
-      future <- bootstrap(brokerAddress)
+      dis <- discover(brokerAddress)
+      bs <- bootstrap(dis.getReporter)
       _ <- publishAddress()
-    } yield createPeerId(future.getBootstrapTo.head)
+    } yield {
+      val brokerId = bs.getBootstrapTo.head
+      val realIp = dis.getPeerAddress
+      log.info(s"Boostrapped to $brokerId using IP $realIp")
+      createPeerId(bs.getBootstrapTo.head)
+    }
 
     futureBrokerId.onComplete {
       case Success(brokerId) =>
+        log.info(s"Successfully connected as $ownId using broker in $brokerAddress with $brokerId")
         listener ! Connected(ownId, brokerId)
         context.become(sendingMessages)
       case Failure(error) =>
+        log.error(s"Cannot connect as $ownId using broker in $brokerAddress: $error")
         listener ! ConnectingError(error)
-        log.info(s"Couldn't connect to Coinffeine network as $ownId to broker in $brokerAddress")
         context.become(receive)
     }
     context.become(Map.empty)
