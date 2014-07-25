@@ -12,21 +12,6 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
-  val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-
-  override def preStart(): Unit = {
-    Futures.addCallback(peerGroup.start(), new FutureCallback[Service.State] {
-      def onSuccess(result: Service.State): Unit = {
-        log.info("Connected to peer group, starting blockchain download")
-        peerGroup.startBlockChainDownload(new DownloadListener)
-      }
-
-      def onFailure(t: Throwable): Unit = {
-        log.error(t, "Cannot connect to peer group")
-      }
-    })
-  }
-
   override def postStop(): Unit = {
     log.info("Shutting down peer group")
     peerGroup.stopAndWait()
@@ -34,14 +19,27 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
   }
 
   override def receive: Receive = {
-    case PublishTransaction(tx) =>
-      log.info(s"Publishing transaction $tx to the Bitcoin network")
-      Futures.addCallback(
-        peerGroup.broadcastTransaction(tx.get),
-        new TxBroadcastCallback(tx, sender()),
-        context.dispatcher)
-    case RetrieveBlockchainActor =>
-      sender ! BlockchainActorReference(blockchainRef)
+    case Start(eventChannel) =>
+      Futures.addCallback(peerGroup.start(), new PeerGroupCallback(eventChannel, sender()))
+  }
+
+  private class InitializedBitcoinPeerActor(eventChannel: ActorRef) {
+    val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+
+    def start(): Unit = {
+      context.become(started)
+    }
+
+    val started: Receive = {
+      case PublishTransaction(tx) =>
+        log.info(s"Publishing transaction $tx to the Bitcoin network")
+        Futures.addCallback(
+          peerGroup.broadcastTransaction(tx.get),
+          new TxBroadcastCallback(tx, sender()),
+          context.dispatcher)
+      case RetrieveBlockchainActor =>
+        sender ! BlockchainActorReference(blockchainRef)
+    }
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
@@ -57,14 +55,36 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
       respondTo ! TransactionNotPublished(originalTx, error)
     }
   }
+
+  private class PeerGroupCallback(eventChannel: ActorRef, listener: ActorRef)
+    extends FutureCallback[Service.State] {
+
+    def onSuccess(result: Service.State): Unit = {
+      log.info("Connected to peer group, starting blockchain download")
+      peerGroup.startBlockChainDownload(new DownloadListener)
+      new InitializedBitcoinPeerActor(eventChannel).start()
+      listener ! Started
+    }
+
+    def onFailure(cause: Throwable): Unit = {
+      log.error(cause, "Cannot connect to peer group")
+      listener ! StartFailure(cause)
+    }
+  }
 }
 
-/** A PeerActor handles connections to other peers in the bitcoin network and can:
+/** A BitcoinPeerActor handles connections to other peers in the bitcoin network and can:
   *
   * - Return a reference to the BlockchainActor that contains the blockchain derived from the peers
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
+  /** A message sent to the peer actor to join to the bitcoin network */
+  case class Start(eventChannel: ActorRef)
+  sealed trait StartResult
+  case object Started extends StartResult
+  case class StartFailure(cause: Throwable) extends StartResult
 
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.

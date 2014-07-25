@@ -9,7 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -50,6 +50,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the bitcoin peer actor" in {
     bitcoinPeer.expectCreation()
+    bitcoinPeer.expectMsg(BitcoinPeerActor.Start(eventChannel.ref))
   }
 
   it must "start the payment processor actor" in {
