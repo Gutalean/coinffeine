@@ -7,7 +7,8 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props)
+class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props,
+                       wallet: Wallet, blockchain: AbstractBlockChain)
   extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
@@ -28,6 +29,8 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     val walletRef = context.actorOf(walletProps, "wallet")
 
     def start(): Unit = {
+      blockchainRef ! BlockchainActor.Initialize(blockchain)
+      walletRef ! WalletActor.Initialize(wallet, eventChannel)
       listener ! Started(walletRef)
       context.become(started)
     }
@@ -127,8 +130,10 @@ object BitcoinPeerActor {
 
     lazy val bitcoinPeerProps: Props = Props(new BitcoinPeerActor(
       peerGroup,
-      BlockchainActor.props(network, blockchain),
-      WalletActor.props(wallet)
+      BlockchainActor.props(network),
+      WalletActor.props,
+      wallet,
+      blockchain
     ))
   }
 }
