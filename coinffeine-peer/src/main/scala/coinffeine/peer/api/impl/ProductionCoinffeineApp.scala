@@ -15,7 +15,7 @@ object ProductionCoinffeineApp {
       with CoinffeinePeerActor.Component
       with ProtocolConstants.DefaultComponent
       with FakeExchangeActor.Component
-      with DummyWalletComponent
+      with DummyPrivateKeysComponent
       with BitcoinPeerActor.Component
       with MockBlockchainComponent
       with ProtoMessageGateway.Component

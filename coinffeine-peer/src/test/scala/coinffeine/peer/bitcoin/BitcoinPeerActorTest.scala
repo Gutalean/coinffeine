@@ -7,7 +7,6 @@ import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.Wallet
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
@@ -27,9 +26,8 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
 
     val blockchainActor, walletActor = new MockSupervisedActor()
     val eventChannel = TestProbe().ref
-    val wallet = new Wallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
-    val actor = system.actorOf(Props(
-      new BitcoinPeerActor(peerGroup, blockchainActor.props, walletActor.props, wallet, blockchain)))
+    val actor = system.actorOf(Props(new BitcoinPeerActor(
+      peerGroup, blockchainActor.props, walletActor.props, keyPairs = Seq.empty, blockchain, network)))
   }
 }

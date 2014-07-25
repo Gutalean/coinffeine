@@ -8,8 +8,8 @@ import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props,
-                       wallet: Wallet, blockchain: AbstractBlockChain)
-  extends Actor with ActorLogging {
+                       keyPairs: Seq[KeyPair], blockchain: AbstractBlockChain,
+                       network: NetworkParameters) extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
@@ -26,11 +26,19 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
   private class InitializedBitcoinPeerActor(eventChannel: ActorRef, listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-    val walletRef = context.actorOf(walletProps, "wallet")
+    val walletRef = {
+      val ref = context.actorOf(walletProps, "wallet")
+      val wallet = new Wallet(network)
+      keyPairs.foreach(wallet.addKey)
+      blockchain.addWallet(wallet)
+      peerGroup.addWallet(wallet)
+
+      ref ! WalletActor.Initialize(wallet, eventChannel)
+      ref
+    }
 
     def start(): Unit = {
       blockchainRef ! BlockchainActor.Initialize(blockchain)
-      walletRef ! WalletActor.Initialize(wallet, eventChannel)
       listener ! Started(walletRef)
       context.become(started)
     }
@@ -124,7 +132,7 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
-    with WalletComponent with ConfigComponent =>
+    with PrivateKeysComponent with ConfigComponent =>
 
     lazy val peerGroup: PeerGroup = createPeerGroup(blockchain)
 
@@ -132,8 +140,9 @@ object BitcoinPeerActor {
       peerGroup,
       BlockchainActor.props(network),
       WalletActor.props,
-      wallet,
-      blockchain
+      keyPairs,
+      blockchain,
+      network
     ))
   }
 }
