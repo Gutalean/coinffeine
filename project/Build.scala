@@ -100,18 +100,17 @@ object Build extends sbt.Build {
     dependsOn(peer, server, okpaymock, commonTest % "compile->compile;test->compile")
   )
 
-  lazy val okpaymock = (Project(
-    id = "okpaymock",
-    base = file("coinffeine-okpaymock"),
-    settings = Defaults.defaultSettings ++ scalaxbSettings ++ CxfWsdl2JavaPlugin.cxf.settings ++ Seq(
+  lazy val okpaymock = (Project(id = "okpaymock", base = file("coinffeine-okpaymock"))
+    settings(CxfWsdl2JavaPlugin.cxf.settings: _*)
+    settings(
       sourceGenerators in Compile <+= wsdl2java in Compile,
       wsdls := Seq(
         Wsdl((resourceDirectory in Compile).value / "okpay.wsdl",
-          Seq("-p", "coinffeine.okpaymock", "-server", "-impl"),
+          Seq("-p", "coinffeine.okpaymock.generated", "-server", "-impl"),
           "generated-sources-okpaymock"
         )
       )
-    ))
+    )
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(model, peer, commonTest % "compile->compile;test->compile")
   )
