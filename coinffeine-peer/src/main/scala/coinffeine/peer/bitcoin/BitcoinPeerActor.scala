@@ -7,7 +7,7 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
+class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props)
   extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
@@ -23,10 +23,12 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
       Futures.addCallback(peerGroup.start(), new PeerGroupCallback(eventChannel, sender()))
   }
 
-  private class InitializedBitcoinPeerActor(eventChannel: ActorRef) {
+  private class InitializedBitcoinPeerActor(eventChannel: ActorRef, listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+    val walletRef = context.actorOf(walletProps, "wallet")
 
     def start(): Unit = {
+      listener ! Started(walletRef)
       context.become(started)
     }
 
@@ -62,8 +64,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
     def onSuccess(result: Service.State): Unit = {
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(new DownloadListener)
-      new InitializedBitcoinPeerActor(eventChannel).start()
-      listener ! Started
+      new InitializedBitcoinPeerActor(eventChannel, listener).start()
     }
 
     def onFailure(cause: Throwable): Unit = {
@@ -83,7 +84,7 @@ object BitcoinPeerActor {
   /** A message sent to the peer actor to join to the bitcoin network */
   case class Start(eventChannel: ActorRef)
   sealed trait StartResult
-  case object Started extends StartResult
+  case class Started(walletActor: ActorRef) extends StartResult
   case class StartFailure(cause: Throwable) extends StartResult
 
   /** A request for the actor to publish the transaction to its peers so it eventually
@@ -120,11 +121,14 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
-    with ConfigComponent =>
+    with WalletComponent with ConfigComponent =>
 
     lazy val peerGroup: PeerGroup = createPeerGroup(blockchain)
 
-    lazy val bitcoinPeerProps: Props =
-      Props(new BitcoinPeerActor(peerGroup, BlockchainActor.props(network, blockchain)))
+    lazy val bitcoinPeerProps: Props = Props(new BitcoinPeerActor(
+      peerGroup,
+      BlockchainActor.props(network, blockchain),
+      WalletActor.props(wallet)
+    ))
   }
 }

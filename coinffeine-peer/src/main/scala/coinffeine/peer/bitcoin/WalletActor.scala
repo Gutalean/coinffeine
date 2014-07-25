@@ -12,7 +12,7 @@ import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance
 import coinffeine.peer.api.event.WalletBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
 
-class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
+private class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.WalletActor._
 
@@ -69,7 +69,7 @@ object WalletActor {
     * transaction included in a FundsBlocked reply message, or FundsBlockingError if something
     * goes wrong. The resulting transaction can be safely sent to the blockchain with the guarantee
     * that the outputs it spends are not used in any other transaction. If the transaction is not
-    * finally broadcasted to the blockchain, the funds can be unblocked by sending a ReleasedFunds
+    * finally broadcast to the blockchain, the funds can be unblocked by sending a ReleasedFunds
     * message.
     *
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
@@ -95,5 +95,5 @@ object WalletActor {
     */
   case class ReleaseFunds(tx: MutableTransaction)
 
-  def props(wallet: Wallet) = Props(new WalletActor(wallet))
+  private[bitcoin] def props(wallet: Wallet) = Props(new WalletActor(wallet))
 }
