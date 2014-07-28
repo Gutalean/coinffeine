@@ -31,7 +31,8 @@ class FakeExchangeActor extends Actor with ActorLogging {
     def handlingStep(step: Int): Receive = {
       case ReceiveTimeout if step == exchange.amounts.breakdown.totalSteps =>
         logEvent(s"Exchange finished successfully")
-        listener ! ExchangeActor.ExchangeSuccess(exchangeAtStep(exchange.amounts.breakdown.totalSteps))
+        listener ! ExchangeActor.ExchangeSuccess(
+          exchangeAtStep(exchange.amounts.breakdown.intermediateSteps))
         context.become(finished)
 
       case ReceiveTimeout =>
