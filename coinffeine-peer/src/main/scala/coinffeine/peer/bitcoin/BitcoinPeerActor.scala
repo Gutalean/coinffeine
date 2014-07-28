@@ -1,6 +1,11 @@
 package coinffeine.peer.bitcoin
 
+import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern._
+import akka.util.Timeout
 import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 
@@ -91,6 +96,16 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
+  def retrieveBlockchainActor(bitcoinPeer: ActorRef)
+                             (implicit timeout: Timeout, ec: ExecutionContext): Future[ActorRef] =
+    (bitcoinPeer ? BitcoinPeerActor.RetrieveBlockchainActor)
+      .mapTo[BitcoinPeerActor.BlockchainActorReference]
+      .map(_.ref)
+      .recoverWith {
+        case NonFatal(cause) => Future.failed(
+          new RuntimeException(s"Cannot retrieve blockchain actor from $bitcoinPeer", cause))
+      }
 
   /** A message sent to the peer actor to join to the bitcoin network */
   case class Start(eventChannel: ActorRef)
