@@ -1,15 +1,18 @@
 package coinffeine.peer
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor, WalletComponent}
+import coinffeine.model.network.PeerId
+import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.exchange.ExchangeActor
@@ -36,29 +39,54 @@ class CoinffeinePeerActor(listenPort: Int,
   private val paymentProcessorRef = spawnDelegate(
     props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize(eventChannel))
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
-  private val walletRef = spawnDelegate(props.wallet, "wallet", WalletActor.Initialize(eventChannel))
+  private var walletRef: ActorRef = _
   private var orderSupervisorRef: ActorRef = _
   private var marketInfoRef: ActorRef = _
 
   override def receive: Receive = {
 
     case CoinffeinePeerActor.Connect =>
-      implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-      (gatewayRef ? MessageGateway.Connect(listenPort, brokerAddress)).map {
-        case MessageGateway.Connected(_, brokerId) =>
-          orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
-            OrderSupervisor.Initialize(
-              brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
-          marketInfoRef = spawnDelegate(
-            props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
-          context.become(handleMessages)
-          CoinffeinePeerActor.Connected
-        case ConnectingError(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
+      val gatewayConnection = connectMessageGateway()
+      val bitcoinConnection = connectBitcoinPeer()
+      (for {
+        brokerId <- gatewayConnection
+        retrievedWalletRef <- bitcoinConnection
+      } yield {
+        walletRef = retrievedWalletRef
+        orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
+          OrderSupervisor.Initialize(
+            brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
+        marketInfoRef = spawnDelegate(
+          props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
+        context.become(handleMessages)
+        CoinffeinePeerActor.Connected
+      }).recover {
+        case NonFatal(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
 
     case BindingError(cause) =>
       log.error(cause, "Cannot start peer")
       context.stop(self)
+  }
+
+  private def connectMessageGateway(): Future[PeerId] = {
+    implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
+    (gatewayRef ? MessageGateway.Connect(listenPort, brokerAddress)).map {
+      case MessageGateway.Connected(_, brokerId) =>
+        brokerId
+      case ConnectingError(cause) =>
+        throw cause
+    }
+  }
+
+  private def connectBitcoinPeer(): Future[ActorRef] = {
+    implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
+    (bitcoinPeerRef ? BitcoinPeerActor.Start(eventChannel)).map {
+      case BitcoinPeerActor.Started(walletActor) =>
+        walletActor
+      case BitcoinPeerActor.StartFailure(cause) =>
+        throw cause
+    }
   }
 
   private val handleMessages: Receive = {
@@ -142,13 +170,11 @@ object CoinffeinePeerActor {
                             marketInfo: Props,
                             orderSupervisor: Props,
                             bitcoinPeer: Props,
-                            wallet: Props,
                             paymentProcessor: Props)
 
   trait Component { this: MessageGateway.Component
     with BitcoinPeerActor.Component
     with ExchangeActor.Component
-    with WalletComponent
     with ConfigComponent
     with NetworkComponent
     with ProtocolConstants.Component =>
@@ -163,7 +189,6 @@ object CoinffeinePeerActor {
         MarketInfoActor.props,
         OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants),
         bitcoinPeerProps,
-        WalletActor.props(wallet),
         OkPayProcessorActor.props(config)
       )
       Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))

@@ -12,25 +12,20 @@ import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance
 import coinffeine.peer.api.event.WalletBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
 
-class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
+private class WalletActor extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.WalletActor._
 
-  override def preStart(): Unit = {
-    wallet.addEventListener(new AbstractWalletEventListener {
-      override def onChange(): Unit = {
-        self ! WalletChanged
-      }
-    }, context.dispatcher)
-  }
-
   override val receive: Receive = {
-    case Initialize(eventChannel) => new InitializedWalletActor(eventChannel).start()
+    case Initialize(wallet, eventChannel) =>
+      new InitializedWalletActor(wallet, eventChannel).start()
   }
 
-  private class InitializedWalletActor(channel: ActorRef) extends EventProducer(channel) {
+  private class InitializedWalletActor(wallet: Wallet, channel: ActorRef)
+    extends EventProducer(channel) {
 
     def start(): Unit = {
+      subscribeToWalletChanges()
       produceEvent(WalletBalanceChangeEvent(wallet.balance()))
       context.become(manageWallet)
     }
@@ -54,6 +49,14 @@ class WalletActor(wallet: Wallet) extends Actor with ActorLogging {
       case WalletChanged =>
         produceEvent(WalletBalanceChangeEvent(wallet.balance()))
     }
+
+    private def subscribeToWalletChanges(): Unit = {
+      wallet.addEventListener(new AbstractWalletEventListener {
+        override def onChange(): Unit = {
+          self ! WalletChanged
+        }
+      }, context.dispatcher)
+    }
   }
 }
 
@@ -61,7 +64,8 @@ object WalletActor {
 
   private case object WalletChanged
 
-  case class Initialize(eventChannel: ActorRef)
+  private[bitcoin] val props = Props(new WalletActor)
+  private[bitcoin] case class Initialize(wallet: Wallet, eventChannel: ActorRef)
 
   /** A message sent to the wallet actor in order to block some funds in a multisign transaction.
     *
@@ -69,7 +73,7 @@ object WalletActor {
     * transaction included in a FundsBlocked reply message, or FundsBlockingError if something
     * goes wrong. The resulting transaction can be safely sent to the blockchain with the guarantee
     * that the outputs it spends are not used in any other transaction. If the transaction is not
-    * finally broadcasted to the blockchain, the funds can be unblocked by sending a ReleasedFunds
+    * finally broadcast to the blockchain, the funds can be unblocked by sending a ReleasedFunds
     * message.
     *
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
@@ -94,6 +98,4 @@ object WalletActor {
     * given transaction.
     */
   case class ReleaseFunds(tx: MutableTransaction)
-
-  def props(wallet: Wallet) = Props(new WalletActor(wallet))
 }

@@ -107,6 +107,8 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val tx = wallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
-    val instance = system.actorOf(Props(new BlockchainActor(network, chain)))
+
+    val instance = system.actorOf(Props(new BlockchainActor(network)))
+    instance ! BlockchainActor.Initialize(chain)
   }
 }

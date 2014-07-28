@@ -1,6 +1,5 @@
 package coinffeine.peer.bitcoin
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
@@ -61,7 +60,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val initialFunds = wallet.balance()
     val eventChannelProbe = TestProbe()
 
-    val instance = system.actorOf(Props(new WalletActor(wallet)))
-    instance ! WalletActor.Initialize(eventChannelProbe.ref)
+    val instance = system.actorOf(WalletActor.props)
+    instance ! WalletActor.Initialize(wallet, eventChannelProbe.ref)
   }
 }

@@ -9,7 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -23,24 +23,20 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val localPort = 8080
   val brokerAddress = BrokerAddress("host", 8888)
   val brokerId = PeerId("broker")
-  val eventChannel = new MockSupervisedActor()
-  val gateway = new MockSupervisedActor()
-  val marketInfo = new MockSupervisedActor()
-  val orders = new MockSupervisedActor()
-  val bitcoinPeer = new MockSupervisedActor()
-  val wallet = new MockSupervisedActor()
-  val paymentProcessor = new MockSupervisedActor()
+  val wallet = TestProbe()
+  val eventChannel, gateway, marketInfo, orders, bitcoinPeer, paymentProcessor =
+    new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
     PropsCatalogue(
       eventChannel = eventChannel.props,
       gateway = gateway.props,
       marketInfo = marketInfo.props,
       orderSupervisor = orders.props,
-      wallet = wallet.props,
       paymentProcessor = paymentProcessor.props,
       bitcoinPeer = bitcoinPeer.props))))
 
   "A peer" must "start the message gateway" in {
+    bitcoinPeer.expectCreation()
     gateway.expectCreation()
   }
 
@@ -48,18 +44,18 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     eventChannel.expectCreation()
   }
 
-  it must "start the bitcoin peer actor" in {
-    bitcoinPeer.expectCreation()
-  }
-
   it must "start the payment processor actor" in {
     paymentProcessor.expectCreation()
     paymentProcessor.expectMsg(PaymentProcessorActor.Initialize(eventChannel.ref))
   }
 
-  it must "make the message gateway start listening when connecting" in {
+  it must "connect to both networks" in {
     gateway.probe.expectNoMsg()
+    val eventChannelRef = eventChannel.ref
     peer ! CoinffeinePeerActor.Connect
+    bitcoinPeer.expectAskWithReply {
+      case BitcoinPeerActor.Start(`eventChannelRef`) => BitcoinPeerActor.Started(wallet.ref)
+    }
     gateway.expectAskWithReply {
       case MessageGateway.Connect(`localPort`, `brokerAddress`) =>
         MessageGateway.Connected(PeerId("peer id"), brokerId)
@@ -67,12 +63,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     expectMsg(CoinffeinePeerActor.Connected)
   }
 
-  it must "start the wallet actor" in {
-    wallet.expectCreation()
-    wallet.expectMsg(WalletActor.Initialize(eventChannel.ref))
-  }
-
-  it must "start the order submissions actor" in {
+  it must "start the order supervisor actor" in {
     orders.expectCreation()
     val OrderSupervisor.Initialize(_, receivedChannel, receivedGateway,
         receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
@@ -81,7 +72,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     receivedGateway should be (gateway.ref)
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
-    receivedWallet should be (wallet.ref)
   }
 
   it must "start the market info actor" in {
@@ -99,7 +89,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
         gateway = localGateway.props,
         marketInfo = dummyHelper.props,
         orderSupervisor = dummyHelper.props,
-        wallet = dummyHelper.props,
         paymentProcessor = dummyHelper.props,
         bitcoinPeer = dummyHelper.props))))
     localGateway.expectCreation()
@@ -147,7 +136,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate wallet balance requests" in {
-    shouldForwardMessage(RetrieveWalletBalance, wallet)
+    peer ! RetrieveWalletBalance
+    wallet.expectMsg(RetrieveWalletBalance)
+    wallet.sender() should be (self)
   }
 
   private def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {

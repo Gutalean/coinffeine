@@ -8,7 +8,7 @@ digraph {
 
 	BitcoinPeerActor1[label="BitcoinPeerActor"];
 	BlockchainActor1[label="BlockchainActor"];
-	BitcoinPeerActor1 -> BlockchainActor1;
+	BitcoinPeerActor1 -> BlockchainActor1, WalletActor;
 	BitcoinPeerActor2[label="BitcoinPeerActor"];
 	BlockchainActor2[label="BlockchainActor"];
 	BitcoinPeerActor2 -> BlockchainActor2;
@@ -16,7 +16,7 @@ digraph {
 	#############################################################
 	# Client side
 	CoinffeinePeerActor -> ProtoRpcMessageGateway1, OrderSupervisor,
-                               BitcoinPeerActor1, PaymentProcessor, WalletActor,
+                               BitcoinPeerActor1, PaymentProcessor,
 			       OKPayProcessorActor;
 	CoinffeinePeerActor -> MarketInfoActor;
 

@@ -1,7 +1,5 @@
 package coinffeine.peer.bitcoin
 
-import java.net.InetAddress
-
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
@@ -9,25 +7,11 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
-  extends Actor with ActorLogging {
+class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props,
+                       keyPairs: Seq[KeyPair], blockchain: AbstractBlockChain,
+                       network: NetworkParameters) extends Actor with ActorLogging {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
-
-  val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-
-  override def preStart(): Unit = {
-    Futures.addCallback(peerGroup.start(), new FutureCallback[Service.State] {
-      def onSuccess(result: Service.State): Unit = {
-        log.info("Connected to peer group, starting blockchain download")
-        peerGroup.startBlockChainDownload(new DownloadListener)
-      }
-
-      def onFailure(t: Throwable): Unit = {
-        log.error(t, "Cannot connect to peer group")
-      }
-    })
-  }
 
   override def postStop(): Unit = {
     log.info("Shutting down peer group")
@@ -36,14 +20,39 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
   }
 
   override def receive: Receive = {
-    case PublishTransaction(tx) =>
-      log.info(s"Publishing transaction $tx to the Bitcoin network")
-      Futures.addCallback(
-        peerGroup.broadcastTransaction(tx.get),
-        new TxBroadcastCallback(tx, sender()),
-        context.dispatcher)
-    case RetrieveBlockchainActor =>
-      sender ! BlockchainActorReference(blockchainRef)
+    case Start(eventChannel) =>
+      Futures.addCallback(peerGroup.start(), new PeerGroupCallback(eventChannel, sender()))
+  }
+
+  private class InitializedBitcoinPeerActor(eventChannel: ActorRef, listener: ActorRef) {
+    val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+    val walletRef = context.actorOf(walletProps, "wallet")
+
+    def start(): Unit = {
+      blockchainRef ! BlockchainActor.Initialize(blockchain)
+      walletRef ! WalletActor.Initialize(createWallet(), eventChannel)
+      listener ! Started(walletRef)
+      context.become(started)
+    }
+
+    val started: Receive = {
+      case PublishTransaction(tx) =>
+        log.info(s"Publishing transaction $tx to the Bitcoin network")
+        Futures.addCallback(
+          peerGroup.broadcastTransaction(tx.get),
+          new TxBroadcastCallback(tx, sender()),
+          context.dispatcher)
+      case RetrieveBlockchainActor =>
+        sender ! BlockchainActorReference(blockchainRef)
+    }
+
+    private def createWallet(): Wallet = {
+      val wallet = new Wallet(network)
+      keyPairs.foreach(wallet.addKey)
+      blockchain.addWallet(wallet)
+      peerGroup.addWallet(wallet)
+      wallet
+    }
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
@@ -59,14 +68,35 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props)
       respondTo ! TransactionNotPublished(originalTx, error)
     }
   }
+
+  private class PeerGroupCallback(eventChannel: ActorRef, listener: ActorRef)
+    extends FutureCallback[Service.State] {
+
+    def onSuccess(result: Service.State): Unit = {
+      log.info("Connected to peer group, starting blockchain download")
+      peerGroup.startBlockChainDownload(new DownloadListener)
+      new InitializedBitcoinPeerActor(eventChannel, listener).start()
+    }
+
+    def onFailure(cause: Throwable): Unit = {
+      log.error(cause, "Cannot connect to peer group")
+      listener ! StartFailure(cause)
+    }
+  }
 }
 
-/** A PeerActor handles connections to other peers in the bitcoin network and can:
+/** A BitcoinPeerActor handles connections to other peers in the bitcoin network and can:
   *
   * - Return a reference to the BlockchainActor that contains the blockchain derived from the peers
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
+  /** A message sent to the peer actor to join to the bitcoin network */
+  case class Start(eventChannel: ActorRef)
+  sealed trait StartResult
+  case class Started(walletActor: ActorRef) extends StartResult
+  case class StartFailure(cause: Throwable) extends StartResult
 
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.
@@ -101,20 +131,16 @@ object BitcoinPeerActor {
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
-  trait Component { this: NetworkComponent with BlockchainComponent with ConfigComponent =>
+  trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
+    with PrivateKeysComponent with ConfigComponent =>
 
-    lazy val peerGroup: PeerGroup = {
-      val group = new PeerGroup(network, blockchain)
-      group.addAddress(parseTestnetAddress())
-      group
-    }
-
-    lazy val bitcoinPeerProps: Props =
-      Props(new BitcoinPeerActor(peerGroup, BlockchainActor.props(network, blockchain)))
-
-    private def parseTestnetAddress() = new PeerAddress(
-      InetAddress.getByName(config.getString("coinffeine.testnet.address")),
-      config.getInt("coinffeine.testnet.port")
-    )
+    lazy val bitcoinPeerProps: Props = Props(new BitcoinPeerActor(
+      createPeerGroup(blockchain),
+      BlockchainActor.props(network),
+      WalletActor.props,
+      keyPairs,
+      blockchain,
+      network
+    ))
   }
 }
