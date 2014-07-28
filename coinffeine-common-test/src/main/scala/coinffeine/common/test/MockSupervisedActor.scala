@@ -5,6 +5,8 @@ import scala.reflect.ClassTag
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 
+import coinffeine.common.test.MockActor.{MockRestarted, MockStopped, MockThrow}
+
 /** Utility class for testing supervisor actors */
 class MockSupervisedActor(implicit system: ActorSystem) {
 
@@ -17,6 +19,16 @@ class MockSupervisedActor(implicit system: ActorSystem) {
   def expectCreation(): Unit = {
     val started = probe.expectMsgClass(classOf[MockActor.MockStarted])
     refOpt = Some(started.ref)
+  }
+
+  def expectRestart(): Unit = {
+    probe.expectMsgClass(classOf[MockStopped])
+    probe.expectMsgClass(classOf[MockRestarted])
+  }
+
+  def expectStop(): Unit = {
+    probe.expectMsgClass(classOf[MockStopped])
+    probe.expectNoMsg()
   }
 
   def expectMsg(message: Any): Unit = {
@@ -47,6 +59,10 @@ class MockSupervisedActor(implicit system: ActorSystem) {
       case MockActor.MockReceived(_, sender, message) if reply.isDefinedAt(message) =>
         sender ! reply(message)
     }
+  }
+
+  def throwException(exception: Throwable): Unit = {
+    ref ! MockThrow(exception)
   }
 
   private var refOpt: Option[ActorRef] = None
