@@ -9,24 +9,15 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin._
 
-class BlockchainActor(network: NetworkParameters)
-    extends Actor with ActorLogging {
+class BlockchainActor(network: NetworkParameters) extends Actor with ActorLogging {
+  import BlockchainActor._
 
   override def receive = {
-    case BlockchainActor.Initialize(blockchain) =>
-      new InitializedBlockchainActor(blockchain).start()
+    case Initialize(blockchain) => new InitializedBlockchainActor(blockchain).start()
   }
 
   private class InitializedBlockchainActor(blockchain: AbstractBlockChain) {
 
-    private case class BlockIdentity(hash: Sha256Hash, height: Int)
-
-    private case class Observation(txHash: Sha256Hash,
-                                   requester: ActorRef,
-                                   requiredConfirmations: Int,
-                                   foundInBlock: Option[BlockIdentity] = None)
-
-    private case class HeightNotification(height: Long, requester: ActorRef)
 
     private var observations: Map[Sha256Hash, Observation] = Map.empty
     private var heightNotifications: Set[HeightNotification] = Set.empty
@@ -49,7 +40,7 @@ class BlockchainActor(network: NetworkParameters)
               "after new chain head {}, tx {} have {} confirmations out of {} required: " +
                 "reporting to the observer",
               blockHeight, txHash, confirmations, reqConf)
-            req ! BlockchainActor.TransactionConfirmed(txHash, confirmations)
+            req ! TransactionConfirmed(txHash, confirmations)
             observations -= txHash
           } else {
             log.info(
@@ -61,7 +52,7 @@ class BlockchainActor(network: NetworkParameters)
         heightNotifications.foreach { case notification@HeightNotification(height, req) =>
           val blockchainHeight = block.getHeight
           if (blockchainHeight >= height) {
-            req ! BlockchainActor.BlockchainHeightReached(blockchainHeight)
+            req ! BlockchainHeightReached(blockchainHeight)
             heightNotifications  -= notification
           }
         }
@@ -74,7 +65,7 @@ class BlockchainActor(network: NetworkParameters)
           newBlocks.toSeq.exists(block => block.getHeader.getHash == tx.foundInBlock.get.hash))
         rejectedObservations.foreach { obs =>
           log.info("tx {} is lost in blockchain reorganization; reporting to the observer", obs.txHash)
-          obs.requester ! BlockchainActor.TransactionRejected(obs.txHash)
+          obs.requester ! TransactionRejected(obs.txHash)
           observations -= obs.txHash
         }
         /* It seems to be a bug in Bitcoinj that causes the newBlocks list to be in an arbitrary
@@ -111,22 +102,22 @@ class BlockchainActor(network: NetworkParameters)
 
     private val handlingBlockchain: Receive = {
 
-      case BlockchainActor.WatchPublicKey(key) =>
+      case WatchPublicKey(key) =>
         wallet.addKey(key)
 
-      case req @ BlockchainActor.WatchTransactionConfirmation(txHash, confirmations) =>
+      case req @ WatchTransactionConfirmation(txHash, confirmations) =>
         observations += txHash -> Observation(txHash, sender(), confirmations)
 
-      case BlockchainActor.RetrieveTransaction(txHash) =>
+      case RetrieveTransaction(txHash) =>
         transactionFor(txHash) match {
-          case Some(tx) => sender ! BlockchainActor.TransactionFound(txHash, ImmutableTransaction(tx))
-          case None => sender ! BlockchainActor.TransactionNotFound(txHash)
+          case Some(tx) => sender ! TransactionFound(txHash, ImmutableTransaction(tx))
+          case None => sender ! TransactionNotFound(txHash)
         }
 
-      case BlockchainActor.RetrieveBlockchainHeight =>
-        sender() ! BlockchainActor.BlockchainHeightReached(blockchain.getBestChainHeight)
+      case RetrieveBlockchainHeight =>
+        sender() ! BlockchainHeightReached(blockchain.getBestChainHeight)
 
-      case BlockchainActor.WatchBlockchainHeight(height) =>
+      case WatchBlockchainHeight(height) =>
         heightNotifications += HeightNotification(height, sender())
     }
 
@@ -197,4 +188,13 @@ object BlockchainActor {
     * blockchain for the given hash.
     */
   case class TransactionNotFound(hash: Hash)
+
+  private case class BlockIdentity(hash: Sha256Hash, height: Int)
+
+  private case class Observation(txHash: Sha256Hash,
+                                 requester: ActorRef,
+                                 requiredConfirmations: Int,
+                                 foundInBlock: Option[BlockIdentity] = None)
+
+  private case class HeightNotification(height: Long, requester: ActorRef)
 }

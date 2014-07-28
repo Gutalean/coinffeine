@@ -50,9 +50,9 @@ class CoinffeinePeerActor(listenPort: Int,
       val bitcoinConnection = connectBitcoinPeer()
       (for {
         brokerId <- gatewayConnection
-        ref <- bitcoinConnection
+        retrievedWalletRef <- bitcoinConnection
       } yield {
-        walletRef = ref
+        walletRef = retrievedWalletRef
         orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
           OrderSupervisor.Initialize(
             brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))

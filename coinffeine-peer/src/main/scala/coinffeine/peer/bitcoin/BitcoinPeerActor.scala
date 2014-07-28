@@ -26,19 +26,11 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
   private class InitializedBitcoinPeerActor(eventChannel: ActorRef, listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-    val walletRef = {
-      val ref = context.actorOf(walletProps, "wallet")
-      val wallet = new Wallet(network)
-      keyPairs.foreach(wallet.addKey)
-      blockchain.addWallet(wallet)
-      peerGroup.addWallet(wallet)
-
-      ref ! WalletActor.Initialize(wallet, eventChannel)
-      ref
-    }
+    val walletRef = context.actorOf(walletProps, "wallet")
 
     def start(): Unit = {
       blockchainRef ! BlockchainActor.Initialize(blockchain)
+      walletRef ! WalletActor.Initialize(createWallet(), eventChannel)
       listener ! Started(walletRef)
       context.become(started)
     }
@@ -52,6 +44,14 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
           context.dispatcher)
       case RetrieveBlockchainActor =>
         sender ! BlockchainActorReference(blockchainRef)
+    }
+
+    private def createWallet(): Wallet = {
+      val wallet = new Wallet(network)
+      keyPairs.foreach(wallet.addKey)
+      blockchain.addWallet(wallet)
+      peerGroup.addWallet(wallet)
+      wallet
     }
   }
 
