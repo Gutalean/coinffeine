@@ -9,11 +9,11 @@ import akka.actor._
 import akka.pattern._
 import com.typesafe.config.Config
 
-import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
+import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 
 class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterval: FiniteDuration)
@@ -23,7 +23,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
   import context.dispatcher
 
   override def receive: Receive = {
-    case PaymentProcessorActor.Initialize(eventChannel) =>
+    case Initialize(eventChannel) =>
       new InitializedBehavior(eventChannel).start()
   }
 
@@ -44,6 +44,8 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
   private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
 
+    private val blockedFunds = new BlockedFunds()
+
     def start(): Unit = {
       pollBalances()
       context.become(managePayments)
@@ -51,36 +53,41 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
     val managePayments: Receive = {
       case PaymentProcessorActor.Identify =>
-        sender ! PaymentProcessorActor.Identified(OkPayProcessorActor.Id)
-      case pay: PaymentProcessorActor.Pay[_] =>
+        sender ! Identified(OkPayProcessorActor.Id)
+      case pay: Pay[_] =>
         sendPayment(sender(), pay)
-      case PaymentProcessorActor.FindPayment(paymentId) =>
+      case FindPayment(paymentId) =>
         findPayment(sender(), paymentId)
-      case PaymentProcessorActor.RetrieveBalance(currency) =>
+      case RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
       case PollBalance =>
         pollBalances()
       case UpdatedBalances(balances) =>
+        updateBlockedFunds(balances)
         for (balance <- balances) {
           produceEvent(FiatBalanceChangeEvent(balance))
         }
+      case BlockFunds(amount, listener) =>
+        sender() ! blockedFunds.block(amount, listener)
+          .fold[BlockFundsResult](NotEnoughFunds)(FundsBlocked.apply)
+      case UnblockFunds(fundsId) =>
+        unblockFunds(fundsId)
     }
 
-    private def sendPayment[C <: FiatCurrency](requester: ActorRef,
-                                               pay: PaymentProcessorActor.Pay[C]): Unit = {
+    private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
       client.sendPayment(pay.to, pay.amount, pay.comment).onComplete {
         case Success(payment) =>
-          requester ! PaymentProcessorActor.Paid(payment)
+          requester ! Paid(payment)
         case Failure(error) =>
-          requester ! PaymentProcessorActor.PaymentFailed(pay, error)
+          requester ! PaymentFailed(pay, error)
       }
     }
 
     private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
       client.findPayment(paymentId).onComplete {
-        case Success(Some(payment)) => requester ! PaymentProcessorActor.PaymentFound(payment)
-        case Success(None) => requester ! PaymentProcessorActor.PaymentNotFound(paymentId)
-        case Failure(error) => requester ! PaymentProcessorActor.FindPaymentFailed(paymentId, error)
+        case Success(Some(payment)) => requester ! PaymentFound(payment)
+        case Success(None) => requester ! PaymentNotFound(paymentId)
+        case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
       }
     }
 
@@ -89,9 +96,9 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
         case Success(balances) =>
           self ! UpdatedBalances(balances)
           requester ! balances.find(_.currency == currency)
-            .fold(balanceNotFound(currency))(PaymentProcessorActor.BalanceRetrieved.apply)
+            .fold(balanceNotFound(currency))(BalanceRetrieved.apply)
         case Failure(error) =>
-          requester ! PaymentProcessorActor.BalanceRetrievalFailed(currency, error)
+          requester ! BalanceRetrievalFailed(currency, error)
       }
     }
 
@@ -99,9 +106,33 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
       client.currentBalances().map(UpdatedBalances.apply).pipeTo(self)
     }
 
-    private def balanceNotFound(currency: FiatCurrency): PaymentProcessorActor.RetrieveBalanceResponse =
-      PaymentProcessorActor.BalanceRetrievalFailed(currency,
-        new NoSuchElementException("No balance in that currency"))
+    private def balanceNotFound(currency: FiatCurrency): RetrieveBalanceResponse =
+      BalanceRetrievalFailed(currency, new NoSuchElementException("No balance in that currency"))
+
+    private def updateBlockedFunds(balances: Seq[FiatAmount]): Unit = notifyingFundsAvailability {
+      blockedFunds.updateBalances(balances)
+    }
+
+    private def unblockFunds(fundsId: FundsId): Unit = notifyingFundsAvailability {
+      blockedFunds.unblock(fundsId)
+    }
+
+    private def notifyingFundsAvailability[T](block: => T): T = {
+      val wereBacked = blockedFunds.areFundsBacked
+      val result = block
+      val areBacked = blockedFunds.areFundsBacked
+      if (wereBacked != areBacked) {
+        notifyFundsListeners(areBacked)
+      }
+      result
+    }
+
+    private def notifyFundsListeners(areBacked: Boolean): Unit = {
+      val messageFactory = if (areBacked) AvailableFunds.apply _ else UnavailableFunds.apply _
+      for ((funds, ref) <- blockedFunds.listenersByFund) {
+        ref ! messageFactory(funds)
+      }
+    }
   }
 }
 
