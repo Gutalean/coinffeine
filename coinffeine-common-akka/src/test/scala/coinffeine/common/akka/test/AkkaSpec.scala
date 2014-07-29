@@ -1,4 +1,4 @@
-package coinffeine.common.test
+package coinffeine.common.akka.test
 
 import akka.actor._
 import akka.testkit.{ImplicitSender, TestKit, TestKitExtension}

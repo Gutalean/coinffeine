@@ -2,8 +2,7 @@ package coinffeine.peer.bitcoin
 
 import akka.actor.Props
 import org.scalatest.mock.MockitoSugar
-
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.Implicits._

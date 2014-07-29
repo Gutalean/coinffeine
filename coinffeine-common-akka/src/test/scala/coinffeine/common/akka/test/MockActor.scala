@@ -1,4 +1,4 @@
-package coinffeine.common.test
+package coinffeine.common.akka.test
 
 import akka.actor._
 import akka.testkit.TestProbe
@@ -8,8 +8,7 @@ import akka.testkit.TestProbe
   * @param master who is informed about the actor activity
   */
 class MockActor(master: ActorRef) extends Actor with ActorLogging {
-
-  import coinffeine.common.test.MockActor._
+  import MockActor._
 
   override def preStart(): Unit = { master ! MockStarted(self) }
   override def postStop(): Unit = { master ! MockStopped(self) }

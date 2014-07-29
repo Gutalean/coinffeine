@@ -6,7 +6,7 @@ import com.google.bitcoin.core.{FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.scalatest.mock.MockitoSugar
 
-import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {

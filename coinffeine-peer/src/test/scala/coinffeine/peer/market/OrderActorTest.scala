@@ -3,15 +3,16 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
+import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Exchange, Both, CompletedExchange, ExchangeId}
+import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.GatewayProbe
@@ -40,10 +41,6 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "stop submitting to the broker & send event once matching is received" in new Fixture {
-    val exchangeId = ExchangeId.random()
-    val counterpart = PeerId("counterpart")
-    val orderMatch = OrderMatch(
-      order.id, exchangeId, order.amount, order.price, lockTime = 400000L, counterpart)
     gatewayProbe.relayMessage(orderMatch, brokerId)
     submissionProbe.fishForMessage() {
       case StopSubmitting(order.`id`) => true
@@ -63,6 +60,19 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
+  it should "spawn an exchange upon matching" in new Fixture {
+    gatewayProbe.relayMessage(orderMatch, brokerId)
+    val keyPair = new KeyPair()
+    walletProbe.expectMsg(WalletActor.CreateKeyPair)
+    walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
+
+    exchange.expectCreation()
+    exchange.expectMsgPF {
+      case ExchangeActor.StartExchange(ex, SellerRole, Exchange.PeerInfo(_, `keyPair`), _, _, _, _)
+        if ex.id == exchangeId =>
+    }
+  }
+
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     val gatewayProbe = new GatewayProbe()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
@@ -71,6 +81,11 @@ class OrderActorTest extends AkkaSpec {
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
     val order = Order(Ask, 5.BTC, 500.EUR)
     val inMarketOrder = order.withStatus(InMarketOrder)
+
+    val exchangeId = ExchangeId.random()
+    val counterpart = PeerId("counterpart")
+    val orderMatch = OrderMatch(
+      order.id, exchangeId, order.amount, order.price, lockTime = 400000L, counterpart)
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
       gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)

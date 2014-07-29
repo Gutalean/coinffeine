@@ -3,8 +3,8 @@ package coinffeine.peer.market
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.MockActor.{MockReceived, MockStarted}
-import coinffeine.common.test.{AkkaSpec, MockActor}
+import coinffeine.common.akka.test.MockActor.{MockReceived, MockStarted}
+import coinffeine.common.akka.test.{AkkaSpec, MockActor}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, Order}

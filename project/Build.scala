@@ -71,6 +71,7 @@ object Build extends sbt.Build {
     dependsOn(
       model % "compile->compile;test->test",
       protocol % "compile->compile;test->test",
+      commonAkka % "compile->compile;test->test",
       commonTest % "test->compile"
     )
   )
@@ -78,12 +79,21 @@ object Build extends sbt.Build {
   lazy val protocol = (Project(id = "protocol", base = file("coinffeine-protocol"))
     settings(PB.protobufSettings: _*)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn(model % "compile->compile;test->test", commonTest % "test->compile")
+    dependsOn(
+      model % "compile->compile;test->test",
+      commonAkka % "compile->compile;test->test",
+      commonTest % "test->compile"
+    )
   )
 
   lazy val model = (Project(id = "model", base = file("coinffeine-model"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(commonTest % "test->compile")
+  )
+
+  lazy val commonAkka = (Project(id = "common-akka", base = file("coinffeine-common-akka"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn commonTest
   )
 
   lazy val commonTest = (Project(id = "common-test", base = file("coinffeine-common-test"))
@@ -112,6 +122,11 @@ object Build extends sbt.Build {
       )
     )
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
-    dependsOn(model, peer, commonTest % "compile->compile;test->compile")
+    dependsOn(
+      model,
+      peer,
+      commonAkka % "compile->compile;test->test",
+      commonTest % "compile->compile;test->compile"
+    )
   )
 }

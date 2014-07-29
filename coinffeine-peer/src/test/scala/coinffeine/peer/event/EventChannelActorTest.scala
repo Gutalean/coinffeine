@@ -3,7 +3,7 @@ package coinffeine.peer.event
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api.event.CoinffeineAppEvent
 

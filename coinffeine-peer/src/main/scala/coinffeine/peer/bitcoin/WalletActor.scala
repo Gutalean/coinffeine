@@ -46,6 +46,11 @@ private class WalletActor extends Actor with ActorLogging {
       case RetrieveWalletBalance =>
         sender() ! WalletBalance(wallet.balance())
 
+      case CreateKeyPair =>
+        val keyPair = new KeyPair()
+        wallet.addKey(keyPair)
+        sender() ! KeyPairCreated(keyPair)
+
       case WalletChanged =>
         produceEvent(WalletBalanceChangeEvent(wallet.balance()))
     }
@@ -98,4 +103,10 @@ object WalletActor {
     * given transaction.
     */
   case class ReleaseFunds(tx: MutableTransaction)
+
+  /** A message sent to the wallet actor to ask for a fresh key pair */
+  case object CreateKeyPair
+
+  /** Response to [[CreateKeyPair]] */
+  case class KeyPairCreated(keyPair: KeyPair)
 }

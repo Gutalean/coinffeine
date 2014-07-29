@@ -3,7 +3,7 @@ package coinffeine.peer
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}

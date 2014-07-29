@@ -3,7 +3,7 @@ package coinffeine.peer.bitcoin
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
@@ -37,6 +37,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     eventually {
       wallet.balance() should be(initialFunds)
     }
+  }
+
+  it must "create new key pairs" in new Fixture {
+    instance ! WalletActor.CreateKeyPair
+    expectMsgClass(classOf[WalletActor.KeyPairCreated])
   }
 
   it must "report wallet balance" in new Fixture {
