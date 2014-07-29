@@ -2,14 +2,17 @@ package coinffeine.peer.payment
 
 import scala.concurrent.duration._
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.ActorRef
 import akka.util.Timeout
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessorActor {
+
+  /** Identifier of some funds blocked for a specific use. */
+  case class FundsId(underlying: Int) extends AnyVal
 
   /** Initialize the payment processor actor */
   case class Initialize(eventChannel: ActorRef)
@@ -19,6 +22,31 @@ object PaymentProcessorActor {
 
   /** A message sent by the payment processor identifying itself. */
   case class Identified(id: Id)
+
+  /** A message sent to the payment processor to reserve some funds
+    *
+    * @constructor
+    * @param amount    Amount to block
+    * @param listener  Actor to notify if the funds are not available despite being blocked
+    */
+  case class BlockFunds(amount: FiatAmount, listener: ActorRef)
+
+  /** Responses to [[BlockFunds]] */
+  sealed trait BlockFundsResult
+  case object NotEnoughFunds extends BlockFundsResult
+  case class FundsBlocked(funds: FundsId) extends BlockFundsResult
+
+  /** A message sent to the payment processor to release some previously reserved funds. */
+  case class UnblockFunds(funds: FundsId)
+
+  /** A message sent by the payment processor to notify that some blocked funds are not available
+    * for external reasons.
+    */
+  case class UnavailableFunds(funds: FundsId)
+
+  /** A message sent by the payment processor to notify when some blocked but not available funds
+    * are available back */
+  case class AvailableFunds(funds: FundsId)
 
   /** A message sent to the payment processor ordering a new pay.
     *
