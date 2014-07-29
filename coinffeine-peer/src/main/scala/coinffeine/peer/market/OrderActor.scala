@@ -1,16 +1,13 @@
 package coinffeine.peer.market
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern._
-import akka.util.Timeout
 import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -125,13 +122,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       )
     }
 
-    private def createFreshKeyPair(): Future[KeyPair] = {
-      implicit val timeout = Timeout(1.second)
-      (wallet ? CreateKeyPair).mapTo[KeyPairCreated].map(_.keyPair).recoverWith {
-        case NonFatal(cause) =>
-          Future.failed(new RuntimeException("Cannot get a fresh key pair", cause))
-      }
-    }
+    private def createFreshKeyPair(): Future[KeyPair] =
+      AskPattern(to = wallet, request = CreateKeyPair, errorMessage = "Cannot get a fresh key pair")
+        .withImmediateReply[KeyPairCreated]()
+        .map(_.keyPair)
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
       currentOrder = currentOrder.withExchange(exchange)
