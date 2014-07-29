@@ -6,10 +6,11 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor._
+import akka.pattern._
 import com.typesafe.config.Config
 
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
@@ -44,6 +45,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
   private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
 
     def start(): Unit = {
+      pollBalances()
       context.become(managePayments)
     }
 
@@ -57,7 +59,11 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
       case PaymentProcessorActor.RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
       case PollBalance =>
-        pollBalance()
+        pollBalances()
+      case UpdatedBalances(balances) =>
+        for (balance <- balances) {
+          produceEvent(FiatBalanceChangeEvent(balance))
+        }
     }
 
     private def sendPayment[C <: FiatCurrency](requester: ActorRef,
@@ -79,20 +85,23 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      client.currentBalance(currency).onComplete {
-        case Success(balance) =>
-          requester ! PaymentProcessorActor.BalanceRetrieved(balance)
-          produceEvent(FiatBalanceChangeEvent(balance))
+      client.currentBalances().onComplete {
+        case Success(balances) =>
+          self ! UpdatedBalances(balances)
+          requester ! balances.find(_.currency == currency)
+            .fold(balanceNotFound(currency))(PaymentProcessorActor.BalanceRetrieved.apply)
         case Failure(error) =>
           requester ! PaymentProcessorActor.BalanceRetrievalFailed(currency, error)
       }
     }
 
-    private def pollBalance(): Unit = {
-      client.currentBalance(CurrencyToPoll).onSuccess {
-        case balance => produceEvent(FiatBalanceChangeEvent(balance))
-      }
+    private def pollBalances(): Unit = {
+      client.currentBalances().map(UpdatedBalances.apply).pipeTo(self)
     }
+
+    private def balanceNotFound(currency: FiatCurrency): PaymentProcessorActor.RetrieveBalanceResponse =
+      PaymentProcessorActor.BalanceRetrievalFailed(currency,
+        new NoSuchElementException("No balance in that currency"))
   }
 }
 
@@ -100,9 +109,9 @@ object OkPayProcessorActor {
 
   val Id = "OKPAY"
 
-  private val CurrencyToPoll = Euro
-
   private case object PollBalance
+
+  private case class UpdatedBalances(balances: Seq[FiatAmount])
 
   def props(config: Config) = {
     val account = config.getString("coinffeine.okpay.id")
