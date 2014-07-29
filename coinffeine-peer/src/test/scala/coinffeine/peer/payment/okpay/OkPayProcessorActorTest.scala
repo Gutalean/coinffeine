@@ -41,6 +41,9 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
+      for (i <- 1 to balances.size) {
+        eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
+      }
     }
   }
 
@@ -74,17 +77,29 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.sendPayment(receiverAccount, amount, "comment"))
       .willReturn(Future.successful(payment))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    processor ! PaymentProcessorActor.Pay(receiverAccount, amount, "comment")
+    processor ! PaymentProcessorActor.BlockFunds(amount, self)
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessorActor.Paid(Payment(
         payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
     }
   }
 
+  it must "require enough funds to send a payment" in new WithOkPayProcessor {
+    givenPaymentProcessorIsInitialized(balances = Seq(amount))
+    processor ! PaymentProcessorActor.BlockFunds(amount / 2, self)
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
+    expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
+  }
+
   it must "report failure to send a payment" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    val payRequest = PaymentProcessorActor.Pay(receiverAccount, amount, "comment")
+    processor ! PaymentProcessorActor.BlockFunds(amount, self)
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     processor ! payRequest
     expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
   }
@@ -122,7 +137,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "block funds up to existing balances" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
     processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
@@ -135,7 +149,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "unblock blocked funds to make then available again" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
     processor ! PaymentProcessorActor.BlockFunds(100.EUR, self)
     val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
     processor ! PaymentProcessorActor.UnblockFunds(funds)

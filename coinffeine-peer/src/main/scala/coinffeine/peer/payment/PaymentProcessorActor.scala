@@ -50,12 +50,17 @@ object PaymentProcessorActor {
 
   /** A message sent to the payment processor ordering a new pay.
     *
-    * @param to The ID of the receiver account
-    * @param amount The amount of fiat currency to pay
-    * @param comment The comment to be attached to the payment
-    * @tparam C The fiat currency of the payment amount
+    * Funds to transfer should have been previously blocked using [[BlockFunds]] and can be
+    * spent partially.
+    *
+    * @param fundsId   Id of the blocked funds to spent
+    * @param to        The ID of the receiver account
+    * @param amount    The amount of fiat currency to pay
+    * @param comment   The comment to be attached to the payment
+    * @tparam C        The fiat currency of the payment amount
     */
-  case class Pay[C <: FiatCurrency](to: AccountId,
+  case class Pay[C <: FiatCurrency](fundsId: FundsId,
+                                    to: AccountId,
                                     amount: CurrencyAmount[C],
                                     comment: String)
 

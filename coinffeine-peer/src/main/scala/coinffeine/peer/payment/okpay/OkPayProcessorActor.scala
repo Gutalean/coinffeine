@@ -75,9 +75,13 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
-      client.sendPayment(pay.to, pay.amount, pay.comment).onComplete {
+      if (!blockedFunds.canUseFunds(pay.fundsId, pay.amount)) {
+        requester ! PaymentFailed(pay,
+          new PaymentProcessorException(s"${pay.amount} is not backed by funds ${pay.fundsId}"))
+      } else client.sendPayment(pay.to, pay.amount, pay.comment).onComplete {
         case Success(payment) =>
           requester ! Paid(payment)
+          blockedFunds.useFunds(pay.fundsId, pay.amount)
         case Failure(error) =>
           requester ! PaymentFailed(pay, error)
       }

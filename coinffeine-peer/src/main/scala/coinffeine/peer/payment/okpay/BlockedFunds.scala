@@ -6,7 +6,9 @@ import coinffeine.model.currency.{CurrencyAmount, FiatCurrency, FiatAmount}
 import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 
 private[okpay] class BlockedFunds {
-  private case class Funds(remainingAmount: FiatAmount, listener: ActorRef)
+  private case class Funds(remainingAmount: FiatAmount, listener: ActorRef) {
+    require(remainingAmount.isPositive)
+  }
   private var createdFunds = 0
   private var fundsMap = Map.empty[FundsId, Funds]
   private var _balances = Seq.empty[FiatAmount]
@@ -33,6 +35,21 @@ private[okpay] class BlockedFunds {
     val currenciesBlocked = fundsMap.values.map(_.remainingAmount.currency).toSet
     currenciesBlocked.forall { currency =>
       blockedIn(currency) <= balanceIn(currency)
+    }
+  }
+
+  def canUseFunds(id: FundsId, amount: FiatAmount): Boolean =
+    fundsMap.get(id).fold(false) { case Funds(remainingAmount, _) =>
+      amount <= remainingAmount
+    }
+
+  def useFunds(id: FundsId, amount: FiatAmount): Unit = {
+    val funds = fundsMap(id)
+    val remainingAmount = funds.remainingAmount - amount
+    if (remainingAmount.isPositive) {
+      fundsMap += id -> funds.copy(remainingAmount = remainingAmount)
+    } else {
+      fundsMap - id
     }
   }
 
