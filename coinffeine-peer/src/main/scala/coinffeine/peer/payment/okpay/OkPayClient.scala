@@ -18,12 +18,14 @@ trait OkPayClient {
 
   def currentBalances(): Future[Seq[FiatAmount]]
 
-  def currentBalance[C <: FiatCurrency](currency: C)
-                                       (implicit ec: ExecutionContext): Future[CurrencyAmount[C]] = {
+  def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+    implicit val ec = executionContext
     currentBalances().map { balances =>
       balances.find(_.currency == currency)
         .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
         .asInstanceOf[CurrencyAmount[C]]
     }
   }
+
+  protected def executionContext: ExecutionContext
 }

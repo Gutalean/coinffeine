@@ -78,12 +78,16 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
       if (!blockedFunds.canUseFunds(pay.fundsId, pay.amount)) {
         requester ! PaymentFailed(pay,
           new PaymentProcessorException(s"${pay.amount} is not backed by funds ${pay.fundsId}"))
-      } else client.sendPayment(pay.to, pay.amount, pay.comment).onComplete {
-        case Success(payment) =>
-          requester ! Paid(payment)
-          blockedFunds.useFunds(pay.fundsId, pay.amount)
-        case Failure(error) =>
-          requester ! PaymentFailed(pay, error)
+      } else {
+        val paymentFuture = client.sendPayment(pay.to, pay.amount, pay.comment)
+        paymentFuture.onComplete {
+          case Success(payment) =>
+            requester ! Paid(payment)
+            blockedFunds.useFunds(pay.fundsId, pay.amount)
+          case Failure(error) =>
+            requester ! PaymentFailed(pay, error)
+        }
+        paymentFuture.onComplete(_ => pollBalances())
       }
     }
 
@@ -133,7 +137,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
     private def notifyFundsListeners(areBacked: Boolean): Unit = {
       val messageFactory = if (areBacked) AvailableFunds.apply _ else UnavailableFunds.apply _
-      for ((funds, ref) <- blockedFunds.listenersByFund) {
+      for ((funds, ref) <- blockedFunds.listenersByFundId) {
         ref ! messageFactory(funds)
       }
     }

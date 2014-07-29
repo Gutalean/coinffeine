@@ -11,12 +11,12 @@ private[okpay] class BlockedFunds {
   }
   private var createdFunds = 0
   private var fundsMap = Map.empty[FundsId, Funds]
-  private var _balances = Seq.empty[FiatAmount]
+  private var balances = Seq.empty[FiatAmount]
 
-  def listenersByFund: Map[FundsId, ActorRef] = fundsMap.mapValues(_.listener)
+  def listenersByFundId: Map[FundsId, ActorRef] = fundsMap.mapValues(_.listener)
 
-  def updateBalances(balances: Seq[FiatAmount]): Unit = {
-    _balances = balances
+  def updateBalances(newBalances: Seq[FiatAmount]): Unit = {
+    balances = newBalances
   }
 
   def block(amount: FiatAmount, listener: ActorRef): Option[FundsId] = {
@@ -60,7 +60,7 @@ private[okpay] class BlockedFunds {
   }
 
   private def balanceIn[C <: FiatCurrency](currency: C): CurrencyAmount[C] =
-    _balances.find(_.currency == currency)
+    balances.find(_.currency == currency)
       .getOrElse(currency.Zero)
       .asInstanceOf[CurrencyAmount[C]]
 
