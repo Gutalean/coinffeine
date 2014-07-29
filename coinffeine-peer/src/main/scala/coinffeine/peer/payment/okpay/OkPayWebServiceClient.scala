@@ -9,7 +9,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.generated._

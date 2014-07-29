@@ -4,8 +4,8 @@ import scala.concurrent.Future
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
+import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
-import coinffeine.peer.payment.AnyPayment
 
 trait OkPayClient {
 
