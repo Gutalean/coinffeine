@@ -19,7 +19,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
+import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest
@@ -55,7 +55,7 @@ class BuyerMicroPaymentChannelActorTest
     filter(fromCounterpart(relevantOfferAccepted)) should be (true)
     filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
-    val randomMessage = PeerOrderRequests.empty(Market(Euro))
+    val randomMessage = PeerPositions.empty(Market(Euro))
     filter(ReceiveMessage(randomMessage, counterpartConnection)) should be (false)
   }
 

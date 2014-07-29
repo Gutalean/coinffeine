@@ -76,7 +76,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val actor = system.actorOf(MarketInfoActor.props)
     val sampleEurQuote = Quote(spread = 900.EUR -> 905.EUR, lastPrice = 904.EUR)
     val sampleUsdQuote = Quote(spread = 1000.USD -> 1010.USD, lastPrice = 1005.USD)
-    val sampleOpenOrders = OpenOrders(PeerOrderRequests.empty(eurMarket))
+    val sampleOpenOrders = OpenOrders(PeerPositions.empty(eurMarket))
 
     actor ! MarketInfoActor.Start(broker, gateway.ref)
     gateway.expectSubscription()

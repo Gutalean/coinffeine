@@ -20,7 +20,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, PaymentFound}
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
+import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
@@ -49,7 +49,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     filter(fromCounterpart(relevantPayment)) should be (true)
     filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
     filter(fromCounterpart(irrelevantPayment)) should be (false)
-    val randomMessage = PeerOrderRequests.empty(Market(Euro))
+    val randomMessage = PeerPositions.empty(Market(Euro))
     filter(fromCounterpart(randomMessage)) should be (false)
   }
 

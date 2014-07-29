@@ -13,7 +13,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.GatewayProbe
-import coinffeine.protocol.messages.brokerage.{Market, PeerOrderRequests}
+import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 
 class SubmissionSupervisorTest extends AkkaSpec {
 
@@ -25,7 +25,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
   val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
   val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
-  val noEurOrders = PeerOrderRequests.empty(Market(Euro))
+  val noEurOrders = PeerPositions.empty(Market(Euro))
   val firstEurOrder = noEurOrders.addEntry(eurOrder1)
   val bothEurOrders = firstEurOrder.addEntry(eurOrder2)
 
@@ -59,7 +59,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
 
     def currencyOfNextOrderSet(): FiatCurrency =
       gateway.expectForwardingPF(brokerId, constants.orderExpirationInterval) {
-        case PeerOrderRequests(Market(currency), _) => currency
+        case PeerPositions(Market(currency), _) => currency
       }
 
     val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())

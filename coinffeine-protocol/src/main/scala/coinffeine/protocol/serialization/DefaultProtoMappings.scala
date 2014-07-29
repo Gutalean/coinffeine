@@ -135,10 +135,10 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val peerPositionsMapping = new ProtoMapping[PeerOrderRequests[FiatCurrency],
-      msg.PeerOrderRequests] {
+  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions[FiatCurrency],
+      msg.PeerPositions] {
 
-    override def fromProtobuf(message: msg.PeerOrderRequests) = {
+    override def fromProtobuf(message: msg.PeerPositions) = {
       val market = ProtoMapping.fromProtobuf(message.getMarket)
       val protobufEntries = message.getEntriesList.asScala
       val positions = for (protoEntry <- protobufEntries) yield {
@@ -146,11 +146,11 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         require(pos.price.currency == market.currency, s"Mixed currencies on $message")
         pos
       }
-      PeerOrderRequests(market, positions)
+      PeerPositions(market, positions)
     }
 
-    override def toProtobuf(requests: PeerOrderRequests[FiatCurrency]) = {
-      val builder = msg.PeerOrderRequests.newBuilder
+    override def toProtobuf(requests: PeerPositions[FiatCurrency]) = {
+      val builder = msg.PeerPositions.newBuilder
         .setMarket(ProtoMapping.toProtobuf(requests.market))
       for (entry <- requests.entries) {
         builder.addEntries(ProtoMapping.toProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](entry))
@@ -228,7 +228,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def toProtobuf(openOrders: OpenOrders[FiatCurrency]): msg.OpenOrders = {
       msg.OpenOrders.newBuilder
-        .setOrders(ProtoMapping.toProtobuf[PeerOrderRequests[FiatCurrency], msg.PeerOrderRequests](
+        .setOrders(ProtoMapping.toProtobuf[PeerPositions[FiatCurrency], msg.PeerPositions](
           openOrders.orders))
         .build
     }

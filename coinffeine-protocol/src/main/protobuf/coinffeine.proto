@@ -30,7 +30,7 @@ message OrderBookEntry {
     required FiatAmount price = 4;
 }
 
-message PeerOrderRequests {
+message PeerPositions {
     required Market market = 1;
     repeated OrderBookEntry entries = 2;
 }
@@ -60,7 +60,7 @@ message OpenOrdersRequest {
 }
 
 message OpenOrders {
-    required PeerOrderRequests orders = 1;
+    required PeerPositions orders = 1;
 }
 
 message ExchangeAborted {
@@ -117,7 +117,7 @@ message Payload {
     optional ExchangeCommitment exchangeCommitment = 2;
     optional CommitmentNotification commitmentNotification = 3;
     optional OrderMatch orderMatch = 4;
-    optional PeerOrderRequests peerOrderRequests = 5;
+    optional PeerPositions peerPositions = 5;
     optional QuoteRequest quoteRequest = 6;
     optional Quote quote = 7;
     optional ExchangeRejection exchangeRejection = 8;
