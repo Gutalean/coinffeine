@@ -62,6 +62,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setOpenOrders(ProtoMapping.toProtobuf(m))
       case m: PeerPositions[FiatCurrency] =>
         builder.setPeerPositions(ProtoMapping.toProtobuf(m))
+      case m: PeerPositionsReceived =>
+        builder.setPeerPositionsReceived(ProtoMapping.toProtobuf(m))
       case _ => throw new IllegalArgumentException("Unsupported message: " + message)
     }
     builder
@@ -115,6 +117,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getOpenOrders)
       case PEERPOSITIONS_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getPeerPositions)
+      case PEERPOSITIONSRECEIVED_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived)
       case _ => throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
     }
   }

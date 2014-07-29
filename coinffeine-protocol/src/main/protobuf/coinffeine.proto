@@ -36,6 +36,10 @@ message PeerPositions {
     repeated OrderBookEntry entries = 3;
 }
 
+message PeerPositionsReceived {
+    required string nonce = 1;
+}
+
 message QuoteRequest {
     required Market market = 1;
 }
@@ -119,16 +123,17 @@ message Payload {
     optional CommitmentNotification commitmentNotification = 3;
     optional OrderMatch orderMatch = 4;
     optional PeerPositions peerPositions = 5;
-    optional QuoteRequest quoteRequest = 6;
-    optional Quote quote = 7;
-    optional ExchangeRejection exchangeRejection = 8;
-    optional PeerHandshake peerHandshake = 9;
-    optional RefundSignatureRequest refundSignatureRequest = 10;
-    optional RefundSignatureResponse refundSignatureResponse = 11;
-    optional StepSignature stepSignature = 12;
-    optional PaymentProof paymentProof = 13;
-    optional OpenOrdersRequest openOrderRequest = 14;
-    optional OpenOrders openOrders = 15;
+    optional PeerPositionsReceived peerPositionsReceived = 6;
+    optional QuoteRequest quoteRequest = 7;
+    optional Quote quote = 8;
+    optional ExchangeRejection exchangeRejection = 9;
+    optional PeerHandshake peerHandshake = 10;
+    optional RefundSignatureRequest refundSignatureRequest = 11;
+    optional RefundSignatureResponse refundSignatureResponse = 12;
+    optional StepSignature stepSignature = 13;
+    optional PaymentProof paymentProof = 14;
+    optional OpenOrdersRequest openOrderRequest = 15;
+    optional OpenOrders openOrders = 16;
 }
 
 message ProtocolVersion {

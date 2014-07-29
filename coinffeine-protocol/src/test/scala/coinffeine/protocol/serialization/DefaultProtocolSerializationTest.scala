@@ -119,7 +119,8 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         PaymentProof(exchangeId, "paymentId"),
         OpenOrdersRequest(market),
         OpenOrders(peerPositions),
-        peerPositions
+        peerPositions,
+        PeerPositionsReceived("nonce-1234567890")
       )
     }
 

@@ -83,6 +83,15 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     thereIsAMappingBetween[PeerPositions[FiatCurrency], msg.PeerPositions](
       positions, positionsMessage)
 
+  val positionsReceived = PeerPositionsReceived("nonce-1234567890")
+  val positionsReceivedMessage = msg.PeerPositionsReceived.newBuilder
+    .setNonce("nonce-1234567890")
+    .build
+
+  "Peer positions received" should behave like
+    thereIsAMappingBetween[PeerPositionsReceived, msg.PeerPositionsReceived](
+      positionsReceived, positionsReceivedMessage)
+
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
     .setExchangeId(sampleExchangeId.value)

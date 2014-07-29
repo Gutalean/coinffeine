@@ -160,6 +160,17 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     }
   }
 
+  implicit val peerPositionsReceivedMapping = new ProtoMapping[PeerPositionsReceived,
+    msg.PeerPositionsReceived] {
+
+    override def fromProtobuf(message: msg.PeerPositionsReceived) =
+      PeerPositionsReceived(message.getNonce)
+
+    override def toProtobuf(reception: PeerPositionsReceived) = msg.PeerPositionsReceived.newBuilder
+      .setNonce(reception.nonce)
+      .build()
+  }
+
   implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
 
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
