@@ -1,14 +1,23 @@
 package coinffeine.peer.market
 
-import akka.actor.{ActorLogging, Actor, ActorRef, Props}
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
+
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern._
+import akka.util.Timeout
 import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
+import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
+import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
@@ -19,6 +28,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermediateSteps: Int)
   extends Actor with ActorLogging {
+
+  import context.dispatcher
 
   override def receive: Receive = {
     case init: Initialize =>
@@ -70,8 +81,14 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
           s"with exchange ${orderMatch.exchangeId} and counterpart ${orderMatch.counterpart}")
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         val newExchange = buildExchange(orderMatch)
-        spawnExchange(newExchange)
         updateExchangeInOrder(newExchange)
+        createFreshKeyPair().onComplete {
+          case Success(keyPair) => spawnExchange(newExchange, keyPair)
+          case Failure(cause) =>
+            log.error(cause,
+              s"Cannot start exchange ${orderMatch.exchangeId} for ${currentOrder.id} order")
+            init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
+        }
 
       case ExchangeActor.ExchangeProgress(exchange) =>
         log.debug(s"Order actor received progress for exchange ${exchange.id}: ${exchange.progress}")
@@ -96,16 +113,24 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       )
     }
 
-    private def spawnExchange(exchange: Exchange[FiatCurrency]): Unit = {
+    private def spawnExchange(exchange: Exchange[FiatCurrency], exchangeKeyPair: KeyPair): Unit = {
       context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
         exchange = exchange,
         role,
-        user = Exchange.PeerInfo(null, null),
+        user = Exchange.PeerInfo(paymentProcessorAccount = null, exchangeKeyPair),
         userWallet = null,
         paymentProcessor,
         messageGateway,
         bitcoinPeer
       )
+    }
+
+    private def createFreshKeyPair(): Future[KeyPair] = {
+      implicit val timeout = Timeout(1.second)
+      (wallet ? CreateKeyPair).mapTo[KeyPairCreated].map(_.keyPair).recoverWith {
+        case NonFatal(cause) =>
+          Future.failed(new RuntimeException("Cannot get a fresh key pair", cause))
+      }
     }
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
