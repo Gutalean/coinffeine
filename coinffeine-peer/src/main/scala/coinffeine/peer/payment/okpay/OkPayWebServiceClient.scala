@@ -9,7 +9,7 @@ import org.joda.time.{DateTime, DateTimeZone}
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.generated._
@@ -68,16 +68,15 @@ class OkPayWebServiceClient(override val accountId: String,
       case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
     }
 
-  override def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+  override def currentBalances(): Future[Seq[FiatAmount]] = {
     service.wallet_Get_Balance(
       walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken()))
     ).map { response =>
       (for {
         arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
-        balance <- parseAndExtractBalance(arrayOfBalances, currency)
-      } yield balance).getOrElse(
-        throw new PaymentProcessorException(s"Cannot parse $currency balance in $response"))
+      } yield parseBalances(arrayOfBalances)).getOrElse(
+          throw new PaymentProcessorException(s"Cannot parse balances in $response"))
     }
   }
 
@@ -115,11 +114,9 @@ class OkPayWebServiceClient(override val accountId: String,
     }
   }
 
-  private def parseAndExtractBalance[C <: FiatCurrency](
-      balances: ArrayOfBalance, currency: C): Option[CurrencyAmount[C]] = {
-    val currencyCode = currency.javaCurrency.getCurrencyCode
-    balances.Balance.collectFirst {
-      case Some(Balance(Some(amount), Flatten(`currencyCode`))) => currency.amount(amount)
+  private def parseBalances[C <: FiatCurrency](balances: ArrayOfBalance): Seq[FiatAmount] = {
+    balances.Balance.collect {
+      case Some(Balance(Some(amount), Flatten(currencyCode))) => FiatAmount(amount, currencyCode)
     }
   }
 

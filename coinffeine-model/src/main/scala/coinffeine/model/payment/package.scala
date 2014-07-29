@@ -1,7 +1,6 @@
-package coinffeine.peer
+package coinffeine.model
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.payment.Payment
 
 package object payment {
 

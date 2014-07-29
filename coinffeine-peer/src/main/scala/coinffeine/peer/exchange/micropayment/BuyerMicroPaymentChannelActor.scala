@@ -15,6 +15,7 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
@@ -112,9 +113,10 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       implicit val timeout = PaymentProcessorActor.RequestTimeout
 
       val paymentRequest = PaymentProcessorActor.Pay(
-        exchange.counterpart.paymentProcessorAccount,
-        exchange.amounts.stepFiatAmount,
-        PaymentDescription(exchange.id, step)
+        fundsId = FundsId(0), // FIXME: reserve funds for the exchange
+        to = exchange.counterpart.paymentProcessorAccount,
+        amount = exchange.amounts.stepFiatAmount,
+        comment = PaymentDescription(exchange.id, step)
       )
       for {
         PaymentProcessorActor.Paid(payment) <- paymentProcessor.ask(paymentRequest)

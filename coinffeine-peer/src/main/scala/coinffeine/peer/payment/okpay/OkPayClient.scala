@@ -1,11 +1,11 @@
 package coinffeine.peer.payment.okpay
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.payment.Payment
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
-import coinffeine.peer.payment.AnyPayment
+import coinffeine.model.payment.{AnyPayment, Payment}
+import coinffeine.peer.payment.PaymentProcessorException
 
 trait OkPayClient {
 
@@ -16,5 +16,16 @@ trait OkPayClient {
 
   def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]]
 
-  def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]]
+  def currentBalances(): Future[Seq[FiatAmount]]
+
+  def currentBalance[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+    implicit val ec = executionContext
+    currentBalances().map { balances =>
+      balances.find(_.currency == currency)
+        .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
+        .asInstanceOf[CurrencyAmount[C]]
+    }
+  }
+
+  protected def executionContext: ExecutionContext
 }
