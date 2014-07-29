@@ -72,9 +72,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Order" should behave like thereIsAMappingBetween[OrderBookEntry[FiatAmount], msg.OrderBookEntry](
     orderBookEntry, orderBookEntryMessage)
 
-  val positions = PeerPositions(Market(Euro), Seq(orderBookEntry))
+  val positions = PeerPositions(Market(Euro), Seq(orderBookEntry), "nonce-1234567890")
   val positionsMessage = msg.PeerPositions.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
+    .setNonce("nonce-1234567890")
     .addEntries(orderBookEntryMessage)
     .build
 

@@ -146,13 +146,14 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         require(pos.price.currency == market.currency, s"Mixed currencies on $message")
         pos
       }
-      PeerPositions(market, positions)
+      PeerPositions(market, positions, message.getNonce)
     }
 
-    override def toProtobuf(requests: PeerPositions[FiatCurrency]) = {
+    override def toProtobuf(positions: PeerPositions[FiatCurrency]) = {
       val builder = msg.PeerPositions.newBuilder
-        .setMarket(ProtoMapping.toProtobuf(requests.market))
-      for (entry <- requests.entries) {
+        .setMarket(ProtoMapping.toProtobuf(positions.market))
+        .setNonce(positions.nonce)
+      for (entry <- positions.entries) {
         builder.addEntries(ProtoMapping.toProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](entry))
       }
       builder.build

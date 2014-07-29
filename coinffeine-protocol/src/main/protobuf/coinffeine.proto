@@ -31,8 +31,9 @@ message OrderBookEntry {
 }
 
 message PeerPositions {
-    required Market market = 1;
-    repeated OrderBookEntry entries = 2;
+    required string nonce = 1;
+    required Market market = 2;
+    repeated OrderBookEntry entries = 3;
 }
 
 message QuoteRequest {

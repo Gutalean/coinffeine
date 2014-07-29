@@ -6,7 +6,7 @@ import akka.actor.Props
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
@@ -33,6 +33,17 @@ class SubmissionSupervisorTest extends AkkaSpec {
     val gateway = new GatewayProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
     actor ! SubmissionSupervisor.Initialize(brokerId, gateway.ref)
+
+    def expectPeerPositionsForwarding(timeout: Duration, entries: OrderBookEntry[FiatAmount]*): Unit = {
+      gateway.expectForwardingPF(brokerId, timeout) {
+        case PeerPositions(Market(Euro), entriesInMsg, _) =>
+          entries.foreach(e => entriesInMsg should contain (e))
+      }
+    }
+
+    def expectPeerPositionsForwarding(entries: OrderBookEntry[FiatAmount]*): Unit = {
+      expectPeerPositionsForwarding(Duration.Undefined, entries: _*)
+    }
   }
 
   "An order submission actor" must "keep silent as long as there is no open orders" in new Fixture {
@@ -41,16 +52,16 @@ class SubmissionSupervisorTest extends AkkaSpec {
 
   it must "submit all orders as soon as a new one is open" in new Fixture {
     actor ! KeepSubmitting(eurOrder1)
-    gateway.expectForwarding(firstEurOrder, brokerId)
+    expectPeerPositionsForwarding(eurOrder1)
     actor ! KeepSubmitting(eurOrder2)
-    gateway.expectForwarding(bothEurOrders, brokerId)
+    expectPeerPositionsForwarding(eurOrder1, eurOrder2)
   }
 
   it must "keep resubmitting open orders to avoid them being discarded" in new Fixture {
     actor ! KeepSubmitting(eurOrder1)
-    gateway.expectForwarding(firstEurOrder, brokerId)
-    gateway.expectForwarding(firstEurOrder, brokerId, timeout = constants.orderExpirationInterval)
-    gateway.expectForwarding(firstEurOrder, brokerId, timeout = constants.orderExpirationInterval)
+    expectPeerPositionsForwarding(eurOrder1)
+    expectPeerPositionsForwarding(timeout = constants.orderExpirationInterval, eurOrder1)
+    expectPeerPositionsForwarding(timeout = constants.orderExpirationInterval, eurOrder1)
   }
 
   it must "group orders by target market" in new Fixture {
@@ -59,7 +70,7 @@ class SubmissionSupervisorTest extends AkkaSpec {
 
     def currencyOfNextOrderSet(): FiatCurrency =
       gateway.expectForwardingPF(brokerId, constants.orderExpirationInterval) {
-        case PeerPositions(Market(currency), _) => currency
+        case PeerPositions(Market(currency), _, _) => currency
       }
 
     val currencies = Set(currencyOfNextOrderSet(), currencyOfNextOrderSet())
@@ -68,20 +79,20 @@ class SubmissionSupervisorTest extends AkkaSpec {
 
   it must "keep resubmitting remaining orders after a cancellation" in new Fixture {
     actor ! KeepSubmitting(eurOrder1)
-    gateway.expectForwarding(firstEurOrder, brokerId)
+    expectPeerPositionsForwarding(eurOrder1)
     actor ! KeepSubmitting(eurOrder2)
-    gateway.expectForwarding(bothEurOrders, brokerId)
+    expectPeerPositionsForwarding(eurOrder1, eurOrder2)
     actor ! StopSubmitting(eurOrder2.id)
-    gateway.expectForwarding(firstEurOrder, brokerId)
-    gateway.expectForwarding(firstEurOrder, brokerId, timeout = constants.orderExpirationInterval)
-    gateway.expectForwarding(firstEurOrder, brokerId, timeout = constants.orderExpirationInterval)
+    expectPeerPositionsForwarding(eurOrder1)
+    expectPeerPositionsForwarding(timeout = constants.orderExpirationInterval, eurOrder1)
+    expectPeerPositionsForwarding(timeout = constants.orderExpirationInterval, eurOrder1)
   }
 
   it must "keep silent if all the orders get cancelled" in new Fixture {
     actor ! KeepSubmitting(eurOrder1)
-    gateway.expectForwarding(firstEurOrder, brokerId)
+    expectPeerPositionsForwarding(eurOrder1)
     actor ! StopSubmitting(eurOrder1.id)
-    gateway.expectForwarding(noEurOrders, brokerId)
+    expectPeerPositionsForwarding()
     gateway.expectNoMsg(constants.orderExpirationInterval)
   }
 }
