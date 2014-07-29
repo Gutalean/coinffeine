@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.util
 
 import akka.actor.Props
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.peer.exchange.util.ConstantValueActor.{SetValue, UnsetValue}
 
 class ConstantValueActorTest extends AkkaSpec("ConstantValueActorTest") {

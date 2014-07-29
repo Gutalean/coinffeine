@@ -2,7 +2,7 @@ package coinffeine.peer.market
 
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId

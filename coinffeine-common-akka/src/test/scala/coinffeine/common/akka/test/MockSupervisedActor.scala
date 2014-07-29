@@ -1,11 +1,11 @@
-package coinffeine.common.test
+package coinffeine.common.akka.test
 
 import scala.reflect.ClassTag
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.MockActor.{MockRestarted, MockStopped, MockThrow}
+import coinffeine.common.akka.test.MockActor.{MockRestarted, MockStopped, MockThrow}
 
 /** Utility class for testing supervisor actors */
 class MockSupervisedActor(implicit system: ActorSystem) {

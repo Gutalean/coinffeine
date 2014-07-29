@@ -6,7 +6,8 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import coinffeine.common.test.{IgnoredNetworkInterfaces, AkkaSpec, DefaultTcpPortAllocator}
+import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway

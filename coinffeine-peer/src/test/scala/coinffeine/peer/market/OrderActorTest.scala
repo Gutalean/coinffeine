@@ -3,7 +3,7 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency

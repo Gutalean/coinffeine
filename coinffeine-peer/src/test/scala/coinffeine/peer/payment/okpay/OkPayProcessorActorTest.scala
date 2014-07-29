@@ -7,8 +7,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 import org.mockito.BDDMockito.given
 import org.scalatest.mock.MockitoSugar
-
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._

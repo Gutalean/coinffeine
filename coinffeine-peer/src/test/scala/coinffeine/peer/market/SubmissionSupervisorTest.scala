@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._

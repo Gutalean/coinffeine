@@ -3,7 +3,8 @@ package coinffeine.protocol.gateway.proto
 import akka.actor.ActorRef
 import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
-import coinffeine.common.test.{IgnoredNetworkInterfaces, AkkaSpec, DefaultTcpPortAllocator}
+import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage

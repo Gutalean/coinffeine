@@ -3,7 +3,7 @@ package coinffeine.peer.bitcoin
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest

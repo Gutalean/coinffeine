@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId

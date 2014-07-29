@@ -1,6 +1,6 @@
 package coinffeine.peer.api.impl
 
-import coinffeine.common.test.AkkaSpec
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
