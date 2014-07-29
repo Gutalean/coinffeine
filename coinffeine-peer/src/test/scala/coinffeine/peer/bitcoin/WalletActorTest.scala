@@ -39,6 +39,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     }
   }
 
+  it must "create new key pairs" in new Fixture {
+    instance ! WalletActor.CreateKeyPair
+    expectMsgClass(classOf[WalletActor.KeyPairCreated])
+  }
+
   it must "report wallet balance" in new Fixture {
     instance ! RetrieveWalletBalance
     expectMsg(WalletBalance(10.BTC))
