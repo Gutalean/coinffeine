@@ -126,7 +126,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         exchange = exchange,
         role,
         user = userInfo,
-        userWallet = null,
+        wallet = null,
         paymentProcessor,
         messageGateway,
         bitcoinPeer

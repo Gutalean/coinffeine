@@ -53,6 +53,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "request refund transaction signature after getting counterpart peer handshake" in {
     givenCounterpartPeerHandshake()
+    shouldBlockFunds()
     shouldForwardRefundSignatureRequest()
   }
 

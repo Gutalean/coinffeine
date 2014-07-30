@@ -4,10 +4,11 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.handshake.HandshakeActor.StartHandshake
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -21,16 +22,13 @@ abstract class HandshakeActorTest(systemName: String)
   def protocolConstants: ProtocolConstants
 
   lazy val handshake = new MockHandshake(handshakingExchange)
-  val listener = TestProbe()
-  val blockchain = TestProbe()
+  val listener, blockchain, wallet = TestProbe()
   val actor = system.actorOf(Props(new HandshakeActor(new MockExchangeProtocol)), "handshake-actor")
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    val changeAddress = new Address(null, "17kzeh4N8g49GFvdDzSf8PjaPfyoD1MndL")
-    val unspentOutputs = Seq.empty
-    actor ! StartHandshake(exchange, userRole, user, unspentOutputs, changeAddress,
-      protocolConstants, gateway.ref, blockchain.ref, Set(listener.ref))
+    actor ! StartHandshake(exchange, userRole, user, protocolConstants, gateway.ref, blockchain.ref,
+      wallet.ref, Set(listener.ref))
   }
 
   def givenCounterpartPeerHandshake(): Unit = {
@@ -42,6 +40,11 @@ abstract class HandshakeActorTest(systemName: String)
   def givenValidRefundSignatureResponse() = {
     val validSignature = RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature)
     gateway.send(actor, fromCounterpart(validSignature))
+  }
+
+  def shouldBlockFunds(): Unit = {
+    val request = wallet.expectMsgClass(classOf[WalletActor.BlockFundsInMultisign])
+    wallet.reply(WalletActor.FundsBlocked(request, MockExchangeProtocol.DummyDeposit))
   }
 
   def shouldForwardPeerHandshake(): Unit = {

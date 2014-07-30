@@ -40,7 +40,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     def start(): Unit = {
-      require(userWallet.getKeys.contains(user.bitcoinKey))
       log.info(s"Starting exchange ${exchange.id}")
       bitcoinPeer ! RetrieveBlockchainActor
       context.become(retrievingBlockchain)
@@ -66,11 +65,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private def startHandshake(): Unit = {
-      // TODO: ask the wallet actor for funds
-      val funds = UnspentOutput.collect(role.myDepositAmount(exchange.amounts), userWallet)
       context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange, role, user, funds, userWallet.getChangeAddress, constants,
-        messageGateway, blockchain, resultListeners = Set(self)
+        exchange, role, user, constants, messageGateway, blockchain, wallet,
+        resultListeners = Set(self)
       )
     }
 

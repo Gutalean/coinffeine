@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.protocol.impl
 
 import scala.util.Try
 
-import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._
@@ -11,18 +11,19 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
       exchange: HandshakingExchange[C],
-      unspentOutputs: Seq[UnspentOutput],
-      changeAddress: Address): Handshake[C] = {
-    val availableFunds = TransactionProcessor.valueOf(unspentOutputs.map(_.output))
-    val depositAmount = exchange.role.myDepositAmount(exchange.amounts)
-    require(availableFunds >= depositAmount,
-      s"Expected deposit with $depositAmount ($availableFunds given)")
-    val myDeposit = ImmutableTransaction {
-      TransactionProcessor.createMultiSignedDeposit(
-        unspentOutputs.map(_.toTuple), depositAmount, changeAddress,
-        exchange.requiredSignatures.toSeq, exchange.parameters.network)
+      deposit: ImmutableTransaction): Handshake[C] = {
+    requireValidDeposit(exchange, deposit)
+    new DefaultHandshake(exchange, deposit)
+  }
+
+  private def requireValidDeposit[C <: FiatCurrency](exchange: HandshakingExchange[C],
+                                                     deposit: ImmutableTransaction): Unit = {
+    val validator = new DepositValidator(exchange.amounts, exchange.participants.map(_.bitcoinKey))
+    val validation = exchange.role match {
+      case BuyerRole => validator.requireValidBuyerFunds _
+      case SellerRole => validator.requireValidSellerFunds _
     }
-    new DefaultHandshake(exchange, myDeposit)
+    validation(deposit).get
   }
 
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =

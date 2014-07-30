@@ -55,6 +55,7 @@ class DepositValidatorTest extends ExchangeTest {
   }
 
   trait Fixture extends BuyerHandshake with SellerHandshake {
+    sendMoneyToWallet(sellerWallet, 10.BTC)
     val invalidFundsCommitment = new MutableTransaction(exchange.parameters.network)
     invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
     invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.getKeys.head)
