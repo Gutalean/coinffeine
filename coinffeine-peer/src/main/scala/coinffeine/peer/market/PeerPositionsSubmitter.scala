@@ -12,10 +12,10 @@ import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
 
-/** A watcher of sending order positions to the broker.
+/** An actor that submits the order positions.
   * 
-  * This actor will be created by [[MarketSubmissionActor]] in order to watch the submission of
-  * a [[PeerPositions]] message. The watcher will forward  the positions through the message
+  * This actor will be created by [[MarketSubmissionActor]] in order to submit and watch  a
+  * [[PeerPositions]] message. The watcher will forward  the positions through the message
   * gateway and then it will expect a [[PeerPositionsReceived]] response to notify the requesters
   * appropriately.
   *
@@ -24,7 +24,7 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositi
   *                  the [[PeerPositionsReceived]] message from.
   * @param timeout   The timeout for the watch.
   */
-class PeerPositionsWatcher[C <: FiatCurrency](
+class PeerPositionsSubmitter[C <: FiatCurrency](
     market: Market[C],
     requests: Set[(ActorRef, OrderBookEntry[FiatAmount])],
     brokerId: PeerId,
@@ -36,17 +36,18 @@ class PeerPositionsWatcher[C <: FiatCurrency](
 
   private val nonce = peerPositions.nonce
 
-  log.debug(s"Watching peer positions with nonce $nonce")
+  override def preStart() = {
+    log.debug(s"Submitting and watching peer positions with nonce $nonce")
 
-  gateway ! MessageGateway.Subscribe {
-    case ReceiveMessage(PeerPositionsReceived(_), _) => true
-    case _ => false
+    gateway ! MessageGateway.Subscribe {
+      case ReceiveMessage(PeerPositionsReceived(_), _) => true
+      case _ => false
+    }
+
+    gateway ! MessageGateway.ForwardMessage(peerPositions, brokerId)
+
+    context.setReceiveTimeout(timeout)
   }
-
-  gateway ! MessageGateway.ForwardMessage(peerPositions, brokerId)
-
-  context.setReceiveTimeout(timeout)
-
 
   override def receive = {
     case ReceiveMessage(PeerPositionsReceived(`nonce`), `brokerId`) =>
@@ -60,12 +61,12 @@ class PeerPositionsWatcher[C <: FiatCurrency](
   }
 
   private def terminate(): Unit = {
-    log.debug(s"Terminating peer positions watcher for nonce $nonce")
+    log.debug(s"Terminating peer positions submitter for nonce $nonce")
     self ! PoisonPill
   }
 }
 
-object PeerPositionsWatcher {
+object PeerPositionsSubmitter {
 
   def props[C <: FiatCurrency](
       market: Market[C],
@@ -73,5 +74,5 @@ object PeerPositionsWatcher {
       brokerId: PeerId,
       gateway: ActorRef,
       timeout: Duration): Props =
-    Props(new PeerPositionsWatcher(market, requests, brokerId, gateway, timeout))
+    Props(new PeerPositionsSubmitter(market, requests, brokerId, gateway, timeout))
 }

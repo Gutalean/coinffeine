@@ -9,7 +9,7 @@ import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -59,10 +59,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private val manageOrder: Receive = {
-      case InMarket(order) if order.id == currentOrder.id =>
+      case InMarket(order) if orderBookEntryMatches(order) =>
         updateOrderStatus(InMarketOrder)
 
-      case Offline(order) if order.id == currentOrder.id =>
+      case Offline(order) if orderBookEntryMatches(order) =>
         updateOrderStatus(OfflineOrder)
 
       case CancelOrder =>
@@ -154,6 +154,9 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       produceEvent(OrderUpdatedEvent(currentOrder))
 
     }
+
+    private def orderBookEntryMatches(entry: OrderBookEntry[FiatAmount]): Boolean =
+      entry.id == currentOrder.id && entry.amount == currentOrder.amount
   }
 }
 

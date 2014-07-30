@@ -57,7 +57,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
     }
 
     private def forwardOrders(orders: SubmittingOrders): Unit = {
-      context.actorOf(PeerPositionsWatcher.props(
+      context.actorOf(PeerPositionsSubmitter.props(
         market, orders, brokerId, gateway, protocolConstants.orderAcknowledgeTimeout))
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
