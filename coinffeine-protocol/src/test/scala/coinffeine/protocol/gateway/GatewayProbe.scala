@@ -21,9 +21,14 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
 
   def ref = probe.ref
 
-  def expectSubscription(): Subscribe = {
+  def expectSubscription(): Subscribe =
+    expectSubscription(probe.testKitSettings.DefaultTimeout.duration)
+
+  def expectSubscription(timeout: Duration): Subscribe = {
     val subscription = try {
-      probe.expectMsgClass(classOf[Subscribe])
+      probe.expectMsgPF(timeout) {
+        case s: Subscribe => s
+      }
     } catch {
       case ex: AssertionError => fail("Expected subscription failed", ex)
     }
