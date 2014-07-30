@@ -15,6 +15,7 @@ import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
@@ -63,23 +64,30 @@ class OrderActorTest extends AkkaSpec {
   it should "spawn an exchange upon matching" in new Fixture {
     gatewayProbe.relayMessage(orderMatch, brokerId)
     val keyPair = new KeyPair()
+
     walletProbe.expectMsg(WalletActor.CreateKeyPair)
     walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
 
+    paymentProcessorProbe.expectMsg(PaymentProcessorActor.Identify)
+    paymentProcessorProbe.reply(PaymentProcessorActor.Identified(paymentProcessorId))
+
     exchange.expectCreation()
+    val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
     exchange.expectMsgPF {
-      case ExchangeActor.StartExchange(ex, SellerRole, Exchange.PeerInfo(_, `keyPair`), _, _, _, _)
+      case ExchangeActor.StartExchange(ex, SellerRole, `peerInfo`, _, _, _, _)
         if ex.id == exchangeId =>
     }
   }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     val gatewayProbe = new GatewayProbe()
-    val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
+    val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
+      TestProbe()
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
     val order = Order(Ask, 5.BTC, 500.EUR)
+    val paymentProcessorId = "account-123"
     val inMarketOrder = order.withStatus(InMarketOrder)
 
     val exchangeId = ExchangeId.random()
