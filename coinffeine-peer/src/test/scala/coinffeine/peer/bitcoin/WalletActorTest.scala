@@ -17,7 +17,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val request = WalletActor.BlockFundsInMultisign(Seq(keyPair, otherKeyPair), 1.BTC)
     instance ! request
     expectMsgPF() {
-      case WalletActor.FundsBlocked(`request`, tx) => wallet.value(tx) should be (-1.BTC)
+      case WalletActor.FundsBlocked(`request`, tx) => wallet.value(tx.get) should be (-1.BTC)
     }
   }
 

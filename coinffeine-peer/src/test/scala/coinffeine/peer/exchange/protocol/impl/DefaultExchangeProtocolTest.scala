@@ -1,8 +1,9 @@
 package coinffeine.peer.exchange.protocol.impl
 
+import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.peer.exchange.protocol.UnspentOutput
 
 class DefaultExchangeProtocolTest extends ExchangeTest {
 
@@ -20,11 +21,12 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
       sendToBlockChain(deposit)
     }
 
-  it should "require the unspent outputs to have a minimum amount" in new FreshInstance {
+  it should "require the deposit to be valid" in new FreshInstance {
     val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.1.BTC)
-    val funds = UnspentOutput.collect(0.1.BTC, buyerWallet)
+    val invalidDeposit = ImmutableTransaction(
+      buyerWallet.blockMultisignFunds(requiredSignatures, 0.01.BTC))
     an [IllegalArgumentException] should be thrownBy {
-      protocol.createHandshake(buyerExchange, funds, buyerWallet.getChangeAddress)
+      protocol.createHandshake(buyerExchange, invalidDeposit)
     }
   }
 }

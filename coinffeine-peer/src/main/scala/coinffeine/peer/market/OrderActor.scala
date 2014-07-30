@@ -13,12 +13,14 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -79,13 +81,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         val newExchange = buildExchange(orderMatch)
         updateExchangeInOrder(newExchange)
-        createFreshKeyPair().onComplete {
-          case Success(keyPair) => spawnExchange(newExchange, keyPair)
-          case Failure(cause) =>
-            log.error(cause,
-              s"Cannot start exchange ${orderMatch.exchangeId} for ${currentOrder.id} order")
-            init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
-        }
+        startExchange(newExchange)
 
       case ExchangeActor.ExchangeProgress(exchange) =>
         log.debug(s"Order actor received progress for exchange ${exchange.id}: ${exchange.progress}")
@@ -95,6 +91,20 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         log.debug(s"Order actor received success for exchange ${exchange.id}")
         currentOrder = currentOrder.withStatus(CompletedOrder)
         updateExchangeInOrder(exchange)
+    }
+
+    private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
+      val userInfoFuture = for {
+        keyPair <- createFreshKeyPair()
+        paymentProcessorId <- retrievePaymentProcessorId()
+      } yield Exchange.PeerInfo(paymentProcessorId, keyPair)
+      userInfoFuture.onComplete {
+        case Success(userInfo) => spawnExchange(newExchange, userInfo)
+        case Failure(cause) =>
+          log.error(cause,
+            s"Cannot start exchange ${newExchange.id} for ${currentOrder.id} order")
+          init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
+      }
     }
 
     private def buildExchange(orderMatch: OrderMatch): Exchange[FiatCurrency] = {
@@ -110,12 +120,13 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       )
     }
 
-    private def spawnExchange(exchange: Exchange[FiatCurrency], exchangeKeyPair: KeyPair): Unit = {
+    private def spawnExchange(exchange: Exchange[FiatCurrency],
+                              userInfo: Exchange.PeerInfo): Unit = {
       context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
         exchange = exchange,
         role,
-        user = Exchange.PeerInfo(paymentProcessorAccount = null, exchangeKeyPair),
-        userWallet = null,
+        user = userInfo,
+        wallet = null,
         paymentProcessor,
         messageGateway,
         bitcoinPeer
@@ -126,6 +137,12 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       AskPattern(to = wallet, request = CreateKeyPair, errorMessage = "Cannot get a fresh key pair")
         .withImmediateReply[KeyPairCreated]()
         .map(_.keyPair)
+
+    private def retrievePaymentProcessorId(): Future[AccountId] = AskPattern(
+      to = paymentProcessor,
+      request = PaymentProcessorActor.Identify,
+      errorMessage = "Cannot retrieve payment processor id"
+    ).withImmediateReply[PaymentProcessorActor.Identified]().map(_.id)
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
       currentOrder = currentOrder.withExchange(exchange)

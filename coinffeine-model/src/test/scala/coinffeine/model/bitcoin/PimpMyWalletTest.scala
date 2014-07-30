@@ -34,6 +34,14 @@ class PimpMyWalletTest extends UnitTest with BitcoinjTest {
     instance.balance() should be (0.BTC)
   }
 
+  it must "reject releasing funds of a transaction not managed by this wallet" in new Fixture {
+    val otherWallet = createWallet(new KeyPair, 10.BTC)
+    val tx = otherWallet.blockFunds(someoneElseAddress, 5.BTC)
+    an [IllegalArgumentException] shouldBe thrownBy {
+      instance.releaseFunds(tx)
+    }
+  }
+
   it must "consider change funds after tx is broadcast" in new Fixture {
     val tx = instance.blockFunds(someoneElseAddress, 1.BTC)
     sendToBlockChain(tx)

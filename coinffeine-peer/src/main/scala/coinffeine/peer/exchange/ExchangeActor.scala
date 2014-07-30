@@ -19,7 +19,7 @@ object ExchangeActor {
   case class StartExchange[C <: FiatCurrency](exchange: Exchange[C],
                                               role: Role,
                                               user: Exchange.PeerInfo,
-                                              userWallet: Wallet,
+                                              wallet: ActorRef,
                                               paymentProcessor: ActorRef,
                                               messageGateway: ActorRef,
                                               bitcoinPeer: ActorRef)

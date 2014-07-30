@@ -1,15 +1,19 @@
 package coinffeine.peer.exchange.handshake
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
+import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.WalletActor.FundsBlocked
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
@@ -62,12 +66,27 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
     private def receivePeerHandshake: Receive = {
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-        val handshake = exchangeProtocol.createHandshake(
-          HandshakingExchange(role, user, counterpart, exchange), unspentOutputs, changeAddress)
-        requestRefundSignature(handshake)
-        context.become(waitForRefundSignature(handshake))
+        val handshakingExchange = HandshakingExchange(role, user, counterpart, exchange)
+        blockFunds(handshakingExchange).onComplete {
+          case Success(deposit) =>
+            val handshake = exchangeProtocol.createHandshake(handshakingExchange, deposit)
+            requestRefundSignature(handshake)
+            context.become(waitForRefundSignature(handshake))
+          case Failure(cause) =>
+            finishWithResult(Failure(cause))
+        }
 
       case ResubmitRequest => handshakePeer()
+    }
+
+    private def blockFunds(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
+      val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
+      val depositAmount = role.myDepositAmount(exchange.amounts)
+      AskPattern(
+        to = wallet,
+        request = WalletActor.BlockFundsInMultisign(requiredSignatures, depositAmount),
+        errorMessage = s"Cannot block $depositAmount in multisig"
+      ).withImmediateReply[FundsBlocked]().map(_.tx)
     }
 
     private def receiveRefundSignature(handshake: Handshake[C]): Receive = {
@@ -148,12 +167,12 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
       val id = exchange.id
       val counterpart = role.counterpart.select(exchange.peerIds)
       messageGateway ! Subscribe {
-        case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) => true
-        case ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) => true
-        case ReceiveMessage(RefundSignatureResponse(`id`, _), `counterpart`) => true
-        case ReceiveMessage(CommitmentNotification(`id`, _), exchange.`brokerId`) => true
-        case ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) => true
-        case _ => false
+        case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) |
+             ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) |
+             ReceiveMessage(RefundSignatureResponse(`id`, _), `counterpart`) |
+             ReceiveMessage(CommitmentNotification(`id`, _), exchange.`brokerId`) |
+             ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) => true
+        case other => false
       }
     }
 
@@ -179,6 +198,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
     }
 
     private def requestRefundSignature(handshake: Handshake[C]): Unit = {
+      log.debug("Handshake {}: requesting refund signature", exchange.id)
       forwarding.forwardToCounterpart(RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund))
     }
 
@@ -208,17 +228,17 @@ object HandshakeActor {
     * @param constants        Protocol constants
     * @param messageGateway   Communications gateway
     * @param blockchain       Actor to ask for TX confirmations for
+    * @param wallet           Wallet actor
     * @param resultListeners  Actors to be notified of the handshake result
     */
   case class StartHandshake[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
       user: Exchange.PeerInfo,
-      unspentOutputs: Seq[UnspentOutput],
-      changeAddress: coinffeine.model.bitcoin.Address,
       constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,
+      wallet: ActorRef,
       resultListeners: Set[ActorRef])
 
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or

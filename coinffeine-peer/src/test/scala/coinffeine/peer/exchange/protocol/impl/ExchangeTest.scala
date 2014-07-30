@@ -1,12 +1,12 @@
 package coinffeine.peer.exchange.protocol.impl
 
+import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
 import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{RunningExchange, Both}
-import coinffeine.peer.exchange.protocol._
+import coinffeine.model.exchange._
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
@@ -19,22 +19,24 @@ trait ExchangeTest extends BitcoinjTest {
   /** Fixture with just a fresh protocol object */
   trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
     val protocol = new DefaultExchangeProtocol()
+    val requiredSignatures = participants.map(_.bitcoinKey.publicKey).toSeq
   }
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
     val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.2.BTC)
-    val buyerFunds = UnspentOutput.collect(0.2.BTC, buyerWallet)
-    val buyerHandshake =
-      protocol.createHandshake(buyerExchange, buyerFunds, buyerWallet.getChangeAddress)
+    val buyerDeposit = ImmutableTransaction(buyerWallet.blockMultisignFunds(
+      requiredSignatures, BuyerRole.myDepositAmount(exchange.amounts)))
+    val buyerHandshake = protocol.createHandshake(buyerExchange, buyerDeposit)
   }
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
     val sellerWallet = createWallet(participants.seller.bitcoinKey, 1.1.BTC)
-    val sellerFunds = UnspentOutput.collect(1.1.BTC, sellerWallet)
+    val sellerDeposit = ImmutableTransaction(sellerWallet.blockMultisignFunds(
+      requiredSignatures, SellerRole.myDepositAmount(exchange.amounts)))
     val sellerHandshake =
-      protocol.createHandshake(sellerExchange, sellerFunds, sellerWallet.getChangeAddress)
+      protocol.createHandshake(sellerExchange, sellerDeposit)
   }
 
   /** Fixture with buyer and seller channels created after a successful handshake */

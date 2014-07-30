@@ -8,7 +8,6 @@ import akka.util.Timeout
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
@@ -24,7 +23,7 @@ import coinffeine.peer.exchange.test.{CoinffeineClientTest, TestMessageQueue}
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 
 class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
-  with SellerPerspective with BitcoinjTest with Eventually {
+  with SellerPerspective with Eventually {
 
   implicit def testTimeout = new Timeout(5 second)
   private val protocolConstants = ProtocolConstants(
@@ -47,10 +46,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   )
 
   trait Fixture {
-    val listener = TestProbe()
-    val blockchain = TestProbe()
-    val peers = TestProbe()
-    val wallet = createWallet(user.bitcoinKey, exchange.amounts.sellerDeposit)
+    val listener, blockchain, peers, walletActor = TestProbe()
     val handshakeProps = TestActor.props(handshakeActorMessageQueue.queue)
     val micropaymentChannelProps = TestActor.props(micropaymentChannelActorMessageQueue.queue)
     val transactionBroadcastActorProps = TestActor.props(transactionBroadcastActorMessageQueue.queue)
@@ -72,8 +68,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     }
 
     def startExchange(): Unit = {
-      listener.send(actor,
-        StartExchange(exchange, userRole, user, wallet, dummyPaymentProcessor, gateway.ref, peers.ref))
+      listener.send(actor, StartExchange(exchange, userRole, user, walletActor.ref,
+        dummyPaymentProcessor, gateway.ref, peers.ref))
       peers.expectMsg(RetrieveBlockchainActor)
       peers.reply(BlockchainActorReference(blockchain.ref))
     }

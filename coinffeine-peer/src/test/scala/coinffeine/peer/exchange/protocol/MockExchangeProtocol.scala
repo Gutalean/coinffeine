@@ -6,14 +6,13 @@ import scala.util.{Failure, Success, Try}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{RunningExchange, HandshakingExchange, Exchange, Both}
+import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
       exchange: HandshakingExchange[C],
-      unspentOutputs: Seq[UnspentOutput],
-      changeAddress: Address) = new MockHandshake(exchange)
+      deposit: ImmutableTransaction) = new MockHandshake(exchange)
 
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
     new MockMicroPaymentChannel(exchange)

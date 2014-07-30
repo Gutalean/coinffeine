@@ -34,14 +34,14 @@ private class WalletActor extends Actor with ActorLogging {
 
       case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
         try {
-          val tx = wallet.blockMultisignFunds(signatures, amount)
+          val tx = ImmutableTransaction(wallet.blockMultisignFunds(signatures, amount))
           sender ! WalletActor.FundsBlocked(req, tx)
         } catch {
           case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
         }
 
       case WalletActor.ReleaseFunds(tx) =>
-        wallet.releaseFunds(tx)
+        wallet.releaseFunds(tx.get)
 
       case RetrieveWalletBalance =>
         sender() ! WalletBalance(wallet.balance())
@@ -92,7 +92,7 @@ object WalletActor {
     * @param request  The request this message is replying to
     * @param tx       The resulting transaction that contains the funds that have been blocked
     */
-  case class FundsBlocked(request: BlockFundsInMultisign, tx: MutableTransaction)
+  case class FundsBlocked(request: BlockFundsInMultisign, tx: ImmutableTransaction)
 
   /** A message sent by the wallet actor in reply to a BlockFundsInMultisign message to report
     * an error while blocking the funds.
@@ -102,7 +102,7 @@ object WalletActor {
   /** A message sent to the wallet actor in order to release the funds that are blocked by the
     * given transaction.
     */
-  case class ReleaseFunds(tx: MutableTransaction)
+  case class ReleaseFunds(tx: ImmutableTransaction)
 
   /** A message sent to the wallet actor to ask for a fresh key pair */
   case object CreateKeyPair
