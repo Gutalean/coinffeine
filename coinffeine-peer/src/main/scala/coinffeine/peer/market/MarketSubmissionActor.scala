@@ -2,11 +2,11 @@ package coinffeine.peer.market
 
 import akka.actor._
 
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.brokerage._
 
 /** Submits and resubmits orders for a given market */
@@ -22,40 +22,43 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
       init: MarketSubmissionActor.Initialize[C]) {
 
     import init._
+    implicit val executor = context.dispatcher
+
+    type SubmittingOrders = Set[(ActorRef, OrderBookEntry[FiatAmount])]
+    val SubmittingOrders = Set
 
     def start(): Unit = {
       context.become(waitingForOrders)
     }
 
-    private val waitingForOrders: Receive = handleOpenOrders(PeerPositions.empty(market))
+    private val waitingForOrders: Receive = handleOpenOrders(SubmittingOrders.empty)
 
-    private def keepingOpenOrders(requests: PeerPositions[FiatCurrency]): Receive =
-      handleOpenOrders(requests).orElse {
+    private def keepingOpenOrders(orders: SubmittingOrders): Receive =
+      handleOpenOrders(orders).orElse {
 
         case StopSubmitting(orderId) =>
-          val reducedOrderSet =
-            PeerPositions(market, requests.entries.filterNot(_.id == orderId))
-          forwardOrders(reducedOrderSet)
-
+          val newOrders = orders.filterNot{ case (_, entry) => entry.id == orderId }
+          forwardOrders(newOrders)
           context.become(
-            if (reducedOrderSet.entries.isEmpty) waitingForOrders
-            else keepingOpenOrders(reducedOrderSet)
+            if (newOrders.isEmpty) waitingForOrders
+            else keepingOpenOrders(newOrders)
           )
 
         case ReceiveTimeout =>
-          forwardOrders(requests)
+          forwardOrders(orders)
       }
 
-    private def handleOpenOrders(positions: PeerPositions[FiatCurrency]): Receive = {
+    private def handleOpenOrders(orders: SubmittingOrders): Receive = {
 
       case KeepSubmitting(order) =>
-        val mergedOrderSet = positions.addEntry(order)
-        forwardOrders(mergedOrderSet)
-        context.become(keepingOpenOrders(mergedOrderSet))
+        val newOrders = orders + (sender -> order)
+        forwardOrders(newOrders)
+        context.become(keepingOpenOrders(newOrders))
     }
 
-    private def forwardOrders(orderSet: PeerPositions[FiatCurrency]): Unit = {
-      gateway ! ForwardMessage(orderSet, brokerId)
+    private def forwardOrders(orders: SubmittingOrders): Unit = {
+      context.actorOf(PeerPositionsWatcher.props(
+        market, orders, brokerId, gateway, protocolConstants.orderAcknowledgeTimeout))
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
   }

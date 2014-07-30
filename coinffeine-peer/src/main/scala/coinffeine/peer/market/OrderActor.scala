@@ -19,7 +19,7 @@ import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
-import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
@@ -52,24 +52,24 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         case _ => false
       }
 
-      // TODO: receive a confirmation that the order was accepted in the market
-      // Since the order submission cannot be confirmed, the only thing we can do with the order
-      // is to set its status to `InMarketOrder` before producing the `OrderSubmittedEvent`.
-      // In the future, we should receive a confirmation that the order was accepted in the market
-      // and then send a `OrderUpdatedEvent` with the new status
-      currentOrder = currentOrder.withStatus(InMarketOrder)
+      currentOrder = currentOrder.withStatus(OfflineOrder)
       produceEvent(OrderSubmittedEvent(currentOrder))
       init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
       context.become(manageOrder)
     }
 
     private val manageOrder: Receive = {
+      case InMarket(order) if order.id == currentOrder.id =>
+        updateOrderStatus(InMarketOrder)
+
+      case Offline(order) if order.id == currentOrder.id =>
+        updateOrderStatus(OfflineOrder)
+
       case CancelOrder =>
         log.info(s"Order actor requested to cancel order ${currentOrder.id}")
-        // TODO: determine the cancellation reason
-        currentOrder = currentOrder.withStatus(CancelledOrder("unknown reason"))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        produceEvent(OrderUpdatedEvent(currentOrder))
+        // TODO: determine the cancellation reason
+        updateOrderStatus(CancelledOrder("unknown reason"))
 
       case RetrieveStatus =>
         log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
@@ -147,6 +147,12 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
       currentOrder = currentOrder.withExchange(exchange)
       produceEvent(OrderUpdatedEvent(currentOrder))
+    }
+
+    private def updateOrderStatus(newStatus: OrderStatus): Unit = {
+      currentOrder = currentOrder.withStatus(newStatus)
+      produceEvent(OrderUpdatedEvent(currentOrder))
+
     }
   }
 }

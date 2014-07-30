@@ -3,7 +3,7 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
@@ -14,7 +14,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -23,7 +23,17 @@ class OrderActorTest extends AkkaSpec {
 
   "An order actor" should "keep order info" in new Fixture {
     actor ! OrderActor.RetrieveStatus
-    expectMsg(inMarketOrder)
+    expectMsg(offlineOrder)
+  }
+
+  it should "submit to the broker and receive submission status" in new Fixture {
+    eventChannelProbe.expectMsg(OrderSubmittedEvent(offlineOrder))
+    val entry = OrderBookEntry(order)
+    submissionProbe.expectMsg(KeepSubmitting(entry))
+    submissionProbe.send(actor, InMarket(entry))
+    eventChannelProbe.expectMsgPF() {
+      case OrderUpdatedEvent(Order(order.id, _, InMarketOrder, _, _, _)) =>
+    }
   }
 
   it should "keep submitting to the broker until been cancelled" in new Fixture {
@@ -34,7 +44,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   it should "notify order creation and cancellation" in new Fixture {
-    eventChannelProbe.expectMsg(OrderSubmittedEvent(inMarketOrder))
+    eventChannelProbe.expectMsg(OrderSubmittedEvent(offlineOrder))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsgPF() {
       case OrderUpdatedEvent(Order(_, _, CancelledOrder(_), _, _, _)) =>
@@ -88,6 +98,7 @@ class OrderActorTest extends AkkaSpec {
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
     val order = Order(Ask, 5.BTC, 500.EUR)
     val paymentProcessorId = "account-123"
+    val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)
 
     val exchangeId = ExchangeId.random()

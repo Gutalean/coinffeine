@@ -31,6 +31,7 @@ case class ProtocolConstants(
   exchangePaymentProofTimeout: FiniteDuration = 5 minutes,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,
+  orderAcknowledgeTimeout: FiniteDuration = 15 seconds,
   refundLockTime: Int = 10,
   refundSafetyBlockCount: Int = 2
 )
