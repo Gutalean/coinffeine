@@ -61,5 +61,9 @@ object SubmissionSupervisor {
 
   case class StopSubmitting(orderId: OrderId)
 
+  case class InMarket(order: OrderBookEntry[FiatAmount])
+
+  case class Offline(order: OrderBookEntry[FiatAmount])
+
   def props(constants: ProtocolConstants) = Props(new SubmissionSupervisor(constants))
 }

@@ -72,15 +72,25 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Order" should behave like thereIsAMappingBetween[OrderBookEntry[FiatAmount], msg.OrderBookEntry](
     orderBookEntry, orderBookEntryMessage)
 
-  val positions = PeerOrderRequests(Market(Euro), Seq(orderBookEntry))
-  val positionsMessage = msg.PeerOrderRequests.newBuilder
+  val positions = PeerPositions(Market(Euro), Seq(orderBookEntry), "nonce-1234567890")
+  val positionsMessage = msg.PeerPositions.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
+    .setNonce("nonce-1234567890")
     .addEntries(orderBookEntryMessage)
     .build
 
   "Peer positions" should behave like
-    thereIsAMappingBetween[PeerOrderRequests[FiatCurrency], msg.PeerOrderRequests](
+    thereIsAMappingBetween[PeerPositions[FiatCurrency], msg.PeerPositions](
       positions, positionsMessage)
+
+  val positionsReceived = PeerPositionsReceived("nonce-1234567890")
+  val positionsReceivedMessage = msg.PeerPositionsReceived.newBuilder
+    .setNonce("nonce-1234567890")
+    .build
+
+  "Peer positions received" should behave like
+    thereIsAMappingBetween[PeerPositionsReceived, msg.PeerPositionsReceived](
+      positionsReceived, positionsReceivedMessage)
 
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
