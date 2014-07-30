@@ -41,22 +41,26 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    def exchange: Exchange[FiatCurrency]
+    val exchange: Exchange[FiatCurrency]
     def participants: Both[Exchange.PeerInfo]
-    def handshakingExchange = HandshakingExchange(userRole, user, counterpart, exchange)
+    def handshakingExchange = HandshakingExchange(user, counterpart, exchange)
     def runningExchange = RunningExchange(MockExchangeProtocol.DummyDeposits, handshakingExchange)
     def userRole: Role
     def user = userRole.select(participants)
     def counterpart = userRole.counterpart.select(participants)
-    def counterpartConnection = userRole.counterpart.select(exchange.peerIds)
+    def counterpartConnection = exchange.counterpartId
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }
 
   trait BuyerPerspective extends Perspective {
-    val userRole = BuyerRole
+    override val userRole = BuyerRole
+    override lazy val exchange = buyerExchange
+    def buyerExchange: Exchange[FiatCurrency]
   }
 
   trait SellerPerspective extends Perspective {
-    val userRole = SellerRole
+    override val userRole = SellerRole
+    override lazy val exchange = sellerExchange
+    def sellerExchange: Exchange[FiatCurrency]
   }
 }

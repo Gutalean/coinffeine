@@ -10,7 +10,7 @@ case class HandshakingExchange[+C <: FiatCurrency](
     override val id: ExchangeId,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
-    override val peerIds: Both[PeerId],
+    override val counterpartId: PeerId,
     override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo]) extends OngoingExchange[C] {
 
@@ -18,13 +18,13 @@ case class HandshakingExchange[+C <: FiatCurrency](
 }
 
 object HandshakingExchange {
-  def apply[C <: FiatCurrency](role: Role, user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo,
+  def apply[C <: FiatCurrency](user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo,
                                exchange: Exchange[C]): HandshakingExchange[C] = {
     import exchange._
     val participants = Both(
       buyer = role.buyer(user, counterpart),
       seller = role.seller(user, counterpart)
     )
-    HandshakingExchange(role, id, amounts, parameters, peerIds, brokerId, participants)
+    HandshakingExchange(role, id, amounts, parameters, counterpartId, brokerId, participants)
   }
 }

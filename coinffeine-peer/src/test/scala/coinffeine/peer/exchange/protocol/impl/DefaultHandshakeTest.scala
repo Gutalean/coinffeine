@@ -31,7 +31,7 @@ class DefaultHandshakeTest extends ExchangeTest {
 
   it should "not be broadcastable after locktime when unsigned" in new BuyerHandshake {
     sendToBlockChain(buyerHandshake.myDeposit.get)
-    mineUntilLockTime(exchange.parameters.lockTime)
+    mineUntilLockTime(parameters.lockTime)
     a [VerificationException] should be thrownBy {
       sendToBlockChain(buyerHandshake.myUnsignedRefund.get)
     }
@@ -42,7 +42,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       val signature = sellerHandshake.signHerRefund(buyerHandshake.myUnsignedRefund)
       val signedBuyerRefund = buyerHandshake.signMyRefund(signature).get
       sendToBlockChain(buyerHandshake.myDeposit.get)
-      mineUntilLockTime(exchange.parameters.lockTime)
+      mineUntilLockTime(parameters.lockTime)
       sendToBlockChain(signedBuyerRefund)
       balance(buyerWallet) should be (0.1.BTC)
     }
@@ -51,7 +51,7 @@ class DefaultHandshakeTest extends ExchangeTest {
     new BuyerHandshake with SellerHandshake {
       val depositWithWrongLockTime = ImmutableTransaction {
         val tx = buyerHandshake.myUnsignedRefund.get
-        tx.setLockTime(exchange.parameters.lockTime - 10)
+        tx.setLockTime(parameters.lockTime - 10)
         tx
       }
       an [InvalidRefundTransaction] should be thrownBy {

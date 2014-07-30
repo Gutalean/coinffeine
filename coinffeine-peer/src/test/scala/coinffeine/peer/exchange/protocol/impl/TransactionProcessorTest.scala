@@ -12,7 +12,6 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
 
   val buyerKey = participants.buyer.bitcoinKey
   val sellerKey = participants.seller.bitcoinKey
-  val requiredSignatures = buyerExchange.requiredSignatures.toSeq
 
   "Multisign transaction creation" should "fail if the amount to commit is less or equal to zero" in {
     val buyerWallet = createWallet(buyerKey, 5.BTC)

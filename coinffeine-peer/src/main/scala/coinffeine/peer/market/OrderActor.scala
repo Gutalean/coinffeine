@@ -112,11 +112,12 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       val amounts = Exchange.Amounts(
         currentOrder.amount, fiatAmount, Exchange.StepBreakdown(intermediateSteps))
       NonStartedExchange(
-        orderMatch.exchangeId,
-        amounts,
-        Exchange.Parameters(orderMatch.lockTime, network),
-        peerIds = null,
-        brokerId
+        id = orderMatch.exchangeId,
+        role = role,
+        counterpartId = orderMatch.counterpart,
+        amounts = amounts,
+        parameters = Exchange.Parameters(orderMatch.lockTime, network),
+        brokerId = brokerId
       )
     }
 

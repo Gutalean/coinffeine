@@ -7,8 +7,6 @@ import coinffeine.model.currency.FiatCurrency
   * as contains information not made public to everyone on the network.
   */
 trait OngoingExchange[+C <: FiatCurrency] extends Exchange[C] {
-  val role: Role
-
   /** Information about the parts */
   val participants: Both[Exchange.PeerInfo]
 

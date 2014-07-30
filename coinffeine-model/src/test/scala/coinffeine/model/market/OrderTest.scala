@@ -33,7 +33,8 @@ class OrderTest extends UnitTest {
 
   private def createExchange(completion: Double) = new Exchange[FiatCurrency] {
     override val id = ExchangeId("exchange")
-    override val peerIds = Both(PeerId("buyer"), PeerId("seller"))
+    override val role = BuyerRole
+    override val counterpartId = PeerId("seller")
     override val parameters = exchangeParameters
     override val brokerId = PeerId("broker")
     override val amounts = Exchange.Amounts(1.BTC, 600.EUR, Exchange.StepBreakdown(10))

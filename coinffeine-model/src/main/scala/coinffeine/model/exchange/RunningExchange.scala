@@ -4,11 +4,11 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.PeerId
 
 case class RunningExchange[+C <: FiatCurrency](
-    override val role: Role,
     override val id: ExchangeId,
+    override val role: Role,
+    override val counterpartId: PeerId,
     override val amounts: Exchange.Amounts[C],
     override val parameters: Exchange.Parameters,
-    override val peerIds: Both[PeerId],
     override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo],
     deposits: Exchange.Deposits,
@@ -25,6 +25,6 @@ object RunningExchange {
                                exchange: HandshakingExchange[C]): RunningExchange[C] = {
     import exchange._
     RunningExchange(
-      role, id, amounts, parameters, peerIds, brokerId, participants, deposits, progress)
+      id, role, counterpartId, amounts, parameters, brokerId, participants, deposits, progress)
   }
 }

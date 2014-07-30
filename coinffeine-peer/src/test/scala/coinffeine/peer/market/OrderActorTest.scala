@@ -59,7 +59,8 @@ class OrderActorTest extends AkkaSpec {
     }
     exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
       id = exchangeId,
-      peerIds = Both(counterpart, PeerId("me")),
+      role,
+      counterpart,
       parameters = Exchange.Parameters(10, network),
       brokerId,
       amounts = Exchange.Amounts[FiatCurrency](
@@ -84,7 +85,7 @@ class OrderActorTest extends AkkaSpec {
     exchange.expectCreation()
     val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
     exchange.expectMsgPF {
-      case ExchangeActor.StartExchange(ex, SellerRole, `peerInfo`, _, _, _, _)
+      case ExchangeActor.StartExchange(ex, role, `peerInfo`, _, _, _, _)
         if ex.id == exchangeId =>
     }
   }
@@ -97,6 +98,7 @@ class OrderActorTest extends AkkaSpec {
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
     val order = Order(Ask, 5.BTC, 500.EUR)
+    val role = SellerRole
     val paymentProcessorId = "account-123"
     val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)

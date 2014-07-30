@@ -12,11 +12,11 @@ import coinffeine.model.payment.PaymentProcessor
 trait Exchange[+C <: FiatCurrency] {
   /** An identifier for the exchange */
   val id: ExchangeId
+  val role: Role
+  val counterpartId: PeerId
   val amounts: Exchange.Amounts[C]
   /** Configurable parameters */
   val parameters: Exchange.Parameters
-  /** Identifiers of the buyer and the seller */
-  val peerIds: Both[PeerId]
   val brokerId: PeerId
   val progress: Exchange.Progress[C]
 }

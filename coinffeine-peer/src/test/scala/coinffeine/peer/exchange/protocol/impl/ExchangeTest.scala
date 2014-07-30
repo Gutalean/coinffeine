@@ -19,24 +19,22 @@ trait ExchangeTest extends BitcoinjTest {
   /** Fixture with just a fresh protocol object */
   trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
     val protocol = new DefaultExchangeProtocol()
-    val requiredSignatures = participants.map(_.bitcoinKey.publicKey).toSeq
   }
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
     val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.2.BTC)
     val buyerDeposit = ImmutableTransaction(buyerWallet.blockMultisignFunds(
-      requiredSignatures, BuyerRole.myDepositAmount(exchange.amounts)))
-    val buyerHandshake = protocol.createHandshake(buyerExchange, buyerDeposit)
+      requiredSignatures, BuyerRole.myDepositAmount(amounts)))
+    val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
   }
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
     val sellerWallet = createWallet(participants.seller.bitcoinKey, 1.1.BTC)
     val sellerDeposit = ImmutableTransaction(sellerWallet.blockMultisignFunds(
-      requiredSignatures, SellerRole.myDepositAmount(exchange.amounts)))
-    val sellerHandshake =
-      protocol.createHandshake(sellerExchange, sellerDeposit)
+      requiredSignatures, SellerRole.myDepositAmount(amounts)))
+    val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)
   }
 
   /** Fixture with buyer and seller channels created after a successful handshake */
@@ -46,12 +44,12 @@ trait ExchangeTest extends BitcoinjTest {
       seller = sellerHandshake.myDeposit
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
-    val deposits = protocol.validateDeposits(commitments, buyerExchange).get
-    val buyerRunningExchange = RunningExchange(deposits, buyerExchange)
-    val sellerRunningExchange = RunningExchange(deposits, sellerExchange)
+    val deposits = protocol.validateDeposits(commitments, buyerHandshakingExchange).get
+    val buyerRunningExchange = RunningExchange(deposits, buyerHandshakingExchange)
+    val sellerRunningExchange = RunningExchange(deposits, sellerHandshakingExchange)
     val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)
     val sellerChannel = protocol.createMicroPaymentChannel(sellerRunningExchange)
-    val totalSteps = exchange.amounts.breakdown.totalSteps
+    val totalSteps = buyerExchange.amounts.breakdown.totalSteps
     val buyerChannels = Seq.iterate(buyerChannel, totalSteps)(_.nextStep)
     val sellerChannels = Seq.iterate(sellerChannel, totalSteps)(_.nextStep)
   }

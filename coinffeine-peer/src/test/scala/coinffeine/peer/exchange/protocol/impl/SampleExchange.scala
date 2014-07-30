@@ -13,23 +13,33 @@ trait SampleExchange { this: NetworkComponent =>
     seller = Exchange.PeerInfo("sellerAccount", new KeyPair())
   )
 
-  val exchange = NonStartedExchange(
-    id = ExchangeId("id"),
-    amounts = Exchange.Amounts(
-      bitcoinAmount = 1.BTC,
-      fiatAmount = 1000.EUR,
-      breakdown = Exchange.StepBreakdown(SampleExchange.IntermediateSteps)
-    ),
-    parameters = Exchange.Parameters(lockTime = 10, network),
-    peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller")),
-    brokerId = PeerId("broker")
+  val requiredSignatures = participants.map(_.bitcoinKey).toSeq
+
+  val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
+
+  val amounts = Exchange.Amounts(
+    bitcoinAmount = 1.BTC,
+    fiatAmount = 1000.EUR,
+    breakdown = Exchange.StepBreakdown(SampleExchange.IntermediateSteps)
   )
 
-  val buyerExchange =
-    HandshakingExchange(BuyerRole, participants.buyer, participants.seller, exchange)
+  val parameters = Exchange.Parameters(lockTime = 10, network)
 
-  val sellerExchange =
-    HandshakingExchange(SellerRole, participants.seller, participants.buyer, exchange)
+  val buyerExchange = NonStartedExchange(
+    id = ExchangeId("id"),
+    role = BuyerRole,
+    counterpartId = peerIds.seller,
+    amounts,
+    parameters,
+    brokerId = PeerId("broker")
+  )
+  val sellerExchange = buyerExchange.copy(role = SellerRole, counterpartId = peerIds.buyer)
+
+  val buyerHandshakingExchange =
+    HandshakingExchange(participants.buyer, participants.seller, buyerExchange)
+
+  val sellerHandshakingExchange =
+    HandshakingExchange(participants.seller, participants.buyer, sellerExchange)
 }
 
 object SampleExchange {
