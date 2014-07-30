@@ -3,7 +3,6 @@ package coinffeine.model.bitcoin
 import java.math.BigInteger
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.Transaction
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 import com.google.bitcoin.wallet.WalletTransaction
@@ -78,17 +77,19 @@ object Implicits {
       tx
     }
 
-    def releaseFunds(tx: Transaction): Unit = {
-      tx.getInputs.foreach { input =>
+    def releaseFunds(tx: MutableTransaction): Unit = {
+      val walletTx = getTransaction(tx.getHash).getOrElse(
+        throw new IllegalArgumentException(s"${tx.getHashAsString} is not part of this wallet"))
+      walletTx.getInputs.foreach { input =>
         val parentTx = input.getOutpoint.getConnectedOutput.getParentTransaction
         if (contains(parentTx)) {
           if (!input.disconnect()) {
-            throw new IllegalStateException(s"cannot disconnect outputs from $input in $tx")
+            throw new IllegalStateException(s"cannot disconnect outputs from $input in $walletTx")
           }
           moveToPool(parentTx, WalletTransaction.Pool.UNSPENT)
         }
       }
-      moveToPool(tx, WalletTransaction.Pool.DEAD)
+      moveToPool(walletTx, WalletTransaction.Pool.DEAD)
     }
 
     def collectFunds(amount: BitcoinAmount): Set[MutableTransactionOutput] = {
@@ -101,12 +102,14 @@ object Implicits {
       inputFundCandidates.take(necessaryInputCount).toSet
     }
 
-    def contains(tx: Transaction): Boolean = Option(wallet.getTransaction(tx.getHash)).isDefined
+    def contains(tx: MutableTransaction): Boolean = getTransaction(tx.getHash).isDefined
+
+    private def getTransaction(txHash: Hash) = Option(wallet.getTransaction(txHash))
 
     private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
       outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).reduce(_ + _)
 
-    private def moveToPool(tx: Transaction, pool: WalletTransaction.Pool): Unit = {
+    private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
       val wtxs = wallet.getWalletTransactions
       wallet.clearTransactions(0)
       wallet.addWalletTransaction(new WalletTransaction(pool, tx))
