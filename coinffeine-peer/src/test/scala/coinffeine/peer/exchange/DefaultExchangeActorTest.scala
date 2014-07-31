@@ -9,7 +9,7 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{Both, CompletedExchange}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
@@ -133,7 +133,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       givenTransactionsAreFound()
       givenMicropaymentChannelSuccess()
       givenTransactionIsCorrectlyBroadcast()
-      listener.expectMsg(ExchangeSuccess(null)) // TODO: figure out how the successful exchange looks like
+      listener.expectMsg(ExchangeSuccess(CompletedExchange.fromExchange(exchange)))
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }

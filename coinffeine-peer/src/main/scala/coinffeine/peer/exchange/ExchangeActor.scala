@@ -1,10 +1,10 @@
 package coinffeine.peer.exchange
 
-import akka.actor.{Props, ActorRef}
+import akka.actor.{ActorRef, Props}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Exchange, Role}
+import coinffeine.model.exchange.{CompletedExchange, Exchange, Role}
 
 /** This actor handles all the necessary steps for an exchange to happen */
 object ExchangeActor {
@@ -30,7 +30,7 @@ object ExchangeActor {
   sealed trait ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange succeeded */
-  case class ExchangeSuccess(exchange: Exchange[FiatCurrency]) extends ExchangeResult
+  case class ExchangeSuccess(exchange: CompletedExchange[FiatCurrency]) extends ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange failed */
   case class ExchangeFailure(e: Throwable) extends ExchangeResult

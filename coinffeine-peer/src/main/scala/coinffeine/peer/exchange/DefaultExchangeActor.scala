@@ -91,14 +91,18 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private val inMicropaymentChannel: Receive = {
+
       case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
         log.info(s"Finishing exchange '${exchange.id}' successfully")
         txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeSuccess(null), successTx)) // TODO: send final Exchange[C]
+        val result = ExchangeSuccess(CompletedExchange.fromExchange(exchange))
+        context.become(finishingExchange(result, successTx))
+
       case MicroPaymentChannelActor.ExchangeFailure(e) =>
         log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         txBroadcaster ! FinishExchange
         context.become(finishingExchange(ExchangeFailure(e), None))
+
       case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
     }
