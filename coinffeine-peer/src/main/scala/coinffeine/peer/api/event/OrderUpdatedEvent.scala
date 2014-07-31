@@ -4,6 +4,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{CancelledOrder, Order}
 
 /** An event triggered each time an order is updated. */
+@deprecated("Use OrderProgressedEvent and OrderStatusChangedEvent instead")
 case class OrderUpdatedEvent(order: Order[FiatCurrency]) extends CoinffeineAppEvent {
 
   override def eventType = order.status match {
