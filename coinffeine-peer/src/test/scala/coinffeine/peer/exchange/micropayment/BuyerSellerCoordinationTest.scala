@@ -34,23 +34,21 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))
   val buyer = system.actorOf(
-    Props(new BuyerMicroPaymentChannelActor(exchangeProtocol)),
+    BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "buyer-exchange-actor"
   )
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.seller.paymentProcessorAccount, Seq(0.EUR)))
   val seller = system.actorOf(
-    Props(new SellerMicroPaymentChannelActor(exchangeProtocol)),
+    SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "seller-exchange-actor"
   )
 
   "The buyer and seller actors" should "be able to perform an exchange" in {
-    buyer ! StartMicroPaymentChannel(
-      buyerRunningExchange, protocolConstants, buyerPaymentProc,
+    buyer ! StartMicroPaymentChannel(buyerRunningExchange, buyerPaymentProc,
       MessageForwarder("fw-to-seller", seller), Set(buyerListener.ref))
-    seller ! StartMicroPaymentChannel(
-      sellerRunningExchange, protocolConstants, sellerPaymentProc,
+    seller ! StartMicroPaymentChannel(sellerRunningExchange, sellerPaymentProc,
       MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
     buyerListener.receiveWhile() {
       case ExchangeProgress(_) =>

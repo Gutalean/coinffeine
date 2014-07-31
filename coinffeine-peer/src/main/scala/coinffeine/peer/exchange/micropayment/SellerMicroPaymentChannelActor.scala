@@ -20,7 +20,8 @@ import coinffeine.protocol.messages.exchange._
 /** This actor implements the seller's's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
+private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
+    exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants)
   extends Actor with ActorLogging with Stash with StepTimeout {
 
   import context.dispatcher
@@ -36,7 +37,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
   private class InitializedSellerExchange(init: StartMicroPaymentChannel[C])
     extends InitializedChannelBehavior(init) {
     import init._
-    import init.constants.exchangePaymentProofTimeout
+    import constants.exchangePaymentProofTimeout
 
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")
@@ -143,7 +144,6 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
 object SellerMicroPaymentChannelActor {
   private case class PaymentValidationResult(result: Try[Unit])
 
-  trait Component { this: ProtocolConstants.Component =>
-    def exchangeActorProps[C <: FiatCurrency]: Props = Props[SellerMicroPaymentChannelActor[C]]
-  }
+  def props(exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) =
+    Props(new SellerMicroPaymentChannelActor(exchangeProtocol, constants))
 }

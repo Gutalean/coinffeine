@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.micropayment
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
 
@@ -13,7 +12,6 @@ import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -31,7 +29,7 @@ class BuyerMicroPaymentChannelActorTest
   val protocolConstants = ProtocolConstants()
   val exchangeProtocol = new MockExchangeProtocol
   val actor = system.actorOf(
-    Props(new BuyerMicroPaymentChannelActor(exchangeProtocol)),
+    BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "buyer-exchange-actor"
   )
   val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
@@ -45,8 +43,9 @@ class BuyerMicroPaymentChannelActorTest
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(runningExchange, protocolConstants, paymentProcessor.ref,
-      gateway.ref, Set(listener.ref))
+    actor ! StartMicroPaymentChannel(
+      runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
+    )
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = ExchangeId("other-id")

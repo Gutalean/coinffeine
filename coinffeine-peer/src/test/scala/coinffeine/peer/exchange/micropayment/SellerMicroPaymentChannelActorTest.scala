@@ -3,7 +3,6 @@ package coinffeine.peer.exchange.micropayment
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
 
@@ -34,11 +33,14 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   val channel = new MockMicroPaymentChannel(runningExchange)
   val firstStep = IntermediateStep(1, exchange.amounts.breakdown)
   val actor = system.actorOf(
-    Props(new SellerMicroPaymentChannelActor(new MockExchangeProtocol())), "seller-exchange-actor")
+    SellerMicroPaymentChannelActor.props(new MockExchangeProtocol(), protocolConstants),
+    "seller-exchange-actor"
+  )
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    runningExchange, protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref))
+    runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
+  )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

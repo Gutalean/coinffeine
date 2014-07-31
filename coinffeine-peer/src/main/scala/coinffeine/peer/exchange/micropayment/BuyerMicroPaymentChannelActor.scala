@@ -21,8 +21,9 @@ import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
-  extends Actor with ActorLogging with StepTimeout  {
+private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
+    exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants)
+  extends Actor with ActorLogging with StepTimeout {
 
   override def postStop(): Unit = {
     cancelTimeout()
@@ -37,7 +38,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
 
     import context.dispatcher
     import init._
-    import init.constants.exchangeSignatureTimeout
+    import constants.exchangeSignatureTimeout
 
     private var lastSignedOffer: Option[ImmutableTransaction] = None
 
@@ -134,8 +135,6 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
 }
 
 object BuyerMicroPaymentChannelActor {
-  trait Component { this: ProtocolConstants.Component =>
-    def micropaymentChannelActorProps[C <: FiatCurrency]: Props =
-      Props[BuyerMicroPaymentChannelActor[C]]
-  }
+  def props(exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) =
+    Props(new BuyerMicroPaymentChannelActor(exchangeProtocol, constants))
 }
