@@ -13,12 +13,11 @@ class OrderProperties(order: Order[FiatCurrency]) {
   val priceProperty = new ObjectProperty[FiatAmount](this, "price", order.price)
   val progressProperty = new DoubleProperty(this, "progress", order.progress)
 
-  def update(order: Order[FiatCurrency]): Unit = {
-    idProperty.set(order.id)
-    orderTypeProperty.set(order.orderType)
-    statusProperty.set(order.status)
-    amountProperty.set(order.amount)
-    priceProperty.set(order.price)
-    progressProperty.set(order.progress)
+  def updateStatus(newStatus: OrderStatus): Unit = {
+    statusProperty.set(newStatus)
+  }
+
+  def updateProgress(newProgress: Double): Unit = {
+    progressProperty.set(newProgress)
   }
 }
