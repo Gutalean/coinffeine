@@ -11,7 +11,7 @@ import org.controlsfx.dialog.Dialogs
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
-import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
+import coinffeine.gui.application.{NotificationManager, ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.WalletBalanceWidget
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
@@ -40,6 +40,7 @@ object Main extends JFXApp
   connectResult.value.get match {
     case Success(_) =>
       val properties = new ApplicationProperties(app)
+      val notificationManager = new NotificationManager(app)
       stage = new PrimaryStage {
         title = "Coinffeine"
         scene = new ApplicationScene(
