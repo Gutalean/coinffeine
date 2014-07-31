@@ -1,11 +1,14 @@
 package coinffeine.peer.payment.okpay
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.testkit.TestProbe
 import org.mockito.BDDMockito.given
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.AkkaSpec
@@ -17,35 +20,6 @@ import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
-
-  private trait WithOkPayProcessor {
-    def pollingInterval = 3.seconds
-    val senderAccount = "OK12345"
-    val receiverAccount = "OK54321"
-    val amount = 100.USD
-    val payment = Payment(
-      id = "250092",
-      senderId = senderAccount,
-      receiverId = receiverAccount,
-      amount = amount,
-      date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
-      description = "comment",
-      completed = true
-    )
-    val cause = new Exception("Sample error")
-    val client = mock[OkPayClient]
-    val eventChannelProbe = TestProbe()
-    val processor = system.actorOf(Props(
-      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
-
-    def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
-      given(client.currentBalances()).willReturn(Future.successful(balances))
-      processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
-      for (i <- 1 to balances.size) {
-        eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
-      }
-    }
-  }
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized()
@@ -158,12 +132,13 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "notify when blocked funds are not backed by funds" in new WithOkPayProcessor {
     override def pollingInterval = 100.millis
-    given(client.currentBalances())
-      .willReturn(Future.successful(Seq(100.EUR)), Future.successful(Seq(90.EUR)))
+    val balances = new MutableBalances(100.EUR)
+    given(client.currentBalances()).willAnswer(balances)
     processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
     val listener1, listener2 = TestProbe()
     processor ! PaymentProcessorActor.BlockFunds(90.EUR, listener1.ref)
     processor ! PaymentProcessorActor.BlockFunds(10.EUR, listener2.ref)
+    balances.set(90.EUR)
     listener1.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
     listener2.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
   }
@@ -171,25 +146,22 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "notify when blocked funds are available again due to balance increase" in
     new WithOkPayProcessor {
       override def pollingInterval = 100.millis
-      given(client.currentBalances()).willReturn(
-        Future.successful(Seq(100.EUR)),
-        Future.successful(Seq(50.EUR)),
-        Future.successful(Seq(100.EUR))
-      )
+      val balances = new MutableBalances(100.EUR)
+      given(client.currentBalances()).willAnswer(balances)
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
       val listener = TestProbe()
       processor ! PaymentProcessorActor.BlockFunds(100.EUR, listener.ref)
+      balances.set(50.EUR)
       listener.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
+      balances.set(100.EUR)
       listener.expectMsgClass(classOf[PaymentProcessorActor.AvailableFunds])
     }
 
   it must "notify when blocked funds are available again due to fund unblocking" in
     new WithOkPayProcessor {
       override def pollingInterval = 100.millis
-      given(client.currentBalances()).willReturn(
-        Future.successful(Seq(100.EUR)),
-        Future.successful(Seq(50.EUR))
-      )
+      val balances = new MutableBalances(100.EUR)
+      given(client.currentBalances()).willAnswer(balances)
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
       val listener1, listener2 = TestProbe()
       processor ! PaymentProcessorActor.BlockFunds(50.EUR, listener1.ref)
@@ -197,9 +169,49 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       val PaymentProcessorActor.FundsBlocked(fundsId) = fishForMessage() {
         case PaymentProcessorActor.FundsBlocked(_) => true
       }
+      balances.set(50.EUR)
       listener1.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
       listener2.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
       processor ! PaymentProcessorActor.UnblockFunds(fundsId)
       listener2.expectMsgClass(classOf[PaymentProcessorActor.AvailableFunds])
     }
+
+  private trait WithOkPayProcessor {
+    def pollingInterval = 3.seconds
+    val senderAccount = "OK12345"
+    val receiverAccount = "OK54321"
+    val amount = 100.USD
+    val payment = Payment(
+      id = "250092",
+      senderId = senderAccount,
+      receiverId = receiverAccount,
+      amount = amount,
+      date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
+      description = "comment",
+      completed = true
+    )
+    val cause = new Exception("Sample error")
+    val client = mock[OkPayClient]
+    val eventChannelProbe = TestProbe()
+    val processor = system.actorOf(Props(
+      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+
+    def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
+      given(client.currentBalances()).willReturn(Future.successful(balances))
+      processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
+      for (i <- 1 to balances.size) {
+        eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
+      }
+    }
+  }
+
+  class MutableBalances(initialBalances: FiatAmount*) extends Answer[Future[Seq[FiatAmount]]] {
+    private val balances = new AtomicReference[Seq[FiatAmount]](initialBalances)
+
+    override def answer(invocation: InvocationOnMock) = Future.successful(balances.get())
+
+    def set(newBalances: FiatAmount*): Unit = {
+      balances.set(newBalances)
+    }
+  }
 }
