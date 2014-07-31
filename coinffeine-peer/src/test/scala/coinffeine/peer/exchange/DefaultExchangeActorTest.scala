@@ -9,7 +9,8 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.exchange.Both
+import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.{Exchange, Both, CompletedExchange}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
@@ -133,10 +134,27 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       givenTransactionsAreFound()
       givenMicropaymentChannelSuccess()
       givenTransactionIsCorrectlyBroadcast()
-      listener.expectMsg(ExchangeSuccess(null)) // TODO: figure out how the successful exchange looks like
+      listener.expectMsg(ExchangeSuccess(CompletedExchange.fromExchange(exchange)))
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }
+
+  it should "forward progress reports" in new Fixture {
+    startExchange()
+    val progressUpdate = ExchangeProgress(sellerRunningExchange.copy(progress = Exchange.Progress(
+      bitcoinsTransferred = 1.BTC,
+      fiatTransferred = 0.EUR
+    )))
+    givenHandshakeSuccess()
+    givenTransactionsAreFound()
+    withActor(MicroPaymentChannelActorName) { micropaymentChannelActor =>
+      micropaymentChannelActorMessageQueue
+        .expectMsgClass[MicroPaymentChannelActor.StartMicroPaymentChannel[_]]()
+      actor.tell(progressUpdate, micropaymentChannelActor)
+    }
+    listener.expectMsg(progressUpdate)
+    system.stop(actor)
+  }
 
   it should "report a failure if the handshake fails" in new Fixture {
     startExchange()

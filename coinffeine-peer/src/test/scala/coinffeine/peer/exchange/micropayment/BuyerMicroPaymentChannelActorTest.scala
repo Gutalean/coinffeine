@@ -13,6 +13,7 @@ import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -23,7 +24,7 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest
-  extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {
+  extends CoinffeineClientTest("buyerExchange") with BuyerPerspective with ProgressExpectations {
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
@@ -62,11 +63,13 @@ class BuyerMicroPaymentChannelActorTest
   it should "respond to step signature messages by sending a payment until all steps are done" in {
     for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
+      expectProgress(signatures = i, payments = i - 1)
       paymentProcessor.expectMsgClass(classOf[PaymentProcessorActor.Pay[_]])
       paymentProcessor.reply(PaymentProcessorActor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
           completed = true)
       ))
+      expectProgress(signatures = i, payments = i)
       shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartConnection
       gateway.expectNoMsg(100 milliseconds)
     }

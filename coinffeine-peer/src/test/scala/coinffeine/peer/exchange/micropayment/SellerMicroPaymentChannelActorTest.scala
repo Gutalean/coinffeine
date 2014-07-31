@@ -6,7 +6,6 @@ import scala.language.postfixOps
 import akka.actor.Props
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange.ExchangeId
@@ -24,7 +23,7 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
-  with SellerPerspective with MockitoSugar {
+  with SellerPerspective with ProgressExpectations {
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
@@ -55,6 +54,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send the first step signature as soon as the exchange starts" in {
     val signatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
+    expectProgress(signatures = 1, payments = 0)
     shouldForward(signatures) to counterpartConnection
   }
 
@@ -67,17 +67,22 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(firstStep)
+    expectProgress(signatures = 1, payments = 1)
     val signatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
     shouldForward(signatures) to counterpartConnection
+    expectProgress(signatures = 2, payments = 1)
   }
 
   it should "send step signatures as new payment proofs are provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(IntermediateStep(2, exchange.amounts.breakdown))
+    expectProgress(signatures = 2, payments = 2)
     for (i <- 3 to exchange.amounts.breakdown.intermediateSteps) {
       val step = IntermediateStep(i, exchange.amounts.breakdown)
+      expectProgress(signatures = i, payments = i - 1)
       actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
       expectPayment(step)
+      expectProgress(signatures = i, payments = i)
       val signatures = StepSignatures(exchange.id, i, MockExchangeProtocol.DummySignatures)
       shouldForward(signatures) to counterpartConnection
     }

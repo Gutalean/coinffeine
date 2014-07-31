@@ -6,8 +6,7 @@ import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Progress
-import coinffeine.model.exchange.{BuyerRole, Exchange}
-import coinffeine.model.network.PeerId
+import coinffeine.model.exchange.{CompletedExchange, Exchange}
 import coinffeine.peer.exchange.ExchangeActor
 
 /** Performs a fake exchange for demo purposes */
@@ -32,8 +31,7 @@ class FakeExchangeActor extends Actor with ActorLogging {
     def handlingStep(step: Int): Receive = {
       case ReceiveTimeout if step == exchange.amounts.breakdown.totalSteps =>
         logEvent(s"Exchange finished successfully")
-        listener ! ExchangeActor.ExchangeSuccess(
-          exchangeAtStep(exchange.amounts.breakdown.intermediateSteps))
+        listener ! ExchangeActor.ExchangeSuccess(completedExchange)
         context.become(finished)
 
       case ReceiveTimeout =>
@@ -41,6 +39,9 @@ class FakeExchangeActor extends Actor with ActorLogging {
         reportProgress(step)
         context.become(handlingStep(step + 1))
     }
+
+    private val completedExchange: CompletedExchange[FiatCurrency] =
+      CompletedExchange.fromExchange(exchangeAtStep(exchange.amounts.breakdown.intermediateSteps))
 
     val finished: Receive = {
       case _ => // Do nothing

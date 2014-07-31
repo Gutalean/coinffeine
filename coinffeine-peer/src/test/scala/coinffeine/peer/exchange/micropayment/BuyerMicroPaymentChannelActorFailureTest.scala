@@ -8,6 +8,7 @@ import akka.testkit.TestProbe
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -42,9 +43,10 @@ class BuyerMicroPaymentChannelActorFailureTest
     expectMsg(LastOffer(None))
   }
 
-  it should "return the last signed offer when a timeout happens" in new Fixture{
+  it should "return the last signed offer when a timeout happens" in new Fixture {
     startMicroPaymentChannel()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
+    listener.expectMsgClass(classOf[ExchangeProgress])
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.cause shouldBe a [TimeoutException]
     actor ! GetLastOffer

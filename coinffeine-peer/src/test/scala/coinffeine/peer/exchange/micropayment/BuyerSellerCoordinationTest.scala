@@ -6,6 +6,7 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -51,6 +52,12 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     seller ! StartMicroPaymentChannel(
       sellerRunningExchange, protocolConstants, sellerPaymentProc,
       MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
+    buyerListener.receiveWhile() {
+      case ExchangeProgress(_) =>
+    }
+    sellerListener.receiveWhile() {
+      case ExchangeProgress(_) =>
+    }
     buyerListener.expectMsgClass(classOf[ExchangeSuccess])
     sellerListener.expectMsg(ExchangeSuccess(None))
   }

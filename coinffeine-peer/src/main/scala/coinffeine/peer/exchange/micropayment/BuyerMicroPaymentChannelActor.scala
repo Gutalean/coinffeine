@@ -13,7 +13,6 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
-import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -30,16 +29,16 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
   }
 
   override def receive: Receive = {
-    case init: StartMicroPaymentChannel[C] =>
-      new InitializedBuyer(init).startExchange()
+    case init: StartMicroPaymentChannel[C] => new InitializedBuyer(init).startExchange()
   }
 
-  private class InitializedBuyer(init: StartMicroPaymentChannel[C]) {
+  private class InitializedBuyer(init: StartMicroPaymentChannel[C])
+    extends InitializedChannelBehavior(init) {
+
+    import context.dispatcher
     import init._
     import init.constants.exchangeSignatureTimeout
 
-    private val forwarding =
-      new MessageForwarding(messageGateway, exchange, exchange.role)
     private var lastSignedOffer: Option[ImmutableTransaction] = None
 
     def startExchange(): Unit = {
@@ -66,7 +65,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
       receive.andThen(_ => cancelTimeout()).orElse(handleTimeout(channel.currentStep))
     }
 
-    private def handleTimeout(step: Step): Receive= {
+    private def handleTimeout(step: Step): Receive = {
       case StepSignatureTimeout =>
         val errorMsg = s"Timed out waiting for the seller to provide the signature for $step" +
           s" (out of ${exchange.amounts.breakdown.intermediateSteps}})"
@@ -80,8 +79,16 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
           lastSignedOffer = Some(channel.closingTransaction(signatures))
           channel.currentStep match {
             case step: IntermediateStep =>
-              forwarding.forwardToCounterpart(pay(step))
+              reportProgress(signatures = step.value, payments = step.value - 1)
+              pay(step).onComplete {
+                case Success(payment) =>
+                  reportProgress(signatures = step.value, payments = step.value)
+                  forwarding.forwardToCounterpart(payment)
+                case Failure(cause) =>
+                  finishWith(ExchangeFailure(cause))
+              }
               context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
+
             case _: FinalStep =>
               log.info(s"Exchange ${exchange.id}: exchange finished with success")
               finishWith(ExchangeSuccess(lastSignedOffer))
@@ -103,7 +110,7 @@ class BuyerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchang
         }
     }
 
-    private def finishWith(result: Any): Unit = {
+    private def finishWith(result: ExchangeResult): Unit = {
       resultListeners.foreach { _ ! result }
       context.become(handleLastOfferQueries)
     }

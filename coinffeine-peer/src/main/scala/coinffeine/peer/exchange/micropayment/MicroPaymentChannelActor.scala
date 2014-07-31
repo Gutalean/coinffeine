@@ -12,7 +12,16 @@ import coinffeine.peer.ProtocolConstants
   */
 object MicroPaymentChannelActor {
 
-  /** Sent to the the actor to start the actual exchange through the micropayment channel. */
+  /** Sent to the the actor to start the actual exchange through the micropayment channel.
+    *
+    * @param exchange          Exchange to take part on
+    * @param constants         Used protocol constants
+    * @param paymentProcessor  Actor to use for making payments
+    * @param messageGateway    Gateway to communicate with the counterpart
+    * @param resultListeners   These actors will receive result and
+    *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeProgress]]
+    *                          notifications
+    */
   case class StartMicroPaymentChannel[C <: FiatCurrency](
       exchange: RunningExchange[C],
       constants: ProtocolConstants,
@@ -21,11 +30,13 @@ object MicroPaymentChannelActor {
       resultListeners: Set[ActorRef]
   )
 
+  sealed trait ExchangeResult
+
   /** Sent to the exchange listeners to notify success of the exchange */
-  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction])
+  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ExchangeFailure(cause: Throwable)
+  case class ExchangeFailure(cause: Throwable) extends ExchangeResult
 
   /** Sent to the actor to query what the last broadcastable offer is */
   case object GetLastOffer

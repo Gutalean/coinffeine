@@ -8,6 +8,7 @@ import akka.testkit.TestProbe
 import com.google.bitcoin.crypto.TransactionSignature
 
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -31,6 +32,7 @@ class SellerMicroPaymentChannelActorFailureTest
     actor ! StartMicroPaymentChannel(
       runningExchange, protocolConstants, paymentProcessor.ref, gateway.ref, Set(listener.ref)
     )
+    listener.expectMsgClass(classOf[ExchangeProgress])
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.cause shouldBe a [TimeoutException]
     actor ! GetLastOffer
