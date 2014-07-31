@@ -11,7 +11,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
+import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
@@ -32,7 +32,7 @@ class OrderActorTest extends AkkaSpec {
     submissionProbe.expectMsg(KeepSubmitting(entry))
     submissionProbe.send(actor, InMarket(entry))
     eventChannelProbe.expectMsgPF() {
-      case OrderUpdatedEvent(Order(order.id, _, InMarketOrder, _, _, _)) =>
+      case OrderStatusChangedEvent(order.id, _, InMarketOrder) =>
     }
   }
 
@@ -47,7 +47,7 @@ class OrderActorTest extends AkkaSpec {
     eventChannelProbe.expectMsg(OrderSubmittedEvent(offlineOrder))
     actor ! OrderActor.CancelOrder
     eventChannelProbe.expectMsgPF() {
-      case OrderUpdatedEvent(Order(_, _, CancelledOrder(_), _, _, _)) =>
+      case OrderStatusChangedEvent(order.id, _, CancelledOrder(_)) =>
     }
   }
 
@@ -67,7 +67,7 @@ class OrderActorTest extends AkkaSpec {
         order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10))
     )))
     eventChannelProbe.fishForMessage() {
-      case OrderUpdatedEvent(Order(_, _, CompletedOrder, _, _, _)) => true
+      case OrderStatusChangedEvent(order.id, _, CompletedOrder) => true
       case _ => false
     }
   }

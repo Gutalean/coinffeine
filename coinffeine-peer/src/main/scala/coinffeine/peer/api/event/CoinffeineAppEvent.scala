@@ -1,4 +1,9 @@
 package coinffeine.peer.api.event
 
-/** A marking trait used to define Coinffeine events. */
-trait CoinffeineAppEvent
+import org.joda.time.DateTime
+
+/** A significant event occurred in the Coinffeine App. */
+trait CoinffeineAppEvent {
+
+  val date = DateTime.now()
+}

@@ -11,11 +11,9 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
 import coinffeine.gui.application.properties.OrderProperties
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Bid, CancelledOrder, Order, OrderId}
-import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
+import coinffeine.model.market._
+import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.api.impl.MockCoinffeineApp
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {
@@ -40,8 +38,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   it must "update the order status in the table" in new UpdatingOrderFixture {
-    val newStatus = CancelledOrder("foobar")
-    assertOnUpdate(_.withStatus(newStatus))(_.statusProperty.get should be (newStatus))
+    assertOnStatusChange(CancelledOrder("foobar"))
   }
 
   it must "enable cancel button when a cancellable order is selected" in new OrderIsPresentFixture {
@@ -105,16 +102,19 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     }
 
     def cancelOrder(): Unit = {
-      app.produceEvent(OrderUpdatedEvent(sampleOrder.withStatus(CancelledOrder("no reason"))))
+      val prevStatus = sampleOrder.status
+      val newStatus = CancelledOrder("no reason")
+      app.produceEvent(OrderStatusChangedEvent(sampleOrder.id, prevStatus, newStatus))
     }
   }
 
   trait UpdatingOrderFixture extends OrderIsPresentFixture {
-    def assertOnUpdate(alter: Order[FiatCurrency] => Order[FiatCurrency])
-                      (assert: OrderProperties => Unit): Unit = {
-      app.produceEvent(OrderUpdatedEvent(alter(sampleOrder)))
+
+    def assertOnStatusChange(newStatus: OrderStatus): Unit = {
+      val prevStatus = sampleOrder.status
+      app.produceEvent(OrderStatusChangedEvent(sampleOrder.id, prevStatus, newStatus))
       eventually {
-        assert(find(sampleOrder.id).get)
+        find(sampleOrder.id).get.statusProperty.get should be (newStatus)
       }
     }
   }

@@ -14,7 +14,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.peer.api.event.{OrderSubmittedEvent, OrderUpdatedEvent}
+import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
@@ -89,7 +89,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
 
       case ExchangeActor.ExchangeSuccess(exchange) =>
         log.debug(s"Order actor received success for exchange ${exchange.id}")
-        currentOrder = currentOrder.withStatus(CompletedOrder)
+        updateOrderStatus(CompletedOrder)
         updateExchangeInOrder(exchange)
     }
 
@@ -146,13 +146,16 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     ).withImmediateReply[PaymentProcessorActor.Identified]().map(_.id)
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
+      val prevProgress = currentOrder.progress
       currentOrder = currentOrder.withExchange(exchange)
-      produceEvent(OrderUpdatedEvent(currentOrder))
+      val newProgress = currentOrder.progress
+      produceEvent(OrderProgressedEvent(currentOrder.id, prevProgress, newProgress))
     }
 
     private def updateOrderStatus(newStatus: OrderStatus): Unit = {
+      val prevStatus = currentOrder.status
       currentOrder = currentOrder.withStatus(newStatus)
-      produceEvent(OrderUpdatedEvent(currentOrder))
+      produceEvent(OrderStatusChangedEvent(currentOrder.id, prevStatus, newStatus))
 
     }
 
