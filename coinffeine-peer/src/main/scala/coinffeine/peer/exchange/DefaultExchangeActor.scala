@@ -30,12 +30,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private class InitializedExchange(init: StartExchange[C], resultListener: ActorRef) {
     import init._
     private var blockchain: ActorRef = _
-    private var _txBroadcaster: ActorRef = _
-    private def txBroadcaster = Option(_txBroadcaster).getOrElse {
-      val message = "Transaction broadcast actor does not exist"
-      log.error(message)
-      throw new Error(message)
-    }
+    private val txBroadcaster =
+      context.actorOf(transactionBroadcastActorProps, TransactionBroadcastActorName)
 
     def start(): Unit = {
       log.info(s"Starting exchange ${exchange.id}")
@@ -46,8 +42,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     private val inHandshake: Receive = {
       case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
         context.child(HandshakeActorName).map(context.stop)
-        _txBroadcaster = context.actorOf(
-          transactionBroadcastActorProps, TransactionBroadcastActorName)
         watchForDepositKeys(handshakingExchange)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))

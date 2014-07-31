@@ -15,8 +15,8 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOf
 import coinffeine.peer.exchange.util.ConstantValueActor
 import coinffeine.peer.exchange.util.ConstantValueActor.SetValue
 
-class TransactionBroadcastActor(
-    constants: ProtocolConstants) extends Actor with ActorLogging with Stash {
+class TransactionBroadcastActor(constants: ProtocolConstants)
+  extends Actor with ActorLogging with Stash {
 
   override val receive: Receive = {
     case msg: StartBroadcastHandling =>
@@ -51,7 +51,7 @@ class TransactionBroadcastActor(
     }
 
     private def setTimePanicFinish(): Unit = {
-      val panicBlock = refund.get.getLockTime - protocolConstants.refundSafetyBlockCount
+      val panicBlock = refund.get.getLockTime - constants.refundSafetyBlockCount
       autoNotifyBlockchainHeightWith(panicBlock, FinishExchange)
     }
 
