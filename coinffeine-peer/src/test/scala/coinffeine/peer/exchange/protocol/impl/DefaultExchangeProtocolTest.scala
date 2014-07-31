@@ -26,7 +26,7 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
     val invalidDeposit = ImmutableTransaction(
       buyerWallet.blockMultisignFunds(requiredSignatures, 0.01.BTC))
     an [IllegalArgumentException] should be thrownBy {
-      protocol.createHandshake(buyerExchange, invalidDeposit)
+      protocol.createHandshake(buyerHandshakingExchange, invalidDeposit)
     }
   }
 }

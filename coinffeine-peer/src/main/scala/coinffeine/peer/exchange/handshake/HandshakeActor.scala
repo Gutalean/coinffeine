@@ -66,7 +66,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
     private def receivePeerHandshake: Receive = {
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-        val handshakingExchange = HandshakingExchange(role, user, counterpart, exchange)
+        val handshakingExchange = HandshakingExchange(user, counterpart, exchange)
         blockFunds(handshakingExchange).onComplete {
           case Success(deposit) =>
             val handshake = exchangeProtocol.createHandshake(handshakingExchange, deposit)
@@ -165,7 +165,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
-      val counterpart = role.counterpart.select(exchange.peerIds)
+      val counterpart = exchange.counterpartId
       messageGateway ! Subscribe {
         case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) |
              ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) |

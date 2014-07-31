@@ -5,8 +5,9 @@ import scala.concurrent.duration._
 import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange
 import coinffeine.model.exchange.Exchange.Progress
+import coinffeine.model.exchange.{BuyerRole, Exchange}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.ExchangeActor
 
 /** Performs a fake exchange for demo purposes */
@@ -51,7 +52,8 @@ class FakeExchangeActor extends Actor with ActorLogging {
 
     private def exchangeAtStep(step: Int) = new Exchange[FiatCurrency] {
       override val id = exchange.id
-      override val peerIds = exchange.peerIds
+      override val role = exchange.role
+      override val counterpartId = exchange.counterpartId
       override val parameters = exchange.parameters
       override val brokerId = exchange.brokerId
       override val amounts = exchange.amounts

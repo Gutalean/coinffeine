@@ -22,25 +22,29 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     )
   )
 
-  val exchange = NonStartedExchange(
-    id = ExchangeId("id"),
-    amounts = Exchange.Amounts(
-      bitcoinAmount = 10.BTC,
-      fiatAmount = 10.EUR,
-      breakdown = Exchange.StepBreakdown(intermediateSteps = 10)
-    ),
-    parameters = Exchange.Parameters(lockTime = 25, network),
-    peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller")),
-    brokerId
+  val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
+
+  val amounts = Exchange.Amounts(
+    bitcoinAmount = 10.BTC,
+    fiatAmount = 10.EUR,
+    breakdown = Exchange.StepBreakdown(intermediateSteps = 10)
   )
 
+  val exchangeId = ExchangeId("id")
+
+  val parameters = Exchange.Parameters(lockTime = 25, network)
+
+  val buyerExchange =
+    NonStartedExchange(exchangeId, BuyerRole, peerIds.seller, amounts, parameters, brokerId)
   val buyerRunningExchange = RunningExchange(
     MockExchangeProtocol.DummyDeposits,
-    HandshakingExchange(BuyerRole, participants.buyer, participants.seller, exchange)
+    HandshakingExchange(participants.buyer, participants.seller, buyerExchange)
   )
 
+  val sellerExchange =
+    NonStartedExchange(exchangeId, SellerRole, peerIds.buyer, amounts, parameters, brokerId)
   val sellerRunningExchange = RunningExchange(
     MockExchangeProtocol.DummyDeposits,
-    HandshakingExchange(SellerRole, participants.seller, participants.buyer, exchange)
+    HandshakingExchange(participants.seller, participants.buyer, sellerExchange)
   )
 }
