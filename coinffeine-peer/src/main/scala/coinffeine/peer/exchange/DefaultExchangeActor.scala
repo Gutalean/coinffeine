@@ -32,6 +32,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     private var blockchain: ActorRef = _
     private val txBroadcaster =
       context.actorOf(transactionBroadcastActorProps, TransactionBroadcastActorName)
+    private val handshakeActor = context.actorOf(handshakeActorProps, HandshakeActorName)
 
     def start(): Unit = {
       log.info(s"Starting exchange ${exchange.id}")
@@ -40,12 +41,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private val inHandshake: Receive = {
+
       case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
-        context.child(HandshakeActorName).map(context.stop)
+        context.stop(handshakeActor)
         watchForDepositKeys(handshakingExchange)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
         context.become(receiveTransaction(handshakingExchange, commitmentTxIds))
+
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
@@ -57,10 +60,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private def startHandshake(): Unit = {
-      context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange, role, user, constants, messageGateway, blockchain, wallet,
-        resultListeners = Set(self)
-      )
+      handshakeActor ! StartHandshake(
+        exchange, role, user, messageGateway, blockchain, wallet, listener = self)
     }
 
     private def finishingExchange(
@@ -145,7 +146,7 @@ object DefaultExchangeActor {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
     override lazy val exchangeActorProps = Props(new DefaultExchangeActor(
-      HandshakeActor.props(exchangeProtocol),
+      HandshakeActor.props(exchangeProtocol, protocolConstants),
       channelActorProps = {
         case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
         case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
