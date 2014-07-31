@@ -11,7 +11,6 @@ import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
 
 import coinffeine.gui.control.DecimalNumberTextField
-import coinffeine.gui.util.ProgressDialog
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market._
@@ -172,11 +171,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = limitAmount.get)
-    val progress =
-      ProgressDialog("Submitting order", "Submitting order to the broker...") {
-        val submission = app.network.submitOrder(order)
-      }
-    progress.show()
+    app.network.submitOrder(order)
     closeForm()
   }
 }
