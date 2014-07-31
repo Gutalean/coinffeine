@@ -14,7 +14,7 @@ import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
-class ExchangeTransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
+class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
 
   private val refundLockTime = 20
   private val refundTx = ImmutableTransaction {

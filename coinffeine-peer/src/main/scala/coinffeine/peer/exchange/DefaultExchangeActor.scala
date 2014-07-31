@@ -9,7 +9,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
@@ -156,7 +156,7 @@ object DefaultExchangeActor {
         case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
         case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
       },
-      ExchangeTransactionBroadcastActor.props(protocolConstants),
+      TransactionBroadcastActor.props(protocolConstants),
       exchangeProtocol,
       protocolConstants
     ))
