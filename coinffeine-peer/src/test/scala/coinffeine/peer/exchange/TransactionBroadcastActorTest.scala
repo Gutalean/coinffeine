@@ -10,7 +10,7 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
-import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor._
+import coinffeine.peer.exchange.TransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
@@ -119,7 +119,6 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   }
 
   trait Fixture {
-    val instance: ActorRef = system.actorOf(
-      Props(new ExchangeTransactionBroadcastActor(protocolConstants)))
+    val instance: ActorRef = system.actorOf(Props(new TransactionBroadcastActor(protocolConstants)))
   }
 }
