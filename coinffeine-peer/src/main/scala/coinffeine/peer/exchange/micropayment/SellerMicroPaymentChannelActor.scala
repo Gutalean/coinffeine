@@ -12,7 +12,6 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
-import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -34,12 +33,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
     case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init).start()
   }
 
-  private class InitializedSellerExchange(init: StartMicroPaymentChannel[C]) {
+  private class InitializedSellerExchange(init: StartMicroPaymentChannel[C])
+    extends InitializedChannelBehavior(init) {
     import init._
     import init.constants.exchangePaymentProofTimeout
-
-    private val forwarding =
-      new MessageForwarding(messageGateway, exchange, exchange.role)
 
     def start(): Unit = {
       log.info(s"Exchange ${exchange.id}: Exchange started")
@@ -60,7 +57,6 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
         sender ! LastOffer(None)
     }
 
-
     private class StepBehavior(channel: MicroPaymentChannel[C]) {
 
       def start(): Unit = {
@@ -69,6 +65,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
           case _: FinalStep =>
             finishExchange()
           case intermediateStep: IntermediateStep =>
+            reportProgress(
+              signatures = channel.currentStep.value,
+              payments = channel.currentStep.value - 1
+            )
             scheduleStepTimeouts(exchangePaymentProofTimeout)
             context.become(waitForPaymentProof(intermediateStep) orElse handleLastOfferQueries)
         }
@@ -104,6 +104,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](exchangeProtocol: Exchan
           context.become(waitForPaymentProof(step) orElse handleLastOfferQueries)
         case PaymentValidationResult(_) =>
           unstashAll()
+          reportProgress(signatures = step.value, payments = step.value)
           new StepBehavior(channel.nextStep).start()
         case _ => stash()
       }

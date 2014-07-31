@@ -23,8 +23,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
-  // TODO: send back to the listener ExchangeProgress messages
-
   val receive: Receive = {
     case init: StartExchange[C] => new InitializedExchange(init, sender()).start()
   }
@@ -102,6 +100,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
         log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
         txBroadcaster ! FinishExchange
         context.become(finishingExchange(ExchangeFailure(e), None))
+
+      case progress: ExchangeProgress =>
+        resultListener ! progress
 
       case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
