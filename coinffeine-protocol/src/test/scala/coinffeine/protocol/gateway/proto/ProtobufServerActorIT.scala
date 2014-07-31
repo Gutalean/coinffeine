@@ -1,7 +1,8 @@
 package coinffeine.protocol.gateway.proto
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
-import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
@@ -12,16 +13,17 @@ import coinffeine.protocol.gateway.proto.ProtobufServerActor.SendMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Payload, ProtocolVersion}
 
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
-  with Eventually with IntegrationPatience with IgnoredNetworkInterfaces {
+  with IgnoredNetworkInterfaces {
 
-  val msg = CoinffeineMessage.newBuilder()
+  private val connectionTimeout = 30.seconds
+  private val msg = CoinffeineMessage.newBuilder()
     .setPayload(Payload.getDefaultInstance)
     .setVersion(ProtocolVersion.newBuilder().setMajor(1).setMinor(4))
     .build()
 
   "A peer" should "be able to send a message to another peer just with its peerId" in {
     val brokerPort = DefaultTcpPortAllocator.allocatePort()
-    val (broker, brokerId) = createBroker(brokerPort)
+    val (_, brokerId) = createBroker(brokerPort)
     val brokerAddress = BrokerAddress("localhost", brokerPort)
 
     val (peer1, receivedBrokerId1) = createPeer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
@@ -41,14 +43,14 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   private def createBroker(port: Int): (ActorRef, PeerId) = {
     val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
     peer ! Bind(port)
-    val Bound(brokerId) = expectMsgType[Bound]
+    val Bound(brokerId) = expectMsgType[Bound](connectionTimeout)
     (peer, brokerId)
   }
 
   private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
     val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
     peer ! Connect(port, connectTo)
-    val Connected(_, brokerId) = expectMsgType[Connected]
+    val Connected(_, brokerId) = expectMsgType[Connected](connectionTimeout)
     (peer, brokerId)
   }
 }

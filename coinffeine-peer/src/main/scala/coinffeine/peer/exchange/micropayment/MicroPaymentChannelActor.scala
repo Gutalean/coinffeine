@@ -5,7 +5,6 @@ import akka.actor.ActorRef
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
-import coinffeine.peer.ProtocolConstants
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.
@@ -15,7 +14,6 @@ object MicroPaymentChannelActor {
   /** Sent to the the actor to start the actual exchange through the micropayment channel.
     *
     * @param exchange          Exchange to take part on
-    * @param constants         Used protocol constants
     * @param paymentProcessor  Actor to use for making payments
     * @param messageGateway    Gateway to communicate with the counterpart
     * @param resultListeners   These actors will receive result and
@@ -24,7 +22,6 @@ object MicroPaymentChannelActor {
     */
   case class StartMicroPaymentChannel[C <: FiatCurrency](
       exchange: RunningExchange[C],
-      constants: ProtocolConstants,
       paymentProcessor: ActorRef,
       messageGateway: ActorRef,
       resultListeners: Set[ActorRef]

@@ -12,13 +12,13 @@ import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
+import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
 
 class DefaultExchangeActor[C <: FiatCurrency](
     handshakeActorProps: Props,
-    microPaymentChannelActorProps: Props,
+    channelActorProps: Role => Props,
     transactionBroadcastActorProps: Props,
     exchangeProtocol: ExchangeProtocol,
     constants: ProtocolConstants) extends Actor with ActorLogging {
@@ -117,9 +117,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
             // TODO: what if counterpart deposit is not valid?
             val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), handshakingExchange).get
             val runningExchange = RunningExchange(deposits, handshakingExchange)
-            val ref = context.actorOf(microPaymentChannelActorProps, MicroPaymentChannelActorName)
-            ref ! StartMicroPaymentChannel[C](runningExchange, constants,
-              paymentProcessor, messageGateway, resultListeners = Set(self))
+            val props = channelActorProps(runningExchange.role)
+            val ref = context.actorOf(props, MicroPaymentChannelActorName)
+            ref ! StartMicroPaymentChannel[C](runningExchange, paymentProcessor, messageGateway,
+              resultListeners = Set(self))
             txBroadcaster ! SetMicropaymentActor(ref)
             context.become(inMicropaymentChannel)
           } else {
@@ -151,8 +152,10 @@ object DefaultExchangeActor {
 
     override lazy val exchangeActorProps = Props(new DefaultExchangeActor(
       HandshakeActor.props(exchangeProtocol),
-      // TODO: there are props for buyer and seller cases but we are taking only one here
-      microPaymentChannelActorProps = ???,
+      channelActorProps = {
+        case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
+        case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
+      },
       ExchangeTransactionBroadcastActor.props(protocolConstants),
       exchangeProtocol,
       protocolConstants

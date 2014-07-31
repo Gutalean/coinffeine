@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.micropayment
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.model.bitcoin.TransactionSignature
@@ -25,12 +24,13 @@ class BuyerMicroPaymentChannelActorFailureTest
   trait Fixture {
     val listener = TestProbe()
     val paymentProcessor = TestProbe()
-    val actor = system.actorOf(Props(new BuyerMicroPaymentChannelActor(new MockExchangeProtocol)))
+    val actor = system.actorOf(
+      BuyerMicroPaymentChannelActor.props(new MockExchangeProtocol, protocolConstants))
     listener.watch(actor)
 
     def startMicroPaymentChannel(): Unit = {
-      actor ! StartMicroPaymentChannel(runningExchange, protocolConstants, paymentProcessor.ref,
-        gateway.ref, Set(listener.ref))
+      actor ! StartMicroPaymentChannel(runningExchange, paymentProcessor.ref, gateway.ref,
+        Set(listener.ref))
     }
   }
 

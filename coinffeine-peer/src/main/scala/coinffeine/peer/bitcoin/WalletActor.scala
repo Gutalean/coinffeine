@@ -24,6 +24,8 @@ private class WalletActor extends Actor with ActorLogging {
   private class InitializedWalletActor(wallet: Wallet, channel: ActorRef)
     extends EventProducer(channel) {
 
+    private var lastBalanceReported: Option[BitcoinAmount] = None
+
     def start(): Unit = {
       subscribeToWalletChanges()
       produceEvent(WalletBalanceChangeEvent(wallet.balance()))
@@ -52,7 +54,11 @@ private class WalletActor extends Actor with ActorLogging {
         sender() ! KeyPairCreated(keyPair)
 
       case WalletChanged =>
-        produceEvent(WalletBalanceChangeEvent(wallet.balance()))
+        val currentBalance = wallet.balance()
+        if (lastBalanceReported != Some(currentBalance)) {
+          produceEvent(WalletBalanceChangeEvent(currentBalance))
+          lastBalanceReported = Some(currentBalance)
+        }
     }
 
     private def subscribeToWalletChanges(): Unit = {
