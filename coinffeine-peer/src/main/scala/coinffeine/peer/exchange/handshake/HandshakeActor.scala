@@ -21,8 +21,8 @@ import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
-private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: ExchangeProtocol)
-  extends Actor with ActorLogging {
+private class HandshakeActor[C <: FiatCurrency](
+    exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) extends Actor with ActorLogging {
   import coinffeine.peer.exchange.handshake.HandshakeActor._
 
   private var timers = Seq.empty[Cancellable]
@@ -38,7 +38,7 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
   private class InitializedHandshake(init: StartHandshake[C]) {
     import context.dispatcher
     import init._
-    import init.constants._
+    import constants._
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
 
@@ -204,9 +204,9 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
 
     private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
       log.info("Handshake {}: handshake finished with result {}", exchange.id, result)
-      resultListeners.foreach(_ ! result.recover {
+      listener ! result.recover {
         case e => HandshakeFailure(e)
-      }.get)
+      }.get
       self ! PoisonPill
     }
   }
@@ -217,7 +217,8 @@ private[handshake] class HandshakeActor[C <: FiatCurrency](exchangeProtocol: Exc
   */
 object HandshakeActor {
 
-  def props(exchangeProtocol: ExchangeProtocol) = Props(new HandshakeActor(exchangeProtocol))
+  def props(exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) =
+    Props(new HandshakeActor(exchangeProtocol, constants))
 
   /** Sent to the actor to start the handshake
     *
@@ -225,21 +226,19 @@ object HandshakeActor {
     * @param exchange         Exchange to start the handshake for
     * @param role             Which role to take
     * @param user             User key and payment id
-    * @param constants        Protocol constants
     * @param messageGateway   Communications gateway
     * @param blockchain       Actor to ask for TX confirmations for
     * @param wallet           Wallet actor
-    * @param resultListeners  Actors to be notified of the handshake result
+    * @param listener         Actor to be notified of the handshake result
     */
   case class StartHandshake[C <: FiatCurrency](
       exchange: Exchange[C],
       role: Role,
       user: Exchange.PeerInfo,
-      constants: ProtocolConstants,
       messageGateway: ActorRef,
       blockchain: ActorRef,
       wallet: ActorRef,
-      resultListeners: Set[ActorRef])
+      listener: ActorRef)
 
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.

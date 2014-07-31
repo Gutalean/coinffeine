@@ -1,6 +1,5 @@
 package coinffeine.peer.exchange.handshake
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
@@ -23,12 +22,15 @@ abstract class HandshakeActorTest(systemName: String)
 
   lazy val handshake = new MockHandshake(handshakingExchange)
   val listener, blockchain, wallet = TestProbe()
-  val actor = system.actorOf(Props(new HandshakeActor(new MockExchangeProtocol)), "handshake-actor")
+  val actor = system.actorOf(
+    HandshakeActor.props(new MockExchangeProtocol, protocolConstants),
+    "handshake-actor"
+  )
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake(exchange, userRole, user, protocolConstants, gateway.ref, blockchain.ref,
-      wallet.ref, Set(listener.ref))
+    actor ! StartHandshake(
+      exchange, userRole, user, gateway.ref, blockchain.ref, wallet.ref, listener.ref)
   }
 
   def givenCounterpartPeerHandshake(): Unit = {

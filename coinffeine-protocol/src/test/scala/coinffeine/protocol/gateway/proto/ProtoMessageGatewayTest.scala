@@ -19,7 +19,7 @@ class ProtoMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with Eventually with IntegrationPatience {
 
-  val timeout = 10.seconds
+  val connectionTimeout = 30.seconds
   val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(msg: OrderMatch, _) => true
     case _ => false
@@ -84,7 +84,7 @@ class ProtoMessageGatewayTest
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway()
       ref ! Connect(localPort, connectTo)
-      val Connected(_, _) = expectMsgType[Connected](5 seconds)
+      val Connected(_, _) = expectMsgType[Connected](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))
       (ref, probe)
@@ -93,7 +93,7 @@ class ProtoMessageGatewayTest
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway()
       ref ! Bind(localPort)
-      val Bound(brokerId) = expectMsgType[Bound](5 seconds)
+      val Bound(brokerId) = expectMsgType[Bound](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))
       (ref, probe, brokerId)

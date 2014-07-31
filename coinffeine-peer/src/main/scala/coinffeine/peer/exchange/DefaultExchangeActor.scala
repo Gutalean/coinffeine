@@ -9,7 +9,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
@@ -30,12 +30,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private class InitializedExchange(init: StartExchange[C], resultListener: ActorRef) {
     import init._
     private var blockchain: ActorRef = _
-    private var _txBroadcaster: ActorRef = _
-    private def txBroadcaster = Option(_txBroadcaster).getOrElse {
-      val message = "Transaction broadcast actor does not exist"
-      log.error(message)
-      throw new Error(message)
-    }
+    private val txBroadcaster =
+      context.actorOf(transactionBroadcastActorProps, TransactionBroadcastActorName)
+    private val handshakeActor = context.actorOf(handshakeActorProps, HandshakeActorName)
 
     def start(): Unit = {
       log.info(s"Starting exchange ${exchange.id}")
@@ -44,14 +41,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private val inHandshake: Receive = {
+
       case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
-        context.child(HandshakeActorName).map(context.stop)
-        _txBroadcaster = context.actorOf(
-          transactionBroadcastActorProps, TransactionBroadcastActorName)
+        context.stop(handshakeActor)
         watchForDepositKeys(handshakingExchange)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
         context.become(receiveTransaction(handshakingExchange, commitmentTxIds))
+
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
@@ -63,10 +60,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private def startHandshake(): Unit = {
-      context.actorOf(handshakeActorProps, HandshakeActorName) ! StartHandshake(
-        exchange, role, user, constants, messageGateway, blockchain, wallet,
-        resultListeners = Set(self)
-      )
+      handshakeActor ! StartHandshake(
+        exchange, role, user, messageGateway, blockchain, wallet, listener = self)
     }
 
     private def finishingExchange(
@@ -151,12 +146,12 @@ object DefaultExchangeActor {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
     override lazy val exchangeActorProps = Props(new DefaultExchangeActor(
-      HandshakeActor.props(exchangeProtocol),
+      HandshakeActor.props(exchangeProtocol, protocolConstants),
       channelActorProps = {
         case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
         case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
       },
-      ExchangeTransactionBroadcastActor.props(protocolConstants),
+      TransactionBroadcastActor.props(protocolConstants),
       exchangeProtocol,
       protocolConstants
     ))

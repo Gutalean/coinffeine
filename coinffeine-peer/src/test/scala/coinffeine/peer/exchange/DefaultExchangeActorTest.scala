@@ -15,7 +15,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.ExchangeTransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
