@@ -7,6 +7,7 @@ import coinffeine.model.market.Order
 case class OrderSubmittedEvent(order: Order[FiatCurrency]) extends CoinffeineAppEvent {
 
   override val eventType = CoinffeineAppEvent.Success
-  override val summary = s"New order with ID ${order.id} has been submitted"
+  override val summary = s"New order submitted"
+  override val description = s"New ${order.id} has been submitted"
 }
 

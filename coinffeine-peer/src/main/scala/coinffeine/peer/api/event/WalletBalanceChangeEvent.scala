@@ -6,5 +6,6 @@ import coinffeine.model.currency.BitcoinAmount
 case class WalletBalanceChangeEvent(balance: BitcoinAmount) extends CoinffeineAppEvent {
 
   override val eventType = CoinffeineAppEvent.Info
-  override val summary = s"Wallet balance is now $balance"
+  override val summary = s"Wallet funds changed"
+  override val description = s"Wallet balance is now $balance"
 }

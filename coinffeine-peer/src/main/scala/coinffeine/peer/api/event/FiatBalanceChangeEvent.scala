@@ -6,5 +6,6 @@ import coinffeine.model.currency.FiatAmount
 case class FiatBalanceChangeEvent(balance: FiatAmount) extends CoinffeineAppEvent {
 
   override val eventType = CoinffeineAppEvent.Info
-  override val summary = s"The fiat balance is now $balance"
+  override val summary = s"Fiat balance changed"
+  override val description = s"The fiat balance is now $balance"
 }

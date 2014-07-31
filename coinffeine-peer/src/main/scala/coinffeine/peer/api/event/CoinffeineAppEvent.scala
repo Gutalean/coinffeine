@@ -9,6 +9,7 @@ trait CoinffeineAppEvent {
 
   def eventType: CoinffeineAppEvent.Type
   def summary: String
+  def description: String
 }
 
 object CoinffeineAppEvent {

@@ -18,6 +18,6 @@ case class OrderStatusChangedEvent(order: OrderId,
     case _ => CoinffeineAppEvent.Info
   }
 
-  override val summary =
-    s"Status of order $order has been changed from $prevStatus to $newStatus}"
+  override val summary = s"Order is $newStatus"
+  override val description = s"Status of $order has been changed from $prevStatus to $newStatus"
 }

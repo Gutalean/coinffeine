@@ -9,8 +9,9 @@ case class OrderProgressedEvent(order: OrderId,
 
   override def eventType = CoinffeineAppEvent.Info
 
-  override val summary =
-    s"Order with ID $order has progressed from ${percent(prevProgress)} to ${percent(newProgress)}"
+  override val summary = s"Order is ${percent(newProgress)} completed".capitalize
+  override val description =
+    s"$order has progressed from ${percent(prevProgress)} to ${percent(newProgress)}".capitalize
 
   private def percent(value: Double): String = "%.2f%%".format(value)
 }
