@@ -10,12 +10,12 @@ import coinffeine.model.market.{CompletedOrder, CancelledOrder, OrderId, OrderSt
   */
 case class OrderStatusChangedEvent(order: OrderId,
                                    prevStatus: OrderStatus,
-                                   newStatus: OrderStatus) extends CoinffeineAppEvent {
+                                   newStatus: OrderStatus) extends NotifiableCoinffeineAppEvent {
 
   override def eventType = (prevStatus, newStatus) match {
-    case (_, CancelledOrder(_)) => CoinffeineAppEvent.Warning
-    case (_, CompletedOrder) => CoinffeineAppEvent.Success
-    case _ => CoinffeineAppEvent.Info
+    case (_, CancelledOrder(_)) => NotifiableCoinffeineAppEvent.Warning
+    case (_, CompletedOrder) => NotifiableCoinffeineAppEvent.Success
+    case _ => NotifiableCoinffeineAppEvent.Info
   }
 
   override val summary = s"Order is $newStatus"

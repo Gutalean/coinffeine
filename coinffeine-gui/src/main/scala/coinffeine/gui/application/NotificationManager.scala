@@ -7,26 +7,26 @@ import org.controlsfx.control.Notifications
 
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.peer.api.CoinffeineApp
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.peer.api.event.{NotifiableCoinffeineAppEvent}
 
 class NotificationManager(app: CoinffeineApp) {
 
   val notificationPosition = Pos.TOP_RIGHT
   val notificationDuration = Duration.apply(5000)
 
-  app.observe(FxEventHandler { case event: CoinffeineAppEvent => notify(event) })
+  app.observe(FxEventHandler { case event: NotifiableCoinffeineAppEvent => notify(event) })
 
-  private def notify(event: CoinffeineAppEvent): Unit = {
+  private def notify(event: NotifiableCoinffeineAppEvent): Unit = {
     val notif = Notifications.create()
       .text(event.summary)
       .position(notificationPosition)
       .hideAfter(notificationDuration)
 
     event.eventType match {
-      case CoinffeineAppEvent.Info => notif.showInformation()
-      case CoinffeineAppEvent.Warning => notif.showWarning()
-      case CoinffeineAppEvent.Error => notif.showError()
-      case CoinffeineAppEvent.Success => notif.showInformation()
+      case NotifiableCoinffeineAppEvent.Info |
+           NotifiableCoinffeineAppEvent.Success => notif.showInformation()
+      case NotifiableCoinffeineAppEvent.Warning => notif.showWarning()
+      case NotifiableCoinffeineAppEvent.Error => notif.showError()
     }
   }
 }
