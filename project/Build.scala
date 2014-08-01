@@ -24,6 +24,7 @@ object Build extends sbt.Build {
     )
     lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
     lazy val bitcoinj = "com.google" % "bitcoinj" % "0.11.3"
+    lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
     lazy val h2 = "com.h2database" % "h2" % "1.3.175"
     lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
