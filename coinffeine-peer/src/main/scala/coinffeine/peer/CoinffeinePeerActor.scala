@@ -163,7 +163,7 @@ object CoinffeinePeerActor {
   private val BrokerHostnameSetting = "coinffeine.broker.hostname"
   private val BrokerPortSetting = "coinffeine.broker.port"
 
-  private val ConnectionTimeout = Timeout(10.seconds)
+  private val ConnectionTimeout = Timeout(30.seconds)
 
   case class PropsCatalogue(eventChannel: Props,
                             gateway: Props,

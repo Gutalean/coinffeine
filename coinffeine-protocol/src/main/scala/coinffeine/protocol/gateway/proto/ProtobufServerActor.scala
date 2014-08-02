@@ -70,20 +70,16 @@ private class ProtobufServerActor(
     .start()
 
   private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = me.discover()
-    .setInetAddress(me.getPeerAddress.getInetAddress)
-    .setPeerAddress(new PeerAddress(
-      Number160.ZERO,
-      InetAddress.getByName(brokerAddress.hostname),
-      brokerAddress.port,
-      brokerAddress.port))
+    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
+    .setPorts(brokerAddress.port)
     .start()
 
   private def bootstrap(brokerAddress: PeerAddress): Future[FutureBootstrap] = me.bootstrap()
     .setPeerAddress(brokerAddress)
     .start()
 
-  private def bootstrapBroadcast(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
-    .setBroadcast()
+  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
+    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
     .setPorts(brokerAddress.port)
     .start()
 
@@ -91,14 +87,22 @@ private class ProtobufServerActor(
       ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Unit = {
     import context.dispatcher
 
+    val bootstrapFuture = discover(brokerAddress).map({ dis =>
+      val realIp = dis.getPeerAddress
+      log.info(s"Attempting connection to Coinffeing using IP $realIp")
+      dis.getReporter
+    }).flatMap(bootstrap).recoverWith {
+      case err =>
+        log.warning("TomP2P bootstrap with discover failed.: " + err)
+        log.warning("Attempting bootstrap without discover")
+        bootstrap(brokerAddress)
+    }
     val futureBrokerId = for {
-      dis <- discover(brokerAddress)
-      bs <- bootstrap(dis.getReporter)
+      bs <- bootstrapFuture
       _ <- publishAddress()
     } yield {
       val brokerId = bs.getBootstrapTo.head
-      val realIp = dis.getPeerAddress
-      log.info(s"Boostrapped to $brokerId using IP $realIp")
+      log.info(s"Boostrapped to $brokerId")
       createPeerId(bs.getBootstrapTo.head)
     }
 
