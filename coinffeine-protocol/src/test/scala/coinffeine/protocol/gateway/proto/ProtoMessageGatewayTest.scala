@@ -67,7 +67,7 @@ class ProtoMessageGatewayTest
     ref ! Connect(
       localPort = DefaultTcpPortAllocator.allocatePort(),
       connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
-    expectMsgType[ConnectingError](5 seconds)
+    expectMsgType[ConnectingError](30 seconds)
   }
 
   trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
