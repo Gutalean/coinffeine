@@ -8,6 +8,7 @@ import scala.util.{Failure, Success}
 import akka.actor.ActorRef
 import akka.pattern._
 import akka.util.Timeout
+import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
@@ -37,8 +38,12 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
       case CoinffeinePeerActor.ConnectionFailed(cause) => Future.failed(ConnectException(cause))
     }
     bindResult.onComplete {
-      case Success(connected) => _status = connected
-      case Failure(_) => _status = Disconnected
+      case Success(connected) =>
+        DefaultCoinffeineNetwork.Log.error("Connected")
+        _status = connected
+      case Failure(cause) =>
+        DefaultCoinffeineNetwork.Log.error("Cannot connect", cause)
+        _status = Disconnected
     }
     bindResult
   }
@@ -62,4 +67,5 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
 
 object DefaultCoinffeineNetwork {
   val ConnectionTimeout = 30.seconds
+  val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineNetwork])
 }

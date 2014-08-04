@@ -59,14 +59,13 @@ class CoinffeinePeerActor(listenPort: Int,
         marketInfoRef = spawnDelegate(
           props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
         context.become(handleMessages)
+        log.info("Coinffeine peer connected both to bitcoin and coinffeine networks")
         CoinffeinePeerActor.Connected
       }).recover {
-        case NonFatal(cause) => CoinffeinePeerActor.ConnectionFailed(cause)
+        case NonFatal(cause) =>
+          log.error(cause, "Coinffeine peer connection failed")
+          CoinffeinePeerActor.ConnectionFailed(cause)
       }.pipeTo(sender())
-
-    case BindingError(cause) =>
-      log.error(cause, "Cannot start peer")
-      context.stop(self)
   }
 
   private def connectMessageGateway(): Future[PeerId] = {
@@ -163,7 +162,7 @@ object CoinffeinePeerActor {
   private val BrokerHostnameSetting = "coinffeine.broker.hostname"
   private val BrokerPortSetting = "coinffeine.broker.port"
 
-  private val ConnectionTimeout = Timeout(10.seconds)
+  private val ConnectionTimeout = Timeout(30.seconds)
 
   case class PropsCatalogue(eventChannel: Props,
                             gateway: Props,
