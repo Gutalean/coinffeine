@@ -10,6 +10,10 @@ scalaVersion in ThisBuild := "2.11.1"
 
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature", "-language:postfixOps")
 
+javaOptions in ThisBuild ++= System.getProperties.entrySet().toSeq
+  .filter(_.getKey == "config.resource")
+  .map(e => s"-D${e.getKey}=${e.getValue}")
+
 javacOptions in ThisBuild ++= Seq("-source", "1.7")
 
 // The following props are needed to avoid overriding max UDP sockets,
