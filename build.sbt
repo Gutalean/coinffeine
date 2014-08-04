@@ -10,9 +10,16 @@ scalaVersion in ThisBuild := "2.11.1"
 
 scalacOptions in ThisBuild ++= Seq("-deprecation", "-feature", "-language:postfixOps")
 
-javaOptions in ThisBuild ++= System.getProperties.entrySet().toSeq
-  .filter(_.getKey == "config.resource")
-  .map(e => s"-D${e.getKey}=${e.getValue}")
+javaOptions in ThisBuild ++= {
+  def propertiesToCopy(property: Any): Boolean = property match {
+    case "config.resource" => true
+    case scalaKey: String if scalaKey.startsWith("scala.") => true
+    case _ => false
+  }
+  System.getProperties.entrySet().toSeq
+    .filter(e => propertiesToCopy(e.getKey))
+    .map(e => s"-D${e.getKey}=${e.getValue}")
+}
 
 javacOptions in ThisBuild ++= Seq("-source", "1.7")
 
