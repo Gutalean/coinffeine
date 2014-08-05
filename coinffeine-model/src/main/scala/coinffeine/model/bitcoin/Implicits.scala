@@ -7,6 +7,7 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 import com.google.bitcoin.wallet.WalletTransaction
 
+import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, Currency}
 
@@ -107,7 +108,8 @@ object Implicits {
     private def getTransaction(txHash: Hash) = Option(wallet.getTransaction(txHash))
 
     private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-      outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).reduce(_ + _)
+      outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue))
+        .foldLeft(Bitcoin.Zero)(_ + _)
 
     private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
       val wtxs = wallet.getWalletTransactions

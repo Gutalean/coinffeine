@@ -13,7 +13,7 @@ import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.bitcoin.WalletActor.FundsBlocked
+import coinffeine.peer.bitcoin.WalletActor.{BlockFundsResult, FundsBlocked, FundsBlockingError}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
@@ -36,9 +36,9 @@ private class HandshakeActor[C <: FiatCurrency](
   }
 
   private class InitializedHandshake(init: StartHandshake[C]) {
+    import constants._
     import context.dispatcher
     import init._
-    import constants._
 
     private val forwarding = new MessageForwarding(messageGateway, exchange, role)
 
@@ -86,7 +86,10 @@ private class HandshakeActor[C <: FiatCurrency](
         to = wallet,
         request = WalletActor.BlockFundsInMultisign(requiredSignatures, depositAmount),
         errorMessage = s"Cannot block $depositAmount in multisig"
-      ).withImmediateReply[FundsBlocked]().map(_.tx)
+      ).withImmediateReply[BlockFundsResult]().flatMap {
+        case FundsBlocked(_, tx) => Future.successful(tx)
+        case FundsBlockingError(_, error) => Future.failed(error)
+      }
     }
 
     private def receiveRefundSignature(handshake: Handshake[C]): Receive = {
@@ -203,10 +206,15 @@ private class HandshakeActor[C <: FiatCurrency](
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
-      log.info("Handshake {}: handshake finished with result {}", exchange.id, result)
-      listener ! result.recover {
-        case e => HandshakeFailure(e)
-      }.get
+      val message = result match {
+        case Success(success) =>
+          log.info("Handshake {}: succeeded")
+          success
+        case Failure(cause) =>
+          log.error(cause, "Handshake {}: handshake failed with", exchange.id)
+          HandshakeFailure(cause)
+      }
+      listener ! message
       self ! PoisonPill
     }
   }

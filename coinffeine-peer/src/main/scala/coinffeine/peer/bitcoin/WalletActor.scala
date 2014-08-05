@@ -92,6 +92,9 @@ object WalletActor {
     */
   case class BlockFundsInMultisign(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
 
+  /** Base trait for the responses to [[BlockFundsInMultisign]] */
+  sealed trait BlockFundsResult
+
   /** A message sent by the wallet actor in reply to a BlockFundsInMultisign message to report
     * a successful funds blocking.
     *
@@ -99,11 +102,13 @@ object WalletActor {
     * @param tx       The resulting transaction that contains the funds that have been blocked
     */
   case class FundsBlocked(request: BlockFundsInMultisign, tx: ImmutableTransaction)
+    extends BlockFundsResult
 
   /** A message sent by the wallet actor in reply to a BlockFundsInMultisign message to report
     * an error while blocking the funds.
     */
   case class FundsBlockingError(request: BlockFundsInMultisign, error: Throwable)
+    extends BlockFundsResult
 
   /** A message sent to the wallet actor in order to release the funds that are blocked by the
     * given transaction.

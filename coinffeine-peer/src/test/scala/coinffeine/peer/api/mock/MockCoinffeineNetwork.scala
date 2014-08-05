@@ -3,9 +3,7 @@ package coinffeine.peer.api.mock
 import scala.concurrent.Future
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
@@ -14,8 +12,6 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
   private var _orders: Set[Order[FiatCurrency]] = Set.empty
 
   override def status: Status = ???
-
-  override def exchanges: Set[Exchange[FiatCurrency]] = ???
 
   override def disconnect(): Future[Disconnected.type] = ???
 

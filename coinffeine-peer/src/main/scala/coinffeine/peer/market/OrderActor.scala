@@ -166,17 +166,9 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       )
     }
 
-    private def spawnExchange(exchange: Exchange[FiatCurrency],
-                              userInfo: Exchange.PeerInfo): Unit = {
+    private def spawnExchange(exchange: Exchange[FiatCurrency], user: Exchange.PeerInfo): Unit = {
       context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
-        exchange = exchange,
-        role,
-        user = userInfo,
-        wallet = null,
-        paymentProcessor,
-        messageGateway,
-        bitcoinPeer
-      )
+        exchange, role, user, wallet, paymentProcessor, messageGateway, bitcoinPeer)
     }
 
     private def createFreshKeyPair(): Future[KeyPair] =
