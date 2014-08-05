@@ -203,10 +203,15 @@ private class HandshakeActor[C <: FiatCurrency](
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
-      log.info("Handshake {}: handshake finished with result {}", exchange.id, result)
-      listener ! result.recover {
-        case e => HandshakeFailure(e)
-      }.get
+      val message = result match {
+        case Success(success) =>
+          log.info("Handshake {}: succeeded")
+          success
+        case Failure(cause) =>
+          log.error(cause, "Handshake {}: handshake failed with", exchange.id)
+          HandshakeFailure(cause)
+      }
+      listener ! message
       self ! PoisonPill
     }
   }
