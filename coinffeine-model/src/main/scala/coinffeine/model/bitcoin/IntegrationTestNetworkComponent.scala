@@ -17,7 +17,7 @@ trait IntegrationTestNetworkComponent extends NetworkComponent with PeerGroupCom
     group
   }
 
-  private def testnetAddress() = new PeerAddress(
+  def testnetAddress() = new PeerAddress(
     InetAddress.getByName(IntegrationTestNetworkComponent.Hostname),
     IntegrationTestNetworkComponent.Port
   )
