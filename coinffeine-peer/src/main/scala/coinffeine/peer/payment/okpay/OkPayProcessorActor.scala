@@ -2,6 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import java.net.URI
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -9,12 +10,14 @@ import akka.actor._
 import akka.pattern._
 import com.typesafe.config.Config
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
+import coinffeine.peer.payment.okpay.BlockingFundsActor.{CannotUseFunds, FundsUsed, UseFunds, BalancesUpdate}
 
 class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterval: FiniteDuration)
   extends Actor {
@@ -44,7 +47,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
   private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
 
-    private val blockedFunds = new BlockedFunds()
+    private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
 
     def start(): Unit = {
       pollBalances()
@@ -62,34 +65,33 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
         currentBalance(sender(), currency)
       case PollBalance =>
         pollBalances()
-      case UpdatedBalances(balances) =>
-        updateBlockedFunds(balances)
-        for (balance <- balances) {
-          produceEvent(FiatBalanceChangeEvent(balance))
-        }
-      case BlockFunds(amount, listener) =>
-        sender() ! blockedFunds.block(amount, listener)
-          .fold[BlockFundsResult](NotEnoughFunds)(FundsBlocked.apply)
-      case UnblockFunds(fundsId) =>
-        unblockFunds(fundsId)
+      case msg @ (BlockFunds(_, _) | UnblockFunds(_)) =>
+        blockingFunds.forward(msg)
     }
 
     private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
-      if (!blockedFunds.canUseFunds(pay.fundsId, pay.amount)) {
-        requester ! PaymentFailed(pay,
-          new PaymentProcessorException(s"${pay.amount} is not backed by funds ${pay.fundsId}"))
-      } else {
-        val paymentFuture = client.sendPayment(pay.to, pay.amount, pay.comment)
-        paymentFuture.onComplete {
-          case Success(payment) =>
-            requester ! Paid(payment)
-            blockedFunds.useFunds(pay.fundsId, pay.amount)
-          case Failure(error) =>
-            requester ! PaymentFailed(pay, error)
-        }
-        paymentFuture.onComplete(_ => pollBalances())
+      (for {
+        _ <- useFunds(pay)
+        payment <- client.sendPayment(pay.to, pay.amount, pay.comment)
+      } yield payment).onComplete {
+        case Success(payment) =>
+          requester ! Paid(payment)
+          pollBalances()
+        case Failure(error) =>
+          requester ! PaymentFailed(pay, error)
+          pollBalances()
       }
     }
+
+    private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] =
+      AskPattern(blockingFunds, UseFunds(pay.fundsId, pay.amount), "fail to use funds")
+        .withImmediateReply[Any]()
+        .flatMap {
+          case FundsUsed(pay.`fundsId`, pay.`amount`) =>
+            Future.successful()
+          case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
+            Future.failed(new RuntimeException(cause))
+        }
 
     private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
       client.findPayment(paymentId).onComplete {
@@ -102,7 +104,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
       client.currentBalances().onComplete {
         case Success(balances) =>
-          self ! UpdatedBalances(balances)
+          updateBalances(balances)
           requester ! balances.find(_.currency == currency)
             .fold(balanceNotFound(currency))(BalanceRetrieved.apply)
         case Failure(error) =>
@@ -110,37 +112,21 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
       }
     }
 
+    private def updateBalances(balances: Seq[FiatAmount]): Unit = {
+      for (balance <- balances) {
+        produceEvent(FiatBalanceChangeEvent(balance))
+      }
+      blockingFunds ! BalancesUpdate(balances)
+    }
+
     private def pollBalances(): Unit = {
-      client.currentBalances().map(UpdatedBalances.apply).pipeTo(self)
+      client.currentBalances().onSuccess { case balances => updateBalances(balances) }
     }
 
     private def balanceNotFound(currency: FiatCurrency): RetrieveBalanceResponse =
       BalanceRetrievalFailed(currency, new NoSuchElementException("No balance in that currency"))
 
-    private def updateBlockedFunds(balances: Seq[FiatAmount]): Unit = notifyingFundsAvailability {
-      blockedFunds.updateBalances(balances)
-    }
 
-    private def unblockFunds(fundsId: FundsId): Unit = notifyingFundsAvailability {
-      blockedFunds.unblock(fundsId)
-    }
-
-    private def notifyingFundsAvailability[T](block: => T): T = {
-      val wereBacked = blockedFunds.areFundsBacked
-      val result = block
-      val areBacked = blockedFunds.areFundsBacked
-      if (wereBacked != areBacked) {
-        notifyFundsListeners(areBacked)
-      }
-      result
-    }
-
-    private def notifyFundsListeners(areBacked: Boolean): Unit = {
-      val messageFactory = if (areBacked) AvailableFunds.apply _ else UnavailableFunds.apply _
-      for ((funds, ref) <- blockedFunds.listenersByFundId) {
-        ref ! messageFactory(funds)
-      }
-    }
   }
 }
 
@@ -149,8 +135,6 @@ object OkPayProcessorActor {
   val Id = "OKPAY"
 
   private case object PollBalance
-
-  private case class UpdatedBalances(balances: Seq[FiatAmount])
 
   def props(config: Config) = {
     val account = config.getString("coinffeine.okpay.id")

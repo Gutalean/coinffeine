@@ -23,18 +23,14 @@ object PaymentProcessorActor {
   /** A message sent by the payment processor identifying itself. */
   case class Identified(id: Id)
 
-  /** A message sent to the payment processor to reserve some funds
+  /** A message sent to the payment processor to reserve some funds. As response, the sender must
+    * expect a [[FundsId]] object.
     *
     * @constructor
     * @param amount    Amount to block
     * @param listener  Actor to notify if the funds are not available despite being blocked
     */
   case class BlockFunds(amount: FiatAmount, listener: ActorRef)
-
-  /** Responses to [[BlockFunds]] */
-  sealed trait BlockFundsResult
-  case object NotEnoughFunds extends BlockFundsResult
-  case class FundsBlocked(funds: FundsId) extends BlockFundsResult
 
   /** A message sent to the payment processor to release some previously reserved funds. */
   case class UnblockFunds(funds: FundsId)

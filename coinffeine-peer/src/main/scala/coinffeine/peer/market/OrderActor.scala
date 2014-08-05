@@ -70,14 +70,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private def initializing: Receive = running orElse {
-      case PaymentProcessorActor.FundsBlocked(fundsId) =>
+      case fundsId: FundsId =>
         blockedFunds = Some(fundsId)
-        init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
-        updateOrderStatus(OfflineOrder)
-        context.become(offline)
-      case PaymentProcessorActor.NotEnoughFunds =>
-        log.error(s"No enough funds to continue with ${currentOrder.id}")
-        context.become(terminated)
+        log.warning(s"${currentOrder.id} is stalled until enough funds are available".capitalize)
+        context.become(stalled)
     }
 
     private def stalled: Receive = running orElse {
