@@ -21,6 +21,7 @@ import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -42,38 +43,53 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       case Bid => BuyerRole
       case Ask => SellerRole
     }
+
     private var currentOrder = init.order
+    private var blockedFundsId: Option[FundsId] = None
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
+      paymentProcessor ! PaymentProcessorActor.BlockFunds(init.order.fiatAmount, self)
       messageGateway ! MessageGateway.Subscribe {
         case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) =>
           orderMatch.orderId == currentOrder.id
         case _ => false
       }
-
-      currentOrder = currentOrder.withStatus(OfflineOrder)
+      currentOrder = currentOrder.withStatus(StalledOrder)
       produceEvent(OrderSubmittedEvent(currentOrder))
-      init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
-      context.become(manageOrder)
+      context.become(initializing)
     }
 
-    private val manageOrder: Receive = {
+    private def initializing: Receive = running orElse {
+      case PaymentProcessorActor.FundsBlocked(fundsId) =>
+        blockedFundsId = Some(fundsId)
+        init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
+        updateOrderStatus(OfflineOrder)
+        context.become(offline)
+
+      case PaymentProcessorActor.NotEnoughFunds =>
+        log.warning(s"${currentOrder.id} is stalled due to not enough funds".capitalize)
+        context.become(stalled)
+    }
+
+    private def stalled: Receive = running orElse {
+      case PaymentProcessorActor.AvailableFunds(fundsId) =>
+        log.info(s"${currentOrder.id} received available funds. Moving to offline status")
+        updateOrderStatus(OfflineOrder)
+        submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
+        context.become(offline)
+    }
+
+    private def offline: Receive = running orElse availableFunds orElse {
       case InMarket(order) if orderBookEntryMatches(order) =>
         updateOrderStatus(InMarketOrder)
+        context.become(waitingForMatch)
+    }
 
+    private def waitingForMatch: Receive = running orElse availableFunds orElse {
       case Offline(order) if orderBookEntryMatches(order) =>
         updateOrderStatus(OfflineOrder)
-
-      case CancelOrder =>
-        log.info(s"Order actor requested to cancel order ${currentOrder.id}")
-        submissionSupervisor ! StopSubmitting(currentOrder.id)
-        // TODO: determine the cancellation reason
-        updateOrderStatus(CancelledOrder("unknown reason"))
-
-      case RetrieveStatus =>
-        log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
-        sender() ! currentOrder
+        context.become(offline)
 
       case ReceiveMessage(orderMatch: OrderMatch, _) =>
         log.info(s"Order actor received a match for ${currentOrder.id} " +
@@ -82,7 +98,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         val newExchange = buildExchange(orderMatch)
         updateExchangeInOrder(newExchange)
         startExchange(newExchange)
+        context.become(exchanging)
+    }
 
+    private def exchanging: Receive = running orElse availableFunds orElse {
       case ExchangeActor.ExchangeProgress(exchange) =>
         log.debug(s"Order actor received progress for exchange ${exchange.id}: ${exchange.progress}")
         updateExchangeInOrder(exchange)
@@ -91,6 +110,32 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         log.debug(s"Order actor received success for exchange ${exchange.id}")
         updateOrderStatus(CompletedOrder)
         updateExchangeInOrder(exchange)
+        context.become(terminated)
+    }
+
+    private def availableFunds: Receive = {
+      case PaymentProcessorActor.UnavailableFunds(fundsId) =>
+        updateOrderStatus(StalledOrder)
+        submissionSupervisor ! StopSubmitting(currentOrder.id)
+        log.warning(s"${currentOrder.id} is stalled due to unavailable funds")
+        context.become(stalled)
+    }
+
+    private def running: Receive = {
+      case RetrieveStatus =>
+        log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
+        sender() ! currentOrder
+
+      case CancelOrder =>
+        log.info(s"Order actor requested to cancel order ${currentOrder.id}")
+        submissionSupervisor ! StopSubmitting(currentOrder.id)
+        // TODO: determine the cancellation reason
+        updateOrderStatus(CancelledOrder("unknown reason"))
+        context.become(terminated)
+    }
+
+    private def terminated: Receive = {
+      case _ => log.info(s"${currentOrder.id} is terminated")
     }
 
     private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
@@ -156,7 +201,6 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       val prevStatus = currentOrder.status
       currentOrder = currentOrder.withStatus(newStatus)
       produceEvent(OrderStatusChangedEvent(currentOrder.id, prevStatus, newStatus))
-
     }
 
     private def orderBookEntryMatches(entry: OrderBookEntry[FiatAmount]): Boolean =
