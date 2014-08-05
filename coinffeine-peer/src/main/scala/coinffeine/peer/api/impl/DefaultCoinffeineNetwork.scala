@@ -11,7 +11,6 @@ import akka.util.Timeout
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
@@ -49,8 +48,6 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   }
 
   override def disconnect(): Future[Disconnected.type] = ???
-
-  override def exchanges: Set[Exchange[FiatCurrency]] = Set.empty
 
   override def orders: Set[Order[FiatCurrency]] =
     await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
