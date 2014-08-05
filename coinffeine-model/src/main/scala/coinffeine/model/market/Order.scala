@@ -25,6 +25,8 @@ case class Order[+C <: FiatCurrency](
     price: CurrencyAmount[C],
     exchanges: Map[ExchangeId, Exchange[C]]) {
 
+  val fiatAmount = price * amount.value
+
   /** Create a new copy of this order with the given status. */
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
 
