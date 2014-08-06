@@ -17,8 +17,6 @@ class BlockchainActor(network: NetworkParameters) extends Actor with ActorLoggin
   }
 
   private class InitializedBlockchainActor(blockchain: AbstractBlockChain) {
-
-
     private var observations: Map[Sha256Hash, Observation] = Map.empty
     private var heightNotifications: Set[HeightNotification] = Set.empty
     private val wallet = new Wallet(network)
@@ -32,30 +30,9 @@ class BlockchainActor(network: NetworkParameters) extends Actor with ActorLoggin
     private object Listener extends AbstractBlockChainListener {
 
       override def notifyNewBestBlock(block: StoredBlock): Unit = {
-        observations.foreach { case (txHash, Observation(_, req, reqConf, Some(foundInBlock))) =>
-          val blockHeight = block.getHeight
-          val confirmations = (blockHeight - foundInBlock.height) + 1
-          if (confirmations >= reqConf) {
-            log.info(
-              "after new chain head {}, tx {} have {} confirmations out of {} required: " +
-                "reporting to the observer",
-              blockHeight, txHash, confirmations, reqConf)
-            req ! TransactionConfirmed(txHash, confirmations)
-            observations -= txHash
-          } else {
-            log.info(
-              "after new chain head {}, tx {} have {} confirmations out of {} required: " +
-                "still waiting for more blocks",
-              blockHeight, txHash, confirmations, reqConf)
-          }
-        }
-        heightNotifications.foreach { case notification@HeightNotification(height, req) =>
-          val blockchainHeight = block.getHeight
-          if (blockchainHeight >= height) {
-            req ! BlockchainHeightReached(blockchainHeight)
-            heightNotifications  -= notification
-          }
-        }
+        val currentHeight = block.getHeight
+        notifyConfirmedTransactions(currentHeight)
+        notifyHeight(currentHeight)
       }
 
       override def reorganize(splitPoint: StoredBlock, oldBlocks: util.List[StoredBlock],
@@ -97,8 +74,37 @@ class BlockchainActor(network: NetworkParameters) extends Actor with ActorLoggin
       override def notifyTransactionIsInBlock(
           txHash: Sha256Hash, block: StoredBlock,
           blockType: NewBlockType, relativityOffset: Int): Boolean = observations.contains(txHash)
-    }
 
+      private def notifyConfirmedTransactions(currentHeight: Int): Unit = {
+        observations.foreach {
+          case (txHash, Observation(_, req, reqConf, Some(foundInBlock))) =>
+            val confirmations = (currentHeight - foundInBlock.height) + 1
+            if (confirmations >= reqConf) {
+              log.info(
+                """after new chain head {}, tx {} have {} confirmations out of {} required:
+                  |reporting to the observer""".stripMargin,
+                currentHeight, txHash, confirmations, reqConf)
+              req ! TransactionConfirmed(txHash, confirmations)
+              observations -= txHash
+            } else {
+              log.info(
+                """after new chain head {}, tx {} have {} confirmations out of {} required:
+                  |still waiting for more blocks""".stripMargin,
+                currentHeight, txHash, confirmations, reqConf)
+            }
+          case _ =>
+        }
+      }
+
+      private def notifyHeight(currentHeight: Int): Unit = {
+        heightNotifications.foreach { case notification@HeightNotification(height, req) =>
+          if (currentHeight >= height) {
+            req ! BlockchainHeightReached(currentHeight)
+            heightNotifications -= notification
+          }
+        }
+      }
+    }
 
     private val handlingBlockchain: Receive = {
 
