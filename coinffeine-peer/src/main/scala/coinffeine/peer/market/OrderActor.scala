@@ -45,35 +45,43 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private var currentOrder = init.order
-    private var blockedFundsId: Option[FundsId] = None
+    private var blockedFunds: Option[FundsId] = None
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
-      paymentProcessor ! PaymentProcessorActor.BlockFunds(init.order.fiatAmount, self)
       messageGateway ! MessageGateway.Subscribe {
         case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) =>
           orderMatch.orderId == currentOrder.id
         case _ => false
       }
-      currentOrder = currentOrder.withStatus(StalledOrder)
-      produceEvent(OrderSubmittedEvent(currentOrder))
-      context.become(initializing)
+      currentOrder.orderType match {
+        case Bid =>
+          log.info(s"${currentOrder.id} is bidding, " +
+            s"blocking ${currentOrder.fiatAmount} in payment processor")
+          paymentProcessor ! PaymentProcessorActor.BlockFunds(init.order.fiatAmount, self)
+          startWithOrderStatus(StalledOrder)
+          context.become(initializing)
+        case Ask =>
+          log.info(s"${currentOrder.id} is asking, no funds blocking in payment processor required")
+          startWithOrderStatus(OfflineOrder)
+          submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
+          context.become(offline)
+      }
     }
 
     private def initializing: Receive = running orElse {
       case PaymentProcessorActor.FundsBlocked(fundsId) =>
-        blockedFundsId = Some(fundsId)
+        blockedFunds = Some(fundsId)
         init.submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
         updateOrderStatus(OfflineOrder)
         context.become(offline)
-
       case PaymentProcessorActor.NotEnoughFunds =>
-        log.warning(s"${currentOrder.id} is stalled due to not enough funds".capitalize)
-        context.become(stalled)
+        log.error(s"No enough funds to continue with ${currentOrder.id}")
+        context.become(terminated)
     }
 
     private def stalled: Receive = running orElse {
-      case PaymentProcessorActor.AvailableFunds(fundsId) =>
+      case PaymentProcessorActor.AvailableFunds(fundsId) if currentlyBlocking(fundsId) =>
         log.info(s"${currentOrder.id} received available funds. Moving to offline status")
         updateOrderStatus(OfflineOrder)
         submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
@@ -114,7 +122,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private def availableFunds: Receive = {
-      case PaymentProcessorActor.UnavailableFunds(fundsId) =>
+      case PaymentProcessorActor.UnavailableFunds(fundsId) if currentlyBlocking(fundsId) =>
         updateOrderStatus(StalledOrder)
         submissionSupervisor ! StopSubmitting(currentOrder.id)
         log.warning(s"${currentOrder.id} is stalled due to unavailable funds")
@@ -137,6 +145,9 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     private def terminated: Receive = {
       case _ => log.info(s"${currentOrder.id} is terminated")
     }
+
+    private def currentlyBlocking(funds: FundsId): Boolean =
+      blockedFunds.isDefined && blockedFunds.get == funds
 
     private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
       val userInfoFuture = for {
@@ -181,6 +192,11 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       request = PaymentProcessorActor.Identify,
       errorMessage = "Cannot retrieve payment processor id"
     ).withImmediateReply[PaymentProcessorActor.Identified]().map(_.id)
+
+    private def startWithOrderStatus(status: OrderStatus): Unit = {
+      currentOrder = currentOrder.withStatus(status)
+      produceEvent(OrderSubmittedEvent(currentOrder))
+    }
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
       val prevProgress = currentOrder.progress
