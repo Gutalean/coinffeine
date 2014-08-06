@@ -14,6 +14,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
+import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FundsId
@@ -24,7 +25,7 @@ class OrderActorTest extends AkkaSpec {
 
   "A bidding order actor" should "keep order info" in new BiddingFixture {
     actor ! OrderActor.RetrieveStatus
-    expectMsg(stalledOrder)
+    expectMsg(blockingFundsOrder)
   }
 
   it should "block FIAT funds when is initialized" in new BiddingFixture {
@@ -41,14 +42,16 @@ class OrderActorTest extends AkkaSpec {
   it should "move to stalled when payment processor reports unavailable funds" in new BiddingFixture {
     givenOfflineOrder()
     paymentProcessorProbe.send(actor, PaymentProcessorActor.UnavailableFunds(fundsId))
-    eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, StalledOrder))
+    eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+      order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
     submissionProbe.expectMsg(StopSubmitting(order.id))
   }
 
   it should "move to offline when receive available funds" in new BiddingFixture {
     givenStalledOrder()
     paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(FundsId(1)))
-    eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, StalledOrder, OfflineOrder))
+    eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+      order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
   }
 
@@ -75,7 +78,8 @@ class OrderActorTest extends AkkaSpec {
   it should "move from stalled to offline when available funds message is received" in new BiddingFixture {
     givenStalledOrder()
     paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fundsId))
-    eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, StalledOrder, OfflineOrder))
+    eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+      order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
   }
 
@@ -196,7 +200,7 @@ class OrderActorTest extends AkkaSpec {
     val order: Order[FiatCurrency]
     val role: Role
     val paymentProcessorId = "account-123"
-    val stalledOrder = order.withStatus(StalledOrder)
+    val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)
 
@@ -215,7 +219,7 @@ class OrderActorTest extends AkkaSpec {
     override val role: Role = BuyerRole
 
     def givenInitializedOrder(): Unit = {
-      eventChannelProbe.expectMsg(OrderSubmittedEvent(stalledOrder))
+      eventChannelProbe.expectMsg(OrderSubmittedEvent(blockingFundsOrder))
       paymentProcessorProbe.expectMsg(PaymentProcessorActor.BlockFunds(order.fiatAmount, actor))
     }
 
@@ -223,14 +227,16 @@ class OrderActorTest extends AkkaSpec {
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
       paymentProcessorProbe.reply(PaymentProcessorActor.FundsBlocked(fundsId))
-      eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, StalledOrder, OfflineOrder))
+      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+        order.id, StalledOrder(BlockingFundsMessage), OfflineOrder))
       submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
     }
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()
       paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds(fundsId))
-      eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, StalledOrder))
+      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+        order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
       submissionProbe.expectMsg(StopSubmitting(order.id))
     }
 
