@@ -43,7 +43,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     private val inHandshake: Receive = {
 
       case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
-        context.stop(handshakeActor)
         watchForDepositKeys(handshakingExchange)
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
