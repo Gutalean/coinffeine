@@ -134,11 +134,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
         sender() ! currentOrder
 
-      case CancelOrder =>
+      case CancelOrder(reason) =>
         log.info(s"Order actor requested to cancel order ${currentOrder.id}")
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        // TODO: determine the cancellation reason
-        updateOrderStatus(CancelledOrder("unknown reason"))
+        updateOrderStatus(CancelledOrder(reason))
         context.become(terminated)
     }
 
@@ -227,7 +226,7 @@ object OrderActor {
                         wallet: ActorRef,
                         brokerId: PeerId)
 
-  case object CancelOrder
+  case class CancelOrder(reason: String)
 
   /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus

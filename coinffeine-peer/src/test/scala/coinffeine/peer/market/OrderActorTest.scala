@@ -64,10 +64,11 @@ class OrderActorTest extends AkkaSpec {
   it should "keep submitting to the broker until been cancelled" in new BiddingFixture {
     givenOfflineOrder()
     expectNoMsg()
-    actor ! OrderActor.CancelOrder
+    val reason = "some reason"
+    actor ! OrderActor.CancelOrder(reason)
     submissionProbe.expectMsg(StopSubmitting(order.id))
     eventChannelProbe.expectMsgPF() {
-      case OrderStatusChangedEvent(orderId, _, CancelledOrder(_)) if orderId == order.id =>
+      case OrderStatusChangedEvent(orderId, _, CancelledOrder(`reason`)) if orderId == order.id =>
     }
   }
 
@@ -135,10 +136,11 @@ class OrderActorTest extends AkkaSpec {
 
   it should "keep submitting to the broker until been cancelled" in new AskingFixture {
     givenInMarketOrder()
-    actor ! OrderActor.CancelOrder
+    val reason = "some reason"
+    actor ! OrderActor.CancelOrder(reason)
     submissionProbe.expectMsg(StopSubmitting(order.id))
     eventChannelProbe.expectMsgPF() {
-      case OrderStatusChangedEvent(order.id, InMarketOrder, CancelledOrder(_)) =>
+      case OrderStatusChangedEvent(order.id, InMarketOrder, CancelledOrder(`reason`)) =>
     }
   }
 

@@ -102,7 +102,8 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         .actions(Actions.YES, Actions.NO)
         .showConfirm()
       if (confirm == Actions.YES) {
-        app.network.cancelOrder(orderSelectionProperty.getValue.idProperty.value)
+        app.network.cancelOrder(orderSelectionProperty.getValue.idProperty.value,
+          "Cancelled by the user")
       }
     }
   }

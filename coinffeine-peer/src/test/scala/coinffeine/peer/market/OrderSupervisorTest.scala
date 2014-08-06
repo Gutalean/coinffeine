@@ -44,8 +44,9 @@ class OrderSupervisorTest extends AkkaSpec {
   it should "cancel an order when requested" in new Fixture {
     givenOrderSupervisorIsInitialized()
     givenOpenOrder(order1)
-    actor ! CancelOrder(order1.id)
-    orderActorProbe.expectMsg(OrderActor.CancelOrder)
+    val reason = "foo"
+    actor ! CancelOrder(order1.id, reason)
+    orderActorProbe.expectMsg(OrderActor.CancelOrder(reason))
   }
 
   it should "collect all orders in a RetrievedOpenOrders message" in new Fixture {
