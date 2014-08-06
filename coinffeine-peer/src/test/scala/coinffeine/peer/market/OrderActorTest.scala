@@ -180,7 +180,7 @@ class OrderActorTest extends AkkaSpec {
     exchange.expectCreation()
     val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
     exchange.expectMsgPF {
-      case ExchangeActor.StartExchange(ex, role, `peerInfo`, _, _, _, _)
+      case ExchangeActor.StartExchange(ex, `role`, `peerInfo`, _, _, _, _)
         if ex.id == exchangeId =>
     }
   }
