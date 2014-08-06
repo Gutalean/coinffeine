@@ -31,6 +31,10 @@ class MockSupervisedActor(implicit system: ActorSystem) {
     probe.expectNoMsg()
   }
 
+  def expectNoMsg(): Unit = {
+    probe.expectNoMsg()
+  }
+
   def expectMsg(message: Any): Unit = {
     probe.expectMsgPF() {
       case MockActor.MockReceived(_, _, `message`) =>

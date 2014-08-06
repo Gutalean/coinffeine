@@ -208,7 +208,7 @@ private class HandshakeActor[C <: FiatCurrency](
     private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
       val message = result match {
         case Success(success) =>
-          log.info("Handshake {}: succeeded")
+          log.info("Handshake {}: succeeded", exchange.id)
           success
         case Failure(cause) =>
           log.error(cause, "Handshake {}: handshake failed with", exchange.id)
