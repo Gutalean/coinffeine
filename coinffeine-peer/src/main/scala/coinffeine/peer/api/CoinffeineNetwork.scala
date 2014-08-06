@@ -50,7 +50,12 @@ trait CoinffeineNetwork {
   /** Submit an order. */
   def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C]
 
-  def cancelOrder(order: OrderId): Unit
+  /** Cancel an order
+    *
+    * @param order The order id to be cancelled
+    * @param reason A user friendly message that explains why the order is being cancelled
+    */
+  def cancelOrder(order: OrderId, reason: String): Unit
 }
 
 object CoinffeineNetwork {

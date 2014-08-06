@@ -17,7 +17,7 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
 
   override def orders: Set[Order[FiatCurrency]] = _orders
 
-  override def cancelOrder(orderId: OrderId): Unit = {
+  override def cancelOrder(orderId: OrderId, reason: String): Unit = {
     _orders = _orders.filterNot(_.id == orderId)
   }
 

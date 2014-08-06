@@ -46,8 +46,8 @@ class OrderSupervisor(orderActorProps: Props,
           bitcoinPeer, wallet, brokerId)
         orders += order.id -> ref
 
-      case CancelOrder(orderId) =>
-        orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
+      case CancelOrder(orderId, reason) =>
+        orders.get(orderId).foreach(_ ! OrderActor.CancelOrder(reason))
         orders = orders.filterNot(_._1 == orderId)
 
       case RetrieveOpenOrders =>

@@ -91,7 +91,7 @@ class CoinffeinePeerActor(listenPort: Int,
   private val handleMessages: Receive = {
     case message @ (CoinffeinePeerActor.Subscribe | CoinffeinePeerActor.Unsubscribe) =>
       eventChannel forward message
-    case message @ (OpenOrder(_) | CancelOrder(_) | RetrieveOpenOrders) =>
+    case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
       orderSupervisorRef forward message
     case message @ RetrieveWalletBalance =>
       walletRef forward message
@@ -140,8 +140,9 @@ object CoinffeinePeerActor {
     * Note that this can cancel partially an existing order for a greater amount of bitcoin.
     *
     * @param order  Order to cancel
+    * @param reason A user friendly description of why the order is cancelled
     */
-  case class CancelOrder(order: OrderId)
+  case class CancelOrder(order: OrderId, reason: String)
 
   /** Ask for own orders opened in any market. */
   case object RetrieveOpenOrders

@@ -18,7 +18,7 @@ import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent,
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.OrderActor.{CancelOrder, Initialize, RetrieveStatus}
+import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FundsId
@@ -59,7 +59,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
           log.info(s"${currentOrder.id} is bidding, " +
             s"blocking ${currentOrder.fiatAmount} in payment processor")
           paymentProcessor ! PaymentProcessorActor.BlockFunds(init.order.fiatAmount, self)
-          startWithOrderStatus(StalledOrder)
+          startWithOrderStatus(StalledOrder(BlockingFundsMessage))
           context.become(initializing)
         case Ask =>
           log.info(s"${currentOrder.id} is asking, no funds blocking in payment processor required")
@@ -123,7 +123,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
 
     private def availableFunds: Receive = {
       case PaymentProcessorActor.UnavailableFunds(fundsId) if currentlyBlocking(fundsId) =>
-        updateOrderStatus(StalledOrder)
+        updateOrderStatus(StalledOrder(NoFundsMessage))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
         log.warning(s"${currentOrder.id} is stalled due to unavailable funds")
         context.become(stalled)
@@ -134,11 +134,10 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         log.debug(s"Order actor requested to retrieve status for ${currentOrder.id}")
         sender() ! currentOrder
 
-      case CancelOrder =>
+      case CancelOrder(reason) =>
         log.info(s"Order actor requested to cancel order ${currentOrder.id}")
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        // TODO: determine the cancellation reason
-        updateOrderStatus(CancelledOrder("unknown reason"))
+        updateOrderStatus(CancelledOrder(reason))
         context.become(terminated)
     }
 
@@ -218,6 +217,9 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
 
 object OrderActor {
 
+  val BlockingFundsMessage = "blocking funds"
+  val NoFundsMessage = "no funds available for order"
+
   case class Initialize(order: Order[FiatCurrency],
                         submissionSupervisor: ActorRef,
                         eventChannel: ActorRef,
@@ -227,7 +229,7 @@ object OrderActor {
                         wallet: ActorRef,
                         brokerId: PeerId)
 
-  case object CancelOrder
+  case class CancelOrder(reason: String)
 
   /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus

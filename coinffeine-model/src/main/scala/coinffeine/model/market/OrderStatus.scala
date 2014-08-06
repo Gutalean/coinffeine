@@ -11,9 +11,11 @@ sealed trait OrderStatus {
   *
   * This status indicates that the corresponding order has been stalled since it is waiting for
   * funds.
+  *
+  * @param reason The reason why the order was stalled
   */
-case object StalledOrder extends OrderStatus {
-  override val name = s"stalled"
+case class StalledOrder(reason: String) extends OrderStatus {
+  override val name = s"stalled ($reason)"
   override val isCancellable = true
 }
 
@@ -53,7 +55,7 @@ case object CompletedOrder extends OrderStatus {
   * This status indicates that the corresponding order has been cancelled. The funds that were
   * already transferred cannot be moved again.
   *
-  * @param reason The reason because of the order was cancelled
+  * @param reason The reason why the order was cancelled
   */
 case class CancelledOrder(reason: String) extends OrderStatus {
   override val name = s"cancelled ($reason)"
