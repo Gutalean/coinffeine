@@ -34,7 +34,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "keep in stalled status when there are not enough funds when buying" in new BiddingFixture {
     givenInitializedOrder()
-    paymentProcessorProbe.reply(PaymentProcessorActor.NotEnoughFunds)
+    paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds)
     eventChannelProbe.expectNoMsg()
     submissionProbe.expectNoMsg()
   }
@@ -49,7 +49,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "move to offline when receive available funds" in new BiddingFixture {
     givenStalledOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(FundsId(1)))
+    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fundsId))
     eventChannelProbe.expectMsg(OrderStatusChangedEvent(
       order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
@@ -221,12 +221,13 @@ class OrderActorTest extends AkkaSpec {
     def givenInitializedOrder(): Unit = {
       eventChannelProbe.expectMsg(OrderSubmittedEvent(blockingFundsOrder))
       paymentProcessorProbe.expectMsg(PaymentProcessorActor.BlockFunds(order.fiatAmount, actor))
+      paymentProcessorProbe.reply(fundsId)
     }
 
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      paymentProcessorProbe.reply(PaymentProcessorActor.FundsBlocked(fundsId))
+      paymentProcessorProbe.reply(PaymentProcessorActor.AvailableFunds(fundsId))
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(
         order.id, StalledOrder(BlockingFundsMessage), OfflineOrder))
       submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))

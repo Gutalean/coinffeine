@@ -52,7 +52,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       .willReturn(Future.successful(payment))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     expectMsgPF() {
       case PaymentProcessorActor.Paid(Payment(
@@ -63,7 +64,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount / 2, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
   }
@@ -72,7 +74,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
+    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     processor ! payRequest
     expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
@@ -108,73 +111,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
     eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
   }
-
-  it must "block funds up to existing balances" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
-    processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
-    processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
-    processor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
-    expectMsgAllConformingOf(
-      classOf[PaymentProcessorActor.FundsBlocked],
-      classOf[PaymentProcessorActor.FundsBlocked],
-      PaymentProcessorActor.NotEnoughFunds.getClass
-    )
-  }
-
-  it must "unblock blocked funds to make then available again" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
-    processor ! PaymentProcessorActor.BlockFunds(100.EUR, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked]).funds
-    processor ! PaymentProcessorActor.UnblockFunds(funds)
-    processor ! PaymentProcessorActor.BlockFunds(100.EUR, self)
-    expectMsgClass(classOf[PaymentProcessorActor.FundsBlocked])
-  }
-
-  it must "notify when blocked funds are not backed by funds" in new WithOkPayProcessor {
-    override def pollingInterval = 100.millis
-    val balances = new MutableBalances(100.EUR)
-    given(client.currentBalances()).willAnswer(balances)
-    processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
-    val listener1, listener2 = TestProbe()
-    processor ! PaymentProcessorActor.BlockFunds(90.EUR, listener1.ref)
-    processor ! PaymentProcessorActor.BlockFunds(10.EUR, listener2.ref)
-    balances.set(90.EUR)
-    listener1.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
-    listener2.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
-  }
-
-  it must "notify when blocked funds are available again due to balance increase" in
-    new WithOkPayProcessor {
-      override def pollingInterval = 100.millis
-      val balances = new MutableBalances(100.EUR)
-      given(client.currentBalances()).willAnswer(balances)
-      processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
-      val listener = TestProbe()
-      processor ! PaymentProcessorActor.BlockFunds(100.EUR, listener.ref)
-      balances.set(50.EUR)
-      listener.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
-      balances.set(100.EUR)
-      listener.expectMsgClass(classOf[PaymentProcessorActor.AvailableFunds])
-    }
-
-  it must "notify when blocked funds are available again due to fund unblocking" in
-    new WithOkPayProcessor {
-      override def pollingInterval = 100.millis
-      val balances = new MutableBalances(100.EUR)
-      given(client.currentBalances()).willAnswer(balances)
-      processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
-      val listener1, listener2 = TestProbe()
-      processor ! PaymentProcessorActor.BlockFunds(50.EUR, listener1.ref)
-      processor ! PaymentProcessorActor.BlockFunds(50.EUR, listener2.ref)
-      val PaymentProcessorActor.FundsBlocked(fundsId) = fishForMessage() {
-        case PaymentProcessorActor.FundsBlocked(_) => true
-      }
-      balances.set(50.EUR)
-      listener1.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
-      listener2.expectMsgClass(classOf[PaymentProcessorActor.UnavailableFunds])
-      processor ! PaymentProcessorActor.UnblockFunds(fundsId)
-      listener2.expectMsgClass(classOf[PaymentProcessorActor.AvailableFunds])
-    }
 
   private trait WithOkPayProcessor {
     def pollingInterval = 3.seconds
