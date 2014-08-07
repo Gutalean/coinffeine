@@ -22,7 +22,7 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
     gateway.expectMsgClass(classOf[Subscribe])
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
-    shouldBlockFunds()
+    shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     expectNoMsg()
     givenValidRefundSignatureResponse()

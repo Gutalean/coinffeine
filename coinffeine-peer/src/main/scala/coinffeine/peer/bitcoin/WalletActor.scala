@@ -34,15 +34,15 @@ private class WalletActor extends Actor with ActorLogging {
 
     private val manageWallet: Receive = {
 
-      case req @ WalletActor.BlockFundsInMultisign(signatures, amount) =>
+      case req @ WalletActor.CreateDeposit(signatures, amount) =>
         try {
           val tx = ImmutableTransaction(wallet.blockMultisignFunds(signatures, amount))
-          sender ! WalletActor.FundsBlocked(req, tx)
+          sender ! WalletActor.DepositCreated(req, tx)
         } catch {
-          case NonFatal(ex) => sender ! WalletActor.FundsBlockingError(req, ex)
+          case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
         }
 
-      case WalletActor.ReleaseFunds(tx) =>
+      case WalletActor.ReleaseDeposit(tx) =>
         wallet.releaseFunds(tx.get)
 
       case RetrieveWalletBalance =>
@@ -78,42 +78,62 @@ object WalletActor {
   private[bitcoin] val props = Props(new WalletActor)
   private[bitcoin] case class Initialize(wallet: Wallet, eventChannel: ActorRef)
 
-  /** A message sent to the wallet actor in order to block some funds in a multisign transaction.
+  /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
+  case class BlockBitcoins(amount: BitcoinAmount)
+
+  /** Identifies a blocked amount of bitcoins. */
+  case class CoinsId(underlying: Int) extends AnyVal
+
+  /** Responses to [[BlockBitcoins]] */
+  sealed trait BlockBitcoinsResponse
+
+  /** Bitcoin amount was blocked successfully */
+  case class BlockedBitcoins(id: CoinsId) extends BlockBitcoinsResponse
+
+  /** Cannot block the requested amount of bitcoins */
+  case object CannotBlockBitcoins extends BlockBitcoinsResponse
+
+  /** A message sent to the wallet actor to release for general use the previously blocked
+    * bitcoins.
+    */
+  case class UnblockBitcoins(id: CoinsId)
+
+  /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
-    * This message requests some funds to be blocked by the wallet. This will produce a new
-    * transaction included in a FundsBlocked reply message, or FundsBlockingError if something
-    * goes wrong. The resulting transaction can be safely sent to the blockchain with the guarantee
-    * that the outputs it spends are not used in any other transaction. If the transaction is not
-    * finally broadcast to the blockchain, the funds can be unblocked by sending a ReleasedFunds
-    * message.
+    * This message requests some funds to be mark as used by the wallet. This will produce a new
+    * transaction included in a [[DepositCreated]] reply message, or [[DepositCreationError]] if
+    * something goes wrong. The resulting transaction can be safely sent to the blockchain with the
+    * guarantee that the outputs it spends are not used in any other transaction. If the transaction
+    * is not finally broadcast to the blockchain, the funds can be unblocked by sending a
+    * [[ReleaseDeposit]] message.
     *
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     */
-  case class BlockFundsInMultisign(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
+  case class CreateDeposit(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
 
-  /** Base trait for the responses to [[BlockFundsInMultisign]] */
-  sealed trait BlockFundsResult
+  /** Base trait for the responses to [[CreateDeposit]] */
+  sealed trait CreateDepositResponse
 
-  /** A message sent by the wallet actor in reply to a BlockFundsInMultisign message to report
+  /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * a successful funds blocking.
     *
     * @param request  The request this message is replying to
     * @param tx       The resulting transaction that contains the funds that have been blocked
     */
-  case class FundsBlocked(request: BlockFundsInMultisign, tx: ImmutableTransaction)
-    extends BlockFundsResult
+  case class DepositCreated(request: CreateDeposit, tx: ImmutableTransaction)
+    extends CreateDepositResponse
 
-  /** A message sent by the wallet actor in reply to a BlockFundsInMultisign message to report
+  /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * an error while blocking the funds.
     */
-  case class FundsBlockingError(request: BlockFundsInMultisign, error: Throwable)
-    extends BlockFundsResult
+  case class DepositCreationError(request: CreateDeposit, error: Throwable)
+    extends CreateDepositResponse
 
-  /** A message sent to the wallet actor in order to release the funds that are blocked by the
-    * given transaction.
+  /** A message sent to the wallet actor in order to release the funds that of a non published
+    * deposit.
     */
-  case class ReleaseFunds(tx: ImmutableTransaction)
+  case class ReleaseDeposit(tx: ImmutableTransaction)
 
   /** A message sent to the wallet actor to ask for a fresh key pair */
   case object CreateKeyPair

@@ -18,7 +18,7 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
     givenActorIsInitialized()
     gateway.expectMsgAllClassOf(classOf[Subscribe], classOf[ForwardMessage[PeerHandshake]])
     givenCounterpartPeerHandshake()
-    shouldBlockFunds()
+    shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     shouldForwardRefundSignatureRequest()
   }

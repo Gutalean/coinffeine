@@ -12,8 +12,8 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
+import coinffeine.peer.bitcoin.WalletActor.{CreateDepositResponse, DepositCreated, DepositCreationError}
 import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
-import coinffeine.peer.bitcoin.WalletActor.{BlockFundsResult, FundsBlocked, FundsBlockingError}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
@@ -67,7 +67,7 @@ private class HandshakeActor[C <: FiatCurrency](
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
         val handshakingExchange = HandshakingExchange(user, counterpart, exchange)
-        blockFunds(handshakingExchange).onComplete {
+        createDeposit(handshakingExchange).onComplete {
           case Success(deposit) =>
             val handshake = exchangeProtocol.createHandshake(handshakingExchange, deposit)
             blockchain ! BlockchainActor.WatchMultisigKeys(handshakingExchange.requiredSignatures.toSeq)
@@ -80,16 +80,16 @@ private class HandshakeActor[C <: FiatCurrency](
       case ResubmitRequest => handshakePeer()
     }
 
-    private def blockFunds(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
+    private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
       val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
       val depositAmount = role.myDepositAmount(exchange.amounts)
       AskPattern(
         to = wallet,
-        request = WalletActor.BlockFundsInMultisign(requiredSignatures, depositAmount),
+        request = WalletActor.CreateDeposit(requiredSignatures, depositAmount),
         errorMessage = s"Cannot block $depositAmount in multisig"
-      ).withImmediateReply[BlockFundsResult]().flatMap {
-        case FundsBlocked(_, tx) => Future.successful(tx)
-        case FundsBlockingError(_, error) => Future.failed(error)
+      ).withImmediateReply[CreateDepositResponse]().flatMap {
+        case DepositCreated(_, tx) => Future.successful(tx)
+        case DepositCreationError(_, error) => Future.failed(error)
       }
     }
 
