@@ -15,7 +15,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.{PaymentProcessor, Payment}
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -52,7 +52,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       .willReturn(Future.successful(payment))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    val funds = expectMsgClass(classOf[PaymentProcessor.FundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     expectMsgPF() {
@@ -64,7 +64,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount / 2, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    val funds = expectMsgClass(classOf[PaymentProcessor.FundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
@@ -74,7 +74,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.BlockFunds(amount, self)
-    val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+    val funds = expectMsgClass(classOf[PaymentProcessor.FundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     processor ! payRequest

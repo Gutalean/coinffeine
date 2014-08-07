@@ -8,6 +8,7 @@ case class RunningExchange[+C <: FiatCurrency](
     override val role: Role,
     override val counterpartId: PeerId,
     override val amounts: Exchange.Amounts[C],
+    override val blockedFunds: Exchange.BlockedFunds,
     override val parameters: Exchange.Parameters,
     override val brokerId: PeerId,
     override val participants: Both[Exchange.PeerInfo],
@@ -25,6 +26,7 @@ object RunningExchange {
                                exchange: HandshakingExchange[C]): RunningExchange[C] = {
     import exchange._
     RunningExchange(
-      id, role, counterpartId, amounts, parameters, brokerId, participants, deposits, progress)
+      id, role, counterpartId, amounts, blockedFunds,
+      parameters, brokerId, participants, deposits, progress)
   }
 }

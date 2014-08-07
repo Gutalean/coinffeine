@@ -9,12 +9,12 @@ import akka.pattern._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
+import coinffeine.model.payment.PaymentProcessor.FundsId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
@@ -123,7 +123,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       implicit val timeout = PaymentProcessorActor.RequestTimeout
 
       val paymentRequest = PaymentProcessorActor.Pay(
-        fundsId = FundsId(0), // FIXME: reserve funds for the exchange
+        fundsId = exchange.blockedFunds.fiat.get,
         to = exchange.counterpart.paymentProcessorAccount,
         amount = exchange.amounts.stepFiatAmount,
         comment = PaymentDescription(exchange.id, step)

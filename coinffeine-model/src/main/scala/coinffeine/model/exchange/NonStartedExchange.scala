@@ -8,6 +8,7 @@ case class NonStartedExchange[+C <: FiatCurrency](
     override val role: Role,
     override val counterpartId: PeerId,
     override val amounts: Exchange.Amounts[C],
+    override val blockedFunds: Exchange.BlockedFunds,
     override val parameters: Exchange.Parameters,
     override val brokerId: PeerId) extends Exchange[C] {
 
