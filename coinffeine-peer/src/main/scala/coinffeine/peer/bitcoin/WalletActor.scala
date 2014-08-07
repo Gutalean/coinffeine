@@ -1,5 +1,6 @@
 package coinffeine.peer.bitcoin
 
+import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
 import akka.actor._
@@ -25,18 +26,21 @@ private class WalletActor extends Actor with ActorLogging {
     extends EventProducer(channel) {
 
     private var lastBalanceReported: Option[BitcoinAmount] = None
+    private val blockedOutputs = new BlockedOutputs()
 
     def start(): Unit = {
       subscribeToWalletChanges()
       produceEvent(WalletBalanceChangeEvent(wallet.balance()))
+      updateSpendCandidates()
       context.become(manageWallet)
     }
 
     private val manageWallet: Receive = {
 
-      case req @ WalletActor.CreateDeposit(signatures, amount) =>
+      case req @ CreateDeposit(coinsId, signatures, amount) =>
         try {
-          val tx = ImmutableTransaction(wallet.blockMultisignFunds(signatures, amount))
+          val inputs = blockedOutputs.use(coinsId, amount)
+          val tx = ImmutableTransaction(wallet.blockMultisignFunds(inputs, signatures, amount))
           sender ! WalletActor.DepositCreated(req, tx)
         } catch {
           case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
@@ -44,6 +48,12 @@ private class WalletActor extends Actor with ActorLogging {
 
       case WalletActor.ReleaseDeposit(tx) =>
         wallet.releaseFunds(tx.get)
+        val releasedOutputs = for {
+          input <- tx.get.getInputs.asScala
+          parentTx <- Option(wallet.getTransaction(input.getOutpoint.getHash))
+          output <- Option(parentTx.getOutput(input.getOutpoint.getIndex.toInt))
+        } yield output
+        blockedOutputs.cancelUsage(releasedOutputs.toSet)
 
       case RetrieveWalletBalance =>
         sender() ! WalletBalance(wallet.balance())
@@ -59,6 +69,18 @@ private class WalletActor extends Actor with ActorLogging {
           produceEvent(WalletBalanceChangeEvent(currentBalance))
           lastBalanceReported = Some(currentBalance)
         }
+        updateSpendCandidates()
+
+      case BlockBitcoins(amount) =>
+        sender() ! blockedOutputs.block(amount)
+          .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
+
+      case UnblockBitcoins(id) =>
+        blockedOutputs.unblock(id)
+    }
+
+    private def updateSpendCandidates(): Unit = {
+      blockedOutputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).asScala.toSet)
     }
 
     private def subscribeToWalletChanges(): Unit = {
@@ -107,10 +129,16 @@ object WalletActor {
     * is not finally broadcast to the blockchain, the funds can be unblocked by sending a
     * [[ReleaseDeposit]] message.
     *
+    * @param coinsId            Source of the bitcoins to use for this deposit
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     */
-  case class CreateDeposit(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
+  case class CreateDeposit(coinsId: CoinsId, requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
+  object CreateDeposit {
+    @deprecated("you should indicate what blocked bitcoins to use")
+    def apply(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount): CreateDeposit =
+      CreateDeposit(CoinsId(-1), requiredSignatures, amount)
+  }
 
   /** Base trait for the responses to [[CreateDeposit]] */
   sealed trait CreateDepositResponse

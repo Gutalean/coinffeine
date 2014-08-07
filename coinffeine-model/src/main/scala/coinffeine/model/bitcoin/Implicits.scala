@@ -61,16 +61,19 @@ object Implicits {
     }
 
     def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
+                            amount: BitcoinAmount): MutableTransaction =
+      blockMultisignFunds(collectFunds(amount), requiredSignatures, amount)
+
+    def blockMultisignFunds(inputs: Traversable[MutableTransactionOutput],
+                            requiredSignatures: Seq[PublicKey],
                             amount: BitcoinAmount): MutableTransaction = {
       require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
-
-      val inputFunds = collectFunds(amount)
-      val totalInputFunds = valueOf(inputFunds)
+      val totalInputFunds = valueOf(inputs)
       require(totalInputFunds >= amount,
         "Input funds must cover the amount of funds to commit")
 
       val tx = new MutableTransaction(wallet.getNetworkParameters)
-      inputFunds.foreach(tx.addInput)
+      inputs.foreach(tx.addInput)
       tx.addMultisignOutput(amount, requiredSignatures)
       tx.addChangeOutput(totalInputFunds, amount, wallet.getChangeAddress)
       tx.signInputs(SigHash.ALL, wallet)
