@@ -2,7 +2,9 @@ package coinffeine.peer.bitcoin
 
 import akka.actor.Props
 import org.scalatest.mock.MockitoSugar
+
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.Implicits._
@@ -14,6 +16,12 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     instance ! BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1)
     sendToBlockChain(tx)
     expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 1))
+  }
+
+  it must "report multisigned transaction confirmation" in new Fixture {
+    instance ! BlockchainActor.WatchTransactionConfirmation(multisignedTx.getHash, 1)
+    sendToBlockChain(multisignedTx)
+    expectMsg(BlockchainActor.TransactionConfirmed(multisignedTx.getHash, 1))
   }
 
   it must "report transaction confirmation only once" in new Fixture {
@@ -75,6 +83,14 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     expectMsg(BlockchainActor.TransactionFound(tx.getHash, ImmutableTransaction(tx)))
   }
 
+  it must "retrieve existing multisigned transaction in blockchain" in new Fixture {
+    instance ! BlockchainActor.WatchMultisigKeys(Seq(keyPair, otherKeyPair))
+    sendToBlockChain(multisignedTx)
+    instance ! BlockchainActor.RetrieveTransaction(multisignedTx.getHash)
+    expectMsg(BlockchainActor.TransactionFound(
+      multisignedTx.getHash, ImmutableTransaction(multisignedTx)))
+  }
+
   it must "fail to retrieve nonexistent transaction in blockchain" in new Fixture {
     instance ! BlockchainActor.WatchPublicKey(keyPair)
     instance ! BlockchainActor.RetrieveTransaction(tx.getHash)
@@ -106,6 +122,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val tx = wallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
+    val multisignedTx = otherWallet.blockMultisignFunds(Seq(keyPair, otherKeyPair), 0.1.BTC)
 
     val instance = system.actorOf(Props(new BlockchainActor(network)))
     instance ! BlockchainActor.Initialize(chain)

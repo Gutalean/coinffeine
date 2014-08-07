@@ -68,25 +68,9 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def givenHandshakeSuccess(): Unit = {
       handshakeActor.expectAskWithReply {
-        case _: StartHandshake[_] => HandshakeSuccess(handshakingExchange, deposits, dummyTx)
+        case _: StartHandshake[_] => HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx)
       }
       transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
-    }
-
-    def givenTransactionsAreFound(): Unit = {
-      shouldWatchForTheTransactions()
-      givenTransactionIsFound(deposits.buyer)
-      givenTransactionIsFound(deposits.seller)
-      micropaymentChannelActor.expectCreation()
-      transactionBroadcastActor.expectMsg(SetMicropaymentActor(micropaymentChannelActor.ref))
-    }
-
-    def givenTransactionIsFound(txId: Hash): Unit = {
-      blockchain.reply(TransactionFound(txId, dummyTx))
-    }
-
-    def givenTransactionIsNotFound(txId: Hash): Unit = {
-      blockchain.reply(TransactionNotFound(txId))
     }
 
     def givenTransactionIsCorrectlyBroadcast(): Unit = {
@@ -124,7 +108,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     new Fixture {
       startExchange()
       givenHandshakeSuccess()
-      givenTransactionsAreFound()
       givenMicropaymentChannelSuccess()
       givenTransactionIsCorrectlyBroadcast()
       listener.expectMsg(ExchangeSuccess(CompletedExchange.fromExchange(exchange)))
@@ -158,22 +141,9 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     system.stop(actor)
   }
 
-  it should "report a failure if the blockchain can't find the commitment txs" in new Fixture {
-    startExchange()
-    givenHandshakeSuccess()
-    shouldWatchForTheTransactions()
-    givenTransactionIsFound(deposits.buyer)
-    givenTransactionIsNotFound(deposits.seller)
-
-    listener.expectMsg(ExchangeFailure(new CommitmentTxNotInBlockChain(deposits.seller)))
-    listener.expectMsgClass(classOf[Terminated])
-    system.stop(actor)
-  }
-
   it should "report a failure if the actual exchange fails" in new Fixture {
     startExchange()
     givenHandshakeSuccess()
-    givenTransactionsAreFound()
 
     val error = new Error("exchange failure")
     givenMicropaymentChannelCreation()
@@ -191,7 +161,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   it should "report a failure if the broadcast failed" in new Fixture {
     startExchange()
     givenHandshakeSuccess()
-    givenTransactionsAreFound()
     givenMicropaymentChannelSuccess()
     val broadcastError = new Error("failed to broadcast")
     transactionBroadcastActor.expectAskWithReply {
@@ -206,7 +175,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     new Fixture {
       startExchange()
       givenHandshakeSuccess()
-      givenTransactionsAreFound()
       givenMicropaymentChannelSuccess()
       val unexpectedTx = ImmutableTransaction {
         val newTx = dummyTx.get

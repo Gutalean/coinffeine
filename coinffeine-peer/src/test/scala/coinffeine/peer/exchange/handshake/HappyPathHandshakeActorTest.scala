@@ -4,11 +4,10 @@ import scala.concurrent.duration._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, WatchTransactionConfirmation}
+import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -55,6 +54,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     givenCounterpartPeerHandshake()
     shouldBlockFunds()
     shouldForwardRefundSignatureRequest()
+    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
@@ -101,16 +101,20 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "wait until commitments are confirmed" in {
     listener.expectNoMsg(100 millis)
-    for (tx <- Seq(
-      handshake.myDeposit.get.getHash,
-      handshake.counterpartCommitmentTransaction.getHash
-    )) {
-      blockchain.send(actor, TransactionConfirmed(tx, 1))
+    val expectedCommitments = Both(
+      buyer = handshake.myDeposit,
+      seller = ImmutableTransaction(handshake.counterpartCommitmentTransaction)
+    )
+    for (tx <- expectedCommitments.toSeq) {
+      blockchain.send(actor, TransactionConfirmed(tx.get.getHash, 1))
     }
-    val result = listener.expectMsgClass(classOf[HandshakeSuccess[FiatCurrency]])
-    result.refundTransaction should be (handshake.mySignedRefund)
-    result.bothCommitments.buyer should be (handshake.myDeposit.get.getHash)
-    result.bothCommitments.seller should be (handshake.counterpartCommitmentTransaction.getHash)
+    expectedCommitments.foreach { tx =>
+      blockchain.expectMsg(RetrieveTransaction(tx.get.getHash))
+      blockchain.reply(TransactionFound(tx.get.getHash, tx))
+    }
+    listener.expectMsgPF() {
+      case HandshakeSuccess(_, `expectedCommitments`, handshake.`mySignedRefund`) =>
+    }
   }
 
   it should "finally terminate himself" in {

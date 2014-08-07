@@ -6,6 +6,7 @@ import scala.collection.JavaConversions._
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
 import com.google.bitcoin.core._
+import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
 
@@ -111,6 +112,9 @@ class BlockchainActor(network: NetworkParameters) extends Actor with ActorLoggin
       case WatchPublicKey(key) =>
         wallet.addKey(key)
 
+      case WatchMultisigKeys(keys) =>
+        wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
+
       case req @ WatchTransactionConfirmation(txHash, confirmations) =>
         observations += txHash -> Observation(txHash, sender(), confirmations)
 
@@ -148,6 +152,11 @@ object BlockchainActor {
     * public key.
     */
   case class WatchPublicKey(publicKey: PublicKey)
+
+  /** A message sent to the blockchain actor requesting to watch for transactions multisigned
+    * for this combination of keys.
+    */
+  case class WatchMultisigKeys(keys: Seq[PublicKey])
 
   /** A message sent to the blockchain actor requesting to watch for confirmation of the
     * given block.

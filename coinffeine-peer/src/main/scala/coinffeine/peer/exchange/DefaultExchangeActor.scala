@@ -2,12 +2,11 @@ package coinffeine.peer.exchange
 
 import akka.actor._
 
-import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
-import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
@@ -42,11 +41,17 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     private val inHandshake: Receive = {
 
-      case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxIds, refundTx) =>
-        watchForDepositKeys(handshakingExchange)
+      case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxs, refundTx) =>
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
-        commitmentTxIds.toSeq.foreach(id => blockchain ! RetrieveTransaction(id))
-        context.become(receiveTransaction(handshakingExchange, commitmentTxIds))
+        // TODO: what if counterpart deposit is not valid?
+        val deposits = exchangeProtocol.validateDeposits(commitmentTxs, handshakingExchange).get
+        val runningExchange = RunningExchange(deposits, handshakingExchange)
+        val props = channelActorProps(runningExchange.role)
+        val ref = context.actorOf(props, MicroPaymentChannelActorName)
+        ref ! StartMicroPaymentChannel[C](runningExchange, paymentProcessor, messageGateway,
+          resultListeners = Set(self))
+        txBroadcaster ! SetMicropaymentActor(ref)
+        context.become(inMicropaymentChannel)
 
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
@@ -82,7 +87,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
         finishWith(ExchangeFailure(TxBroadcastFailed(err)))
     }
 
-    private val inMicropaymentChannel: Receive = {
+    private def inMicropaymentChannel: Receive = {
 
       case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
         log.info(s"Finishing exchange '${exchange.id}' successfully")
@@ -102,39 +107,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
     }
 
-    private def receiveTransaction(handshakingExchange: HandshakingExchange[C],
-                                   commitmentTxIds: Both[Hash]): Receive = {
-      def withReceivedTxs(receivedTxs: Map[Hash, ImmutableTransaction]): Receive = {
-        case TransactionFound(id, tx) =>
-          val newTxs = receivedTxs.updated(id, tx)
-          if (commitmentTxIds.toSeq.forall(newTxs.keySet.contains)) {
-            // TODO: what if counterpart deposit is not valid?
-            val deposits = exchangeProtocol.validateDeposits(commitmentTxIds.map(newTxs), handshakingExchange).get
-            val runningExchange = RunningExchange(deposits, handshakingExchange)
-            val props = channelActorProps(runningExchange.role)
-            val ref = context.actorOf(props, MicroPaymentChannelActorName)
-            ref ! StartMicroPaymentChannel[C](runningExchange, paymentProcessor, messageGateway,
-              resultListeners = Set(self))
-            txBroadcaster ! SetMicropaymentActor(ref)
-            context.become(inMicropaymentChannel)
-          } else {
-            context.become(withReceivedTxs(newTxs))
-          }
-        case TransactionNotFound(txId) =>
-          finishWith(ExchangeFailure(CommitmentTxNotInBlockChain(txId)))
-      }
-      withReceivedTxs(Map.empty)
-    }
-
     private def finishWith(result: Any): Unit = {
       resultListener ! result
       context.stop(self)
-    }
-
-    private def watchForDepositKeys(ongoingExchange: OngoingExchange[C]): Unit = {
-      ongoingExchange.participants.toSeq.foreach { p =>
-        blockchain ! WatchPublicKey(p.bitcoinKey)
-      }
     }
   }
 }
