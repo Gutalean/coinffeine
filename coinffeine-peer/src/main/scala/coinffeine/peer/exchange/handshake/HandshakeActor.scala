@@ -12,7 +12,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
 import coinffeine.peer.bitcoin.WalletActor.{BlockFundsResult, FundsBlocked, FundsBlockingError}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
@@ -70,6 +70,7 @@ private class HandshakeActor[C <: FiatCurrency](
         blockFunds(handshakingExchange).onComplete {
           case Success(deposit) =>
             val handshake = exchangeProtocol.createHandshake(handshakingExchange, deposit)
+            blockchain ! BlockchainActor.WatchMultisigKeys(handshakingExchange.requiredSignatures.toSeq)
             requestRefundSignature(handshake)
             context.become(waitForRefundSignature(handshake))
           case Failure(cause) =>
@@ -146,16 +147,13 @@ private class HandshakeActor[C <: FiatCurrency](
         abortOnBrokerNotification
 
     private def waitForConfirmations(handshake: Handshake[C],
-                                     bothCommitments: Both[Hash],
+                                     commitmentIds: Both[Hash],
                                      refund: ImmutableTransaction): Receive = {
       def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
         case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
           val stillPending = pendingConfirmation - tx
-          if (stillPending.nonEmpty) {
-            context.become(waitForPendingConfirmations(stillPending))
-          } else {
-            finishWithResult(Success(HandshakeSuccess(handshake.exchange, bothCommitments, refund)))
-          }
+          if (stillPending.isEmpty) retrieveCommitmentsAndFinish()
+          else context.become(waitForPendingConfirmations(stillPending))
 
         case TransactionRejected(tx) =>
           val isOwn = tx == handshake.myDeposit.get.getHash
@@ -163,8 +161,33 @@ private class HandshakeActor[C <: FiatCurrency](
           log.error("Handshake {}: {}", exchange.id, cause.getMessage)
           finishWithResult(Failure(cause))
       }
-      waitForPendingConfirmations(bothCommitments.toSet)
+
+      def retrieveCommitmentsAndFinish(): Unit = {
+        retrieveCommitmentTransactions(commitmentIds).onComplete {
+          case Success(commitmentTxs) =>
+            finishWithResult(Success(HandshakeSuccess(handshake.exchange, commitmentTxs, refund)))
+          case Failure(cause) =>
+            finishWithResult(Failure(cause))
+        }
+      }
+
+      waitForPendingConfirmations(commitmentIds.toSet)
     }
+
+    private def retrieveCommitmentTransactions(
+        commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
+      for {
+        buyerTx <- retrieveCommitmentTransaction(commitmentIds.buyer)
+        sellerTx <- retrieveCommitmentTransaction(commitmentIds.seller)
+      } yield Both(buyer = buyerTx, seller = sellerTx)
+    }
+
+    private def retrieveCommitmentTransaction(commitmentId: Hash): Future[ImmutableTransaction] =
+      AskPattern(
+        to = blockchain,
+        request = BlockchainActor.RetrieveTransaction(commitmentId),
+        errorMessage = s"Cannot retrieve TX $commitmentId"
+      ).withImmediateReply[BlockchainActor.TransactionFound]().map(_.tx)
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
@@ -208,7 +231,7 @@ private class HandshakeActor[C <: FiatCurrency](
     private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
       val message = result match {
         case Success(success) =>
-          log.info("Handshake {}: succeeded")
+          log.info("Handshake {}: succeeded", exchange.id)
           success
         case Failure(cause) =>
           log.error(cause, "Handshake {}: handshake failed with", exchange.id)
@@ -252,7 +275,7 @@ object HandshakeActor {
     * failure with an exception.
     */
   case class HandshakeSuccess[C <: FiatCurrency](exchange: HandshakingExchange[C],
-                                                 bothCommitments: Both[Hash],
+                                                 bothCommitments: Both[ImmutableTransaction],
                                                  refundTransaction: ImmutableTransaction)
 
   case class HandshakeFailure(e: Throwable)
