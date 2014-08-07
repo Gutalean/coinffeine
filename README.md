@@ -1,7 +1,7 @@
 Coinffeine
 ==========
 
-Coinffeine P2P exchange implementation.
+Coinffeine P2P FIAT-Bitcoin exchange implementation.
 
 
 Getting Started
@@ -13,7 +13,7 @@ To build Coinffeine you will need:
  * A working [SBT 0.13](http://www.scala-sbt.org/download.html)
  * Protobuf compiler 2.5.0. You can get it with your favourite package manager
    (`protobuf` in brew, `protobuf-java` in apt-get and macports) or directly
-   fron its [project page](https://code.google.com/p/protobuf/downloads/list).
+   from its [project page](https://code.google.com/p/protobuf/downloads/list).
 
 To compile all the modules and run their tests:
 
