@@ -36,9 +36,9 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   private class InitializedBuyer(init: StartMicroPaymentChannel[C])
     extends InitializedChannelBehavior(init) {
 
+    import constants.exchangeSignatureTimeout
     import context.dispatcher
     import init._
-    import constants.exchangeSignatureTimeout
 
     private var lastSignedOffer: Option[ImmutableTransaction] = None
 
@@ -46,7 +46,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       subscribeToMessages()
       val channel = exchangeProtocol.createMicroPaymentChannel(exchange)
       context.become(waitForNextStepSignature(channel) orElse handleLastOfferQueries)
-      log.info(s"Exchange ${exchange.id}: Exchange started")
+      log.info(s"Exchange {}: buyer micropayment channel started", exchange.id)
     }
 
     private def subscribeToMessages(): Unit = {
@@ -80,10 +80,12 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
           lastSignedOffer = Some(channel.closingTransaction(signatures))
           channel.currentStep match {
             case step: IntermediateStep =>
+              log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
               reportProgress(signatures = step.value, payments = step.value - 1)
               pay(step).onComplete {
                 case Success(payment) =>
                   reportProgress(signatures = step.value, payments = step.value)
+                  log.debug("Exchange {}: payment {} done", exchange.id, step)
                   forwarding.forwardToCounterpart(payment)
                 case Failure(cause) =>
                   finishWith(ExchangeFailure(cause))
@@ -91,7 +93,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
               context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
 
             case _: FinalStep =>
-              log.info(s"Exchange ${exchange.id}: exchange finished with success")
+              log.info("Exchange {}: micropayment channel finished with success", exchange.id)
               finishWith(ExchangeSuccess(lastSignedOffer))
           }
         }
@@ -104,8 +106,8 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
           case Success(_) =>
             body(signatures)
           case Failure(cause) =>
-            log.warning(s"Received invalid signature for ${channel.currentStep}: " +
-              s"($signatures). Reason: $cause")
+            log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
+              exchange.id, channel.currentStep, signatures)
             finishWith(ExchangeFailure(
               InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
         }

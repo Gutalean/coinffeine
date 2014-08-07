@@ -40,7 +40,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     import constants.exchangePaymentProofTimeout
 
     def start(): Unit = {
-      log.info(s"Exchange ${exchange.id}: Exchange started")
+      log.info("Exchange {}: seller micropayment channel started", exchange.id)
       subscribeToMessages()
       new StepBehavior(exchangeProtocol.createMicroPaymentChannel(exchange)).start()
     }
@@ -76,6 +76,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       }
 
       private def forwardSignatures(): Unit = {
+        log.debug("Exchange {}: sending signatures for {}", exchange.id, channel.currentStep)
         forwarding.forwardToCounterpart(StepSignatures(
           exchange.id,
           channel.currentStep.value,
@@ -93,18 +94,19 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid " +
             s"payment proof ${channel.currentStep}"
-          log.warning(errorMsg)
+          log.warning("Exchange {}: {}", exchange.id, errorMsg)
           finishWith(ExchangeFailure(TimeoutException(errorMsg)))
       }
 
       private def waitForPaymentValidation(paymentId: String, step: IntermediateStep): Receive = {
         case PaymentValidationResult(Failure(cause)) =>
           unstashAll()
-          log.warning(s"Invalid payment proof received in ${channel.currentStep}: " +
-            s"$paymentId. Reason: $cause")
+          log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
+            exchange.id, channel.currentStep, paymentId)
           context.become(waitForPaymentProof(step) orElse handleLastOfferQueries)
         case PaymentValidationResult(_) =>
           unstashAll()
+          log.debug("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
           reportProgress(signatures = step.value, payments = step.value)
           new StepBehavior(channel.nextStep).start()
         case _ => stash()
@@ -116,7 +118,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       }
 
       private def finishExchange(): Unit = {
-        log.info(s"Exchange ${exchange.id}: exchange finished with success")
+        log.info(s"Exchange {}: micropayment channel finished with success", exchange.id)
         finishWith(ExchangeSuccess(None))
       }
     }
