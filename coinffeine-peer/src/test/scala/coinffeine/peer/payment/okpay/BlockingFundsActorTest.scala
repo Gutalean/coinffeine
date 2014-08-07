@@ -6,8 +6,10 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.payment.PaymentProcessor
+import coinffeine.model.payment.PaymentProcessor.FundsId
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.{UnavailableFunds, AvailableFunds, FundsId}
+import coinffeine.peer.payment.PaymentProcessorActor.{UnavailableFunds, AvailableFunds}
 import coinffeine.peer.payment.okpay.BlockingFundsActor.{FundsUsed, CannotUseFunds, UseFunds}
 
 class BlockingFundsActorTest extends AkkaSpec {
@@ -18,11 +20,11 @@ class BlockingFundsActorTest extends AkkaSpec {
     actor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     actor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     expectMsgAllConformingOf(
-      classOf[PaymentProcessorActor.FundsId],
+      classOf[PaymentProcessor.FundsId],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessorActor.FundsId],
+      classOf[PaymentProcessor.FundsId],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessorActor.FundsId],
+      classOf[PaymentProcessor.FundsId],
       classOf[PaymentProcessorActor.UnavailableFunds]
     )
   }
@@ -137,7 +139,7 @@ class BlockingFundsActorTest extends AkkaSpec {
     def givenBlockedFunds(amount: FiatAmount)(block: (TestProbe, FundsId) => Unit): Unit = {
       val listener = TestProbe()
       actor ! PaymentProcessorActor.BlockFunds(amount, listener.ref)
-      val funds = expectMsgClass(classOf[PaymentProcessorActor.FundsId])
+      val funds = expectMsgClass(classOf[PaymentProcessor.FundsId])
       block(listener, funds)
     }
 

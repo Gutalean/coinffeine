@@ -11,13 +11,13 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.PaymentProcessor.FundsId
 import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.GatewayProbe
 import coinffeine.protocol.messages.brokerage.OrderMatch
 

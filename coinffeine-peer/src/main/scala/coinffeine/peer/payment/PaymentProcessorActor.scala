@@ -11,9 +11,6 @@ import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessorActor {
 
-  /** Identifier of some funds blocked for a specific use. */
-  case class FundsId(underlying: Int) extends AnyVal
-
   /** Initialize the payment processor actor */
   case class Initialize(eventChannel: ActorRef)
 

@@ -13,7 +13,7 @@ import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor.AccountId
+import coinffeine.model.payment.PaymentProcessor.{AccountId, FundsId}
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
@@ -21,7 +21,6 @@ import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch

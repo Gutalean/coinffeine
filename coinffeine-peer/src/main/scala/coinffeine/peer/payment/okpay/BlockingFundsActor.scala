@@ -3,8 +3,8 @@ package coinffeine.peer.payment.okpay
 import akka.actor.{Props, ActorRef, Actor, ActorLogging}
 
 import coinffeine.model.currency.{FiatCurrency, FiatAmount}
+import coinffeine.model.payment.PaymentProcessor.FundsId
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FundsId
 
 class BlockingFundsActor extends Actor with ActorLogging {
   import BlockingFundsActor._
