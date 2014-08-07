@@ -44,9 +44,9 @@ abstract class HandshakeActorTest(systemName: String)
     gateway.send(actor, fromCounterpart(validSignature))
   }
 
-  def shouldBlockFunds(): Unit = {
-    val request = wallet.expectMsgClass(classOf[WalletActor.BlockFundsInMultisign])
-    wallet.reply(WalletActor.FundsBlocked(request, MockExchangeProtocol.DummyDeposit))
+  def shouldCreateDeposits(): Unit = {
+    val request = wallet.expectMsgClass(classOf[WalletActor.CreateDeposit])
+    wallet.reply(WalletActor.DepositCreated(request, MockExchangeProtocol.DummyDeposit))
   }
 
   def shouldForwardPeerHandshake(): Unit = {

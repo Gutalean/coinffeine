@@ -13,27 +13,27 @@ import coinffeine.peer.api.event.WalletBalanceChangeEvent
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
-  "The wallet actor" must "block funds in a multisign transaction" in new Fixture {
-    val request = WalletActor.BlockFundsInMultisign(Seq(keyPair, otherKeyPair), 1.BTC)
+  "The wallet actor" must "create a deposit as a multisign transaction" in new Fixture {
+    val request = WalletActor.CreateDeposit(Seq(keyPair, otherKeyPair), 1.BTC)
     instance ! request
     expectMsgPF() {
-      case WalletActor.FundsBlocked(`request`, tx) => wallet.value(tx.get) should be (-1.BTC)
+      case WalletActor.DepositCreated(`request`, tx) => wallet.value(tx.get) should be (-1.BTC)
     }
   }
 
-  it must "fail to block funds when there is no enough amount" in new Fixture {
-    val request = WalletActor.BlockFundsInMultisign(Seq(keyPair, otherKeyPair), 10000.BTC)
+  it must "fail to create a deposit when there is no enough amount" in new Fixture {
+    val request = WalletActor.CreateDeposit(Seq(keyPair, otherKeyPair), 10000.BTC)
     instance ! request
     expectMsgPF() {
-      case WalletActor.FundsBlockingError(`request`, _: IllegalArgumentException) =>
+      case WalletActor.DepositCreationError(`request`, _: IllegalArgumentException) =>
     }
   }
 
-  it must "release blocked funds" in new Fixture {
-    val request = WalletActor.BlockFundsInMultisign(Seq(keyPair, otherKeyPair), 1.BTC)
+  it must "release unpublished deposit funds" in new Fixture {
+    val request = WalletActor.CreateDeposit(Seq(keyPair, otherKeyPair), 1.BTC)
     instance ! request
-    val reply = expectMsgType[WalletActor.FundsBlocked]
-    instance ! WalletActor.ReleaseFunds(reply.tx)
+    val reply = expectMsgType[WalletActor.DepositCreated]
+    instance ! WalletActor.ReleaseDeposit(reply.tx)
     eventually {
       wallet.balance() should be(initialFunds)
     }

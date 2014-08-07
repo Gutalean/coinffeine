@@ -52,7 +52,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "request refund transaction signature after getting counterpart peer handshake" in {
     givenCounterpartPeerHandshake()
-    shouldBlockFunds()
+    shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
   }
