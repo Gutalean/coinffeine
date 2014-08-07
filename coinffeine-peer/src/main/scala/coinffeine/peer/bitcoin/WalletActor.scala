@@ -78,6 +78,26 @@ object WalletActor {
   private[bitcoin] val props = Props(new WalletActor)
   private[bitcoin] case class Initialize(wallet: Wallet, eventChannel: ActorRef)
 
+  /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
+  case class BlockBitcoins(amount: BitcoinAmount)
+
+  /** Identifies a blocked amount of bitcoins. */
+  case class CoinsId(underlying: Int) extends AnyVal
+
+  /** Responses to [[BlockBitcoins]] */
+  sealed trait BlockBitcoinsResponse
+
+  /** Bitcoin amount was blocked successfully */
+  case class BlockedBitcoins(id: CoinsId) extends BlockBitcoinsResponse
+
+  /** Cannot block the requested amount of bitcoins */
+  case object CannotBlockBitcoins extends BlockBitcoinsResponse
+
+  /** A message sent to the wallet actor to release for general use the previously blocked
+    * bitcoins.
+    */
+  case class UnblockBitcoins(id: CoinsId)
+
   /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
     * This message requests some funds to be mark as used by the wallet. This will produce a new
