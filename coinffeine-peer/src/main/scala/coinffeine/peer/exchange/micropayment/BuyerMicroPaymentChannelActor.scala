@@ -123,7 +123,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       implicit val timeout = PaymentProcessorActor.RequestTimeout
 
       val paymentRequest = PaymentProcessorActor.Pay(
-        fundsId = FundsId(0), // FIXME: reserve funds for the exchange
+        fundsId = exchange.blockedFunds.fiat.get,
         to = exchange.counterpart.paymentProcessorAccount,
         amount = exchange.amounts.stepFiatAmount,
         comment = PaymentDescription(exchange.id, step)
