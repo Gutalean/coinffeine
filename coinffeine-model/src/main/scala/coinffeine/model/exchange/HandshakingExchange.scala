@@ -9,6 +9,7 @@ case class HandshakingExchange[+C <: FiatCurrency](
     override val role: Role,
     override val id: ExchangeId,
     override val amounts: Exchange.Amounts[C],
+    override val blockedFunds: Exchange.BlockedFunds,
     override val parameters: Exchange.Parameters,
     override val counterpartId: PeerId,
     override val brokerId: PeerId,
@@ -25,6 +26,7 @@ object HandshakingExchange {
       buyer = role.buyer(user, counterpart),
       seller = role.seller(user, counterpart)
     )
-    HandshakingExchange(role, id, amounts, parameters, counterpartId, brokerId, participants)
+    HandshakingExchange(
+      role, id, amounts, blockedFunds, parameters, counterpartId, brokerId, participants)
   }
 }

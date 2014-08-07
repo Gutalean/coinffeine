@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.{KeyPair, NetworkComponent}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange { this: NetworkComponent =>
@@ -25,15 +26,23 @@ trait SampleExchange { this: NetworkComponent =>
 
   val parameters = Exchange.Parameters(lockTime = 10, network)
 
+  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.FundsId(1)))
+  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None)
+
   val buyerExchange = NonStartedExchange(
     id = ExchangeId("id"),
     role = BuyerRole,
     counterpartId = peerIds.seller,
     amounts,
+    buyerBlockedFunds,
     parameters,
     brokerId = PeerId("broker")
   )
-  val sellerExchange = buyerExchange.copy(role = SellerRole, counterpartId = peerIds.buyer)
+  val sellerExchange = buyerExchange.copy(
+    role = SellerRole,
+    counterpartId = peerIds.buyer,
+    blockedFunds = sellerBlockedFunds
+  )
 
   val buyerHandshakingExchange =
     HandshakingExchange(participants.buyer, participants.seller, buyerExchange)

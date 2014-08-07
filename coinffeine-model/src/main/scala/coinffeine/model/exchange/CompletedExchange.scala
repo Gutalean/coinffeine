@@ -11,13 +11,14 @@ case class CompletedExchange[+C <: FiatCurrency](
     override val counterpartId: PeerId,
     override val parameters: Parameters,
     override val brokerId: PeerId,
-    override val amounts: Amounts[C]) extends Exchange[C] {
+    override val amounts: Amounts[C],
+    override val blockedFunds: Exchange.BlockedFunds) extends Exchange[C] {
   override val progress = Progress(amounts.bitcoinAmount, amounts.fiatAmount)
 }
 
 object CompletedExchange {
   def fromExchange[C <: FiatCurrency](exchange: Exchange[C]): CompletedExchange[C] = {
     import exchange._
-    CompletedExchange(id, role, counterpartId, parameters, brokerId, amounts)
+    CompletedExchange(id, role, counterpartId, parameters, brokerId, amounts, blockedFunds)
   }
 }

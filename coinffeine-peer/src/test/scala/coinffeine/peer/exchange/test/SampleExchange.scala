@@ -5,6 +5,7 @@ import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
@@ -34,15 +35,18 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
-  val buyerExchange =
-    NonStartedExchange(exchangeId, BuyerRole, peerIds.seller, amounts, parameters, brokerId)
+  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.FundsId(1)))
+  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None)
+
+  val buyerExchange = NonStartedExchange(
+    exchangeId, BuyerRole, peerIds.seller, amounts, buyerBlockedFunds, parameters, brokerId)
   val buyerRunningExchange = RunningExchange(
     MockExchangeProtocol.DummyDeposits,
     HandshakingExchange(participants.buyer, participants.seller, buyerExchange)
   )
 
-  val sellerExchange =
-    NonStartedExchange(exchangeId, SellerRole, peerIds.buyer, amounts, parameters, brokerId)
+  val sellerExchange = NonStartedExchange(
+    exchangeId, SellerRole, peerIds.buyer, amounts, sellerBlockedFunds, parameters, brokerId)
   val sellerRunningExchange = RunningExchange(
     MockExchangeProtocol.DummyDeposits,
     HandshakingExchange(participants.seller, participants.buyer, sellerExchange)

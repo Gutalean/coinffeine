@@ -97,7 +97,8 @@ class OrderActorTest extends AkkaSpec {
       parameters = Exchange.Parameters(10, network),
       brokerId,
       amounts = Exchange.Amounts[FiatCurrency](
-        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10))
+        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
+      blockedFunds = Exchange.BlockedFunds(fiat = Some(fundsId))
     )))
     eventChannelProbe.fishForMessage() {
       case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
@@ -162,7 +163,8 @@ class OrderActorTest extends AkkaSpec {
       parameters = Exchange.Parameters(10, network),
       brokerId,
       amounts = Exchange.Amounts[FiatCurrency](
-        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10))
+        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
+      blockedFunds = Exchange.BlockedFunds(fiat = None)
     )))
     eventChannelProbe.fishForMessage() {
       case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true

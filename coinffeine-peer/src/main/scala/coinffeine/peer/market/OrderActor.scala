@@ -166,6 +166,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         role = role,
         counterpartId = orderMatch.counterpart,
         amounts = amounts,
+        blockedFunds = Exchange.BlockedFunds(fiat = blockedFunds),
         parameters = Exchange.Parameters(orderMatch.lockTime, network),
         brokerId = brokerId
       )
