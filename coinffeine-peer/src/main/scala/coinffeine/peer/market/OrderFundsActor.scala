@@ -1,6 +1,6 @@
 package coinffeine.peer.market
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Props, Actor, ActorLogging, ActorRef}
 
 import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
@@ -10,34 +10,34 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
 /** Manages funds blocking for an order */
-class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef) extends Actor with ActorLogging {
+class OrderFundsActor extends Actor with ActorLogging {
   import coinffeine.peer.market.OrderFundsActor._
 
-  private sealed trait FiatFunds {
-    def available: Boolean
-    def unblock(): Unit = {}
-    def maybeId: Option[BlockedFundsId] = None
-  }
-  private case object NoFiatFunds extends FiatFunds {
-    override val available = false
-  }
-  private case object UnneededFiatFunds extends FiatFunds {
-    override val available = true
-  }
-  private case class BlockedFiatFunds(id: BlockedFundsId, available: Boolean) extends FiatFunds {
-    override val maybeId = Some(id)
-    override def unblock(): Unit = {
-      paymentProcessor ! PaymentProcessorActor.UnblockFunds(id)
-    }
-  }
-
   override def receive: Receive = {
-    case BlockFunds(fiatAmount, bitcoinAmount) =>
-      new InitializedBehavior(fiatAmount, bitcoinAmount, sender()).start()
+    case init: BlockFunds =>
+      new InitializedBehavior(init, sender()).start()
   }
 
-  private class InitializedBehavior(
-      fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount, listener: ActorRef) {
+  private class InitializedBehavior(init: BlockFunds, listener: ActorRef) {
+    import init._
+
+    private sealed trait FiatFunds {
+      def available: Boolean
+      def unblock(): Unit = {}
+      def maybeId: Option[BlockedFundsId] = None
+    }
+    private case object NoFiatFunds extends FiatFunds {
+      override val available = false
+    }
+    private case object UnneededFiatFunds extends FiatFunds {
+      override val available = true
+    }
+    private case class BlockedFiatFunds(id: BlockedFundsId, available: Boolean) extends FiatFunds {
+      override val maybeId = Some(id)
+      override def unblock(): Unit = {
+        paymentProcessor ! PaymentProcessorActor.UnblockFunds(id)
+      }
+    }
 
     private var fiatFunds: FiatFunds = NoFiatFunds
     private var btcFunds: Option[BlockedCoinsId] = None
@@ -99,8 +99,14 @@ class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef) extends Acto
 }
 
 object OrderFundsActor {
+
+  val props = Props(new OrderFundsActor)
+
   /** Sent to the [[OrderFundsActor]] to initialize it. */
-  case class BlockFunds(fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount)
+  case class BlockFunds(fiatAmount: FiatAmount,
+                        bitcoinAmount: BitcoinAmount,
+                        wallet: ActorRef,
+                        paymentProcessor: ActorRef)
 
   /** Whoever sent the [[BlockFunds]] message will receive this message when funds became
     * available. */
