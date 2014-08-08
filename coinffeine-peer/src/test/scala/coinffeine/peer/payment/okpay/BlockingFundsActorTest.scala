@@ -17,7 +17,7 @@ class BlockingFundsActorTest extends AkkaSpec {
 
   it must "retrieve no blocked funds when no funds are blocked" in new WithBlockingFundsActor {
     actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-    expectMsg(BlockingFundsActor.NoFundsBlocked(Euro))
+    expectMsg(BlockingFundsActor.BlockedFunds(Euro.Zero))
   }
 
   it must "retrieve blocked funds when blocked" in new WithBlockingFundsActor {
@@ -33,7 +33,7 @@ class BlockingFundsActorTest extends AkkaSpec {
     givenAvailableFunds(100.EUR) { (listener, funds) =>
       actor ! PaymentProcessorActor.UnblockFunds(funds)
       actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.NoFundsBlocked(Euro))
+      expectMsg(BlockingFundsActor.BlockedFunds(Euro.Zero))
     }
   }
 

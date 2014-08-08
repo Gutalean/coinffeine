@@ -25,7 +25,7 @@ class BlockingFundsActor extends Actor with ActorLogging {
     case RetrieveBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockingFundsActor.BlockedFunds(blockedFunds)
-        case None => sender ! NoFundsBlocked(currency)
+        case None => sender ! BlockingFundsActor.BlockedFunds(currency.Zero)
       }
 
     case BalancesUpdate(newBalances) =>
@@ -180,7 +180,6 @@ object BlockingFundsActor {
 
   case class RetrieveBlockedFunds[C <: FiatCurrency](currency: C)
   case class BlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
-  case class NoFundsBlocked[C <: FiatCurrency](currency: C)
 
   case class BalancesUpdate(balances: Seq[FiatAmount])
 

@@ -118,10 +118,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
     private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
       AskPattern(blockingFunds, RetrieveBlockedFunds(currency))
-        .withImmediateReply[Any]().map {
-          case BlockedFunds(funds) => funds.asInstanceOf[CurrencyAmount[C]]
-          case NoFundsBlocked(`currency`) => currency.Zero
-        }
+        .withImmediateReply[BlockedFunds[C]]().map(_.funds)
     }
 
     private def updateBalances(balances: Seq[FiatAmount]): Unit = {
