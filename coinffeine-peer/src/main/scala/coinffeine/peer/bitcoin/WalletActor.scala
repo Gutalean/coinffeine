@@ -103,9 +103,6 @@ object WalletActor {
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
   case class BlockBitcoins(amount: BitcoinAmount)
 
-  /** Identifies a blocked amount of bitcoins. */
-  case class BlockedCoinsId(underlying: Int) extends AnyVal
-
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
 

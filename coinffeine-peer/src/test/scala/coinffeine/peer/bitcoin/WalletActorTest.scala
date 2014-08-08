@@ -5,14 +5,13 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.KeyPair
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.api.event.WalletBalanceChangeEvent
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
-import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 

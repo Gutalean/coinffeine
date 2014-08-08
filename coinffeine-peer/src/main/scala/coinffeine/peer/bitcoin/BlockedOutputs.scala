@@ -2,10 +2,9 @@ package coinffeine.peer.bitcoin
 
 import scala.annotation.tailrec
 
-import coinffeine.model.bitcoin.MutableTransactionOutput
+import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransactionOutput}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 private[bitcoin] class BlockedOutputs {
   import coinffeine.peer.bitcoin.BlockedOutputs._

@@ -2,10 +2,9 @@ package coinffeine.peer.bitcoin
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.bitcoin.{MutableTransaction, MutableTransactionOutput, PublicKey}
+import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransaction, MutableTransactionOutput, PublicKey}
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.bitcoin.BlockedOutputs.{BlockingFundsException, UnknownCoinsId}
-import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
