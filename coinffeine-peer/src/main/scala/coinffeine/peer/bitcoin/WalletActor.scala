@@ -27,6 +27,7 @@ private class WalletActor extends Actor with ActorLogging {
 
     private var lastBalanceReported: Option[BitcoinAmount] = None
     private val blockedOutputs = new BlockedOutputs()
+    private var listeners = Set.empty[ActorRef]
 
     def start(): Unit = {
       subscribeToWalletChanges()
@@ -64,12 +65,9 @@ private class WalletActor extends Actor with ActorLogging {
         sender() ! KeyPairCreated(keyPair)
 
       case WalletChanged =>
-        val currentBalance = wallet.balance()
-        if (lastBalanceReported != Some(currentBalance)) {
-          produceEvent(WalletBalanceChangeEvent(currentBalance))
-          lastBalanceReported = Some(currentBalance)
-        }
+        updateBalance()
         updateSpendCandidates()
+        notifyListeners()
 
       case BlockBitcoins(amount) =>
         sender() ! blockedOutputs.block(amount)
@@ -77,6 +75,25 @@ private class WalletActor extends Actor with ActorLogging {
 
       case UnblockBitcoins(id) =>
         blockedOutputs.unblock(id)
+
+      case SubscribeToWalletChanges =>
+        context.watch(sender())
+        listeners += sender()
+
+      case UnsubscribeToWalletChanges =>
+        context.unwatch(sender())
+        listeners -= sender()
+
+      case Terminated(listener) =>
+        listeners -= listener
+    }
+
+    private def updateBalance(): Unit = {
+      val currentBalance = wallet.balance()
+      if (lastBalanceReported != Some(currentBalance)) {
+        produceEvent(WalletBalanceChangeEvent(currentBalance))
+        lastBalanceReported = Some(currentBalance)
+      }
     }
 
     private def updateSpendCandidates(): Unit = {
@@ -90,27 +107,32 @@ private class WalletActor extends Actor with ActorLogging {
         }
       }, context.dispatcher)
     }
+
+    private def notifyListeners(): Unit = {
+      listeners.foreach(_ ! WalletChanged)
+    }
   }
 }
 
 object WalletActor {
-
-  private case object WalletChanged
-
   private[bitcoin] val props = Props(new WalletActor)
   private[bitcoin] case class Initialize(wallet: Wallet, eventChannel: ActorRef)
 
+  /** Subscribe to wallet changes. The sender will receive [[WalletChanged]] after sending this
+    * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].
+    */
+  case object SubscribeToWalletChanges
+  case object UnsubscribeToWalletChanges
+  case object WalletChanged
+
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
   case class BlockBitcoins(amount: BitcoinAmount)
-
-  /** Identifies a blocked amount of bitcoins. */
-  case class CoinsId(underlying: Int) extends AnyVal
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
 
   /** Bitcoin amount was blocked successfully */
-  case class BlockedBitcoins(id: CoinsId) extends BlockBitcoinsResponse
+  case class BlockedBitcoins(id: BlockedCoinsId) extends BlockBitcoinsResponse
 
   /** Cannot block the requested amount of bitcoins */
   case object CannotBlockBitcoins extends BlockBitcoinsResponse
@@ -118,7 +140,7 @@ object WalletActor {
   /** A message sent to the wallet actor to release for general use the previously blocked
     * bitcoins.
     */
-  case class UnblockBitcoins(id: CoinsId)
+  case class UnblockBitcoins(id: BlockedCoinsId)
 
   /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
@@ -133,11 +155,14 @@ object WalletActor {
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     */
-  case class CreateDeposit(coinsId: CoinsId, requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
+  case class CreateDeposit(coinsId: BlockedCoinsId,
+                           requiredSignatures: Seq[KeyPair],
+                           amount: BitcoinAmount)
+
   object CreateDeposit {
     @deprecated("you should indicate what blocked bitcoins to use")
     def apply(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount): CreateDeposit =
-      CreateDeposit(CoinsId(-1), requiredSignatures, amount)
+      CreateDeposit(BlockedCoinsId(-1), requiredSignatures, amount)
   }
 
   /** Base trait for the responses to [[CreateDeposit]] */

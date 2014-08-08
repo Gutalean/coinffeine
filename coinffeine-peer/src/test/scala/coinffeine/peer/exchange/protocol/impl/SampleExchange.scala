@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import coinffeine.model.bitcoin.{KeyPair, NetworkComponent}
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, NetworkComponent}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
@@ -26,8 +26,11 @@ trait SampleExchange { this: NetworkComponent =>
 
   val parameters = Exchange.Parameters(lockTime = 10, network)
 
-  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.FundsId(1)))
-  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None)
+  val buyerBlockedFunds = Exchange.BlockedFunds(
+    fiat = Some(PaymentProcessor.BlockedFundsId(1)),
+    bitcoin = BlockedCoinsId(1)
+  )
+  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))
 
   val buyerExchange = NonStartedExchange(
     id = ExchangeId("id"),

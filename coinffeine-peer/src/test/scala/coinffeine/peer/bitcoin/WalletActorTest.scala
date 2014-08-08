@@ -1,18 +1,20 @@
 package coinffeine.peer.bitcoin
 
+import scala.concurrent.duration._
+
 import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.api.event.WalletBalanceChangeEvent
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
-import coinffeine.peer.bitcoin.WalletActor.CoinsId
+import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -64,6 +66,17 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     }
   }
 
+  it must "notify on wallet changes until being unsubscribed" in new Fixture {
+    instance ! SubscribeToWalletChanges
+    expectNoMsg(100.millis)
+    wallet.addKey(new KeyPair)
+    expectMsg(WalletChanged)
+    instance ! UnsubscribeToWalletChanges
+    expectNoMsg(100.millis)
+    wallet.addKey(new KeyPair)
+    expectNoMsg(100.millis)
+  }
+
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
@@ -74,7 +87,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val instance = system.actorOf(WalletActor.props)
     instance ! WalletActor.Initialize(wallet, eventChannelProbe.ref)
 
-    def givenBlockedFunds(amount: BitcoinAmount): CoinsId = {
+    def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = {
       instance ! WalletActor.BlockBitcoins(amount)
       expectMsgClass(classOf[WalletActor.BlockedBitcoins]).id
     }

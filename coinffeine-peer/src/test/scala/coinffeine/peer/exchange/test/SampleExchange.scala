@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.test
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.bitcoin.{KeyPair, PublicKey}
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
@@ -35,8 +35,11 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
-  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.FundsId(1)))
-  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None)
+  val buyerBlockedFunds = Exchange.BlockedFunds(
+    fiat = Some(PaymentProcessor.BlockedFundsId(1)),
+    bitcoin = BlockedCoinsId(1)
+  )
+  val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))
 
   val buyerExchange = NonStartedExchange(
     exchangeId, BuyerRole, peerIds.seller, amounts, buyerBlockedFunds, parameters, brokerId)
