@@ -8,7 +8,7 @@ import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.bitcoin.KeyPair
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -166,7 +166,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
         role = role,
         counterpartId = orderMatch.counterpart,
         amounts = amounts,
-        blockedFunds = Exchange.BlockedFunds(fiat = blockedFunds),
+        blockedFunds = Exchange.BlockedFunds(fiat = blockedFunds, bitcoin = BlockedCoinsId(1)),
         parameters = Exchange.Parameters(orderMatch.lockTime, network),
         brokerId = brokerId
       )

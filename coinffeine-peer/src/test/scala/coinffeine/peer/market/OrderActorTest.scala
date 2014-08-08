@@ -4,7 +4,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.KeyPair
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
@@ -14,6 +14,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.WalletActor.BlockedBitcoins
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
@@ -41,7 +42,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "move to stalled when payment processor reports unavailable funds" in new BiddingFixture {
     givenOfflineOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.UnavailableFunds(fundsId))
+    paymentProcessorProbe.send(actor, PaymentProcessorActor.UnavailableFunds(fiatFunds))
     eventChannelProbe.expectMsg(OrderStatusChangedEvent(
       order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
     submissionProbe.expectMsg(StopSubmitting(order.id))
@@ -49,7 +50,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "move to offline when receive available funds" in new BiddingFixture {
     givenStalledOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fundsId))
+    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fiatFunds))
     eventChannelProbe.expectMsg(OrderStatusChangedEvent(
       order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
@@ -77,7 +78,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "move from stalled to offline when available funds message is received" in new BiddingFixture {
     givenStalledOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fundsId))
+    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fiatFunds))
     eventChannelProbe.expectMsg(OrderStatusChangedEvent(
       order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
@@ -98,7 +99,7 @@ class OrderActorTest extends AkkaSpec {
       brokerId,
       amounts = Exchange.Amounts[FiatCurrency](
         order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
-      blockedFunds = Exchange.BlockedFunds(fiat = Some(fundsId))
+      blockedFunds = Exchange.BlockedFunds(fiat = Some(fiatFunds), bitcoin = BlockedCoinsId(1))
     )))
     eventChannelProbe.fishForMessage() {
       case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
@@ -149,28 +150,29 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
-  it should "stop submitting to the broker & send event once matching is received" in new AskingFixture {
-    givenInMarketOrder()
-    gatewayProbe.relayMessage(orderMatch, brokerId)
-    submissionProbe.fishForMessage() {
-      case StopSubmitting(orderId) if orderId == order.id => true
-      case _ => false
+  it should "stop submitting to the broker & send event once matching is received" in
+    new AskingFixture {
+      givenInMarketOrder()
+      gatewayProbe.relayMessage(orderMatch, brokerId)
+      submissionProbe.fishForMessage() {
+        case StopSubmitting(orderId) if orderId == order.id => true
+        case _ => false
+      }
+      exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
+        id = exchangeId,
+        role,
+        counterpart,
+        parameters = Exchange.Parameters(10, network),
+        brokerId,
+        amounts = Exchange.Amounts[FiatCurrency](
+          order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
+        blockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = btcFunds)
+      )))
+      eventChannelProbe.fishForMessage() {
+        case OrderStatusChangedEvent(orderId, _, CompletedOrder) => orderId == order.id
+        case _ => false
+      }
     }
-    exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
-      id = exchangeId,
-      role,
-      counterpart,
-      parameters = Exchange.Parameters(10, network),
-      brokerId,
-      amounts = Exchange.Amounts[FiatCurrency](
-        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
-      blockedFunds = Exchange.BlockedFunds(fiat = None)
-    )))
-    eventChannelProbe.fishForMessage() {
-      case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
-      case _ => false
-    }
-  }
 
   it should "spawn an exchange upon matching" in new AskingFixture {
     givenInMarketOrder()
@@ -195,7 +197,8 @@ class OrderActorTest extends AkkaSpec {
     val gatewayProbe = new GatewayProbe()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
       TestProbe()
-    val fundsId = BlockedFundsId(1)
+    val fiatFunds = BlockedFundsId(1)
+    val btcFunds = BlockedCoinsId(1)
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
@@ -223,13 +226,13 @@ class OrderActorTest extends AkkaSpec {
     def givenInitializedOrder(): Unit = {
       eventChannelProbe.expectMsg(OrderSubmittedEvent(blockingFundsOrder))
       paymentProcessorProbe.expectMsg(PaymentProcessorActor.BlockFunds(order.fiatAmount, actor))
-      paymentProcessorProbe.reply(fundsId)
+      paymentProcessorProbe.reply(fiatFunds)
     }
 
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      paymentProcessorProbe.reply(PaymentProcessorActor.AvailableFunds(fundsId))
+      paymentProcessorProbe.reply(PaymentProcessorActor.AvailableFunds(fiatFunds))
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(
         order.id, StalledOrder(BlockingFundsMessage), OfflineOrder))
       submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
@@ -237,7 +240,7 @@ class OrderActorTest extends AkkaSpec {
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()
-      paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds(fundsId))
+      paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds(fiatFunds))
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(
         order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
       submissionProbe.expectMsg(StopSubmitting(order.id))

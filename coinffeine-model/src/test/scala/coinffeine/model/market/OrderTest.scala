@@ -3,6 +3,7 @@ package coinffeine.model.market
 import com.google.bitcoin.params.MainNetParams
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Exchange.Progress
@@ -38,7 +39,7 @@ class OrderTest extends UnitTest {
     override val parameters = exchangeParameters
     override val brokerId = PeerId("broker")
     override val amounts = Exchange.Amounts(1.BTC, 600.EUR, Exchange.StepBreakdown(10))
-    override val blockedFunds = Exchange.BlockedFunds(fiat = None)
+    override val blockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(42))
     override val progress = Progress[FiatCurrency](1.BTC * completion, 600.EUR * completion)
   }
 }
