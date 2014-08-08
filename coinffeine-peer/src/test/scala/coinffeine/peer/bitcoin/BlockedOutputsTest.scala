@@ -5,7 +5,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{MutableTransaction, MutableTransactionOutput, PublicKey}
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.bitcoin.BlockedOutputs.{BlockingFundsException, UnknownCoinsId}
-import coinffeine.peer.bitcoin.WalletActor.CoinsId
+import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
@@ -48,7 +48,7 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
   it should "reject using funds from an unknown identifier" in {
     val instance = new BlockedOutputs()
     a [UnknownCoinsId] shouldBe thrownBy {
-      instance.use(CoinsId(42), 2.BTC)
+      instance.use(BlockedCoinsId(42), 2.BTC)
     }
   }
 

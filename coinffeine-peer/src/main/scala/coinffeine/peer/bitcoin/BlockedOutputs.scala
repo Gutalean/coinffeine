@@ -5,7 +5,7 @@ import scala.annotation.tailrec
 import coinffeine.model.bitcoin.MutableTransactionOutput
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.peer.bitcoin.WalletActor.CoinsId
+import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 private[bitcoin] class BlockedOutputs {
   import coinffeine.peer.bitcoin.BlockedOutputs._
@@ -34,13 +34,13 @@ private[bitcoin] class BlockedOutputs {
 
   private var nextId = 1
   private var spendableOutputs = Set.empty[MutableTransactionOutput]
-  private var blockedFunds = Map.empty[CoinsId, BlockedFunds]
+  private var blockedFunds = Map.empty[BlockedCoinsId, BlockedFunds]
 
   def setSpendCandidates(spendCandidates: Outputs): Unit = {
     spendableOutputs = spendCandidates
   }
 
-  def block(amount: BitcoinAmount): Option[CoinsId] = {
+  def block(amount: BitcoinAmount): Option[BlockedCoinsId] = {
     collectFunds(amount).map { funds =>
       val coinsId = generateNextCoinsId()
       blockedFunds += coinsId -> new BlockedFunds(funds)
@@ -48,12 +48,12 @@ private[bitcoin] class BlockedOutputs {
     }
   }
 
-  def unblock(id: CoinsId): Unit = {
+  def unblock(id: BlockedCoinsId): Unit = {
     blockedFunds -= id
   }
 
   @throws[BlockedOutputs.BlockingFundsException]
-  def use(id: CoinsId, amount: BitcoinAmount): Outputs = {
+  def use(id: BlockedCoinsId, amount: BitcoinAmount): Outputs = {
     val funds = blockedFunds.getOrElse(id, throw UnknownCoinsId(id))
     funds.use(amount)
   }
@@ -86,7 +86,7 @@ private[bitcoin] class BlockedOutputs {
   private def blockedOutputs: Outputs = blockedFunds.values.flatMap(_.reservedOutputs).toSet
 
   private def generateNextCoinsId() = {
-    val coinsId = CoinsId(nextId)
+    val coinsId = BlockedCoinsId(nextId)
     nextId += 1
     coinsId
   }
@@ -95,7 +95,7 @@ private[bitcoin] class BlockedOutputs {
 object BlockedOutputs {
   sealed abstract class BlockingFundsException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
-  case class UnknownCoinsId(unknownId: CoinsId)
+  case class UnknownCoinsId(unknownId: BlockedCoinsId)
     extends BlockingFundsException(s"Unknown coins id $unknownId")
   case class NotEnoughFunds(requested: BitcoinAmount, available: BitcoinAmount)
     extends BlockingFundsException(

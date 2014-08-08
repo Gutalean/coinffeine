@@ -12,7 +12,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.api.event.WalletBalanceChangeEvent
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
-import coinffeine.peer.bitcoin.WalletActor.CoinsId
+import coinffeine.peer.bitcoin.WalletActor.BlockedCoinsId
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -74,7 +74,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val instance = system.actorOf(WalletActor.props)
     instance ! WalletActor.Initialize(wallet, eventChannelProbe.ref)
 
-    def givenBlockedFunds(amount: BitcoinAmount): CoinsId = {
+    def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = {
       instance ! WalletActor.BlockBitcoins(amount)
       expectMsgClass(classOf[WalletActor.BlockedBitcoins]).id
     }

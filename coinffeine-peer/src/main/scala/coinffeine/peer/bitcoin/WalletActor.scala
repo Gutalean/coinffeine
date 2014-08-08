@@ -104,13 +104,13 @@ object WalletActor {
   case class BlockBitcoins(amount: BitcoinAmount)
 
   /** Identifies a blocked amount of bitcoins. */
-  case class CoinsId(underlying: Int) extends AnyVal
+  case class BlockedCoinsId(underlying: Int) extends AnyVal
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
 
   /** Bitcoin amount was blocked successfully */
-  case class BlockedBitcoins(id: CoinsId) extends BlockBitcoinsResponse
+  case class BlockedBitcoins(id: BlockedCoinsId) extends BlockBitcoinsResponse
 
   /** Cannot block the requested amount of bitcoins */
   case object CannotBlockBitcoins extends BlockBitcoinsResponse
@@ -118,7 +118,7 @@ object WalletActor {
   /** A message sent to the wallet actor to release for general use the previously blocked
     * bitcoins.
     */
-  case class UnblockBitcoins(id: CoinsId)
+  case class UnblockBitcoins(id: BlockedCoinsId)
 
   /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
@@ -133,11 +133,14 @@ object WalletActor {
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     */
-  case class CreateDeposit(coinsId: CoinsId, requiredSignatures: Seq[KeyPair], amount: BitcoinAmount)
+  case class CreateDeposit(coinsId: BlockedCoinsId,
+                           requiredSignatures: Seq[KeyPair],
+                           amount: BitcoinAmount)
+
   object CreateDeposit {
     @deprecated("you should indicate what blocked bitcoins to use")
     def apply(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount): CreateDeposit =
-      CreateDeposit(CoinsId(-1), requiredSignatures, amount)
+      CreateDeposit(BlockedCoinsId(-1), requiredSignatures, amount)
   }
 
   /** Base trait for the responses to [[CreateDeposit]] */
