@@ -9,7 +9,6 @@ import akka.pattern._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
-import coinffeine.model.payment.PaymentProcessor.FundsId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._

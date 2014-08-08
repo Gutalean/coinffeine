@@ -35,7 +35,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
-  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.FundsId(1)))
+  val buyerBlockedFunds = Exchange.BlockedFunds(fiat = Some(PaymentProcessor.BlockedFundsId(1)))
   val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None)
 
   val buyerExchange = NonStartedExchange(

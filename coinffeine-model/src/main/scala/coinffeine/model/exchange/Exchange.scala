@@ -63,7 +63,7 @@ object Exchange {
     val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
   }
 
-  case class BlockedFunds(fiat: Option[PaymentProcessor.FundsId])
+  case class BlockedFunds(fiat: Option[PaymentProcessor.BlockedFundsId])
 
   case class Deposits(transactions: Both[ImmutableTransaction])
 

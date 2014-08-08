@@ -21,7 +21,7 @@ object PaymentProcessorActor {
   case class Identified(id: Id)
 
   /** A message sent to the payment processor to reserve some funds. As response, the sender must
-    * expect a [[FundsId]] object.
+    * expect a [[BlockedFundsId]] object.
     *
     * @constructor
     * @param amount    Amount to block
@@ -30,16 +30,16 @@ object PaymentProcessorActor {
   case class BlockFunds(amount: FiatAmount, listener: ActorRef)
 
   /** A message sent to the payment processor to release some previously reserved funds. */
-  case class UnblockFunds(funds: FundsId)
+  case class UnblockFunds(funds: BlockedFundsId)
 
   /** A message sent by the payment processor to notify that some blocked funds are not available
     * for external reasons.
     */
-  case class UnavailableFunds(funds: FundsId)
+  case class UnavailableFunds(funds: BlockedFundsId)
 
   /** A message sent by the payment processor to notify when some blocked but not available funds
     * are available back */
-  case class AvailableFunds(funds: FundsId)
+  case class AvailableFunds(funds: BlockedFundsId)
 
   /** A message sent to the payment processor ordering a new pay.
     *
@@ -52,7 +52,7 @@ object PaymentProcessorActor {
     * @param comment   The comment to be attached to the payment
     * @tparam C        The fiat currency of the payment amount
     */
-  case class Pay[C <: FiatCurrency](fundsId: FundsId,
+  case class Pay[C <: FiatCurrency](fundsId: BlockedFundsId,
                                     to: AccountId,
                                     amount: CurrencyAmount[C],
                                     comment: String)

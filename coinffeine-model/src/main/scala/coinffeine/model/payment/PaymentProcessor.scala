@@ -14,5 +14,5 @@ object PaymentProcessor {
   type PaymentId = String
 
   /** Identifier of some funds blocked for a specific use. */
-  case class FundsId(underlying: Int) extends AnyVal
+  case class BlockedFundsId(underlying: Int) extends AnyVal
 }

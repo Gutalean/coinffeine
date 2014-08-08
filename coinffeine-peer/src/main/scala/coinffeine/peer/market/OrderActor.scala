@@ -13,7 +13,7 @@ import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor.{AccountId, FundsId}
+import coinffeine.model.payment.PaymentProcessor.{AccountId, BlockedFundsId}
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
@@ -44,7 +44,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private var currentOrder = init.order
-    private var blockedFunds: Option[FundsId] = None
+    private var blockedFunds: Option[BlockedFundsId] = None
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
@@ -69,7 +69,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
     }
 
     private def initializing: Receive = running orElse {
-      case fundsId: FundsId =>
+      case fundsId: BlockedFundsId =>
         blockedFunds = Some(fundsId)
         log.warning(s"${currentOrder.id} is stalled until enough funds are available".capitalize)
         context.become(stalled)
@@ -140,7 +140,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
       case _ => log.info(s"${currentOrder.id} is terminated")
     }
 
-    private def currentlyBlocking(funds: FundsId): Boolean =
+    private def currentlyBlocking(funds: BlockedFundsId): Boolean =
       blockedFunds.isDefined && blockedFunds.get == funds
 
     private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {

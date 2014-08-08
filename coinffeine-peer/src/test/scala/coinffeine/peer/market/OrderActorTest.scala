@@ -11,7 +11,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor.FundsId
+import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
@@ -195,7 +195,7 @@ class OrderActorTest extends AkkaSpec {
     val gatewayProbe = new GatewayProbe()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
       TestProbe()
-    val fundsId = FundsId(1)
+    val fundsId = BlockedFundsId(1)
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))

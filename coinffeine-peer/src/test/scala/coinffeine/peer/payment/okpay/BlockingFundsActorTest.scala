@@ -7,7 +7,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.PaymentProcessor
-import coinffeine.model.payment.PaymentProcessor.FundsId
+import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.{UnavailableFunds, AvailableFunds}
 import coinffeine.peer.payment.okpay.BlockingFundsActor.{FundsUsed, CannotUseFunds, UseFunds}
@@ -20,11 +20,11 @@ class BlockingFundsActorTest extends AkkaSpec {
     actor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     actor ! PaymentProcessorActor.BlockFunds(50.EUR, self)
     expectMsgAllConformingOf(
-      classOf[PaymentProcessor.FundsId],
+      classOf[PaymentProcessor.BlockedFundsId],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessor.FundsId],
+      classOf[PaymentProcessor.BlockedFundsId],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessor.FundsId],
+      classOf[PaymentProcessor.BlockedFundsId],
       classOf[PaymentProcessorActor.UnavailableFunds]
     )
   }
@@ -86,8 +86,8 @@ class BlockingFundsActorTest extends AkkaSpec {
     }
 
   it must "reject funds usage for unknown funds id" in new WithBlockingFundsActor {
-    actor ! UseFunds(FundsId(100), 10.EUR)
-    expectMsgPF() { case CannotUseFunds(FundsId(100), _, _) => }
+    actor ! UseFunds(BlockedFundsId(100), 10.EUR)
+    expectMsgPF() { case CannotUseFunds(BlockedFundsId(100), _, _) => }
   }
 
   it must "reject funds usage when it exceeds blocked amount" in new WithBlockingFundsActor {
@@ -136,21 +136,21 @@ class BlockingFundsActorTest extends AkkaSpec {
   private trait WithBlockingFundsActor {
     val actor = system.actorOf(Props(new BlockingFundsActor()))
 
-    def givenBlockedFunds(amount: FiatAmount)(block: (TestProbe, FundsId) => Unit): Unit = {
+    def givenBlockedFunds(amount: FiatAmount)(block: (TestProbe, BlockedFundsId) => Unit): Unit = {
       val listener = TestProbe()
       actor ! PaymentProcessorActor.BlockFunds(amount, listener.ref)
-      val funds = expectMsgClass(classOf[PaymentProcessor.FundsId])
+      val funds = expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
       block(listener, funds)
     }
 
-    def givenAvailableFunds(amount: FiatAmount)(block: (TestProbe, FundsId) => Unit): Unit = {
+    def givenAvailableFunds(amount: FiatAmount)(block: (TestProbe, BlockedFundsId) => Unit): Unit = {
       givenBlockedFunds(amount) { (listener, funds) =>
         listener.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
         block(listener, funds)
       }
     }
 
-    def givenUnavailableFunds(amount: FiatAmount)(block: (TestProbe, FundsId) => Unit): Unit = {
+    def givenUnavailableFunds(amount: FiatAmount)(block: (TestProbe, BlockedFundsId) => Unit): Unit = {
       givenBlockedFunds(amount) { (listener, funds) =>
         listener.expectMsg(PaymentProcessorActor.UnavailableFunds(funds))
         block(listener, funds)
