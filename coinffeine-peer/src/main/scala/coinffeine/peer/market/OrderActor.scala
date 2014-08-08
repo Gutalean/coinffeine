@@ -25,8 +25,10 @@ import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermediateSteps: Int)
-  extends Actor with ActorLogging {
+class OrderActor(exchangeActorProps: Props,
+                 orderFundsActorProps: Props,
+                 network: NetworkParameters,
+                 intermediateSteps: Int) extends Actor with ActorLogging {
 
   import context.dispatcher
 
@@ -45,6 +47,7 @@ class OrderActor(exchangeActorProps: Props, network: NetworkParameters, intermed
 
     private var currentOrder = init.order
     private var blockedFunds: Option[BlockedFundsId] = None
+    private val fundsActor = context.actorOf(orderFundsActorProps)
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
@@ -232,6 +235,6 @@ object OrderActor {
 
   def props(exchangeActorProps: Props, config: Config, network: NetworkParameters): Props = {
     val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
-    Props(new OrderActor(exchangeActorProps, network, intermediateSteps))
+    Props(new OrderActor(exchangeActorProps, OrderFundsActor.props, network, intermediateSteps))
   }
 }

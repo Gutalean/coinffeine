@@ -14,7 +14,6 @@ import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.bitcoin.WalletActor.BlockedBitcoins
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
@@ -195,13 +194,14 @@ class OrderActorTest extends AkkaSpec {
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     val gatewayProbe = new GatewayProbe()
+    val fundsActor = new MockSupervisedActor()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
       TestProbe()
     val fiatFunds = BlockedFundsId(1)
     val btcFunds = BlockedCoinsId(1)
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
-    val actor = system.actorOf(Props(new OrderActor(exchange.props, network, 10)))
+    val actor = system.actorOf(Props(new OrderActor(exchange.props, fundsActor.props, network, 10)))
     val order: Order[FiatCurrency]
     val role: Role
     val paymentProcessorId = "account-123"
@@ -217,6 +217,7 @@ class OrderActorTest extends AkkaSpec {
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
       gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
     gatewayProbe.expectSubscription()
+    fundsActor.expectCreation()
   }
 
   trait BiddingFixture extends Fixture {
