@@ -10,5 +10,12 @@ trait CoinffeinePaymentProcessor {
   def accountId: PaymentProcessor.AccountId
 
   /** Get the current balance if possible */
-  def currentBalance(): Option[CurrencyAmount[Euro.type]]
+  def currentBalance(): Option[CoinffeinePaymentProcessor.Balance]
+}
+
+object CoinffeinePaymentProcessor {
+
+  case class Balance(
+    totalFunds: CurrencyAmount[Euro.type],
+    blockedFunds: CurrencyAmount[Euro.type])
 }
