@@ -8,12 +8,13 @@ import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
+import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor.{AccountId, BlockedFundsId}
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
 import coinffeine.peer.event.EventProducer
@@ -46,41 +47,45 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private var currentOrder = init.order
-    private var blockedFunds: Option[BlockedFundsId] = None
-    private val fundsActor = context.actorOf(orderFundsActorProps)
+    private var blockedFunds: Option[BlockedFunds] = None
+    private val fundsActor = context.actorOf(orderFundsActorProps, "funds")
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
+      subscribeToMessages()
+      blockFunds()
+      startWithOrderStatus(StalledOrder(BlockingFundsMessage))
+      log.warning(s"${currentOrder.id} is stalled until enough funds are available".capitalize)
+      context.become(stalled)
+    }
+
+    private def subscribeToMessages(): Unit = {
       messageGateway ! MessageGateway.Subscribe {
         case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) =>
           orderMatch.orderId == currentOrder.id
         case _ => false
       }
-      currentOrder.orderType match {
-        case Bid =>
-          log.info(s"${currentOrder.id} is bidding, " +
-            s"blocking ${currentOrder.fiatAmount} in payment processor")
-          paymentProcessor ! PaymentProcessorActor.BlockFunds(init.order.fiatAmount, self)
-          startWithOrderStatus(StalledOrder(BlockingFundsMessage))
-          context.become(initializing)
-        case Ask =>
-          log.info(s"${currentOrder.id} is asking, no funds blocking in payment processor required")
-          startWithOrderStatus(OfflineOrder)
-          submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
-          context.become(offline)
-      }
     }
 
-    private def initializing: Receive = running orElse {
-      case fundsId: BlockedFundsId =>
-        blockedFunds = Some(fundsId)
-        log.warning(s"${currentOrder.id} is stalled until enough funds are available".capitalize)
-        context.become(stalled)
+    private def blockFunds(): Unit = {
+      val fiatToBlock = currentOrder.orderType match {
+        case Bid =>
+          log.info("{} is bidding, blocking {} in payment processor",
+            currentOrder.id, currentOrder.fiatAmount)
+          currentOrder.fiatAmount
+        case Ask =>
+          log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
+          currentOrder.fiatAmount.currency.Zero
+      }
+      val bitcoinToBlock = currentOrder.bitcoinsTransferred * role.select(ProportionOfBitcoinToBlock)
+      fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 
     private def stalled: Receive = running orElse {
-      case PaymentProcessorActor.AvailableFunds(fundsId) if currentlyBlocking(fundsId) =>
-        log.info(s"${currentOrder.id} received available funds. Moving to offline status")
+      case OrderFundsActor.AvailableFunds(availableBlockedFunds) =>
+        blockedFunds = Some(availableBlockedFunds)
+        log.info(s"{} received available funds {}. Moving to offline status",
+          currentOrder.id, availableBlockedFunds)
         updateOrderStatus(OfflineOrder)
         submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
         context.become(offline)
@@ -120,10 +125,10 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def availableFunds: Receive = {
-      case PaymentProcessorActor.UnavailableFunds(fundsId) if currentlyBlocking(fundsId) =>
+      case OrderFundsActor.UnavailableFunds =>
         updateOrderStatus(StalledOrder(NoFundsMessage))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        log.warning(s"${currentOrder.id} is stalled due to unavailable funds")
+        log.warning("${} is stalled due to unavailable funds", currentOrder.id)
         context.become(stalled)
     }
 
@@ -142,9 +147,6 @@ class OrderActor(exchangeActorProps: Props,
     private def terminated: Receive = {
       case _ => log.info(s"${currentOrder.id} is terminated")
     }
-
-    private def currentlyBlocking(funds: BlockedFundsId): Boolean =
-      blockedFunds.isDefined && blockedFunds.get == funds
 
     private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
       val userInfoFuture = for {
@@ -169,7 +171,7 @@ class OrderActor(exchangeActorProps: Props,
         role = role,
         counterpartId = orderMatch.counterpart,
         amounts = amounts,
-        blockedFunds = Exchange.BlockedFunds(fiat = blockedFunds, bitcoin = BlockedCoinsId(1)),
+        blockedFunds = blockedFunds.get,
         parameters = Exchange.Parameters(orderMatch.lockTime, network),
         brokerId = brokerId
       )
@@ -215,6 +217,9 @@ class OrderActor(exchangeActorProps: Props,
 }
 
 object OrderActor {
+
+  /** Bitcoins to block as a proportion of the amount to be transferred */
+  private val ProportionOfBitcoinToBlock = Both[BigDecimal](buyer = 0.2, seller = 1.1)
 
   val BlockingFundsMessage = "blocking funds"
   val NoFundsMessage = "no funds available for order"

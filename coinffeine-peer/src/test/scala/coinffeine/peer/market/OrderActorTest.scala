@@ -6,7 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{FiatAmount, BitcoinAmount, FiatCurrency}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -32,24 +32,26 @@ class OrderActorTest extends AkkaSpec {
     givenInitializedOrder()
   }
 
-  it should "keep in stalled status when there are not enough funds when buying" in new BiddingFixture {
-    givenInitializedOrder()
-    paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds)
-    eventChannelProbe.expectNoMsg()
-    submissionProbe.expectNoMsg()
-  }
+  it should "keep in stalled status when there are not enough funds when buying" in
+    new BiddingFixture {
+      givenInitializedOrder()
+      givenFundsBecomeUnavailable()
+      eventChannelProbe.expectNoMsg()
+      submissionProbe.expectNoMsg()
+    }
 
-  it should "move to stalled when payment processor reports unavailable funds" in new BiddingFixture {
-    givenOfflineOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.UnavailableFunds(fiatFunds))
-    eventChannelProbe.expectMsg(OrderStatusChangedEvent(
-      order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
-    submissionProbe.expectMsg(StopSubmitting(order.id))
-  }
+  it should "move to stalled when payment processor reports unavailable funds" in
+    new BiddingFixture {
+      givenOfflineOrder()
+      givenFundsBecomeUnavailable()
+      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+        order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
+      submissionProbe.expectMsg(StopSubmitting(order.id))
+    }
 
   it should "move to offline when receive available funds" in new BiddingFixture {
     givenStalledOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fiatFunds))
+    givenFundsBecomeAvailable()
     eventChannelProbe.expectMsg(OrderStatusChangedEvent(
       order.id, StalledOrder(NoFundsMessage), OfflineOrder))
     submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
@@ -75,36 +77,38 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
-  it should "move from stalled to offline when available funds message is received" in new BiddingFixture {
-    givenStalledOrder()
-    paymentProcessorProbe.send(actor, PaymentProcessorActor.AvailableFunds(fiatFunds))
-    eventChannelProbe.expectMsg(OrderStatusChangedEvent(
-      order.id, StalledOrder(NoFundsMessage), OfflineOrder))
-    submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
-  }
+  it should "move from stalled to offline when available funds message is received" in
+    new BiddingFixture {
+      givenStalledOrder()
+      givenFundsBecomeAvailable()
+      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+        order.id, StalledOrder(NoFundsMessage), OfflineOrder))
+      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
+    }
 
-  it should "stop submitting to the broker & send event once matching is received" in new BiddingFixture {
-    givenInMarketOrder()
-    gatewayProbe.relayMessage(orderMatch, brokerId)
-    submissionProbe.fishForMessage() {
-      case StopSubmitting(orderId) if orderId == order.id => true
-      case _ => false
+  it should "stop submitting to the broker & send event once matching is received" in
+    new BiddingFixture {
+      givenInMarketOrder()
+      gatewayProbe.relayMessage(orderMatch, brokerId)
+      submissionProbe.fishForMessage() {
+        case StopSubmitting(orderId) if orderId == order.id => true
+        case _ => false
+      }
+      exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
+        id = exchangeId,
+        role,
+        counterpart,
+        parameters = Exchange.Parameters(10, network),
+        brokerId,
+        amounts = Exchange.Amounts[FiatCurrency](
+          order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
+        blockedFunds
+      )))
+      eventChannelProbe.fishForMessage() {
+        case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
+        case _ => false
+      }
     }
-    exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
-      id = exchangeId,
-      role,
-      counterpart,
-      parameters = Exchange.Parameters(10, network),
-      brokerId,
-      amounts = Exchange.Amounts[FiatCurrency](
-        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
-      blockedFunds = Exchange.BlockedFunds(fiat = Some(fiatFunds), bitcoin = BlockedCoinsId(1))
-    )))
-    eventChannelProbe.fishForMessage() {
-      case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
-      case _ => false
-    }
-  }
 
   it should "spawn an exchange upon matching" in new BiddingFixture {
     givenInMarketOrder()
@@ -127,12 +131,7 @@ class OrderActorTest extends AkkaSpec {
 
   "An asking order actor" should "keep order info" in new AskingFixture {
     actor ! OrderActor.RetrieveStatus
-    expectMsg(offlineOrder)
-  }
-
-  it should "not block FIAT funds when is initialized" in new AskingFixture {
-    givenOfflineOrder()
-    paymentProcessorProbe.expectNoMsg()
+    expectMsg(blockingFundsOrder)
   }
 
   it should "submit to the broker and receive submission status" in new AskingFixture {
@@ -165,7 +164,7 @@ class OrderActorTest extends AkkaSpec {
         brokerId,
         amounts = Exchange.Amounts[FiatCurrency](
           order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
-        blockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = btcFunds)
+        blockedFunds
       )))
       eventChannelProbe.fishForMessage() {
         case OrderStatusChangedEvent(orderId, _, CompletedOrder) => orderId == order.id
@@ -193,17 +192,18 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
+    val role: Role
+    def fiatFunds: Option[BlockedFundsId]
+    val order: Order[FiatCurrency]
+    def amountsToBlock: (FiatAmount, BitcoinAmount)
     val gatewayProbe = new GatewayProbe()
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
       TestProbe()
-    val fiatFunds = BlockedFundsId(1)
-    val btcFunds = BlockedCoinsId(1)
+    val blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, fundsActor.props, network, 10)))
-    val order: Order[FiatCurrency]
-    val role: Role
     val paymentProcessorId = "account-123"
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
@@ -218,33 +218,27 @@ class OrderActorTest extends AkkaSpec {
       gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
     gatewayProbe.expectSubscription()
     fundsActor.expectCreation()
-  }
-
-  trait BiddingFixture extends Fixture {
-    override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
-    override val role: Role = BuyerRole
 
     def givenInitializedOrder(): Unit = {
       eventChannelProbe.expectMsg(OrderSubmittedEvent(blockingFundsOrder))
-      paymentProcessorProbe.expectMsg(PaymentProcessorActor.BlockFunds(order.fiatAmount, actor))
-      paymentProcessorProbe.reply(fiatFunds)
+      fundsActor.expectMsg(OrderFundsActor.BlockFunds(
+        amountsToBlock._1, amountsToBlock._2, walletProbe.ref, paymentProcessorProbe.ref))
     }
-
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      paymentProcessorProbe.reply(PaymentProcessorActor.AvailableFunds(fiatFunds))
+      givenFundsBecomeAvailable()
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(
         order.id, StalledOrder(BlockingFundsMessage), OfflineOrder))
       submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
     }
 
-    def givenStalledOrder(): Unit = {
-      givenOfflineOrder()
-      paymentProcessorProbe.reply(PaymentProcessorActor.UnavailableFunds(fiatFunds))
-      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
-        order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
-      submissionProbe.expectMsg(StopSubmitting(order.id))
+    def givenFundsBecomeAvailable(): Unit = {
+      fundsActor.probe.send(actor, OrderFundsActor.AvailableFunds(blockedFunds))
+    }
+
+    def givenFundsBecomeUnavailable(): Unit = {
+      fundsActor.probe.send(actor, OrderFundsActor.UnavailableFunds)
     }
 
     def givenInMarketOrder(): Unit = {
@@ -254,19 +248,26 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
+  trait BiddingFixture extends Fixture {
+    override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
+    override val role: Role = BuyerRole
+    override val fiatFunds = Some(BlockedFundsId(1))
+    override val amountsToBlock = (order.fiatAmount, order.bitcoinsTransferred * 0.2)
+
+    def givenStalledOrder(): Unit = {
+      givenOfflineOrder()
+      givenFundsBecomeUnavailable()
+      eventChannelProbe.expectMsg(OrderStatusChangedEvent(
+        order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
+      submissionProbe.expectMsg(StopSubmitting(order.id))
+    }
+
+  }
+
   trait AskingFixture extends Fixture {
     override lazy val order: Order[FiatCurrency] = Order(Ask, 5.BTC, 500.EUR)
     override val role: Role = SellerRole
-
-    def givenOfflineOrder(): Unit = {
-      eventChannelProbe.expectMsg(OrderSubmittedEvent(offlineOrder))
-      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
-    }
-
-    def givenInMarketOrder(): Unit = {
-      givenOfflineOrder()
-      submissionProbe.send(actor, InMarket(OrderBookEntry(order)))
-      eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, InMarketOrder))
-    }
+    override val fiatFunds = None
+    override val amountsToBlock = (0.EUR, order.bitcoinsTransferred * 1.1)
   }
 }
