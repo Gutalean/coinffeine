@@ -14,7 +14,7 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.{PaymentProcessor, Payment}
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -30,7 +30,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "be able to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
-    expectMsg(PaymentProcessorActor.BalanceRetrieved(amount))
+    expectMsg(PaymentProcessorActor.BalanceRetrieved(amount, UsDollar.Zero))
   }
 
   it must "produce an event when asked to get the current balance" in new WithOkPayProcessor {
@@ -42,6 +42,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     given(client.currentBalances()).willReturn(Future.failed(cause))
+    given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
     processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
@@ -134,6 +135,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
+      given(client.currentBalance(UsDollar)).willReturn(Future.successful(balances
+        .find(_.currency == UsDollar)
+        .getOrElse(UsDollar.Zero)
+        .asInstanceOf[CurrencyAmount[UsDollar.type]]))
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])

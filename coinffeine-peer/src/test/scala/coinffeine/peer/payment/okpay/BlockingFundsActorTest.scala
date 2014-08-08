@@ -4,6 +4,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.PaymentProcessor
@@ -13,6 +14,38 @@ import coinffeine.peer.payment.PaymentProcessorActor.{UnavailableFunds, Availabl
 import coinffeine.peer.payment.okpay.BlockingFundsActor.{FundsUsed, CannotUseFunds, UseFunds}
 
 class BlockingFundsActorTest extends AkkaSpec {
+
+  it must "retrieve no blocked funds when no funds are blocked" in new WithBlockingFundsActor {
+    actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
+    expectMsg(BlockingFundsActor.NoFundsBlocked(Euro))
+  }
+
+  it must "retrieve blocked funds when blocked" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    givenAvailableFunds(100.EUR) { (listener, funds) =>
+      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.BlockedFunds(100.EUR))
+    }
+  }
+
+  it must "retrieve no blocked funds after unblocked" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    givenAvailableFunds(100.EUR) { (listener, funds) =>
+      actor ! PaymentProcessorActor.UnblockFunds(funds)
+      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.NoFundsBlocked(Euro))
+    }
+  }
+
+  it must "retrieve blocked after using some" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    givenAvailableFunds(100.EUR) { (listener, funds) =>
+      listener.send(actor, BlockingFundsActor.UseFunds(funds, 60.EUR))
+      listener.expectMsgPF() { case FundsUsed(`funds`, _) => }
+      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.BlockedFunds(40.EUR))
+    }
+  }
 
   it must "block funds up to existing balances" in new WithBlockingFundsActor {
     actor ! BlockingFundsActor.BalancesUpdate(Seq(100.EUR))

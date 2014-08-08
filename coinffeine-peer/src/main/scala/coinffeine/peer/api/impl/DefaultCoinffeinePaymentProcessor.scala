@@ -19,7 +19,7 @@ private[impl] class DefaultCoinffeinePaymentProcessor(override val accountId: Ac
   override def currentBalance(): Option[CurrencyAmount[Euro.type]] =
     await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse]
       .map {
-        case BalanceRetrieved(balance @ CurrencyAmount(_, Euro)) =>
+        case BalanceRetrieved(balance @ CurrencyAmount(_, Euro), _) =>
           Some(balance.asInstanceOf[CurrencyAmount[Euro.type]])
         case BalanceRetrievalFailed(_, cause) =>
           DefaultCoinffeinePaymentProcessor.Log.error("Cannot retrieve current balance", cause)

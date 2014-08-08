@@ -90,8 +90,9 @@ object PaymentProcessorActor {
   /** A message sent by the payment processor reporting the current balance in the
     * given currency.
     * */
-  case class BalanceRetrieved[C <: FiatCurrency](balance: CurrencyAmount[C])
-    extends RetrieveBalanceResponse
+  case class BalanceRetrieved[C <: FiatCurrency](
+    balance: CurrencyAmount[C],
+    blockedFunds: CurrencyAmount[C]) extends RetrieveBalanceResponse
 
   /** A message sent by the payment processor reporting that the current balance in the
     * given currency cannot be retrieved.

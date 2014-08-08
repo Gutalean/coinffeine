@@ -11,13 +11,13 @@ import akka.pattern._
 import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.BlockingFundsActor.{CannotUseFunds, FundsUsed, UseFunds, BalancesUpdate}
+import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
 class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterval: FiniteDuration)
   extends Actor {
@@ -102,14 +102,26 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      client.currentBalances().onComplete {
-        case Success(balances) =>
-          updateBalances(balances)
-          requester ! balances.find(_.currency == currency)
-            .fold(balanceNotFound(currency))(BalanceRetrieved.apply)
+      val query = for {
+        balance <- client.currentBalance(currency)
+        blocking <- blockedFundsForCurrency(currency)
+      } yield (balance, blocking)
+
+      query.onComplete {
+        case Success((balance, blocking)) =>
+          updateBalances(Seq(balance))
+          requester ! BalanceRetrieved(balance, blocking)
         case Failure(error) =>
           requester ! BalanceRetrievalFailed(currency, error)
       }
+    }
+
+    private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+      AskPattern(blockingFunds, RetrieveBlockedFunds(currency))
+        .withImmediateReply[Any]().map {
+          case BlockedFunds(funds) => funds.asInstanceOf[CurrencyAmount[C]]
+          case NoFundsBlocked(`currency`) => currency.Zero
+        }
     }
 
     private def updateBalances(balances: Seq[FiatAmount]): Unit = {
