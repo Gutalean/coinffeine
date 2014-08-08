@@ -25,7 +25,7 @@ class ApplicationProperties(app: CoinffeineApp) {
     this, "walletBalance", Some(app.wallet.currentBalance()))
 
   private val _fiatBalanceProperty = new ObjectProperty[Option[CurrencyAmount[Euro.type]]](
-    this, "fiatBalance", app.paymentProcessor.currentBalance())
+    this, "fiatBalance", app.paymentProcessor.currentBalance().map(_.totalFunds))
 
   private val eventHandler: EventHandler = FxEventHandler {
 
