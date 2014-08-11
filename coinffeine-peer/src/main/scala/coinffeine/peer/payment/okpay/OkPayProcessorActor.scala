@@ -70,7 +70,7 @@ class OkPayProcessorActor(accountId: AccountId,
         pollBalances()
       case UpdateBalances(balances) =>
         updateBalances(balances)
-      case msg @ (BlockFunds(_, _) | UnblockFunds(_)) =>
+      case msg @ (BlockFunds(_) | UnblockFunds(_)) =>
         blockingFunds.forward(msg)
     }
 

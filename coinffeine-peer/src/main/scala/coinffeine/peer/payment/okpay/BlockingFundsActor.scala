@@ -36,10 +36,10 @@ class BlockingFundsActor extends Actor with ActorLogging {
       useFunds(fundsId, amount, sender())
       updateBackedFunds()
 
-    case PaymentProcessorActor.BlockFunds(amount, listener) =>
+    case PaymentProcessorActor.BlockFunds(amount) =>
       val fundsId = generateFundsId()
       sender() ! fundsId
-      funds += fundsId -> BlockedFundsInfo(fundsId, amount, listener)
+      funds += fundsId -> BlockedFundsInfo(fundsId, amount, sender())
       setNeverBacked(fundsId)
       updateBackedFunds()
 
