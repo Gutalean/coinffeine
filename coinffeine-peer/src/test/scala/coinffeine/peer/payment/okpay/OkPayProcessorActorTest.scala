@@ -14,8 +14,8 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.{PaymentProcessor, Payment}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.payment.{Payment, PaymentProcessor}
 import coinffeine.peer.api.event.FiatBalanceChangeEvent
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -35,9 +35,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "produce an event when asked to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
+    given(client.currentBalances()).willReturn(Future.successful(Seq(amount * 2)))
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(amount))
+    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(amount * 2))
   }
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
@@ -107,10 +108,14 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   }
 
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
     override def pollingInterval = 1.second
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(100.EUR))
+    givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
+    given(client.currentBalances()).willReturn(
+      Future.successful(Seq(120.EUR)),
+      Future.successful(Seq(140.EUR))
+    )
+    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(120.EUR))
+    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(140.EUR))
   }
 
   private trait WithOkPayProcessor {
@@ -135,10 +140,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
-      given(client.currentBalance(UsDollar)).willReturn(Future.successful(balances
-        .find(_.currency == UsDollar)
-        .getOrElse(UsDollar.Zero)
-        .asInstanceOf[CurrencyAmount[UsDollar.type]]))
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
