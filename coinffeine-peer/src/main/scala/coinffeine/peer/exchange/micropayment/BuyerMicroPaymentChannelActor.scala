@@ -1,15 +1,17 @@
 package coinffeine.peer.exchange.micropayment
 
-import scala.concurrent.Future
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.pattern._
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.exchange.micropayment.BuyerMicroPaymentChannelActor.PaymentFailed
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
@@ -81,14 +83,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
             case step: IntermediateStep =>
               log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
               reportProgress(signatures = step.value, payments = step.value - 1)
-              pay(step).onComplete {
-                case Success(payment) =>
-                  reportProgress(signatures = step.value, payments = step.value)
-                  log.debug("Exchange {}: payment {} done", exchange.id, step)
-                  forwarding.forwardToCounterpart(payment)
-                case Failure(cause) =>
-                  finishWith(ExchangeFailure(cause))
-              }
+              pay(step)
               context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
 
             case _: FinalStep =>
@@ -110,6 +105,15 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
             finishWith(ExchangeFailure(
               InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
         }
+
+      case proof: PaymentProof =>
+        val completedSteps = channel.currentStep.value - 1
+        reportProgress(signatures = completedSteps, payments = completedSteps)
+        log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
+        forwarding.forwardToCounterpart(proof)
+
+      case PaymentFailed(cause) =>
+        finishWith(ExchangeFailure(cause))
     }
 
     private def finishWith(result: ExchangeResult): Unit = {
@@ -117,25 +121,31 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       context.become(handleLastOfferQueries)
     }
 
-    private def pay(step: IntermediateStep): Future[PaymentProof] = {
+    private def pay(step: IntermediateStep): Unit = {
       import context.dispatcher
       implicit val timeout = PaymentProcessorActor.RequestTimeout
-
-      val paymentRequest = PaymentProcessorActor.Pay(
-        fundsId = exchange.blockedFunds.fiat.get,
-        to = exchange.counterpart.paymentProcessorAccount,
-        amount = exchange.amounts.stepFiatAmount,
-        comment = PaymentDescription(exchange.id, step)
-      )
-      for {
-        PaymentProcessorActor.Paid(payment) <- paymentProcessor.ask(paymentRequest)
-          .mapTo[PaymentProcessorActor.Paid[C]]
-      } yield PaymentProof(exchange.id, payment.id)
+      AskPattern(
+        to = paymentProcessor,
+        request = PaymentProcessorActor.Pay(
+          fundsId = exchange.blockedFunds.fiat.get,
+          to = exchange.counterpart.paymentProcessorAccount,
+          amount = exchange.amounts.stepFiatAmount,
+          comment = PaymentDescription(exchange.id, step)
+        ),
+        errorMessage = s"Cannot pay at $step"
+      ).withReply[PaymentProcessorActor.Paid[C]]().map { result =>
+        PaymentProof(exchange.id, result.payment.id)
+      }.recover {
+        case NonFatal(cause) => PaymentFailed(cause)
+      }.pipeTo(self)
     }
   }
 }
 
 object BuyerMicroPaymentChannelActor {
+
+  private case class PaymentFailed(cause: Throwable)
+
   def props(exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) =
     Props(new BuyerMicroPaymentChannelActor(exchangeProtocol, constants))
 }
