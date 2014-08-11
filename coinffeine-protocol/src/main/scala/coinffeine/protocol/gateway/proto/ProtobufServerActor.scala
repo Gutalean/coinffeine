@@ -3,7 +3,7 @@ package coinffeine.protocol.gateway.proto
 import java.net.{InetAddress, NetworkInterface}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
-import scala.util.{Failure, Random, Success}
+import scala.util.{Failure, Random, Success, Try}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import net.tomp2p.connection.Bindings
@@ -37,18 +37,26 @@ private class ProtobufServerActor(
     case bind: Bind =>
       val listener = sender()
       initPeer(bind.listenToPort, listener)
-      publishAddress().onComplete {
-        case Success(_) =>
-          listener ! Bound(createPeerId(me))
-          context.become(sendingMessages)
-        case Failure(error) =>
-          listener ! BindingError(error)
-          me = null
+      publishAddress().onComplete { case result =>
+        self ! AddressPublicationResult(result)
       }
+      context.become(publishingAddress(sender()))
+
     case connect: Connect =>
       val listener = sender()
       initPeer(connect.localPort, listener)
       connectToBroker(createPeerId(me), connect.connectTo, listener)
+  }
+
+  private def publishingAddress(listener: ActorRef): Receive = {
+    case AddressPublicationResult(Success(_)) =>
+      listener ! Bound(createPeerId(me))
+      context.become(sendingMessages)
+
+    case AddressPublicationResult(Failure(error)) =>
+      listener ! BindingError(error)
+      me = null
+      context.become(receive)
   }
 
   def initPeer(localPort: Int, listener: ActorRef): Unit = {
@@ -150,6 +158,8 @@ private class ProtobufServerActor(
 }
 
 private[gateway] object ProtobufServerActor {
+  private case class AddressPublicationResult(result: Try[FutureDHT])
+
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
     new ProtobufServerActor(ignoredNetworkInterfaces))
 

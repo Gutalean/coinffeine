@@ -4,6 +4,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import akka.pattern._
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.Implicits._
@@ -67,15 +68,17 @@ private class HandshakeActor[C <: FiatCurrency](
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
         val handshakingExchange = HandshakingExchange(user, counterpart, exchange)
-        createDeposit(handshakingExchange).onComplete {
-          case Success(deposit) =>
-            val handshake = exchangeProtocol.createHandshake(handshakingExchange, deposit)
-            blockchain ! BlockchainActor.WatchMultisigKeys(handshakingExchange.requiredSignatures.toSeq)
-            requestRefundSignature(handshake)
-            context.become(waitForRefundSignature(handshake))
-          case Failure(cause) =>
-            finishWithResult(Failure(cause))
-        }
+        createDeposit(handshakingExchange)
+          .map(deposit => exchangeProtocol.createHandshake(handshakingExchange, deposit))
+          .pipeTo(self)
+
+      case handshake: Handshake[C] =>
+        blockchain ! BlockchainActor.WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq)
+        requestRefundSignature(handshake)
+        context.become(waitForRefundSignature(handshake))
+
+      case Status.Failure(cause) =>
+        finishWithResult(Failure(cause))
 
       case ResubmitRequest => handshakePeer()
     }
@@ -164,7 +167,7 @@ private class HandshakeActor[C <: FiatCurrency](
       }
 
       def retrieveCommitmentsAndFinish(): Unit = {
-        retrieveCommitmentTransactions(commitmentIds).onComplete {
+        retrieveCommitmentTransactions(commitmentIds).onComplete { // FIXME: send self-message
           case Success(commitmentTxs) =>
             finishWithResult(Success(HandshakeSuccess(handshake.exchange, commitmentTxs, refund)))
           case Failure(cause) =>

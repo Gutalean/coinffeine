@@ -3,7 +3,6 @@ package coinffeine.peer.bitcoin
 import scala.concurrent.{ExecutionContext, Future}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.util.Timeout
 import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 
@@ -97,7 +96,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 object BitcoinPeerActor {
 
   def retrieveBlockchainActor(bitcoinPeer: ActorRef)
-                             (implicit timeout: Timeout, ec: ExecutionContext): Future[ActorRef] =
+                             (implicit ec: ExecutionContext): Future[ActorRef] =
     AskPattern(
       to = bitcoinPeer,
       request = BitcoinPeerActor.RetrieveBlockchainActor,
