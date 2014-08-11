@@ -14,11 +14,11 @@ object PaymentProcessorActor {
   /** Initialize the payment processor actor */
   case class Initialize(eventChannel: ActorRef)
 
-  /** A message sent to the payment processor in order to identify itself. */
-  case object Identify
+  /** A message sent to the payment processor in order to identify the user account. */
+  case object RetrieveAccountId
 
-  /** A message sent by the payment processor identifying itself. */
-  case class Identified(id: Id)
+  /** A message sent by the payment processor identifying the account id. */
+  case class RetrievedAccountId(id: AccountId)
 
   /** A message sent to the payment processor to reserve some funds. As response, the sender must
     * expect a [[BlockedFundsId]] object.

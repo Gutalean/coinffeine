@@ -118,8 +118,8 @@ class OrderActorTest extends AkkaSpec {
     walletProbe.expectMsg(WalletActor.CreateKeyPair)
     walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
 
-    paymentProcessorProbe.expectMsg(PaymentProcessorActor.Identify)
-    paymentProcessorProbe.reply(PaymentProcessorActor.Identified(paymentProcessorId))
+    paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
+    paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
 
     exchange.expectCreation()
     val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
@@ -180,8 +180,8 @@ class OrderActorTest extends AkkaSpec {
     walletProbe.expectMsg(WalletActor.CreateKeyPair)
     walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
 
-    paymentProcessorProbe.expectMsg(PaymentProcessorActor.Identify)
-    paymentProcessorProbe.reply(PaymentProcessorActor.Identified(paymentProcessorId))
+    paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
+    paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
 
     exchange.expectCreation()
     val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)

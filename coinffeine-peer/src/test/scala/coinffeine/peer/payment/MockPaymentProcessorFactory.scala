@@ -19,8 +19,8 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
     val id: String = "MockPay"
 
     override def receive: Receive = {
-      case PaymentProcessorActor.Identify =>
-        sender ! PaymentProcessorActor.Identified(id)
+      case PaymentProcessorActor.RetrieveAccountId =>
+        sender ! PaymentProcessorActor.RetrievedAccountId(id)
       case pay: PaymentProcessorActor.Pay[_] =>
         sendPayment(sender(), pay)
       case PaymentProcessorActor.FindPayment(paymentId) =>

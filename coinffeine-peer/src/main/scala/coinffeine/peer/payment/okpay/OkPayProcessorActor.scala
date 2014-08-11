@@ -20,8 +20,9 @@ import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
-class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterval: FiniteDuration)
-  extends Actor {
+class OkPayProcessorActor(accountId: AccountId,
+                          client: OkPayClient,
+                          pollingInterval: FiniteDuration) extends Actor {
 
   import OkPayProcessorActor._
   import context.dispatcher
@@ -57,8 +58,8 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     val managePayments: Receive = {
-      case PaymentProcessorActor.Identify =>
-        sender ! Identified(OkPayProcessorActor.Id)
+      case PaymentProcessorActor.RetrieveAccountId =>
+        sender ! RetrievedAccountId(accountId)
       case pay: Pay[_] =>
         sendPayment(sender(), pay)
       case FindPayment(paymentId) =>
@@ -92,7 +93,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
         .withImmediateReply[Any]()
         .flatMap {
           case FundsUsed(pay.`fundsId`, pay.`amount`) =>
-            Future.successful()
+            Future.successful {}
           case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
             Future.failed(new RuntimeException(cause))
         }
