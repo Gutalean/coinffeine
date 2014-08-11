@@ -10,9 +10,11 @@ import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
 
+import org.controlsfx.dialog.{Dialog, Dialogs}
+
 import coinffeine.gui.control.DecimalNumberTextField
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
+import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -171,7 +173,45 @@ class OrderSubmissionForm(app: CoinffeineApp) {
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = limitAmount.get)
-    app.network.submitOrder(order)
+    if (checkPrerequisites(order)) {
+      app.network.submitOrder(order)
+    }
     closeForm()
+  }
+
+  private def checkPrerequisites(order: Order[Currency.Euro.type]): Boolean =
+    checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
+
+  private def checkEnoughFiatFunds(order: Order[Currency.Euro.type]): Boolean = {
+    app.paymentProcessor.currentBalance() match {
+      case Some(balance) if order.requiredFiatAmount <= balance.availableFunds => true
+      case Some(balance) =>
+        val response = Dialogs.create()
+          .title("Insufficient funds")
+          .message(
+            """Your balance is insufficient to submit this order.
+              |
+              |You may proceed, but your order will be stalled until enough funds are available in your payment processor.
+              |
+              |Do you want to proceed with the order submission?""".stripMargin)
+          .showConfirm()
+        response == Dialog.Actions.YES
+      case None =>
+        val response = Dialogs.create()
+          .title("Payment processor unavailable")
+          .message(
+            """You are not connected to your payment processor. That means your balance cannot be checked to verify the correctness of this order.
+              |
+              |It can be submitted anyway, but it might be stalled until payment processor is available and it has enough funds to satisfy the order.
+              |
+              |Do you want to proceed with the order submission?""".stripMargin)
+          .showConfirm()
+        response == Dialog.Actions.YES
+    }
+  }
+
+  private def checkEnoughBitcoinFunds(order: Order[Currency.Euro.type]): Boolean = {
+    // TODO: check enough bitcoin funds
+    true
   }
 }

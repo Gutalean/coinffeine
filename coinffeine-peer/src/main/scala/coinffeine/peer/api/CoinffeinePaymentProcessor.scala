@@ -16,6 +16,8 @@ trait CoinffeinePaymentProcessor {
 object CoinffeinePaymentProcessor {
 
   case class Balance(
-    totalFunds: CurrencyAmount[Euro.type],
-    blockedFunds: CurrencyAmount[Euro.type])
+      totalFunds: CurrencyAmount[Euro.type],
+      blockedFunds: CurrencyAmount[Euro.type]) {
+    val availableFunds = totalFunds - blockedFunds
+  }
 }
