@@ -4,6 +4,7 @@ import java.net.URI
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import akka.actor._
@@ -37,7 +38,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
       initialDelay = pollingInterval,
       interval = pollingInterval,
       receiver = self,
-      message = PollBalance
+      message = PollBalances
     )
   }
 
@@ -48,6 +49,7 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
   private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
 
     private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
+    private var currentBalances = Map.empty[FiatCurrency, FiatAmount]
 
     def start(): Unit = {
       pollBalances()
@@ -63,8 +65,10 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
         findPayment(sender(), paymentId)
       case RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
-      case PollBalance =>
+      case PollBalances =>
         pollBalances()
+      case UpdateBalances(balances) =>
+        updateBalances(balances)
       case msg @ (BlockFunds(_, _) | UnblockFunds(_)) =>
         blockingFunds.forward(msg)
     }
@@ -102,18 +106,20 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
     }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      val query = for {
-        balance <- client.currentBalance(currency)
-        blocking <- blockedFundsForCurrency(currency)
-      } yield (balance, blocking)
-
-      query.onComplete {
-        case Success((balance, blocking)) =>
-          updateBalances(Seq(balance))
-          requester ! BalanceRetrieved(balance, blocking)
-        case Failure(error) =>
-          requester ! BalanceRetrievalFailed(currency, error)
+      val balances = client.currentBalances()
+      balances.onSuccess { case b =>
+        self ! UpdateBalances(b)
       }
+      val blockedFunds = blockedFundsForCurrency(currency)
+      (for {
+        totalAmount <- balances.map { b =>
+          b.find(_.currency == currency)
+            .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
+        }
+        blockedAmount <- blockedFunds
+      } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
+        case NonFatal(error) => BalanceRetrievalFailed(currency, error)
+      }.pipeTo(requester)
     }
 
     private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
@@ -123,19 +129,17 @@ class OkPayProcessorActor(account: AccountId, client: OkPayClient, pollingInterv
 
     private def updateBalances(balances: Seq[FiatAmount]): Unit = {
       for (balance <- balances) {
-        produceEvent(FiatBalanceChangeEvent(balance))
+        if (currentBalances.get(balance.currency) != Some(balance)) {
+          produceEvent(FiatBalanceChangeEvent(balance))
+        }
       }
+      currentBalances = balances.map(b => b.currency -> b).toMap
       blockingFunds ! BalancesUpdate(balances)
     }
 
     private def pollBalances(): Unit = {
-      client.currentBalances().onSuccess { case balances => updateBalances(balances) }
+      client.currentBalances().map(UpdateBalances.apply).pipeTo(self)
     }
-
-    private def balanceNotFound(currency: FiatCurrency): RetrieveBalanceResponse =
-      BalanceRetrievalFailed(currency, new NoSuchElementException("No balance in that currency"))
-
-
   }
 }
 
@@ -143,7 +147,11 @@ object OkPayProcessorActor {
 
   val Id = "OKPAY"
 
-  private case object PollBalance
+  /** Message sent to self to trigger OKPay API polling. */
+  private case object PollBalances
+
+  /** Message sent to self to update to the latest balances */
+  private case class UpdateBalances(balances: Seq[FiatAmount])
 
   def props(config: Config) = {
     val account = config.getString("coinffeine.okpay.id")
