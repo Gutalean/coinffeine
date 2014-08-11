@@ -41,14 +41,14 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   }
 
   private def createBroker(port: Int): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
+    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces), s"broker-$port")
     peer ! Bind(port)
     val Bound(brokerId) = expectMsgType[Bound](connectionTimeout)
     (peer, brokerId)
   }
 
   private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces))
+    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces), s"peer-$port")
     peer ! Connect(port, connectTo)
     val Connected(_, brokerId) = expectMsgType[Connected](connectionTimeout)
     (peer, brokerId)
