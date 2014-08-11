@@ -14,7 +14,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
   extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case init: MarketSubmissionActor.Initialize[FiatCurrency] =>
+    case init @ MarketSubmissionActor.Initialize(_, _, _) =>
       new InitializedOrderSubmission(init).start()
   }
 
@@ -66,9 +66,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
 private[market] object MarketSubmissionActor {
 
-  case class Initialize[C <: FiatCurrency](market: Market[C],
-                                           gateway: ActorRef,
-                                           brokerId: PeerId)
+  case class Initialize[C <: FiatCurrency](market: Market[C], gateway: ActorRef, brokerId: PeerId)
 
   def props(constants: ProtocolConstants) = Props(new MarketSubmissionActor(constants))
 }
