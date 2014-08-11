@@ -71,7 +71,7 @@ class OrderFundsActorTest extends AkkaSpec {
     val btcFunds = BlockedCoinsId(1)
 
     def givenFiatBlockingOf(amount: FiatAmount): Unit = {
-      paymentProcessor.expectMsg(PaymentProcessorActor.BlockFunds(amount, actor))
+      paymentProcessor.expectMsg(PaymentProcessorActor.BlockFunds(amount))
       paymentProcessor.reply(fiatFunds)
     }
 

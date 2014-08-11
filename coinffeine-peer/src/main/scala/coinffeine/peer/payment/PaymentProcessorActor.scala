@@ -21,13 +21,10 @@ object PaymentProcessorActor {
   case class RetrievedAccountId(id: AccountId)
 
   /** A message sent to the payment processor to reserve some funds. As response, the sender must
-    * expect a [[BlockedFundsId]] object.
-    *
-    * @constructor
-    * @param amount    Amount to block
-    * @param listener  Actor to notify if the funds are not available despite being blocked
+    * expect a [[BlockedFundsId]] object and then, availability will be notified via
+    * [[AvailableFunds]] and [[UnavailableFunds]] messages.
     */
-  case class BlockFunds(amount: FiatAmount, listener: ActorRef)
+  case class BlockFunds(amount: FiatAmount)
 
   /** A message sent to the payment processor to release some previously reserved funds. */
   case class UnblockFunds(funds: BlockedFundsId)

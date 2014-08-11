@@ -45,7 +45,7 @@ class OrderFundsActor extends Actor with ActorLogging {
 
     def start(): Unit = {
       if (fiatAmount.isPositive) {
-        paymentProcessor ! PaymentProcessorActor.BlockFunds(fiatAmount, self)
+        paymentProcessor ! PaymentProcessorActor.BlockFunds(fiatAmount)
       } else {
         fiatFunds = UnneededFiatFunds
       }
