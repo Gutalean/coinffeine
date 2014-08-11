@@ -77,7 +77,7 @@ class OrderActor(exchangeActorProps: Props,
           log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
           currentOrder.fiatAmount.currency.Zero
       }
-      val bitcoinToBlock = currentOrder.bitcoinsTransferred * role.select(ProportionOfBitcoinToBlock)
+      val bitcoinToBlock = currentOrder.amount * role.select(ProportionOfBitcoinToBlock)
       fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 

@@ -252,7 +252,7 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
-    override val amountsToBlock = (order.fiatAmount, order.bitcoinsTransferred * 0.2)
+    override val amountsToBlock = (order.fiatAmount, order.amount * 0.2)
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()
@@ -268,6 +268,6 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Ask, 5.BTC, 500.EUR)
     override val role: Role = SellerRole
     override val fiatFunds = None
-    override val amountsToBlock = (0.EUR, order.bitcoinsTransferred * 1.1)
+    override val amountsToBlock = (0.EUR, order.amount * 1.1)
   }
 }
