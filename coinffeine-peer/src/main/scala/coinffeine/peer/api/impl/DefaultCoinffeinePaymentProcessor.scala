@@ -15,21 +15,24 @@ import coinffeine.peer.payment.PaymentProcessorActor._
 private[impl] class DefaultCoinffeinePaymentProcessor(override val accountId: AccountId,
                                                       override val peer: ActorRef)
   extends CoinffeinePaymentProcessor with PeerActorWrapper {
+  import DefaultCoinffeinePaymentProcessor._
 
   override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] =
-    await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse]
-      .map {
-        case BalanceRetrieved(
-          balance @ CurrencyAmount(_, Euro),
-          blockedFunds @ CurrencyAmount(_, Euro)) =>
-          Some(CoinffeinePaymentProcessor.Balance(
-            balance.asInstanceOf[CurrencyAmount[Euro.type]],
-            blockedFunds.asInstanceOf[CurrencyAmount[Euro.type]]
-          ))
-        case BalanceRetrievalFailed(_, cause) =>
-          DefaultCoinffeinePaymentProcessor.Log.error("Cannot retrieve current balance", cause)
-          None
-      })
+    await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse].map {
+      case BalanceRetrieved(
+        balance @ CurrencyAmount(_, Euro),
+        blockedFunds @ CurrencyAmount(_, Euro)) =>
+        Some(CoinffeinePaymentProcessor.Balance(
+          balance.asInstanceOf[CurrencyAmount[Euro.type]],
+          blockedFunds.asInstanceOf[CurrencyAmount[Euro.type]]
+        ))
+      case nonEurBalance @ BalanceRetrieved(_, _) =>
+        Log.error("Balance not in euro: {}", nonEurBalance)
+        None
+      case BalanceRetrievalFailed(_, cause) =>
+        Log.error("Cannot retrieve current balance", cause)
+        None
+    })
 }
 
 private object DefaultCoinffeinePaymentProcessor {
