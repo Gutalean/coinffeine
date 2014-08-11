@@ -19,7 +19,7 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
 
   it must "detect invalid amounts" in {
     Bitcoin.amount(0.0000001)
-    Bitcoin.fromSatoshi(BigInt(1).underlying)
+    Bitcoin.fromSatoshi(BigInt(1).underlying())
     Bitcoin.amount(0)
     Bitcoin.amount(-100)
     an [IllegalArgumentException] should be thrownBy { Bitcoin.amount(3.1415926535) }
@@ -36,7 +36,7 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
       currency.amount(7.5).tryCompareTo(currency.amount(7)).get should be > 0
       currency.amount(2).tryCompareTo(currency.amount(2)).get should be (0)
       object FakeCurrency extends Currency {
-        override def isValidAmount(amount: BigDecimal) = true
+        override val precision = 2
       }
       currency.amount(3).tryCompareTo(FakeCurrency.amount(4)) should be (None)
     }

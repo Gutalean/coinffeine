@@ -9,6 +9,9 @@ trait Currency {
   /** The instance of the concrete type that extends this trait. */
   val self: this.type = this
 
+  /** Minimum amount that can be expressed on this currency in terms of decimal positions allowed */
+  val precision: Int
+
   /** An amount of currency.
     *
     * Please note this is a path-dependent type. It cannot be used as Currency.Amount but as UsDollar.Amount,
@@ -18,7 +21,8 @@ trait Currency {
     */
   def amount(value: BigDecimal): CurrencyAmount[this.type] = CurrencyAmount(value, self)
 
-  def isValidAmount(value: BigDecimal): Boolean
+  def isValidAmount(value: BigDecimal): Boolean =
+    (value * BigDecimal(10).pow(precision)).isWhole()
 
   def apply(value: BigDecimal) = amount(value)
   def apply(value: Int) = amount(value)
@@ -34,22 +38,20 @@ object Currency {
 
   object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
-    override def isValidAmount(amount: BigDecimal) = (amount * 100).isWhole()
+    override val precision = 2
   }
 
   object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
-    override def isValidAmount(amount: BigDecimal) = (amount * 100).isWhole()
+    override val precision = 2
   }
 
   object Bitcoin extends Currency {
     val OneBtcInSatoshi = BigDecimal(100000000)
+    override val precision = 8
     override val toString = "BTC"
 
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
-
-    override def isValidAmount(amount: BigDecimal) =
-      (amount * OneBtcInSatoshi).isWhole()
   }
 }
 
