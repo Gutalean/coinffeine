@@ -77,7 +77,7 @@ class OrderActor(exchangeActorProps: Props,
           log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
           currentOrder.fiatAmount.currency.Zero
       }
-      val bitcoinToBlock = currentOrder.bitcoinsTransferred * role.select(ProportionOfBitcoinToBlock)
+      val bitcoinToBlock = currentOrder.amount * role.select(ProportionOfBitcoinToBlock)
       fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 
@@ -189,9 +189,9 @@ class OrderActor(exchangeActorProps: Props,
 
     private def retrievePaymentProcessorId(): Future[AccountId] = AskPattern(
       to = paymentProcessor,
-      request = PaymentProcessorActor.Identify,
-      errorMessage = "Cannot retrieve payment processor id"
-    ).withImmediateReply[PaymentProcessorActor.Identified]().map(_.id)
+      request = PaymentProcessorActor.RetrieveAccountId,
+      errorMessage = "Cannot retrieve the user account id"
+    ).withImmediateReply[PaymentProcessorActor.RetrievedAccountId]().map(_.id)
 
     private def startWithOrderStatus(status: OrderStatus): Unit = {
       currentOrder = currentOrder.withStatus(status)

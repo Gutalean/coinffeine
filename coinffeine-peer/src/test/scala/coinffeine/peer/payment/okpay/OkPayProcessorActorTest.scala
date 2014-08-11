@@ -23,8 +23,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized()
-    processor ! PaymentProcessorActor.Identify
-    expectMsg(PaymentProcessorActor.Identified("OKPAY"))
+    processor ! PaymentProcessorActor.RetrieveAccountId
+    expectMsg(PaymentProcessorActor.RetrievedAccountId(senderAccount))
   }
 
   it must "be able to get the current balance" in new WithOkPayProcessor {

@@ -159,12 +159,6 @@ object WalletActor {
                            requiredSignatures: Seq[KeyPair],
                            amount: BitcoinAmount)
 
-  object CreateDeposit {
-    @deprecated("you should indicate what blocked bitcoins to use")
-    def apply(requiredSignatures: Seq[KeyPair], amount: BitcoinAmount): CreateDeposit =
-      CreateDeposit(BlockedCoinsId(-1), requiredSignatures, amount)
-  }
-
   /** Base trait for the responses to [[CreateDeposit]] */
   sealed trait CreateDepositResponse
 
