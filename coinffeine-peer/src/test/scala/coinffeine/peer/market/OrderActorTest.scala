@@ -28,7 +28,7 @@ class OrderActorTest extends AkkaSpec {
     expectMsg(blockingFundsOrder)
   }
 
-  it should "block FIAT funds when is initialized" in new BiddingFixture {
+  it should "block FIAT funds when initialized" in new BiddingFixture {
     givenInitializedOrder()
   }
 
@@ -77,6 +77,12 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
+  it should "release funds when being cancelled" in new BiddingFixture {
+    givenOfflineOrder()
+    actor ! OrderActor.CancelOrder("testing purposes")
+    fundsActor.expectMsg(OrderFundsActor.UnblockFunds)
+  }
+
   it should "move from stalled to offline when available funds message is received" in
     new BiddingFixture {
       givenStalledOrder()
@@ -94,16 +100,7 @@ class OrderActorTest extends AkkaSpec {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
-      exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(CompletedExchange(
-        id = exchangeId,
-        role,
-        counterpart,
-        parameters = Exchange.Parameters(10, network),
-        brokerId,
-        amounts = Exchange.Amounts[FiatCurrency](
-          order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
-        blockedFunds
-      )))
+      exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
       eventChannelProbe.fishForMessage() {
         case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
         case _ => false
@@ -113,13 +110,8 @@ class OrderActorTest extends AkkaSpec {
   it should "spawn an exchange upon matching" in new BiddingFixture {
     givenInMarketOrder()
     gatewayProbe.relayMessage(orderMatch, brokerId)
-    val keyPair = new KeyPair()
-
-    walletProbe.expectMsg(WalletActor.CreateKeyPair)
-    walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
-
-    paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
-    paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
+    val keyPair = givenAFreshKeyIsGenerated()
+    givenPaymentProcessorAccountIsRetrieved()
 
     exchange.expectCreation()
     val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
@@ -127,6 +119,12 @@ class OrderActorTest extends AkkaSpec {
       case ExchangeActor.StartExchange(ex, `role`, `peerInfo`, _, _, _, _)
         if ex.id == exchangeId =>
     }
+  }
+
+  it should "release remaining funds after completing exchanges" in new BiddingFixture {
+    givenInMarketOrder()
+    givenASuccessfulPerfectMatchExchange()
+    fundsActor.expectMsg(OrderFundsActor.UnblockFunds)
   }
 
   "An asking order actor" should "keep order info" in new AskingFixture {
@@ -175,20 +173,7 @@ class OrderActorTest extends AkkaSpec {
   it should "spawn an exchange upon matching" in new AskingFixture {
     givenInMarketOrder()
     gatewayProbe.relayMessage(orderMatch, brokerId)
-    val keyPair = new KeyPair()
-
-    walletProbe.expectMsg(WalletActor.CreateKeyPair)
-    walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
-
-    paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
-    paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
-
-    exchange.expectCreation()
-    val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
-    exchange.expectMsgPF {
-      case ExchangeActor.StartExchange(ex, `role`, `peerInfo`, _, _, _, _)
-        if ex.id == exchangeId =>
-    }
+    expectAPerfectMatchExchangeToBeStarted()
   }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
@@ -200,7 +185,7 @@ class OrderActorTest extends AkkaSpec {
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
       TestProbe()
-    val blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
+    def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val brokerId = PeerId("broker")
     val exchange = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderActor(exchange.props, fundsActor.props, network, 10)))
@@ -213,6 +198,16 @@ class OrderActorTest extends AkkaSpec {
     val counterpart = PeerId("counterpart")
     val orderMatch = OrderMatch(
       order.id, exchangeId, order.amount, order.price, lockTime = 400000L, counterpart)
+    val completedExchange = CompletedExchange(
+      id = exchangeId,
+      role,
+      counterpart,
+      parameters = Exchange.Parameters(10, network),
+      brokerId,
+      amounts = Exchange.Amounts[FiatCurrency](
+        order.amount, order.price * order.amount.value, Exchange.StepBreakdown(10)),
+      blockedFunds
+    )
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
       gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
@@ -246,6 +241,36 @@ class OrderActorTest extends AkkaSpec {
       submissionProbe.send(actor, InMarket(OrderBookEntry(order)))
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, InMarketOrder))
     }
+
+    def givenAFreshKeyIsGenerated(): KeyPair = {
+      val keyPair = new KeyPair()
+      walletProbe.expectMsg(WalletActor.CreateKeyPair)
+      walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
+      keyPair
+    }
+
+    def givenPaymentProcessorAccountIsRetrieved(): Unit = {
+      paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
+      paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
+    }
+
+    def expectAPerfectMatchExchangeToBeStarted(): Unit = {
+      val keyPair = givenAFreshKeyIsGenerated()
+      givenPaymentProcessorAccountIsRetrieved()
+
+      exchange.expectCreation()
+      val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
+      exchange.expectMsgPF {
+        case ExchangeActor.StartExchange(ex, `role`, `peerInfo`, _, _, _, _)
+          if ex.id == exchangeId =>
+      }
+    }
+
+    def givenASuccessfulPerfectMatchExchange(): Unit = {
+      gatewayProbe.relayMessage(orderMatch, brokerId)
+      expectAPerfectMatchExchangeToBeStarted()
+      exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
+    }
   }
 
   trait BiddingFixture extends Fixture {
@@ -261,7 +286,6 @@ class OrderActorTest extends AkkaSpec {
         order.id, OfflineOrder, StalledOrder(NoFundsMessage)))
       submissionProbe.expectMsg(StopSubmitting(order.id))
     }
-
   }
 
   trait AskingFixture extends Fixture {
