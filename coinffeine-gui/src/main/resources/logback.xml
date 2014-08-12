@@ -13,6 +13,8 @@
 
     <logger name="net.tomp2p" level="WARN"/>
 
+    <logger name="com.ning.http" level="WARN"/>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
