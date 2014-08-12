@@ -16,7 +16,7 @@ import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
-import coinffeine.peer.bitcoin.WalletActor.{CreateKeyPair, KeyPairCreated}
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor._
@@ -103,8 +103,8 @@ class OrderActor(exchangeActorProps: Props,
         context.become(offline)
 
       case ReceiveMessage(orderMatch: OrderMatch, _) =>
-        log.info(s"Order actor received a match for ${currentOrder.id} " +
-          s"with exchange ${orderMatch.exchangeId} and counterpart ${orderMatch.counterpart}")
+        log.info("Match for {} against counterpart {} identified as {}", currentOrder.id,
+          orderMatch.counterpart, orderMatch.exchangeId)
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         val newExchange = buildExchange(orderMatch)
         updateExchangeInOrder(newExchange)
@@ -119,9 +119,8 @@ class OrderActor(exchangeActorProps: Props,
 
       case ExchangeActor.ExchangeSuccess(exchange) =>
         log.debug(s"Order actor received success for exchange ${exchange.id}")
-        updateOrderStatus(CompletedOrder)
         updateExchangeInOrder(exchange)
-        context.become(terminated)
+        terminate(CompletedOrder)
     }
 
     private def availableFunds: Receive = {
@@ -138,14 +137,15 @@ class OrderActor(exchangeActorProps: Props,
         sender() ! currentOrder
 
       case CancelOrder(reason) =>
-        log.info(s"Order actor requested to cancel order ${currentOrder.id}")
-        submissionSupervisor ! StopSubmitting(currentOrder.id)
-        updateOrderStatus(CancelledOrder(reason))
-        context.become(terminated)
+        log.info("Cancelling order {}", currentOrder.id)
+        terminate(CancelledOrder(reason))
     }
 
-    private def terminated: Receive = {
-      case _ => log.info(s"${currentOrder.id} is terminated")
+    private def terminate(finalStatus: OrderStatus): Unit = {
+      updateOrderStatus(finalStatus)
+      submissionSupervisor ! StopSubmitting(currentOrder.id)
+      fundsActor ! OrderFundsActor.UnblockFunds
+      context.become(Map.empty)
     }
 
     private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
@@ -182,10 +182,11 @@ class OrderActor(exchangeActorProps: Props,
         exchange, role, user, wallet, paymentProcessor, messageGateway, bitcoinPeer)
     }
 
-    private def createFreshKeyPair(): Future[KeyPair] =
-      AskPattern(to = wallet, request = CreateKeyPair, errorMessage = "Cannot get a fresh key pair")
-        .withImmediateReply[KeyPairCreated]()
-        .map(_.keyPair)
+    private def createFreshKeyPair(): Future[KeyPair] = AskPattern(
+      to = wallet,
+      request = WalletActor.CreateKeyPair,
+      errorMessage = "Cannot get a fresh key pair"
+    ).withImmediateReply[WalletActor.KeyPairCreated]().map(_.keyPair)
 
     private def retrievePaymentProcessorId(): Future[AccountId] = AskPattern(
       to = paymentProcessor,
