@@ -70,6 +70,12 @@ object Exchange {
 
   case class Progress[+C <: FiatCurrency](
       bitcoinsTransferred: BitcoinAmount, fiatTransferred: CurrencyAmount[C]) {
+
+    def +[C2 >: C <: FiatCurrency](other: Progress[C2]) = Progress(
+      bitcoinsTransferred = bitcoinsTransferred + other.bitcoinsTransferred,
+      fiatTransferred = fiatTransferred + other.fiatTransferred
+    )
+
     override def toString = s"progressed $bitcoinsTransferred by $fiatTransferred"
   }
 
