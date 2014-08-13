@@ -14,7 +14,7 @@ import com.typesafe.config.Config
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.api.event.FiatBalanceChangeEvent
+import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
@@ -131,7 +131,7 @@ class OkPayProcessorActor(accountId: AccountId,
     private def updateBalances(balances: Seq[FiatAmount]): Unit = {
       for (balance <- balances) {
         if (currentBalances.get(balance.currency) != Some(balance)) {
-          produceEvent(FiatBalanceChangeEvent(balance))
+          produceEvent(FiatBalanceChangeEvent(Balance(balance)))
         }
       }
       currentBalances = balances.map(b => b.currency -> b).toMap

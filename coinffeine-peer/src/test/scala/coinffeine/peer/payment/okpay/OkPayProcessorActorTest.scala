@@ -16,7 +16,7 @@ import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.payment.{Payment, PaymentProcessor}
-import coinffeine.peer.api.event.FiatBalanceChangeEvent
+import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
@@ -35,10 +35,11 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "produce an event when asked to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    given(client.currentBalances()).willReturn(Future.successful(Seq(amount * 2)))
+    val nextAmount = amount * 2
+    given(client.currentBalances()).willReturn(Future.successful(Seq(nextAmount)))
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(amount * 2))
+    expectBalanceNotification(nextAmount)
   }
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
@@ -114,8 +115,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       Future.successful(Seq(120.EUR)),
       Future.successful(Seq(140.EUR))
     )
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(120.EUR))
-    eventChannelProbe.expectMsg(FiatBalanceChangeEvent(140.EUR))
+    expectBalanceNotification(120.EUR)
+    expectBalanceNotification(140.EUR)
   }
 
   private trait WithOkPayProcessor {
@@ -143,6 +144,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
+      }
+    }
+
+    def expectBalanceNotification(balance: FiatAmount): Unit = {
+      eventChannelProbe.expectMsgPF() {
+        case FiatBalanceChangeEvent(Balance(`balance`, _)) =>
       }
     }
   }

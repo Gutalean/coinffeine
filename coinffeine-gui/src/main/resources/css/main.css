@@ -22,3 +22,6 @@ Separator {
 .EUR-label {
     -fx-background-color: #99CCFF;
 }
+.non-current .balance {
+    -fx-graphic: url('../graphics/warning.png');
+}
