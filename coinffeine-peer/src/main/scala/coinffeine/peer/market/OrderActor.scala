@@ -88,19 +88,15 @@ class OrderActor(exchangeActorProps: Props,
           currentOrder.id, availableBlockedFunds)
         updateOrderStatus(OfflineOrder)
         submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
-        context.become(offline)
-    }
-
-    private def offline: Receive = running orElse availableFunds orElse {
-      case InMarket(order) if orderBookEntryMatches(order) =>
-        updateOrderStatus(InMarketOrder)
         context.become(waitingForMatch)
     }
 
     private def waitingForMatch: Receive = running orElse availableFunds orElse {
+      case InMarket(order) if orderBookEntryMatches(order) =>
+        updateOrderStatus(InMarketOrder)
+
       case Offline(order) if orderBookEntryMatches(order) =>
         updateOrderStatus(OfflineOrder)
-        context.become(offline)
 
       case ReceiveMessage(orderMatch: OrderMatch, _) =>
         log.info("Match for {} against counterpart {} identified as {}", currentOrder.id,
