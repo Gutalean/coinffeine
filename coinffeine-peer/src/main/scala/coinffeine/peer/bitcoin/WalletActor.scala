@@ -10,7 +10,7 @@ import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
-import coinffeine.peer.api.event.WalletBalanceChangeEvent
+import coinffeine.peer.api.event.{Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.event.EventProducer
 
 private class WalletActor extends Actor with ActorLogging {
@@ -31,7 +31,7 @@ private class WalletActor extends Actor with ActorLogging {
 
     def start(): Unit = {
       subscribeToWalletChanges()
-      produceEvent(WalletBalanceChangeEvent(wallet.balance()))
+      updateBalance()
       updateSpendCandidates()
       context.become(manageWallet)
     }
@@ -91,7 +91,7 @@ private class WalletActor extends Actor with ActorLogging {
     private def updateBalance(): Unit = {
       val currentBalance = wallet.balance()
       if (lastBalanceReported != Some(currentBalance)) {
-        produceEvent(WalletBalanceChangeEvent(currentBalance))
+        produceEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
         lastBalanceReported = Some(currentBalance)
       }
     }

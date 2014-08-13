@@ -12,7 +12,7 @@ import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
-import coinffeine.peer.api.event.WalletBalanceChangeEvent
+import coinffeine.peer.api.event.{Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
@@ -58,11 +58,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   }
 
   it must "produce balance change events" in new Fixture {
-    eventChannelProbe.expectMsg(WalletBalanceChangeEvent(initialFunds))
+    eventChannelProbe.expectMsg(WalletBalanceChangeEvent(Balance(initialFunds)))
     sendMoneyToWallet(wallet, 1.BTC)
     val expectedBalance = initialFunds + 1.BTC
     eventChannelProbe.fishForMessage() {
-      case WalletBalanceChangeEvent(balance) => balance == expectedBalance
+      case WalletBalanceChangeEvent(balance) => balance.amount == expectedBalance
     }
   }
 

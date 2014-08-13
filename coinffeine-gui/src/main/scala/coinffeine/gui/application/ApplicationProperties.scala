@@ -5,27 +5,28 @@ import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.util.FxEventHandler
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount}
+import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.market.OrderId
 import coinffeine.peer.api.event._
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) {
+  type BitcoinBalance = Balance[Bitcoin.type]
+  type FiatBalance = Balance[Euro.type]
 
   val ordersProperty = ObservableBuffer[OrderProperties]()
 
-  def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinAmount]] =
-    _walletBalanceProperty
+  def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] = _walletBalanceProperty
+  def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
 
-  def fiatBalanceProperty: ReadOnlyObjectProperty[Option[CurrencyAmount[Euro.type]]] =
-    _fiatBalanceProperty
+  private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
+    this, "walletBalance", Some(Balance(app.wallet.currentBalance())))
 
-  private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinAmount]](
-    this, "walletBalance", Some(app.wallet.currentBalance()))
+  private val _fiatBalanceProperty =
+    new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", initialFiatBalance)
 
-  private val _fiatBalanceProperty = new ObjectProperty[Option[CurrencyAmount[Euro.type]]](
-    this, "fiatBalance", app.paymentProcessor.currentBalance().map(_.totalFunds))
+  private def initialFiatBalance: Option[FiatBalance] =
+    app.paymentProcessor.currentBalance().map { balance => Balance(balance.totalFunds) }
 
   private val eventHandler: EventHandler = FxEventHandler {
 
@@ -42,8 +43,8 @@ class ApplicationProperties(app: CoinffeineApp) {
     case WalletBalanceChangeEvent(newBalance) =>
       _walletBalanceProperty.set(Some(newBalance))
 
-    case FiatBalanceChangeEvent(newBalance @ CurrencyAmount(_, Euro)) =>
-      _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[CurrencyAmount[Euro.type]]))
+    case FiatBalanceChangeEvent(newBalance) if newBalance.amount.currency == Euro =>
+      _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
   }
 
   private def orderExist(orderId: OrderId): Boolean =

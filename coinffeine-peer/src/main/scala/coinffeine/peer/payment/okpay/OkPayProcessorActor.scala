@@ -14,7 +14,7 @@ import com.typesafe.config.Config
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.api.event.FiatBalanceChangeEvent
+import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.peer.event.EventProducer
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
@@ -22,7 +22,7 @@ import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
 class OkPayProcessorActor(accountId: AccountId,
                           client: OkPayClient,
-                          pollingInterval: FiniteDuration) extends Actor {
+                          pollingInterval: FiniteDuration) extends Actor with ActorLogging {
 
   import OkPayProcessorActor._
   import context.dispatcher
@@ -50,7 +50,7 @@ class OkPayProcessorActor(accountId: AccountId,
   private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
 
     private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
-    private var currentBalances = Map.empty[FiatCurrency, FiatAmount]
+    private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
 
     def start(): Unit = {
       pollBalances()
@@ -70,6 +70,8 @@ class OkPayProcessorActor(accountId: AccountId,
         pollBalances()
       case UpdateBalances(balances) =>
         updateBalances(balances)
+      case BalanceUpdateFailed(cause) =>
+        notifyBalanceUpdateFailure(cause)
       case msg @ (BlockFunds(_) | UnblockFunds(_)) =>
         blockingFunds.forward(msg)
     }
@@ -129,17 +131,30 @@ class OkPayProcessorActor(accountId: AccountId,
     }
 
     private def updateBalances(balances: Seq[FiatAmount]): Unit = {
-      for (balance <- balances) {
-        if (currentBalances.get(balance.currency) != Some(balance)) {
-          produceEvent(FiatBalanceChangeEvent(balance))
-        }
+      for (amount <- balances) {
+        updateBalance(Balance(amount, hasExpired = false))
       }
-      currentBalances = balances.map(b => b.currency -> b).toMap
       blockingFunds ! BalancesUpdate(balances)
     }
 
+    private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
+      log.error(cause, "Cannot poll OKPay for balances")
+      for (balance <- currentBalances.values) {
+        updateBalance(balance.copy(hasExpired = true))
+      }
+    }
+
+    private def updateBalance(balance: Balance[FiatCurrency]): Unit = {
+      if (currentBalances.get(balance.amount.currency) != Some(balance)) {
+        produceEvent(FiatBalanceChangeEvent(balance))
+        currentBalances += balance.amount.currency -> balance
+      }
+    }
+
     private def pollBalances(): Unit = {
-      client.currentBalances().map(UpdateBalances.apply).pipeTo(self)
+      client.currentBalances().map(UpdateBalances.apply).recover {
+        case NonFatal(cause) => BalanceUpdateFailed(cause)
+      }.pipeTo(self)
     }
   }
 }
@@ -148,11 +163,14 @@ object OkPayProcessorActor {
 
   val Id = "OKPAY"
 
-  /** Message sent to self to trigger OKPay API polling. */
+  /** Self-message sent to trigger OKPay API polling. */
   private case object PollBalances
 
-  /** Message sent to self to update to the latest balances */
+  /** Self-message sent to update to the latest balances */
   private case class UpdateBalances(balances: Seq[FiatAmount])
+
+  /** Self-message to report balance polling failures */
+  private case class BalanceUpdateFailed(cause: Throwable)
 
   def props(config: Config) = {
     val account = config.getString("coinffeine.okpay.id")
