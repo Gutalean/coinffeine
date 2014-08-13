@@ -30,9 +30,9 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         cellValueFactory = { _.value.idProperty.delegate.map(_.value) }
         prefWidth = 150
       },
-      new TableColumn[OrderProperties, OrderStatus] {
+      new TableColumn[OrderProperties, String] {
         text = "Status"
-        cellValueFactory = { _.value.statusProperty }
+        cellValueFactory = { _.value.statusProperty.delegate.map(_.name.capitalize) }
         prefWidth = 80
       },
       new TableColumn[OrderProperties, OrderType] {
