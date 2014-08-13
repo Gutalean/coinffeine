@@ -113,10 +113,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
     given(client.currentBalances()).willReturn(
       Future.successful(Seq(120.EUR)),
-      Future.successful(Seq(140.EUR))
+      Future.successful(Seq(140.EUR)),
+      Future.failed(new Exception("doesn't work"))
     )
     expectBalanceNotification(120.EUR)
     expectBalanceNotification(140.EUR)
+    expectBalanceNotification(140.EUR, hasExpired = true)
   }
 
   private trait WithOkPayProcessor {
@@ -147,10 +149,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       }
     }
 
-    def expectBalanceNotification(balance: FiatAmount): Unit = {
-      eventChannelProbe.expectMsgPF() {
-        case FiatBalanceChangeEvent(Balance(`balance`, _)) =>
-      }
+    def expectBalanceNotification(balance: FiatAmount, hasExpired: Boolean = false): Unit = {
+      eventChannelProbe.expectMsg(FiatBalanceChangeEvent(Balance(balance, hasExpired)))
     }
   }
 
