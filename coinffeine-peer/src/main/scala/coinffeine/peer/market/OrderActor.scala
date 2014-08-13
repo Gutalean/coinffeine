@@ -106,6 +106,7 @@ class OrderActor(exchangeActorProps: Props,
         log.info("Match for {} against counterpart {} identified as {}", currentOrder.id,
           orderMatch.counterpart, orderMatch.exchangeId)
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
+        updateOrderStatus(InProgressOrder)
         val newExchange = buildExchange(orderMatch)
         updateExchangeInOrder(newExchange)
         startExchange(newExchange)

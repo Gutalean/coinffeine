@@ -40,6 +40,15 @@ case object InMarketOrder extends OrderStatus {
   override val isCancellable = true
 }
 
+/** The order is in progress.
+  *
+  * This status indicates that there are some order matches and therefore some exchanges running.
+  */
+case object InProgressOrder extends OrderStatus {
+  override val name ="in progress"
+  override val isCancellable = true
+}
+
 /** The order is completed.
   *
   * This status indicates that the corresponding order has been completed. All the funds have

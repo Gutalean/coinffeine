@@ -12,7 +12,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
+import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
@@ -92,7 +92,7 @@ class OrderActorTest extends AkkaSpec {
       submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
     }
 
-  it should "stop submitting to the broker & send event once matching is received" in
+  it should "stop submitting to the broker & report new status once matching is received" in
     new BiddingFixture {
       givenInMarketOrder()
       gatewayProbe.relayMessage(orderMatch, brokerId)
@@ -100,6 +100,10 @@ class OrderActorTest extends AkkaSpec {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
+      eventChannelProbe.expectMsgAllOf(
+        OrderStatusChangedEvent(order.id, InMarketOrder, InProgressOrder),
+        OrderProgressedEvent(order.id, 0.0, 0.0)
+      )
       exchange.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
       eventChannelProbe.fishForMessage() {
         case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
