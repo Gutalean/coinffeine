@@ -8,11 +8,15 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
+import coinffeine.peer.api.event.BitcoinConnectionStatus
+import coinffeine.peer.api.event.BitcoinConnectionStatus.{Downloaded, Downloading}
 import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.event.EventPublisher
 
 class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props,
                        keyPairs: Seq[KeyPair], blockchain: AbstractBlockChain,
-                       network: NetworkParameters) extends Actor with ActorLogging {
+                       network: NetworkParameters)
+  extends Actor with ActorLogging with EventPublisher {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
@@ -30,11 +34,13 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   private class InitializedBitcoinPeerActor(listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
     val walletRef = context.actorOf(walletProps, "wallet")
+    var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), Downloaded)
 
     def start(): Unit = {
       blockchainRef ! BlockchainActor.Initialize(blockchain)
       walletRef ! WalletActor.Initialize(createWallet())
       listener ! Started(walletRef)
+      publishEvent(connectionStatus)
       context.become(started)
     }
 
@@ -47,6 +53,29 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
           context.dispatcher)
       case RetrieveBlockchainActor =>
         sender ! BlockchainActorReference(blockchainRef)
+
+      case PeerGroupSize(activePeers) =>
+        updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
+
+      case DownloadStarted(remainingBlocks) =>
+        updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloading(
+          totalBlocks = remainingBlocks,
+          remainingBlocks = remainingBlocks
+        )))
+
+      case DownloadProgress(remainingBlocks) =>
+        connectionStatus.blockchainStatus match {
+          case Downloading(totalBlocks, previouslyRemainingBlocks)
+            if remainingBlocks <= previouslyRemainingBlocks =>
+            updateConnectionStatus(connectionStatus.copy(blockchainStatus =
+              Downloading(totalBlocks, remainingBlocks)))
+          case otherStatus =>
+            log.warning("Received download progress ({}) when having status {}",
+              remainingBlocks, otherStatus)
+        }
+
+      case DownloadCompleted =>
+        updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloaded))
     }
 
     private def createWallet(): Wallet = {
@@ -55,6 +84,13 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
       blockchain.addWallet(wallet)
       peerGroup.addWallet(wallet)
       wallet
+    }
+
+    private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
+      if (newConnectionStatus != connectionStatus) {
+        publishEvent(newConnectionStatus)
+      }
+      connectionStatus = newConnectionStatus
     }
   }
 
@@ -77,13 +113,31 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
     def onSuccess(result: Service.State): Unit = {
       log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(new DownloadListener)
+      peerGroup.startBlockChainDownload(new PeerGroupListener)
       new InitializedBitcoinPeerActor(listener).start()
     }
 
     def onFailure(cause: Throwable): Unit = {
       log.error(cause, "Cannot connect to peer group")
       listener ! StartFailure(cause)
+    }
+  }
+
+  private class PeerGroupListener extends AbstractPeerEventListener {
+    override def onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int): Unit = {
+      self ! (if (blocksLeft == 0) DownloadCompleted else DownloadProgress(blocksLeft))
+    }
+
+    override def onChainDownloadStarted(peer: Peer, blocksLeft: Int): Unit = {
+      self ! DownloadStarted(blocksLeft)
+    }
+
+    override def onPeerConnected(peer: Peer, peerCount: Int): Unit = {
+      self ! PeerGroupSize(peerCount)
+    }
+
+    override def onPeerDisconnected(peer: Peer, peerCount: Int): Unit = {
+      self ! PeerGroupSize(peerCount)
     }
   }
 }
@@ -94,6 +148,12 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
+  // Self-messages to manage the connection status
+  private case class PeerGroupSize(activePeers: Int)
+  private case class DownloadStarted(remainingBlocks: Int)
+  private case class DownloadProgress(remainingBlocks: Int)
+  private case object DownloadCompleted
 
   def retrieveBlockchainActor(bitcoinPeer: ActorRef)
                              (implicit ec: ExecutionContext): Future[ActorRef] =

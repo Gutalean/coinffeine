@@ -11,7 +11,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.api.event.{CoinffeineAppEvent, OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
+import coinffeine.peer.api.event._
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Perspective, SellerPerspective}
@@ -178,8 +178,8 @@ class OrderActorTest extends AkkaSpec {
     def amountsToBlock: (FiatAmount, BitcoinAmount)
     val gatewayProbe = new GatewayProbe()
     val fundsActor = new MockSupervisedActor()
-    val submissionProbe, eventChannelProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe =
-      TestProbe()
+    val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
+    val eventChannelProbe = EventChannelProbe()
     def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val exchangeActor = new MockSupervisedActor()
     val actor =
@@ -191,8 +191,6 @@ class OrderActorTest extends AkkaSpec {
 
     val orderMatch = OrderMatch(
       order.id, exchangeId, order.amount, order.price, lockTime = 400000L, exchange.counterpartId)
-
-    system.eventStream.subscribe(eventChannelProbe.ref, classOf[CoinffeineAppEvent])
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, gatewayProbe.ref,
       paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)

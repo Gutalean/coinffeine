@@ -5,7 +5,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.Props
-import akka.testkit.TestProbe
 import org.mockito.BDDMockito.given
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -16,7 +15,7 @@ import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.payment.{Payment, PaymentProcessor}
-import coinffeine.peer.api.event.{CoinffeineAppEvent, Balance, FiatBalanceChangeEvent}
+import coinffeine.peer.api.event.{Balance, EventChannelProbe, FiatBalanceChangeEvent}
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
@@ -137,8 +136,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     )
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
-    val eventChannelProbe = TestProbe()
-    system.eventStream.subscribe(eventChannelProbe.ref, classOf[CoinffeineAppEvent])
+    val eventChannelProbe = EventChannelProbe()
     val processor = system.actorOf(Props(
       new OkPayProcessorActor(senderAccount, client, pollingInterval)))
 

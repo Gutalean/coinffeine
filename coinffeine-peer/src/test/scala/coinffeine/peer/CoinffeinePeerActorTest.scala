@@ -3,13 +3,13 @@ package coinffeine.peer
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.peer.api.event.EventChannelProbe
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
@@ -24,8 +24,8 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val localPort = 8080
   val brokerAddress = BrokerAddress("host", 8888)
   val brokerId = PeerId("broker")
-  val wallet, eventChannel = TestProbe()
-  system.eventStream.subscribe(eventChannel.ref, classOf[CoinffeineAppEvent])
+  val wallet = TestProbe()
+  val eventChannel = EventChannelProbe()
 
   val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
