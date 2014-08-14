@@ -86,7 +86,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     system.eventStream.subscribe(eventChannelProbe.ref, classOf[CoinffeineAppEvent])
 
     val instance = system.actorOf(WalletActor.props)
-    instance ! WalletActor.Initialize(wallet, eventChannelProbe.ref)
+    instance ! WalletActor.Initialize(wallet)
 
     def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = {
       instance ! WalletActor.BlockBitcoins(amount)

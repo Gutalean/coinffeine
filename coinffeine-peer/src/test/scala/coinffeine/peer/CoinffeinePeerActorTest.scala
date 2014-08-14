@@ -9,6 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
+import coinffeine.peer.api.event.CoinffeineAppEvent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
@@ -23,12 +24,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   val localPort = 8080
   val brokerAddress = BrokerAddress("host", 8888)
   val brokerId = PeerId("broker")
-  val wallet = TestProbe()
-  val eventChannel, gateway, marketInfo, orders, bitcoinPeer, paymentProcessor =
-    new MockSupervisedActor()
+  val wallet, eventChannel = TestProbe()
+  system.eventStream.subscribe(eventChannel.ref, classOf[CoinffeineAppEvent])
+
+  val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
   val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
     PropsCatalogue(
-      eventChannel = eventChannel.props,
       gateway = gateway.props,
       marketInfo = marketInfo.props,
       orderSupervisor = orders.props,
@@ -40,13 +41,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.expectCreation()
   }
 
-  it must "start the event channel actor" in {
-    eventChannel.expectCreation()
-  }
-
   it must "start the payment processor actor" in {
     paymentProcessor.expectCreation()
-    paymentProcessor.expectMsg(PaymentProcessorActor.Initialize(eventChannel.ref))
+    paymentProcessor.expectMsg(PaymentProcessorActor.Initialize)
   }
 
   it must "connect to both networks" in {
@@ -54,7 +51,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val eventChannelRef = eventChannel.ref
     peer ! CoinffeinePeerActor.Connect
     bitcoinPeer.expectAskWithReply {
-      case BitcoinPeerActor.Start(`eventChannelRef`) => BitcoinPeerActor.Started(wallet.ref)
+      case BitcoinPeerActor.Start => BitcoinPeerActor.Started(wallet.ref)
     }
     gateway.expectAskWithReply {
       case MessageGateway.Join(`localPort`, `brokerAddress`) =>
@@ -65,10 +62,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the order supervisor actor" in {
     orders.expectCreation()
-    val OrderSupervisor.Initialize(_, receivedChannel, receivedGateway,
+    val OrderSupervisor.Initialize(_, receivedGateway,
         receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
       orders.expectMsgType[OrderSupervisor.Initialize]
-    receivedChannel should be (eventChannel.ref)
     receivedGateway should be (gateway.ref)
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
@@ -85,7 +81,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val localGateway = new MockSupervisedActor()
     val uninitializedPeer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
       PropsCatalogue(
-        eventChannel = dummyHelper.props,
         gateway = localGateway.props,
         marketInfo = dummyHelper.props,
         orderSupervisor = dummyHelper.props,

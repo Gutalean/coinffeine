@@ -215,8 +215,8 @@ class OrderActorTest extends AkkaSpec {
 
     system.eventStream.subscribe(eventChannelProbe.ref, classOf[CoinffeineAppEvent])
 
-    actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
-      gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
+    actor ! OrderActor.Initialize(order, submissionProbe.ref, gatewayProbe.ref,
+      paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
     gatewayProbe.expectSubscription()
     fundsActor.expectCreation()
 

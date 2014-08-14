@@ -13,7 +13,7 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
 
   "The bitcoin peer actor" should "connect to the bitcoin network and create delegates" in
     new Fixture {
-      actor ! BitcoinPeerActor.Start(eventChannel)
+      actor ! BitcoinPeerActor.Start
       blockchainActor.expectCreation()
       blockchainActor.expectMsg(BlockchainActor.Initialize(blockchain))
       walletActor.expectCreation()

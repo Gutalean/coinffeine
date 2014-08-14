@@ -224,7 +224,6 @@ object OrderActor {
 
   case class Initialize(order: Order[FiatCurrency],
                         submissionSupervisor: ActorRef,
-                        eventChannel: ActorRef,
                         messageGateway: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,

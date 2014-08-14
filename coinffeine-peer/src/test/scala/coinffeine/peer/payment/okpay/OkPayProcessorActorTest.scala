@@ -45,7 +45,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     given(client.currentBalances()).willReturn(Future.failed(cause))
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
-    processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
+    processor ! PaymentProcessorActor.Initialize
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
@@ -144,7 +144,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
-      processor ! PaymentProcessorActor.Initialize(eventChannelProbe.ref)
+      processor ! PaymentProcessorActor.Initialize
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
       }

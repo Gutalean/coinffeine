@@ -14,7 +14,6 @@ import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.event.EventChannelActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -34,10 +33,9 @@ class CoinffeinePeerActor(listenPort: Int,
   import context.dispatcher
   import CoinffeinePeerActor._
 
-  private val eventChannel = spawnDelegate(props.eventChannel, "eventChannel")
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
   private val paymentProcessorRef = spawnDelegate(
-    props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize(eventChannel))
+    props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize)
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private var walletRef: ActorRef = _
   private var orderSupervisorRef: ActorRef = _
@@ -55,7 +53,7 @@ class CoinffeinePeerActor(listenPort: Int,
         walletRef = retrievedWalletRef
         orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
           OrderSupervisor.Initialize(
-            brokerId, eventChannel, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
+            brokerId, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
         marketInfoRef = spawnDelegate(
           props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
         context.become(handleMessages)
@@ -80,7 +78,7 @@ class CoinffeinePeerActor(listenPort: Int,
 
   private def connectBitcoinPeer(): Future[ActorRef] = {
     implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-    (bitcoinPeerRef ? BitcoinPeerActor.Start(eventChannel)).map {
+    (bitcoinPeerRef ? BitcoinPeerActor.Start).map {
       case BitcoinPeerActor.Started(walletActor) =>
         walletActor
       case BitcoinPeerActor.StartFailure(cause) =>
@@ -157,8 +155,7 @@ object CoinffeinePeerActor {
 
   private val ConnectionTimeout = Timeout(30.seconds)
 
-  case class PropsCatalogue(eventChannel: Props,
-                            gateway: Props,
+  case class PropsCatalogue(gateway: Props,
                             marketInfo: Props,
                             orderSupervisor: Props,
                             bitcoinPeer: Props,
@@ -176,7 +173,6 @@ object CoinffeinePeerActor {
       val brokerHostname = config.getString(BrokerHostnameSetting)
       val brokerPort= config.getInt(BrokerPortSetting)
       val props = PropsCatalogue(
-        EventChannelActor.props(),
         messageGatewayProps(config),
         MarketInfoActor.props,
         OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants),
