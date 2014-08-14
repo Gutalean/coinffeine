@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.currency.Implicits._
-import coinffeine.peer.exchange.test.SampleExchange
+import coinffeine.model.exchange.SampleExchange
 
 class DefaultMicroPaymentChannelTest extends ExchangeTest {
 
