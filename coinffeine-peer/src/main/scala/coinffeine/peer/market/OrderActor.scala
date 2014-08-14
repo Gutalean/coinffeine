@@ -166,7 +166,7 @@ class OrderActor(exchangeActorProps: Props,
       val amounts = Exchange.Amounts(
         currentOrder.amount, fiatAmount.asInstanceOf[CurrencyAmount[C]],
         Exchange.StepBreakdown(intermediateSteps))
-      Exchange.nonStarted(
+      Exchange.notStarted(
         id = orderMatch.exchangeId,
         role = role,
         counterpartId = orderMatch.counterpart,

@@ -84,7 +84,7 @@ object Exchange {
   def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, c.Zero)
 
 
-  def nonStarted[C <: FiatCurrency](id: ExchangeId,
+  def notStarted[C <: FiatCurrency](id: ExchangeId,
                                     role: Role,
                                     counterpartId: PeerId,
                                     amounts: Exchange.Amounts[C],
@@ -92,17 +92,17 @@ object Exchange {
                                     brokerId: PeerId,
                                     blockedFunds: Exchange.BlockedFunds) =
     Exchange(id, role, counterpartId, amounts, parameters, brokerId, blockedFunds,
-      NonStarted()(amounts.currency))
+      NotStarted()(amounts.currency))
 
   sealed trait State[+C <: FiatCurrency] {
     val progress: Exchange.Progress[C]
   }
 
-  case class NonStarted[C <: FiatCurrency]()(currency: C) extends State[C] {
+  case class NotStarted[C <: FiatCurrency]()(currency: C) extends State[C] {
     override val progress = Exchange.noProgress(currency)
   }
 
-  implicit class NonStartedTransitions[C <: FiatCurrency](val exchange: Exchange[C, NonStarted[C]])
+  implicit class NonStartedTransitions[C <: FiatCurrency](val exchange: Exchange[C, NotStarted[C]])
     extends AnyVal {
 
     def startHandshaking(user: Exchange.PeerInfo,

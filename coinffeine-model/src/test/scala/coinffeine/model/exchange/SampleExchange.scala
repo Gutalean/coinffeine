@@ -41,12 +41,12 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   )
   val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))
 
-  val buyerExchange = Exchange.nonStarted(exchangeId, BuyerRole, peerIds.seller, amounts,
+  val buyerExchange = Exchange.notStarted(exchangeId, BuyerRole, peerIds.seller, amounts,
     parameters, brokerId, buyerBlockedFunds)
   val buyerHandshakingExchange =
     buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
-  val sellerExchange = Exchange.nonStarted(exchangeId, SellerRole, peerIds.seller, amounts,
+  val sellerExchange = Exchange.notStarted(exchangeId, SellerRole, peerIds.seller, amounts,
     parameters, brokerId, buyerBlockedFunds)
   val sellerHandshakingExchange =
     sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
