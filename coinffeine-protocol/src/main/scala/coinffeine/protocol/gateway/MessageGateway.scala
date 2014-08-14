@@ -18,20 +18,20 @@ object MessageGateway {
   /** A request message to bind & create a new, empty P2P network. */
   case class Bind(listenToPort: Int)
 
-  /** A request message to connect to an already existing network. */
-  case class Connect(localPort: Int, connectTo: BrokerAddress)
+  /** A request message to join to an already existing network. */
+  case class Join(localPort: Int, connectTo: BrokerAddress)
 
   /** A response message indicating a success bind operation. */
-  case class Bound(ownId: PeerId)
+  case class Bound(port: Int, ownId: PeerId)
 
-  /** A response message indicating a success connect operation. */
-  case class Connected(ownId: PeerId, brokerId: PeerId)
+  /** A response message indicating the message gateway is joined to the network. */
+  case class Joined(ownId: PeerId, brokerId: PeerId)
 
   /** A response message indicating a binding error. */
-  case class BindingError(cause: Throwable)
+  case class BindingError(port: Int, cause: Throwable)
 
-  /** A response message indicating a connection error. */
-  case class ConnectingError(cause: Throwable)
+  /** A response message indicating a join error. */
+  case class JoinError(cause: Throwable)
 
   /** A message sent in order to forward another message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)

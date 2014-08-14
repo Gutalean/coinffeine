@@ -34,27 +34,27 @@ private class ProtobufServerActor(
   }
 
   override val receive: Receive = {
-    case bind: Bind =>
+    case Bind(port) =>
       val listener = sender()
-      initPeer(bind.listenToPort, listener)
+      initPeer(port, listener)
       publishAddress().onComplete { case result =>
-        self ! AddressPublicationResult(result)
+        self ! AddressPublicationResult(port, result)
       }
       context.become(publishingAddress(sender()))
 
-    case connect: Connect =>
+    case Join(port, broker) =>
       val listener = sender()
-      initPeer(connect.localPort, listener)
-      connectToBroker(createPeerId(me), connect.connectTo, listener)
+      initPeer(port, listener)
+      connectToBroker(createPeerId(me), broker, listener)
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
-    case AddressPublicationResult(Success(_)) =>
-      listener ! Bound(createPeerId(me))
+    case AddressPublicationResult(port, Success(_)) =>
+      listener ! Bound(port, createPeerId(me))
       context.become(sendingMessages)
 
-    case AddressPublicationResult(Failure(error)) =>
-      listener ! BindingError(error)
+    case AddressPublicationResult(port, Failure(error)) =>
+      listener ! BindingError(port, error)
       me = null
       context.become(receive)
   }
@@ -117,11 +117,11 @@ private class ProtobufServerActor(
     futureBrokerId.onComplete {
       case Success(brokerId) =>
         log.info(s"Successfully connected as $ownId using broker in $brokerAddress with $brokerId")
-        listener ! Connected(ownId, brokerId)
+        listener ! Joined(ownId, brokerId)
         context.become(sendingMessages)
       case Failure(error) =>
         log.error(s"Cannot connect as $ownId using broker in $brokerAddress: $error")
-        listener ! ConnectingError(error)
+        listener ! JoinError(error)
         context.become(receive)
     }
     context.become(Map.empty)
@@ -158,7 +158,7 @@ private class ProtobufServerActor(
 }
 
 private[gateway] object ProtobufServerActor {
-  private case class AddressPublicationResult(result: Try[FutureDHT])
+  private case class AddressPublicationResult(port: Int, result: Try[FutureDHT])
 
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
     new ProtobufServerActor(ignoredNetworkInterfaces))
