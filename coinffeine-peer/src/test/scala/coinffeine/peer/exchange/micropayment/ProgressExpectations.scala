@@ -3,13 +3,13 @@ package coinffeine.peer.exchange.micropayment
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 
 trait ProgressExpectations { this: AkkaSpec =>
 
   protected def listener: TestProbe
-  protected def exchange: Exchange[_]
+  protected def exchange: AnyExchange[_]
 
   def expectProgress(signatures: Int, payments: Int): Unit = {
     val progress = listener.expectMsgClass(classOf[ExchangeProgress]).exchange.progress

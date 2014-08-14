@@ -9,7 +9,7 @@ import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -34,11 +34,11 @@ class OrderActor(exchangeActorProps: Props,
   import context.dispatcher
 
   override def receive: Receive = {
-    case init: Initialize =>
+    case init @ Initialize(_, _, _, _, _, _, _) =>
       new InitializedOrderActor(init).start()
   }
 
-  private class InitializedOrderActor(init: Initialize) {
+  private class InitializedOrderActor[C <: FiatCurrency](init: Initialize[C]) {
     import init.{order => _, _}
 
     private val role = init.order.orderType match {
@@ -62,7 +62,8 @@ class OrderActor(exchangeActorProps: Props,
     private def subscribeToMessages(): Unit = {
       messageGateway ! MessageGateway.Subscribe {
         case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) =>
-          orderMatch.orderId == currentOrder.id
+          orderMatch.orderId == currentOrder.id &&
+            orderMatch.price.currency == init.order.fiatAmount.currency
         case _ => false
       }
     }
@@ -101,6 +102,7 @@ class OrderActor(exchangeActorProps: Props,
       case ReceiveMessage(orderMatch: OrderMatch, _) =>
         log.info("Match for {} against counterpart {} identified as {}", currentOrder.id,
           orderMatch.counterpart, orderMatch.exchangeId)
+        // TODO: check price to be in range
         init.submissionSupervisor ! StopSubmitting(orderMatch.orderId)
         updateOrderStatus(InProgressOrder)
         val newExchange = buildExchange(orderMatch)
@@ -110,12 +112,12 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def exchanging: Receive = running orElse availableFunds orElse {
-      case ExchangeActor.ExchangeProgress(exchange) =>
-        log.debug(s"Order actor received progress for exchange ${exchange.id}: ${exchange.progress}")
+      case ExchangeActor.ExchangeProgress(exchange: AnyExchange[C]) =>
+        log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
         updateExchangeInOrder(exchange)
 
-      case ExchangeActor.ExchangeSuccess(exchange) =>
-        log.debug(s"Order actor received success for exchange ${exchange.id}")
+      case ExchangeActor.ExchangeSuccess(exchange: AnyExchange[C]) =>
+        log.debug("Order actor received success for {}", exchange.id)
         updateExchangeInOrder(exchange)
         terminate(CompletedOrder)
     }
@@ -145,7 +147,7 @@ class OrderActor(exchangeActorProps: Props,
       context.become(Map.empty)
     }
 
-    private def startExchange(newExchange: Exchange[FiatCurrency]): Unit = {
+    private def startExchange(newExchange: NonStartedExchange[C]): Unit = {
       val userInfoFuture = for {
         keyPair <- createFreshKeyPair()
         paymentProcessorId <- retrievePaymentProcessorId()
@@ -159,11 +161,12 @@ class OrderActor(exchangeActorProps: Props,
       }
     }
 
-    private def buildExchange(orderMatch: OrderMatch): Exchange[FiatCurrency] = {
+    private def buildExchange(orderMatch: OrderMatch): NonStartedExchange[C] = {
       val fiatAmount = orderMatch.price * currentOrder.amount.value
       val amounts = Exchange.Amounts(
-        currentOrder.amount, fiatAmount, Exchange.StepBreakdown(intermediateSteps))
-      NonStartedExchange(
+        currentOrder.amount, fiatAmount.asInstanceOf[CurrencyAmount[C]],
+        Exchange.StepBreakdown(intermediateSteps))
+      Exchange.nonStarted(
         id = orderMatch.exchangeId,
         role = role,
         counterpartId = orderMatch.counterpart,
@@ -174,9 +177,9 @@ class OrderActor(exchangeActorProps: Props,
       )
     }
 
-    private def spawnExchange(exchange: Exchange[FiatCurrency], user: Exchange.PeerInfo): Unit = {
+    private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {
       context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
-        exchange, role, user, wallet, paymentProcessor, messageGateway, bitcoinPeer)
+        exchange, user, wallet, paymentProcessor, messageGateway, bitcoinPeer)
     }
 
     private def createFreshKeyPair(): Future[KeyPair] = AskPattern(
@@ -196,7 +199,7 @@ class OrderActor(exchangeActorProps: Props,
       publishEvent(OrderSubmittedEvent(currentOrder))
     }
 
-    private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
+    private def updateExchangeInOrder(exchange: AnyExchange[C]): Unit = {
       val prevProgress = currentOrder.progress
       currentOrder = currentOrder.withExchange(exchange)
       val newProgress = currentOrder.progress
@@ -209,7 +212,7 @@ class OrderActor(exchangeActorProps: Props,
       publishEvent(OrderStatusChangedEvent(currentOrder.id, prevStatus, newStatus))
     }
 
-    private def orderBookEntryMatches(entry: OrderBookEntry[FiatAmount]): Boolean =
+    private def orderBookEntryMatches(entry: OrderBookEntry[_]): Boolean =
       entry.id == currentOrder.id && entry.amount == currentOrder.amount
   }
 }
@@ -222,13 +225,13 @@ object OrderActor {
   val BlockingFundsMessage = "blocking funds"
   val NoFundsMessage = "no funds available for order"
 
-  case class Initialize(order: Order[FiatCurrency],
-                        submissionSupervisor: ActorRef,
-                        messageGateway: ActorRef,
-                        paymentProcessor: ActorRef,
-                        bitcoinPeer: ActorRef,
-                        wallet: ActorRef,
-                        brokerId: PeerId)
+  case class Initialize[C <: FiatCurrency](order: Order[C],
+                                           submissionSupervisor: ActorRef,
+                                           messageGateway: ActorRef,
+                                           paymentProcessor: ActorRef,
+                                           bitcoinPeer: ActorRef,
+                                           wallet: ActorRef,
+                                           brokerId: PeerId)
 
   case class CancelOrder(reason: String)
 

@@ -1,10 +1,12 @@
 package coinffeine.peer.exchange
 
+import scala.language.existentials
+
 import akka.actor.{ActorRef, Props}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{CompletedExchange, Exchange, Role}
+import coinffeine.model.exchange._
 
 /** This actor handles all the necessary steps for an exchange to happen */
 object ExchangeActor {
@@ -16,8 +18,7 @@ object ExchangeActor {
   /** This is a request for the actor to start the exchange to be replied with status updates and
     * the exchange result.
     */
-  case class StartExchange[C <: FiatCurrency](exchange: Exchange[C],
-                                              role: Role,
+  case class StartExchange[C <: FiatCurrency](exchange: NonStartedExchange[C],
                                               user: Exchange.PeerInfo,
                                               wallet: ActorRef,
                                               paymentProcessor: ActorRef,
@@ -25,12 +26,12 @@ object ExchangeActor {
                                               bitcoinPeer: ActorRef)
 
   /** This is sent back to listener to indicate exchange progress. */
-  case class ExchangeProgress(exchange: Exchange[FiatCurrency])
+  case class ExchangeProgress(exchange: RunningExchange[_ <: FiatCurrency])
 
   sealed trait ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange succeeded */
-  case class ExchangeSuccess(exchange: CompletedExchange[FiatCurrency]) extends ExchangeResult
+  case class ExchangeSuccess(exchange: CompletedExchange[_ <: FiatCurrency]) extends ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange failed */
   case class ExchangeFailure(e: Throwable) extends ExchangeResult

@@ -20,7 +20,7 @@ import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{BindingError, BrokerAddress, JoinError}
+import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, JoinError}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 

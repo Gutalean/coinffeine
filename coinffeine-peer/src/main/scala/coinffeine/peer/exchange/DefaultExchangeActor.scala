@@ -15,7 +15,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicro
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
 
-class DefaultExchangeActor[C <: FiatCurrency](
+class DefaultExchangeActor(
     handshakeActorProps: Props,
     channelActorProps: Role => Props,
     transactionBroadcastActorProps: Props,
@@ -23,10 +23,11 @@ class DefaultExchangeActor[C <: FiatCurrency](
     constants: ProtocolConstants) extends Actor with ActorLogging {
 
   val receive: Receive = {
-    case init: StartExchange[C] => new InitializedExchange(init, sender()).start()
+    case init @ StartExchange(_, _, _, _, _, _) => new InitializedExchange(init, sender()).start()
   }
 
-  private class InitializedExchange(init: StartExchange[C], resultListener: ActorRef) {
+  private class InitializedExchange[C <: FiatCurrency](init: StartExchange[C],
+                                                       resultListener: ActorRef) {
     import init._
     private var blockchain: ActorRef = _
     private val txBroadcaster =
@@ -41,17 +42,19 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     private val inHandshake: Receive = {
 
-      case HandshakeSuccess(handshakingExchange: HandshakingExchange[C], commitmentTxs, refundTx) =>
+      case HandshakeSuccess(handshakingExchange, commitmentTxs, refundTx)
+          if handshakingExchange.currency == exchange.currency =>
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         // TODO: what if counterpart deposit is not valid?
         val deposits = exchangeProtocol.validateDeposits(commitmentTxs, handshakingExchange).get
-        val runningExchange = RunningExchange(deposits, handshakingExchange)
+        val runningExchange =
+          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(deposits)
         val props = channelActorProps(runningExchange.role)
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
-        ref ! StartMicroPaymentChannel[C](runningExchange, paymentProcessor, messageGateway,
+        ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, messageGateway,
           resultListeners = Set(self))
         txBroadcaster ! SetMicropaymentActor(ref)
-        context.become(inMicropaymentChannel)
+        context.become(inMicropaymentChannel(runningExchange))
 
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
@@ -64,8 +67,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
 
     private def startHandshake(): Unit = {
-      handshakeActor ! StartHandshake(
-        exchange, role, user, messageGateway, blockchain, wallet, listener = self)
+      handshakeActor !
+        StartHandshake(exchange, user, messageGateway, blockchain, wallet, listener = self)
     }
 
     private def finishingExchange(
@@ -87,12 +90,12 @@ class DefaultExchangeActor[C <: FiatCurrency](
         finishWith(ExchangeFailure(TxBroadcastFailed(err)))
     }
 
-    private def inMicropaymentChannel: Receive = {
+    private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
 
       case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
         log.info(s"Finishing exchange '${exchange.id}' successfully")
         txBroadcaster ! FinishExchange
-        val result = ExchangeSuccess(CompletedExchange.fromExchange(exchange))
+        val result = ExchangeSuccess(runningExchange.complete)
         context.become(finishingExchange(result, successTx))
 
       case MicroPaymentChannelActor.ExchangeFailure(e) =>

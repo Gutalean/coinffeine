@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.{AnyExchange, ExchangeId}
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
   * the Coinffeine market.
@@ -23,7 +23,7 @@ case class Order[+C <: FiatCurrency](
     status: OrderStatus,
     amount: BitcoinAmount,
     price: CurrencyAmount[C],
-    exchanges: Map[ExchangeId, Exchange[C]]) {
+    exchanges: Map[ExchangeId, AnyExchange[C]]) {
 
   val fiatAmount = price * amount.value
 
@@ -37,7 +37,7 @@ case class Order[+C <: FiatCurrency](
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
 
   /** Create a new copy of this order with the given exchange. */
-  def withExchange[C1 >: C <: FiatCurrency](exchange: Exchange[C1]): Order[C1] =
+  def withExchange[C1 >: C <: FiatCurrency](exchange: AnyExchange[C1]): Order[C1] =
     copy(exchanges = exchanges + (exchange.id -> exchange))
 
   /** Retrieve the total amount of bitcoins that were already transferred.
@@ -66,7 +66,7 @@ case class Order[+C <: FiatCurrency](
   def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
 
   private def totalSum[A <: Currency](
-      zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
+      zero: CurrencyAmount[A])(f: AnyExchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)
 
 }

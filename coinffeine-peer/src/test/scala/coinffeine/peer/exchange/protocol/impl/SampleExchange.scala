@@ -5,8 +5,8 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
-import coinffeine.peer.exchange.protocol._
 
+@deprecated("Use coinffeine.peer.exchange.test.SampleExchange instead")
 trait SampleExchange { this: NetworkComponent =>
 
   val participants = Both(
@@ -32,14 +32,14 @@ trait SampleExchange { this: NetworkComponent =>
   )
   val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))
 
-  val buyerExchange = NonStartedExchange(
+  val buyerExchange = Exchange.nonStarted(
     id = ExchangeId("id"),
     role = BuyerRole,
     counterpartId = peerIds.seller,
     amounts,
-    buyerBlockedFunds,
     parameters,
-    brokerId = PeerId("broker")
+    brokerId = PeerId("broker"),
+    buyerBlockedFunds
   )
   val sellerExchange = buyerExchange.copy(
     role = SellerRole,
@@ -48,10 +48,10 @@ trait SampleExchange { this: NetworkComponent =>
   )
 
   val buyerHandshakingExchange =
-    HandshakingExchange(participants.buyer, participants.seller, buyerExchange)
+    buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
   val sellerHandshakingExchange =
-    HandshakingExchange(participants.seller, participants.buyer, sellerExchange)
+    sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
 }
 
 object SampleExchange {

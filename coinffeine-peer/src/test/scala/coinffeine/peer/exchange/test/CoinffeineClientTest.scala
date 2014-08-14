@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.test
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.protocol._
@@ -41,26 +41,24 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    val exchange: Exchange[FiatCurrency]
+    val exchange: NonStartedExchange[Euro.type]
     def participants: Both[Exchange.PeerInfo]
-    def handshakingExchange = HandshakingExchange(user, counterpart, exchange)
-    def runningExchange = RunningExchange(MockExchangeProtocol.DummyDeposits, handshakingExchange)
-    def userRole: Role
-    def user = userRole.select(participants)
-    def counterpart = userRole.counterpart.select(participants)
+    def handshakingExchange = exchange.startHandshaking(user, counterpart)
+    def runningExchange = handshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
+    def completedExchange = runningExchange.complete
+    def user = exchange.role.select(participants)
+    def counterpart = exchange.role.counterpart.select(participants)
     def counterpartConnection = exchange.counterpartId
     def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
   }
 
   trait BuyerPerspective extends Perspective {
-    override val userRole = BuyerRole
     override lazy val exchange = buyerExchange
-    def buyerExchange: Exchange[FiatCurrency]
+    def buyerExchange: NonStartedExchange[Euro.type]
   }
 
   trait SellerPerspective extends Perspective {
-    override val userRole = SellerRole
     override lazy val exchange = sellerExchange
-    def sellerExchange: Exchange[FiatCurrency]
+    def sellerExchange: NonStartedExchange[Euro.type]
   }
 }

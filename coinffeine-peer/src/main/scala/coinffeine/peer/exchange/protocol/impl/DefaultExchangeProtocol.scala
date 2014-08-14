@@ -30,7 +30,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     new DefaultMicroPaymentChannel(exchange)
 
   override def validateCommitments(transactions: Both[ImmutableTransaction],
-                                   amounts: Exchange.Amounts[FiatCurrency]): Try[Unit] = for {
+                                   amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit] = for {
     requiredSignatures <- DepositValidator.validateRequiredSignatures(transactions)
     validator = new DepositValidator(amounts, requiredSignatures)
     _ <- validator.requireValidBuyerFunds(transactions.buyer)
@@ -38,7 +38,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
   } yield ()
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[FiatCurrency]) =
+                                exchange: HandshakingExchange[_ <: FiatCurrency]) =
     new DepositValidator(exchange.amounts, exchange.requiredSignatures).validate(transactions)
 }
 

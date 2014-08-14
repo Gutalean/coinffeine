@@ -3,7 +3,7 @@ package coinffeine.peer.api
 import scala.concurrent.Future
 
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
 
 /** Represents how the app takes part on the P2P network */
@@ -25,7 +25,7 @@ trait CoinffeineNetwork {
 
   def orders: Set[Order[FiatCurrency]]
 
-  def exchanges: Set[Exchange[FiatCurrency]] = orders.flatMap(_.exchanges.values)
+  def exchanges: Set[AnyExchange[FiatCurrency]] = orders.flatMap(_.exchanges.values)
 
   /** Submit an order to buy bitcoins.
     *

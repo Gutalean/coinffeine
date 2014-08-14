@@ -29,8 +29,7 @@ abstract class HandshakeActorTest(systemName: String)
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake(
-      exchange, userRole, user, gateway.ref, blockchain.ref, wallet.ref, listener.ref)
+    actor ! StartHandshake(exchange, user, gateway.ref, blockchain.ref, wallet.ref, listener.ref)
   }
 
   def givenCounterpartPeerHandshake(): Unit = {

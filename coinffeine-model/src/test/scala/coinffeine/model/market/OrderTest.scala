@@ -1,18 +1,18 @@
 package coinffeine.model.market
 
-import com.google.bitcoin.params.MainNetParams
-
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.bitcoin.{BlockedCoinsId, ImmutableTransaction, KeyPair, MutableTransaction}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Exchange.Progress
+import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 
-class OrderTest extends UnitTest {
+class OrderTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
-  val exchangeParameters = Exchange.Parameters(10, MainNetParams.get())
+  val exchangeParameters = Exchange.Parameters(10, network)
+  val dummyDeposits =
+    Exchange.Deposits(Both.fill(ImmutableTransaction(new MutableTransaction(network))))
 
   "Order" must "report no progress with no exchanges" in {
     val order = Order(OrderId.random(), Bid, 1.BTC, 600.EUR)
@@ -32,14 +32,17 @@ class OrderTest extends UnitTest {
     order.progress should be (0.6)
   }
 
-  private def createExchange(completion: Double) = new Exchange[FiatCurrency] {
-    override val id = ExchangeId("exchange")
-    override val role = BuyerRole
-    override val counterpartId = PeerId("seller")
-    override val parameters = exchangeParameters
-    override val brokerId = PeerId("broker")
-    override val amounts = Exchange.Amounts(1.BTC, 600.EUR, Exchange.StepBreakdown(10))
-    override val blockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(42))
-    override val progress = Progress[FiatCurrency](1.BTC * completion, 600.EUR * completion)
-  }
+  private def createExchange(completion: Double) = Exchange.nonStarted(
+    id = ExchangeId("exchange"),
+    role = BuyerRole,
+    counterpartId = PeerId("seller"),
+    parameters = exchangeParameters,
+    brokerId = PeerId("broker"),
+    amounts = Exchange.Amounts(1.BTC, 600.EUR, Exchange.StepBreakdown(10)),
+    blockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(42))
+  ).startHandshaking(
+    user = PeerInfo("account1", new KeyPair()),
+    counterpart = PeerInfo("account2", new KeyPair())
+  ).startExchanging(dummyDeposits)
+    .increaseProgress(btcAmount = 1.BTC * completion, fiatAmount = 600.EUR * completion)
 }

@@ -18,11 +18,11 @@ class MockExchangeProtocol extends ExchangeProtocol {
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[FiatCurrency]): Try[Exchange.Deposits] =
+                                exchange: HandshakingExchange[_ <: FiatCurrency]): Try[Exchange.Deposits] =
     validateCommitments(transactions, null).map(_ => Exchange.Deposits(transactions))
 
   override def validateCommitments(transactions: Both[ImmutableTransaction],
-                                   amounts: Exchange.Amounts[FiatCurrency]): Try[Unit] =
+                                   amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit] =
     transactions.toSeq match {
       case Seq(MockExchangeProtocol.InvalidDeposit, _) =>
         Failure(new IllegalArgumentException("Invalid buyer deposit"))

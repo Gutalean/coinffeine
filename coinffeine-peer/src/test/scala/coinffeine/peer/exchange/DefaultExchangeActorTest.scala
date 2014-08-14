@@ -9,9 +9,8 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, CompletedExchange, Exchange}
+import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
@@ -48,7 +47,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   trait Fixture {
     val listener, blockchain, peers, walletActor = TestProbe()
     val handshakeActor, micropaymentChannelActor, transactionBroadcastActor = new MockSupervisedActor()
-    val actor = system.actorOf(Props(new DefaultExchangeActor[Euro.type](
+    val actor = system.actorOf(Props(new DefaultExchangeActor(
       handshakeActor.props,
       _ => micropaymentChannelActor.props,
       transactionBroadcastActor.props,
@@ -58,7 +57,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     listener.watch(actor)
 
     def startExchange(): Unit = {
-      listener.send(actor, StartExchange(exchange, userRole, user, walletActor.ref,
+      listener.send(actor, StartExchange(exchange, user, walletActor.ref,
         dummyPaymentProcessor, gateway.ref, peers.ref))
       peers.expectMsg(RetrieveBlockchainActor)
       peers.reply(BlockchainActorReference(blockchain.ref))
@@ -110,17 +109,14 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       givenHandshakeSuccess()
       givenMicropaymentChannelSuccess()
       givenTransactionIsCorrectlyBroadcast()
-      listener.expectMsg(ExchangeSuccess(CompletedExchange.fromExchange(exchange)))
+      listener.expectMsg(ExchangeSuccess(completedExchange))
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }
 
   it should "forward progress reports" in new Fixture {
     startExchange()
-    val progressUpdate = ExchangeProgress(sellerRunningExchange.copy(progress = Exchange.Progress(
-      bitcoinsTransferred = 1.BTC,
-      fiatTransferred = 0.EUR
-    )))
+    val progressUpdate = ExchangeProgress(runningExchange.increaseProgress(1.BTC, 0.EUR))
     givenHandshakeSuccess()
     givenMicropaymentChannelCreation()
     micropaymentChannelActor.expectAskWithReply {

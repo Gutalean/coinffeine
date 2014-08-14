@@ -28,7 +28,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = ExchangeId("other-id")
     val relevantPeerHandshake =
-      PeerHandshake(exchange.id, handshake.exchange.counterpart.bitcoinKey.publicKey, "foo")
+      PeerHandshake(exchange.id, handshake.exchange.state.counterpart.bitcoinKey.publicKey, "foo")
     val relevantSignatureRequest =
       RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =
