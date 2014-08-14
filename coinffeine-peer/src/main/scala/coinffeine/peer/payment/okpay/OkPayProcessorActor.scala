@@ -15,14 +15,15 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
-import coinffeine.peer.event.EventProducer
+import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
-class OkPayProcessorActor(accountId: AccountId,
-                          client: OkPayClient,
-                          pollingInterval: FiniteDuration) extends Actor with ActorLogging {
+class OkPayProcessorActor(
+    accountId: AccountId,
+    client: OkPayClient,
+    pollingInterval: FiniteDuration) extends Actor with ActorLogging with EventPublisher {
 
   import OkPayProcessorActor._
   import context.dispatcher
@@ -47,7 +48,7 @@ class OkPayProcessorActor(accountId: AccountId,
     Option(timer).foreach(_.cancel())
   }
 
-  private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
+  private class InitializedBehavior(eventChannel: ActorRef) {
 
     private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
     private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
@@ -146,7 +147,7 @@ class OkPayProcessorActor(accountId: AccountId,
 
     private def updateBalance(balance: Balance[FiatCurrency]): Unit = {
       if (currentBalances.get(balance.amount.currency) != Some(balance)) {
-        produceEvent(FiatBalanceChangeEvent(balance))
+        publishEvent(FiatBalanceChangeEvent(balance))
         currentBalances += balance.amount.currency -> balance
       }
     }

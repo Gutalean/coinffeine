@@ -17,7 +17,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.event.EventProducer
+import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
@@ -29,7 +29,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 intermediateSteps: Int) extends Actor with ActorLogging {
+                 intermediateSteps: Int) extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
 
@@ -38,7 +38,7 @@ class OrderActor(exchangeActorProps: Props,
       new InitializedOrderActor(init).start()
   }
 
-  private class InitializedOrderActor(init: Initialize) extends EventProducer(init.eventChannel) {
+  private class InitializedOrderActor(init: Initialize) {
     import init.{order => _, _}
 
     private val role = init.order.orderType match {
@@ -193,20 +193,20 @@ class OrderActor(exchangeActorProps: Props,
 
     private def startWithOrderStatus(status: OrderStatus): Unit = {
       currentOrder = currentOrder.withStatus(status)
-      produceEvent(OrderSubmittedEvent(currentOrder))
+      publishEvent(OrderSubmittedEvent(currentOrder))
     }
 
     private def updateExchangeInOrder(exchange: Exchange[FiatCurrency]): Unit = {
       val prevProgress = currentOrder.progress
       currentOrder = currentOrder.withExchange(exchange)
       val newProgress = currentOrder.progress
-      produceEvent(OrderProgressedEvent(currentOrder.id, prevProgress, newProgress))
+      publishEvent(OrderProgressedEvent(currentOrder.id, prevProgress, newProgress))
     }
 
     private def updateOrderStatus(newStatus: OrderStatus): Unit = {
       val prevStatus = currentOrder.status
       currentOrder = currentOrder.withStatus(newStatus)
-      produceEvent(OrderStatusChangedEvent(currentOrder.id, prevStatus, newStatus))
+      publishEvent(OrderStatusChangedEvent(currentOrder.id, prevStatus, newStatus))
     }
 
     private def orderBookEntryMatches(entry: OrderBookEntry[FiatAmount]): Boolean =
