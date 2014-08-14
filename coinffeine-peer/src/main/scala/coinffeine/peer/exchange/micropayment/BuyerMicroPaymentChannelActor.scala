@@ -38,7 +38,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     extends InitializedChannelBehavior(init) {
 
     import constants.exchangeSignatureTimeout
-    import context.dispatcher
     import init._
 
     private var lastSignedOffer: Option[ImmutableTransaction] = None
@@ -128,7 +127,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         to = paymentProcessor,
         request = PaymentProcessorActor.Pay(
           fundsId = exchange.blockedFunds.fiat.get,
-          to = exchange.counterpart.paymentProcessorAccount,
+          to = exchange.state.counterpart.paymentProcessorAccount,
           amount = exchange.amounts.stepFiatAmount,
           comment = PaymentDescription(exchange.id, step)
         ),

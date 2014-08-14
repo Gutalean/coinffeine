@@ -23,7 +23,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
-    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.2.BTC)
+    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 2.BTC)
     val buyerDeposit = ImmutableTransaction(buyerWallet.blockMultisignFunds(
       requiredSignatures, BuyerRole.myDepositAmount(amounts)))
     val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
@@ -31,7 +31,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
-    val sellerWallet = createWallet(participants.seller.bitcoinKey, 1.1.BTC)
+    val sellerWallet = createWallet(participants.seller.bitcoinKey, 11.BTC)
     val sellerDeposit = ImmutableTransaction(sellerWallet.blockMultisignFunds(
       requiredSignatures, SellerRole.myDepositAmount(amounts)))
     val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)
@@ -45,8 +45,8 @@ trait ExchangeTest extends BitcoinjTest {
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
     val deposits = protocol.validateDeposits(commitments, buyerHandshakingExchange).get
-    val buyerRunningExchange = RunningExchange(deposits, buyerHandshakingExchange)
-    val sellerRunningExchange = RunningExchange(deposits, sellerHandshakingExchange)
+    val buyerRunningExchange = buyerHandshakingExchange.startExchanging(deposits)
+    val sellerRunningExchange = sellerHandshakingExchange.startExchanging(deposits)
     val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)
     val sellerChannel = protocol.createMicroPaymentChannel(sellerRunningExchange)
     val totalSteps = buyerExchange.amounts.breakdown.totalSteps

@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.Future
+import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -41,7 +42,8 @@ private class HandshakeActor[C <: FiatCurrency](
     import context.dispatcher
     import init._
 
-    private val forwarding = new MessageForwarding(messageGateway, exchange, role)
+    private val forwarding =
+      new MessageForwarding(messageGateway, exchange.counterpartId, exchange.brokerId)
 
     def startHandshake(): Unit = {
       subscribeToMessages()
@@ -67,7 +69,7 @@ private class HandshakeActor[C <: FiatCurrency](
     private def receivePeerHandshake: Receive = {
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-        val handshakingExchange = HandshakingExchange(user, counterpart, exchange)
+        val handshakingExchange = exchange.startHandshaking(user, counterpart)
         createDeposit(handshakingExchange)
           .map(deposit => exchangeProtocol.createHandshake(handshakingExchange, deposit))
           .pipeTo(self)
@@ -85,7 +87,7 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
       val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
-      val depositAmount = role.myDepositAmount(exchange.amounts)
+      val depositAmount = exchange.role.myDepositAmount(exchange.amounts)
       AskPattern(
         to = wallet,
         request = WalletActor.CreateDeposit(
@@ -232,7 +234,7 @@ private class HandshakeActor[C <: FiatCurrency](
       forwarding.forwardToCounterpart(RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund))
     }
 
-    private def finishWithResult(result: Try[HandshakeSuccess[C]]): Unit = {
+    private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
       val message = result match {
         case Success(success) =>
           log.info("Handshake {}: succeeded", exchange.id)
@@ -259,7 +261,6 @@ object HandshakeActor {
     *
     * @constructor
     * @param exchange         Exchange to start the handshake for
-    * @param role             Which role to take
     * @param user             User key and payment id
     * @param messageGateway   Communications gateway
     * @param blockchain       Actor to ask for TX confirmations for
@@ -267,8 +268,7 @@ object HandshakeActor {
     * @param listener         Actor to be notified of the handshake result
     */
   case class StartHandshake[C <: FiatCurrency](
-      exchange: Exchange[C],
-      role: Role,
+      exchange: NonStartedExchange[C],
       user: Exchange.PeerInfo,
       messageGateway: ActorRef,
       blockchain: ActorRef,
@@ -278,9 +278,9 @@ object HandshakeActor {
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.
     */
-  case class HandshakeSuccess[C <: FiatCurrency](exchange: HandshakingExchange[C],
-                                                 bothCommitments: Both[ImmutableTransaction],
-                                                 refundTransaction: ImmutableTransaction)
+  case class HandshakeSuccess(exchange: HandshakingExchange[_ <: FiatCurrency],
+                              bothCommitments: Both[ImmutableTransaction],
+                              refundTransaction: ImmutableTransaction)
 
   case class HandshakeFailure(e: Throwable)
 

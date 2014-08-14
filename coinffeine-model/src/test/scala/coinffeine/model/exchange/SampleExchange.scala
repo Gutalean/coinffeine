@@ -1,12 +1,10 @@
-package coinffeine.peer.exchange.test
+package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
-import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
@@ -22,6 +20,8 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
       bitcoinKey = new KeyPair()
     )
   )
+
+  val requiredSignatures = participants.map(_.bitcoinKey).toSeq
 
   val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
 
@@ -41,17 +41,17 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   )
   val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))
 
-  val buyerExchange = NonStartedExchange(
-    exchangeId, BuyerRole, peerIds.seller, amounts, buyerBlockedFunds, parameters, brokerId)
-  val buyerRunningExchange = RunningExchange(
-    MockExchangeProtocol.DummyDeposits,
-    HandshakingExchange(participants.buyer, participants.seller, buyerExchange)
-  )
+  val buyerExchange = Exchange.notStarted(exchangeId, BuyerRole, peerIds.seller, amounts,
+    parameters, brokerId, buyerBlockedFunds)
+  val buyerHandshakingExchange =
+    buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
-  val sellerExchange = NonStartedExchange(
-    exchangeId, SellerRole, peerIds.buyer, amounts, sellerBlockedFunds, parameters, brokerId)
-  val sellerRunningExchange = RunningExchange(
-    MockExchangeProtocol.DummyDeposits,
-    HandshakingExchange(participants.seller, participants.buyer, sellerExchange)
-  )
+  val sellerExchange = Exchange.notStarted(exchangeId, SellerRole, peerIds.seller, amounts,
+    parameters, brokerId, buyerBlockedFunds)
+  val sellerHandshakingExchange =
+    sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
+}
+
+object SampleExchange {
+  val IntermediateSteps = 10
 }

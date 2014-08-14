@@ -18,7 +18,7 @@ class OrderSupervisorTest extends AkkaSpec {
     private var order: Order[FiatCurrency] = _
 
     override def receive: Receive = {
-      case init: OrderActor.Initialize =>
+      case init @ OrderActor.Initialize(_, _, _, _, _, _, _) =>
         order = init.order
         listener ! init
       case OrderActor.RetrieveStatus =>
@@ -81,7 +81,7 @@ class OrderSupervisorTest extends AkkaSpec {
     def givenOpenOrder(order: Order[FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
-        case init: OrderActor.Initialize if init.order == order =>
+        case init: OrderActor.Initialize[_] if init.order == order =>
       }
     }
   }

@@ -29,7 +29,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     )
 
     TransactionProcessor.createUnsignedTransaction(
-      inputs = exchange.deposits.transactions.toSeq.map(_.get.getOutput(0)),
+      inputs = exchange.state.deposits.transactions.toSeq.map(_.get.getOutput(0)),
       outputs = Seq(
         exchange.participants.buyer.bitcoinKey -> split.buyer,
         exchange.participants.seller.bitcoinKey -> split.seller
@@ -41,7 +41,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
   override def validateCurrentTransactionSignatures(
       herSignatures: Both[TransactionSignature]): Try[Unit] = {
     val tx = currentUnsignedTransaction.get
-    val herKey = exchange.counterpart.bitcoinKey
+    val herKey = exchange.state.counterpart.bitcoinKey
 
     def requireValidSignature(index: Int, signature: TransactionSignature) = {
       require(
@@ -61,7 +61,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
 
   override def signCurrentTransaction = {
     val tx = currentUnsignedTransaction.get
-    val signingKey = exchange.user.bitcoinKey
+    val signingKey = exchange.state.user.bitcoinKey
     Both(
       buyer = TransactionProcessor.signMultiSignedOutput(
         tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq),
