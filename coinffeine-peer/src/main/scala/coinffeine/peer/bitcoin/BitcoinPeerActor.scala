@@ -23,17 +23,17 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   }
 
   override def receive: Receive = {
-    case Start(eventChannel) =>
-      Futures.addCallback(peerGroup.start(), new PeerGroupCallback(eventChannel, sender()))
+    case Start =>
+      Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
   }
 
-  private class InitializedBitcoinPeerActor(eventChannel: ActorRef, listener: ActorRef) {
+  private class InitializedBitcoinPeerActor(listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
     val walletRef = context.actorOf(walletProps, "wallet")
 
     def start(): Unit = {
       blockchainRef ! BlockchainActor.Initialize(blockchain)
-      walletRef ! WalletActor.Initialize(createWallet(), eventChannel)
+      walletRef ! WalletActor.Initialize(createWallet())
       listener ! Started(walletRef)
       context.become(started)
     }
@@ -72,13 +72,13 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     }
   }
 
-  private class PeerGroupCallback(eventChannel: ActorRef, listener: ActorRef)
+  private class PeerGroupCallback(listener: ActorRef)
     extends FutureCallback[Service.State] {
 
     def onSuccess(result: Service.State): Unit = {
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(new DownloadListener)
-      new InitializedBitcoinPeerActor(eventChannel, listener).start()
+      new InitializedBitcoinPeerActor(listener).start()
     }
 
     def onFailure(cause: Throwable): Unit = {
@@ -104,7 +104,7 @@ object BitcoinPeerActor {
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorReference]().map(_.ref)
 
   /** A message sent to the peer actor to join to the bitcoin network */
-  case class Start(eventChannel: ActorRef)
+  case object Start
   sealed trait StartResult
   case class Started(walletActor: ActorRef) extends StartResult
   case class StartFailure(cause: Throwable) extends StartResult

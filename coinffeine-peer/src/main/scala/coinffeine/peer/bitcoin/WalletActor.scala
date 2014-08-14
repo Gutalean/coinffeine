@@ -11,19 +11,18 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.api.event.{Balance, WalletBalanceChangeEvent}
-import coinffeine.peer.event.EventProducer
+import coinffeine.peer.event.EventPublisher
 
-private class WalletActor extends Actor with ActorLogging {
+private class WalletActor extends Actor with ActorLogging with EventPublisher {
 
   import coinffeine.peer.bitcoin.WalletActor._
 
   override val receive: Receive = {
-    case Initialize(wallet, eventChannel) =>
-      new InitializedWalletActor(wallet, eventChannel).start()
+    case Initialize(wallet) =>
+      new InitializedWalletActor(wallet).start()
   }
 
-  private class InitializedWalletActor(wallet: Wallet, channel: ActorRef)
-    extends EventProducer(channel) {
+  private class InitializedWalletActor(wallet: Wallet) {
 
     private var lastBalanceReported: Option[BitcoinAmount] = None
     private val blockedOutputs = new BlockedOutputs()
@@ -91,7 +90,7 @@ private class WalletActor extends Actor with ActorLogging {
     private def updateBalance(): Unit = {
       val currentBalance = wallet.balance()
       if (lastBalanceReported != Some(currentBalance)) {
-        produceEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
+        publishEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
         lastBalanceReported = Some(currentBalance)
       }
     }
@@ -116,7 +115,7 @@ private class WalletActor extends Actor with ActorLogging {
 
 object WalletActor {
   private[bitcoin] val props = Props(new WalletActor)
-  private[bitcoin] case class Initialize(wallet: Wallet, eventChannel: ActorRef)
+  private[bitcoin] case class Initialize(wallet: Wallet)
 
   /** Subscribe to wallet changes. The sender will receive [[WalletChanged]] after sending this
     * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].

@@ -42,7 +42,7 @@ class OrderSupervisor(orderActorProps: Props,
       case OpenOrder(order) =>
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
 
-        ref ! OrderActor.Initialize(order, submission, eventChannel, gateway, paymentProcessor,
+        ref ! OrderActor.Initialize(order, submission, gateway, paymentProcessor,
           bitcoinPeer, wallet, brokerId)
         orders += order.id -> ref
 
@@ -63,7 +63,6 @@ class OrderSupervisor(orderActorProps: Props,
 object OrderSupervisor {
 
   case class Initialize(brokerId: PeerId,
-                        eventChannel: ActorRef,
                         gateway: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,

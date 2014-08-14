@@ -12,7 +12,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
+import coinffeine.peer.api.event.{CoinffeineAppEvent, OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.OrderActor.{NoFundsMessage, BlockingFundsMessage}
@@ -213,8 +213,10 @@ class OrderActorTest extends AkkaSpec {
       blockedFunds
     )
 
-    actor ! OrderActor.Initialize(order, submissionProbe.ref, eventChannelProbe.ref,
-      gatewayProbe.ref, paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
+    system.eventStream.subscribe(eventChannelProbe.ref, classOf[CoinffeineAppEvent])
+
+    actor ! OrderActor.Initialize(order, submissionProbe.ref, gatewayProbe.ref,
+      paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
     gatewayProbe.expectSubscription()
     fundsActor.expectCreation()
 

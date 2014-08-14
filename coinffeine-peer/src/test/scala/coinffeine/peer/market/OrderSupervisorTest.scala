@@ -69,7 +69,7 @@ class OrderSupervisorTest extends AkkaSpec {
     def givenOrderSupervisorIsInitialized(): Unit = {
       val brokerId = PeerId("Broker")
       val initMessage = OrderSupervisor.Initialize(
-        brokerId, eventChannel.ref, gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
+        brokerId, gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
       actor ! initMessage
       submissionProbe.expectMsgClass(classOf[MockStarted])
       val gatewayRef = gateway.ref

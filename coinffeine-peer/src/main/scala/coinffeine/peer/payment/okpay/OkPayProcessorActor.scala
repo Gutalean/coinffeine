@@ -15,21 +15,26 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
-import coinffeine.peer.event.EventProducer
+import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
-class OkPayProcessorActor(accountId: AccountId,
-                          client: OkPayClient,
-                          pollingInterval: FiniteDuration) extends Actor with ActorLogging {
+class OkPayProcessorActor(
+    accountId: AccountId,
+    client: OkPayClient,
+    pollingInterval: FiniteDuration) extends Actor with ActorLogging with EventPublisher {
 
   import OkPayProcessorActor._
   import context.dispatcher
 
+  private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
+  private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
+
   override def receive: Receive = {
-    case Initialize(eventChannel) =>
-      new InitializedBehavior(eventChannel).start()
+    case Initialize =>
+      pollBalances()
+      context.become(managePayments)
   }
 
   private var timer: Cancellable = _
@@ -47,115 +52,104 @@ class OkPayProcessorActor(accountId: AccountId,
     Option(timer).foreach(_.cancel())
   }
 
-  private class InitializedBehavior(eventChannel: ActorRef) extends EventProducer(eventChannel) {
-
-    private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
-    private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
-
-    def start(): Unit = {
+  private val managePayments: Receive = {
+    case PaymentProcessorActor.RetrieveAccountId =>
+      sender ! RetrievedAccountId(accountId)
+    case pay: Pay[_] =>
+      sendPayment(sender(), pay)
+    case FindPayment(paymentId) =>
+      findPayment(sender(), paymentId)
+    case RetrieveBalance(currency) =>
+      currentBalance(sender(), currency)
+    case PollBalances =>
       pollBalances()
-      context.become(managePayments)
-    }
+    case UpdateBalances(balances) =>
+      updateBalances(balances)
+    case BalanceUpdateFailed(cause) =>
+      notifyBalanceUpdateFailure(cause)
+    case msg @ (BlockFunds(_) | UnblockFunds(_)) =>
+      blockingFunds.forward(msg)
+  }
 
-    val managePayments: Receive = {
-      case PaymentProcessorActor.RetrieveAccountId =>
-        sender ! RetrievedAccountId(accountId)
-      case pay: Pay[_] =>
-        sendPayment(sender(), pay)
-      case FindPayment(paymentId) =>
-        findPayment(sender(), paymentId)
-      case RetrieveBalance(currency) =>
-        currentBalance(sender(), currency)
-      case PollBalances =>
+  private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
+    (for {
+      _ <- useFunds(pay)
+      payment <- client.sendPayment(pay.to, pay.amount, pay.comment)
+    } yield payment).onComplete {
+      case Success(payment) =>
+        requester ! Paid(payment)
         pollBalances()
-      case UpdateBalances(balances) =>
-        updateBalances(balances)
-      case BalanceUpdateFailed(cause) =>
-        notifyBalanceUpdateFailure(cause)
-      case msg @ (BlockFunds(_) | UnblockFunds(_)) =>
-        blockingFunds.forward(msg)
+      case Failure(error) =>
+        requester ! PaymentFailed(pay, error)
+        pollBalances()
     }
+  }
 
-    private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
-      (for {
-        _ <- useFunds(pay)
-        payment <- client.sendPayment(pay.to, pay.amount, pay.comment)
-      } yield payment).onComplete {
-        case Success(payment) =>
-          requester ! Paid(payment)
-          pollBalances()
-        case Failure(error) =>
-          requester ! PaymentFailed(pay, error)
-          pollBalances()
+  private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] =
+    AskPattern(blockingFunds, UseFunds(pay.fundsId, pay.amount), "fail to use funds")
+      .withImmediateReply[Any]()
+      .flatMap {
+        case FundsUsed(pay.`fundsId`, pay.`amount`) =>
+          Future.successful {}
+        case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
+          Future.failed(new RuntimeException(cause))
       }
+
+  private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
+    client.findPayment(paymentId).onComplete {
+      case Success(Some(payment)) => requester ! PaymentFound(payment)
+      case Success(None) => requester ! PaymentNotFound(paymentId)
+      case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
     }
+  }
 
-    private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] =
-      AskPattern(blockingFunds, UseFunds(pay.fundsId, pay.amount), "fail to use funds")
-        .withImmediateReply[Any]()
-        .flatMap {
-          case FundsUsed(pay.`fundsId`, pay.`amount`) =>
-            Future.successful {}
-          case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
-            Future.failed(new RuntimeException(cause))
-        }
-
-    private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
-      client.findPayment(paymentId).onComplete {
-        case Success(Some(payment)) => requester ! PaymentFound(payment)
-        case Success(None) => requester ! PaymentNotFound(paymentId)
-        case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
+  private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
+    val balances = client.currentBalances()
+    balances.onSuccess { case b =>
+      self ! UpdateBalances(b)
+    }
+    val blockedFunds = blockedFundsForCurrency(currency)
+    (for {
+      totalAmount <- balances.map { b =>
+        b.find(_.currency == currency)
+          .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
       }
-    }
+      blockedAmount <- blockedFunds
+    } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
+      case NonFatal(error) => BalanceRetrievalFailed(currency, error)
+    }.pipeTo(requester)
+  }
 
-    private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      val balances = client.currentBalances()
-      balances.onSuccess { case b =>
-        self ! UpdateBalances(b)
-      }
-      val blockedFunds = blockedFundsForCurrency(currency)
-      (for {
-        totalAmount <- balances.map { b =>
-          b.find(_.currency == currency)
-            .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
-        }
-        blockedAmount <- blockedFunds
-      } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
-        case NonFatal(error) => BalanceRetrievalFailed(currency, error)
-      }.pipeTo(requester)
-    }
+  private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+    AskPattern(blockingFunds, RetrieveBlockedFunds(currency))
+      .withImmediateReply[BlockedFunds[C]]().map(_.funds)
+  }
 
-    private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
-      AskPattern(blockingFunds, RetrieveBlockedFunds(currency))
-        .withImmediateReply[BlockedFunds[C]]().map(_.funds)
+  private def updateBalances(balances: Seq[FiatAmount]): Unit = {
+    for (amount <- balances) {
+      updateBalance(Balance(amount, hasExpired = false))
     }
+    blockingFunds ! BalancesUpdate(balances)
+  }
 
-    private def updateBalances(balances: Seq[FiatAmount]): Unit = {
-      for (amount <- balances) {
-        updateBalance(Balance(amount, hasExpired = false))
-      }
-      blockingFunds ! BalancesUpdate(balances)
+  private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
+    log.error(cause, "Cannot poll OKPay for balances")
+    for (balance <- currentBalances.values) {
+      updateBalance(balance.copy(hasExpired = true))
     }
+  }
 
-    private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
-      log.error(cause, "Cannot poll OKPay for balances")
-      for (balance <- currentBalances.values) {
-        updateBalance(balance.copy(hasExpired = true))
-      }
+  private def updateBalance(balance: Balance[FiatCurrency]): Unit = {
+    if (currentBalances.get(balance.amount.currency) != Some(balance)) {
+      publishEvent(FiatBalanceChangeEvent(balance))
+      currentBalances += balance.amount.currency -> balance
     }
+  }
 
-    private def updateBalance(balance: Balance[FiatCurrency]): Unit = {
-      if (currentBalances.get(balance.amount.currency) != Some(balance)) {
-        produceEvent(FiatBalanceChangeEvent(balance))
-        currentBalances += balance.amount.currency -> balance
-      }
-    }
-
-    private def pollBalances(): Unit = {
-      client.currentBalances().map(UpdateBalances.apply).recover {
-        case NonFatal(cause) => BalanceUpdateFailed(cause)
-      }.pipeTo(self)
-    }
+  private def pollBalances(): Unit = {
+    client.currentBalances().map(UpdateBalances.apply).recover {
+      case NonFatal(cause) => BalanceUpdateFailed(cause)
+    }.pipeTo(self)
   }
 }
 
