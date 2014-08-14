@@ -89,8 +89,6 @@ class CoinffeinePeerActor(listenPort: Int,
   }
 
   private val handleMessages: Receive = {
-    case message @ (CoinffeinePeerActor.Subscribe | CoinffeinePeerActor.Unsubscribe) =>
-      eventChannel forward message
     case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
       orderSupervisorRef forward message
     case message @ RetrieveWalletBalance =>
@@ -113,12 +111,6 @@ class CoinffeinePeerActor(listenPort: Int,
 
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
-
-  /** A message sent to request the subscription to events for the sender. */
-  case object Subscribe
-
-  /** A message sent to request the unsubscription to events for the sender. */
-  case object Unsubscribe
 
   /** Start peer connection to the network. The sender of this message will receive either
     * a [[Connected]] or [[ConnectionFailed]] message in response. */

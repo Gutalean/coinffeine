@@ -5,6 +5,7 @@ import akka.actor.{ActorSystem, Props}
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
+import coinffeine.peer.api.event.CoinffeineAppEvent
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
 
@@ -34,7 +35,7 @@ class DefaultCoinffeineApp(name: String,
 
   override def observe(handler: EventHandler): Unit = {
     val observer = system.actorOf(EventObserverActor.props(handler))
-    peerRef.tell(CoinffeinePeerActor.Subscribe, observer)
+    system.eventStream.subscribe(observer, classOf[CoinffeineAppEvent])
   }
 }
 

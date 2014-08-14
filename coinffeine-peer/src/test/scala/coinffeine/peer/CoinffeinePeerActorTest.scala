@@ -123,18 +123,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
-  it must "forward subscription commands to the event channel" in {
-    val subscriber = TestProbe()
-    subscriber.send(peer, CoinffeinePeerActor.Subscribe)
-    eventChannel.expectForward(CoinffeinePeerActor.Subscribe, subscriber.ref)
-  }
-
-  it must "forward unsubscription commands to the event channel" in {
-    val subscriber = TestProbe()
-    subscriber.send(peer, CoinffeinePeerActor.Unsubscribe)
-    eventChannel.expectForward(CoinffeinePeerActor.Unsubscribe, subscriber.ref)
-  }
-
   it must "delegate wallet balance requests" in {
     peer ! RetrieveWalletBalance
     wallet.expectMsg(RetrieveWalletBalance)

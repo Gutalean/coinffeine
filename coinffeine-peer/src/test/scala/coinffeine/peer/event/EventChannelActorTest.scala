@@ -20,7 +20,7 @@ class EventChannelActorTest extends AkkaSpec with MockitoSugar {
 
   it must "stop forwarding events after unsubscription" in {
     val subs = givenSubscribers(2)
-    subs.head.send(channel, CoinffeinePeerActor.Unsubscribe)
+    system.eventStream.unsubscribe(subs.head.ref, classOf[CoinffeineAppEvent])
     channel ! event
     subs.head.expectNoMsg()
     subs.last.expectMsg(event)
@@ -28,7 +28,7 @@ class EventChannelActorTest extends AkkaSpec with MockitoSugar {
 
   private def givenSubscribers(numberOfSubscribers: Int): Set[TestProbe] = {
     val subs = Set(TestProbe(), TestProbe())
-    subs.foreach(_.send(channel, CoinffeinePeerActor.Subscribe))
+    subs.foreach(s => system.eventStream.subscribe(s.ref, classOf[CoinffeineAppEvent]))
     subs
   }
 }
