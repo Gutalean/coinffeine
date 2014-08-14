@@ -111,7 +111,7 @@ object Exchange {
   }
 
   case class Handshaking[C <: FiatCurrency](user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo)
-                                           (currency: C) extends State[C] with StartedHandshake {
+                                           (currency: C) extends State[C] with StartedHandshake[C] {
     override val progress = Exchange.noProgress(currency)
   }
 
@@ -126,15 +126,15 @@ object Exchange {
       user: Exchange.PeerInfo,
       counterpart: Exchange.PeerInfo,
       deposits: Exchange.Deposits,
-      progress: Exchange.Progress[C])(currency: C)
-    extends State[C] with StartedExchange
+      progress: Exchange.Progress[C])
+    extends State[C] with StartedExchange[C]
 
   object Exchanging {
     def apply[C <: FiatCurrency](currency: C,
                                  previousState: Handshaking[C],
                                  deposits: Exchange.Deposits): Exchanging[C] =
       Exchanging(previousState.user, previousState.counterpart, deposits,
-        Exchange.noProgress(currency))(currency)
+        Exchange.noProgress(currency))
   }
 
   implicit class ExchangingTransitions[C <: FiatCurrency](val exchange: Exchange[C, Exchanging[C]])
@@ -146,14 +146,14 @@ object Exchange {
     def increaseProgress(btcAmount: BitcoinAmount,
                          fiatAmount: CurrencyAmount[C]): Exchange[C, Exchanging[C]] = {
       val progress = exchange.state.progress + Exchange.Progress(btcAmount, fiatAmount)
-      exchange.copy(state = exchange.state.copy(progress = progress)(exchange.currency))
+      exchange.copy(state = exchange.state.copy(progress = progress))
     }
   }
 
   case class Completed[C <: FiatCurrency](user: Exchange.PeerInfo,
                                           counterpart: Exchange.PeerInfo,
                                           deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
-    extends State[C] with StartedExchange {
+    extends State[C] with StartedExchange[C] {
     override val progress = Progress(amounts.bitcoinAmount, amounts.fiatAmount)
   }
 
@@ -163,14 +163,14 @@ object Exchange {
       Completed(previousState.user, previousState.counterpart, previousState.deposits)(amounts)
   }
 
-  trait StartedHandshake {
+  trait StartedHandshake[C <: FiatCurrency] extends State[C] {
     val user: Exchange.PeerInfo
     val counterpart: Exchange.PeerInfo
 
     require(user.bitcoinKey.hasPrivKey)
   }
 
-  implicit class StartedHandshakePimps(val exchange: Exchange[_, _ <: StartedHandshake])
+  implicit class StartedHandshakePimps(val exchange: Exchange[_, StartedHandshake[_]])
     extends AnyVal {
 
     def participants: Both[Exchange.PeerInfo] = Both.fromSeq(exchange.role match {
@@ -181,7 +181,7 @@ object Exchange {
     def requiredSignatures: Both[PublicKey] = participants.map(_.bitcoinKey)
   }
 
-  trait StartedExchange extends StartedHandshake {
+  trait StartedExchange[C <: FiatCurrency] extends StartedHandshake[C] {
     val deposits: Exchange.Deposits
   }
 }
