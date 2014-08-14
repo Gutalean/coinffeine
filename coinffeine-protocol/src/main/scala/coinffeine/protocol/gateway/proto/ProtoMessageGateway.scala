@@ -37,19 +37,30 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   }
 
   private val waitingForInitialization: Receive = {
-    case msg @ (Bind(_) | Connect(_, _)) =>
+    case msg @ (Bind(_) | Join(_, _)) =>
       server ! msg
       context.become(starting(sender()) orElse managingSubscriptions)
   }
 
   private def starting(listener: ActorRef): Receive = {
-    case response @ (Bound(_) | Connected(_, _)) =>
+    case response @ Bound(port, peerId) =>
       listener ! response
-      log.info(s"Message gateway started")
+      log.info(s"Message gateway successfully bounded on port {} as {}", port, peerId)
       context.become(forwardingMessages orElse managingSubscriptions)
 
-    case error @ (BindingError(_) | ConnectingError(_)) =>
-      log.info(s"Message gateway couldn't start")
+    case response @ Joined(myId, brokerId) =>
+      listener ! response
+      log.info(s"Message gateway successfully joined to network as {} using broker {}",
+        myId, brokerId)
+      context.become(forwardingMessages orElse managingSubscriptions)
+
+    case error @ BindingError(port, cause) =>
+      log.error(cause, "Message gateway failed to bind on port {}", port)
+      listener ! error
+      context.become(receive)
+
+    case error @ JoinError(cause) =>
+      log.error(cause, "Message gateway failed to join to the network")
       listener ! error
       context.become(receive)
   }

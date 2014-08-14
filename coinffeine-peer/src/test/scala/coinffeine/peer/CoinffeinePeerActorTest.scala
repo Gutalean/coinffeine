@@ -57,8 +57,8 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       case BitcoinPeerActor.Start(`eventChannelRef`) => BitcoinPeerActor.Started(wallet.ref)
     }
     gateway.expectAskWithReply {
-      case MessageGateway.Connect(`localPort`, `brokerAddress`) =>
-        MessageGateway.Connected(PeerId("peer id"), brokerId)
+      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
+        MessageGateway.Joined(PeerId("peer id"), brokerId)
     }
     expectMsg(CoinffeinePeerActor.Connected)
   }
@@ -95,7 +95,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     uninitializedPeer ! CoinffeinePeerActor.Connect
     val cause = new Exception("deep cause")
     localGateway.expectAskWithReply {
-      case MessageGateway.Connect(`localPort`, `brokerAddress`) => ConnectingError(cause)
+      case MessageGateway.Join(`localPort`, `brokerAddress`) => JoinError(cause)
     }
     expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
   }

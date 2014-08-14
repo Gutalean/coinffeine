@@ -62,12 +62,12 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
   }
 
-  it must "report connect failures" in new FreshBrokerAndPeer {
+  it must "report join failures" in new FreshBrokerAndPeer {
     val ref = createMessageGateway()
-    ref ! Connect(
+    ref ! Join(
       localPort = DefaultTcpPortAllocator.allocatePort(),
       connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
-    expectMsgType[ConnectingError](30 seconds)
+    expectMsgType[JoinError](30 seconds)
   }
 
   trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
@@ -83,8 +83,8 @@ class ProtoMessageGatewayTest
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway()
-      ref ! Connect(localPort, connectTo)
-      val Connected(_, _) = expectMsgType[Connected](connectionTimeout)
+      ref ! Join(localPort, connectTo)
+      val Joined(_, _) = expectMsgType[Joined](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))
       (ref, probe)
@@ -93,7 +93,7 @@ class ProtoMessageGatewayTest
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway()
       ref ! Bind(localPort)
-      val Bound(brokerId) = expectMsgType[Bound](connectionTimeout)
+      val Bound(_, brokerId) = expectMsgType[Bound](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, Subscribe(_ => true))
       (ref, probe, brokerId)

@@ -21,7 +21,7 @@ import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{BindingError, BrokerAddress, ConnectingError}
+import coinffeine.protocol.gateway.MessageGateway.{BindingError, BrokerAddress, JoinError}
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
@@ -70,10 +70,10 @@ class CoinffeinePeerActor(listenPort: Int,
 
   private def connectMessageGateway(): Future[PeerId] = {
     implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-    (gatewayRef ? MessageGateway.Connect(listenPort, brokerAddress)).map {
-      case MessageGateway.Connected(_, brokerId) =>
+    (gatewayRef ? MessageGateway.Join(listenPort, brokerAddress)).map {
+      case MessageGateway.Joined(_, brokerId) =>
         brokerId
-      case ConnectingError(cause) =>
+      case JoinError(cause) =>
         throw cause
     }
   }
