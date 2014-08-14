@@ -8,18 +8,16 @@ import coinffeine.peer.api.event.CoinffeineAppEvent
 /** An actor that receives events and forward them to the subscriptors. */
 class EventChannelActor extends Actor with ActorLogging {
 
-  private var subscribers: Set[ActorRef] = Set.empty
-
   override def receive: Receive = {
     case CoinffeinePeerActor.Subscribe =>
       log.info(s"Subscription received from ${sender()}")
-      subscribers += sender
+      context.system.eventStream.subscribe(sender(), classOf[CoinffeineAppEvent])
     case CoinffeinePeerActor.Unsubscribe =>
       log.info(s"Unsubscription received from ${sender()}")
-      subscribers -= sender
+      context.system.eventStream.unsubscribe(sender(), classOf[CoinffeineAppEvent])
     case event: CoinffeineAppEvent =>
       log.debug(s"Delivering event $event to the subscribers")
-      for (s <- subscribers) { s.forward(event) }
+      context.system.eventStream.publish(event)
   }
 }
 
