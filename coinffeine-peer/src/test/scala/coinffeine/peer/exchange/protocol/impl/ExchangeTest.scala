@@ -7,6 +7,7 @@ import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
+import coinffeine.peer.exchange.test.SampleExchange
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
@@ -23,7 +24,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
-    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 0.2.BTC)
+    val buyerWallet = createWallet(participants.buyer.bitcoinKey, 2.BTC)
     val buyerDeposit = ImmutableTransaction(buyerWallet.blockMultisignFunds(
       requiredSignatures, BuyerRole.myDepositAmount(amounts)))
     val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
@@ -31,7 +32,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
-    val sellerWallet = createWallet(participants.seller.bitcoinKey, 1.1.BTC)
+    val sellerWallet = createWallet(participants.seller.bitcoinKey, 11.BTC)
     val sellerDeposit = ImmutableTransaction(sellerWallet.blockMultisignFunds(
       requiredSignatures, SellerRole.myDepositAmount(amounts)))
     val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)

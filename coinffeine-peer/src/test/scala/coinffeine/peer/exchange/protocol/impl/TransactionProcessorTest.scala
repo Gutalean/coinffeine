@@ -7,6 +7,7 @@ import com.google.bitcoin.core.Transaction.SigHash
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency.Currency
 import coinffeine.model.currency.Implicits._
+import coinffeine.peer.exchange.test.SampleExchange
 
 class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
 

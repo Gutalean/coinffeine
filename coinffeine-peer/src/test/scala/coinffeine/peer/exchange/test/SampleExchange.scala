@@ -6,7 +6,6 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
-import coinffeine.peer.exchange.protocol._
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
@@ -22,6 +21,8 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
       bitcoinKey = new KeyPair()
     )
   )
+
+  val requiredSignatures = participants.map(_.bitcoinKey).toSeq
 
   val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
 
@@ -45,13 +46,13 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     parameters, brokerId, buyerBlockedFunds)
   val buyerHandshakingExchange =
     buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
-  val buyerRunningExchange =
-    buyerHandshakingExchange.startExchanging(deposits = MockExchangeProtocol.DummyDeposits)
 
   val sellerExchange = Exchange.nonStarted(exchangeId, SellerRole, peerIds.seller, amounts,
     parameters, brokerId, buyerBlockedFunds)
   val sellerHandshakingExchange =
     sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
-  val sellerRunningExchange =
-    sellerHandshakingExchange.startExchanging(deposits = MockExchangeProtocol.DummyDeposits)
+}
+
+object SampleExchange {
+  val IntermediateSteps = 10
 }

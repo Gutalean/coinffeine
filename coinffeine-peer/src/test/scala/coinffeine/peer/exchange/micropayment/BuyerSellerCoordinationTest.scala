@@ -37,6 +37,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "buyer-exchange-actor"
   )
+  val buyerRunningExchange =
+    buyerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.seller.paymentProcessorAccount, Seq(0.EUR)))
@@ -44,6 +46,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "seller-exchange-actor"
   )
+  val sellerRunningExchange =
+    sellerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
 
   "The buyer and seller actors" should "be able to perform an exchange" in {
     buyer ! StartMicroPaymentChannel(buyerRunningExchange, buyerPaymentProc,

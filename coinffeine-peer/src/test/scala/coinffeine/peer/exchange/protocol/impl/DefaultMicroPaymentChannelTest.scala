@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.currency.Implicits._
+import coinffeine.peer.exchange.test.SampleExchange
 
 class DefaultMicroPaymentChannelTest extends ExchangeTest {
 
@@ -20,8 +21,8 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
         val currentSellerChannel = sellerChannels(step - 1)
         val tx = currentBuyerChannel.closingTransaction(currentSellerChannel.signCurrentTransaction)
         sendToBlockChain(tx.get)
-        (balance(buyerWallet) + balance(sellerWallet)) should be (1.BTC)
-        balance(buyerWallet) should be (0.1.BTC * (step - 1))
+        (balance(buyerWallet) + balance(sellerWallet)) should be (10.BTC)
+        balance(buyerWallet) should be (1.BTC * (step - 1))
       }
   }
 
@@ -31,7 +32,7 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
       val lastSellerChannel = sellerChannels.last
       val tx = lastBuyerChannel.closingTransaction(lastSellerChannel.signCurrentTransaction)
       sendToBlockChain(tx.get)
-      balance(buyerWallet) should be (1.2.BTC)
-      balance(sellerWallet) should be (0.1.BTC)
+      balance(buyerWallet) should be (12.BTC)
+      balance(sellerWallet) should be (1.BTC)
     }
 }

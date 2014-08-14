@@ -9,11 +9,11 @@ import coinffeine.peer.exchange.protocol.Handshake.InvalidRefundTransaction
 class DefaultHandshakeTest extends ExchangeTest {
 
   "The refund transaction" should "refund the right amount for the buyer" in new BuyerHandshake {
-    valueSent(buyerHandshake.myUnsignedRefund, buyerWallet) should be (0.1.BTC)
+    valueSent(buyerHandshake.myUnsignedRefund, buyerWallet) should be (1.BTC)
   }
 
   it should "refund the right amount for the seller" in new SellerHandshake {
-    valueSent(sellerHandshake.myUnsignedRefund, sellerWallet) should be (1.BTC)
+    valueSent(sellerHandshake.myUnsignedRefund, sellerWallet) should be (10.BTC)
   }
 
   it should "not be directly broadcastable to the blockchain" in new BuyerHandshake {
@@ -44,7 +44,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       sendToBlockChain(buyerHandshake.myDeposit.get)
       mineUntilLockTime(parameters.lockTime)
       sendToBlockChain(signedBuyerRefund)
-      balance(buyerWallet) should be (0.1.BTC)
+      balance(buyerWallet) should be (1.BTC)
     }
 
   "A handshake" should "reject signing counterpart deposit with a different lock time" in
