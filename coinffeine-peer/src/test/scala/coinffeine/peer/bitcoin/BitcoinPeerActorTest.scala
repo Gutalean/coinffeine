@@ -5,9 +5,9 @@ import com.google.bitcoin.core.{FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.scalatest.mock.MockitoSugar
 
-import coinffeine.common.akka.test.{MockSupervisedActor, AkkaSpec}
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.peer.api.event.EventChannelProbe
+import coinffeine.peer.api.event.{BitcoinConnectionStatus, EventChannelProbe}
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
 
@@ -20,6 +20,13 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
       walletActor.expectMsgType[WalletActor.Initialize]
       expectMsg(BitcoinPeerActor.Started(walletActor.ref))
     }
+
+  it should "report connection status" in new Fixture {
+    actor ! BitcoinPeerActor.Start
+    walletActor.expectCreation()
+    expectMsg(BitcoinPeerActor.Started(walletActor.ref))
+    eventChannelProbe.expectMsgClass(classOf[BitcoinConnectionStatus])
+  }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     val peerGroup = new PeerGroup(network)
