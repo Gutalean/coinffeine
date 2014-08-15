@@ -3,16 +3,16 @@ package coinffeine.gui
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success, Random}
-import scalafx.application.{Platform, JFXApp}
+import scala.util.{Failure, Random, Success}
 import scalafx.application.JFXApp.PrimaryStage
+import scalafx.application.{JFXApp, Platform}
 
 import org.controlsfx.dialog.Dialogs
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
-import coinffeine.gui.application.{NotificationManager, ApplicationProperties, ApplicationScene}
-import coinffeine.gui.control.WalletBalanceWidget
+import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, NotificationManager}
+import coinffeine.gui.control.{BitcoinConnectionStatusWidget, WalletBalanceWidget}
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
@@ -48,6 +48,9 @@ object Main extends JFXApp
           toolbarWidgets = Seq(
             new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
             new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
+          ),
+          statusBarWidgets = Seq(
+            new BitcoinConnectionStatusWidget(properties.bitcoinConnectionStatusProperty)
           )
         )
       }

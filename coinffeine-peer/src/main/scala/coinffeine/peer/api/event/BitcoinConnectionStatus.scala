@@ -14,7 +14,7 @@ object BitcoinConnectionStatus {
   sealed trait BlockchainStatus
 
   /** The blockchain is fully downloaded */
-  case object Downloaded extends BlockchainStatus
+  case object NotDownloading extends BlockchainStatus
 
   /** Blockchain download is in progress */
   case class Downloading(totalBlocks: Int, remainingBlocks: Int) extends BlockchainStatus {

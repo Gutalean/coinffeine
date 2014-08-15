@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
 import coinffeine.peer.api.event.BitcoinConnectionStatus
-import coinffeine.peer.api.event.BitcoinConnectionStatus.{Downloaded, Downloading}
+import coinffeine.peer.api.event.BitcoinConnectionStatus.{NotDownloading, Downloading}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
@@ -28,13 +28,14 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
   override def receive: Receive = {
     case Start =>
+      peerGroup.addEventListener(PeerGroupListener)
       Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
   }
 
   private class InitializedBitcoinPeerActor(listener: ActorRef) {
     val blockchainRef = context.actorOf(blockchainProps, "blockchain")
     val walletRef = context.actorOf(walletProps, "wallet")
-    var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), Downloaded)
+    var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
 
     def start(): Unit = {
       blockchainRef ! BlockchainActor.Initialize(blockchain)
@@ -75,7 +76,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
         }
 
       case DownloadCompleted =>
-        updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloaded))
+        updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
     }
 
     private def createWallet(): Wallet = {
@@ -113,7 +114,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
     def onSuccess(result: Service.State): Unit = {
       log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(new PeerGroupListener)
+      peerGroup.startBlockChainDownload(PeerGroupListener)
       new InitializedBitcoinPeerActor(listener).start()
     }
 
@@ -123,7 +124,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     }
   }
 
-  private class PeerGroupListener extends AbstractPeerEventListener {
+  private object PeerGroupListener extends AbstractPeerEventListener {
     override def onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int): Unit = {
       self ! (if (blocksLeft == 0) DownloadCompleted else DownloadProgress(blocksLeft))
     }
