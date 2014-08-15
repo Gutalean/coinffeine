@@ -21,6 +21,8 @@ class ApplicationProperties(app: CoinffeineApp) {
   def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
   def bitcoinConnectionStatusProperty: ReadOnlyObjectProperty[BitcoinConnectionStatus] =
     _bitcoinConnectionStatus
+  def coinffeineConnectionStatusProperty: ReadOnlyObjectProperty[CoinffeineConnectionStatus] =
+    _coinffeineConnectionStatus
 
   private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
     this, "walletBalance", Some(Balance(app.wallet.currentBalance())))
@@ -33,6 +35,9 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private val _bitcoinConnectionStatus = new ObjectProperty[BitcoinConnectionStatus](
     this, "bitcoinConnectionStatus", BitcoinConnectionStatus(0, NotDownloading))
+
+  private val _coinffeineConnectionStatus = new ObjectProperty(
+    this, "coinffeineConnectionStatus", CoinffeineConnectionStatus(0))
 
   private val eventHandler: EventHandler = FxEventHandler {
 
@@ -54,6 +59,9 @@ class ApplicationProperties(app: CoinffeineApp) {
 
     case status: BitcoinConnectionStatus =>
       _bitcoinConnectionStatus.set(status)
+
+    case status: CoinffeineConnectionStatus =>
+      _coinffeineConnectionStatus.set(status)
   }
 
   private def orderExist(orderId: OrderId): Boolean =
