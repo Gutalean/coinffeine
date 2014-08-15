@@ -12,7 +12,7 @@ import org.controlsfx.dialog.Dialogs
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, NotificationManager}
-import coinffeine.gui.control.{BitcoinConnectionStatusWidget, WalletBalanceWidget}
+import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
 import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
@@ -50,7 +50,7 @@ object Main extends JFXApp
             new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
           ),
           statusBarWidgets = Seq(
-            new BitcoinConnectionStatusWidget(properties.bitcoinConnectionStatusProperty)
+            new ConnectionStatusWidget(properties.connectionStatusProperty)
           )
         )
       }
