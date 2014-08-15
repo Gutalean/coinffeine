@@ -28,6 +28,7 @@ class BitcoinConnectionStatusWidget(status: ReadOnlyObjectProperty[BitcoinConnec
         val percent = (download.progress * 100).toInt
         s", syncing blockchain ($percent%)"
     }
-    s"${status.activePeers} bitcoin peers$downloadMessage"
+    val pluralS = if (status.activePeers == 1) "" else "s"
+    s"${status.activePeers} bitcoin peer${pluralS}$downloadMessage"
   }
 }
