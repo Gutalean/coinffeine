@@ -4,6 +4,7 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.application.properties.OrderProperties
+import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.market.OrderId
@@ -19,10 +20,8 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] = _walletBalanceProperty
   def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
-  def bitcoinConnectionStatusProperty: ReadOnlyObjectProperty[BitcoinConnectionStatus] =
-    _bitcoinConnectionStatus
-  def coinffeineConnectionStatusProperty: ReadOnlyObjectProperty[CoinffeineConnectionStatus] =
-    _coinffeineConnectionStatus
+  def connectionStatusProperty: ReadOnlyObjectProperty[CombinedConnectionStatus] =
+    _connectionStatus
 
   private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
     this, "walletBalance", Some(Balance(app.wallet.currentBalance())))
@@ -33,11 +32,8 @@ class ApplicationProperties(app: CoinffeineApp) {
   private def initialFiatBalance: Option[FiatBalance] =
     app.paymentProcessor.currentBalance().map { balance => Balance(balance.totalFunds) }
 
-  private val _bitcoinConnectionStatus = new ObjectProperty[BitcoinConnectionStatus](
-    this, "bitcoinConnectionStatus", BitcoinConnectionStatus(0, NotDownloading))
-
-  private val _coinffeineConnectionStatus = new ObjectProperty(
-    this, "coinffeineConnectionStatus", CoinffeineConnectionStatus(0))
+  private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
+    CombinedConnectionStatus(CoinffeineConnectionStatus(0), BitcoinConnectionStatus(0, NotDownloading)))
 
   private val eventHandler: EventHandler = FxEventHandler {
 
@@ -58,10 +54,10 @@ class ApplicationProperties(app: CoinffeineApp) {
       _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
 
     case status: BitcoinConnectionStatus =>
-      _bitcoinConnectionStatus.set(status)
+      _connectionStatus.set(_connectionStatus.value.copy(bitcoinStatus = status))
 
     case status: CoinffeineConnectionStatus =>
-      _coinffeineConnectionStatus.set(status)
+      _connectionStatus.set(_connectionStatus.value.copy(coinffeineStatus = status))
   }
 
   private def orderExist(orderId: OrderId): Boolean =
