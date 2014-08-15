@@ -67,7 +67,7 @@ class OkPayProcessorActor(
       updateBalances(balances)
     case BalanceUpdateFailed(cause) =>
       notifyBalanceUpdateFailure(cause)
-    case msg @ (BlockFunds(_) | UnblockFunds(_)) =>
+    case msg@(BlockFunds(_) | UnblockFunds(_)) =>
       blockingFunds.forward(msg)
   }
 
@@ -89,11 +89,11 @@ class OkPayProcessorActor(
     AskPattern(blockingFunds, UseFunds(pay.fundsId, pay.amount), "fail to use funds")
       .withImmediateReply[Any]()
       .flatMap {
-        case FundsUsed(pay.`fundsId`, pay.`amount`) =>
-          Future.successful {}
-        case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
-          Future.failed(new RuntimeException(cause))
-      }
+      case FundsUsed(pay.`fundsId`, pay.`amount`) =>
+        Future.successful {}
+      case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
+        Future.failed(new RuntimeException(cause))
+    }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
     client.findPayment(paymentId).onComplete {

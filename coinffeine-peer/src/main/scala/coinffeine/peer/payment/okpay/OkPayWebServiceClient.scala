@@ -12,6 +12,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.peer.payment._
+import coinffeine.peer.payment.okpay.OkPayClient.{PaidBySender, PaidByReceiver, FeePolicy}
 import coinffeine.peer.payment.okpay.generated._
 
 /** SOAP client of OKPay service.
@@ -42,7 +43,7 @@ class OkPayWebServiceClient(override val accountId: String,
   override val baseAddress: URI = baseAddressOverride.getOrElse(super.baseAddress)
 
   override def sendPayment[C <: FiatCurrency](
-      to: AccountId, amount: CurrencyAmount[C], comment: String): Future[Payment[C]] =
+      to: AccountId, amount: CurrencyAmount[C], comment: String, feePolicy: FeePolicy): Future[Payment[C]] =
     service.send_Money(
       walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken())),
@@ -50,7 +51,10 @@ class OkPayWebServiceClient(override val accountId: String,
       currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
       amount = Some(amount.value),
       comment = Some(Some(comment)),
-      isReceiverPaysFees = Some(false),
+      isReceiverPaysFees = Some(feePolicy match {
+        case PaidByReceiver => true
+        case PaidBySender => false
+      }),
       invoice = None
     ).map { response =>
       parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
