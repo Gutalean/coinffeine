@@ -28,6 +28,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
   override def receive: Receive = {
     case Start =>
+      peerGroup.addEventListener(PeerGroupListener)
       Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
   }
 
@@ -113,7 +114,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
     def onSuccess(result: Service.State): Unit = {
       log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(new PeerGroupListener)
+      peerGroup.startBlockChainDownload(PeerGroupListener)
       new InitializedBitcoinPeerActor(listener).start()
     }
 
@@ -123,7 +124,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     }
   }
 
-  private class PeerGroupListener extends AbstractPeerEventListener {
+  private object PeerGroupListener extends AbstractPeerEventListener {
     override def onBlocksDownloaded(peer: Peer, block: Block, blocksLeft: Int): Unit = {
       self ! (if (blocksLeft == 0) DownloadCompleted else DownloadProgress(blocksLeft))
     }
