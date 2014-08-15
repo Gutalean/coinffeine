@@ -6,13 +6,16 @@ import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment.PaymentProcessorException
+import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidBySender}
 
 trait OkPayClient {
 
   val accountId: AccountId
 
-  def sendPayment[C <: FiatCurrency](to: AccountId, amount: CurrencyAmount[C],
-                                     comment: String): Future[Payment[C]]
+  def sendPayment[C <: FiatCurrency](to: AccountId,
+                                     amount: CurrencyAmount[C],
+                                     comment: String,
+                                     feePolicy: FeePolicy = PaidBySender): Future[Payment[C]]
 
   def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]]
 
@@ -28,4 +31,10 @@ trait OkPayClient {
   }
 
   protected def executionContext: ExecutionContext
+}
+
+object OkPayClient {
+  sealed trait FeePolicy
+  case object PaidByReceiver extends FeePolicy
+  case object PaidBySender extends FeePolicy
 }

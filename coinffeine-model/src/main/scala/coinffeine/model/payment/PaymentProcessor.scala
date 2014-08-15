@@ -1,5 +1,18 @@
 package coinffeine.model.payment
 
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+
+trait PaymentProcessor {
+
+  def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C]
+
+  def amountPlusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+    amount + calculateFee(amount)
+
+  def amountMinusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+    amount - calculateFee(amount)
+}
+
 object PaymentProcessor {
   /** The ID of the payment processor. */
   type Id = String
