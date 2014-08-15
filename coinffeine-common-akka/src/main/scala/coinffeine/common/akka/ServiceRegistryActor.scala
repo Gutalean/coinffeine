@@ -55,7 +55,9 @@ class ServiceRegistryActor extends Actor with ActorLogging {
 object ServiceRegistryActor {
 
   /** An object that identifies a determined service provided by an actor. */
-  case class ServiceId(id: String)
+  case class ServiceId(id: String) {
+    override def toString = s"actor service $id"
+  }
 
   /** A request to register a service provided by the given actor.
     *
