@@ -7,6 +7,7 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.market.OrderId
+import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.peer.api.event._
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
@@ -18,6 +19,8 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] = _walletBalanceProperty
   def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
+  def bitcoinConnectionStatusProperty: ReadOnlyObjectProperty[BitcoinConnectionStatus] =
+    _bitcoinConnectionStatus
 
   private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
     this, "walletBalance", Some(Balance(app.wallet.currentBalance())))
@@ -27,6 +30,9 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private def initialFiatBalance: Option[FiatBalance] =
     app.paymentProcessor.currentBalance().map { balance => Balance(balance.totalFunds) }
+
+  private val _bitcoinConnectionStatus = new ObjectProperty[BitcoinConnectionStatus](
+    this, "bitcoinConnectionStatus", BitcoinConnectionStatus(0, NotDownloading))
 
   private val eventHandler: EventHandler = FxEventHandler {
 
@@ -45,6 +51,9 @@ class ApplicationProperties(app: CoinffeineApp) {
 
     case FiatBalanceChangeEvent(newBalance) if newBalance.amount.currency == Euro =>
       _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
+
+    case status: BitcoinConnectionStatus =>
+      _bitcoinConnectionStatus.set(status)
   }
 
   private def orderExist(orderId: OrderId): Boolean =
