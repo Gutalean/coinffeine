@@ -48,7 +48,8 @@ object Main extends JFXApp
           toolbarWidgets = Seq(
             new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
             new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
-          )
+          ),
+          statusBarWidgets = Seq.empty
         )
       }
       stage.show()

@@ -11,11 +11,15 @@ import org.controlsfx.control.SegmentedButton
 
 import coinffeine.gui.application.ApplicationScene._
 
-/** Main scene of the application
+/** Main scene of the application.
   *
   * @param views  Available application views. The first one is visible at application start.
+  * @param toolbarWidgets  Widgets displayed at the tool bar on the top of the window
+  * @param statusBarWidgets  Widgets displayed on the status bar at the bottom of the window
   */
-class ApplicationScene(views: Seq[ApplicationView], toolbarWidgets: Seq[Node])
+class ApplicationScene(views: Seq[ApplicationView],
+                       toolbarWidgets: Seq[Node],
+                       statusBarWidgets: Seq[Node])
   extends Scene(width = DefaultWidth, height = DefaultHeight) {
 
   require(views.nonEmpty, "At least one view is required")
@@ -38,18 +42,29 @@ class ApplicationScene(views: Seq[ApplicationView], toolbarWidgets: Seq[Node])
   }
 
   private val toolbarPane = new ToolBar {
+    id = "toolbar"
     content = Seq(viewSelector, new Separator()) ++ toolbarWidgets
+  }
+
+  private val statusBarPane = new ToolBar {
+    id = "status"
+    prefHeight = 25
+    content = interleaveSeparators(statusBarWidgets)
   }
 
   root = {
     val mainPane = new BorderPane {
       top = toolbarPane
+      bottom = statusBarPane
     }
     currentView.onChange { mainPane.center = currentView.value.centerPane }
     mainPane
   }
 
   currentView.value = views.head
+
+  private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =
+    widgets.flatMap(w => Seq(new Separator, w)).drop(1)
 }
 
 object ApplicationScene {
