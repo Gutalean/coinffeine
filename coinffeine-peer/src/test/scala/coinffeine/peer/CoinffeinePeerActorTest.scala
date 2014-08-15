@@ -43,7 +43,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the payment processor actor" in {
     paymentProcessor.expectCreation()
-    paymentProcessor.expectMsg(PaymentProcessorActor.Initialize)
   }
 
   it must "connect to both networks" in {

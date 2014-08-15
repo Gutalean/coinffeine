@@ -36,8 +36,7 @@ class CoinffeinePeerActor(listenPort: Int,
   import CoinffeinePeerActor._
 
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
-  private val paymentProcessorRef = spawnDelegate(
-    props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize)
+  private val paymentProcessorRef = spawnDelegate(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private var walletRef: ActorRef = _
   private var orderSupervisorRef: ActorRef = _

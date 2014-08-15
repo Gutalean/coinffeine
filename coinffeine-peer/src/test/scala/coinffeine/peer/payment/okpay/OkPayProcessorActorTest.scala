@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import org.mockito.BDDMockito.given
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -44,7 +44,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     given(client.currentBalances()).willReturn(Future.failed(cause))
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
-    processor ! PaymentProcessorActor.Initialize
+    processor = system.actorOf(Props(
+      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
@@ -137,12 +138,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
     val eventChannelProbe = EventChannelProbe()
-    val processor = system.actorOf(Props(
-      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+    var processor: ActorRef = _
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
-      processor ! PaymentProcessorActor.Initialize
+      processor = system.actorOf(Props(
+        new OkPayProcessorActor(senderAccount, client, pollingInterval)))
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
       }

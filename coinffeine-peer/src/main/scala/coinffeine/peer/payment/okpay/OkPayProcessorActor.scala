@@ -31,15 +31,10 @@ class OkPayProcessorActor(
   private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
   private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
 
-  override def receive: Receive = {
-    case Initialize =>
-      pollBalances()
-      context.become(managePayments)
-  }
-
   private var timer: Cancellable = _
 
   override def preStart(): Unit = {
+    pollBalances()
     timer = context.system.scheduler.schedule(
       initialDelay = pollingInterval,
       interval = pollingInterval,
@@ -52,7 +47,7 @@ class OkPayProcessorActor(
     Option(timer).foreach(_.cancel())
   }
 
-  private val managePayments: Receive = {
+  override def receive: Receive = {
     case PaymentProcessorActor.RetrieveAccountId =>
       sender ! RetrievedAccountId(accountId)
     case pay: Pay[_] =>

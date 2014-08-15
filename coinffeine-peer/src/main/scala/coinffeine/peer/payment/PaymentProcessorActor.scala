@@ -11,9 +11,6 @@ import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessorActor {
 
-  /** Initialize the payment processor actor */
-  case object Initialize
-
   /** A message sent to the payment processor in order to identify the user account. */
   case object RetrieveAccountId
 
