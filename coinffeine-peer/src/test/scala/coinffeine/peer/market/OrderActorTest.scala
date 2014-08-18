@@ -10,6 +10,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.api.event._
 import coinffeine.peer.bitcoin.WalletActor
@@ -28,7 +29,7 @@ class OrderActorTest extends AkkaSpec {
     expectMsg(blockingFundsOrder)
   }
 
-  it should "block FIAT funds when initialized" in new BuyerFixture {
+  it should "block FIAT funds plus fees when initialized" in new BuyerFixture {
     givenInitializedOrder()
   }
 
@@ -260,7 +261,8 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
-    override val amountsToBlock = (order.fiatAmount, order.amount * 0.2)
+    override val amountsToBlock =
+      (OkPayPaymentProcessor.amountPlusFee(order.fiatAmount), order.amount * 0.2)
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()

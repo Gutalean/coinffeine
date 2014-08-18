@@ -4,7 +4,7 @@ import scala.math.BigDecimal.RoundingMode
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 
-object OkPayFeeCalculator extends PaymentProcessor {
+object OkPayPaymentProcessor extends PaymentProcessor {
 
   val MinFee = BigDecimal(0.01)
   val MaxFee = BigDecimal(2.99)
