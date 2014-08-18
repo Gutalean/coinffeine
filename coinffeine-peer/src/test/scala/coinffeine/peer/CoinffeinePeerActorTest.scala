@@ -48,7 +48,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "connect to both networks" in {
     gateway.probe.expectNoMsg()
-    val eventChannelRef = eventChannel.ref
     peer ! CoinffeinePeerActor.Connect
     bitcoinPeer.expectAskWithReply {
       case BitcoinPeerActor.Start => BitcoinPeerActor.Started(wallet.ref)
