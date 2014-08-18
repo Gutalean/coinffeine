@@ -28,8 +28,11 @@ class ServiceRegistryActor extends Actor with ActorLogging {
     case EventuallyLocateService(id, timeout) =>
       implicit val executor = context.dispatcher
       val requester = sender()
-      val timer = context.system.scheduler.scheduleOnce(timeout)(triggerTimeout(id, requester))
+      val timer = context.system.scheduler.scheduleOnce(
+        timeout, self, TriggerTimeout(id, requester))
       addTimer(id, requester, timer)
+    case TriggerTimeout(id, requester) =>
+      triggerTimeout(id, requester)
   }
 
   private def addTimer(id: ServiceId, requester: ActorRef, timer: Cancellable): Unit = {
@@ -96,6 +99,9 @@ object ServiceRegistryActor {
 
   /** A response indicating the requested service has not been found. */
   case class ServiceNotFound(id: ServiceId)
+
+  /** A self-message sent when timeout must be triggered. */
+  private case class TriggerTimeout(id: ServiceId, requester: ActorRef)
 
   /** Obtain the properties for a new, fresh service registry actor. */
   def props(): Props = Props(new ServiceRegistryActor)
