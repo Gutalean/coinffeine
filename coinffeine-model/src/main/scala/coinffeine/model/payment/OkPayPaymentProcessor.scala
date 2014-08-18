@@ -3,9 +3,8 @@ package coinffeine.model.payment
 import scala.math.BigDecimal.RoundingMode
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.FeeCalculator
 
-object OkPayFeeCalculator extends FeeCalculator {
+object OkPayPaymentProcessor extends PaymentProcessor {
 
   val MinFee = BigDecimal(0.01)
   val MaxFee = BigDecimal(2.99)

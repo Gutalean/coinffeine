@@ -2,6 +2,17 @@ package coinffeine.model.payment
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 
+trait PaymentProcessor {
+
+  def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C]
+
+  def amountPlusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+    amount + calculateFee(amount)
+
+  def amountMinusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+    amount - calculateFee(amount)
+}
+
 object PaymentProcessor {
   /** The ID of the payment processor. */
   type Id = String
@@ -17,15 +28,4 @@ object PaymentProcessor {
 
   /** Identifier of some funds blocked for a specific use. */
   case class BlockedFundsId(underlying: Int) extends AnyVal
-
-  trait FeeCalculator {
-
-    def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C]
-
-    def amountPlusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
-      amount + calculateFee(amount)
-
-    def amountMinusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
-      amount - calculateFee(amount)
-  }
 }
