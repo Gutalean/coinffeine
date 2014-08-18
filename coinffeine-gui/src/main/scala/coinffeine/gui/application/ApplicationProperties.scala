@@ -24,7 +24,7 @@ class ApplicationProperties(app: CoinffeineApp) {
     _connectionStatus
 
   private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
-    this, "walletBalance", Some(Balance(app.wallet.currentBalance())))
+    this, "walletBalance", app.wallet.currentBalance().map(amount => Balance(amount)))
 
   private val _fiatBalanceProperty =
     new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", initialFiatBalance)
