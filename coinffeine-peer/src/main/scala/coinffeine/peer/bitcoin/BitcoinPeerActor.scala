@@ -30,6 +30,11 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     case Start =>
       peerGroup.addEventListener(PeerGroupListener)
       Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
+
+    case init: InitializedBitcoinPeerActor => init.start()
+
+    case RetrieveConnectionStatus =>
+      sender() ! BitcoinConnectionStatus(activePeers = 0, NotDownloading)
   }
 
   private class InitializedBitcoinPeerActor(listener: ActorRef) {
@@ -38,6 +43,8 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
 
     def start(): Unit = {
+      log.info("Connected to peer group, starting blockchain download")
+      peerGroup.startBlockChainDownload(PeerGroupListener)
       blockchainRef ! BlockchainActor.Initialize(blockchain)
       walletRef ! WalletActor.Initialize(createWallet())
       listener ! Started(walletRef)
@@ -77,6 +84,9 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
       case DownloadCompleted =>
         updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
+
+      case RetrieveConnectionStatus =>
+        sender() ! connectionStatus
     }
 
     private def createWallet(): Wallet = {
@@ -113,9 +123,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     extends FutureCallback[Service.State] {
 
     def onSuccess(result: Service.State): Unit = {
-      log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(PeerGroupListener)
-      new InitializedBitcoinPeerActor(listener).start()
+      self ! new InitializedBitcoinPeerActor(listener)
     }
 
     def onFailure(cause: Throwable): Unit = {
