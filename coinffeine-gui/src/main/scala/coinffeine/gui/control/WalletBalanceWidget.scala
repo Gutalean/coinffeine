@@ -8,7 +8,7 @@ import scalafx.scene.layout.HBox
 
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency.Currency
-import coinffeine.peer.api.event.Balance
+import coinffeine.model.event.Balance
 
 class WalletBalanceWidget[C <: Currency](
     currency: C, balanceProperty: ReadOnlyObjectProperty[Option[Balance[C]]]) extends HBox {

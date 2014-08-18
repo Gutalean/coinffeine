@@ -13,7 +13,7 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor

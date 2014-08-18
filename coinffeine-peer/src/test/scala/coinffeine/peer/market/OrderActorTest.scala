@@ -10,10 +10,10 @@ import coinffeine.model.bitcoin.{BitcoinFeeCalculator, BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
+import coinffeine.model.event._
 import coinffeine.model.market._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.api.event._
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Perspective, SellerPerspective}

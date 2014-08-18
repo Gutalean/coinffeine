@@ -6,8 +6,8 @@ import scalafx.util.Duration
 import org.controlsfx.control.Notifications
 
 import coinffeine.gui.util.FxEventHandler
+import coinffeine.model.event.NotifiableCoinffeineAppEvent
 import coinffeine.peer.api.CoinffeineApp
-import coinffeine.peer.api.event.{NotifiableCoinffeineAppEvent}
 
 class NotificationManager(app: CoinffeineApp) {
 

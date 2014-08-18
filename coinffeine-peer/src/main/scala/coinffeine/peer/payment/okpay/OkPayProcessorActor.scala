@@ -13,8 +13,8 @@ import com.typesafe.config.Config
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.api.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._

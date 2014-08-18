@@ -1,4 +1,4 @@
-package coinffeine.peer.api.event
+package coinffeine.model.event
 
 import org.joda.time.DateTime
 

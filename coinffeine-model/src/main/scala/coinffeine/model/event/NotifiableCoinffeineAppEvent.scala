@@ -1,4 +1,4 @@
-package coinffeine.peer.api.event
+package coinffeine.model.event
 
 /** A coinffeine app event that is susceptible to be notified to the UI. */
 trait NotifiableCoinffeineAppEvent extends CoinffeineAppEvent {

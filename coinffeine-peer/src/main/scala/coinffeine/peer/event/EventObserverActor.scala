@@ -2,8 +2,8 @@ package coinffeine.peer.event
 
 import akka.actor.{Actor, Props}
 
+import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.peer.api.EventHandler
-import coinffeine.peer.api.event.CoinffeineAppEvent
 
 class EventObserverActor(handler: EventHandler) extends Actor {
 

@@ -7,8 +7,8 @@ import scalafx.beans.property.ObjectProperty
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
-import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
+import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 
 class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
   with Eventually {

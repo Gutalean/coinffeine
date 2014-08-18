@@ -2,8 +2,8 @@ package coinffeine.gui.control
 
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.control.CombinedConnectionStatus.{Red, Yellow, Green}
-import coinffeine.peer.api.event.{CoinffeineConnectionStatus, BitcoinConnectionStatus}
-import coinffeine.peer.api.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
+import coinffeine.model.event.{CoinffeineConnectionStatus, BitcoinConnectionStatus}
+import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
 
 class CombinedConnectionStatusTest extends UnitTest {
 

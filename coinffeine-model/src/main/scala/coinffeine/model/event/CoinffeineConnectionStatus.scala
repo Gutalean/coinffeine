@@ -1,4 +1,4 @@
-package coinffeine.peer.api.event
+package coinffeine.model.event
 
 /** An event reporting the state of the connection with the Coinffeine network. */
 case class CoinffeineConnectionStatus(activePeers: Int) {

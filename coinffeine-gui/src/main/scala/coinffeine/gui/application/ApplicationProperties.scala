@@ -7,9 +7,9 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
+import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
+import coinffeine.model.event._
 import coinffeine.model.market.OrderId
-import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.peer.api.event._
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) {

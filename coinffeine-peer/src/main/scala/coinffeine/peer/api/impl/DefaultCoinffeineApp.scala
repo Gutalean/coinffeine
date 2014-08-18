@@ -5,7 +5,7 @@ import akka.actor.{ActorSystem, Props}
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
 

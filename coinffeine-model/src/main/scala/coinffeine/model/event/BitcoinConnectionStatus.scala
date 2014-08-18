@@ -1,6 +1,6 @@
-package coinffeine.peer.api.event
+package coinffeine.model.event
 
-import coinffeine.peer.api.event.BitcoinConnectionStatus.BlockchainStatus
+import coinffeine.model.event.BitcoinConnectionStatus.BlockchainStatus
 
 /** An event reporting the state of the connection with the bitcoin network. */
 case class BitcoinConnectionStatus(activePeers: Int, blockchainStatus: BlockchainStatus)
