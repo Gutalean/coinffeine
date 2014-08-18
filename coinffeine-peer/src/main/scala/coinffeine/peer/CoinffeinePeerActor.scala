@@ -8,10 +8,12 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
+import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -98,6 +100,16 @@ class CoinffeinePeerActor(listenPort: Int,
       marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
     case OpenOrdersRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestOpenOrders(market))
+
+    case RetrieveConnectionStatus =>
+      (for {
+        bitcoinStatus <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveConnectionStatus)
+          .withImmediateReply[BitcoinConnectionStatus]()
+        coinffeineStatus <- AskPattern(gatewayRef, MessageGateway.RetrieveConnectionStatus)
+          .withImmediateReply[MessageGateway.ConnectionStatus]()
+      } yield {
+        ConnectionStatus(bitcoinStatus, CoinffeineConnectionStatus(coinffeineStatus.activePeers))
+      }).pipeTo(sender())
   }
 
   private def spawnDelegate(delegateProps: Props, name: String, initMessages: Any*): ActorRef = {
@@ -115,6 +127,11 @@ object CoinffeinePeerActor {
   case object Connect
   case object Connected
   case class ConnectionFailed(cause: Throwable)
+
+  /** Message sent to the peer to get a [[ConnectionStatus]] in response */
+  case object RetrieveConnectionStatus
+  case class ConnectionStatus(bitcoinStatus: BitcoinConnectionStatus,
+                              coinffeineStatus: CoinffeineConnectionStatus)
 
   /** Open a new order.
     *

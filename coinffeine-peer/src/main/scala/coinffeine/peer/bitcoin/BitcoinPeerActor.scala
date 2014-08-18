@@ -170,6 +170,9 @@ object BitcoinPeerActor {
   case class Started(walletActor: ActorRef) extends StartResult
   case class StartFailure(cause: Throwable) extends StartResult
 
+  /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
+  case object RetrieveConnectionStatus
+
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.
     *
