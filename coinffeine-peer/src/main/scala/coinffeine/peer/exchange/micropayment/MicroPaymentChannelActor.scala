@@ -15,7 +15,7 @@ object MicroPaymentChannelActor {
     *
     * @param exchange          Exchange to take part on
     * @param paymentProcessor  Actor to use for making payments
-    * @param messageGateway    Gateway to communicate with the counterpart
+    * @param registry          Registry to locate services
     * @param resultListeners   These actors will receive result and
     *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeProgress]]
     *                          notifications
@@ -23,7 +23,7 @@ object MicroPaymentChannelActor {
   case class StartMicroPaymentChannel[C <: FiatCurrency](
       exchange: RunningExchange[C],
       paymentProcessor: ActorRef,
-      messageGateway: ActorRef,
+      registry: ActorRef,
       resultListeners: Set[ActorRef]
   )
 

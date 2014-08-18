@@ -39,7 +39,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
+    runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
   )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {

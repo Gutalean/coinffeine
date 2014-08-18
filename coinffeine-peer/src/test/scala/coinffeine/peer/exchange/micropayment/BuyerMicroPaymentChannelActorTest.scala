@@ -44,7 +44,7 @@ class BuyerMicroPaymentChannelActorTest
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
     actor ! StartMicroPaymentChannel(
-      runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
+      runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
     )
 
     val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])

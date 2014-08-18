@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
@@ -11,6 +12,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeS
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.payment.MockPaymentProcessorFactory
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 
 class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
@@ -49,11 +51,18 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val sellerRunningExchange =
     sellerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
 
+  val buyerRegistry, sellerRegistry = system.actorOf(ServiceRegistryActor.props())
+  val buyerMessageForwarder = MessageForwarder("fw-to-seller", seller)
+  val sellerMessageForwarder = MessageForwarder("fw-to-buyer", buyer)
+
+  new ServiceRegistry(buyerRegistry).register(MessageGateway.ServiceId, buyerMessageForwarder)
+  new ServiceRegistry(sellerRegistry).register(MessageGateway.ServiceId, sellerMessageForwarder)
+
   "The buyer and seller actors" should "be able to perform an exchange" in {
     buyer ! StartMicroPaymentChannel(buyerRunningExchange, buyerPaymentProc,
-      MessageForwarder("fw-to-seller", seller), Set(buyerListener.ref))
+      buyerRegistry, Set(buyerListener.ref))
     seller ! StartMicroPaymentChannel(sellerRunningExchange, sellerPaymentProc,
-      MessageForwarder("fw-to-buyer", buyer), Set(sellerListener.ref))
+      sellerRegistry, Set(sellerListener.ref))
     buyerListener.receiveWhile() {
       case ExchangeProgress(_) =>
     }

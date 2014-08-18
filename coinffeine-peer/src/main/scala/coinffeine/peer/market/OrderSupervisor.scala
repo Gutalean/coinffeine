@@ -33,7 +33,7 @@ class OrderSupervisor(orderActorProps: Props,
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(brokerId, gateway)
+      submission ! SubmissionSupervisor.Initialize(brokerId, registry)
       context.become(waitingForOrders)
     }
 
@@ -42,7 +42,7 @@ class OrderSupervisor(orderActorProps: Props,
       case OpenOrder(order) =>
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
 
-        ref ! OrderActor.Initialize(order, submission, gateway, paymentProcessor,
+        ref ! OrderActor.Initialize(order, submission, registry, paymentProcessor,
           bitcoinPeer, wallet, brokerId)
         orders += order.id -> ref
 
@@ -63,7 +63,7 @@ class OrderSupervisor(orderActorProps: Props,
 object OrderSupervisor {
 
   case class Initialize(brokerId: PeerId,
-                        gateway: ActorRef,
+                        registry: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)

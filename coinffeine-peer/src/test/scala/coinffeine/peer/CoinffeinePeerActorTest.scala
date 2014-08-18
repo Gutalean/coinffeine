@@ -73,10 +73,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the order supervisor actor" in {
     orders.expectCreation()
-    val OrderSupervisor.Initialize(_, receivedGateway,
+    val OrderSupervisor.Initialize(_, _,
         receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
       orders.expectMsgType[OrderSupervisor.Initialize]
-    receivedGateway should be (gateway.ref)
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
   }

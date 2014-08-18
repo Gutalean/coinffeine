@@ -7,7 +7,7 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.pattern._
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.{ServiceRegistry, AskPattern}
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
@@ -19,6 +19,7 @@ import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
@@ -42,6 +43,8 @@ private class HandshakeActor[C <: FiatCurrency](
     import context.dispatcher
     import init._
 
+    private val messageGateway = new ServiceRegistry(registry)
+      .eventuallyLocate(MessageGateway.ServiceId)
     private val forwarding =
       new MessageForwarding(messageGateway, exchange.counterpartId, exchange.brokerId)
 
@@ -262,7 +265,7 @@ object HandshakeActor {
     * @constructor
     * @param exchange         Exchange to start the handshake for
     * @param user             User key and payment id
-    * @param messageGateway   Communications gateway
+    * @param registry         Actor to locate services
     * @param blockchain       Actor to ask for TX confirmations for
     * @param wallet           Wallet actor
     * @param listener         Actor to be notified of the handshake result
@@ -270,7 +273,7 @@ object HandshakeActor {
   case class StartHandshake[C <: FiatCurrency](
       exchange: NonStartedExchange[C],
       user: Exchange.PeerInfo,
-      messageGateway: ActorRef,
+      registry: ActorRef,
       blockchain: ActorRef,
       wallet: ActorRef,
       listener: ActorRef)

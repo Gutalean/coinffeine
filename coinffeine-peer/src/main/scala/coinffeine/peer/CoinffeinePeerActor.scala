@@ -59,7 +59,7 @@ class CoinffeinePeerActor(listenPort: Int,
         walletRef = retrievedWalletRef
         orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
           OrderSupervisor.Initialize(
-            brokerId, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
+            brokerId, registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
         marketInfoRef = spawnDelegate(
           props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
         context.become(handleMessages)
