@@ -14,7 +14,8 @@ import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor.AccountId
+import coinffeine.model.payment.OkPayFeeCalculator
+import coinffeine.model.payment.PaymentProcessor.{FeeCalculator, AccountId}
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
@@ -29,7 +30,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 intermediateSteps: Int) extends Actor with ActorLogging with EventPublisher {
+                 intermediateSteps: Int,
+                 feeCalculator: FeeCalculator) extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
 
@@ -73,7 +75,7 @@ class OrderActor(exchangeActorProps: Props,
         case Bid =>
           log.info("{} is bidding, blocking {} in payment processor",
             currentOrder.id, currentOrder.fiatAmount)
-          currentOrder.fiatAmount
+          feeCalculator.amountPlusFee(currentOrder.fiatAmount)
         case Ask =>
           log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
           currentOrder.fiatAmount.currency.Zero
@@ -240,6 +242,7 @@ object OrderActor {
 
   def props(exchangeActorProps: Props, config: Config, network: NetworkParameters): Props = {
     val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
-    Props(new OrderActor(exchangeActorProps, OrderFundsActor.props, network, intermediateSteps))
+    Props(new OrderActor(exchangeActorProps, OrderFundsActor.props, network, intermediateSteps,
+      OkPayFeeCalculator))
   }
 }

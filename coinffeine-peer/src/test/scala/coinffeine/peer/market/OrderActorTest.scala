@@ -10,6 +10,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.payment.OkPayFeeCalculator
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.api.event._
 import coinffeine.peer.bitcoin.WalletActor
@@ -28,7 +29,7 @@ class OrderActorTest extends AkkaSpec {
     expectMsg(blockingFundsOrder)
   }
 
-  it should "block FIAT funds when initialized" in new BuyerFixture {
+  it should "block FIAT funds plus fees when initialized" in new BuyerFixture {
     givenInitializedOrder()
   }
 
@@ -183,7 +184,8 @@ class OrderActorTest extends AkkaSpec {
     def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val exchangeActor = new MockSupervisedActor()
     val actor =
-      system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, 10)))
+      system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, 10,
+        OkPayFeeCalculator)))
     val paymentProcessorId = exchange.role.select(participants).paymentProcessorAccount
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
@@ -260,7 +262,8 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
-    override val amountsToBlock = (order.fiatAmount, order.amount * 0.2)
+    override val amountsToBlock =
+      (OkPayFeeCalculator.amountPlusFee(order.fiatAmount), order.amount * 0.2)
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()
