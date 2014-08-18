@@ -27,10 +27,7 @@ class ApplicationProperties(app: CoinffeineApp) {
     this, "walletBalance", app.wallet.currentBalance().map(amount => Balance(amount)))
 
   private val _fiatBalanceProperty =
-    new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", initialFiatBalance)
-
-  private def initialFiatBalance: Option[FiatBalance] =
-    app.paymentProcessor.currentBalance().map { balance => Balance(balance.totalFunds) }
+    new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
 
   private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
     CombinedConnectionStatus(CoinffeineConnectionStatus(0), BitcoinConnectionStatus(0, NotDownloading)))

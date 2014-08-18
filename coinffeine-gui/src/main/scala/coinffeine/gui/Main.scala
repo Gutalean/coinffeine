@@ -1,13 +1,10 @@
 package coinffeine.gui
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Random, Success}
+import scala.concurrent.Future
+import scala.util.Random
+import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
-import scalafx.application.{JFXApp, Platform}
-
-import org.controlsfx.dialog.Dialogs
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
@@ -35,34 +32,23 @@ object Main extends JFXApp
   val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
   val setupConfig = new SetupWizard(sampleAddress, validator).run()
 
-  val connectResult = app.network.connect()
-  Await.ready(connectResult, Duration.Inf)
-  connectResult.value.get match {
-    case Success(_) =>
-      val properties = new ApplicationProperties(app)
-      val notificationManager = new NotificationManager(app)
-      stage = new PrimaryStage {
-        title = "Coinffeine"
-        scene = new ApplicationScene(
-          views = Seq(new MainView, new OperationsView(app, properties)),
-          toolbarWidgets = Seq(
-            new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
-            new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
-          ),
-          statusBarWidgets = Seq(
-            new ConnectionStatusWidget(properties.connectionStatusProperty)
-          )
-        )
-      }
-      stage.show()
-    case Failure(err) =>
-      Dialogs.create()
-        .title("Connection error")
-        .message("Could not connect to the Coinffeine network. The application will now exit.")
-        .showException(err)
-      Platform.exit()
+  val properties = new ApplicationProperties(app)
+  val notificationManager = new NotificationManager(app)
+  app.network.connect()
+  stage = new PrimaryStage {
+    title = "Coinffeine"
+    scene = new ApplicationScene(
+      views = Seq(new MainView, new OperationsView(app, properties)),
+      toolbarWidgets = Seq(
+        new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
+        new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
+      ),
+      statusBarWidgets = Seq(
+        new ConnectionStatusWidget(properties.connectionStatusProperty)
+      )
+    )
   }
-
+  stage.show()
 
   override def stopApp(): Unit = {
     app.close()
