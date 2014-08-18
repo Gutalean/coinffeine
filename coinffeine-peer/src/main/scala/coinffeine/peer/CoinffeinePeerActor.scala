@@ -61,7 +61,7 @@ class CoinffeinePeerActor(listenPort: Int,
           OrderSupervisor.Initialize(
             brokerId, registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
         marketInfoRef = spawnDelegate(
-          props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
+          props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, registryRef))
         context.become(handleMessages)
         log.info("Coinffeine peer connected both to bitcoin and coinffeine networks")
         CoinffeinePeerActor.Connected

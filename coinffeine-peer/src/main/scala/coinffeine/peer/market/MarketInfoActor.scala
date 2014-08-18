@@ -2,8 +2,10 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
+import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.PeerId
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage._
 
@@ -20,7 +22,9 @@ class MarketInfoActor extends Actor {
 
   private class InitializedActor(init: Start) {
     import init._
+    import context.dispatcher
 
+    private val gateway = new ServiceRegistry(registry).eventuallyLocate(MessageGateway.ServiceId)
     private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
 
     def start(): Unit = {
@@ -73,7 +77,7 @@ object MarketInfoActor {
   val props: Props = Props(new MarketInfoActor)
 
   /** Initialize the actor to subscribe for market information */
-  case class Start(broker: PeerId, gateway: ActorRef)
+  case class Start(broker: PeerId, registry: ActorRef)
 
   sealed trait InfoRequest
 
