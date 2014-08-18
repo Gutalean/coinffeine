@@ -7,6 +7,7 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.peer.api.event.{BitcoinConnectionStatus, EventChannelProbe}
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
@@ -26,6 +27,12 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     walletActor.expectCreation()
     expectMsg(BitcoinPeerActor.Started(walletActor.ref))
     eventChannelProbe.expectMsgClass(classOf[BitcoinConnectionStatus])
+  }
+
+  it should "retrieve connection status on demand" in new Fixture {
+    actor ! BitcoinPeerActor.Start
+    actor ! BitcoinPeerActor.RetrieveConnectionStatus
+    expectMsg(BitcoinConnectionStatus(activePeers = 0, NotDownloading))
   }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {

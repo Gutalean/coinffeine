@@ -62,7 +62,7 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
   }
 
-  it must "report join failures" in new FreshBrokerAndPeer {
+  it must "report join failures" in new Fixture {
     val ref = createMessageGateway()
     ref ! Join(
       localPort = DefaultTcpPortAllocator.allocatePort(),
@@ -70,13 +70,21 @@ class ProtoMessageGatewayTest
     expectMsgType[JoinError](30 seconds)
   }
 
-  trait FreshBrokerAndPeer extends ProtoMessageGateway.Component
+  it must "retrieve the connection status when disconnected" in new Fixture {
+    val ref = createMessageGateway()
+    ref ! MessageGateway.RetrieveConnectionStatus
+    expectMsg(MessageGateway.ConnectionStatus(activePeers = 0, brokerId = None))
+  }
+
+  it must "retrieve the connection status when connected" in new FreshBrokerAndPeer {
+    peerGateway ! MessageGateway.RetrieveConnectionStatus
+    expectMsg(MessageGateway.ConnectionStatus(activePeers = 1, Some(brokerId)))
+  }
+
+  trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
       with IgnoredNetworkInterfaces {
-    val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
-    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
-    val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
     def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
 
@@ -98,6 +106,12 @@ class ProtoMessageGatewayTest
       probe.send(ref, Subscribe(_ => true))
       (ref, probe, brokerId)
     }
+  }
+
+  trait FreshBrokerAndPeer extends Fixture {
+    val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
+    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
+    val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
     peerGateway ! ForwardMessage(randomOrderMatch(), brokerId)

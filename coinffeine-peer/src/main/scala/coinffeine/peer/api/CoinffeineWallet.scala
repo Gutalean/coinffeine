@@ -7,7 +7,7 @@ import coinffeine.model.currency.BitcoinAmount
 
 trait CoinffeineWallet {
 
-  def currentBalance(): BitcoinAmount
+  def currentBalance(): Option[BitcoinAmount]
 
   /** Where to transfer BTC funds to top-up Coinffeine */
   def depositAddress: Address

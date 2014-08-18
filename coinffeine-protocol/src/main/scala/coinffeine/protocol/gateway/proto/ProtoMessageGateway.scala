@@ -26,33 +26,34 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   private val server = context.actorOf(
     ProtobufServerActor.props(ignoredNetworkInterfaces), "server")
 
-  override def receive = waitingForInitialization orElse managingSubscriptions
+  override def receive = waitingForInitialization orElse managingSubscriptionsAndConnectionStatus
 
-  private val managingSubscriptions: Receive = {
+  private val managingSubscriptionsAndConnectionStatus: Receive = {
     case msg: Subscribe =>
       context.watch(sender())
       subscriptions forward msg
     case msg @ Unsubscribe => subscriptions forward msg
     case Terminated(actor) => subscriptions.tell(Unsubscribe, actor)
+    case msg @ RetrieveConnectionStatus => server forward msg
   }
 
   private val waitingForInitialization: Receive = {
     case msg @ (Bind(_) | Join(_, _)) =>
       server ! msg
-      context.become(starting(sender()) orElse managingSubscriptions)
+      context.become(starting(sender()) orElse managingSubscriptionsAndConnectionStatus)
   }
 
   private def starting(listener: ActorRef): Receive = {
     case response @ Bound(port, peerId) =>
       listener ! response
       log.info(s"Message gateway successfully bounded on port {} as {}", port, peerId)
-      context.become(forwardingMessages orElse managingSubscriptions)
+      context.become(forwardingMessages orElse managingSubscriptionsAndConnectionStatus)
 
     case response @ Joined(myId, brokerId) =>
       listener ! response
       log.info(s"Message gateway successfully joined to network as {} using broker {}",
         myId, brokerId)
-      context.become(forwardingMessages orElse managingSubscriptions)
+      context.become(forwardingMessages orElse managingSubscriptionsAndConnectionStatus)
 
     case error @ BindingError(port, cause) =>
       log.error(cause, "Message gateway failed to bind on port {}", port)

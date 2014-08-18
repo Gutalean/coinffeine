@@ -9,7 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.api.event.EventChannelProbe
+import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
@@ -48,7 +48,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "connect to both networks" in {
     gateway.probe.expectNoMsg()
-    val eventChannelRef = eventChannel.ref
     peer ! CoinffeinePeerActor.Connect
     bitcoinPeer.expectAskWithReply {
       case BitcoinPeerActor.Start => BitcoinPeerActor.Started(wallet.ref)
@@ -58,6 +57,19 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
         MessageGateway.Joined(PeerId("peer id"), brokerId)
     }
     expectMsg(CoinffeinePeerActor.Connected)
+  }
+
+  it must "report the connection status" in {
+    peer ! CoinffeinePeerActor.RetrieveConnectionStatus
+    val bitcoinStatus = BitcoinConnectionStatus(0, BitcoinConnectionStatus.NotDownloading)
+    bitcoinPeer.expectAskWithReply {
+      case BitcoinPeerActor.RetrieveConnectionStatus => bitcoinStatus
+    }
+    gateway.expectAskWithReply {
+      case MessageGateway.RetrieveConnectionStatus =>
+        MessageGateway.ConnectionStatus(10, Some(PeerId("broker")))
+    }
+    expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, CoinffeineConnectionStatus(10)))
   }
 
   it must "start the order supervisor actor" in {

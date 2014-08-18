@@ -11,6 +11,10 @@ import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
 
+  /** A request message to get the connection status as a [[ConnectionStatus]] */
+  case object RetrieveConnectionStatus
+  case class ConnectionStatus(activePeers: Int, brokerId: Option[PeerId])
+
   case class BrokerAddress(hostname: String, port: Int) {
     override def toString = s"$hostname:$port"
   }
