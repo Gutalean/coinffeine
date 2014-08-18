@@ -46,7 +46,7 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
     private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(MarketSubmissionActor.props(protocolConstants))
-      newDelegate ! MarketSubmissionActor.Initialize(market, gateway, brokerId)
+      newDelegate ! MarketSubmissionActor.Initialize(market, registry, brokerId)
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
@@ -55,7 +55,7 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
 
 object SubmissionSupervisor {
 
-  case class Initialize(brokerId: PeerId, gateway: ActorRef)
+  case class Initialize(brokerId: PeerId, registry: ActorRef)
 
   case class KeepSubmitting(order: OrderBookEntry[FiatAmount])
 

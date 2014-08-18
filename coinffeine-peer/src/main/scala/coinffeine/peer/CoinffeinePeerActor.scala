@@ -8,7 +8,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.{AskPattern, ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
@@ -18,7 +18,6 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -35,7 +34,13 @@ class CoinffeinePeerActor(listenPort: Int,
   import context.dispatcher
   import CoinffeinePeerActor._
 
+  private val registryRef = spawnDelegate(ServiceRegistryActor.props(), "registry")
+  private val registry = new ServiceRegistry(registryRef)
+
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
+
+  registry.register(MessageGateway.ServiceId, gatewayRef)
+
   private val paymentProcessorRef = spawnDelegate(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private var walletRef: ActorRef = _
