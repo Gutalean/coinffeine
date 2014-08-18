@@ -51,7 +51,7 @@ class DefaultExchangeActor(
           handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(deposits)
         val props = channelActorProps(runningExchange.role)
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
-        ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, messageGateway,
+        ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
           resultListeners = Set(self))
         txBroadcaster ! SetMicropaymentActor(ref)
         context.become(inMicropaymentChannel(runningExchange))
@@ -68,7 +68,7 @@ class DefaultExchangeActor(
 
     private def startHandshake(): Unit = {
       handshakeActor !
-        StartHandshake(exchange, user, messageGateway, blockchain, wallet, listener = self)
+        StartHandshake(exchange, user, registry, blockchain, wallet, listener = self)
     }
 
     private def finishingExchange(

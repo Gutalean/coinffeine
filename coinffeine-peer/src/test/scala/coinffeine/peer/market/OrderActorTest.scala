@@ -3,6 +3,7 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
@@ -19,7 +20,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Per
 import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.GatewayProbe
+import coinffeine.protocol.gateway.{MessageGateway, GatewayProbe}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActorTest extends AkkaSpec {
@@ -189,11 +190,13 @@ class OrderActorTest extends AkkaSpec {
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)
+    val registryActor = system.actorOf(ServiceRegistryActor.props())
+    new ServiceRegistry(registryActor).register(MessageGateway.ServiceId, gatewayProbe.ref)
 
     val orderMatch = OrderMatch(
       order.id, exchangeId, order.amount, order.price, lockTime = 400000L, exchange.counterpartId)
 
-    actor ! OrderActor.Initialize(order, submissionProbe.ref, gatewayProbe.ref,
+    actor ! OrderActor.Initialize(order, submissionProbe.ref, registryActor,
       paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
     gatewayProbe.expectSubscription()
     fundsActor.expectCreation()

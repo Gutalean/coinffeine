@@ -7,7 +7,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.{ServiceRegistry, AskPattern}
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange.BlockedFunds
@@ -51,6 +51,8 @@ class OrderActor(exchangeActorProps: Props,
     private var currentOrder = init.order
     private var blockedFunds: Option[BlockedFunds] = None
     private val fundsActor = context.actorOf(orderFundsActorProps, "funds")
+    private val messageGateway = new ServiceRegistry(registry)
+      .eventuallyLocate(MessageGateway.ServiceId)
 
     def start(): Unit = {
       log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
@@ -181,7 +183,7 @@ class OrderActor(exchangeActorProps: Props,
 
     private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {
       context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
-        exchange, user, wallet, paymentProcessor, messageGateway, bitcoinPeer)
+        exchange, user, wallet, paymentProcessor, registry, bitcoinPeer)
     }
 
     private def createFreshKeyPair(): Future[KeyPair] = AskPattern(
@@ -229,7 +231,7 @@ object OrderActor {
 
   case class Initialize[C <: FiatCurrency](order: Order[C],
                                            submissionSupervisor: ActorRef,
-                                           messageGateway: ActorRef,
+                                           registry: ActorRef,
                                            paymentProcessor: ActorRef,
                                            bitcoinPeer: ActorRef,
                                            wallet: ActorRef,

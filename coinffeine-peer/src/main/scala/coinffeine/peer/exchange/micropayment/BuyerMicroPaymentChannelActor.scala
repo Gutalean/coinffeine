@@ -35,7 +35,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private class InitializedBuyer(init: StartMicroPaymentChannel[C])
-    extends InitializedChannelBehavior(init) {
+    extends InitializedChannelBehavior(init)(context.dispatcher) {
 
     import constants.exchangeSignatureTimeout
     import init._

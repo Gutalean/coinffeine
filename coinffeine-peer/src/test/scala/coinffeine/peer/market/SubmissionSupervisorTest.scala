@@ -1,11 +1,13 @@
 package coinffeine.peer.market
 
 import scala.concurrent.duration._
+import scala.util.Random
 
 import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.Inside
 
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
@@ -14,7 +16,7 @@ import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.gateway.GatewayProbe
+import coinffeine.protocol.gateway.{MessageGateway, GatewayProbe}
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
@@ -32,10 +34,14 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
   val bothEurOrders = firstEurOrder.addEntry(eurOrder2)
 
   trait Fixture {
+    val registryActor = system.actorOf(ServiceRegistryActor.props(), "registry-"+Random.nextInt())
+    val registry = new ServiceRegistry(registryActor)
     val gateway = new GatewayProbe()
+    registry.register(MessageGateway.ServiceId, gateway.ref)
+
     val requester = TestProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(brokerId, gateway.ref)
+    actor ! SubmissionSupervisor.Initialize(brokerId, registryActor)
 
     def keepSubmitting(entry: OrderBookEntry[FiatAmount]): Unit = {
       requester.send(actor, KeepSubmitting(entry))

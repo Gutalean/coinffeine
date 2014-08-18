@@ -6,10 +6,14 @@ import java.net.NetworkInterface
 import akka.actor.Props
 import com.typesafe.config.{ConfigException, Config}
 
+import coinffeine.common.akka.ServiceRegistryActor
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
+
+  /** The identifier of the message gateway as global service. */
+  val ServiceId = ServiceRegistryActor.ServiceId("/Coinffeine/MessageGateway")
 
   /** A request message to get the connection status as a [[ConnectionStatus]] */
   case object RetrieveConnectionStatus

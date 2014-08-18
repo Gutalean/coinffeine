@@ -43,7 +43,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the payment processor actor" in {
     paymentProcessor.expectCreation()
-    paymentProcessor.expectMsg(PaymentProcessorActor.Initialize)
   }
 
   it must "connect to both networks" in {
@@ -74,18 +73,16 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the order supervisor actor" in {
     orders.expectCreation()
-    val OrderSupervisor.Initialize(_, receivedGateway,
+    val OrderSupervisor.Initialize(_, _,
         receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
       orders.expectMsgType[OrderSupervisor.Initialize]
-    receivedGateway should be (gateway.ref)
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
   }
 
   it must "start the market info actor" in {
     marketInfo.expectCreation()
-    val MarketInfoActor.Start(_, receivedGateway) = marketInfo.expectMsgType[MarketInfoActor.Start]
-    receivedGateway should be (gateway.ref)
+    val MarketInfoActor.Start(_, _) = marketInfo.expectMsgType[MarketInfoActor.Start]
   }
 
   it must "propagate failures when connecting" in {

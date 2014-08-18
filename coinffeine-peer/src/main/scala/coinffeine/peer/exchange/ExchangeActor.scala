@@ -22,7 +22,7 @@ object ExchangeActor {
                                               user: Exchange.PeerInfo,
                                               wallet: ActorRef,
                                               paymentProcessor: ActorRef,
-                                              messageGateway: ActorRef,
+                                              registry: ActorRef,
                                               bitcoinPeer: ActorRef)
 
   /** This is sent back to listener to indicate exchange progress. */

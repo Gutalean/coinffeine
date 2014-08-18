@@ -4,6 +4,7 @@ import scala.concurrent.duration.Duration
 
 import akka.actor._
 
+import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.{FiatCurrency, FiatAmount}
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.network.PeerId
@@ -20,15 +21,16 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositi
   * appropriately.
   *
   * @param requests  The collection of each order book entry with the actor that requested each order
-  * @param gateway   The message gateway to fordward the [[PeerPositions]] message and receive
-  *                  the [[PeerPositionsReceived]] message from.
+  * @param registry  The service registry to obtain the message gateway to fordward the
+  *                  [[PeerPositions]] message and receive the [[PeerPositionsReceived]] message
+  *                  from.
   * @param timeout   The timeout for the watch.
   */
 class PeerPositionsSubmitter[C <: FiatCurrency](
     market: Market[C],
     requests: Set[(ActorRef, OrderBookEntry[FiatAmount])],
     brokerId: PeerId,
-    gateway: ActorRef,
+    registry: ActorRef,
     timeout: Duration) extends Actor with ActorLogging {
 
   private val peerPositions: PeerPositions[FiatCurrency] =
@@ -38,6 +40,10 @@ class PeerPositionsSubmitter[C <: FiatCurrency](
 
   override def preStart() = {
     log.debug(s"Submitting and watching peer positions with nonce $nonce")
+
+    implicit val executor = context.dispatcher
+    val reg = new ServiceRegistry(registry)
+    val gateway = reg.eventuallyLocate(MessageGateway.ServiceId)
 
     gateway ! MessageGateway.Subscribe {
       case ReceiveMessage(PeerPositionsReceived(_), _) => true
@@ -72,7 +78,7 @@ object PeerPositionsSubmitter {
       market: Market[C],
       requests: Set[(ActorRef, OrderBookEntry[FiatAmount])],
       brokerId: PeerId,
-      gateway: ActorRef,
+      registry: ActorRef,
       timeout: Duration): Props =
-    Props(new PeerPositionsSubmitter(market, requests, brokerId, gateway, timeout))
+    Props(new PeerPositionsSubmitter(market, requests, brokerId, registry, timeout))
 }

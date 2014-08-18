@@ -2,18 +2,23 @@ package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.protocol._
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange {
 
+  val registryActor = system.actorOf(ServiceRegistryActor.props())
+  val registry = new ServiceRegistry(registryActor)
   val gateway = TestProbe()
+  registry.register(MessageGateway.ServiceId, gateway.ref)
 
   def fromBroker(message: PublicMessage) = ReceiveMessage(message, brokerId)
 

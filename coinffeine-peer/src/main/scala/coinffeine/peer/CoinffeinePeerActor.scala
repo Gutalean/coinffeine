@@ -8,7 +8,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.{AskPattern, ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
@@ -18,7 +18,6 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -35,9 +34,14 @@ class CoinffeinePeerActor(listenPort: Int,
   import context.dispatcher
   import CoinffeinePeerActor._
 
+  private val registryRef = spawnDelegate(ServiceRegistryActor.props(), "registry")
+  private val registry = new ServiceRegistry(registryRef)
+
   private val gatewayRef = spawnDelegate(props.gateway, "gateway")
-  private val paymentProcessorRef = spawnDelegate(
-    props.paymentProcessor, "paymentProcessor", PaymentProcessorActor.Initialize)
+
+  registry.register(MessageGateway.ServiceId, gatewayRef)
+
+  private val paymentProcessorRef = spawnDelegate(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private var walletRef: ActorRef = _
   private var orderSupervisorRef: ActorRef = _
@@ -55,9 +59,9 @@ class CoinffeinePeerActor(listenPort: Int,
         walletRef = retrievedWalletRef
         orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
           OrderSupervisor.Initialize(
-            brokerId, gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
+            brokerId, registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
         marketInfoRef = spawnDelegate(
-          props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, gatewayRef))
+          props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, registryRef))
         context.become(handleMessages)
         log.info("Coinffeine peer connected both to bitcoin and coinffeine networks")
         CoinffeinePeerActor.Connected
