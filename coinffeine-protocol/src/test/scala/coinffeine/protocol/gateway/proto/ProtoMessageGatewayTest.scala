@@ -70,6 +70,17 @@ class ProtoMessageGatewayTest
     expectMsgType[JoinError](30 seconds)
   }
 
+  it must "retrieve the connection status when disconnected" in new Fixture {
+    val ref = createMessageGateway()
+    ref ! MessageGateway.RetrieveConnectionStatus
+    expectMsg(MessageGateway.ConnectionStatus(activePeers = 0, brokerId = None))
+  }
+
+  it must "retrieve the connection status when connected" in new FreshBrokerAndPeer {
+    peerGateway ! MessageGateway.RetrieveConnectionStatus
+    expectMsg(MessageGateway.ConnectionStatus(activePeers = 1, Some(brokerId)))
+  }
+
   trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
