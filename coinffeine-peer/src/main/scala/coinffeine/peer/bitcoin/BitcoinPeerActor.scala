@@ -1,10 +1,13 @@
 package coinffeine.peer.bitcoin
 
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Failure, Try}
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor._
 import com.google.bitcoin.core._
-import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
+import com.google.common.util.concurrent.{ListenableFuture, FutureCallback, Futures, Service}
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
@@ -15,7 +18,7 @@ import coinffeine.peer.event.EventPublisher
 
 class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Wallet => Props,
                        keyPairs: Seq[KeyPair], blockchain: AbstractBlockChain,
-                       network: NetworkParameters)
+                       network: NetworkParameters, connectionRetryInterval: FiniteDuration)
   extends Actor with ActorLogging with EventPublisher {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
@@ -24,21 +27,87 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   private val walletRef = context.actorOf(walletProps(createWallet()), "wallet")
   private var connectionStatus =
     BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
+  private var retryTimer: Option[Cancellable] = None
 
-  override def postStop(): Unit = {
-    log.info("Shutting down peer group")
-    peerGroup.stopAndWait()
-    log.info("Peer group stopped")
+  override def preStart(): Unit = {
+    peerGroup.addEventListener(PeerGroupListener)
+    publishEvent(connectionStatus)
   }
 
-  override def receive: Receive = waitingForInitialization orElse commonHandling
+  override def postStop(): Unit = {
+    clearRetryTimer()
+    if (peerGroup.isRunning) {
+      log.info("Shutting down peer group")
+      peerGroup.stopAndWait()
+      log.info("Peer group stopped")
+    }
+  }
 
-  private def waitingForInitialization: Receive = {
-    case Start =>
-      peerGroup.addEventListener(PeerGroupListener)
-      Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
+  override def receive: Receive = disconnected orElse commonHandling
 
-    case init: InitializedBitcoinPeerActor => init.start()
+  private def disconnected: Receive = {
+    case LeaveBitcoinNetwork =>
+      log.info("Already disconnected from bitcoin network")
+
+    case JoinBitcoinNetwork =>
+      startConnecting()
+      become(joining orElse notPublishingTransactions)
+  }
+
+  private def joining: Receive = {
+    case PeerGroupStartResult(Success(_)) =>
+      log.info("Connected to peer group, starting blockchain download")
+      peerGroup.startBlockChainDownload(PeerGroupListener)
+      blockchainRef ! BlockchainActor.Initialize(blockchain)
+      become(connected)
+
+    case PeerGroupStartResult(Failure(_)) =>
+      scheduleRetryTimer()
+
+    case PeerGroupStopResult(_) | RetryConnection =>
+      clearRetryTimer()
+      startConnecting()
+
+    case LeaveBitcoinNetwork =>
+      log.info("Cancelling connection to the bitcoin network")
+      clearRetryTimer()
+      become(leaving orElse notPublishingTransactions)
+
+    case JoinBitcoinNetwork =>
+      log.info("Already trying to join the bitcoin network")
+  }
+
+  private def leaving: Receive = {
+    case PeerGroupStartResult(Success(_)) =>
+      replyToSelf(peerGroup.stop(), PeerGroupStopResult.apply)
+      become(disconnected orElse notPublishingTransactions)
+
+    case PeerGroupStartResult(Failure(_)) | PeerGroupStopResult(Success(_)) =>
+      become(disconnected orElse notPublishingTransactions)
+
+    case PeerGroupStopResult(Failure(cause)) =>
+      log.error(cause, "Cannot stop peer group")
+      become(disconnected orElse notPublishingTransactions)
+
+    case LeaveBitcoinNetwork =>
+      log.info("Already leaving the bitcoin network")
+
+    case JoinBitcoinNetwork =>
+      become(joining orElse notPublishingTransactions)
+  }
+
+  private def connected: Receive = {
+    case LeaveBitcoinNetwork =>
+
+    case JoinBitcoinNetwork =>
+      log.info("Already joined to the bitcoin network")
+
+    case PublishTransaction(tx) =>
+      log.info(s"Publishing transaction $tx to the Bitcoin network")
+      Futures.addCallback(
+        peerGroup.broadcastTransaction(tx.get),
+        new TxBroadcastCallback(tx, sender()),
+        context.dispatcher)
   }
 
   private def createWallet(): Wallet = {
@@ -47,6 +116,10 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     blockchain.addWallet(wallet)
     peerGroup.addWallet(wallet)
     wallet
+  }
+
+  private def become(behavior: Receive): Unit = {
+    context.become(behavior orElse commonHandling)
   }
 
   private def commonHandling: Receive = {
@@ -58,57 +131,43 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
     case RetrieveWalletActor =>
       sender() ! WalletActorRef(walletRef)
+
+    case PeerGroupSize(activePeers) =>
+      updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
+
+    case DownloadStarted(remainingBlocks) =>
+      updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloading(
+        totalBlocks = remainingBlocks,
+        remainingBlocks = remainingBlocks
+      )))
+
+    case DownloadProgress(remainingBlocks) =>
+      connectionStatus.blockchainStatus match {
+        case Downloading(totalBlocks, previouslyRemainingBlocks)
+          if remainingBlocks <= previouslyRemainingBlocks =>
+          updateConnectionStatus(connectionStatus.copy(blockchainStatus =
+            Downloading(totalBlocks, remainingBlocks)))
+        case otherStatus =>
+          log.warning("Received download progress ({}) when having status {}",
+            remainingBlocks, otherStatus)
+      }
+
+    case DownloadCompleted =>
+      updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
   }
 
-  private class InitializedBitcoinPeerActor(listener: ActorRef) {
+  private def notPublishingTransactions: Receive = {
+    case PublishTransaction(tx) =>
+      log.info(
+        s"Not publishing transaction ${tx.get.getHash} since we are not connected to the network")
+      sender() ! TransactionNotPublished(tx, new IllegalStateException("Not connected to the network"))
+  }
 
-    def start(): Unit = {
-      log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(PeerGroupListener)
-      blockchainRef ! BlockchainActor.Initialize(blockchain)
-      listener ! Started
-      publishEvent(connectionStatus)
-      context.become(started orElse commonHandling)
+  private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
+    if (newConnectionStatus != connectionStatus) {
+      publishEvent(newConnectionStatus)
     }
-
-    val started: Receive = {
-      case PublishTransaction(tx) =>
-        log.info(s"Publishing transaction $tx to the Bitcoin network")
-        Futures.addCallback(
-          peerGroup.broadcastTransaction(tx.get),
-          new TxBroadcastCallback(tx, sender()),
-          context.dispatcher)
-
-      case PeerGroupSize(activePeers) =>
-        updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
-
-      case DownloadStarted(remainingBlocks) =>
-        updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloading(
-          totalBlocks = remainingBlocks,
-          remainingBlocks = remainingBlocks
-        )))
-
-      case DownloadProgress(remainingBlocks) =>
-        connectionStatus.blockchainStatus match {
-          case Downloading(totalBlocks, previouslyRemainingBlocks)
-            if remainingBlocks <= previouslyRemainingBlocks =>
-            updateConnectionStatus(connectionStatus.copy(blockchainStatus =
-              Downloading(totalBlocks, remainingBlocks)))
-          case otherStatus =>
-            log.warning("Received download progress ({}) when having status {}",
-              remainingBlocks, otherStatus)
-        }
-
-      case DownloadCompleted =>
-        updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
-    }
-
-    private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
-      if (newConnectionStatus != connectionStatus) {
-        publishEvent(newConnectionStatus)
-      }
-      connectionStatus = newConnectionStatus
-    }
+    connectionStatus = newConnectionStatus
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
@@ -125,17 +184,9 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     }
   }
 
-  private class PeerGroupCallback(listener: ActorRef)
-    extends FutureCallback[Service.State] {
-
-    def onSuccess(result: Service.State): Unit = {
-      self ! new InitializedBitcoinPeerActor(listener)
-    }
-
-    def onFailure(cause: Throwable): Unit = {
-      log.error(cause, "Cannot connect to peer group")
-      listener ! StartFailure(cause)
-    }
+  private def startConnecting(): Unit = {
+    log.info("Trying to join the bitcoin network")
+    replyToSelf(peerGroup.start(), PeerGroupStartResult.apply)
   }
 
   private object PeerGroupListener extends AbstractPeerEventListener {
@@ -155,6 +206,31 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
       self ! PeerGroupSize(peerCount)
     }
   }
+
+  /** Translates a listenable future result into messages sent back to self to safely modify
+    * the actor state.
+    */
+  private def replyToSelf[T](future: ListenableFuture[T], reply: Try[T] => Any): Unit = {
+    Futures.addCallback[T](future, new FutureCallback[T] {
+      override def onFailure(t: Throwable): Unit = {
+        self ! reply(Failure(t))
+      }
+      override def onSuccess(result: T): Unit = {
+        self ! reply(Success(result))
+      }
+    }, context.dispatcher)
+  }
+
+  private def scheduleRetryTimer(): Unit = {
+    import context.dispatcher
+    retryTimer = Some(context.system.scheduler.scheduleOnce(
+      connectionRetryInterval, self, RetryConnection))
+  }
+
+  private def clearRetryTimer(): Unit = {
+    retryTimer.foreach(_.cancel())
+    retryTimer = None
+  }
 }
 
 /** A BitcoinPeerActor handles connections to other peers in the bitcoin network and can:
@@ -163,6 +239,10 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
   * - Broadcast a transaction to the peers
   */
 object BitcoinPeerActor {
+
+  private case class PeerGroupStartResult(result: Try[Service.State])
+  private case class PeerGroupStopResult(result: Try[Service.State])
+  private case object RetryConnection
 
   // Self-messages to manage the connection status
   private case class PeerGroupSize(activePeers: Int)
@@ -178,11 +258,10 @@ object BitcoinPeerActor {
       errorMessage = s"Cannot retrieve blockchain actor from $bitcoinPeer"
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
 
-  /** A message sent to the peer actor to join to the bitcoin network */
-  @deprecated case object Start
-  @deprecated sealed trait StartResult
-  @deprecated case object Started extends StartResult
-  @deprecated case class StartFailure(cause: Throwable) extends StartResult
+  /** Instruct the peer to join the bitcoin network retrying as much as necessary. */
+  case object JoinBitcoinNetwork
+  /** Instruct the peer to leave the bitcoin network or abort connection in progress */
+  case object LeaveBitcoinNetwork
 
   /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
   case object RetrieveConnectionStatus
@@ -227,13 +306,18 @@ object BitcoinPeerActor {
   trait Component { this: PeerGroupComponent with NetworkComponent with BlockchainComponent
     with PrivateKeysComponent with ConfigComponent =>
 
-    lazy val bitcoinPeerProps: Props = Props(new BitcoinPeerActor(
-      createPeerGroup(blockchain),
-      BlockchainActor.props(network),
-      WalletActor.props,
-      keyPairs,
-      blockchain,
-      network
-    ))
+    lazy val bitcoinPeerProps: Props = {
+      val connectionRetryInterval =
+        config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds
+      Props(new BitcoinPeerActor(
+        createPeerGroup(blockchain),
+        BlockchainActor.props(network),
+        WalletActor.props,
+        keyPairs,
+        blockchain,
+        network,
+        connectionRetryInterval
+      ))
+    }
   }
 }

@@ -76,16 +76,14 @@ class CoinffeinePeerActor(listenPort: Int,
   }
 
   private def connect(listener: ActorRef): Unit = {
-    val gatewayConnection = connectMessageGateway()
-    val bitcoinConnection = connectBitcoinPeer()
-    (for {
-      retrievedBrokerId <- gatewayConnection
-      _ <- bitcoinConnection
-    } yield Success(retrievedBrokerId)).recover {
-      case NonFatal(cause) => Failure(cause)
-    }.map { result =>
-      ConnectionResult(result, listener)
-    }.pipeTo(self)
+    bitcoinPeerRef ! BitcoinPeerActor.JoinBitcoinNetwork
+    connectMessageGateway()
+      .map(Success.apply)
+      .recover {
+        case NonFatal(cause) => Failure(cause)
+      }.map { result =>
+        ConnectionResult(result, listener)
+      }.pipeTo(self)
   }
 
   private def tryStartHandlingMessages(): Unit = {
@@ -104,14 +102,6 @@ class CoinffeinePeerActor(listenPort: Int,
     (gatewayRef ? MessageGateway.Join(listenPort, brokerAddress)).map {
       case MessageGateway.Joined(_, retrievedBrokerId) => retrievedBrokerId
       case JoinError(cause) => throw cause
-    }
-  }
-
-  private def connectBitcoinPeer(): Future[Unit] = {
-    implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-    (bitcoinPeerRef ? BitcoinPeerActor.Start).flatMap {
-      case BitcoinPeerActor.Started => Future.successful {}
-      case BitcoinPeerActor.StartFailure(cause) => Future.failed(cause)
     }
   }
 
@@ -151,9 +141,14 @@ object CoinffeinePeerActor {
 
   /** Start peer connection to the network. The sender of this message will receive either
     * a [[Connected]] or [[ConnectionFailed]] message in response. */
-  case object Connect
-  case object Connected
-  case class ConnectionFailed(cause: Throwable)
+  @deprecated case object Connect
+  @deprecated case object Connected
+  @deprecated case class ConnectionFailed(cause: Throwable)
+
+  /** Instruct the peer to join all the networks retrying as much as necessary. */
+  case object JoinNetworks
+  /** Instruct the peer to leave all the networks or abort connections in progress */
+  case object LeaveNetworks
 
   /** Message sent to the peer to get a [[ConnectionStatus]] in response */
   case object RetrieveConnectionStatus

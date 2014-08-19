@@ -53,9 +53,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   it must "connect to both networks" in {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
-    bitcoinPeer.expectAskWithReply {
-      case BitcoinPeerActor.Start => BitcoinPeerActor.Started
-    }
+    bitcoinPeer.expectMsg(BitcoinPeerActor.JoinBitcoinNetwork)
     gateway.expectAskWithReply {
       case MessageGateway.Join(`localPort`, `brokerAddress`) =>
         MessageGateway.Joined(PeerId("peer id"), brokerId)
@@ -78,8 +76,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the order supervisor actor" in {
     orders.expectCreation()
-    val OrderSupervisor.Initialize(_, _,
-        receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
+    val OrderSupervisor.Initialize(_, _, receivedPaymentProc, receivedBitcoinPeer, _) =
       orders.expectMsgType[OrderSupervisor.Initialize]
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
