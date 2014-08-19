@@ -1,4 +1,4 @@
-package coinffeine.peer.api.event
+package coinffeine.model.event
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.Order

@@ -8,8 +8,8 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, Service}
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
-import coinffeine.peer.api.event.BitcoinConnectionStatus
-import coinffeine.peer.api.event.BitcoinConnectionStatus.{NotDownloading, Downloading}
+import coinffeine.model.event.BitcoinConnectionStatus
+import coinffeine.model.event.BitcoinConnectionStatus.{NotDownloading, Downloading}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 

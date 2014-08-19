@@ -7,8 +7,8 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, EventChannelProbe}
+import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
+import coinffeine.model.event.{BitcoinConnectionStatus, EventChannelProbe}
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
 

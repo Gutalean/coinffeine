@@ -5,7 +5,7 @@ import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.api._
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.peer.api.mock.MockCoinffeineNetwork
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 

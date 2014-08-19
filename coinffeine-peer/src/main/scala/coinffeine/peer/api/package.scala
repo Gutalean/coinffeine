@@ -1,6 +1,6 @@
 package coinffeine.peer
 
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.model.event.CoinffeineAppEvent
 
 package object api {
 

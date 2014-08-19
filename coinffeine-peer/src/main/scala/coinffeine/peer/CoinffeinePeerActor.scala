@@ -13,7 +13,7 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -110,10 +110,8 @@ class CoinffeinePeerActor(listenPort: Int,
         bitcoinStatus <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveConnectionStatus)
           .withImmediateReply[BitcoinConnectionStatus]()
         coinffeineStatus <- AskPattern(gatewayRef, MessageGateway.RetrieveConnectionStatus)
-          .withImmediateReply[MessageGateway.ConnectionStatus]()
-      } yield {
-        ConnectionStatus(bitcoinStatus, CoinffeineConnectionStatus(coinffeineStatus.activePeers))
-      }).pipeTo(sender())
+          .withImmediateReply[CoinffeineConnectionStatus]()
+      } yield ConnectionStatus(bitcoinStatus, coinffeineStatus)).pipeTo(sender())
   }
 
   private def spawnDelegate(delegateProps: Props, name: String, initMessages: Any*): ActorRef = {

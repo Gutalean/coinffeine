@@ -6,14 +6,13 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.model.market.{Bid, Order, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
@@ -64,11 +63,11 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     bitcoinPeer.expectAskWithReply {
       case BitcoinPeerActor.RetrieveConnectionStatus => bitcoinStatus
     }
+    val coinffeineStatus = CoinffeineConnectionStatus(10, Some(PeerId("broker")))
     gateway.expectAskWithReply {
-      case MessageGateway.RetrieveConnectionStatus =>
-        MessageGateway.ConnectionStatus(10, Some(PeerId("broker")))
+      case MessageGateway.RetrieveConnectionStatus => coinffeineStatus
     }
-    expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, CoinffeineConnectionStatus(10)))
+    expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, coinffeineStatus))
   }
 
   it must "start the order supervisor actor" in {

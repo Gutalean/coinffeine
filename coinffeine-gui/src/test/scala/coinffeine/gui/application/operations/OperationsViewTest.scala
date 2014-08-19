@@ -12,8 +12,8 @@ import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.market._
-import coinffeine.peer.api.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.api.impl.MockCoinffeineApp
 
 class OperationsViewTest extends GuiTest[Pane] with Eventually {

@@ -1,7 +1,7 @@
 package coinffeine.gui.control
 
-import coinffeine.peer.api.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
-import coinffeine.peer.api.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
+import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 
 /** Combines Coinffeine and Bitcoin Connection status information */
 case class CombinedConnectionStatus(

@@ -2,7 +2,7 @@ package coinffeine.peer.event
 
 import akka.actor.{Actor}
 
-import coinffeine.peer.api.event.CoinffeineAppEvent
+import coinffeine.model.event.CoinffeineAppEvent
 
 /** An actor able to publish events. */
 trait EventPublisher { this: Actor =>

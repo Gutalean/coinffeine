@@ -9,8 +9,8 @@ import com.google.bitcoin.core.AbstractWalletEventListener
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.event.{Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
-import coinffeine.peer.api.event.{Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.event.EventPublisher
 
 private class WalletActor extends Actor with ActorLogging with EventPublisher {

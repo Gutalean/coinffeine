@@ -7,9 +7,9 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
+import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
+import coinffeine.model.event._
 import coinffeine.model.market.OrderId
-import coinffeine.peer.api.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.peer.api.event._
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) {
@@ -30,7 +30,8 @@ class ApplicationProperties(app: CoinffeineApp) {
     new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
 
   private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
-    CombinedConnectionStatus(CoinffeineConnectionStatus(0), BitcoinConnectionStatus(0, NotDownloading)))
+    CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
+      BitcoinConnectionStatus(0, NotDownloading)))
 
   private val eventHandler: EventHandler = FxEventHandler {
 
