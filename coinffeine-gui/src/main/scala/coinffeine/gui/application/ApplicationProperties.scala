@@ -30,7 +30,8 @@ class ApplicationProperties(app: CoinffeineApp) {
     new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
 
   private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
-    CombinedConnectionStatus(CoinffeineConnectionStatus(0), BitcoinConnectionStatus(0, NotDownloading)))
+    CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
+      BitcoinConnectionStatus(0, NotDownloading)))
 
   private val eventHandler: EventHandler = FxEventHandler {
 

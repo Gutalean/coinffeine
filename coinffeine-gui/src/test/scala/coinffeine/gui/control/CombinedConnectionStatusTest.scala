@@ -4,6 +4,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.gui.control.CombinedConnectionStatus.{Red, Yellow, Green}
 import coinffeine.model.event.{CoinffeineConnectionStatus, BitcoinConnectionStatus}
 import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
+import coinffeine.model.network.PeerId
 
 class CombinedConnectionStatusTest extends UnitTest {
 
@@ -18,7 +19,9 @@ class CombinedConnectionStatusTest extends UnitTest {
   val coinffeineStatuses = Set(
     CoinffeineConnectionStatus(0),
     CoinffeineConnectionStatus(1),
-    CoinffeineConnectionStatus(2)
+    CoinffeineConnectionStatus(2),
+    CoinffeineConnectionStatus(1, brokerId = Some(PeerId("broker"))),
+    CoinffeineConnectionStatus(2, brokerId = Some(PeerId("broker")))
   )
   val anyStatus = for {
     coinffeineStatus <- coinffeineStatuses
