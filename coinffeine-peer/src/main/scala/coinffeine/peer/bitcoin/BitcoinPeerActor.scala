@@ -66,7 +66,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(PeerGroupListener)
       blockchainRef ! BlockchainActor.Initialize(blockchain)
-      listener ! Started(walletRef)
+      listener ! Started
       publishEvent(connectionStatus)
       context.become(started orElse commonHandling)
     }
@@ -179,10 +179,10 @@ object BitcoinPeerActor {
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
 
   /** A message sent to the peer actor to join to the bitcoin network */
-  case object Start
-  sealed trait StartResult
-  case class Started(walletActor: ActorRef) extends StartResult
-  case class StartFailure(cause: Throwable) extends StartResult
+  @deprecated case object Start
+  @deprecated sealed trait StartResult
+  @deprecated case object Started extends StartResult
+  @deprecated case class StartFailure(cause: Throwable) extends StartResult
 
   /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
   case object RetrieveConnectionStatus

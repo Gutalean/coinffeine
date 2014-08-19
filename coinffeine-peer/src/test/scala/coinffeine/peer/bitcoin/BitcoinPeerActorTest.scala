@@ -19,13 +19,13 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
       blockchainActor.expectCreation()
       blockchainActor.expectMsg(BlockchainActor.Initialize(blockchain))
       walletActor.expectCreation()
-      expectMsg(BitcoinPeerActor.Started(walletActor.ref))
+      expectMsg(BitcoinPeerActor.Started)
     }
 
   it should "report connection status" in new Fixture {
     actor ! BitcoinPeerActor.Start
     walletActor.expectCreation()
-    expectMsg(BitcoinPeerActor.Started(walletActor.ref))
+    expectMsg(BitcoinPeerActor.Started)
     eventChannelProbe.expectMsgClass(classOf[BitcoinConnectionStatus])
   }
 

@@ -107,13 +107,11 @@ class CoinffeinePeerActor(listenPort: Int,
     }
   }
 
-  private def connectBitcoinPeer(): Future[ActorRef] = {
+  private def connectBitcoinPeer(): Future[Unit] = {
     implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-    (bitcoinPeerRef ? BitcoinPeerActor.Start).map {
-      case BitcoinPeerActor.Started(walletActor) =>
-        walletActor
-      case BitcoinPeerActor.StartFailure(cause) =>
-        throw cause
+    (bitcoinPeerRef ? BitcoinPeerActor.Start).flatMap {
+      case BitcoinPeerActor.Started => Future.successful {}
+      case BitcoinPeerActor.StartFailure(cause) => Future.failed(cause)
     }
   }
 

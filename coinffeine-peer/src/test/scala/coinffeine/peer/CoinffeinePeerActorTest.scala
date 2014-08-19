@@ -54,7 +54,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
     bitcoinPeer.expectAskWithReply {
-      case BitcoinPeerActor.Start => BitcoinPeerActor.Started(wallet.ref)
+      case BitcoinPeerActor.Start => BitcoinPeerActor.Started
     }
     gateway.expectAskWithReply {
       case MessageGateway.Join(`localPort`, `brokerAddress`) =>
