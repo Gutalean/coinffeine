@@ -7,15 +7,15 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
-import coinffeine.common.akka.{ServiceRegistry, AskPattern}
-import coinffeine.model.bitcoin.KeyPair
+import coinffeine.common.akka.{AskPattern, ServiceRegistry}
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, KeyPair}
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.OkPayPaymentProcessor
-import coinffeine.model.payment.PaymentProcessor.{AccountId}
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
@@ -82,7 +82,10 @@ class OrderActor(exchangeActorProps: Props,
           log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
           currentOrder.fiatAmount.currency.Zero
       }
-      val bitcoinToBlock = currentOrder.amount * role.select(ProportionOfBitcoinToBlock)
+
+      val bitcoinToBlock =
+        BitcoinFeeCalculator.amountPlusFee(
+          currentOrder.amount * role.select(ProportionOfBitcoinToBlock))
       fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 
