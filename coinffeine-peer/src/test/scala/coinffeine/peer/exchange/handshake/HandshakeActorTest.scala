@@ -51,12 +51,12 @@ abstract class HandshakeActorTest(systemName: String)
   def shouldForwardPeerHandshake(): Unit = {
     val peerHandshake =
       PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount)
-    shouldForward (peerHandshake) to counterpartConnection
+    shouldForward (peerHandshake) to counterpartId
   }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
     val refundSignatureRequest = RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund)
-    shouldForward (refundSignatureRequest) to counterpartConnection
+    shouldForward (refundSignatureRequest) to counterpartId
   }
 
   def shouldSignCounterpartRefund(): Unit = {
@@ -64,7 +64,7 @@ abstract class HandshakeActorTest(systemName: String)
     gateway.send(actor, fromCounterpart(request))
     val refundSignatureRequest =
       RefundSignatureResponse(exchange.id, MockExchangeProtocol.CounterpartRefundSignature)
-    shouldForward (refundSignatureRequest) to counterpartConnection
+    shouldForward (refundSignatureRequest) to counterpartId
   }
 
   override protected def resetBlockchainBetweenTests = false

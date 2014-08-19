@@ -14,7 +14,7 @@ import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
 
 /** An actor that submits the order positions.
-  * 
+  *
   * This actor will be created by [[MarketSubmissionActor]] in order to submit and watch  a
   * [[PeerPositions]] message. The watcher will forward  the positions through the message
   * gateway and then it will expect a [[PeerPositionsReceived]] response to notify the requesters
@@ -46,8 +46,7 @@ class PeerPositionsSubmitter[C <: FiatCurrency](
     val gateway = reg.eventuallyLocate(MessageGateway.ServiceId)
 
     gateway ! MessageGateway.Subscribe {
-      case ReceiveMessage(PeerPositionsReceived(_), _) => true
-      case _ => false
+      case ReceiveMessage(PeerPositionsReceived(_), _) =>
     }
 
     gateway ! MessageGateway.ForwardMessage(peerPositions, brokerId)

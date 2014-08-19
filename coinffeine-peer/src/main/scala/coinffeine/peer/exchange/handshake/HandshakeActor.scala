@@ -206,8 +206,7 @@ private class HandshakeActor[C <: FiatCurrency](
              ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) |
              ReceiveMessage(RefundSignatureResponse(`id`, _), `counterpart`) |
              ReceiveMessage(CommitmentNotification(`id`, _), exchange.`brokerId`) |
-             ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) => true
-        case other => false
+             ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) =>
       }
     }
 

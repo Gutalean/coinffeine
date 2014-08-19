@@ -34,9 +34,7 @@ class MarketInfoActor extends Actor {
 
     private def subscribeToMessages(): Unit = {
       gateway ! Subscribe {
-        case ReceiveMessage(_: Quote[_], `broker`) |
-             ReceiveMessage(_ : OpenOrders[_], `broker`) => true
-        case _ => false
+        case ReceiveMessage(Quote(_, _, _) | OpenOrders(_), `broker`) =>
       }
     }
 

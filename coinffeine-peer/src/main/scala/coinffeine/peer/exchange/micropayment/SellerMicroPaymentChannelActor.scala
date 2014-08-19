@@ -48,8 +48,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     private def subscribeToMessages(): Unit = {
       val counterpart = exchange.counterpartId
       messageGateway ! Subscribe {
-        case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) => true
-        case _ => false
+        case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) =>
       }
     }
 

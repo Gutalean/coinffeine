@@ -17,7 +17,7 @@ import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPayment
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, PaymentFound}
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
@@ -43,21 +43,21 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
-    val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val subscription = gateway.expectMsgClass(classOf[Subscribe])
     val anotherPeer = PeerId("some-random-peer")
     val relevantPayment = PaymentProof(exchange.id, null)
     val irrelevantPayment = PaymentProof(ExchangeId("another-id"), null)
-    filter(fromCounterpart(relevantPayment)) should be (true)
-    filter(ReceiveMessage(relevantPayment, anotherPeer)) should be (false)
-    filter(fromCounterpart(irrelevantPayment)) should be (false)
+    subscription should subscribeTo(relevantPayment, counterpartId)
+    subscription should not(subscribeTo(relevantPayment, anotherPeer))
+    subscription should not(subscribeTo(irrelevantPayment, counterpartId))
     val randomMessage = PeerPositions.empty(Market(Euro))
-    filter(fromCounterpart(randomMessage)) should be (false)
+    subscription should not(subscribeTo(randomMessage, counterpartId))
   }
 
   it should "send the first step signature as soon as the exchange starts" in {
     val signatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
     expectProgress(signatures = 1, payments = 0)
-    shouldForward(signatures) to counterpartConnection
+    shouldForward(signatures) to counterpartId
   }
 
   it should "not send the second step signature until complete payment proof has been provided" in {
@@ -71,7 +71,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     expectPayment(firstStep)
     expectProgress(signatures = 1, payments = 1)
     val signatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
-    shouldForward(signatures) to counterpartConnection
+    shouldForward(signatures) to counterpartId
     expectProgress(signatures = 2, payments = 1)
   }
 
@@ -86,7 +86,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
       expectPayment(step)
       expectProgress(signatures = i, payments = i)
       val signatures = StepSignatures(exchange.id, i, MockExchangeProtocol.DummySignatures)
-      shouldForward(signatures) to counterpartConnection
+      shouldForward(signatures) to counterpartId
     }
   }
 
@@ -94,7 +94,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     val signatures = StepSignatures(
       exchange.id, exchange.amounts.breakdown.totalSteps, MockExchangeProtocol.DummySignatures
     )
-    shouldForward(signatures) to counterpartConnection
+    shouldForward(signatures) to counterpartId
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

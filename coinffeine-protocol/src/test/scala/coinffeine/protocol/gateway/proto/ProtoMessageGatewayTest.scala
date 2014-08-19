@@ -22,8 +22,7 @@ class ProtoMessageGatewayTest
 
   val connectionTimeout = 30.seconds
   val subscribeToOrderMatches = MessageGateway.Subscribe {
-    case ReceiveMessage(msg: OrderMatch, _) => true
-    case _ => false
+    case ReceiveMessage(_: OrderMatch, _) =>
   }
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
@@ -50,7 +49,7 @@ class ProtoMessageGatewayTest
 
   it must "do not deliver messages to subscribers when filter doesn't match" in
     new FreshBrokerAndPeer {
-      peerGateway ! Subscribe(_ => false)
+      peerGateway ! Subscribe(Map.empty)
       brokerGateway ! ForwardMessage(randomOrderMatch(), peerId)
       expectNoMsg()
     }
@@ -89,9 +88,7 @@ class ProtoMessageGatewayTest
     }
     eventChannelProbe.fishForMessage(hint = "notify connected status") {
       case CoinffeineConnectionStatus(1, Some(`brokerId`)) => true
-      case other =>
-        println(s"FISHING: $other")
-        false
+      case other => false
     }
   }
 
@@ -99,6 +96,8 @@ class ProtoMessageGatewayTest
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
       with IgnoredNetworkInterfaces {
+
+    private val subscribeToAnything = Subscribe { case _ => }
 
     def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
 
@@ -108,7 +107,7 @@ class ProtoMessageGatewayTest
       ref ! Join(localPort, connectTo)
       val Joined(_, _) = expectMsgType[Joined](connectionTimeout)
       val probe = TestProbe()
-      probe.send(ref, Subscribe(_ => true))
+      probe.send(ref, subscribeToAnything)
       (ref, probe)
     }
 
@@ -117,7 +116,7 @@ class ProtoMessageGatewayTest
       ref ! Bind(localPort)
       val Bound(_, brokerId) = expectMsgType[Bound](connectionTimeout)
       val probe = TestProbe()
-      probe.send(ref, Subscribe(_ => true))
+      probe.send(ref, subscribeToAnything)
       (ref, probe, brokerId)
     }
   }

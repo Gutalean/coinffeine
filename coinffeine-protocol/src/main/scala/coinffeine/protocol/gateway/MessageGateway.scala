@@ -45,7 +45,7 @@ object MessageGateway {
   /** A message sent in order to forward another message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
 
-  type Filter = ReceiveMessage[_ <: PublicMessage] => Boolean
+  type Filter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
 
   /** A message sent in order to subscribe for incoming messages.
     *

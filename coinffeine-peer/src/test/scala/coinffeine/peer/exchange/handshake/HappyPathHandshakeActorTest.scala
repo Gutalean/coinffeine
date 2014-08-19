@@ -10,7 +10,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -25,7 +25,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   "Handshake happy path" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
     givenActorIsInitialized()
-    val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val subscription = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = ExchangeId("other-id")
     val relevantPeerHandshake =
       PeerHandshake(exchange.id, handshake.exchange.state.counterpart.bitcoinKey.publicKey, "foo")
@@ -33,17 +33,18 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
       RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =
       RefundSignatureRequest(otherId, ImmutableTransaction(handshake.counterpartRefund))
-    filter(fromCounterpart(relevantPeerHandshake)) should be (true)
-    filter(fromBroker(relevantPeerHandshake)) should be (false)
-    filter(fromCounterpart(relevantSignatureRequest)) should be (true)
-    filter(ReceiveMessage(relevantSignatureRequest, PeerId("other"))) should be (false)
-    filter(fromCounterpart(irrelevantSignatureRequest)) should be (false)
-    filter(fromCounterpart(
-      RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature))) should be (true)
-    filter(fromBroker(CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))) should be (true)
-    filter(fromBroker(ExchangeAborted(exchange.id, "failed"))) should be (true)
-    filter(fromCounterpart(ExchangeAborted(exchange.id, "failed"))) should be (false)
-    filter(fromBroker(ExchangeAborted(otherId, "failed"))) should be (false)
+    subscription should subscribeTo(relevantPeerHandshake, counterpartId)
+    subscription should not(subscribeTo(relevantPeerHandshake, brokerId))
+    subscription should subscribeTo(relevantSignatureRequest, counterpartId)
+    subscription should not(subscribeTo(relevantSignatureRequest, PeerId("other")))
+    subscription should not(subscribeTo(irrelevantSignatureRequest, counterpartId))
+    subscription should subscribeTo(
+      RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature), counterpartId)
+    subscription should subscribeTo(
+      CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])), brokerId)
+    subscription should subscribeTo(ExchangeAborted(exchange.id, "failed"), brokerId)
+    subscription should not(subscribeTo(ExchangeAborted(exchange.id, "failed"), counterpartId))
+    subscription should not(subscribeTo(ExchangeAborted(otherId, "failed"), brokerId))
   }
 
   it should "send peer handshake" in {

@@ -59,7 +59,7 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters
-      if filter(notification)
+      if filter.isDefinedAt(notification)
     } yield ref
     assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>

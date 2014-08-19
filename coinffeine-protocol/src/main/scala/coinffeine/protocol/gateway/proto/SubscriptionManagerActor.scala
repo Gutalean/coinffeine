@@ -19,7 +19,7 @@ private class SubscriptionManagerActor extends Actor with ActorLogging {
   }
 
   private def dispatchToSubscriptions(notification: ReceiveMessage[_ <: PublicMessage]): Unit = {
-    for ((actor, filter) <- subscriptions if filter(notification)) {
+    for ((actor, filter) <- subscriptions if filter.isDefinedAt(notification)) {
       actor ! notification
     }
   }
