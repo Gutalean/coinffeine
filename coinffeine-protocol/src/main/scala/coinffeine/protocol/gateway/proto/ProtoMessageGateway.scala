@@ -29,7 +29,7 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   override def receive = waitingForInitialization orElse managingSubscriptionsAndConnectionStatus
 
   private val managingSubscriptionsAndConnectionStatus: Receive = {
-    case msg: Subscribe =>
+    case msg @ (Subscribe(_) | SubscribeToBroker(_)) =>
       context.watch(sender())
       subscriptions forward msg
     case msg @ Unsubscribe => subscriptions forward msg
@@ -45,11 +45,13 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
 
   private def starting(listener: ActorRef): Receive = {
     case response @ Bound(port, peerId) =>
+      subscriptions ! SubscriptionManagerActor.ConnectedToBroker(peerId)
       listener ! response
       log.info(s"Message gateway successfully bounded on port {} as {}", port, peerId)
       context.become(forwardingMessages orElse managingSubscriptionsAndConnectionStatus)
 
     case response @ Joined(myId, brokerId) =>
+      subscriptions ! SubscriptionManagerActor.ConnectedToBroker(brokerId)
       listener ! response
       log.info(s"Message gateway successfully joined to network as {} using broker {}",
         myId, brokerId)
