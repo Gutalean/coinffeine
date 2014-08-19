@@ -20,8 +20,10 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
-  val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-  val walletRef = context.actorOf(walletProps(createWallet()), "wallet")
+  private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+  private val walletRef = context.actorOf(walletProps(createWallet()), "wallet")
+  private var connectionStatus =
+    BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
 
   override def postStop(): Unit = {
     log.info("Shutting down peer group")
@@ -29,15 +31,14 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     log.info("Peer group stopped")
   }
 
-  override def receive: Receive = {
+  override def receive: Receive = waitingForInitialization orElse commonHandling
+
+  private def waitingForInitialization: Receive = {
     case Start =>
       peerGroup.addEventListener(PeerGroupListener)
       Futures.addCallback(peerGroup.start(), new PeerGroupCallback(sender()))
 
     case init: InitializedBitcoinPeerActor => init.start()
-
-    case RetrieveConnectionStatus =>
-      sender() ! BitcoinConnectionStatus(activePeers = 0, NotDownloading)
   }
 
   private def createWallet(): Wallet = {
@@ -48,8 +49,18 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     wallet
   }
 
+  private def commonHandling: Receive = {
+    case RetrieveConnectionStatus =>
+      sender() ! connectionStatus
+
+    case RetrieveBlockchainActor =>
+      sender ! BlockchainActorRef(blockchainRef)
+
+    case RetrieveWalletActor =>
+      sender() ! WalletActorRef(walletRef)
+  }
+
   private class InitializedBitcoinPeerActor(listener: ActorRef) {
-    var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
 
     def start(): Unit = {
       log.info("Connected to peer group, starting blockchain download")
@@ -57,7 +68,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
       blockchainRef ! BlockchainActor.Initialize(blockchain)
       listener ! Started(walletRef)
       publishEvent(connectionStatus)
-      context.become(started)
+      context.become(started orElse commonHandling)
     }
 
     val started: Receive = {
@@ -67,8 +78,6 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
           peerGroup.broadcastTransaction(tx.get),
           new TxBroadcastCallback(tx, sender()),
           context.dispatcher)
-      case RetrieveBlockchainActor =>
-        sender ! BlockchainActorReference(blockchainRef)
 
       case PeerGroupSize(activePeers) =>
         updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
@@ -92,9 +101,6 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
       case DownloadCompleted =>
         updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
-
-      case RetrieveConnectionStatus =>
-        sender() ! connectionStatus
     }
 
     private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
@@ -211,6 +217,10 @@ object BitcoinPeerActor {
 
   /** The response to the RetrieveBlockchainActor request */
   case class BlockchainActorRef(ref: ActorRef)
+
+  /** Ask for the wallet actor reference. To be replied with a [[WalletActorRef]] */
+  case object RetrieveWalletActor
+  case class WalletActorRef(ref: ActorRef)
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 

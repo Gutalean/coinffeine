@@ -42,6 +42,13 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     probe.expectMsg(BitcoinPeerActor.BlockchainActorRef(blockchainActor.ref))
   }
 
+  it should "retrieve the wallet actor" in new Fixture {
+    walletActor.expectCreation()
+    val probe = TestProbe()
+    probe.send(actor, BitcoinPeerActor.RetrieveWalletActor)
+    probe.expectMsg(BitcoinPeerActor.WalletActorRef(walletActor.ref))
+  }
+
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     val peerGroup = new PeerGroup(network)
     val blockchainActor, walletActor = new MockSupervisedActor()
