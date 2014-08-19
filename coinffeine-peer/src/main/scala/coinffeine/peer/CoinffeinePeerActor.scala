@@ -133,7 +133,9 @@ object CoinffeinePeerActor {
   /** Message sent to the peer to get a [[ConnectionStatus]] in response */
   case object RetrieveConnectionStatus
   case class ConnectionStatus(bitcoinStatus: BitcoinConnectionStatus,
-                              coinffeineStatus: CoinffeineConnectionStatus)
+                              coinffeineStatus: CoinffeineConnectionStatus) {
+    def connected: Boolean = bitcoinStatus.connected && coinffeineStatus.connected
+  }
 
   /** Open a new order.
     *
