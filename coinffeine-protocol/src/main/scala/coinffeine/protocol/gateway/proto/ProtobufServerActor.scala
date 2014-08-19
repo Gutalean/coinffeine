@@ -3,7 +3,7 @@ package coinffeine.protocol.gateway.proto
 import java.net.{InetAddress, NetworkInterface}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
-import scala.util.{Failure, Random, Success, Try}
+import scala.util._
 
 import akka.actor._
 import akka.pattern._
@@ -14,43 +14,47 @@ import net.tomp2p.peers.{Number160, PeerAddress, PeerMapChangeListener}
 import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
+import coinffeine.model.event.CoinffeineConnectionStatus
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-private class ProtobufServerActor(
-    ignoredNetworkInterfaces: Seq[NetworkInterface]) extends Actor with ActorLogging {
+private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface])
+  extends Actor with ActorLogging {
+
+  import coinffeine.protocol.gateway.proto.ProtobufServerActor._
   import context.dispatcher
-  import ProtobufServerActor._
 
   private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
     .filterNot(ignoredNetworkInterfaces.contains)
 
   private var me: Peer = _
+  private var connectionStatus = CoinffeineConnectionStatus(activePeers = 0, brokerId = None)
+
+  override def preStart(): Unit = {
+    publishConnectionStatusEvent()
+  }
 
   override def postStop(): Unit = {
     log.info("Shutting down the protobuf server")
     Option(me).map(_.shutdown())
   }
 
-  override val receive: Receive = {
+  override val receive: Receive = waitingForInitialization orElse manageConnectionStatus
+
+  private def waitingForInitialization: Receive = {
     case Bind(port) =>
-      val listener = sender()
-      initPeer(port, listener)
+      initPeer(port, sender())
       publishAddress().onComplete { case result =>
-        self ! AddressPublicationResult(port, result)
+       self ! AddressPublicationResult(port, result)
       }
-      context.become(publishingAddress(sender()))
+      context.become(publishingAddress(sender()) orElse manageConnectionStatus)
 
     case Join(port, broker) =>
-      val listener = sender()
-      initPeer(port, listener)
-      connectToBroker(createPeerId(me), broker, listener)
-
-    case MessageGateway.RetrieveConnectionStatus =>
-      sender() ! ConnectionStatus(activePeers = 0, brokerId = None)
+      initPeer(port, sender())
+      connectToBroker(createPeerId(me), broker, sender())
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
@@ -63,9 +67,6 @@ private class ProtobufServerActor(
       listener ! BindingError(port, error)
       me = null
       context.become(receive)
-
-    case MessageGateway.RetrieveConnectionStatus =>
-      sender() ! ConnectionStatus(activePeers = me.getPeerBean.getPeerMap.size(), brokerId = None)
   }
 
   def initPeer(localPort: Int, listener: ActorRef): Unit = {
@@ -80,6 +81,7 @@ private class ProtobufServerActor(
       .makeAndListen()
     me.getConfiguration.setBehindFirewall(true)
     me.setObjectDataReply(new ReplyHandler(listener))
+    me.getPeerBean.getPeerMap.addPeerMapChangeListener(PeerChangeListener)
   }
 
   private def publishAddress(): Future[FutureDHT] = me.put(me.getPeerID)
@@ -122,7 +124,7 @@ private class ProtobufServerActor(
       createPeerId(bs.getBootstrapTo.head)
     }).pipeTo(self)
 
-    context.become {
+    val waitForBootstrap: Receive = {
       case brokerId: PeerId =>
         log.info(s"Successfully connected as $ownId using broker in $brokerAddress with $brokerId")
         listener ! Joined(ownId, brokerId)
@@ -132,16 +134,20 @@ private class ProtobufServerActor(
         log.error(s"Cannot connect as $ownId using broker in $brokerAddress: $error")
         listener ! JoinError(error)
         context.become(receive)
-
-      case MessageGateway.RetrieveConnectionStatus =>
-        sender() ! ConnectionStatus(activePeers = me.getPeerBean.getPeerMap.size(), brokerId = None)
     }
+
+    context.become(waitForBootstrap orElse manageConnectionStatus)
   }
 
   private class InitializedServer(listener: ActorRef, brokerId: PeerId) {
 
     def start(): Unit = {
-      context.become(sendingMessages)
+      connectionStatus = CoinffeineConnectionStatus(
+        activePeers = me.getPeerBean.getPeerMap.getAll.size(),
+        brokerId = Some(brokerId)
+      )
+      publishConnectionStatusEvent()
+      context.become(sendingMessages orElse manageConnectionStatus)
     }
 
     private val sendingMessages: Receive = {
@@ -154,14 +160,16 @@ private class ProtobufServerActor(
         sendMsg.onFailure { case err =>
           log.error(err, s"Failure when sending send message $msg to $to")
         }
-
-      case MessageGateway.RetrieveConnectionStatus =>
-        sender() ! connectionStatus()
     }
+  }
 
-    private def connectionStatus() = {
-      ConnectionStatus(me.getPeerBean.getPeerMap.getAll.size(), Some(brokerId))
-    }
+  private def manageConnectionStatus: Receive = {
+    case MessageGateway.RetrieveConnectionStatus =>
+      sender() ! connectionStatus
+
+    case PeerMapChanged =>
+      connectionStatus = connectionStatus.copy(activePeers = me.getPeerBean.getPeerMap.getAll.size())
+      publishConnectionStatusEvent()
   }
 
   private class ReplyHandler(listener: ActorRef) extends ObjectDataReply {
@@ -176,6 +184,26 @@ private class ProtobufServerActor(
     }
   }
 
+  /** Notifies the actor about changes on the peer map */
+  private object PeerChangeListener extends PeerMapChangeListener {
+
+    override def peerInserted(peerAddress: PeerAddress): Unit = {
+      self ! PeerMapChanged
+    }
+
+    override def peerRemoved(peerAddress: PeerAddress): Unit = {
+      self ! PeerMapChanged
+    }
+
+    override def peerUpdated(peerAddress: PeerAddress): Unit = {
+      self ! PeerMapChanged
+    }
+  }
+
+  private def publishConnectionStatusEvent(): Unit = {
+    context.system.eventStream.publish(connectionStatus)
+  }
+
   private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString)
   private def createPeerId(address: PeerAddress): PeerId = createPeerId(address.getID)
   private def createPeerId(peer: Peer): PeerId = createPeerId(peer.getPeerID)
@@ -184,6 +212,7 @@ private class ProtobufServerActor(
 
 private[gateway] object ProtobufServerActor {
   private case class AddressPublicationResult(port: Int, result: Try[FutureDHT])
+  private case object PeerMapChanged
 
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
     new ProtobufServerActor(ignoredNetworkInterfaces))

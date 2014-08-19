@@ -15,9 +15,10 @@ object MessageGateway {
   /** The identifier of the message gateway as global service. */
   val ServiceId = ServiceRegistryActor.ServiceId("/Coinffeine/MessageGateway")
 
-  /** A request message to get the connection status as a [[ConnectionStatus]] */
+  /** A request message to get the connection status as a
+    * [[coinffeine.model.event.CoinffeineConnectionStatus]].
+    */
   case object RetrieveConnectionStatus
-  case class ConnectionStatus(activePeers: Int, brokerId: Option[PeerId])
 
   case class BrokerAddress(hostname: String, port: Int) {
     override def toString = s"$hostname:$port"

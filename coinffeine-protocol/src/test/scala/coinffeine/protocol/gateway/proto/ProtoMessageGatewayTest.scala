@@ -9,6 +9,7 @@ import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
@@ -73,12 +74,25 @@ class ProtoMessageGatewayTest
   it must "retrieve the connection status when disconnected" in new Fixture {
     val ref = createMessageGateway()
     ref ! MessageGateway.RetrieveConnectionStatus
-    expectMsg(MessageGateway.ConnectionStatus(activePeers = 0, brokerId = None))
+    expectMsg(CoinffeineConnectionStatus(activePeers = 0, brokerId = None))
   }
 
   it must "retrieve the connection status when connected" in new FreshBrokerAndPeer {
     peerGateway ! MessageGateway.RetrieveConnectionStatus
-    expectMsg(MessageGateway.ConnectionStatus(activePeers = 1, Some(brokerId)))
+    expectMsg(CoinffeineConnectionStatus(activePeers = 1, Some(brokerId)))
+  }
+
+  it must "produce connection status events" in new FreshBrokerAndPeer {
+    eventChannelProbe.fishForMessage(hint = "notify disconnected status") {
+      case CoinffeineConnectionStatus(0, None) => true
+      case _ => false
+    }
+    eventChannelProbe.fishForMessage(hint = "notify connected status") {
+      case CoinffeineConnectionStatus(1, Some(`brokerId`)) => true
+      case other =>
+        println(s"FISHING: $other")
+        false
+    }
   }
 
   trait Fixture extends ProtoMessageGateway.Component
@@ -109,6 +123,7 @@ class ProtoMessageGatewayTest
   }
 
   trait FreshBrokerAndPeer extends Fixture {
+    val eventChannelProbe = EventChannelProbe()
     val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
     val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
