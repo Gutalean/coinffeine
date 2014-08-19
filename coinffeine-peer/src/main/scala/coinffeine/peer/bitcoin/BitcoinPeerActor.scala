@@ -13,12 +13,15 @@ import coinffeine.model.event.BitcoinConnectionStatus.{NotDownloading, Downloadi
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
-class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Props,
+class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Wallet => Props,
                        keyPairs: Seq[KeyPair], blockchain: AbstractBlockChain,
                        network: NetworkParameters)
   extends Actor with ActorLogging with EventPublisher {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
+
+  val blockchainRef = context.actorOf(blockchainProps, "blockchain")
+  val walletRef = context.actorOf(walletProps(createWallet()), "wallet")
 
   override def postStop(): Unit = {
     log.info("Shutting down peer group")
@@ -37,16 +40,21 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
       sender() ! BitcoinConnectionStatus(activePeers = 0, NotDownloading)
   }
 
+  private def createWallet(): Wallet = {
+    val wallet = new Wallet(network)
+    keyPairs.foreach(wallet.addKey)
+    blockchain.addWallet(wallet)
+    peerGroup.addWallet(wallet)
+    wallet
+  }
+
   private class InitializedBitcoinPeerActor(listener: ActorRef) {
-    val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-    val walletRef = context.actorOf(walletProps, "wallet")
     var connectionStatus = BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
 
     def start(): Unit = {
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(PeerGroupListener)
       blockchainRef ! BlockchainActor.Initialize(blockchain)
-      walletRef ! WalletActor.Initialize(createWallet())
       listener ! Started(walletRef)
       publishEvent(connectionStatus)
       context.become(started)
@@ -87,14 +95,6 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
 
       case RetrieveConnectionStatus =>
         sender() ! connectionStatus
-    }
-
-    private def createWallet(): Wallet = {
-      val wallet = new Wallet(network)
-      keyPairs.foreach(wallet.addKey)
-      blockchain.addWallet(wallet)
-      peerGroup.addWallet(wallet)
-      wallet
     }
 
     private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {

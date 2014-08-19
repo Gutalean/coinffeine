@@ -18,7 +18,6 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
       blockchainActor.expectCreation()
       blockchainActor.expectMsg(BlockchainActor.Initialize(blockchain))
       walletActor.expectCreation()
-      walletActor.expectMsgType[WalletActor.Initialize]
       expectMsg(BitcoinPeerActor.Started(walletActor.ref))
     }
 
@@ -40,7 +39,7 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     val blockchainActor, walletActor = new MockSupervisedActor()
     val eventChannelProbe = EventChannelProbe()
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
-    val actor = system.actorOf(Props(new BitcoinPeerActor(
-      peerGroup, blockchainActor.props, walletActor.props, keyPairs = Seq.empty, blockchain, network)))
+    val actor = system.actorOf(Props(new BitcoinPeerActor(peerGroup, blockchainActor.props,
+      _ => walletActor.props, keyPairs = Seq.empty, blockchain, network)))
   }
 }
