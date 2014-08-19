@@ -7,14 +7,11 @@ import coinffeine.protocol.messages.PublicMessage
 
 private class SubscriptionManagerActor extends Actor with ActorLogging {
 
-  /** Metadata on message subscription requested by an actor. */
-  private case class MessageSubscription(filter: Filter)
-
-  private var subscriptions = Map.empty[ActorRef, MessageSubscription]
+  private var subscriptions = Map.empty[ActorRef, Filter]
 
   override def receive: Receive = {
     case Subscribe(filter) =>
-      subscriptions += sender -> MessageSubscription(filter)
+      subscriptions += sender -> filter
     case Unsubscribe =>
       subscriptions -= sender
     case message @ ReceiveMessage(_, _) =>
@@ -22,7 +19,7 @@ private class SubscriptionManagerActor extends Actor with ActorLogging {
   }
 
   private def dispatchToSubscriptions(notification: ReceiveMessage[_ <: PublicMessage]): Unit = {
-    for ((actor, MessageSubscription(filter)) <- subscriptions if filter(notification)) {
+    for ((actor, filter) <- subscriptions if filter(notification)) {
       actor ! notification
     }
   }
