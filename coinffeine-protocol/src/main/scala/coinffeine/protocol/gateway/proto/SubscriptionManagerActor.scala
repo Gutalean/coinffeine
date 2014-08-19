@@ -11,7 +11,8 @@ private class SubscriptionManagerActor extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case Subscribe(filter) =>
-      subscriptions += sender -> filter
+      val newFilter = subscriptions.get(sender()).fold(filter)(_ orElse filter)
+      subscriptions += sender() -> newFilter
     case Unsubscribe =>
       subscriptions -= sender
     case message @ ReceiveMessage(_, _) =>

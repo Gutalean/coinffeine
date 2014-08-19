@@ -10,6 +10,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
+import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
@@ -45,6 +46,21 @@ class ProtoMessageGatewayTest
     peerGateway ! subscribeToOrderMatches
     brokerGateway ! ForwardMessage(msg, peerId)
     expectMsg(ReceiveMessage(msg, brokerId))
+  }
+
+  it must "support multiple subscriptions from the same actor" in new FreshBrokerAndPeer {
+    val msg1 = randomOrderMatch().copy(orderId = OrderId("1"))
+    val msg2 = msg1.copy(orderId = OrderId("2"))
+    peerGateway ! Subscribe {
+      case ReceiveMessage(OrderMatch(OrderId("1"), _, _, _, _, _), _) =>
+    }
+    peerGateway ! Subscribe {
+      case ReceiveMessage(OrderMatch(OrderId("2"), _, _, _, _, _), _) =>
+    }
+    brokerGateway ! ForwardMessage(msg1, peerId)
+    expectMsg(ReceiveMessage(msg1, brokerId))
+    brokerGateway ! ForwardMessage(msg2, peerId)
+    expectMsg(ReceiveMessage(msg2, brokerId))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in
