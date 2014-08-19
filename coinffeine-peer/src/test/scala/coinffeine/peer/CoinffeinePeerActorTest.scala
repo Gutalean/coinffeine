@@ -36,8 +36,14 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       bitcoinPeer = bitcoinPeer.props))))
 
   "A peer" must "start the message gateway" in {
-    bitcoinPeer.expectCreation()
     gateway.expectCreation()
+  }
+
+  it must "start the bitcoin peer and retrieve the wallet actor" in {
+    bitcoinPeer.expectCreation()
+    bitcoinPeer.expectAskWithReply {
+      case BitcoinPeerActor.RetrieveWalletActor => BitcoinPeerActor.WalletActorRef(wallet.ref)
+    }
   }
 
   it must "start the payment processor actor" in {
