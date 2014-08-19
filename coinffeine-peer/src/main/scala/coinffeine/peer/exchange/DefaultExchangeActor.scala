@@ -6,7 +6,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorReference, RetrieveBlockchainActor, TransactionPublished}
+import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorRef, RetrieveBlockchainActor, TransactionPublished}
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
@@ -60,7 +60,7 @@ class DefaultExchangeActor(
     }
 
     private val retrievingBlockchain: Receive = {
-      case BlockchainActorReference(blockchainRef) =>
+      case BlockchainActorRef(blockchainRef) =>
         blockchain = blockchainRef
         startHandshake()
         context.become(inHandshake)

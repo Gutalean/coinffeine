@@ -170,7 +170,7 @@ object BitcoinPeerActor {
       to = bitcoinPeer,
       request = BitcoinPeerActor.RetrieveBlockchainActor,
       errorMessage = s"Cannot retrieve blockchain actor from $bitcoinPeer"
-    ).withImmediateReply[BitcoinPeerActor.BlockchainActorReference]().map(_.ref)
+    ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
 
   /** A message sent to the peer actor to join to the bitcoin network */
   case object Start
@@ -210,7 +210,7 @@ object BitcoinPeerActor {
   case object RetrieveBlockchainActor
 
   /** The response to the RetrieveBlockchainActor request */
-  case class BlockchainActorReference(ref: ActorRef)
+  case class BlockchainActorRef(ref: ActorRef)
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 

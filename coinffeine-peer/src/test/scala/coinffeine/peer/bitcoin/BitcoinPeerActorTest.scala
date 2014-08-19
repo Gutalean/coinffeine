@@ -1,6 +1,7 @@
 package coinffeine.peer.bitcoin
 
 import akka.actor.Props
+import akka.testkit.TestProbe
 import com.google.bitcoin.core.{FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.scalatest.mock.MockitoSugar
@@ -32,6 +33,13 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     actor ! BitcoinPeerActor.Start
     actor ! BitcoinPeerActor.RetrieveConnectionStatus
     expectMsg(BitcoinConnectionStatus(activePeers = 0, NotDownloading))
+  }
+
+  it should "retrieve the blockchain actor" in new Fixture {
+    blockchainActor.expectCreation()
+    val probe = TestProbe()
+    probe.send(actor, BitcoinPeerActor.RetrieveBlockchainActor)
+    probe.expectMsg(BitcoinPeerActor.BlockchainActorRef(blockchainActor.ref))
   }
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
