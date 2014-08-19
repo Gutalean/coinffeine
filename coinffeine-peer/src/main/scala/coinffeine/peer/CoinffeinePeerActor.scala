@@ -110,10 +110,8 @@ class CoinffeinePeerActor(listenPort: Int,
         bitcoinStatus <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveConnectionStatus)
           .withImmediateReply[BitcoinConnectionStatus]()
         coinffeineStatus <- AskPattern(gatewayRef, MessageGateway.RetrieveConnectionStatus)
-          .withImmediateReply[MessageGateway.ConnectionStatus]()
-      } yield {
-        ConnectionStatus(bitcoinStatus, CoinffeineConnectionStatus(coinffeineStatus.activePeers))
-      }).pipeTo(sender())
+          .withImmediateReply[CoinffeineConnectionStatus]()
+      } yield ConnectionStatus(bitcoinStatus, coinffeineStatus)).pipeTo(sender())
   }
 
   private def spawnDelegate(delegateProps: Props, name: String, initMessages: Any*): ActorRef = {
