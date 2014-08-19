@@ -37,7 +37,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   private def givenSuccessfulBlockchainRetrieval(): Unit = {
     peerActor.expectMsg(RetrieveBlockchainActor)
-    peerActor.reply(BlockchainActorReference(blockchain.ref))
+    peerActor.reply(BlockchainActorRef(blockchain.ref))
   }
 
   private def expectPanicNotificationRequest(): ActorRef = {

@@ -63,7 +63,6 @@ object CoinffeineNetwork {
   sealed trait Status
   case object Disconnected extends Status
   case object Connected extends Status
-  case object Connecting extends Status
 
   case class ConnectException(cause: Throwable)
     extends Exception("Cannot connect to the P2P network", cause)

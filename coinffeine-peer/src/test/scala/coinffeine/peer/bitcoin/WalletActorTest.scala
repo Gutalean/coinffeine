@@ -2,7 +2,6 @@ package coinffeine.peer.bitcoin
 
 import scala.concurrent.duration._
 
-import akka.testkit.TestProbe
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.AkkaSpec
@@ -11,8 +10,8 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.event.{Balance, EventChannelProbe, WalletBalanceChangeEvent}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
-import coinffeine.model.event.{EventChannelProbe, CoinffeineAppEvent, Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
@@ -83,9 +82,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val wallet = createWallet(keyPair, 10.BTC)
     val initialFunds = wallet.balance()
     val eventChannelProbe = EventChannelProbe()
-
-    val instance = system.actorOf(WalletActor.props)
-    instance ! WalletActor.Initialize(wallet)
+    val instance = system.actorOf(WalletActor.props(wallet))
 
     def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = {
       instance ! WalletActor.BlockBitcoins(amount)

@@ -10,6 +10,7 @@ import akka.pattern._
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor
@@ -20,9 +21,13 @@ import coinffeine.peer.api.CoinffeineNetwork._
 private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   extends CoinffeineNetwork with PeerActorWrapper {
 
-  private var _status: CoinffeineNetwork.Status = Disconnected
-
-  override def status = _status
+  override def status = await(AskPattern(
+    to = peer,
+    request = CoinffeinePeerActor.RetrieveConnectionStatus,
+    errorMessage = "Cannot get connection status"
+  ).withImmediateReply[CoinffeinePeerActor.ConnectionStatus]().map { status =>
+    if (status.connected) Connected else Disconnected
+  })
 
   /** @inheritdoc
     *
@@ -31,7 +36,6 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     */
   override def connect(): Future[Connected.type] = {
     implicit val timeout = Timeout(DefaultCoinffeineNetwork.ConnectionTimeout)
-    _status = Connecting
     val bindResult = (peer ? CoinffeinePeerActor.Connect).flatMap {
       case CoinffeinePeerActor.Connected => Future.successful(Connected)
       case CoinffeinePeerActor.ConnectionFailed(cause) => Future.failed(ConnectException(cause))
@@ -39,10 +43,8 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     bindResult.onComplete {
       case Success(connected) =>
         DefaultCoinffeineNetwork.Log.error("Connected")
-        _status = connected
       case Failure(cause) =>
         DefaultCoinffeineNetwork.Log.error("Cannot connect", cause)
-        _status = Disconnected
     }
     bindResult
   }

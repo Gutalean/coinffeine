@@ -25,7 +25,7 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
   }
 
   private def waitForBlockchain(init: StartBroadcastHandling): Receive = {
-    case BlockchainActorReference(blockchain: ActorRef) =>
+    case BlockchainActorRef(blockchain: ActorRef) =>
       unstashAll()
       new InitializedBroadcastActor(init, blockchain).start()
     case _ => stash()

@@ -60,7 +60,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       listener.send(actor, StartExchange(exchange, user, walletActor.ref,
         dummyPaymentProcessor, gateway.ref, peers.ref))
       peers.expectMsg(RetrieveBlockchainActor)
-      peers.reply(BlockchainActorReference(blockchain.ref))
+      peers.reply(BlockchainActorRef(blockchain.ref))
       handshakeActor.expectCreation()
       transactionBroadcastActor.expectCreation()
     }
