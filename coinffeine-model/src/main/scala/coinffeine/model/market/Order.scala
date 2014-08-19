@@ -28,9 +28,9 @@ case class Order[+C <: FiatCurrency](
   val fiatAmount = price * amount.value
 
   /** The required fiat amount for the owner of this order. */
-  val requiredFiatAmount = orderType match {
+  val requiredFiatAmount: CurrencyAmount[C] = orderType match {
     case Bid => fiatAmount
-    case Ask => amount.currency.Zero
+    case Ask => fiatAmount.currency.Zero
   }
 
   /** Create a new copy of this order with the given status. */
