@@ -6,7 +6,7 @@ import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, SubscribeToBroker}
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
@@ -21,8 +21,8 @@ class MarketInfoActor extends Actor {
   }
 
   private class InitializedActor(init: Start) {
-    import init._
     import context.dispatcher
+    import init._
 
     private val gateway = new ServiceRegistry(registry).eventuallyLocate(MessageGateway.ServiceId)
     private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
@@ -33,8 +33,8 @@ class MarketInfoActor extends Actor {
     }
 
     private def subscribeToMessages(): Unit = {
-      gateway ! Subscribe {
-        case ReceiveMessage(Quote(_, _, _) | OpenOrders(_), `broker`) =>
+      gateway ! SubscribeToBroker {
+        case Quote(_, _, _) | OpenOrders(_) =>
       }
     }
 

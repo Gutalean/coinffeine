@@ -178,7 +178,7 @@ class OrderActorTest extends AkkaSpec {
     def fiatFunds: Option[BlockedFundsId]
     val order: Order[FiatCurrency]
     def amountsToBlock: (FiatAmount, BitcoinAmount)
-    val gatewayProbe = new GatewayProbe()
+    val gatewayProbe = new GatewayProbe(brokerId)
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
     val eventChannelProbe = EventChannelProbe()
