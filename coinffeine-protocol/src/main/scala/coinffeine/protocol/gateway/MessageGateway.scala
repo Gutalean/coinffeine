@@ -45,7 +45,7 @@ object MessageGateway {
   /** A message sent in order to forward another message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
 
-  type Filter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
+  type ReceiveFilter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
 
   /** A message sent in order to subscribe for incoming messages.
     *
@@ -54,7 +54,7 @@ object MessageGateway {
     *
     * @param filter A filter function that indicates what messages are forwarded to the sender actor
     */
-  case class Subscribe(filter: Filter)
+  case class Subscribe(filter: ReceiveFilter)
 
   /** A message sent in order to unsubscribe from incoming message reception. */
   case object Unsubscribe

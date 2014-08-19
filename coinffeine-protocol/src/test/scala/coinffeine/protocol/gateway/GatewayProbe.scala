@@ -17,7 +17,7 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
   private val probe = TestProbe()
 
   /** Mapping of subscriptions used to relay only what is subscribed or fail otherwise. */
-  private var subscriptions: Map[ActorRef, Set[Filter]] = Map.empty
+  private var subscriptions: Map[ActorRef, Set[ReceiveFilter]] = Map.empty
 
   def ref = probe.ref
 

@@ -7,16 +7,21 @@ import coinffeine.protocol.messages.PublicMessage
 
 private class SubscriptionManagerActor extends Actor with ActorLogging {
 
-  private var subscriptions = Map.empty[ActorRef, Filter]
+  private var subscriptions = Map.empty[ActorRef, ReceiveFilter]
+  private var brokerSubscriptions = Map.empty[ActorRef, ]
 
   override def receive: Receive = {
     case Subscribe(filter) =>
-      val newFilter = subscriptions.get(sender()).fold(filter)(_ orElse filter)
-      subscriptions += sender() -> newFilter
+      addSubscription(sender(), filter)
     case Unsubscribe =>
       subscriptions -= sender
     case message @ ReceiveMessage(_, _) =>
       dispatchToSubscriptions(message)
+  }
+
+  private def addSubscription(subscriber: ActorRef, filter: ReceiveFilter): Unit = {
+    val newFilter = subscriptions.get(subscriber).fold(filter)(_ orElse filter)
+    subscriptions += subscriber -> newFilter
   }
 
   private def dispatchToSubscriptions(notification: ReceiveMessage[_ <: PublicMessage]): Unit = {
