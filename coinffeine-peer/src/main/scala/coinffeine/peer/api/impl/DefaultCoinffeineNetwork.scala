@@ -49,8 +49,6 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     bindResult
   }
 
-  override def disconnect(): Future[Disconnected.type] = ???
-
   override def orders: Set[Order[FiatCurrency]] =
     await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
 

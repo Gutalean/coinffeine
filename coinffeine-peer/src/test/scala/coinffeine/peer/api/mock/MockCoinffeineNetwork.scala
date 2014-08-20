@@ -13,8 +13,6 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
 
   override def status: Status = ???
 
-  override def disconnect(): Future[Disconnected.type] = ???
-
   override def orders: Set[Order[FiatCurrency]] = _orders
 
   override def cancelOrder(orderId: OrderId, reason: String): Unit = {
