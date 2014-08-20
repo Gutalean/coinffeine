@@ -3,8 +3,7 @@ package coinffeine.peer.market
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.test.MockActor.{MockReceived, MockStarted}
-import coinffeine.common.akka.test.{AkkaSpec, MockActor}
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, Order}
@@ -58,10 +57,10 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
-    val orderActorProbe, submissionProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer,
-      wallet = TestProbe()
+    val orderActorProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer, wallet = TestProbe()
+    val submissionProbe = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
-      MockActor.props(submissionProbe), protocolConstants)))
+      submissionProbe.props, protocolConstants)))
 
     val order1 = Order(Bid, 5.BTC, 500.EUR)
     val order2 = Order(Ask, 2.BTC, 800.EUR)
@@ -71,11 +70,9 @@ class OrderSupervisorTest extends AkkaSpec {
       val initMessage = OrderSupervisor.Initialize(
         brokerId, gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
       actor ! initMessage
-      submissionProbe.expectMsgClass(classOf[MockStarted])
+      submissionProbe.expectCreation()
       val gatewayRef = gateway.ref
-      submissionProbe.expectMsgPF() {
-        case MockReceived(_, _, SubmissionSupervisor.Initialize(`brokerId`, `gatewayRef`)) =>
-      }
+      submissionProbe.expectMsg(SubmissionSupervisor.Initialize(gatewayRef))
     }
 
     def givenOpenOrder(order: Order[FiatCurrency]): Unit = {

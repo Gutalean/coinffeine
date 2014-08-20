@@ -41,7 +41,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
     val requester = TestProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(brokerId, registryActor)
+    actor ! SubmissionSupervisor.Initialize(registryActor)
 
     def keepSubmitting(entry: OrderBookEntry[FiatAmount]): Unit = {
       requester.send(actor, KeepSubmitting(entry))

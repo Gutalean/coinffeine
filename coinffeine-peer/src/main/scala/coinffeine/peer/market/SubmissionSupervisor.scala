@@ -7,7 +7,6 @@ import akka.util.Timeout
 
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.{OrderBookEntry, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage.Market
@@ -55,7 +54,7 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
 
 object SubmissionSupervisor {
 
-  case class Initialize(brokerId: PeerId, registry: ActorRef)
+  case class Initialize(registry: ActorRef)
 
   case class KeepSubmitting(order: OrderBookEntry[FiatAmount])
 

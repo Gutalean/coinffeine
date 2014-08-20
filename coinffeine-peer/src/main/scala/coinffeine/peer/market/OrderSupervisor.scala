@@ -33,7 +33,7 @@ class OrderSupervisor(orderActorProps: Props,
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(brokerId, registry)
+      submission ! SubmissionSupervisor.Initialize(registry)
       context.become(waitingForOrders)
     }
 
@@ -62,7 +62,7 @@ class OrderSupervisor(orderActorProps: Props,
 
 object OrderSupervisor {
 
-  case class Initialize(brokerId: PeerId,
+  case class Initialize(@deprecated val brokerId: PeerId,
                         registry: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
