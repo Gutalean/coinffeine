@@ -16,6 +16,7 @@ import coinffeine.protocol.messages.PublicMessage
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange with SubscriptionMatchers {
 
+  val brokerId = PeerId("broker")
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
   val gateway = TestProbe()

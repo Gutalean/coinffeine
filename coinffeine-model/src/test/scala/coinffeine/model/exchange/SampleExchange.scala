@@ -8,8 +8,6 @@ import coinffeine.model.payment.PaymentProcessor
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
-  val brokerId = PeerId("broker")
-
   val participants = Both(
     buyer = Exchange.PeerInfo(
       paymentProcessorAccount = "buyer",

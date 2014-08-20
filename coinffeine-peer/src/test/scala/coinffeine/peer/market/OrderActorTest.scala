@@ -3,15 +3,16 @@ package coinffeine.peer.market
 import akka.actor.Props
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BitcoinFeeCalculator, BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.exchange._
 import coinffeine.model.event._
+import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.network.PeerId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
@@ -20,7 +21,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Per
 import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.{MessageGateway, GatewayProbe}
+import coinffeine.protocol.gateway.{GatewayProbe, MessageGateway}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActorTest extends AkkaSpec {
@@ -97,7 +98,7 @@ class OrderActorTest extends AkkaSpec {
   it should "stop submitting to the broker & report new status once matching is received" in
     new BuyerFixture {
       givenInMarketOrder()
-      gatewayProbe.relayMessage(orderMatch, brokerId)
+      gatewayProbe.relayMessageFromBroker(orderMatch)
       submissionProbe.fishForMessage() {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
@@ -115,7 +116,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "spawn an exchange upon matching" in new BuyerFixture {
     givenInMarketOrder()
-    gatewayProbe.relayMessage(orderMatch, brokerId)
+    gatewayProbe.relayMessageFromBroker(orderMatch)
     val keyPair = givenAFreshKeyIsGenerated()
     givenPaymentProcessorAccountIsRetrieved()
 
@@ -155,7 +156,7 @@ class OrderActorTest extends AkkaSpec {
   it should "stop submitting to the broker & send event once matching is received" in
     new SellerFixture {
       givenInMarketOrder()
-      gatewayProbe.relayMessage(orderMatch, brokerId)
+      gatewayProbe.relayMessageFromBroker(orderMatch)
       submissionProbe.fishForMessage() {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
@@ -169,7 +170,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "spawn an exchange upon matching" in new SellerFixture {
     givenInMarketOrder()
-    gatewayProbe.relayMessage(orderMatch, brokerId)
+    gatewayProbe.relayMessageFromBroker(orderMatch)
     expectAPerfectMatchExchangeToBeStarted()
   }
 
@@ -178,7 +179,7 @@ class OrderActorTest extends AkkaSpec {
     def fiatFunds: Option[BlockedFundsId]
     val order: Order[FiatCurrency]
     def amountsToBlock: (FiatAmount, BitcoinAmount)
-    val gatewayProbe = new GatewayProbe(brokerId)
+    val gatewayProbe = new GatewayProbe(PeerId("broker"))
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
     val eventChannelProbe = EventChannelProbe()
@@ -254,7 +255,7 @@ class OrderActorTest extends AkkaSpec {
     }
 
     def givenASuccessfulPerfectMatchExchange(): Unit = {
-      gatewayProbe.relayMessage(orderMatch, brokerId)
+      gatewayProbe.relayMessageFromBroker(orderMatch)
       expectAPerfectMatchExchangeToBeStarted()
       exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
     }
