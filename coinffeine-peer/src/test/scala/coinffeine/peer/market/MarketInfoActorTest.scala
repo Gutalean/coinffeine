@@ -12,7 +12,7 @@ class MarketInfoActorTest extends AkkaSpec {
 
   "A market info actor" should "retrieve a market quote" in new Fixture {
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    messageGateway.expectForwarding(QuoteRequest(eurMarket), broker)
+    messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
     messageGateway.relayMessageFromBroker(sampleEurQuote)
     expectMsg(sampleEurQuote)
   }
@@ -21,7 +21,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val concurrentRequester = TestProbe()
 
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    messageGateway.expectForwarding(QuoteRequest(eurMarket), broker)
+    messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestQuote(eurMarket))
     messageGateway.expectNoMsg()
@@ -33,7 +33,7 @@ class MarketInfoActorTest extends AkkaSpec {
 
   it should "retrieve open orders" in new Fixture {
     actor ! MarketInfoActor.RequestOpenOrders(eurMarket)
-    messageGateway.expectForwarding(OpenOrdersRequest(eurMarket), broker)
+    messageGateway.expectForwardingToBroker(OpenOrdersRequest(eurMarket))
     messageGateway.relayMessageFromBroker(sampleOpenOrders)
     expectMsg(sampleOpenOrders)
   }
@@ -42,7 +42,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val concurrentRequester = TestProbe()
 
     actor ! MarketInfoActor.RequestOpenOrders(eurMarket)
-    messageGateway.expectForwarding(OpenOrdersRequest(eurMarket), broker)
+    messageGateway.expectForwardingToBroker(OpenOrdersRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestOpenOrders(eurMarket))
     messageGateway.expectNoMsg()
@@ -54,11 +54,11 @@ class MarketInfoActorTest extends AkkaSpec {
 
   it should "handle different markets" in new Fixture {
     actor ! MarketInfoActor.RequestQuote(eurMarket)
-    messageGateway.expectForwarding(QuoteRequest(eurMarket), broker)
+    messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
 
     val usdRequester = TestProbe()
     usdRequester.send(actor, MarketInfoActor.RequestQuote(usdMarket))
-    messageGateway.expectForwarding(QuoteRequest(usdMarket), broker)
+    messageGateway.expectForwardingToBroker(QuoteRequest(usdMarket))
 
     messageGateway.relayMessageFromBroker(sampleEurQuote)
     expectMsg(sampleEurQuote)
@@ -75,7 +75,7 @@ class MarketInfoActorTest extends AkkaSpec {
     val sampleUsdQuote = Quote(spread = 1000.USD -> 1010.USD, lastPrice = 1005.USD)
     val sampleOpenOrders = OpenOrders(PeerPositions.empty(eurMarket))
 
-    actor ! MarketInfoActor.Start(broker, registryActor)
+    actor ! MarketInfoActor.Start(registryActor)
     messageGateway.expectSubscriptionToBroker()
   }
 }

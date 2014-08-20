@@ -4,9 +4,8 @@ import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, SubscribeToBroker}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ReceiveMessage, SubscribeToBroker}
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
@@ -41,12 +40,12 @@ class MarketInfoActor extends Actor {
     private val initializedReceive: Receive = {
       case request @ RequestQuote(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessage(QuoteRequest(market), broker)
+          gateway ! ForwardMessageToBroker(QuoteRequest(market))
         }
 
       case request @ RequestOpenOrders(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessage(OpenOrdersRequest(market), broker)
+          gateway ! ForwardMessageToBroker(OpenOrdersRequest(market))
         }
 
       case ReceiveMessage(quote: Quote[FiatCurrency], _) =>
@@ -75,7 +74,7 @@ object MarketInfoActor {
   val props: Props = Props(new MarketInfoActor)
 
   /** Initialize the actor to subscribe for market information */
-  case class Start(broker: PeerId, registry: ActorRef)
+  case class Start(registry: ActorRef)
 
   sealed trait InfoRequest
 

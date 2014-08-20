@@ -47,9 +47,13 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     subscription
   }
 
+  def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
+    expectForwarding(payload, brokerId, timeout)
+
   def expectForwarding(payload: Any, dest: PeerId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
+      case message @ ForwardMessageToBroker(`payload`) if dest == brokerId => message
     }
 
   def expectForwardingPF[T](dest: PeerId, timeout: Duration = Duration.Undefined)

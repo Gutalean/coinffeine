@@ -84,7 +84,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "start the market info actor" in {
     marketInfo.expectCreation()
-    val MarketInfoActor.Start(_, _) = marketInfo.expectMsgType[MarketInfoActor.Start]
+    marketInfo.expectMsgType[MarketInfoActor.Start]
   }
 
   it must "propagate failures when connecting" in {
