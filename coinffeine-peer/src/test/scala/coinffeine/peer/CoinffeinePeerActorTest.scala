@@ -41,13 +41,15 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     peer ! ServiceActor.Start {}
 
     shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo, orders)
-    bitcoinPeer.expectMsg(ServiceActor.Start {})
+    shouldRequestStart(paymentProcessor, {})
+    shouldRequestStart(bitcoinPeer, {})
+
     val cause = new Exception("deep cause")
     gateway.expectAskWithReply {
       case MessageGateway.Join(`localPort`, `brokerAddress`) =>
         MessageGateway.JoinError(cause)
     }
-    expectMsg(ServiceActor.StartFailure(cause))
+    expectMsgType[ServiceActor.StartFailure]
   }
 
   it must "delegate quote requests" in new StartedFixture {
@@ -103,6 +105,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     def shouldCreateActors(actors: MockSupervisedActor*): Unit = {
       actors.foreach(_.expectCreation())
     }
+
+    def shouldRequestStart[Args](actor: MockSupervisedActor, args: Args): Unit = {
+      actor.expectAskWithReply {
+        case ServiceActor.Start(`args`) => ServiceActor.Started
+      }
+    }
   }
 
   trait StartedFixture extends Fixture {
@@ -112,8 +120,11 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     // Then we start the actor
     peer ! ServiceActor.Start({})
 
-    // Then it must request to join to the Bitcoin network
-    bitcoinPeer.expectMsg(ServiceActor.Start {})
+    // Then it must request the payment processor to start
+    shouldRequestStart(paymentProcessor, {})
+
+    // Then it must request the Bitcoin network to start
+    shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
     gateway.expectAskWithReply {
