@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
@@ -8,12 +9,12 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.protocol._
-import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.{SubscriptionMatchers, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with SampleExchange {
+  extends AkkaSpec(systemName) with SampleExchange with SubscriptionMatchers {
 
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
@@ -53,8 +54,8 @@ object CoinffeineClientTest {
     def completedExchange = runningExchange.complete
     def user = exchange.role.select(participants)
     def counterpart = exchange.role.counterpart.select(participants)
-    def counterpartConnection = exchange.counterpartId
-    def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartConnection)
+    def counterpartId = exchange.counterpartId
+    def fromCounterpart(message: PublicMessage) = ReceiveMessage(message, counterpartId)
   }
 
   trait BuyerPerspective extends Perspective {

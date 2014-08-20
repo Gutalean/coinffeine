@@ -11,13 +11,14 @@ import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.PublicMessage
 
 /** Probe specialized on mocking a MessageGateway. */
-class GatewayProbe(implicit system: ActorSystem) extends Assertions {
+class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Assertions {
 
   /** Underlying probe used for poking actors. */
   private val probe = TestProbe()
 
   /** Mapping of subscriptions used to relay only what is subscribed or fail otherwise. */
-  private var subscriptions: Map[ActorRef, Set[Filter]] = Map.empty
+  private var subscriptions: Map[ActorRef, Set[ReceiveFilter]] = Map.empty
+  private var brokerSubscriptions: Map[ActorRef, Set[MessageFilter]] = Map.empty
 
   def ref = probe.ref
 
@@ -25,21 +26,34 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
     expectSubscription(probe.testKitSettings.DefaultTimeout.duration)
 
   def expectSubscription(timeout: Duration): Subscribe = {
-    val subscription = try {
-      probe.expectMsgPF(timeout) {
-        case s: Subscribe => s
-      }
-    } catch {
-      case ex: AssertionError => fail("Expected subscription failed", ex)
+    val subscription = probe.expectMsgPF(timeout, hint = "expected subscription") {
+      case s: Subscribe => s
     }
     val currentSubscription = subscriptions.getOrElse(probe.sender(), Set.empty)
     subscriptions = subscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
     subscription
   }
 
+  def expectSubscriptionToBroker(): SubscribeToBroker =
+    expectSubscriptionToBroker(probe.testKitSettings.DefaultTimeout.duration)
+
+  def expectSubscriptionToBroker(timeout: Duration): SubscribeToBroker = {
+    val subscription =probe.expectMsgPF(timeout, hint = "expected subscription to broker") {
+      case s: SubscribeToBroker => s
+    }
+    val currentSubscription = brokerSubscriptions.getOrElse(probe.sender(), Set.empty)
+    brokerSubscriptions =
+      brokerSubscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
+    subscription
+  }
+
+  def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
+    expectForwarding(payload, brokerId, timeout)
+
   def expectForwarding(payload: Any, dest: PeerId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
+      case message @ ForwardMessageToBroker(`payload`) if dest == brokerId => message
     }
 
   def expectForwardingPF[T](dest: PeerId, timeout: Duration = Duration.Undefined)
@@ -56,14 +70,24 @@ class GatewayProbe(implicit system: ActorSystem) extends Assertions {
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
   def relayMessage(message: PublicMessage, origin: PeerId): Unit = {
     val notification = ReceiveMessage(message, origin)
-    val targets = for {
+    val subscriptionTargets = for {
       (ref, filters) <- subscriptions.toSet
-      filter <- filters
-      if filter(notification)
+      filter <- filters if filter.isDefinedAt(notification)
     } yield ref
+    val brokerSubscriptionTargets =
+      if (origin != brokerId) Set.empty
+      else for {
+        (ref, filters) <- brokerSubscriptions.toSet
+        filter <- filters if filter.isDefinedAt(notification.msg)
+      } yield ref
+    val targets = subscriptionTargets ++ brokerSubscriptionTargets
     assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
       probe.send(target, notification)
     }
+  }
+
+  def relayMessageFromBroker(message: PublicMessage): Unit = {
+    relayMessage(message, brokerId)
   }
 }

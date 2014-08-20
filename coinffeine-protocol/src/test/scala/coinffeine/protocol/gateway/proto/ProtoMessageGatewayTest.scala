@@ -10,6 +10,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
+import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
@@ -22,8 +23,7 @@ class ProtoMessageGatewayTest
 
   val connectionTimeout = 30.seconds
   val subscribeToOrderMatches = MessageGateway.Subscribe {
-    case ReceiveMessage(msg: OrderMatch, _) => true
-    case _ => false
+    case ReceiveMessage(_: OrderMatch, _) =>
   }
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
@@ -48,9 +48,24 @@ class ProtoMessageGatewayTest
     expectMsg(ReceiveMessage(msg, brokerId))
   }
 
+  it must "support multiple subscriptions from the same actor" in new FreshBrokerAndPeer {
+    val msg1 = randomOrderMatch().copy(orderId = OrderId("1"))
+    val msg2 = msg1.copy(orderId = OrderId("2"))
+    peerGateway ! Subscribe {
+      case ReceiveMessage(OrderMatch(OrderId("1"), _, _, _, _, _), _) =>
+    }
+    peerGateway ! Subscribe {
+      case ReceiveMessage(OrderMatch(OrderId("2"), _, _, _, _, _), _) =>
+    }
+    brokerGateway ! ForwardMessage(msg1, peerId)
+    expectMsg(ReceiveMessage(msg1, brokerId))
+    brokerGateway ! ForwardMessage(msg2, peerId)
+    expectMsg(ReceiveMessage(msg2, brokerId))
+  }
+
   it must "do not deliver messages to subscribers when filter doesn't match" in
     new FreshBrokerAndPeer {
-      peerGateway ! Subscribe(_ => false)
+      peerGateway ! Subscribe(Map.empty)
       brokerGateway ! ForwardMessage(randomOrderMatch(), peerId)
       expectNoMsg()
     }
@@ -89,16 +104,32 @@ class ProtoMessageGatewayTest
     }
     eventChannelProbe.fishForMessage(hint = "notify connected status") {
       case CoinffeineConnectionStatus(1, Some(`brokerId`)) => true
-      case other =>
-        println(s"FISHING: $other")
-        false
+      case other => false
     }
+  }
+
+  it must "subscribe to broker messages" in new FreshBrokerAndPeer {
+    val probe = TestProbe()
+    probe.send(peerGateway, SubscribeToBroker {
+      case _: OrderMatch =>
+    })
+    val message = randomOrderMatch()
+    brokerGateway ! ForwardMessage(message, peerId)
+    probe.expectMsg(ReceiveMessage(message, brokerId))
+  }
+
+  it must "forward messages to the broker" in new FreshBrokerAndPeer {
+    val msg = randomOrderMatch()
+    peerGateway ! ForwardMessageToBroker(msg)
+    brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
   }
 
   trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
       with IgnoredNetworkInterfaces {
+
+    private val subscribeToAnything = Subscribe { case _ => }
 
     def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
 
@@ -108,7 +139,7 @@ class ProtoMessageGatewayTest
       ref ! Join(localPort, connectTo)
       val Joined(_, _) = expectMsgType[Joined](connectionTimeout)
       val probe = TestProbe()
-      probe.send(ref, Subscribe(_ => true))
+      probe.send(ref, subscribeToAnything)
       (ref, probe)
     }
 
@@ -117,7 +148,7 @@ class ProtoMessageGatewayTest
       ref ! Bind(localPort)
       val Bound(_, brokerId) = expectMsgType[Bound](connectionTimeout)
       val probe = TestProbe()
-      probe.send(ref, Subscribe(_ => true))
+      probe.send(ref, subscribeToAnything)
       (ref, probe, brokerId)
     }
   }

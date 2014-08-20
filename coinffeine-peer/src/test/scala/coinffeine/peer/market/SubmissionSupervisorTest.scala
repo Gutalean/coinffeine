@@ -36,7 +36,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
   trait Fixture {
     val registryActor = system.actorOf(ServiceRegistryActor.props(), "registry-"+Random.nextInt())
     val registry = new ServiceRegistry(registryActor)
-    val gateway = new GatewayProbe()
+    val gateway = new GatewayProbe(brokerId)
     registry.register(MessageGateway.ServiceId, gateway.ref)
 
     val requester = TestProbe()

@@ -29,7 +29,7 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   override def receive = waitingForInitialization orElse managingSubscriptionsAndConnectionStatus
 
   private val managingSubscriptionsAndConnectionStatus: Receive = {
-    case msg: Subscribe =>
+    case msg @ (Subscribe(_) | SubscribeToBroker(_)) =>
       context.watch(sender())
       subscriptions forward msg
     case msg @ Unsubscribe => subscriptions forward msg
@@ -45,15 +45,17 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
 
   private def starting(listener: ActorRef): Receive = {
     case response @ Bound(port, peerId) =>
+      subscriptions ! SubscriptionManagerActor.ConnectedToBroker(peerId)
       listener ! response
       log.info(s"Message gateway successfully bounded on port {} as {}", port, peerId)
-      context.become(forwardingMessages orElse managingSubscriptionsAndConnectionStatus)
+      context.become(forwardingMessages(peerId) orElse managingSubscriptionsAndConnectionStatus)
 
     case response @ Joined(myId, brokerId) =>
+      subscriptions ! SubscriptionManagerActor.ConnectedToBroker(brokerId)
       listener ! response
       log.info(s"Message gateway successfully joined to network as {} using broker {}",
         myId, brokerId)
-      context.become(forwardingMessages orElse managingSubscriptionsAndConnectionStatus)
+      context.become(forwardingMessages(brokerId) orElse managingSubscriptionsAndConnectionStatus)
 
     case error @ BindingError(port, cause) =>
       log.error(cause, "Message gateway failed to bind on port {}", port)
@@ -66,18 +68,22 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
       context.become(receive)
   }
 
-  private val forwardingMessages: Receive = {
-    case m @ ForwardMessage(msg, destId) =>
-      log.debug(s"Forwarding message $msg to $destId")
+  private def forwardingMessages(brokerId: PeerId): Receive = {
+    case ForwardMessage(msg, destId) =>
       forward(destId, msg)
+
+    case ForwardMessageToBroker(msg) =>
+      forward(brokerId, msg)
 
     case ReceiveProtoMessage(protoMessage, senderId) =>
       val message = serialization.fromProtobuf(protoMessage)
       subscriptions ! ReceiveMessage(message, senderId)
   }
 
-  private def forward(to: PeerId, message: PublicMessage): Unit =
+  private def forward(to: PeerId, message: PublicMessage): Unit = {
+    log.debug("Forwarding message {} to {}", message, to)
     server ! SendMessage(to, serialization.toProtobuf(message))
+  }
 }
 
 object ProtoMessageGateway {

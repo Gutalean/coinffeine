@@ -44,9 +44,11 @@ class CoinffeinePeerActor(listenPort: Int,
 
   private val paymentProcessorRef = spawnDelegate(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
+  private val marketInfoRef = spawnDelegate(
+    props.marketInfo, "marketInfo", MarketInfoActor.Start(registryRef))
   private var walletRef: ActorRef = _
   private var orderSupervisorRef: ActorRef = _
-  private var marketInfoRef: ActorRef = _
+
   private var brokerId: PeerId = _
 
   override def preStart(): Unit = {
@@ -91,8 +93,6 @@ class CoinffeinePeerActor(listenPort: Int,
       orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
         OrderSupervisor.Initialize(
           brokerId, registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
-      marketInfoRef = spawnDelegate(
-        props.marketInfo, "marketInfo", MarketInfoActor.Start(brokerId, registryRef))
       context.become(handleMessages)
     }
   }

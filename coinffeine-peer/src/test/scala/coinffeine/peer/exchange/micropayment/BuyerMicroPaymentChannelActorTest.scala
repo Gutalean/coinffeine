@@ -17,7 +17,7 @@ import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
@@ -47,16 +47,16 @@ class BuyerMicroPaymentChannelActorTest
       runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
     )
 
-    val Subscribe(filter) = gateway.expectMsgClass(classOf[Subscribe])
+    val subscription = gateway.expectMsgClass(classOf[Subscribe])
     val otherId = ExchangeId("other-id")
     val relevantOfferAccepted = StepSignatures(exchange.id, 5, signatures)
     val irrelevantOfferAccepted = StepSignatures(otherId, 2, signatures)
     val anotherPeer = PeerId("some-random-peer")
-    filter(fromCounterpart(relevantOfferAccepted)) should be (true)
-    filter(ReceiveMessage(relevantOfferAccepted, anotherPeer)) should be (false)
-    filter(fromCounterpart(irrelevantOfferAccepted)) should be (false)
+    subscription should subscribeTo(relevantOfferAccepted, counterpartId)
+    subscription should not(subscribeTo(relevantOfferAccepted, anotherPeer))
+    subscription should not(subscribeTo(irrelevantOfferAccepted, counterpartId))
     val randomMessage = PeerPositions.empty(Market(Euro))
-    filter(ReceiveMessage(randomMessage, counterpartConnection)) should be (false)
+    subscription should not(subscribeTo(randomMessage, counterpartId))
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
@@ -69,7 +69,7 @@ class BuyerMicroPaymentChannelActorTest
           completed = true)
       ))
       expectProgress(signatures = i, payments = i)
-      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartConnection
+      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartId
       gateway.expectNoMsg(100 milliseconds)
     }
   }
