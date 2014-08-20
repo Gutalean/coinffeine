@@ -1,9 +1,7 @@
 package coinffeine.peer
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 import akka.actor._
 import akka.pattern._
@@ -14,7 +12,6 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -22,80 +19,48 @@ import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{BrokerAddress, JoinError}
+import coinffeine.protocol.gateway.MessageGateway.BrokerAddress
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(listenPort: Int,
-                          brokerAddress: BrokerAddress,
-                          props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging {
+class CoinffeinePeerActor(
+    listenPort: Int,
+    brokerAddress: BrokerAddress,
+    props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[Unit] {
   import context.dispatcher
   import CoinffeinePeerActor._
 
-  private val registryRef = spawnDelegate(ServiceRegistryActor.props(), "registry")
+  private val registryRef = context.actorOf(ServiceRegistryActor.props(), "registry")
   private val registry = new ServiceRegistry(registryRef)
 
-  private val gatewayRef = spawnDelegate(props.gateway, "gateway")
+  private val gatewayRef = context.actorOf(props.gateway, "gateway")
 
   registry.register(MessageGateway.ServiceId, gatewayRef)
 
-  private val paymentProcessorRef = spawnDelegate(props.paymentProcessor, "paymentProcessor")
-  private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
-  private val marketInfoRef = spawnDelegate(
-    props.marketInfo, "marketInfo", MarketInfoActor.Start(registryRef))
-  private val orderSupervisorRef: ActorRef = spawnDelegate(props.orderSupervisor, "orders")
+  private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
+  private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
+  private val marketInfoRef = context.actorOf(props.marketInfo, "marketInfo")
+  private val orderSupervisorRef = context.actorOf(props.orderSupervisor, "orders")
   private var walletRef: ActorRef = _
 
-  override def preStart(): Unit = {
-    AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor, "Cannot retrieve the wallet actor")
-      .withImmediateReply[BitcoinPeerActor.WalletActorRef]()
-      .pipeTo(self)
-  }
-
-  override def receive: Receive = waitForWalletRef orElse handleConnections
-
-  private def waitForWalletRef: Receive = {
-    case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
-      walletRef = retrievedWalletRef
-      orderSupervisorRef !
-        OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
-      context.become(handleMessages orElse handleConnections)
-  }
-
-  private def handleConnections: Receive = {
-    case CoinffeinePeerActor.Connect =>
-      connect(sender())
-      context.become((if (walletRef != null) handleMessages else waitForWalletRef)
-        orElse handleConnections)
-
-    case ConnectionResult(Success(_), listener) =>
-      log.info("Coinffeine peer connected both to bitcoin and coinffeine networks")
-      listener ! CoinffeinePeerActor.Connected
-
-    case ConnectionResult(Failure(cause), listener) =>
-      log.error(cause, "Coinffeine peer connection failed")
-      listener ! CoinffeinePeerActor.ConnectionFailed(cause)
-  }
-
-  private def connect(listener: ActorRef): Unit = {
+  override def starting(args: Unit) = {
+    // TODO: replace children actors by services and start them here
     bitcoinPeerRef ! ServiceActor.Start {}
-    connectMessageGateway()
-      .map(_ => Success {})
-      .recover {
-        case NonFatal(cause) => Failure(cause)
-      }.map { result =>
-        ConnectionResult(result, listener)
-      }.pipeTo(self)
-  }
-
-  private def connectMessageGateway(): Future[PeerId] = {
-    implicit val timeout = CoinffeinePeerActor.ConnectionTimeout
-    (gatewayRef ? MessageGateway.Join(listenPort, brokerAddress)).map {
-      case MessageGateway.Joined(_, retrievedBrokerId) => retrievedBrokerId
-      case JoinError(cause) => throw cause
+    gatewayRef ! MessageGateway.Join(listenPort, brokerAddress)
+    handle {
+      case MessageGateway.Joined(_, _) =>
+        bitcoinPeerRef ! BitcoinPeerActor.RetrieveWalletActor
+      case MessageGateway.JoinError(cause) =>
+        cancelStart(cause)
+      case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
+        walletRef = retrievedWalletRef
+        orderSupervisorRef !
+          OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+        marketInfoRef ! MarketInfoActor.Start(registryRef)
+        becomeStarted(handleMessages)
     }
   }
 
@@ -120,29 +85,10 @@ class CoinffeinePeerActor(listenPort: Int,
           .withImmediateReply[CoinffeineConnectionStatus]()
       } yield ConnectionStatus(bitcoinStatus, coinffeineStatus)).pipeTo(sender())
   }
-
-  private def spawnDelegate(delegateProps: Props, name: String, initMessages: Any*): ActorRef = {
-    val ref = context.actorOf(delegateProps, name)
-    initMessages.foreach(ref ! _)
-    ref
-  }
 }
 
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
-
-  private case class ConnectionResult(result: Try[Unit], listener: ActorRef)
-
-  /** Start peer connection to the network. The sender of this message will receive either
-    * a [[Connected]] or [[ConnectionFailed]] message in response. */
-  @deprecated case object Connect
-  @deprecated case object Connected
-  @deprecated case class ConnectionFailed(cause: Throwable)
-
-  /** Instruct the peer to join all the networks retrying as much as necessary. */
-  case object JoinNetworks
-  /** Instruct the peer to leave all the networks or abort connections in progress */
-  case object LeaveNetworks
 
   /** Message sent to the peer to get a [[ConnectionStatus]] in response */
   case object RetrieveConnectionStatus
@@ -187,8 +133,6 @@ object CoinffeinePeerActor {
   private val PortSetting = "coinffeine.peer.port"
   private val BrokerHostnameSetting = "coinffeine.broker.hostname"
   private val BrokerPortSetting = "coinffeine.broker.port"
-
-  private val ConnectionTimeout = Timeout(30.seconds)
 
   case class PropsCatalogue(gateway: Props,
                             marketInfo: Props,

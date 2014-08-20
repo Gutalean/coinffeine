@@ -1,7 +1,12 @@
 package coinffeine.peer.api.impl
 
-import akka.actor.{ActorSystem, Props}
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
+import akka.actor.{ActorSystem, Props}
+import akka.util.Timeout
+
+import coinffeine.common.akka.{ServiceActor, AskPattern}
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
@@ -36,6 +41,18 @@ class DefaultCoinffeineApp(name: String,
   override def observe(handler: EventHandler): Unit = {
     val observer = system.actorOf(EventObserverActor.props(handler))
     system.eventStream.subscribe(observer, classOf[CoinffeineAppEvent])
+  }
+
+  override def start()(implicit timeout: FiniteDuration): Future[Unit] = {
+    import system.dispatcher
+    implicit val to = Timeout(timeout)
+    AskPattern(peerRef, ServiceActor.Start {})
+      .withReply[Any]()
+        .collect {
+          case ServiceActor.Started =>
+          case ServiceActor.StartFailure(cause) =>
+            throw new RuntimeException("cannot start coinffeine app", cause)
+      }
   }
 }
 

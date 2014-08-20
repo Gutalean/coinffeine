@@ -23,6 +23,4 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
     _orders += order
     order
   }
-
-  override def connect(): Future[Connected.type] = ???
 }

@@ -1,7 +1,5 @@
 package coinffeine.peer.api
 
-import scala.concurrent.Future
-
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
@@ -10,12 +8,6 @@ import coinffeine.model.market._
 trait CoinffeineNetwork {
 
   def status: CoinffeineNetwork.Status
-
-  /** Start connection with the network.
-    *
-    * @return The connected status in case of success or ConnectException otherwise
-    */
-  def connect(): Future[CoinffeineNetwork.Connected.type]
 
   def orders: Set[Order[FiatCurrency]]
 

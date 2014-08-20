@@ -21,48 +21,10 @@ import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteR
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
-  val localPort = 8080
-  val brokerAddress = BrokerAddress("host", 8888)
-  val brokerId = PeerId("broker")
-  val wallet = TestProbe()
-  val eventChannel = EventChannelProbe()
-
-  val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
-  val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
-    PropsCatalogue(
-      gateway = gateway.props,
-      marketInfo = marketInfo.props,
-      orderSupervisor = orders.props,
-      paymentProcessor = paymentProcessor.props,
-      bitcoinPeer = bitcoinPeer.props))))
-
-  "A peer" must "start the message gateway" in {
-    gateway.expectCreation()
+  "A peer" must "start its children upon start" in new StartedFixture {
   }
 
-  it must "start the bitcoin peer and retrieve the wallet actor" in {
-    bitcoinPeer.expectCreation()
-    bitcoinPeer.expectAskWithReply {
-      case BitcoinPeerActor.RetrieveWalletActor => BitcoinPeerActor.WalletActorRef(wallet.ref)
-    }
-  }
-
-  it must "start the payment processor actor" in {
-    paymentProcessor.expectCreation()
-  }
-
-  it must "connect to both networks" in {
-    gateway.probe.expectNoMsg()
-    peer ! CoinffeinePeerActor.Connect
-    bitcoinPeer.expectMsgType[ServiceActor.Start[Unit]]
-    gateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
-        MessageGateway.Joined(PeerId("peer id"), brokerId)
-    }
-    expectMsg(CoinffeinePeerActor.Connected)
-  }
-
-  it must "report the connection status" in {
+  it must "report the connection status" in new StartedFixture {
     peer ! CoinffeinePeerActor.RetrieveConnectionStatus
     val bitcoinStatus = BitcoinConnectionStatus(0, BitcoinConnectionStatus.NotDownloading)
     bitcoinPeer.expectAskWithReply {
@@ -75,69 +37,106 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, coinffeineStatus))
   }
 
-  it must "start the order supervisor actor" in {
-    orders.expectCreation()
-    val OrderSupervisor.Initialize(_, receivedPaymentProc, receivedBitcoinPeer, _) =
-      orders.expectMsgType[OrderSupervisor.Initialize]
-    receivedPaymentProc should be (paymentProcessor.ref)
-    receivedBitcoinPeer should be (bitcoinPeer.ref)
-  }
+  it must "fail to start on message gateway connect error" in new Fixture {
+    peer ! ServiceActor.Start {}
 
-  it must "start the market info actor" in {
-    marketInfo.expectCreation()
-    marketInfo.expectMsgType[MarketInfoActor.Start]
-  }
-
-  it must "propagate failures when connecting" in {
-    val dummyHelper = new MockSupervisedActor()
-    val localGateway = new MockSupervisedActor()
-    val uninitializedPeer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
-      PropsCatalogue(
-        gateway = localGateway.props,
-        marketInfo = dummyHelper.props,
-        orderSupervisor = dummyHelper.props,
-        paymentProcessor = dummyHelper.props,
-        bitcoinPeer = dummyHelper.props))))
-    localGateway.expectCreation()
-    uninitializedPeer ! CoinffeinePeerActor.Connect
+    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo, orders)
+    bitcoinPeer.expectMsg(ServiceActor.Start {})
     val cause = new Exception("deep cause")
-    localGateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) => JoinError(cause)
+    gateway.expectAskWithReply {
+      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
+        MessageGateway.JoinError(cause)
     }
-    expectMsg(CoinffeinePeerActor.ConnectionFailed(cause))
+    expectMsg(ServiceActor.StartFailure(cause))
   }
 
-  it must "delegate quote requests" in {
+  it must "delegate quote requests" in new StartedFixture {
     peer ! QuoteRequest(Market(Euro))
     marketInfo.expectForward(RequestQuote(Market(Euro)), self)
     peer ! OpenOrdersRequest(Market(UsDollar))
     marketInfo.expectForward(RequestOpenOrders(Market(UsDollar)), self)
   }
 
-  it must "delegate order placement" in {
+  it must "delegate order placement" in new StartedFixture {
     shouldForwardMessage(OpenOrder(Order(Bid, 10.BTC, 300.EUR)), orders)
   }
 
-  it must "delegate retrieve open orders request" in {
+  it must "delegate retrieve open orders request" in new StartedFixture {
     shouldForwardMessage(RetrieveOpenOrders, orders)
   }
 
-  it must "delegate order cancellation" in {
+  it must "delegate order cancellation" in new StartedFixture {
     shouldForwardMessage(CancelOrder(OrderId.random(), "catastrophic failure"), orders)
   }
 
-  it must "delegate fiat balance requests" in {
+  it must "delegate fiat balance requests" in new StartedFixture {
     shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
-  it must "delegate wallet balance requests" in {
+  it must "delegate wallet balance requests" in new StartedFixture {
     peer ! RetrieveWalletBalance
     wallet.expectMsg(RetrieveWalletBalance)
     wallet.sender() should be (self)
   }
 
-  private def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
-    peer ! message
-    delegate.expectForward(message, self)
+  trait Fixture {
+    val localPort = 8080
+    val brokerAddress = BrokerAddress("host", 8888)
+    val brokerId = PeerId("broker")
+    val wallet = TestProbe()
+    val eventChannel = EventChannelProbe()
+
+    val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
+    val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
+      PropsCatalogue(
+        gateway = gateway.props,
+        marketInfo = marketInfo.props,
+        orderSupervisor = orders.props,
+        paymentProcessor = paymentProcessor.props,
+        bitcoinPeer = bitcoinPeer.props))))
+
+    def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
+      peer ! message
+      delegate.expectForward(message, self)
+    }
+
+    def shouldCreateActors(actors: MockSupervisedActor*): Unit = {
+      actors.foreach(_.expectCreation())
+    }
+  }
+
+  trait StartedFixture extends Fixture {
+    // Firstly, the actors are created before peer is started
+    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo, orders)
+
+    // Then we start the actor
+    peer ! ServiceActor.Start({})
+
+    // Then it must request to join to the Bitcoin network
+    bitcoinPeer.expectMsg(ServiceActor.Start {})
+
+    // Then request to join to the Coinffeine network
+    gateway.expectAskWithReply {
+      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
+        MessageGateway.Joined(PeerId("client-peer"), brokerId)
+    }
+
+    // Then request the wallet actor from bitcoin actor
+    bitcoinPeer.expectAskWithReply {
+      case BitcoinPeerActor.RetrieveWalletActor => BitcoinPeerActor.WalletActorRef(wallet.ref)
+    }
+
+    // Then request the order supervisor to initialize
+    val OrderSupervisor.Initialize(_, receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
+      orders.expectMsgType[OrderSupervisor.Initialize]
+    receivedPaymentProc should be (paymentProcessor.ref)
+    receivedBitcoinPeer should be (bitcoinPeer.ref)
+    receivedWallet should be (wallet.ref)
+
+    // Then the market info is requested to start
+    marketInfo.expectMsgPF { case MarketInfoActor.Start(_) => }
+
+    // And finally indicate it succeed to start
+    expectMsg(ServiceActor.Started)
   }
 }

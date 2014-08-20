@@ -2,6 +2,9 @@ package coinffeine.peer.api
 
 import java.io.Closeable
 
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.{Duration, FiniteDuration}
+
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.peer.ProtocolConstants
@@ -16,4 +19,10 @@ trait CoinffeineApp extends Closeable {
   def marketStats: MarketStats
 
   def observe(handler: EventHandler): Unit
+
+  def start()(implicit timeout: FiniteDuration): Future[Unit]
+
+  def startAndWait()(implicit timeout: FiniteDuration): Unit = {
+    Await.result(start(), Duration.Inf)
+  }
 }
