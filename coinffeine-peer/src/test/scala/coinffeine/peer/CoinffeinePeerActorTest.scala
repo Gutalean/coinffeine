@@ -3,6 +3,7 @@ package coinffeine.peer
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
@@ -53,7 +54,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   it must "connect to both networks" in {
     gateway.probe.expectNoMsg()
     peer ! CoinffeinePeerActor.Connect
-    bitcoinPeer.expectMsg(BitcoinPeerActor.JoinBitcoinNetwork)
+    bitcoinPeer.expectMsgType[ServiceActor.Start[Unit]]
     gateway.expectAskWithReply {
       case MessageGateway.Join(`localPort`, `brokerAddress`) =>
         MessageGateway.Joined(PeerId("peer id"), brokerId)

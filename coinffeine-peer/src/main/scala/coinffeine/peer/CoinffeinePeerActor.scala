@@ -2,19 +2,19 @@ package coinffeine.peer
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.{AskPattern, ServiceRegistry, ServiceRegistryActor}
+import coinffeine.common.akka.{AskPattern, ServiceActor, ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -81,7 +81,7 @@ class CoinffeinePeerActor(listenPort: Int,
   }
 
   private def connect(listener: ActorRef): Unit = {
-    bitcoinPeerRef ! BitcoinPeerActor.JoinBitcoinNetwork
+    bitcoinPeerRef ! ServiceActor.Start {}
     connectMessageGateway()
       .map(_ => Success {})
       .recover {

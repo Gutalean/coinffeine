@@ -17,12 +17,6 @@ trait CoinffeineNetwork {
     */
   def connect(): Future[CoinffeineNetwork.Connected.type]
 
-  /** Disconnect from the network.
-    *
-    * @return A future to be resolved when actually disconnected from the network.
-    */
-  def disconnect(): Future[CoinffeineNetwork.Disconnected.type]
-
   def orders: Set[Order[FiatCurrency]]
 
   def exchanges: Set[AnyExchange[FiatCurrency]] = orders.flatMap(_.exchanges.values)
