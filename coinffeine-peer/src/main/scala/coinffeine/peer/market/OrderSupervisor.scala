@@ -11,7 +11,6 @@ import com.typesafe.config.Config
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.OrderActor.RetrieveStatus
@@ -33,7 +32,7 @@ class OrderSupervisor(orderActorProps: Props,
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(brokerId, registry)
+      submission ! SubmissionSupervisor.Initialize(registry)
       context.become(waitingForOrders)
     }
 
@@ -43,7 +42,7 @@ class OrderSupervisor(orderActorProps: Props,
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
 
         ref ! OrderActor.Initialize(order, submission, registry, paymentProcessor,
-          bitcoinPeer, wallet, brokerId)
+          bitcoinPeer, wallet)
         orders += order.id -> ref
 
       case CancelOrder(orderId, reason) =>
@@ -62,8 +61,7 @@ class OrderSupervisor(orderActorProps: Props,
 
 object OrderSupervisor {
 
-  case class Initialize(brokerId: PeerId,
-                        registry: ActorRef,
+  case class Initialize(registry: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)

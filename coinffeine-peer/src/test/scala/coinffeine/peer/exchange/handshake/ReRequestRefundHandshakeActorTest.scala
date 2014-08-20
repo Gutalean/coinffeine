@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.peer.ProtocolConstants
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.handshake.PeerHandshake
 
 class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path") {
@@ -16,7 +16,8 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
 
   "The handshake actor" should "request refund transaction signature after a timeout" in {
     givenActorIsInitialized()
-    gateway.expectMsgAllClassOf(classOf[Subscribe], classOf[ForwardMessage[PeerHandshake]])
+    givenActorIsSubscribedToMessages()
+    gateway.expectMsgType[ForwardMessage[PeerHandshake]]
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()

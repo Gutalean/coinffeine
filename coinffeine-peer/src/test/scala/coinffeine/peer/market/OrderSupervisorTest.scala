@@ -3,12 +3,10 @@ package coinffeine.peer.market
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.test.MockActor.{MockReceived, MockStarted}
-import coinffeine.common.akka.test.{AkkaSpec, MockActor}
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, Order}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
 
@@ -18,7 +16,7 @@ class OrderSupervisorTest extends AkkaSpec {
     private var order: Order[FiatCurrency] = _
 
     override def receive: Receive = {
-      case init @ OrderActor.Initialize(_, _, _, _, _, _, _) =>
+      case init @ OrderActor.Initialize(_, _, _, _, _, _) =>
         order = init.order
         listener ! init
       case OrderActor.RetrieveStatus =>
@@ -58,24 +56,21 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
-    val orderActorProbe, submissionProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer,
-      wallet = TestProbe()
+    val orderActorProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer, wallet = TestProbe()
+    val submissionProbe = new MockSupervisedActor()
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
-      MockActor.props(submissionProbe), protocolConstants)))
+      submissionProbe.props, protocolConstants)))
 
     val order1 = Order(Bid, 5.BTC, 500.EUR)
     val order2 = Order(Ask, 2.BTC, 800.EUR)
 
     def givenOrderSupervisorIsInitialized(): Unit = {
-      val brokerId = PeerId("Broker")
       val initMessage = OrderSupervisor.Initialize(
-        brokerId, gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
+        gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
       actor ! initMessage
-      submissionProbe.expectMsgClass(classOf[MockStarted])
+      submissionProbe.expectCreation()
       val gatewayRef = gateway.ref
-      submissionProbe.expectMsgPF() {
-        case MockReceived(_, _, SubmissionSupervisor.Initialize(`brokerId`, `gatewayRef`)) =>
-      }
+      submissionProbe.expectMsg(SubmissionSupervisor.Initialize(gatewayRef))
     }
 
     def givenOpenOrder(order: Order[FiatCurrency]): Unit = {

@@ -10,12 +10,13 @@ import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.{SubscriptionMatchers, MessageGateway}
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange with SubscriptionMatchers {
 
+  val brokerId = PeerId("broker")
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
   val gateway = TestProbe()
@@ -25,10 +26,14 @@ abstract class CoinffeineClientTest(systemName: String)
 
   protected class ValidateWithPeer(validation: PeerId => Unit) {
     def to(receiver: PeerId): Unit = validation(receiver)
+    def toBroker: Unit = validation(brokerId)
   }
 
-  def shouldForward(message: PublicMessage) =
-    new ValidateWithPeer(receiver => gateway.expectMsg(ForwardMessage(message, receiver)))
+  def shouldForward(message: PublicMessage) = new ValidateWithPeer({receiver =>
+    val expectedMessages = Seq(ForwardMessage(message, receiver)) ++
+      (if (receiver == brokerId) Some(ForwardMessageToBroker(message)) else None)
+    gateway.expectMsgAnyOf(expectedMessages: _*)
+  })
 
   protected class ValidateAllMessagesWithPeer {
     private var messages: List[PeerId => Any] = List.empty

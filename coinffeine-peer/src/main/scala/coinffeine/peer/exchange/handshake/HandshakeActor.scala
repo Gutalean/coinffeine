@@ -20,7 +20,7 @@ import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, Inva
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.{SubscribeToBroker, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -45,8 +45,7 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private val messageGateway = new ServiceRegistry(registry)
       .eventuallyLocate(MessageGateway.ServiceId)
-    private val forwarding =
-      new MessageForwarding(messageGateway, exchange.counterpartId, exchange.brokerId)
+    private val forwarding = new MessageForwarding(messageGateway, exchange.counterpartId)
 
     def startHandshake(): Unit = {
       subscribeToMessages()
@@ -200,13 +199,14 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
+      messageGateway ! SubscribeToBroker {
+        case CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _) =>
+      }
       val counterpart = exchange.counterpartId
       messageGateway ! Subscribe {
-        case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) |
-             ReceiveMessage(RefundSignatureRequest(`id`, _), `counterpart`) |
-             ReceiveMessage(RefundSignatureResponse(`id`, _), `counterpart`) |
-             ReceiveMessage(CommitmentNotification(`id`, _), exchange.`brokerId`) |
-             ReceiveMessage(ExchangeAborted(`id`, _), exchange.`brokerId`) =>
+        case ReceiveMessage(PeerHandshake(`id`, _, _) |
+                            RefundSignatureRequest(`id`, _) |
+                            RefundSignatureResponse(`id`, _), `counterpart`) =>
       }
     }
 

@@ -41,7 +41,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
     val requester = TestProbe()
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(brokerId, registryActor)
+    actor ! SubmissionSupervisor.Initialize(registryActor)
 
     def keepSubmitting(entry: OrderBookEntry[FiatAmount]): Unit = {
       requester.send(actor, KeepSubmitting(entry))
@@ -54,11 +54,11 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     def expectPeerPositionsForwarding(timeout: Duration,
                                       market: Market[FiatCurrency],
                                       entries: OrderBookEntry[FiatAmount]*): Unit = {
-      gateway.expectSubscription(timeout)
+      gateway.expectSubscriptionToBroker(timeout)
       gateway.expectForwardingPF(brokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
-          gateway.relayMessage(PeerPositionsReceived(nonce), brokerId)
+          gateway.relayMessageFromBroker(PeerPositionsReceived(nonce))
       }
     }
 

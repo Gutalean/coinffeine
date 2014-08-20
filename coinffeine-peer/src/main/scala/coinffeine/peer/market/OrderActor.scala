@@ -14,7 +14,6 @@ import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, Or
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.PeerId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.bitcoin.WalletActor
@@ -36,8 +35,7 @@ class OrderActor(exchangeActorProps: Props,
   import context.dispatcher
 
   override def receive: Receive = {
-    case init @ Initialize(_, _, _, _, _, _, _) =>
-      new InitializedOrderActor(init).start()
+    case init @ Initialize(_, _, _, _, _, _) => new InitializedOrderActor(init).start()
   }
 
   private class InitializedOrderActor[C <: FiatCurrency](init: Initialize[C]) {
@@ -55,7 +53,7 @@ class OrderActor(exchangeActorProps: Props,
       .eventuallyLocate(MessageGateway.ServiceId)
 
     def start(): Unit = {
-      log.info(s"Order actor initialized for ${init.order.id} using $brokerId as broker")
+      log.info("Order actor initialized for {}", init.order.id)
       subscribeToMessages()
       blockFunds()
       startWithOrderStatus(StalledOrder(BlockingFundsMessage))
@@ -64,10 +62,9 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def subscribeToMessages(): Unit = {
-      messageGateway ! MessageGateway.Subscribe {
-        case ReceiveMessage(orderMatch: OrderMatch, `brokerId`) if
-          orderMatch.orderId == currentOrder.id &&
-            orderMatch.price.currency == init.order.fiatAmount.currency =>
+      messageGateway ! MessageGateway.SubscribeToBroker {
+        case orderMatch: OrderMatch if orderMatch.orderId == currentOrder.id &&
+          orderMatch.price.currency == init.order.fiatAmount.currency =>
       }
     }
 
@@ -178,8 +175,7 @@ class OrderActor(exchangeActorProps: Props,
         counterpartId = orderMatch.counterpart,
         amounts = amounts,
         blockedFunds = blockedFunds.get,
-        parameters = Exchange.Parameters(orderMatch.lockTime, network),
-        brokerId = brokerId
+        parameters = Exchange.Parameters(orderMatch.lockTime, network)
       )
     }
 
@@ -236,8 +232,7 @@ object OrderActor {
                                            registry: ActorRef,
                                            paymentProcessor: ActorRef,
                                            bitcoinPeer: ActorRef,
-                                           wallet: ActorRef,
-                                           brokerId: PeerId)
+                                           wallet: ActorRef)
 
   case class CancelOrder(reason: String)
 

@@ -12,7 +12,6 @@ case class Exchange[+C <: FiatCurrency, +S <: Exchange.State[C]](
     counterpartId: PeerId,
     amounts: Exchange.Amounts[C],
     parameters: Exchange.Parameters,
-    brokerId: PeerId,
     blockedFunds: Exchange.BlockedFunds,
     state: S) {
 
@@ -89,10 +88,8 @@ object Exchange {
                                     counterpartId: PeerId,
                                     amounts: Exchange.Amounts[C],
                                     parameters: Exchange.Parameters,
-                                    brokerId: PeerId,
-                                    blockedFunds: Exchange.BlockedFunds) =
-    Exchange(id, role, counterpartId, amounts, parameters, brokerId, blockedFunds,
-      NotStarted()(amounts.currency))
+                                    blockedFunds: Exchange.BlockedFunds) = Exchange(
+    id, role, counterpartId, amounts, parameters, blockedFunds, NotStarted()(amounts.currency))
 
   sealed trait State[+C <: FiatCurrency] {
     val progress: Exchange.Progress[C]

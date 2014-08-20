@@ -2,8 +2,6 @@ package coinffeine.peer.exchange.micropayment
 
 import scala.concurrent.ExecutionContext
 
-import akka.actor.Actor
-
 import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
@@ -17,8 +15,7 @@ private[micropayment] abstract class InitializedChannelBehavior[C <: FiatCurrenc
 
   protected val messageGateway = new ServiceRegistry(registry)
     .eventuallyLocate(MessageGateway.ServiceId)
-  protected val forwarding =
-    new MessageForwarding(messageGateway, exchange.counterpartId, exchange.brokerId)
+  protected val forwarding = new MessageForwarding(messageGateway, exchange.counterpartId)
 
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(

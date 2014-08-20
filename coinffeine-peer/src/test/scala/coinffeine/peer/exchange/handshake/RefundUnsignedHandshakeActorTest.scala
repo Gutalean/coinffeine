@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.peer.ProtocolConstants
-import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessageToBroker
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
@@ -24,7 +24,7 @@ class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-tim
 
   it must "notify the broker that the exchange is rejected" in {
     gateway.fishForMessage() {
-      case ForwardMessage(ExchangeRejection(exchange.`id`, _), exchange.`brokerId`) => true
+      case ForwardMessageToBroker(ExchangeRejection(exchange.`id`, _)) => true
       case _ => false
     }
   }

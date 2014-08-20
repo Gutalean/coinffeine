@@ -4,7 +4,6 @@ import akka.actor._
 
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.OrderBookEntry
-import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage._
@@ -14,7 +13,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
   extends Actor with ActorLogging {
 
   override def receive: Receive = {
-    case init @ MarketSubmissionActor.Initialize(_, _, _) =>
+    case init @ MarketSubmissionActor.Initialize(_, _) =>
       new InitializedOrderSubmission(init).start()
   }
 
@@ -58,7 +57,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
     private def forwardOrders(orders: SubmittingOrders): Unit = {
       context.actorOf(PeerPositionsSubmitter.props(
-        market, orders, brokerId, registry, protocolConstants.orderAcknowledgeTimeout))
+        market, orders, registry, protocolConstants.orderAcknowledgeTimeout))
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
   }
@@ -66,7 +65,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
 private[market] object MarketSubmissionActor {
 
-  case class Initialize[C <: FiatCurrency](market: Market[C], registry: ActorRef, brokerId: PeerId)
+  case class Initialize[C <: FiatCurrency](market: Market[C], registry: ActorRef)
 
   def props(constants: ProtocolConstants) = Props(new MarketSubmissionActor(constants))
 }
