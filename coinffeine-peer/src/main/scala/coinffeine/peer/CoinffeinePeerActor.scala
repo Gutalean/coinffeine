@@ -49,51 +49,46 @@ class CoinffeinePeerActor(listenPort: Int,
   private val orderSupervisorRef: ActorRef = spawnDelegate(props.orderSupervisor, "orders")
   private var walletRef: ActorRef = _
 
-  private var brokerId: PeerId = _
-
   override def preStart(): Unit = {
     AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor, "Cannot retrieve the wallet actor")
       .withImmediateReply[BitcoinPeerActor.WalletActorRef]()
       .pipeTo(self)
   }
 
-  override def receive: Receive = {
+  override def receive: Receive = waitForWalletRef orElse handleConnections
 
+  private def waitForWalletRef: Receive = {
+    case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
+      walletRef = retrievedWalletRef
+      orderSupervisorRef !
+        OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+      context.become(handleMessages orElse handleConnections)
+  }
+
+  private def handleConnections: Receive = {
     case CoinffeinePeerActor.Connect =>
       connect(sender())
+      context.become((if (walletRef != null) handleMessages else waitForWalletRef)
+        orElse handleConnections)
 
-    case ConnectionResult(Success(retrievedBrokerId), listener) =>
-      brokerId = retrievedBrokerId
-      tryStartHandlingMessages()
+    case ConnectionResult(Success(_), listener) =>
       log.info("Coinffeine peer connected both to bitcoin and coinffeine networks")
       listener ! CoinffeinePeerActor.Connected
 
     case ConnectionResult(Failure(cause), listener) =>
       log.error(cause, "Coinffeine peer connection failed")
       listener ! CoinffeinePeerActor.ConnectionFailed(cause)
-
-    case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
-      walletRef = retrievedWalletRef
-      orderSupervisorRef !
-        OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
-      tryStartHandlingMessages()
   }
 
   private def connect(listener: ActorRef): Unit = {
     bitcoinPeerRef ! BitcoinPeerActor.JoinBitcoinNetwork
     connectMessageGateway()
-      .map(Success.apply)
+      .map(_ => Success {})
       .recover {
         case NonFatal(cause) => Failure(cause)
       }.map { result =>
         ConnectionResult(result, listener)
       }.pipeTo(self)
-  }
-
-  private def tryStartHandlingMessages(): Unit = {
-    if (walletRef != null && brokerId != null) {
-      context.become(handleMessages)
-    }
   }
 
   private def connectMessageGateway(): Future[PeerId] = {
@@ -136,7 +131,7 @@ class CoinffeinePeerActor(listenPort: Int,
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
 
-  private case class ConnectionResult(brokerId: Try[PeerId], listener: ActorRef)
+  private case class ConnectionResult(result: Try[Unit], listener: ActorRef)
 
   /** Start peer connection to the network. The sender of this message will receive either
     * a [[Connected]] or [[ConnectionFailed]] message in response. */
