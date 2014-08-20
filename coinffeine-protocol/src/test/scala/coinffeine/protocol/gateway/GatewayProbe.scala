@@ -61,6 +61,8 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     probe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
+      case ForwardMessageToBroker(payload) if dest == brokerId && payloadMatcher.isDefinedAt(payload) =>
+        payloadMatcher.apply(payload)
     }
 
   def expectNoMsg(): Unit = probe.expectNoMsg()

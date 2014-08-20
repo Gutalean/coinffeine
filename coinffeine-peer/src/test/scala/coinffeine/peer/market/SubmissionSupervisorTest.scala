@@ -54,11 +54,11 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     def expectPeerPositionsForwarding(timeout: Duration,
                                       market: Market[FiatCurrency],
                                       entries: OrderBookEntry[FiatAmount]*): Unit = {
-      gateway.expectSubscription(timeout)
+      gateway.expectSubscriptionToBroker(timeout)
       gateway.expectForwardingPF(brokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
-          gateway.relayMessage(PeerPositionsReceived(nonce), brokerId)
+          gateway.relayMessageFromBroker(PeerPositionsReceived(nonce))
       }
     }
 
