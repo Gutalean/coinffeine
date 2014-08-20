@@ -178,8 +178,7 @@ class OrderActor(exchangeActorProps: Props,
         counterpartId = orderMatch.counterpart,
         amounts = amounts,
         blockedFunds = blockedFunds.get,
-        parameters = Exchange.Parameters(orderMatch.lockTime, network),
-        brokerId = brokerId
+        parameters = Exchange.Parameters(orderMatch.lockTime, network)
       )
     }
 
