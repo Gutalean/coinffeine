@@ -44,23 +44,13 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   }
 
   private def starting(listener: ActorRef): Receive = {
-    case response @ Bound(port, peerId) =>
-      subscriptions ! SubscriptionManagerActor.ConnectedToBroker(peerId)
-      listener ! response
-      log.info(s"Message gateway successfully bounded on port {} as {}", port, peerId)
-      context.become(forwardingMessages(peerId) orElse managingSubscriptionsAndConnectionStatus)
-
     case response @ Joined(myId, brokerId) =>
       subscriptions ! SubscriptionManagerActor.ConnectedToBroker(brokerId)
       listener ! response
-      log.info(s"Message gateway successfully joined to network as {} using broker {}",
-        myId, brokerId)
+      if (myId == brokerId) log.info("Message gateway successfully bounded on as {}", myId)
+      else log.info(
+        "Message gateway successfully joined to network as {} with broker {}", myId, brokerId)
       context.become(forwardingMessages(brokerId) orElse managingSubscriptionsAndConnectionStatus)
-
-    case error @ BindingError(port, cause) =>
-      log.error(cause, "Message gateway failed to bind on port {}", port)
-      listener ! error
-      context.become(receive)
 
     case error @ JoinError(cause) =>
       log.error(cause, "Message gateway failed to join to the network")

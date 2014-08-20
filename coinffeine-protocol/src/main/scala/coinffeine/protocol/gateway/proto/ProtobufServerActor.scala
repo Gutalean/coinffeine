@@ -48,7 +48,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     case JoinAsBroker(port) =>
       initPeer(port, sender())
       publishAddress().onComplete { case result =>
-       self ! AddressPublicationResult(port, result)
+       self ! AddressPublicationResult(result)
       }
       context.become(publishingAddress(sender()) orElse manageConnectionStatus)
 
@@ -58,13 +58,13 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
-    case AddressPublicationResult(port, Success(_)) =>
+    case AddressPublicationResult(Success(_)) =>
       val myId = createPeerId(me)
-      listener ! Bound(port, myId)
+      listener ! Joined(ownId = myId, brokerId = myId)
       new InitializedServer(listener, myId).start()
 
-    case AddressPublicationResult(port, Failure(error)) =>
-      listener ! BindingError(port, error)
+    case AddressPublicationResult(Failure(error)) =>
+      listener ! JoinError(error)
       me = null
       context.become(receive)
   }
@@ -211,7 +211,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 }
 
 private[gateway] object ProtobufServerActor {
-  private case class AddressPublicationResult(port: Int, result: Try[FutureDHT])
+  private case class AddressPublicationResult(result: Try[FutureDHT])
   private case object PeerMapChanged
 
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(

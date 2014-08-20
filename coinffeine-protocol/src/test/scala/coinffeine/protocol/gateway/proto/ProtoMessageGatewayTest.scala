@@ -146,7 +146,7 @@ class ProtoMessageGatewayTest
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway()
       ref ! JoinAsBroker(localPort)
-      val Bound(_, brokerId) = expectMsgType[Bound](connectionTimeout)
+      val Joined(_, brokerId) = expectMsgType[Joined](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe, brokerId)
