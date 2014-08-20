@@ -11,7 +11,6 @@ import com.typesafe.config.Config
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.OrderActor.RetrieveStatus
@@ -62,8 +61,7 @@ class OrderSupervisor(orderActorProps: Props,
 
 object OrderSupervisor {
 
-  case class Initialize(@deprecated val brokerId: PeerId,
-                        registry: ActorRef,
+  case class Initialize(registry: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)

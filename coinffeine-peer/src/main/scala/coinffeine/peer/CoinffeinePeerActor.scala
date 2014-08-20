@@ -46,8 +46,8 @@ class CoinffeinePeerActor(listenPort: Int,
   private val bitcoinPeerRef = spawnDelegate(props.bitcoinPeer, "bitcoinPeer")
   private val marketInfoRef = spawnDelegate(
     props.marketInfo, "marketInfo", MarketInfoActor.Start(registryRef))
+  private val orderSupervisorRef: ActorRef = spawnDelegate(props.orderSupervisor, "orders")
   private var walletRef: ActorRef = _
-  private var orderSupervisorRef: ActorRef = _
 
   private var brokerId: PeerId = _
 
@@ -74,6 +74,8 @@ class CoinffeinePeerActor(listenPort: Int,
 
     case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
       walletRef = retrievedWalletRef
+      orderSupervisorRef !
+        OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
       tryStartHandlingMessages()
   }
 
@@ -90,9 +92,6 @@ class CoinffeinePeerActor(listenPort: Int,
 
   private def tryStartHandlingMessages(): Unit = {
     if (walletRef != null && brokerId != null) {
-      orderSupervisorRef = spawnDelegate(props.orderSupervisor, "orders",
-        OrderSupervisor.Initialize(
-          brokerId, registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef))
       context.become(handleMessages)
     }
   }
