@@ -118,6 +118,12 @@ class ProtoMessageGatewayTest
     probe.expectMsg(ReceiveMessage(message, brokerId))
   }
 
+  it must "forward messages to the broker" in new FreshBrokerAndPeer {
+    val msg = randomOrderMatch()
+    peerGateway ! ForwardMessageToBroker(msg)
+    brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
+  }
+
   trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component

@@ -42,8 +42,11 @@ object MessageGateway {
   /** A response message indicating a join error. */
   case class JoinError(cause: Throwable)
 
-  /** A message sent in order to forward another message to a given destination. */
+  /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
+
+  /** A message sent in order to forward a message to a the broker node. */
+  case class ForwardMessageToBroker[M <: PublicMessage](message: M)
 
   type ReceiveFilter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
   type MessageFilter = PartialFunction[PublicMessage, Unit]
