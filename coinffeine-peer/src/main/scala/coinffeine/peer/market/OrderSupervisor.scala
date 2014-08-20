@@ -43,7 +43,7 @@ class OrderSupervisor(orderActorProps: Props,
         val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
 
         ref ! OrderActor.Initialize(order, submission, registry, paymentProcessor,
-          bitcoinPeer, wallet, brokerId)
+          bitcoinPeer, wallet)
         orders += order.id -> ref
 
       case CancelOrder(orderId, reason) =>

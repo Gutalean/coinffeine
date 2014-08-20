@@ -197,8 +197,8 @@ class OrderActorTest extends AkkaSpec {
       order.id, exchangeId, order.amount, order.price, lockTime = 400000L, exchange.counterpartId)
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, registryActor,
-      paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref, brokerId)
-    gatewayProbe.expectSubscription()
+      paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref)
+    gatewayProbe.expectSubscriptionToBroker()
     fundsActor.expectCreation()
 
     def givenInitializedOrder(): Unit = {
