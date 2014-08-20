@@ -52,12 +52,13 @@ class BlockingFundsActor extends Actor with ActorLogging {
   private def useFunds(fundsId: BlockedFundsId, amount: FiatAmount, requester: ActorRef): Unit = {
     funds.get(fundsId) match {
       case Some(blockedFunds) =>
-        if (!canUseFunds(blockedFunds, amount)) {
-          requester ! CannotUseFunds(
-            fundsId, amount, s"insufficient blocked funds for id $fundsId")
+        if (amount > blockedFunds.remainingAmount) {
+          requester ! CannotUseFunds(fundsId, amount,
+            s"insufficient blocked funds for id $fundsId: " +
+              s"$amount requested, ${blockedFunds.remainingAmount} available")
         } else if (!areBacked(blockedFunds)) {
           requester ! CannotUseFunds(
-            fundsId, amount, s"funds with id are not currently blocked$fundsId")
+            fundsId, amount, s"funds with id $fundsId are not currently blocked")
         } else {
           updateFunds(blockedFunds.copy(remainingAmount = blockedFunds.remainingAmount - amount))
           reduceBalance(amount)
@@ -67,9 +68,6 @@ class BlockingFundsActor extends Actor with ActorLogging {
         requester ! CannotUseFunds(fundsId, amount, s"no such funds with id $fundsId")
     }
   }
-
-  private def canUseFunds(blockedFunds: BlockedFundsInfo, amount: FiatAmount): Boolean =
-    amount <= blockedFunds.remainingAmount
 
   private def areBacked(blockedFunds: BlockedFundsInfo): Boolean = backedFunds.contains(blockedFunds.id)
 
