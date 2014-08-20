@@ -38,7 +38,7 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   }
 
   private val waitingForInitialization: Receive = {
-    case msg @ (Bind(_) | Join(_, _)) =>
+    case msg: Join =>
       server ! msg
       context.become(starting(sender()) orElse managingSubscriptionsAndConnectionStatus)
   }

@@ -45,14 +45,14 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   override val receive: Receive = waitingForInitialization orElse manageConnectionStatus
 
   private def waitingForInitialization: Receive = {
-    case Bind(port) =>
+    case JoinAsBroker(port) =>
       initPeer(port, sender())
       publishAddress().onComplete { case result =>
        self ! AddressPublicationResult(port, result)
       }
       context.become(publishingAddress(sender()) orElse manageConnectionStatus)
 
-    case Join(port, broker) =>
+    case JoinAsPeer(port, broker) =>
       initPeer(port, sender())
       connectToBroker(createPeerId(me), broker, sender())
   }

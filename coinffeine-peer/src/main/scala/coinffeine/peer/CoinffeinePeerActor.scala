@@ -54,7 +54,7 @@ import coinffeine.peer.CoinffeinePeerActor._
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef, {})
       _ <- ServiceActor.askStart(bitcoinPeerRef, {})
-      _ <- AskPattern(gatewayRef, MessageGateway.Join(listenPort, brokerAddress))
+      _ <- AskPattern(gatewayRef, MessageGateway.JoinAsPeer(listenPort, brokerAddress))
         .withReply[MessageGateway.Joined]
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]

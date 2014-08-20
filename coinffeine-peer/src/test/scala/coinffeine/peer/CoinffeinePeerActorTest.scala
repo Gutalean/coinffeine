@@ -46,7 +46,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
     val cause = new Exception("deep cause")
     gateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
+      case MessageGateway.JoinAsPeer(`localPort`, `brokerAddress`) =>
         MessageGateway.JoinError(cause)
     }
     expectMsgType[ServiceActor.StartFailure]
@@ -128,7 +128,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
     // Then request to join to the Coinffeine network
     gateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
+      case MessageGateway.JoinAsPeer(`localPort`, `brokerAddress`) =>
         MessageGateway.Joined(PeerId("client-peer"), brokerId)
     }
 

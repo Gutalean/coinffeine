@@ -80,7 +80,7 @@ class ProtoMessageGatewayTest
 
   it must "report join failures" in new Fixture {
     val ref = createMessageGateway()
-    ref ! Join(
+    ref ! JoinAsPeer(
       localPort = DefaultTcpPortAllocator.allocatePort(),
       connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
     expectMsgType[JoinError](30 seconds)
@@ -136,7 +136,7 @@ class ProtoMessageGatewayTest
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway()
-      ref ! Join(localPort, connectTo)
+      ref ! JoinAsPeer(localPort, connectTo)
       val Joined(_, _) = expectMsgType[Joined](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
@@ -145,7 +145,7 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway()
-      ref ! Bind(localPort)
+      ref ! JoinAsBroker(localPort)
       val Bound(_, brokerId) = expectMsgType[Bound](connectionTimeout)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
