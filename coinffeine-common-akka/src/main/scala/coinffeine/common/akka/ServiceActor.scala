@@ -1,9 +1,10 @@
 package coinffeine.common.akka
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
 import akka.actor.{ActorRef, Actor}
+import akka.util.Timeout
 
 /** An actor that can behave like a service.
   *
@@ -196,4 +197,20 @@ object ServiceActor {
 
   /** A response message indicating the service actor failed to stop. */
   case class StopFailure(cause: Throwable)
+
+  /** Ask a service actor to start.
+    *
+    * @param to       The service actor who is asked to start
+    * @param args     The start arguments
+    * @param timeout  The timeout for considering the start as failed
+    * @return         A future representing the service start
+    */
+  def askStart[Args](to: ActorRef, args: Args)
+                    (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
+    AskPattern(to, Start(args))
+      .withReply[Any]
+      .collect {
+        case Started =>
+        case StartFailure(cause) => throw cause
+      }
 }

@@ -1,7 +1,6 @@
 package coinffeine.peer
 
 import scala.concurrent.duration._
-import scala.util.Try
 
 import akka.actor._
 import akka.pattern._
@@ -31,6 +30,7 @@ class CoinffeinePeerActor(
     brokerAddress: BrokerAddress,
     props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[Unit] {
   import context.dispatcher
+
   import CoinffeinePeerActor._
 
   private val registryRef = context.actorOf(ServiceRegistryActor.props(), "registry")
@@ -47,20 +47,29 @@ class CoinffeinePeerActor(
   private var walletRef: ActorRef = _
 
   override def starting(args: Unit) = {
-    // TODO: replace children actors by services and start them here
-    bitcoinPeerRef ! ServiceActor.Start {}
-    gatewayRef ! MessageGateway.Join(listenPort, brokerAddress)
+    implicit val timeout = Timeout(ServiceStartTimeout)
+    log.info("Starting Coinffeine peer actor...")
+    // TODO: replace all children actors by services and start them here
+    (for {
+      _ <- ServiceActor.askStart(paymentProcessorRef, {})
+      _ <- ServiceActor.askStart(bitcoinPeerRef, {})
+      _ <- AskPattern(gatewayRef, MessageGateway.Join(listenPort, brokerAddress))
+        .withReply[MessageGateway.Joined]
+      walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
+        .withReply[BitcoinPeerActor.WalletActorRef]
+    } yield walletActorRef).pipeTo(self)
+
     handle {
-      case MessageGateway.Joined(_, _) =>
-        bitcoinPeerRef ! BitcoinPeerActor.RetrieveWalletActor
-      case MessageGateway.JoinError(cause) =>
-        cancelStart(cause)
       case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
         walletRef = retrievedWalletRef
         orderSupervisorRef !
           OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
         marketInfoRef ! MarketInfoActor.Start(registryRef)
         becomeStarted(handleMessages)
+        log.info("Coinffeine peer actor successfully started!")
+      case Status.Failure(cause) =>
+        log.error(cause, "Coinffeine peer actor failed to start")
+        cancelStart(cause)
     }
   }
 
@@ -89,6 +98,8 @@ class CoinffeinePeerActor(
 
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
+
+  val ServiceStartTimeout = 10.seconds
 
   /** Message sent to the peer to get a [[ConnectionStatus]] in response */
   case object RetrieveConnectionStatus

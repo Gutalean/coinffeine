@@ -10,6 +10,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.scalatest.mock.MockitoSugar
 
+import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
@@ -46,6 +47,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
     processor = system.actorOf(Props(
       new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+    processor ! ServiceActor.Start({})
+    expectMsg(ServiceActor.Started)
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
@@ -142,8 +145,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
+
       processor = system.actorOf(Props(
         new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+      processor ! ServiceActor.Start({})
+      expectMsg(ServiceActor.Started)
+
       for (i <- 1 to balances.size) {
         eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
       }

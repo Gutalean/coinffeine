@@ -11,7 +11,7 @@ import akka.actor._
 import akka.pattern._
 import com.typesafe.config.Config
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.{ServiceActor, AskPattern}
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.model.payment.PaymentProcessor._
@@ -23,7 +23,7 @@ import coinffeine.peer.payment.okpay.BlockingFundsActor._
 class OkPayProcessorActor(
     accountId: AccountId,
     client: OkPayClient,
-    pollingInterval: FiniteDuration) extends Actor with ActorLogging with EventPublisher {
+    pollingInterval: FiniteDuration) extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
 
   import OkPayProcessorActor._
   import context.dispatcher
@@ -33,7 +33,7 @@ class OkPayProcessorActor(
 
   private var timer: Cancellable = _
 
-  override def preStart(): Unit = {
+  override def starting(args: Unit) = {
     pollBalances()
     timer = context.system.scheduler.schedule(
       initialDelay = pollingInterval,
@@ -41,13 +41,15 @@ class OkPayProcessorActor(
       receiver = self,
       message = PollBalances
     )
+    becomeStarted(started)
   }
 
-  override def postStop(): Unit = {
+  override def stopping() = {
     Option(timer).foreach(_.cancel())
+    becomeStopped()
   }
 
-  override def receive: Receive = {
+  private def started: Receive = {
     case PaymentProcessorActor.RetrieveAccountId =>
       sender ! RetrievedAccountId(accountId)
     case pay: Pay[_] =>
