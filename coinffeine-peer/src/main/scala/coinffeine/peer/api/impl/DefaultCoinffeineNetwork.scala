@@ -1,13 +1,10 @@
 package coinffeine.peer.api.impl
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 import akka.actor.ActorRef
 import akka.pattern._
-import akka.util.Timeout
 import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.AskPattern
@@ -28,26 +25,6 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
   ).withImmediateReply[CoinffeinePeerActor.ConnectionStatus]().map { status =>
     if (status.connected) Connected else Disconnected
   })
-
-  /** @inheritdoc
-    *
-    * With the centralized broker implementation over protobuf RPC, "connecting" consists on opening
-    * a port with a duplex RPC server.
-    */
-  override def connect(): Future[Connected.type] = {
-    implicit val timeout = Timeout(DefaultCoinffeineNetwork.ConnectionTimeout)
-    val bindResult = (peer ? CoinffeinePeerActor.Connect).flatMap {
-      case CoinffeinePeerActor.Connected => Future.successful(Connected)
-      case CoinffeinePeerActor.ConnectionFailed(cause) => Future.failed(ConnectException(cause))
-    }
-    bindResult.onComplete {
-      case Success(connected) =>
-        DefaultCoinffeineNetwork.Log.error("Connected")
-      case Failure(cause) =>
-        DefaultCoinffeineNetwork.Log.error("Cannot connect", cause)
-    }
-    bindResult
-  }
 
   override def orders: Set[Order[FiatCurrency]] =
     await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet

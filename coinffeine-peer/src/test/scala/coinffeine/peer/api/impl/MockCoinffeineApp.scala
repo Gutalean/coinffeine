@@ -1,5 +1,8 @@
 package coinffeine.peer.api.impl
 
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
@@ -28,6 +31,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def accountId = "fake-account-id"
     override def currentBalance() = None
   }
+
+  override def start()(implicit timeout: FiniteDuration): Future[Unit] = Future.successful {}
 
   override def close(): Unit = ???
 

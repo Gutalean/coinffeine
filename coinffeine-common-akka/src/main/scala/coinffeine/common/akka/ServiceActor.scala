@@ -151,6 +151,17 @@ trait ServiceActor[Args] { this: Actor =>
     receive
   }
 
+  /** Cancel the service start process.
+    *
+    * This will send a [[StartFailure]] to the actor that requested the service start. It's meant
+    * to be used to report a start failure from the [[starting()]] state.
+    */
+  protected def cancelStart(cause: Throwable): Unit = {
+    requester ! StartFailure(cause)
+    requester = ActorRef.noSender
+    become(receive)
+  }
+
   /** A convenience function to assign a [[Receive]] type to a partial function. */
   protected def handle(r: Receive): Receive = r
 }

@@ -33,6 +33,16 @@ class ServiceActorTest extends AkkaSpec {
     expectMsgPF() { case ServiceActor.StartFailure(_) => }
   }
 
+  it should "fail to start on start cancel" in {
+    val probe = TestProbe()
+    val service = sampleService(probe)
+
+    service ! ServiceActor.Start("Satoshi")
+    probe.expectMsg("start")
+    probe.send(service, "start-failed")
+    expectMsgPF() { case ServiceActor.StartFailure(_) => }
+  }
+
   it should "invoke stop function on Stop message received" in {
     val probe = TestProbe()
     val service = startedSampleService("Satoshi", probe)
@@ -77,6 +87,7 @@ class ServiceActorTest extends AkkaSpec {
       probe ! "start"
       handle {
         case "started" => becomeStarted(sayingHello(args))
+        case "start-failed" => cancelStart(new RuntimeException("Oh no! More lemmings!"))
       }
     }
 
