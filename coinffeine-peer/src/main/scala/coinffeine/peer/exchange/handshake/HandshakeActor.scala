@@ -45,8 +45,7 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private val messageGateway = new ServiceRegistry(registry)
       .eventuallyLocate(MessageGateway.ServiceId)
-    private val forwarding =
-      new MessageForwarding(messageGateway, exchange.counterpartId, exchange.brokerId)
+    private val forwarding = new MessageForwarding(messageGateway, exchange.counterpartId)
 
     def startHandshake(): Unit = {
       subscribeToMessages()

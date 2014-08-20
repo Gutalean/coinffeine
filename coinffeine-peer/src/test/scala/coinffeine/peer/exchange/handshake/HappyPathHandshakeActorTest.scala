@@ -77,7 +77,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     givenValidRefundSignatureResponse()
-    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) to brokerId
+    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) toBroker
   }
 
   it should "sign counterpart refund after having our refund signed" in {
