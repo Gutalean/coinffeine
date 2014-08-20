@@ -6,7 +6,6 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.TransactionRejected
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
@@ -19,7 +18,7 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   "Handshakes in which TX are rejected" should "have a failed handshake result" in {
     givenActorIsInitialized()
-    gateway.expectMsgClass(classOf[Subscribe])
+    givenActorIsSubscribedToMessages()
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
