@@ -162,6 +162,16 @@ trait ServiceActor[Args] { this: Actor =>
     requester = ActorRef.noSender
     become(receive)
   }
+  /** Cancel the service stop process.
+    *
+    * This will send a [[StopFailure]] to the actor that requested the service stop. It's meant
+    * to be used to report a stop failure from the [[stopping()]] state.
+    */
+  protected def cancelStop(cause: Throwable): Unit = {
+    requester ! StopFailure(cause)
+    requester = ActorRef.noSender
+    become(receive)
+  }
 
   /** A convenience function to assign a [[Receive]] type to a partial function. */
   protected def handle(r: Receive): Receive = r
@@ -198,6 +208,16 @@ object ServiceActor {
   /** A response message indicating the service actor failed to stop. */
   case class StopFailure(cause: Throwable)
 
+  /** Ask a service actor to start with empty arguments.
+    *
+    * @param to       The service actor who is asked to start
+    * @param timeout  The timeout for considering the start as failed
+    * @return         A future representing the service start
+    */
+  def askStart[Args](to: ActorRef)
+                    (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
+    askStart(to, {})
+
   /** Ask a service actor to start.
     *
     * @param to       The service actor who is asked to start
@@ -209,5 +229,28 @@ object ServiceActor {
                     (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
     AskPattern(to, Start(args))
       .withReplyOrError[Started.type, StartFailure](_.cause)
-      .map(_ => {})
+      .map(ignoreResult)
+
+  /** Ask a service actor to stop.
+    *
+    * @param to       The service actor who is asked to stop
+    * @param timeout  The timeout for considering the stop as failed
+    * @return         A future representing the service stop
+    */
+  def askStop(to: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
+    AskPattern(to, Stop)
+      .withReplyOrError[Stopped.type, StopFailure](_.cause)
+      .map(ignoreResult)
+
+  /** Ask a number of services to stop in parallel.
+    *
+    * @param services  The service actors to stop
+    * @param timeout   The timeout for considering the stop as failed
+    * @return          A future representing the services stop
+    */
+  def askStopAll(services: ActorRef*)
+                (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
+    Future.sequence(services.map(askStop)).map(ignoreResult)
+
+  private def ignoreResult[T](ignored: T) = {}
 }
