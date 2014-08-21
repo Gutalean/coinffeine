@@ -32,12 +32,6 @@ object MessageGateway {
   /** A request message to join to an already existing network. */
   case class JoinAsPeer(localPort: Int, connectTo: BrokerAddress) extends Join
 
-  /** A response message indicating the message gateway has joined the network. */
-  case class Joined(ownId: PeerId, brokerId: PeerId)
-
-  /** A response message indicating a join error. */
-  case class JoinError(cause: Throwable)
-
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
 
