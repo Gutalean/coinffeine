@@ -48,12 +48,12 @@ import coinffeine.peer.CoinffeinePeerActor._
   private var walletRef: ActorRef = _
 
   override def starting(args: Unit) = {
-    implicit val timeout = Timeout(ServiceStartTimeout)
+    implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
     // TODO: replace all children actors by services and start them here
     (for {
-      _ <- ServiceActor.askStart(paymentProcessorRef, {})
-      _ <- ServiceActor.askStart(bitcoinPeerRef, {})
+      _ <- ServiceActor.askStart(paymentProcessorRef)
+      _ <- ServiceActor.askStart(bitcoinPeerRef)
       _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(listenPort, brokerAddress))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
@@ -70,6 +70,15 @@ import coinffeine.peer.CoinffeinePeerActor._
       case Status.Failure(cause) =>
         log.error(cause, "Coinffeine peer actor failed to start")
         cancelStart(cause)
+    }
+  }
+
+  override protected def stopping(): Receive = {
+    implicit val timeout = Timeout(ServiceStartStopTimeout)
+    ServiceActor.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
+    handle {
+      case () => becomeStopped()
+      case Status.Failure(cause) => cancelStop(cause)
     }
   }
 
@@ -99,7 +108,7 @@ import coinffeine.peer.CoinffeinePeerActor._
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
 
-  val ServiceStartTimeout = 10.seconds
+  val ServiceStartStopTimeout = 10.seconds
 
   /** Message sent to the peer to get a [[ConnectionStatus]] in response */
   case object RetrieveConnectionStatus

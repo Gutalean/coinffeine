@@ -66,6 +66,13 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     wallet.sender() should be (self)
   }
 
+  it must "stop delegates on stop" in new StartedFixture {
+    peer ! ServiceActor.Stop
+    paymentProcessor.expectMsg(ServiceActor.Stop)
+    bitcoinPeer.expectMsg(ServiceActor.Stop)
+    gateway.expectMsg(ServiceActor.Stop)
+  }
+
   trait Fixture {
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
