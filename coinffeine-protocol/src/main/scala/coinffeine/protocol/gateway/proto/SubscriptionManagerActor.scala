@@ -2,16 +2,14 @@ package coinffeine.protocol.gateway.proto
 
 import akka.actor._
 
-import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.ConnectedToBroker
 import coinffeine.protocol.messages.PublicMessage
 
 private class SubscriptionManagerActor extends Actor with ActorLogging {
+  import SubscriptionManagerActor._
 
   private var subscriptions = Map.empty[ActorRef, ReceiveFilter]
   private var brokerSubscriptions = Map.empty[ActorRef, MessageFilter]
-  private var brokerId: Option[PeerId] = None
 
   override def receive: Receive = {
     case Subscribe(filter) =>
@@ -21,10 +19,8 @@ private class SubscriptionManagerActor extends Actor with ActorLogging {
     case Unsubscribe =>
       subscriptions -= sender
       brokerSubscriptions -= sender
-    case message @ ReceiveMessage(_, _) =>
-      dispatchToSubscriptions(message)
-    case ConnectedToBroker(id) =>
-      brokerId = Some(id)
+    case notification: NotifySubscribers =>
+      dispatchToSubscriptions(notification)
   }
 
   private def addSubscription(subscriber: ActorRef, filter: ReceiveFilter): Unit = {
@@ -37,26 +33,27 @@ private class SubscriptionManagerActor extends Actor with ActorLogging {
     brokerSubscriptions += subscriber -> newFilter
   }
 
-  private def dispatchToSubscriptions(notification: ReceiveMessage[_ <: PublicMessage]): Unit = {
+  private def dispatchToSubscriptions(notification: NotifySubscribers): Unit = {
     for (actor <- subscriptions.keySet ++ brokerSubscriptions.keySet
          if isSubscribed(actor, notification)) {
-      actor ! notification
+      actor ! notification.message
     }
   }
 
-  private def isSubscribed(subscriber: ActorRef,
-                           notification: ReceiveMessage[_ <: PublicMessage]): Boolean =
-    subscriptions.get(subscriber).fold(false)(_.isDefinedAt(notification)) ||
-      (isFromBroker(notification) &&
-        brokerSubscriptions.get(subscriber).fold(false)(_.isDefinedAt(notification.msg)))
+  private def isSubscribed(subscriber: ActorRef, notification: NotifySubscribers): Boolean =
+    isSubscribedToPeerMessage(subscriber, notification) ||
+      isSubscribedToBrokerMessage(subscriber, notification)
 
-  private def isFromBroker(notification: ReceiveMessage[_ <: PublicMessage]): Boolean = {
-    Some(notification.sender) == brokerId
-  }
+  private def isSubscribedToPeerMessage(subscriber: ActorRef, notification: NotifySubscribers) =
+    subscriptions.get(subscriber).fold(false)(_.isDefinedAt(notification.message))
+
+  private def isSubscribedToBrokerMessage(subscriber: ActorRef, notification: NotifySubscribers) =
+    notification.fromBroker &&
+      brokerSubscriptions.get(subscriber).fold(false)(_.isDefinedAt(notification.message.msg))
 }
 
 private[gateway] object SubscriptionManagerActor {
   val props: Props = Props(new SubscriptionManagerActor())
 
-  case class ConnectedToBroker(brokerId: PeerId)
+  case class NotifySubscribers(message: ReceiveMessage[_ <: PublicMessage], fromBroker: Boolean)
 }

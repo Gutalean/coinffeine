@@ -1,11 +1,9 @@
 package coinffeine.protocol.gateway.proto
 
-import scala.concurrent.duration._
-
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
-import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
+import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -19,9 +17,8 @@ import coinffeine.protocol.serialization._
 
 class ProtoMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
-  with Eventually with IntegrationPatience {
+  with ProtoServerAssertions {
 
-  val connectionTimeout = 30.seconds
   val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(_: OrderMatch, _) =>
   }
@@ -78,21 +75,7 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
   }
 
-  it must "report join failures" in new Fixture {
-    val ref = createMessageGateway()
-    ref ! JoinAsPeer(
-      localPort = DefaultTcpPortAllocator.allocatePort(),
-      connectTo = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort()))
-    expectMsgType[JoinError](30 seconds)
-  }
-
-  it must "retrieve the connection status when disconnected" in new Fixture {
-    val ref = createMessageGateway()
-    ref ! MessageGateway.RetrieveConnectionStatus
-    expectMsg(CoinffeineConnectionStatus(activePeers = 0, brokerId = None))
-  }
-
-  it must "retrieve the connection status when connected" in new FreshBrokerAndPeer {
+  it must "retrieve the connection status" in new FreshBrokerAndPeer {
     peerGateway ! MessageGateway.RetrieveConnectionStatus
     expectMsg(CoinffeineConnectionStatus(activePeers = 1, Some(brokerId)))
   }
@@ -136,8 +119,9 @@ class ProtoMessageGatewayTest
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway()
-      ref ! JoinAsPeer(localPort, connectTo)
-      val Joined(_, _) = expectMsgType[Joined](connectionTimeout)
+      ref ! ServiceActor.Start(JoinAsPeer(localPort, connectTo))
+      expectMsg(ServiceActor.Started)
+      waitForConnections(ref, minConnections = 1)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe)
@@ -145,8 +129,9 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway()
-      ref ! JoinAsBroker(localPort)
-      val Joined(_, brokerId) = expectMsgType[Joined](connectionTimeout)
+      ref ! ServiceActor.Start(JoinAsBroker(localPort))
+      expectMsg(ServiceActor.Started)
+      val brokerId = waitForConnections(ref, minConnections = 0)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe, brokerId)
