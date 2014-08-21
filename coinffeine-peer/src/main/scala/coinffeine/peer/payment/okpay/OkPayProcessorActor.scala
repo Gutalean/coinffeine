@@ -27,8 +27,7 @@ class OkPayProcessorActor(
     pollingInterval: FiniteDuration) extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
 
   import context.dispatcher
-
-import coinffeine.peer.payment.okpay.OkPayProcessorActor._
+  import OkPayProcessorActor._
 
   private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
   private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
