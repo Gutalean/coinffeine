@@ -24,13 +24,41 @@ object AskPattern {
 
   class AskRequestBuilder private[AskPattern] (to: ActorRef, request: Any, errorMessage: String) {
 
-    def withReply[R]()(implicit timeout: Timeout, ev: ClassTag[R], ec: ExecutionContext): Future[R] =
+    def withReply[R]()(implicit timeout: Timeout,
+                       resultType: ClassTag[R],
+                       executor: ExecutionContext): Future[R] =
       (to ? request).mapTo[R].recoverWith {
         case NonFatal(cause) =>
           Future.failed(new RuntimeException(errorMessage, cause))
       }
 
-    def withImmediateReply[R]()(implicit ev: ClassTag[R], ec: ExecutionContext): Future[R] =
-      withReply()(ImmediateResponseTimeout, ev, ec)
+    def withImmediateReply[R]()(implicit resultType: ClassTag[R], 
+                                executor: ExecutionContext): Future[R] =
+      withReply()(ImmediateResponseTimeout, resultType, executor)
+
+    def withReplyOrError[R, E](causeExtractor: E => Throwable = defaultCauseExtractor _)
+                              (implicit timeout: Timeout,
+                               resultType: ClassTag[R],
+                               errorType: ClassTag[E],
+                               executor: ExecutionContext): Future[R] =
+      (to ? request).mapTo[Any]
+        .map {
+          case resultType(success) => success
+          case errorType(error) => throw causeExtractor(error)
+        }
+        .recoverWith {
+          case NonFatal(cause) =>
+            Future.failed(new RuntimeException(errorMessage, cause))
+        }
+
+    def withImmediateReplyOrError[R, E](causeExtractor: E => Throwable = defaultCauseExtractor _)
+                                       (implicit resultType: ClassTag[R],
+                                        errorType: ClassTag[E],
+                                        executor: ExecutionContext): Future[R] =
+      withReplyOrError(causeExtractor)(ImmediateResponseTimeout, resultType, errorType, executor)
+
+    private def defaultCauseExtractor(error: Any): Throwable = {
+      new RuntimeException(s"actor replied with error message: $error")
+    }
   }
 }
