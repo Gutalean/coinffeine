@@ -39,7 +39,7 @@ object PaymentProcessorActor {
     * Funds to transfer should have been previously blocked using [[BlockFunds]] and can be
     * spent partially.
     *
-    * This will be responded with an [[PaymentResult]]
+    * This will be responded with either [[Paid]] or [[PaymentFailed]].
     *
     * @param fundsId   Id of the blocked funds to spent
     * @param to        The ID of the receiver account
@@ -52,10 +52,8 @@ object PaymentProcessorActor {
                                     amount: CurrencyAmount[C],
                                     comment: String)
 
-  sealed trait PaymentResult
-
   /** A message sent by the payment processor in order to notify of a successful payment. */
-  case class Paid[C <: FiatCurrency](payment: Payment[C]) extends PaymentResult
+  case class Paid[C <: FiatCurrency](payment: Payment[C])
 
   /** A message sent by the payment processor to notify a payment failure.
     *
@@ -64,7 +62,6 @@ object PaymentProcessorActor {
     * @tparam C The fiat currency of the payment amount
     */
   case class PaymentFailed[C <: FiatCurrency](request: Pay[C], error: Throwable)
-    extends PaymentResult
 
   /** A message sent to the payment processor in order to find a payment. */
   case class FindPayment(payment: PaymentId)

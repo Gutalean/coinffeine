@@ -148,9 +148,6 @@ object WalletActor {
                            requiredSignatures: Seq[KeyPair],
                            amount: BitcoinAmount)
 
-  /** Base trait for the responses to [[CreateDeposit]] */
-  sealed trait CreateDepositResponse
-
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * a successful funds blocking.
     *
@@ -158,13 +155,11 @@ object WalletActor {
     * @param tx       The resulting transaction that contains the funds that have been blocked
     */
   case class DepositCreated(request: CreateDeposit, tx: ImmutableTransaction)
-    extends CreateDepositResponse
 
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * an error while blocking the funds.
     */
   case class DepositCreationError(request: CreateDeposit, error: Throwable)
-    extends CreateDepositResponse
 
   /** A message sent to the wallet actor in order to release the funds that of a non published
     * deposit.

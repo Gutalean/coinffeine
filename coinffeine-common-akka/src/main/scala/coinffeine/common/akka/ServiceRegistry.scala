@@ -40,13 +40,9 @@ class ServiceRegistry(registry: ActorRef) {
                                   executor: ExecutionContext): Future[ActorRef] = {
     implicit val to = Timeout(timeout)
     AskPattern(registry, msg, s"cannot locate $service: registry is unavailable")
-      .withReply[Any]()
-      .flatMap {
-      case ServiceLocated(`service`, actor) =>
-        Future.successful(actor)
-      case ServiceNotFound(`service`) =>
-        Future.failed(new IllegalArgumentException(s"cannot locate $service: no such service"))
-    }
+      .withReplyOrError[ServiceLocated, ServiceNotFound](
+        _ => new IllegalArgumentException(s"cannot locate $service: no such service"))
+      .map(_.actor)
   }
 }
 

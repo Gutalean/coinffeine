@@ -208,9 +208,6 @@ object ServiceActor {
   def askStart[Args](to: ActorRef, args: Args)
                     (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
     AskPattern(to, Start(args))
-      .withReply[Any]
-      .collect {
-        case Started =>
-        case StartFailure(cause) => throw cause
-      }
+      .withReplyOrError[Started.type, StartFailure](_.cause)
+      .map(_ => {})
 }
