@@ -32,9 +32,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def currentBalance() = None
   }
 
-  override def start()(implicit timeout: FiniteDuration): Future[Unit] = Future.successful {}
-
-  override def close(): Unit = ???
+  override def start(timeout: FiniteDuration) = Future.successful {}
+  override def stop(timeout: FiniteDuration) = Future.successful {}
 
   override def observe(handler: EventHandler): Unit = {
     handlers += handler

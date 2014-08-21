@@ -5,12 +5,13 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
+import org.slf4j.LoggerFactory
 
-import coinffeine.common.akka.{ServiceActor, AskPattern}
+import coinffeine.common.akka.ServiceActor
+import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api._
-import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
 
@@ -36,23 +37,32 @@ class DefaultCoinffeineApp(name: String,
 
   override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(accountId, peerRef)
 
-  override def close(): Unit = system.shutdown()
-
   override def observe(handler: EventHandler): Unit = {
     val observer = system.actorOf(EventObserverActor.props(handler))
     system.eventStream.subscribe(observer, classOf[CoinffeineAppEvent])
   }
 
-  override def start()(implicit timeout: FiniteDuration): Future[Unit] = {
+  override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
     implicit val to = Timeout(timeout)
-    AskPattern(peerRef, ServiceActor.Start {})
-      .withReplyOrError[ServiceActor.Started.type, ServiceActor.StartFailure](_.cause)
-      .map(_ => {})
+    ServiceActor.askStart(peerRef).recoverWith {
+      case cause => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
+    }
+  }
+
+  override def stop(timeout: FiniteDuration): Future[Unit] = {
+    import system.dispatcher
+    implicit val to = Timeout(timeout)
+    ServiceActor.askStop(peerRef).recover {
+      case cause =>
+        DefaultCoinffeineApp.Log.error("cannot gracefully stop coinffeine app", cause)
+    }.map(_ => system.shutdown())
   }
 }
 
 object DefaultCoinffeineApp {
+  private val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineApp])
+
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent =>
 
