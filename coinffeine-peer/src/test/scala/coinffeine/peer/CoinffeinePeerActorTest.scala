@@ -37,21 +37,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, coinffeineStatus))
   }
 
-  it must "fail to start on message gateway connect error" in new Fixture {
-    peer ! ServiceActor.Start {}
-
-    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo, orders)
-    shouldRequestStart(paymentProcessor, {})
-    shouldRequestStart(bitcoinPeer, {})
-
-    val cause = new Exception("deep cause")
-    gateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
-        MessageGateway.JoinError(cause)
-    }
-    expectMsgType[ServiceActor.StartFailure]
-  }
-
   it must "delegate quote requests" in new StartedFixture {
     peer ! QuoteRequest(Market(Euro))
     marketInfo.expectForward(RequestQuote(Market(Euro)), self)
@@ -127,10 +112,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
-    gateway.expectAskWithReply {
-      case MessageGateway.Join(`localPort`, `brokerAddress`) =>
-        MessageGateway.Joined(PeerId("client-peer"), brokerId)
-    }
+    shouldRequestStart(gateway, MessageGateway.JoinAsPeer(`localPort`, `brokerAddress`))
 
     // Then request the wallet actor from bitcoin actor
     bitcoinPeer.expectAskWithReply {

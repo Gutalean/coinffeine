@@ -24,23 +24,13 @@ object MessageGateway {
     override def toString = s"$hostname:$port"
   }
 
+  sealed trait Join
+
   /** A request message to bind & create a new, empty P2P network. */
-  case class Bind(listenToPort: Int)
+  case class JoinAsBroker(localPort: Int) extends Join
 
   /** A request message to join to an already existing network. */
-  case class Join(localPort: Int, connectTo: BrokerAddress)
-
-  /** A response message indicating a success bind operation. */
-  case class Bound(port: Int, ownId: PeerId)
-
-  /** A response message indicating the message gateway is joined to the network. */
-  case class Joined(ownId: PeerId, brokerId: PeerId)
-
-  /** A response message indicating a binding error. */
-  case class BindingError(port: Int, cause: Throwable)
-
-  /** A response message indicating a join error. */
-  case class JoinError(cause: Throwable)
+  case class JoinAsPeer(localPort: Int, connectTo: BrokerAddress) extends Join
 
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)

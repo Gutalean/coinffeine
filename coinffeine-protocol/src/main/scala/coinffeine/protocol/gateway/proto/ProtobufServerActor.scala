@@ -14,15 +14,15 @@ import net.tomp2p.peers.{Number160, PeerAddress, PeerMapChangeListener}
 import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
+import coinffeine.common.akka.ServiceActor
 import coinffeine.model.event.CoinffeineConnectionStatus
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.proto.ProtoMessageGateway.ReceiveProtoMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface])
-  extends Actor with ActorLogging {
+  extends Actor with ServiceActor[Join] with ActorLogging {
 
   import coinffeine.protocol.gateway.proto.ProtobufServerActor._
   import context.dispatcher
@@ -33,40 +33,38 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   private var me: Peer = _
   private var connectionStatus = CoinffeineConnectionStatus(activePeers = 0, brokerId = None)
 
-  override def preStart(): Unit = {
+  override protected def starting(args: Join): Receive = {
     publishConnectionStatusEvent()
+    becomeStarted(args match {
+      case JoinAsBroker(port) =>
+        initPeer(port, sender())
+        publishAddress().onComplete { case result =>
+          self ! AddressPublicationResult(result)
+        }
+        publishingAddress(sender()) orElse manageConnectionStatus
+
+      case JoinAsPeer(port, broker) =>
+        initPeer(port, sender())
+        connectToBroker(createPeerId(me), broker, sender())
+    })
   }
 
-  override def postStop(): Unit = {
+  override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
     Option(me).map(_.shutdown())
-  }
-
-  override val receive: Receive = waitingForInitialization orElse manageConnectionStatus
-
-  private def waitingForInitialization: Receive = {
-    case Bind(port) =>
-      initPeer(port, sender())
-      publishAddress().onComplete { case result =>
-       self ! AddressPublicationResult(port, result)
-      }
-      context.become(publishingAddress(sender()) orElse manageConnectionStatus)
-
-    case Join(port, broker) =>
-      initPeer(port, sender())
-      connectToBroker(createPeerId(me), broker, sender())
+    becomeStopped()
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
-    case AddressPublicationResult(port, Success(_)) =>
+    case AddressPublicationResult(Success(_)) =>
       val myId = createPeerId(me)
-      listener ! Bound(port, myId)
-      new InitializedServer(listener, myId).start()
+      new InitializedServer(myId, listener).start()
 
-    case AddressPublicationResult(port, Failure(error)) =>
-      listener ! BindingError(port, error)
-      me = null
-      context.become(receive)
+    case AddressPublicationResult(Failure(error)) =>
+      log.error(error, "Address publication failed, retrying")
+      publishAddress().onComplete { case result =>
+        self ! AddressPublicationResult(result)
+      }
   }
 
   def initPeer(localPort: Int, listener: ActorRef): Unit = {
@@ -80,7 +78,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
       .setBindings(bindings)
       .makeAndListen()
     me.getConfiguration.setBehindFirewall(true)
-    me.setObjectDataReply(new ReplyHandler(listener))
+    me.setObjectDataReply(IncomingDataListener)
     me.getPeerBean.getPeerMap.addPeerMapChangeListener(PeerChangeListener)
   }
 
@@ -102,8 +100,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     .setPorts(brokerAddress.port)
     .start()
 
-  private def connectToBroker(
-      ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Unit = {
+  private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
     val bootstrapFuture = discover(brokerAddress).map({ dis =>
       val realIp = dis.getPeerAddress
       log.info(s"Attempting connection to Coinffeine using IP $realIp")
@@ -126,20 +123,19 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 
     val waitForBootstrap: Receive = {
       case brokerId: PeerId =>
-        log.info(s"Successfully connected as $ownId using broker in $brokerAddress with $brokerId")
-        listener ! Joined(ownId, brokerId)
-        new InitializedServer(listener, brokerId).start()
+        log.info("Successfully connected as {} using broker in {} with {}",
+          ownId, brokerAddress, brokerId)
+        new InitializedServer(brokerId, listener).start()
 
       case Status.Failure(error) =>
-        log.error(s"Cannot connect as $ownId using broker in $brokerAddress: $error")
-        listener ! JoinError(error)
-        context.become(receive)
+        log.error(error, "Cannot connect as {} using broker in {}, retrying", ownId, brokerAddress)
+        become(connectToBroker(ownId, brokerAddress, listener))
     }
 
-    context.become(waitForBootstrap orElse manageConnectionStatus)
+    waitForBootstrap orElse manageConnectionStatus
   }
 
-  private class InitializedServer(listener: ActorRef, brokerId: PeerId) {
+  private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
 
     def start(): Unit = {
       connectionStatus = CoinffeineConnectionStatus(
@@ -147,19 +143,27 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
         brokerId = Some(brokerId)
       )
       publishConnectionStatusEvent()
-      context.become(sendingMessages orElse manageConnectionStatus)
+      become(handlingMessages orElse manageConnectionStatus)
     }
 
-    private val sendingMessages: Receive = {
-      case SendMessage(to, msg) =>
-        val sendMsg = me.get(createNumber160(to)).start().flatMap(dhtEntry => {
-          me.sendDirect(new PeerAddress(dhtEntry.getData.getData))
-            .setObject(msg.toByteArray)
-            .start()
-        })
-        sendMsg.onFailure { case err =>
-          log.error(err, s"Failure when sending send message $msg to $to")
-        }
+    private val handlingMessages: Receive = {
+      case SendProtoMessage(to, msg) => sendMessage(to, msg)
+      case SendProtoMessageToBroker(msg) => sendMessage(brokerId, msg)
+      case ReceiveData(from, data) =>
+        val msg = CoinffeineMessage.parseFrom(data)
+        val fromBroker = from == brokerId
+        listener ! ReceiveProtoMessage(from, msg, fromBroker)
+    }
+
+    private def sendMessage(to: PeerId, msg: CoinffeineMessage) = {
+      val sendMsg = me.get(createNumber160(to)).start().flatMap(dhtEntry => {
+        me.sendDirect(new PeerAddress(dhtEntry.getData.getData))
+          .setObject(msg.toByteArray)
+          .start()
+      })
+      sendMsg.onFailure { case err =>
+        log.error(err, s"Failure when sending send message $msg to $to")
+      }
     }
   }
 
@@ -172,14 +176,9 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
       publishConnectionStatusEvent()
   }
 
-  private class ReplyHandler(listener: ActorRef) extends ObjectDataReply {
+  private object IncomingDataListener extends ObjectDataReply {
     override def reply(sender: PeerAddress, request: Any): AnyRef = {
-      context.dispatcher.execute(new Runnable {
-        override def run(): Unit = {
-          val msg = CoinffeineMessage.parseFrom(request.asInstanceOf[Array[Byte]])
-          listener ! ReceiveProtoMessage(msg, createPeerId(sender))
-        }
-      })
+      self ! ReceiveData(createPeerId(sender), request.asInstanceOf[Array[Byte]])
       null
     }
   }
@@ -211,12 +210,18 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 }
 
 private[gateway] object ProtobufServerActor {
-  private case class AddressPublicationResult(port: Int, result: Try[FutureDHT])
+  private case class AddressPublicationResult(result: Try[FutureDHT])
   private case object PeerMapChanged
+  private case class ReceiveData(from: PeerId, data: Array[Byte])
 
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
     new ProtobufServerActor(ignoredNetworkInterfaces))
 
   /** Send a message to a peer */
-  case class SendMessage(to: PeerId, msg: CoinffeineMessage)
+  case class SendProtoMessage(to: PeerId, msg: CoinffeineMessage)
+  /** Send a message to the broker */
+  case class SendProtoMessageToBroker(msg: CoinffeineMessage)
+
+  /** Sent to the listener when a message is received */
+  case class ReceiveProtoMessage(senderId: PeerId, msg: CoinffeineMessage, fromBroker: Boolean)
 }
