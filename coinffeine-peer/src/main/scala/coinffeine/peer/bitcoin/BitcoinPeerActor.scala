@@ -212,11 +212,6 @@ object BitcoinPeerActor {
       errorMessage = s"Cannot retrieve blockchain actor from $bitcoinPeer"
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
 
-  /** Instruct the peer to join the bitcoin network retrying as much as necessary. */
-  @deprecated case object JoinBitcoinNetwork
-  /** Instruct the peer to leave the bitcoin network or abort connection in progress */
-  @deprecated case object LeaveBitcoinNetwork
-
   /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
   case object RetrieveConnectionStatus
 
