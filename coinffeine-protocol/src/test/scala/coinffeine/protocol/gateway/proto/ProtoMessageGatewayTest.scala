@@ -107,6 +107,11 @@ class ProtoMessageGatewayTest
     brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
   }
 
+  it must "stop successfully" in new FreshBrokerAndPeer {
+    peerGateway ! ServiceActor.Stop
+    expectMsg(ServiceActor.Stopped)
+  }
+
   trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component

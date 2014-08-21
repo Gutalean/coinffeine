@@ -1,7 +1,7 @@
 package coinffeine.gui
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 import scalafx.application.JFXApp
@@ -35,7 +35,7 @@ object Main extends JFXApp
 
   val properties = new ApplicationProperties(app)
   val notificationManager = new NotificationManager(app)
-  app.startAndWait()(30.seconds)
+  app.startAndWait(30.seconds)
   stage = new PrimaryStage {
     title = "Coinffeine"
     scene = new ApplicationScene(
@@ -52,6 +52,6 @@ object Main extends JFXApp
   stage.show()
 
   override def stopApp(): Unit = {
-    app.close()
+    app.stopAndWait(30.seconds)
   }
 }

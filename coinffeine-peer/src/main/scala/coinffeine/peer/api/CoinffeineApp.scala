@@ -1,17 +1,10 @@
 package coinffeine.peer.api
 
-import java.io.Closeable
-
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.{Duration, FiniteDuration}
-
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.market.{OrderBookEntry, OrderId}
-import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.payment.PaymentProcessorActor
+import scala.concurrent.{Await, Future}
 
 /** Coinffeine application interface */
-trait CoinffeineApp extends Closeable {
+trait CoinffeineApp {
 
   def network: CoinffeineNetwork
   def wallet: CoinffeineWallet
@@ -20,9 +13,13 @@ trait CoinffeineApp extends Closeable {
 
   def observe(handler: EventHandler): Unit
 
-  def start()(implicit timeout: FiniteDuration): Future[Unit]
+  def start(timeout: FiniteDuration): Future[Unit]
+  def stop(timeout: FiniteDuration): Future[Unit]
 
-  def startAndWait()(implicit timeout: FiniteDuration): Unit = {
-    Await.result(start(), Duration.Inf)
+  def startAndWait(timeout: FiniteDuration): Unit = waitForever(start(timeout))
+  def stopAndWait(timeout: FiniteDuration): Unit = waitForever(stop(timeout))
+
+  private def waitForever(future: Future[Unit]): Unit = {
+    Await.result(future, Duration.Inf)
   }
 }
