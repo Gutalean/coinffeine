@@ -128,14 +128,11 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         comment = PaymentDescription(exchange.id, step)
       )
       AskPattern(paymentProcessor, request, errorMessage = s"Cannot pay at $step")
-        .withReply[PaymentProcessorActor.PaymentResult]().map {
-          case paid: PaymentProcessorActor.Paid[_] =>
-            PaymentProof(exchange.id, paid.payment.id)
-          case paymentFailed: PaymentProcessorActor.PaymentFailed[_] =>
-            paymentFailed
-        }.recover {
-          case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause)
-        }.pipeTo(self)
+        .withReplyOrError[PaymentProcessorActor.Paid[C], PaymentProcessorActor.PaymentFailed[C]](
+          _.error)
+        .map(paid => PaymentProof(exchange.id, paid.payment.id))
+        .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
+        .pipeTo(self)
     }
   }
 }

@@ -47,12 +47,8 @@ class DefaultCoinffeineApp(name: String,
     import system.dispatcher
     implicit val to = Timeout(timeout)
     AskPattern(peerRef, ServiceActor.Start {})
-      .withReply[Any]()
-        .collect {
-          case ServiceActor.Started =>
-          case ServiceActor.StartFailure(cause) =>
-            throw new RuntimeException("cannot start coinffeine app", cause)
-      }
+      .withReplyOrError[ServiceActor.Started.type, ServiceActor.StartFailure](_.cause)
+      .map(_ => {})
   }
 }
 

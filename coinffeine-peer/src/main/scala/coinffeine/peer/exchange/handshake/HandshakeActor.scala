@@ -13,8 +13,8 @@ import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BlockchainActor.{TransactionConfirmed, TransactionRejected, WatchTransactionConfirmation}
-import coinffeine.peer.bitcoin.WalletActor.{CreateDepositResponse, DepositCreated, DepositCreationError}
+import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
 import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
@@ -95,10 +95,7 @@ private class HandshakeActor[C <: FiatCurrency](
         request = WalletActor.CreateDeposit(
           exchange.blockedFunds.bitcoin, requiredSignatures, depositAmount),
         errorMessage = s"Cannot block $depositAmount in multisig"
-      ).withImmediateReply[CreateDepositResponse]().flatMap {
-        case DepositCreated(_, tx) => Future.successful(tx)
-        case DepositCreationError(_, error) => Future.failed(error)
-      }
+      ).withImmediateReplyOrError[DepositCreated, DepositCreationError](_.error).map(_.tx)
     }
 
     private def receiveRefundSignature(handshake: Handshake[C]): Receive = {
@@ -195,7 +192,7 @@ private class HandshakeActor[C <: FiatCurrency](
         to = blockchain,
         request = BlockchainActor.RetrieveTransaction(commitmentId),
         errorMessage = s"Cannot retrieve TX $commitmentId"
-      ).withImmediateReply[BlockchainActor.TransactionFound]().map(_.tx)
+      ).withImmediateReplyOrError[TransactionFound, TransactionNotFound]().map(_.tx)
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id

@@ -88,11 +88,9 @@ class OkPayProcessorActor(
     log.debug(s"Using funds with id ${pay.fundsId}. " +
       s"Amount to use: ${OkPayPaymentProcessor.amountPlusFee(pay.amount)}")
     AskPattern(blockingFunds, request, "fail to use funds")
-      .withImmediateReply[Any]()
-      .flatMap {
-        case _: FundsUsed => Future.successful {}
-        case CannotUseFunds(_, _, cause) => Future.failed(new RuntimeException(cause))
-      }
+      .withImmediateReplyOrError[FundsUsed, CannotUseFunds](
+        failure => throw new RuntimeException(failure.reason))
+      .map(_ => {})
   }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
