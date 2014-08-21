@@ -3,14 +3,13 @@ package coinffeine.protocol.gateway.proto
 import java.net.NetworkInterface
 
 import akka.actor._
+
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
-import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage, SendProtoMessageToBroker}
 import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.NotifySubscribers
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
 private class ProtoMessageGateway(serialization: ProtocolSerialization,
@@ -54,6 +53,14 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
     case ReceiveProtoMessage(senderId, protoMessage, fromBroker) =>
       val message = serialization.fromProtobuf(protoMessage)
       subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId), fromBroker)
+  }
+
+  override protected def stopping(): Receive = {
+    server ! ServiceActor.Stop
+    handle {
+      case ServiceActor.Stopped => becomeStopped()
+      case ServiceActor.StopFailure(cause) => cancelStop(cause)
+    }
   }
 }
 
