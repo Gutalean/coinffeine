@@ -7,8 +7,8 @@ import coinffeine.model.exchange.{Both, BuyerRole, SellerRole}
 import coinffeine.model.market.{Ask, Bid, Order}
 import coinffeine.model.payment.OkPayPaymentProcessor
 
-private[amounts] class DefaultOrderFundsCalculator extends OrderFundsCalculator {
-  import coinffeine.peer.amounts.DefaultOrderFundsCalculator._
+private[amounts] class DefaultExchangeFundsCalculator extends OrderFundsCalculator {
+  import coinffeine.peer.amounts.DefaultExchangeFundsCalculator._
 
   override def calculateFunds[C](
     order: Order[FiatCurrency]): (CurrencyAmount[FiatCurrency], BitcoinAmount) = {
@@ -45,7 +45,7 @@ private[amounts] class DefaultOrderFundsCalculator extends OrderFundsCalculator 
     currency(amount.setScale(currency.precision, RoundingMode.UP))
 }
 
-object DefaultOrderFundsCalculator {
+object DefaultExchangeFundsCalculator {
 
   /** Bitcoins to block as a proportion of the amount to be transferred */
   private val ProportionOfBitcoinToBlock = Both[BigDecimal](buyer = 0.2, seller = 1.1)

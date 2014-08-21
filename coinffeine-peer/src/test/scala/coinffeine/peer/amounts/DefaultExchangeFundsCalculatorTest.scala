@@ -4,7 +4,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Ask, Bid, Order}
 
-class DefaultOrderFundsCalculatorTest extends UnitTest {
+class DefaultExchangeFundsCalculatorTest extends UnitTest {
 
   "A bid order" must "need a deposit in BTC plus fees and the amount plus fees in FIAT" in
     new Fixture {
@@ -19,9 +19,8 @@ class DefaultOrderFundsCalculatorTest extends UnitTest {
   trait Fixture {
     val bitcoinAmount = 1.BTC
     val price = 1000.EUR
-    val instance = new DefaultOrderFundsCalculator()
+    val instance = new DefaultExchangeFundsCalculator()
     val bidOrder = Order(Bid, bitcoinAmount, price)
     val askOrder = Order(Ask, bitcoinAmount, price)
   }
-
 }
