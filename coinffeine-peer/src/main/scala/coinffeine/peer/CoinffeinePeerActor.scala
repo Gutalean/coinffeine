@@ -11,6 +11,7 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.model.market.{Order, OrderId}
+import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -31,7 +32,7 @@ class CoinffeinePeerActor(
     props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[Unit] {
   import context.dispatcher
 
-  import CoinffeinePeerActor._
+import coinffeine.peer.CoinffeinePeerActor._
 
   private val registryRef = context.actorOf(ServiceRegistryActor.props(), "registry")
   private val registry = new ServiceRegistry(registryRef)
@@ -156,7 +157,8 @@ object CoinffeinePeerActor {
     with ExchangeActor.Component
     with ConfigComponent
     with NetworkComponent
-    with ProtocolConstants.Component =>
+    with ProtocolConstants.Component
+    with AmountsComponent =>
 
     lazy val peerProps: Props = {
       val ownPort = config.getInt(PortSetting)
@@ -165,7 +167,8 @@ object CoinffeinePeerActor {
       val props = PropsCatalogue(
         messageGatewayProps(config),
         MarketInfoActor.props,
-        OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants),
+        OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants,
+          orderFundsCalculator),
         bitcoinPeerProps,
         OkPayProcessorActor.props(config)
       )

@@ -98,10 +98,11 @@ class DefaultExchangeActor(
         val result = ExchangeSuccess(runningExchange.complete)
         context.become(finishingExchange(result, successTx))
 
-      case MicroPaymentChannelActor.ExchangeFailure(e) =>
-        log.warning(s"Finishing exchange '${exchange.id}' with a failure due to ${e.toString}")
+      case MicroPaymentChannelActor.ExchangeFailure(cause) =>
+        log.error(cause,
+          s"Finishing exchange '${exchange.id}' with a failure due to ${cause.toString}")
         txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeFailure(e), None))
+        context.become(finishingExchange(ExchangeFailure(cause), None))
 
       case progress: ExchangeProgress =>
         resultListener ! progress

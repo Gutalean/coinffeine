@@ -11,7 +11,6 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.micropayment.BuyerMicroPaymentChannelActor.PaymentFailed
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
@@ -110,7 +109,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
         forwarding.forwardToCounterpart(proof)
 
-      case PaymentFailed(cause) =>
+      case PaymentProcessorActor.PaymentFailed(_, cause) =>
         finishWith(ExchangeFailure(cause))
     }
 
@@ -122,27 +121,26 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     private def pay(step: IntermediateStep): Unit = {
       import context.dispatcher
       implicit val timeout = PaymentProcessorActor.RequestTimeout
-      AskPattern(
-        to = paymentProcessor,
-        request = PaymentProcessorActor.Pay(
-          fundsId = exchange.blockedFunds.fiat.get,
-          to = exchange.state.counterpart.paymentProcessorAccount,
-          amount = exchange.amounts.stepFiatAmount,
-          comment = PaymentDescription(exchange.id, step)
-        ),
-        errorMessage = s"Cannot pay at $step"
-      ).withReply[PaymentProcessorActor.Paid[C]]().map { result =>
-        PaymentProof(exchange.id, result.payment.id)
-      }.recover {
-        case NonFatal(cause) => PaymentFailed(cause)
-      }.pipeTo(self)
+      val request = PaymentProcessorActor.Pay(
+        fundsId = exchange.blockedFunds.fiat.get,
+        to = exchange.state.counterpart.paymentProcessorAccount,
+        amount = exchange.amounts.stepFiatAmount,
+        comment = PaymentDescription(exchange.id, step)
+      )
+      AskPattern(paymentProcessor, request, errorMessage = s"Cannot pay at $step")
+        .withReply[PaymentProcessorActor.PaymentResult]().map {
+          case paid: PaymentProcessorActor.Paid[_] =>
+            PaymentProof(exchange.id, paid.payment.id)
+          case paymentFailed: PaymentProcessorActor.PaymentFailed[_] =>
+            paymentFailed
+        }.recover {
+          case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause)
+        }.pipeTo(self)
     }
   }
 }
 
 object BuyerMicroPaymentChannelActor {
-
-  private case class PaymentFailed(cause: Throwable)
 
   def props(exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants) =
     Props(new BuyerMicroPaymentChannelActor(exchangeProtocol, constants))

@@ -8,14 +8,14 @@ import com.google.bitcoin.core.NetworkParameters
 import com.typesafe.config.Config
 
 import coinffeine.common.akka.{AskPattern, ServiceRegistry}
-import coinffeine.model.bitcoin.{BitcoinFeeCalculator, KeyPair}
+import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.AccountId
+import coinffeine.peer.amounts.OrderFundsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
@@ -29,7 +29,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 intermediateSteps: Int)
+                 intermediateSteps: Int,
+                 orderFundsCalculator: OrderFundsCalculator)
   extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
@@ -69,19 +70,7 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def blockFunds(): Unit = {
-      val fiatToBlock = currentOrder.orderType match {
-        case Bid =>
-          log.info("{} is bidding, blocking {} in payment processor",
-            currentOrder.id, currentOrder.fiatAmount)
-          OkPayPaymentProcessor.amountPlusFee(currentOrder.fiatAmount)
-        case Ask =>
-          log.info("{} is asking, no funds blocking in payment processor required", currentOrder.id)
-          currentOrder.fiatAmount.currency.Zero
-      }
-
-      val bitcoinToBlock =
-        BitcoinFeeCalculator.amountPlusFee(
-          currentOrder.amount * role.select(ProportionOfBitcoinToBlock))
+      val (fiatToBlock, bitcoinToBlock) = orderFundsCalculator.calculateFunds(currentOrder)
       fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 
@@ -221,9 +210,6 @@ class OrderActor(exchangeActorProps: Props,
 
 object OrderActor {
 
-  /** Bitcoins to block as a proportion of the amount to be transferred */
-  private val ProportionOfBitcoinToBlock = Both[BigDecimal](buyer = 0.2, seller = 1.1)
-
   val BlockingFundsMessage = "blocking funds"
   val NoFundsMessage = "no funds available for order"
 
@@ -239,8 +225,16 @@ object OrderActor {
   /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus
 
-  def props(exchangeActorProps: Props, config: Config, network: NetworkParameters): Props = {
+  def props(exchangeActorProps: Props,
+            config: Config,
+            network: NetworkParameters,
+            orderFundsCalculator: OrderFundsCalculator): Props = {
     val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
-    Props(new OrderActor(exchangeActorProps, OrderFundsActor.props, network, intermediateSteps))
+    Props(new OrderActor(
+      exchangeActorProps,
+      OrderFundsActor.props,
+      network,
+      intermediateSteps,
+      orderFundsCalculator))
   }
 }

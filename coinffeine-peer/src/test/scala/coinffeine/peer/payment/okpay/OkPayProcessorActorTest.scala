@@ -16,7 +16,7 @@ import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.event.{Balance, EventChannelProbe, FiatBalanceChangeEvent}
-import coinffeine.model.payment.{Payment, PaymentProcessor}
+import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
@@ -56,8 +56,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
   it must "be able to send a payment" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment"))
       .willReturn(Future.successful(payment))
-    givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    processor ! PaymentProcessorActor.BlockFunds(amount)
+    givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
+    processor ! PaymentProcessorActor.BlockFunds(OkPayPaymentProcessor.amountPlusFee(amount))
     val funds = expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
@@ -78,8 +78,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
   it must "report failure to send a payment" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
-    givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    processor ! PaymentProcessorActor.BlockFunds(amount)
+    givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
+    processor ! PaymentProcessorActor.BlockFunds(OkPayPaymentProcessor.amountPlusFee(amount))
     val funds = expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")

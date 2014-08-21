@@ -1,6 +1,7 @@
 package coinffeine.peer.api.impl
 
 import coinffeine.model.bitcoin.{NetworkComponent, PeerGroupComponent}
+import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.bitcoin._
 import coinffeine.peer.config.FileConfigComponent
 import coinffeine.peer.exchange.DefaultExchangeActor
@@ -14,6 +15,7 @@ object ProductionCoinffeineApp {
   trait Component
     extends DefaultCoinffeineApp.Component
       with CoinffeinePeerActor.Component
+      with DefaultAmountsComponent
       with ProtocolConstants.DefaultComponent
       with DefaultExchangeActor.Component
       with DefaultExchangeProtocol.Component

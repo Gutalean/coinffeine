@@ -14,6 +14,7 @@ import com.typesafe.config.Config
 import coinffeine.common.akka.{ServiceActor, AskPattern}
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.event.{Balance, FiatBalanceChangeEvent}
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.payment.PaymentProcessorActor._
@@ -25,8 +26,8 @@ class OkPayProcessorActor(
     client: OkPayClient,
     pollingInterval: FiniteDuration) extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
 
-  import OkPayProcessorActor._
   import context.dispatcher
+  import OkPayProcessorActor._
 
   private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
   private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
@@ -82,15 +83,17 @@ class OkPayProcessorActor(
     }
   }
 
-  private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] =
-    AskPattern(blockingFunds, UseFunds(pay.fundsId, pay.amount), "fail to use funds")
+  private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] = {
+    val request = UseFunds(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
+    log.debug(s"Using funds with id ${pay.fundsId}. " +
+      s"Amount to use: ${OkPayPaymentProcessor.amountPlusFee(pay.amount)}")
+    AskPattern(blockingFunds, request, "fail to use funds")
       .withImmediateReply[Any]()
       .flatMap {
-      case FundsUsed(pay.`fundsId`, pay.`amount`) =>
-        Future.successful {}
-      case CannotUseFunds(pay.`fundsId`, pay.`amount`, cause) =>
-        Future.failed(new RuntimeException(cause))
-    }
+        case _: FundsUsed => Future.successful {}
+        case CannotUseFunds(_, _, cause) => Future.failed(new RuntimeException(cause))
+      }
+  }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
     client.findPayment(paymentId).onComplete {
