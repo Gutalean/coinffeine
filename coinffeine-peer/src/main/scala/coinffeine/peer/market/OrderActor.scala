@@ -9,7 +9,7 @@ import com.typesafe.config.Config
 
 import coinffeine.common.akka.{AskPattern, ServiceRegistry}
 import coinffeine.model.bitcoin.KeyPair
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
@@ -29,7 +29,6 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 intermediateSteps: Int,
                  amountsCalculator: ExchangeAmountsCalculator)
   extends Actor with ActorLogging with EventPublisher {
 
@@ -155,15 +154,12 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def buildExchange(orderMatch: OrderMatch): NonStartedExchange[C] = {
-      val fiatAmount = orderMatch.price * currentOrder.amount.value
-      val amounts = Exchange.Amounts(
-        currentOrder.amount, fiatAmount.asInstanceOf[CurrencyAmount[C]],
-        Exchange.StepBreakdown(intermediateSteps))
+      val amounts = amountsCalculator.amountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]]
       Exchange.notStarted(
         id = orderMatch.exchangeId,
         role = role,
         counterpartId = orderMatch.counterpart,
-        amounts = amounts,
+        amounts,
         blockedFunds = blockedFunds.get,
         parameters = Exchange.Parameters(orderMatch.lockTime, network)
       )
@@ -230,12 +226,10 @@ object OrderActor {
             config: Config,
             network: NetworkParameters,
             amountsCalculator: ExchangeAmountsCalculator): Props = {
-    val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
     Props(new OrderActor(
       exchangeActorProps,
       OrderFundsActor.props,
       network,
-      intermediateSteps,
       amountsCalculator))
   }
 }

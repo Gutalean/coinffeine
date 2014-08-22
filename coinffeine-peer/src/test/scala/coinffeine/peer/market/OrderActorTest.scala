@@ -185,13 +185,13 @@ class OrderActorTest extends AkkaSpec {
     val eventChannelProbe = EventChannelProbe()
     def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val exchangeActor = new MockSupervisedActor()
-    def fundsWithoutFees = new ExchangeAmountsCalculator {
+    def calculator = new ExchangeAmountsCalculator {
       override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                                  price: CurrencyAmount[C]) =
         amounts.asInstanceOf[Amounts[C]]
     }
     val actor =
-      system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, 10, fundsWithoutFees)))
+      system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, calculator)))
     val paymentProcessorId = exchange.role.select(participants).paymentProcessorAccount
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
