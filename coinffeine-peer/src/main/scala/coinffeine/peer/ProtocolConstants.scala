@@ -14,6 +14,8 @@ import scala.language.postfixOps
   *                                commitments
   * @param exchangeSignatureTimeout Amount of time the actor will wait for a step signature
   * @param exchangePaymentProofTimeout Amount of time the actor will wait for a payment proof
+  * @param microPaymentChannelResubmitTimeout  Amount of time before resubmitting information
+  *                                            during the micro payment channel exchange
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
   * @param orderResubmitInterval   Open orders should be resubmitted after this interval to avoid
   *                                being discarded
@@ -29,6 +31,7 @@ case class ProtocolConstants(
   commitmentAbortTimeout: FiniteDuration = 5 minutes,
   exchangeSignatureTimeout: FiniteDuration = 5 minutes,
   exchangePaymentProofTimeout: FiniteDuration = 5 minutes,
+  microPaymentChannelResubmitTimeout: FiniteDuration = 3 seconds,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,
   orderAcknowledgeTimeout: FiniteDuration = 15 seconds,
