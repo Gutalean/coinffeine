@@ -50,7 +50,6 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
     case PeerGroupStartResult(Success(_)) =>
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(PeerGroupListener)
-      blockchainRef ! BlockchainActor.Initialize(blockchain)
       become(connected orElse commonHandling)
 
     case PeerGroupStartResult(Failure(_)) =>
@@ -260,7 +259,7 @@ object BitcoinPeerActor {
         config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds
       Props(new BitcoinPeerActor(
         createPeerGroup(blockchain),
-        BlockchainActor.props(network),
+        BlockchainActor.props(blockchain, network),
         WalletActor.props,
         keyPairs,
         blockchain,

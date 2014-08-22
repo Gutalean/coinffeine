@@ -19,7 +19,6 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     actor ! ServiceActor.Start {}
     expectMsg(ServiceActor.Started)
     eventChannelProbe.expectMsg(BitcoinConnectionStatus(0, NotDownloading))
-    blockchainActor.expectMsg(BlockchainActor.Initialize(blockchain))
   }
 
   it should "retrieve connection status on demand" in new Fixture {

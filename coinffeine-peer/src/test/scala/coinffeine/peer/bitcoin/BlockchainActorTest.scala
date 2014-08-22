@@ -124,7 +124,6 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val otherTx = otherWallet.createSend(keyPair.toAddress(network), 0.1.BTC.asSatoshi)
     val multisignedTx = otherWallet.blockMultisignFunds(Seq(keyPair, otherKeyPair), 0.1.BTC)
 
-    val instance = system.actorOf(Props(new BlockchainActor(network)))
-    instance ! BlockchainActor.Initialize(chain)
+    val instance = system.actorOf(Props(new BlockchainActor(chain, network)))
   }
 }
