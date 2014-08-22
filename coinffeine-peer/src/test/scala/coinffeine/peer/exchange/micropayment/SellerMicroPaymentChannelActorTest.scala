@@ -5,6 +5,7 @@ import scala.language.postfixOps
 
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
+import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange.ExchangeId
@@ -22,14 +23,16 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
-  with SellerPerspective with ProgressExpectations {
+  with SellerPerspective with ProgressExpectations with Eventually {
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
     resubmitRefundSignatureTimeout = 1 second,
-    refundSignatureAbortTimeout = 1 minute)
+    refundSignatureAbortTimeout = 1 minute,
+    microPaymentChannelResubmitTimeout = 2.seconds
+  )
   val channel = new MockMicroPaymentChannel(runningExchange)
   val firstStep = IntermediateStep(1, exchange.amounts.breakdown)
   val actor = system.actorOf(
@@ -54,25 +57,35 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     subscription should not(subscribeTo(randomMessage, counterpartId))
   }
 
+  val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
+  val secondSignatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
+
   it should "send the first step signature as soon as the exchange starts" in {
-    val signatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
     expectProgress(signatures = 1, payments = 0)
-    shouldForward(signatures) to counterpartId
+    shouldForward(firstSignatures) to counterpartId
   }
 
   it should "not send the second step signature until complete payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "INCOMPLETE"))
     expectPayment(firstStep, completed = false)
-    gateway.expectNoMsg(100 milliseconds)
+    withClue("instead, send previous signatures") {
+      shouldForward(firstSignatures) to counterpartId
+    }
   }
 
   it should "send the second step signature once payment proof has been provided" in {
     actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
     expectPayment(firstStep)
     expectProgress(signatures = 1, payments = 1)
-    val signatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
-    shouldForward(signatures) to counterpartId
+    eventually {
+      shouldForward(secondSignatures) to counterpartId
+    }
     expectProgress(signatures = 2, payments = 1)
+  }
+
+  it should "keep sending them if no response is received" in {
+    expectNoMsg(100.millis)
+    shouldForward(secondSignatures) to counterpartId
   }
 
   it should "send step signatures as new payment proofs are provided" in {
