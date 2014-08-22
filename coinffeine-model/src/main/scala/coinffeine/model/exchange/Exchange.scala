@@ -15,10 +15,10 @@ case class Exchange[+C <: FiatCurrency, +S <: Exchange.State[C]](
     blockedFunds: Exchange.BlockedFunds,
     state: S) {
 
-  val currency: C = amounts.fiatAmount.currency
+  val currency: C = amounts.fiatExchanged.currency
 
   val progress: Exchange.Progress[C] = state.progress
-  require(progress.bitcoinsTransferred <= amounts.bitcoinAmount,
+  require(progress.bitcoinsTransferred <= amounts.bitcoinExchanged,
     "invalid running exchange instantiation: " +
       s"progress $progress is inconsistent with amounts $amounts")
 }
@@ -49,25 +49,27 @@ object Exchange {
     )
   }
 
-  case class Amounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                         fiatAmount: CurrencyAmount[C],
+  case class Amounts[+C <: FiatCurrency](bitcoinExchanged: BitcoinAmount,
+                                         fiatExchanged: CurrencyAmount[C],
                                          breakdown: Exchange.StepBreakdown) {
-    require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
-    require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
+    require(bitcoinExchanged.isPositive, s"bitcoin amount must be positive ($bitcoinExchanged given)")
+    require(fiatExchanged.isPositive, s"fiat amount must be positive ($fiatExchanged given)")
 
-    val currency = fiatAmount.currency
+    val currency = fiatExchanged.currency
 
     /** Amounts to exchange per intermediate step */
     val stepAmounts = StepAmounts(
-      bitcoinAmount = bitcoinAmount / breakdown.intermediateSteps,
-      fiatAmount = fiatAmount / breakdown.intermediateSteps
+      bitcoinAmount = bitcoinExchanged / breakdown.intermediateSteps,
+      fiatAmount = fiatExchanged / breakdown.intermediateSteps
     )
 
     /** Total amount compromised in multisignature by each part */
     val deposits: Both[BitcoinAmount] = Both(
       buyer = stepAmounts.bitcoinAmount * 2,
-      seller = bitcoinAmount + stepAmounts.bitcoinAmount
+      seller = bitcoinExchanged + stepAmounts.bitcoinAmount
     )
+
+    val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
 
     /** Amount refundable by each part after a lock time */
     val refunds: Both[BitcoinAmount] = deposits.map(_ - stepAmounts.bitcoinAmount)
@@ -160,7 +162,7 @@ object Exchange {
                                           counterpart: Exchange.PeerInfo,
                                           deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends State[C] with StartedExchange[C] {
-    override val progress = Progress(amounts.bitcoinAmount, amounts.fiatAmount)
+    override val progress = Progress(amounts.bitcoinExchanged, amounts.fiatExchanged)
   }
 
   object Completed {

@@ -21,11 +21,11 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     import exchange.amounts._
 
     val split = if (currentStep.isFinal) Both(
-      buyer = deposits.buyer + bitcoinAmount,
-      seller = deposits.seller - bitcoinAmount
+      buyer = deposits.buyer + bitcoinExchanged,
+      seller = deposits.seller - bitcoinExchanged
     ) else Both(
       buyer = stepAmounts.bitcoinAmount * (currentStep.value - 1),
-      seller = bitcoinAmount - stepAmounts.bitcoinAmount * (currentStep.value - 1)
+      seller = bitcoinExchanged - stepAmounts.bitcoinAmount * (currentStep.value - 1)
     )
 
     TransactionProcessor.createUnsignedTransaction(
