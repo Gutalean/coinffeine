@@ -14,7 +14,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.amounts.OrderFundsCalculator
+import coinffeine.peer.amounts.ExchangeAmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Perspective, SellerPerspective}
@@ -185,8 +185,8 @@ class OrderActorTest extends AkkaSpec {
     val eventChannelProbe = EventChannelProbe()
     def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val exchangeActor = new MockSupervisedActor()
-    def fundsWithoutFees = new OrderFundsCalculator {
-      override def calculateFunds[C](order: Order[FiatCurrency]) = amountsToBlock
+    def fundsWithoutFees = new ExchangeAmountsCalculator {
+      override def amountsFor[C](order: Order[FiatCurrency]) = amountsToBlock
     }
     val actor =
       system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, 10, fundsWithoutFees)))

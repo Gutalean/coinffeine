@@ -15,7 +15,7 @@ import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.peer.amounts.OrderFundsCalculator
+import coinffeine.peer.amounts.ExchangeAmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
@@ -30,7 +30,7 @@ class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
                  intermediateSteps: Int,
-                 orderFundsCalculator: OrderFundsCalculator)
+                 amountsCalculator: ExchangeAmountsCalculator)
   extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
@@ -70,7 +70,7 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def blockFunds(): Unit = {
-      val (fiatToBlock, bitcoinToBlock) = orderFundsCalculator.calculateFunds(currentOrder)
+      val (fiatToBlock, bitcoinToBlock) = amountsCalculator.amountsFor(currentOrder)
       fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
     }
 
@@ -228,13 +228,13 @@ object OrderActor {
   def props(exchangeActorProps: Props,
             config: Config,
             network: NetworkParameters,
-            orderFundsCalculator: OrderFundsCalculator): Props = {
+            amountsCalculator: ExchangeAmountsCalculator): Props = {
     val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
     Props(new OrderActor(
       exchangeActorProps,
       OrderFundsActor.props,
       network,
       intermediateSteps,
-      orderFundsCalculator))
+      amountsCalculator))
   }
 }

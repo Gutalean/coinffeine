@@ -13,7 +13,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.amounts.OrderFundsCalculator
+import coinffeine.peer.amounts.ExchangeAmountsCalculator
 import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
@@ -71,8 +71,8 @@ object OrderSupervisor {
             config: Config,
             network: NetworkParameters,
             constants: ProtocolConstants,
-            orderFundsCalculator: OrderFundsCalculator) = Props(new OrderSupervisor(
-      OrderActor.props(exchangeActorProps, config, network, orderFundsCalculator),
+            amountsCalculator: ExchangeAmountsCalculator) = Props(new OrderSupervisor(
+      OrderActor.props(exchangeActorProps, config, network, amountsCalculator),
       SubmissionSupervisor.props(constants),
       constants
     ))
