@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.micropayment
 
+import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
@@ -69,9 +70,10 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         finishWith(ExchangeFailure(TimeoutException(errorMsg)))
     }
 
-    private def waitForNextStepSignature(channel: MicroPaymentChannel[C]): Receive =
+    private def waitForNextStepSignature(channel: MicroPaymentChannel[C],
+                                         previousPaymentProof: Option[PaymentProof] = None): Receive =
       withStepTimeout(channel) {
-        waitForValidSignature(channel) { signatures =>
+        waitForValidSignature(channel, previousPaymentProof) { signatures =>
           updateLastSignedOffer(channel.closingTransaction(signatures))
           channel.currentStep match {
             case step: IntermediateStep =>
@@ -94,25 +96,37 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
           reportProgress(signatures = completedSteps, payments = completedSteps)
           log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
           forwarding.forwardToCounterpart(proof)
-          context.become(waitForNextStepSignature(channel.nextStep))
+          context.become(waitForNextStepSignature(channel.nextStep, Some(proof)))
 
         case PaymentProcessorActor.PaymentFailed(_, cause) =>
           // TODO: look more carefully to the error and consider retrying
           finishWith(ExchangeFailure(cause))
       }
 
-    private def waitForValidSignature(channel: MicroPaymentChannel[C])
+    private def waitForValidSignature(channel: MicroPaymentChannel[C],
+                                      previousPaymentProof: Option[PaymentProof])
                                      (body: Both[TransactionSignature] => Unit): Receive = {
-      case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
-        channel.validateCurrentTransactionSignatures(signatures) match {
-          case Success(_) =>
-            body(signatures)
-          case Failure(cause) =>
-            log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
-              exchange.id, channel.currentStep, signatures)
-            finishWith(ExchangeFailure(
-              InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
-        }
+      val behavior: Receive = {
+        case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
+          channel.validateCurrentTransactionSignatures(signatures) match {
+            case Success(_) =>
+              context.setReceiveTimeout(Duration.Undefined)
+              body(signatures)
+            case Failure(cause) =>
+              log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
+                exchange.id, channel.currentStep, signatures)
+              finishWith(ExchangeFailure(
+                InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
+          }
+
+        case ReceiveTimeout =>
+          previousPaymentProof.foreach(forwarding.forwardToCounterpart)
+
+        case ReceiveMessage(StepSignatures(_, step, _), _) if step < channel.currentStep.value =>
+          previousPaymentProof.foreach(forwarding.forwardToCounterpart)
+      }
+      context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
+      behavior
     }
 
     private def finishWith(result: ExchangeResult): Unit = {

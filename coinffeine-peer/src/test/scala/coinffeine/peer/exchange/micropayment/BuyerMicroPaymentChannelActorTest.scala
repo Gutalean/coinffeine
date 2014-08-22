@@ -26,13 +26,14 @@ class BuyerMicroPaymentChannelActorTest
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()
-  val protocolConstants = ProtocolConstants()
+  val protocolConstants = ProtocolConstants(microPaymentChannelResubmitTimeout = 2.seconds)
   val exchangeProtocol = new MockExchangeProtocol
   val actor = system.actorOf(
     BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
     "buyer-exchange-actor"
   )
   val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
+  val lastStep = exchange.amounts.breakdown.intermediateSteps
   val expectedLastOffer = {
     val initialChannel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val lastChannel = Seq.iterate(
@@ -60,7 +61,7 @@ class BuyerMicroPaymentChannelActorTest
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
-    for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
+    for (i <- 1 to lastStep) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       listener.expectMsgType[LastBroadcastableOffer]
       expectProgress(signatures = i, payments = i - 1)
@@ -73,6 +74,15 @@ class BuyerMicroPaymentChannelActorTest
       shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartId
       gateway.expectNoMsg(100 milliseconds)
     }
+  }
+
+  it should "resubmit payment proof when last signature is resubmitted by the seller" in {
+    actor ! fromCounterpart(StepSignatures(exchange.id, lastStep, signatures))
+    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
+  }
+
+  it should "resubmit payment proof when no response is get" in {
+    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
