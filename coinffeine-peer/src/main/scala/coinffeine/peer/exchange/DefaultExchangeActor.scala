@@ -52,7 +52,7 @@ class DefaultExchangeActor(
         val props = channelActorProps(runningExchange.role)
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
         ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
-          resultListeners = Set(self))
+          resultListeners = Set(self, txBroadcaster))
         txBroadcaster ! SetMicropaymentActor(ref)
         context.become(inMicropaymentChannel(runningExchange))
 
