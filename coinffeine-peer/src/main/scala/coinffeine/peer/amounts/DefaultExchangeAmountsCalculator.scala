@@ -1,52 +1,13 @@
 package coinffeine.peer.amounts
 
-import scala.math.BigDecimal.RoundingMode
-
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.{Both, BuyerRole, SellerRole}
-import coinffeine.model.market.{Ask, Bid, Order}
-import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.model.exchange._
 
 private[amounts] class DefaultExchangeAmountsCalculator extends ExchangeAmountsCalculator {
-  import coinffeine.peer.amounts.DefaultExchangeAmountsCalculator._
-
-  override def amountsFor[C](
-    order: Order[FiatCurrency]): (CurrencyAmount[FiatCurrency], BitcoinAmount) = {
-
-    val role = order.orderType match {
-      case Bid => BuyerRole
-      case Ask => SellerRole
-    }
-
-    val bitcoinAmount = order.amount * role.select(ProportionOfBitcoinToBlock)
-
-    if(role == BuyerRole) {
-      val fiatAmount = fiatAmountPlusFee(order.price * order.amount.value)
-      (fiatAmount, bitcoinAmount)
-    } else {
-      (order.fiatAmount.currency.Zero , bitcoinAmount)
-    }
-  }
-
-  private def calculateFiatFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] = {
-    val steps = calculateSteps(amount)
-    val feeByStep = roundUp(
-      OkPayPaymentProcessor.calculateFee(amount / steps).value, amount.currency)
-    feeByStep * steps
-  }
-
-  private def fiatAmountPlusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] = {
-    amount + calculateFiatFee(amount)
-  }
-
-  private def calculateSteps[C <: FiatCurrency](amount: CurrencyAmount[C]) = 10
-
-  private def roundUp[C <: FiatCurrency](amount: BigDecimal, currency: C): CurrencyAmount[C] =
-    currency(amount.setScale(currency.precision, RoundingMode.UP))
-}
-
-object DefaultExchangeAmountsCalculator {
-
-  /** Bitcoins to block as a proportion of the amount to be transferred */
-  private val ProportionOfBitcoinToBlock = Both[BigDecimal](buyer = 0.2, seller = 1.1)
+  override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount, price: CurrencyAmount[C]) =
+    Exchange.Amounts[C](
+      bitcoinExchanged = bitcoinAmount,
+      fiatExchanged = price * bitcoinAmount.value,
+      breakdown = Exchange.StepBreakdown(10)
+    )
 }

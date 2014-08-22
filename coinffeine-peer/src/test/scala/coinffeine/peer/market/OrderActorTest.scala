@@ -8,8 +8,9 @@ import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.event._
+import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -178,7 +179,6 @@ class OrderActorTest extends AkkaSpec {
     val role: Role
     def fiatFunds: Option[BlockedFundsId]
     val order: Order[FiatCurrency]
-    def amountsToBlock: (FiatAmount, BitcoinAmount)
     val gatewayProbe = new GatewayProbe(PeerId("broker"))
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
@@ -186,7 +186,9 @@ class OrderActorTest extends AkkaSpec {
     def blockedFunds = Exchange.BlockedFunds(fiatFunds, BlockedCoinsId(1))
     val exchangeActor = new MockSupervisedActor()
     def fundsWithoutFees = new ExchangeAmountsCalculator {
-      override def amountsFor[C](order: Order[FiatCurrency]) = amountsToBlock
+      override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                                 price: CurrencyAmount[C]) =
+        amounts.asInstanceOf[Amounts[C]]
     }
     val actor =
       system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, 10, fundsWithoutFees)))
@@ -207,8 +209,7 @@ class OrderActorTest extends AkkaSpec {
 
     def givenInitializedOrder(): Unit = {
       eventChannelProbe.expectMsg(OrderSubmittedEvent(blockingFundsOrder))
-      fundsActor.expectMsg(OrderFundsActor.BlockFunds(
-        amountsToBlock._1, amountsToBlock._2, walletProbe.ref, paymentProcessorProbe.ref))
+      fundsActor.expectMsgType[OrderFundsActor.BlockFunds]
     }
 
     def givenOfflineOrder(): Unit = {
@@ -268,7 +269,6 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
-    override def amountsToBlock = (order.fiatAmount, order.amount * 0.2)
 
     def givenStalledOrder(): Unit = {
       givenOfflineOrder()
@@ -283,6 +283,5 @@ class OrderActorTest extends AkkaSpec {
     override lazy val order: Order[FiatCurrency] = Order(Ask, 5.BTC, 500.EUR)
     override val role: Role = SellerRole
     override val fiatFunds = None
-    override def amountsToBlock = (0.EUR, order.amount * 1.1)
   }
 }

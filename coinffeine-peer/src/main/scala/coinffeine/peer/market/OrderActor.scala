@@ -66,8 +66,13 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def blockFunds(): Unit = {
-      val (fiatToBlock, bitcoinToBlock) = amountsCalculator.amountsFor(currentOrder)
-      fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
+      val amounts = amountsCalculator.amountsFor(currentOrder)
+      fundsActor ! OrderFundsActor.BlockFunds(
+        fiatAmount = role.select(amounts.fiatRequired),
+        bitcoinAmount = role.select(amounts.deposits),
+        wallet,
+        paymentProcessor
+      )
     }
 
     private def stalled: Receive = running orElse {
