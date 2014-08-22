@@ -42,11 +42,7 @@ class OrderActor(exchangeActorProps: Props,
   private class InitializedOrderActor[C <: FiatCurrency](init: Initialize[C]) {
     import init.{order => _, _}
 
-    private val role = init.order.orderType match {
-      case Bid => BuyerRole
-      case Ask => SellerRole
-    }
-
+    private val role = Role.fromOrderType(init.order.orderType)
     private var currentOrder = init.order
     private var blockedFunds: Option[BlockedFunds] = None
     private val fundsActor = context.actorOf(orderFundsActorProps, "funds")

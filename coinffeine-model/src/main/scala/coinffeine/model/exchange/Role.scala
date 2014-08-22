@@ -1,5 +1,7 @@
 package coinffeine.model.exchange
 
+import coinffeine.model.market.{Ask, Bid, OrderType}
+
 sealed trait Role {
   def select[A](both: Both[A]): A
   def counterpart: Role
@@ -14,6 +16,11 @@ object Role {
     case both.`buyer` => Some(BuyerRole)
     case both.`seller` => Some(SellerRole)
     case _ => None
+  }
+
+  def fromOrderType(orderType: OrderType): Role = orderType match {
+    case Bid => BuyerRole
+    case Ask => SellerRole
   }
 }
 
