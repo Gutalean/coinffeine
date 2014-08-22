@@ -58,13 +58,15 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
         forwardSignatures()
         channel.currentStep match {
           case _: FinalStep =>
-            finishExchange()
+            finishExchange() // TODO: What if signatures doesn't get received?
+
           case intermediateStep: IntermediateStep =>
             reportProgress(
               signatures = channel.currentStep.value,
               payments = channel.currentStep.value - 1
             )
             scheduleStepTimeout(exchangePaymentProofTimeout)
+            context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
             context.become(waitForPaymentProof(intermediateStep))
         }
       }
@@ -85,6 +87,10 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
             self ! PaymentValidationResult(tryResult)
           }
           context.become(waitForPaymentValidation(paymentId, step))
+
+        case ReceiveTimeout =>
+          forwardSignatures()
+
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid " +
             s"payment proof ${channel.currentStep}"
@@ -97,12 +103,15 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
           unstashAll()
           log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
             exchange.id, channel.currentStep, paymentId)
+          forwardSignatures()
           context.become(waitForPaymentProof(step))
+
         case PaymentValidationResult(_) =>
           unstashAll()
           log.debug("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
           reportProgress(signatures = step.value, payments = step.value)
           new StepBehavior(channel.nextStep).start()
+
         case _ => stash()
       }
 
