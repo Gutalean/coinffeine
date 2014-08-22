@@ -2,6 +2,8 @@ package coinffeine.peer.exchange.util
 
 import akka.actor.Actor
 
+// TODO: this class is not used at the moment, consider moving it to common-akka as a shared
+// utility or remove it from the code base
 class ConstantValueActor extends Actor {
   import coinffeine.peer.exchange.util.ConstantValueActor._
 

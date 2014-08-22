@@ -53,7 +53,6 @@ class DefaultExchangeActor(
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
         ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
           resultListeners = Set(self, txBroadcaster))
-        txBroadcaster ! SetMicropaymentActor(ref)
         context.become(inMicropaymentChannel(runningExchange))
 
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))

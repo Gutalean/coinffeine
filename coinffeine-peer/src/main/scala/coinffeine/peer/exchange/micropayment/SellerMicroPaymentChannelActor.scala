@@ -52,11 +52,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       }
     }
 
-    private val handleLastOfferQueries: Receive = {
-      case GetLastOffer =>
-        sender ! LastOffer(None)
-    }
-
     private class StepBehavior(channel: MicroPaymentChannel[C]) {
 
       def start(): Unit = {
@@ -70,7 +65,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
               payments = channel.currentStep.value - 1
             )
             scheduleStepTimeouts(exchangePaymentProofTimeout)
-            context.become(waitForPaymentProof(intermediateStep) orElse handleLastOfferQueries)
+            context.become(waitForPaymentProof(intermediateStep))
         }
       }
 
@@ -89,7 +84,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
           validatePayment(step, paymentId).onComplete { tryResult =>
             self ! PaymentValidationResult(tryResult)
           }
-          context.become(waitForPaymentValidation(paymentId, step) orElse handleLastOfferQueries)
+          context.become(waitForPaymentValidation(paymentId, step))
         case StepSignatureTimeout =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid " +
             s"payment proof ${channel.currentStep}"
@@ -102,7 +97,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
           unstashAll()
           log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
             exchange.id, channel.currentStep, paymentId)
-          context.become(waitForPaymentProof(step) orElse handleLastOfferQueries)
+          context.become(waitForPaymentProof(step))
         case PaymentValidationResult(_) =>
           unstashAll()
           log.debug("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
@@ -113,7 +108,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
       private def finishWith(result: Any): Unit = {
         resultListeners.foreach { _ ! result }
-        context.become(handleLastOfferQueries)
+        context.stop(self)
       }
 
       private def finishExchange(): Unit = {

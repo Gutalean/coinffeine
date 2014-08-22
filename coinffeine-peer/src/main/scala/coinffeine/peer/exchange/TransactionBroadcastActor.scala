@@ -11,9 +11,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor._
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
-import coinffeine.peer.exchange.util.ConstantValueActor
-import coinffeine.peer.exchange.util.ConstantValueActor.SetValue
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
 class TransactionBroadcastActor(constants: ProtocolConstants)
   extends Actor with ActorLogging with Stash {
@@ -34,20 +32,11 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
   private class InitializedBroadcastActor(init: StartBroadcastHandling, blockchain: ActorRef) {
     import init._
 
-    private var micropaymentChannel: ActorRef = {
-      val constantValueActor = context.actorOf(Props[ConstantValueActor])
-      constantValueActor ! SetValue(LastOffer(None))
-      constantValueActor
-    }
+    private var lastOffer: Option[ImmutableTransaction] = None
 
-    private def autoNotifyBlockchainHeightWith(height: Long, msg: Any): Unit = {
-      import context.dispatcher
-      implicit val timeout = Timeout(1.day)
-      (blockchain ? WatchBlockchainHeight(height))
-        .mapTo[BlockchainHeightReached]
-        .onSuccess { case _ =>
-          self ! msg
-        }
+    def start(): Unit = {
+      setTimePanicFinish()
+      context.become(handleFinishExchange)
     }
 
     private def setTimePanicFinish(): Unit = {
@@ -55,9 +44,24 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
       autoNotifyBlockchainHeightWith(panicBlock, FinishExchange)
     }
 
-    private def finishWith(result: Any): Unit = {
-      resultListeners.foreach { _ ! result}
-      context.stop(self)
+    private val handleFinishExchange: Receive = {
+      case LastBroadcastableOffer(tx) =>
+        lastOffer = Some(tx)
+
+      case FinishExchange =>
+        val bestOffer = lastOffer.getOrElse(refund).get
+        if (bestOffer.isTimeLocked) {
+          autoNotifyBlockchainHeightWith(bestOffer.getLockTime, ReadyForBroadcast)
+        } else {
+          self ! ReadyForBroadcast
+        }
+        context.become(readyForBroadcast(ImmutableTransaction(bestOffer)))
+    }
+
+    private def readyForBroadcast(offer: ImmutableTransaction): Receive = {
+      case ReadyForBroadcast =>
+        bitcoinPeerActor ! PublishTransaction(offer)
+        context.become(broadcastCompleted(offer))
     }
 
     private def broadcastCompleted(txToPublish: ImmutableTransaction): Receive = {
@@ -69,37 +73,19 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
         finishWith(ExchangeFinishFailure(err))
     }
 
-    private def readyForBroadcast(offer: ImmutableTransaction): Receive = {
-      case ReadyForBroadcast =>
-        bitcoinPeerActor ! PublishTransaction(offer)
-        context.become(broadcastCompleted(offer))
+    private def finishWith(result: Any): Unit = {
+      resultListeners.foreach { _ ! result}
+      context.stop(self)
     }
 
-    private val gettingLastOffer: Receive = {
-      case LastOffer(offer) =>
-        val bestOffer = offer.getOrElse(refund).get
-        if (bestOffer.isTimeLocked)
-          autoNotifyBlockchainHeightWith(bestOffer.getLockTime, ReadyForBroadcast)
-        else
-          self ! ReadyForBroadcast
-        context.become(readyForBroadcast(ImmutableTransaction(bestOffer)))
-    }
-
-    private val handleFinishExchange: Receive = {
-      case FinishExchange =>
-        micropaymentChannel ! GetLastOffer
-        context.become(gettingLastOffer)
-    }
-
-    private val setMicropaymentChannel: Receive = {
-      case SetMicropaymentActor(microPaymentRef) =>
-        micropaymentChannel = microPaymentRef
-        context.become(handleFinishExchange)
-    }
-
-    def start(): Unit = {
-      setTimePanicFinish()
-      context.become(handleFinishExchange orElse setMicropaymentChannel)
+    private def autoNotifyBlockchainHeightWith(height: Long, msg: Any): Unit = {
+      import context.dispatcher
+      implicit val timeout = Timeout(1.day)
+      (blockchain ? WatchBlockchainHeight(height))
+        .mapTo[BlockchainHeightReached]
+        .onSuccess { case _ =>
+        self ! msg
+      }
     }
   }
 }
@@ -117,11 +103,6 @@ object TransactionBroadcastActor {
     */
   case class StartBroadcastHandling(
     refund: ImmutableTransaction, bitcoinPeerActor: ActorRef, resultListeners: Set[ActorRef])
-
-  /** Sets the micropayment actor, which will be queried for transactions which are deemed better
-    * than the refund transaction.
-    */
-  case class SetMicropaymentActor(micropaymentRef: ActorRef)
 
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object FinishExchange

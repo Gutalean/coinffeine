@@ -47,7 +47,7 @@ class BuyerMicroPaymentChannelActorTest
       runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
     )
 
-    val subscription = gateway.expectMsgClass(classOf[Subscribe])
+    val subscription = gateway.expectMsgType[Subscribe]
     val otherId = ExchangeId("other-id")
     val relevantOfferAccepted = StepSignatures(exchange.id, 5, signatures)
     val irrelevantOfferAccepted = StepSignatures(otherId, 2, signatures)
@@ -62,8 +62,9 @@ class BuyerMicroPaymentChannelActorTest
   it should "respond to step signature messages by sending a payment until all steps are done" in {
     for (i <- 1 to exchange.amounts.breakdown.intermediateSteps) {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
+      listener.expectMsgType[LastBroadcastableOffer]
       expectProgress(signatures = i, payments = i - 1)
-      paymentProcessor.expectMsgClass(classOf[PaymentProcessorActor.Pay[_]])
+      paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
       paymentProcessor.reply(PaymentProcessorActor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
           completed = true)
@@ -77,11 +78,7 @@ class BuyerMicroPaymentChannelActorTest
   it should "send a notification to the listeners once the exchange has finished" in {
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
+    listener.expectMsgType[LastBroadcastableOffer]
     listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
-  }
-
-  it should "reply with the final transaction when asked about the last signed offer" in {
-    actor ! GetLastOffer
-    expectMsg(LastOffer(Some(expectedLastOffer)))
   }
 }

@@ -44,7 +44,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     def startExchange(): Unit = {
       subscribeToMessages()
       val channel = exchangeProtocol.createMicroPaymentChannel(exchange)
-      context.become(waitForNextStepSignature(channel) orElse handleLastOfferQueries)
+      context.become(waitForNextStepSignature(channel))
       log.info(s"Exchange {}: buyer micropayment channel started", exchange.id)
     }
 
@@ -53,10 +53,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       messageGateway ! Subscribe {
         case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) =>
       }
-    }
-
-    private val handleLastOfferQueries: Receive = {
-      case GetLastOffer => sender ! LastOffer(lastSignedOffer)
     }
 
     private def withStepTimeout(channel: MicroPaymentChannel[C])(receive: Receive): Receive = {
@@ -75,13 +71,13 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     private def waitForNextStepSignature(channel: MicroPaymentChannel[C]): Receive =
       withStepTimeout(channel) {
         waitForValidSignature(channel) { signatures =>
-          lastSignedOffer = Some(channel.closingTransaction(signatures))
+          updateLastSignedOffer(channel.closingTransaction(signatures))
           channel.currentStep match {
             case step: IntermediateStep =>
               log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
               reportProgress(signatures = step.value, payments = step.value - 1)
               pay(step)
-              context.become(waitForNextStepSignature(channel.nextStep) orElse handleLastOfferQueries)
+              context.become(waitForNextStepSignature(channel.nextStep))
 
             case _: FinalStep =>
               log.info("Exchange {}: micropayment channel finished with success", exchange.id)
@@ -114,8 +110,17 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     }
 
     private def finishWith(result: ExchangeResult): Unit = {
-      resultListeners.foreach { _ ! result }
-      context.become(handleLastOfferQueries)
+      notifyListeners(result)
+      self ! PoisonPill
+    }
+
+    private def updateLastSignedOffer(newSignedOffer: ImmutableTransaction): Unit = {
+      lastSignedOffer = Some(newSignedOffer)
+      notifyListeners(LastBroadcastableOffer(newSignedOffer))
+    }
+
+    private def notifyListeners(message: Any): Unit = {
+      resultListeners.foreach { _ ! message }
     }
 
     private def pay(step: IntermediateStep): Unit = {
@@ -128,8 +133,8 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         comment = PaymentDescription(exchange.id, step)
       )
       AskPattern(paymentProcessor, request, errorMessage = s"Cannot pay at $step")
-        .withReplyOrError[PaymentProcessorActor.Paid[C], PaymentProcessorActor.PaymentFailed[C]](
-          _.error)
+        .withReplyOrError[PaymentProcessorActor.Paid[C],
+                          PaymentProcessorActor.PaymentFailed[C]](_.error)
         .map(paid => PaymentProof(exchange.id, paid.payment.id))
         .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
         .pipeTo(self)

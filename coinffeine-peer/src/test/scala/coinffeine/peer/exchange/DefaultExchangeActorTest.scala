@@ -80,7 +80,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def givenMicropaymentChannelCreation(): Unit = {
       micropaymentChannelActor.expectCreation()
-      transactionBroadcastActor.expectMsg(SetMicropaymentActor(micropaymentChannelActor.ref))
     }
 
     def givenMicropaymentChannelSuccess(): Unit = {

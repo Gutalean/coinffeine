@@ -35,7 +35,6 @@ class SellerMicroPaymentChannelActorFailureTest
     listener.expectMsgClass(classOf[ExchangeProgress])
     val failure = listener.expectMsgClass(classOf[ExchangeFailure])
     failure.cause shouldBe a [TimeoutException]
-    actor ! GetLastOffer
-    expectMsg(LastOffer(None))
+    listener.expectTerminated(actor)
   }
 }
