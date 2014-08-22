@@ -49,7 +49,15 @@ object Exchange {
     )
   }
 
-  case class Amounts[+C <: FiatCurrency](bitcoinExchanged: BitcoinAmount,
+  /** Amounts of money involved on an exchange.
+    *
+    * @param deposits          Bitcoins deposited in multisign by each part
+    * @param bitcoinExchanged  Amount of bitcoins to be exchanged
+    * @param fiatExchanged     Amount of fiat to be exchanged
+    * @tparam C                Fiat currency defined to this exchange
+    */
+  case class Amounts[+C <: FiatCurrency](deposits: Both[BitcoinAmount],
+                                         bitcoinExchanged: BitcoinAmount,
                                          fiatExchanged: CurrencyAmount[C],
                                          breakdown: Exchange.StepBreakdown) {
     require(bitcoinExchanged.isPositive, s"bitcoin amount must be positive ($bitcoinExchanged given)")
@@ -61,12 +69,6 @@ object Exchange {
     val stepAmounts = StepAmounts(
       bitcoinAmount = bitcoinExchanged / breakdown.intermediateSteps,
       fiatAmount = fiatExchanged / breakdown.intermediateSteps
-    )
-
-    /** Total amount compromised in multisignature by each part */
-    val deposits: Both[BitcoinAmount] = Both(
-      buyer = stepAmounts.bitcoinAmount * 2,
-      seller = bitcoinExchanged + stepAmounts.bitcoinAmount
     )
 
     val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
