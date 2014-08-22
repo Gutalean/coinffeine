@@ -135,7 +135,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       val request = PaymentProcessorActor.Pay(
         fundsId = exchange.blockedFunds.fiat.get,
         to = exchange.state.counterpart.paymentProcessorAccount,
-        amount = exchange.amounts.stepFiatAmount,
+        amount = exchange.amounts.stepAmounts.fiatAmount,
         comment = PaymentDescription(exchange.id, step)
       )
       AskPattern(paymentProcessor, request, errorMessage = s"Cannot pay at $step")

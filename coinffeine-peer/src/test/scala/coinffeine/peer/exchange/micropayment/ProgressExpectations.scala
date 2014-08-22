@@ -14,8 +14,8 @@ trait ProgressExpectations { this: AkkaSpec =>
   def expectProgress(signatures: Int, payments: Int): Unit = {
     val progress = listener.expectMsgClass(classOf[ExchangeProgress]).exchange.progress
     val actualSignatures =
-      progress.bitcoinsTransferred.value / exchange.amounts.stepBitcoinAmount.value
-    val actualPayments = progress.fiatTransferred.value / exchange.amounts.stepFiatAmount.value
+      progress.bitcoinsTransferred.value / exchange.amounts.stepAmounts.bitcoinAmount.value
+    val actualPayments = progress.fiatTransferred.value / exchange.amounts.stepAmounts.fiatAmount.value
     withClue("Wrong number of signatures") {
       actualSignatures should be (signatures)
     }

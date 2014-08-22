@@ -19,8 +19,8 @@ private[micropayment] abstract class InitializedChannelBehavior[C <: FiatCurrenc
 
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
-      btcAmount = exchange.amounts.stepBitcoinAmount * signatures,
-      fiatAmount = exchange.amounts.stepFiatAmount * payments
+      btcAmount = exchange.amounts.stepAmounts.bitcoinAmount * signatures,
+      fiatAmount = exchange.amounts.stepAmounts.fiatAmount * payments
     )
     resultListeners.foreach { _ ! ExchangeProgress(progressUpdate) }
   }

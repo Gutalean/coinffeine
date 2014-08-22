@@ -24,8 +24,8 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
       buyer = deposits.buyer + bitcoinAmount,
       seller = deposits.seller - bitcoinAmount
     ) else Both(
-      buyer = stepBitcoinAmount * (currentStep.value - 1),
-      seller = bitcoinAmount - stepBitcoinAmount * (currentStep.value - 1)
+      buyer = stepAmounts.bitcoinAmount * (currentStep.value - 1),
+      seller = bitcoinAmount - stepAmounts.bitcoinAmount * (currentStep.value - 1)
     )
 
     TransactionProcessor.createUnsignedTransaction(

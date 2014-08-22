@@ -40,6 +40,15 @@ object Exchange {
     val totalSteps = intermediateSteps + 1
   }
 
+  /** Amounts involved on one exchange step */
+  case class StepAmounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                             fiatAmount: CurrencyAmount[C]) {
+    def +[C2 >: C <: FiatCurrency](other: StepAmounts[C2]) = StepAmounts(
+      bitcoinAmount + other.bitcoinAmount,
+      fiatAmount + other.fiatAmount
+    )
+  }
+
   case class Amounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                          fiatAmount: CurrencyAmount[C],
                                          breakdown: Exchange.StepBreakdown) {
@@ -48,22 +57,20 @@ object Exchange {
 
     val currency = fiatAmount.currency
 
-    /** Amount of bitcoins to exchange per intermediate step */
-    val stepBitcoinAmount: BitcoinAmount = bitcoinAmount / breakdown.intermediateSteps
-    /** Amount of fiat to exchange per intermediate step */
-    val stepFiatAmount: CurrencyAmount[C] = fiatAmount / breakdown.intermediateSteps
+    /** Amounts to exchange per intermediate step */
+    val stepAmounts = StepAmounts(
+      bitcoinAmount = bitcoinAmount / breakdown.intermediateSteps,
+      fiatAmount = fiatAmount / breakdown.intermediateSteps
+    )
 
     /** Total amount compromised in multisignature by each part */
     val deposits: Both[BitcoinAmount] = Both(
-      buyer = stepBitcoinAmount * 2,
-      seller = bitcoinAmount + stepBitcoinAmount
+      buyer = stepAmounts.bitcoinAmount * 2,
+      seller = bitcoinAmount + stepAmounts.bitcoinAmount
     )
 
     /** Amount refundable by each part after a lock time */
-    val refunds: Both[BitcoinAmount] = Both(
-      buyer = deposits.buyer - stepBitcoinAmount,
-      seller = deposits.seller - stepBitcoinAmount
-    )
+    val refunds: Both[BitcoinAmount] = deposits.map(_ - stepAmounts.bitcoinAmount)
   }
 
   /** Funds reserved for the order this exchange belongs to */
