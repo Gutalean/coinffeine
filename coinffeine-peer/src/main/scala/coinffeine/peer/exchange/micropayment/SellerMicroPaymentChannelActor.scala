@@ -64,7 +64,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
               signatures = channel.currentStep.value,
               payments = channel.currentStep.value - 1
             )
-            scheduleStepTimeouts(exchangePaymentProofTimeout)
+            scheduleStepTimeout(exchangePaymentProofTimeout)
             context.become(waitForPaymentProof(intermediateStep))
         }
       }

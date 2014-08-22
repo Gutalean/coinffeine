@@ -56,8 +56,9 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     }
 
     private def withStepTimeout(channel: MicroPaymentChannel[C])(receive: Receive): Receive = {
-      scheduleStepTimeouts(exchangeSignatureTimeout)
-      receive.andThen(_ => cancelTimeout()).orElse(handleTimeout(channel.currentStep))
+      cancelTimeout()
+      scheduleStepTimeout(exchangeSignatureTimeout)
+      receive.orElse(handleTimeout(channel.currentStep))
     }
 
     private def handleTimeout(step: Step): Receive = {
