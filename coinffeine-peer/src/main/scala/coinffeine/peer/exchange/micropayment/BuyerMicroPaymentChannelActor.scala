@@ -78,13 +78,27 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
               log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
               reportProgress(signatures = step.value, payments = step.value - 1)
               pay(step)
-              context.become(waitForNextStepSignature(channel.nextStep))
+              context.become(waitForPaymentResult(channel))
 
             case _: FinalStep =>
               log.info("Exchange {}: micropayment channel finished with success", exchange.id)
               finishWith(ExchangeSuccess(lastSignedOffer))
           }
         }
+      }
+
+    private def waitForPaymentResult(channel: MicroPaymentChannel[C]): Receive =
+      withStepTimeout(channel) {
+        case proof: PaymentProof =>
+          val completedSteps = channel.currentStep.value
+          reportProgress(signatures = completedSteps, payments = completedSteps)
+          log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
+          forwarding.forwardToCounterpart(proof)
+          context.become(waitForNextStepSignature(channel.nextStep))
+
+        case PaymentProcessorActor.PaymentFailed(_, cause) =>
+          // TODO: look more carefully to the error and consider retrying
+          finishWith(ExchangeFailure(cause))
       }
 
     private def waitForValidSignature(channel: MicroPaymentChannel[C])
@@ -99,15 +113,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
             finishWith(ExchangeFailure(
               InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
         }
-
-      case proof: PaymentProof =>
-        val completedSteps = channel.currentStep.value - 1
-        reportProgress(signatures = completedSteps, payments = completedSteps)
-        log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
-        forwarding.forwardToCounterpart(proof)
-
-      case PaymentProcessorActor.PaymentFailed(_, cause) =>
-        finishWith(ExchangeFailure(cause))
     }
 
     private def finishWith(result: ExchangeResult): Unit = {
