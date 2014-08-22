@@ -53,15 +53,17 @@ object Exchange {
     /** Amount of fiat to exchange per intermediate step */
     val stepFiatAmount: CurrencyAmount[C] = fiatAmount / breakdown.intermediateSteps
 
-    /** Total amount compromised in multisignature by the buyer */
-    val buyerDeposit: BitcoinAmount = stepBitcoinAmount * 2
-    /** Amount refundable by the buyer after a lock time */
-    val buyerRefund: BitcoinAmount = buyerDeposit - stepBitcoinAmount
+    /** Total amount compromised in multisignature by each part */
+    val deposits: Both[BitcoinAmount] = Both(
+      buyer = stepBitcoinAmount * 2,
+      seller = bitcoinAmount + stepBitcoinAmount
+    )
 
-    /** Total amount compromised in multisignature by the seller */
-    val sellerDeposit: BitcoinAmount = bitcoinAmount + stepBitcoinAmount
-    /** Amount refundable by the seller after a lock time */
-    val sellerRefund: BitcoinAmount = sellerDeposit - stepBitcoinAmount
+    /** Amount refundable by each part after a lock time */
+    val refunds: Both[BitcoinAmount] = Both(
+      buyer = deposits.buyer - stepBitcoinAmount,
+      seller = deposits.seller - stepBitcoinAmount
+    )
   }
 
   /** Funds reserved for the order this exchange belongs to */
