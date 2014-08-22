@@ -10,7 +10,7 @@ private[micropayment] trait StepTimeout { this: Actor =>
 
   private var stepTimeout: Option[Cancellable] = None
 
-  protected def scheduleStepTimeouts(delay: FiniteDuration): Unit = {
+  protected def scheduleStepTimeout(delay: FiniteDuration): Unit = {
     import context.dispatcher
     stepTimeout = Some(context.system.scheduler.scheduleOnce(
         delay = delay,

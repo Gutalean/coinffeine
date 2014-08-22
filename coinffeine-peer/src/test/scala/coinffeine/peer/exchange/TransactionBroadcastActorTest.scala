@@ -11,7 +11,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import coinffeine.peer.exchange.TransactionBroadcastActor._
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{GetLastOffer, LastOffer}
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
 class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
@@ -31,41 +31,6 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   private val someLastOffer = ImmutableTransaction(new MutableTransaction(network))
   private val protocolConstants = ProtocolConstants()
   private val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
-  private val peerActor = TestProbe()
-  private val blockchain = TestProbe()
-  private val micropaymentChannel = TestProbe()
-
-  private def givenSuccessfulBlockchainRetrieval(): Unit = {
-    peerActor.expectMsg(RetrieveBlockchainActor)
-    peerActor.reply(BlockchainActorRef(blockchain.ref))
-  }
-
-  private def expectPanicNotificationRequest(): ActorRef = {
-    blockchain.expectMsg(WatchBlockchainHeight(panicBlock))
-    blockchain.sender()
-  }
-
-  private def expectBroadcastReadinessRequest(block: Int): ActorRef = {
-    blockchain.expectMsg(WatchBlockchainHeight(block))
-    blockchain.sender()
-  }
-
-  private def givenSuccessfulBroadcast(tx: ImmutableTransaction): TransactionPublished = {
-    peerActor.expectMsg(PublishTransaction(tx))
-    val result = TransactionPublished(tx, tx)
-    peerActor.reply(result)
-    result
-  }
-
-  private def givenPanicNotification(): Unit = {
-    val panicNotificationRequester = expectPanicNotificationRequest()
-    blockchain.send(panicNotificationRequester, BlockchainHeightReached(panicBlock))
-  }
-
-  private def givenLastOffer(offer: Option[ImmutableTransaction]): Unit = {
-    micropaymentChannel.expectMsg(GetLastOffer)
-    micropaymentChannel.reply(LastOffer(offer))
-  }
 
   "An exchange transaction broadcast actor" should "broadcast the refund transaction if it " +
     "becomes valid" in new Fixture {
@@ -93,10 +58,9 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   it should "broadcast the last offer when the refund transaction becomes valid" in new Fixture {
     instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-    instance ! SetMicropaymentActor(micropaymentChannel.ref)
     givenSuccessfulBlockchainRetrieval()
+    givenLastOffer(someLastOffer)
     givenPanicNotification()
-    givenLastOffer(Some(someLastOffer))
 
     val result = givenSuccessfulBroadcast(someLastOffer)
     expectMsg(ExchangeFinished(result))
@@ -105,11 +69,9 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
     instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-    instance ! SetMicropaymentActor(micropaymentChannel.ref)
     givenSuccessfulBlockchainRetrieval()
     expectPanicNotificationRequest()
     instance ! FinishExchange
-    givenLastOffer(None)
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
     blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
 
@@ -119,6 +81,38 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   }
 
   trait Fixture {
+    val peerActor = TestProbe()
+    val blockchain = TestProbe()
     val instance: ActorRef = system.actorOf(Props(new TransactionBroadcastActor(protocolConstants)))
+
+    def givenSuccessfulBlockchainRetrieval(): Unit = {
+      peerActor.expectMsg(RetrieveBlockchainActor)
+      peerActor.reply(BlockchainActorRef(blockchain.ref))
+    }
+
+    def expectPanicNotificationRequest(): Unit = {
+      blockchain.expectMsg(WatchBlockchainHeight(panicBlock))
+    }
+
+    def expectBroadcastReadinessRequest(block: Int): ActorRef = {
+      blockchain.expectMsg(WatchBlockchainHeight(block))
+      blockchain.sender()
+    }
+
+    def givenSuccessfulBroadcast(tx: ImmutableTransaction): TransactionPublished = {
+      peerActor.expectMsg(PublishTransaction(tx))
+      val result = TransactionPublished(tx, tx)
+      peerActor.reply(result)
+      result
+    }
+
+    def givenPanicNotification(): Unit = {
+      expectPanicNotificationRequest()
+      blockchain.reply(BlockchainHeightReached(panicBlock))
+    }
+
+    def givenLastOffer(offer: ImmutableTransaction): Unit = {
+      instance ! LastBroadcastableOffer(offer)
+    }
   }
 }

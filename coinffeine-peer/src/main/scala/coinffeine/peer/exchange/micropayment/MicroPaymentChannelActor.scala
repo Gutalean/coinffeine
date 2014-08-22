@@ -16,7 +16,7 @@ object MicroPaymentChannelActor {
     * @param exchange          Exchange to take part on
     * @param paymentProcessor  Actor to use for making payments
     * @param registry          Registry to locate services
-    * @param resultListeners   These actors will receive result and
+    * @param resultListeners   These actors will receive the result, [[LastBroadcastableOffer]] and
     *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeProgress]]
     *                          notifications
     */
@@ -35,11 +35,8 @@ object MicroPaymentChannelActor {
   /** Sent to the exchange listeners to notify of a failure during the exchange */
   case class ExchangeFailure(cause: Throwable) extends ExchangeResult
 
-  /** Sent to the actor to query what the last broadcastable offer is */
-  case object GetLastOffer
-
-  /** Sent by the actor as a reply to a GetLastOffer message */
-  case class LastOffer(lastOffer: Option[ImmutableTransaction])
+  /** Sent to the listeners to notify about what the last broadcastable offer is */
+  case class LastBroadcastableOffer(transaction: ImmutableTransaction)
 
   private[micropayment] case object StepSignatureTimeout
 

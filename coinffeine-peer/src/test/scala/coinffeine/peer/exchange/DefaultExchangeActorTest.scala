@@ -80,13 +80,12 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def givenMicropaymentChannelCreation(): Unit = {
       micropaymentChannelActor.expectCreation()
-      transactionBroadcastActor.expectMsg(SetMicropaymentActor(micropaymentChannelActor.ref))
     }
 
     def givenMicropaymentChannelSuccess(): Unit = {
       givenMicropaymentChannelCreation()
-      val initMessage = StartMicroPaymentChannel(
-        runningExchange, dummyPaymentProcessor, gateway.ref, Set(actor))
+      val initMessage = StartMicroPaymentChannel(runningExchange, dummyPaymentProcessor,
+        gateway.ref, Set(actor, transactionBroadcastActor.ref))
       micropaymentChannelActor.expectAskWithReply {
         case `initMessage` => MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx))
       }

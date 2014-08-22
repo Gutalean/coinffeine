@@ -8,7 +8,7 @@ import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Implicits._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, LastBroadcastableOffer, StartMicroPaymentChannel}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.payment.MockPaymentProcessorFactory
@@ -64,12 +64,13 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     seller ! StartMicroPaymentChannel(sellerRunningExchange, sellerPaymentProc,
       sellerRegistry, Set(sellerListener.ref))
     buyerListener.receiveWhile() {
+      case LastBroadcastableOffer(_) =>
       case ExchangeProgress(_) =>
     }
     sellerListener.receiveWhile() {
       case ExchangeProgress(_) =>
     }
-    buyerListener.expectMsgClass(classOf[ExchangeSuccess])
+    buyerListener.expectMsgType[ExchangeSuccess]
     sellerListener.expectMsg(ExchangeSuccess(None))
   }
 }
