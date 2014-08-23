@@ -25,6 +25,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val amounts = Exchange.Amounts(
     deposits = Both(buyer = 2.BTC, seller = 11.BTC),
+    refunds = Both(buyer = 1.BTC, seller = 10.BTC),
     bitcoinExchanged = 10.BTC,
     fiatExchanged = 10.EUR,
     breakdown = Exchange.StepBreakdown(intermediateSteps = 10)

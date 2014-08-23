@@ -15,6 +15,7 @@ private[amounts] class DefaultExchangeAmountsCalculator extends ExchangeAmountsC
     )
     Exchange.Amounts[C](
       deposits,
+      refunds = deposits.map(_ - bitcoinStepAmount),
       bitcoinExchanged = bitcoinAmount,
       fiatExchanged = price * bitcoinAmount.value,
       breakdown = Exchange.StepBreakdown(10)

@@ -52,11 +52,13 @@ object Exchange {
   /** Amounts of money involved on an exchange.
     *
     * @param deposits          Bitcoins deposited in multisign by each part
+    * @param refunds           Amount refundable by each part after a lock time
     * @param bitcoinExchanged  Amount of bitcoins to be exchanged
     * @param fiatExchanged     Amount of fiat to be exchanged
     * @tparam C                Fiat currency defined to this exchange
     */
   case class Amounts[+C <: FiatCurrency](deposits: Both[BitcoinAmount],
+                                         refunds: Both[BitcoinAmount],
                                          bitcoinExchanged: BitcoinAmount,
                                          fiatExchanged: CurrencyAmount[C],
                                          breakdown: Exchange.StepBreakdown) {
@@ -72,9 +74,6 @@ object Exchange {
     )
 
     val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
-
-    /** Amount refundable by each part after a lock time */
-    val refunds: Both[BitcoinAmount] = deposits.map(_ - stepAmounts.bitcoinAmount)
   }
 
   /** Funds reserved for the order this exchange belongs to */
