@@ -6,7 +6,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.Amounts
+import coinffeine.model.exchange.Exchange.{Amounts, StepAmounts}
 
 class DefaultExchangeAmountsCalculatorTest extends UnitTest {
 
@@ -54,6 +54,19 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
     forAnyAmountOrPrice { amounts =>
       amounts.deposits.buyer - amounts.refunds.buyer should be (amounts.stepAmounts.bitcoinAmount)
       amounts.deposits.seller - amounts.refunds.seller should be (amounts.stepAmounts.bitcoinAmount)
+    }
+  }
+
+  it must "have same sized steps" in new Fixture {
+    forAnyAmountOrPrice { amounts =>
+      amounts.steps.toSet should have size 1
+    }
+  }
+
+  it must "have steps summing up to the total amounts" in new Fixture {
+    forAnyAmountOrPrice { (bitcoinAmount, price, amounts) =>
+      val stepsSum = amounts.steps.reduce(_ + _)
+      stepsSum should be (StepAmounts(bitcoinAmount, price * bitcoinAmount.value))
     }
   }
 

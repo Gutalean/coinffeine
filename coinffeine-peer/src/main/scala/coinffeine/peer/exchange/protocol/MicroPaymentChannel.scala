@@ -5,7 +5,7 @@ import scala.util.Try
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.StepBreakdown
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.exchange.{Exchange, Both, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
 trait MicroPaymentChannel[C <: FiatCurrency] {
@@ -64,6 +64,9 @@ object MicroPaymentChannel {
     override def next =
       if (value == breakdown.intermediateSteps) FinalStep(breakdown) else copy(value = value + 1)
     override val toString = s"step $value/${breakdown.totalSteps}"
+
+    def select[C <: FiatCurrency](amounts: Exchange.Amounts[C]): Exchange.StepAmounts[C] =
+      amounts.steps(value - 1)
   }
 
   case class FinalStep(breakdown: StepBreakdown) extends Step {

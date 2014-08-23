@@ -73,6 +73,8 @@ object Exchange {
       fiatAmount = fiatExchanged / breakdown.intermediateSteps
     )
 
+    val steps = Seq.fill(breakdown.intermediateSteps)(stepAmounts)
+
     val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
   }
 
