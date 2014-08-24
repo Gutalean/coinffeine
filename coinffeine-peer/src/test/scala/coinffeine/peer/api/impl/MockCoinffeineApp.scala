@@ -7,6 +7,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{Address, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
+import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
 import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.peer.api.mock.MockCoinffeineNetwork
@@ -29,7 +30,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
   override def paymentProcessor: CoinffeinePaymentProcessor = new CoinffeinePaymentProcessor {
     override def accountId = "fake-account-id"
-    override def currentBalance() = None
+    override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
   }
 
   override def start(timeout: FiniteDuration) = Future.successful {}

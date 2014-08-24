@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
+import scalafx.scene.image.Image
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
@@ -48,6 +49,7 @@ object Main extends JFXApp
         new ConnectionStatusWidget(properties.connectionStatusProperty)
       )
     )
+    icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
   }
   stage.show()
 

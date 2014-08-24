@@ -58,7 +58,7 @@ class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]]
       balanceProperty.set(Some(Balance(10.BTC, hasExpired = true)))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be ("10.00")
+      find[Label]("#BTC-balance").getText should be (formatNumber(10))
       find[HBox]("#balance-widget").getStyleClass should contain ("non-current")
     }
   }
