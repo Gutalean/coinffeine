@@ -39,21 +39,21 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
 
   it must "require the buyer to deposit two steps worth of bitcoins" in new Fixture {
     forAnyAmountOrPrice { amounts =>
-      amounts.deposits.buyer should be (amounts.stepAmounts.bitcoinAmount * 2)
+      amounts.deposits.buyer should be (amounts.steps.head.bitcoinAmount * 2)
     }
   }
 
   it must "require the seller to deposit one steps worth of bitcoins apart from the principal" in
     new Fixture {
       forAnyAmountOrPrice { amounts =>
-        amounts.deposits.seller - amounts.bitcoinExchanged should be (amounts.stepAmounts.bitcoinAmount)
+        amounts.deposits.seller - amounts.bitcoinExchanged should be (amounts.steps.head.bitcoinAmount)
       }
     }
 
   it must "refund deposited amounts but one step worth of bitcoins" in new Fixture {
     forAnyAmountOrPrice { amounts =>
-      amounts.deposits.buyer - amounts.refunds.buyer should be (amounts.stepAmounts.bitcoinAmount)
-      amounts.deposits.seller - amounts.refunds.seller should be (amounts.stepAmounts.bitcoinAmount)
+      amounts.deposits.buyer - amounts.refunds.buyer should be (amounts.steps.head.bitcoinAmount)
+      amounts.deposits.seller - amounts.refunds.seller should be (amounts.steps.head.bitcoinAmount)
     }
   }
 

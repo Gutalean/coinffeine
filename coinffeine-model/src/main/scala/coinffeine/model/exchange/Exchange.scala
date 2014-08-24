@@ -68,7 +68,7 @@ object Exchange {
     val currency = fiatExchanged.currency
 
     /** Amounts to exchange per intermediate step */
-    val stepAmounts = StepAmounts(
+    private val stepAmounts = StepAmounts(
       bitcoinAmount = bitcoinExchanged / breakdown.intermediateSteps,
       fiatAmount = fiatExchanged / breakdown.intermediateSteps
     )
