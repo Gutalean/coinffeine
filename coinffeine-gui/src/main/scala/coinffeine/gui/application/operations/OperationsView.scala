@@ -110,12 +110,14 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
 
   override def name: String = "Operations"
 
-  override def centerPane: Pane = new GridPane {
+  private val buttonsPane: Pane = new HBox {
+    content = Seq(newOrderButton, cancelOrderButton)
+    spacing = 10
+  }
+
+  override def centerPane: Pane = new VBox {
     margin = Insets(20)
-    hgap = 10
-    vgap = 10
-    add(newOrderButton, 0, 0)
-    add(cancelOrderButton, 1, 0)
-    add(orderTable, 0, 1, 3, 1)
+    spacing = 10
+    content = Seq(buttonsPane, orderTable)
   }
 }
