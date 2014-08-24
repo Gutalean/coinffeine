@@ -43,6 +43,9 @@ object Exchange {
   /** Amounts involved on one exchange step */
   case class StepAmounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                              fiatAmount: CurrencyAmount[C]) {
+    require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
+    require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
+
     def +[C2 >: C <: FiatCurrency](other: StepAmounts[C2]) = StepAmounts(
       bitcoinAmount + other.bitcoinAmount,
       fiatAmount + other.fiatAmount
@@ -53,27 +56,21 @@ object Exchange {
     *
     * @param deposits          Bitcoins deposited in multisign by each part
     * @param refunds           Amount refundable by each part after a lock time
-    * @param bitcoinExchanged  Amount of bitcoins to be exchanged
-    * @param fiatExchanged     Amount of fiat to be exchanged
+    * @param steps             Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
   case class Amounts[+C <: FiatCurrency](deposits: Both[BitcoinAmount],
                                          refunds: Both[BitcoinAmount],
-                                         bitcoinExchanged: BitcoinAmount,
-                                         fiatExchanged: CurrencyAmount[C],
+                                         steps: Seq[StepAmounts[C]],
                                          breakdown: Exchange.StepBreakdown) {
-    require(bitcoinExchanged.isPositive, s"bitcoin amount must be positive ($bitcoinExchanged given)")
-    require(fiatExchanged.isPositive, s"fiat amount must be positive ($fiatExchanged given)")
+    require(steps.nonEmpty, "There should be at least one step")
+    val currency = steps.head.fiatAmount.currency
 
-    val currency = fiatExchanged.currency
-
-    /** Amounts to exchange per intermediate step */
-    private val stepAmounts = StepAmounts(
-      bitcoinAmount = bitcoinExchanged / breakdown.intermediateSteps,
-      fiatAmount = fiatExchanged / breakdown.intermediateSteps
-    )
-
-    val steps = Seq.fill(breakdown.intermediateSteps)(stepAmounts)
+    /** Amount of bitcoins to be exchanged */
+    val bitcoinExchanged: BitcoinAmount = steps.foldLeft(Bitcoin.Zero)(_ + _.bitcoinAmount)
+    /** Amount of fiat to be exchanged */
+    val fiatExchanged: CurrencyAmount[C] =
+      steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatAmount)
 
     val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
   }

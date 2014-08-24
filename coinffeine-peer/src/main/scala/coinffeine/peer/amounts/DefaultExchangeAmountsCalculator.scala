@@ -8,16 +8,18 @@ private[amounts] class DefaultExchangeAmountsCalculator extends ExchangeAmountsC
 
   override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                              price: CurrencyAmount[C]) = {
-    val bitcoinStepAmount = bitcoinAmount / Steps
+    val step = Exchange.StepAmounts(
+      bitcoinAmount = bitcoinAmount / Steps,
+      fiatAmount = price * bitcoinAmount.value / Steps
+    )
     val deposits = Both(
-      buyer = bitcoinStepAmount * EscrowSteps.buyer,
-      seller = bitcoinAmount + bitcoinStepAmount * EscrowSteps.seller
+      buyer = step.bitcoinAmount * EscrowSteps.buyer,
+      seller = bitcoinAmount + step.bitcoinAmount * EscrowSteps.seller
     )
     Exchange.Amounts[C](
       deposits,
-      refunds = deposits.map(_ - bitcoinStepAmount),
-      bitcoinExchanged = bitcoinAmount,
-      fiatExchanged = price * bitcoinAmount.value,
+      refunds = deposits.map(_ - step.bitcoinAmount),
+      steps = Seq.fill(Steps)(step),
       breakdown = Exchange.StepBreakdown(10)
     )
   }
