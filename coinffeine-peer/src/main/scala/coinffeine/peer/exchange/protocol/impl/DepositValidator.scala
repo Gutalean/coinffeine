@@ -19,14 +19,14 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
   def requireValidBuyerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val buyerFunds = transaction.get.getOutput(0)
     requireValidFunds(buyerFunds)
-    require(Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.deposits.buyer,
+    require(Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.deposits.buyer + amounts.transactionFee / 2,
       "The amount of committed funds by the buyer does not match the expected amount")
   }
 
   def requireValidSellerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val sellerFunds = transaction.get.getOutput(0)
     require(
-      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.deposits.seller,
+      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.deposits.seller + amounts.transactionFee / 2,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
