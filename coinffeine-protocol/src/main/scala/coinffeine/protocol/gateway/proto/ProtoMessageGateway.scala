@@ -6,6 +6,7 @@ import akka.actor._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.network.BrokerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage, SendProtoMessageToBroker}

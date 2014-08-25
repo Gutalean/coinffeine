@@ -13,7 +13,7 @@ import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.{MessageGateway, GatewayProbe}
@@ -25,7 +25,6 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     orderExpirationInterval = 6.seconds,
     orderResubmitInterval = 4.seconds
   )
-  val brokerId = PeerId("broker")
   val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
   val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
@@ -36,7 +35,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
   trait Fixture {
     val registryActor = system.actorOf(ServiceRegistryActor.props(), "registry-"+Random.nextInt())
     val registry = new ServiceRegistry(registryActor)
-    val gateway = new GatewayProbe(brokerId)
+    val gateway = new GatewayProbe(PeerId("broker"))
     registry.register(MessageGateway.ServiceId, gateway.ref)
 
     val requester = TestProbe()
@@ -55,7 +54,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
                                       market: Market[FiatCurrency],
                                       entries: OrderBookEntry[FiatAmount]*): Unit = {
       gateway.expectSubscriptionToBroker(timeout)
-      gateway.expectForwardingPF(brokerId, timeout) {
+      gateway.expectForwardingPF(BrokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
           gateway.relayMessageFromBroker(PeerPositionsReceived(nonce))

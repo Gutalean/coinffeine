@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.PublicMessage
 
@@ -50,18 +50,23 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
   def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
     expectForwarding(payload, brokerId, timeout)
 
-  def expectForwarding(payload: Any, dest: PeerId, timeout: Duration = Duration.Undefined): Unit =
+  def expectForwarding(payload: Any, dest: NodeId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
-      case message @ ForwardMessageToBroker(`payload`) if dest == brokerId => message
+      case message @ ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
+      case message @ ForwardMessageToBroker(`payload`) if isBroker(dest) => message
     }
 
-  def expectForwardingPF[T](dest: PeerId, timeout: Duration = Duration.Undefined)
+  def expectForwardingPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
                            (payloadMatcher: PartialFunction[Any, T]): T =
     probe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
-      case ForwardMessageToBroker(payload) if dest == brokerId && payloadMatcher.isDefinedAt(payload) =>
+      case ForwardMessage(payload, BrokerId)
+          if isBroker(dest) && payloadMatcher.isDefinedAt(payload) =>
+        payloadMatcher.apply(payload)
+      case ForwardMessageToBroker(payload)
+          if isBroker(dest) && payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
     }
 
@@ -69,8 +74,10 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
 
   def expectNoMsg(timeout: FiniteDuration): Unit = probe.expectNoMsg(timeout)
 
+  def isBroker(nodeId: NodeId): Boolean = nodeId == BrokerId || nodeId == brokerId
+
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: PublicMessage, origin: PeerId): Unit = {
+  def relayMessage(message: PublicMessage, origin: NodeId): Unit = {
     val notification = ReceiveMessage(message, origin)
     val subscriptionTargets = for {
       (ref, filters) <- subscriptions.toSet

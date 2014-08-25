@@ -7,7 +7,7 @@ import akka.actor.Props
 import com.typesafe.config.{ConfigException, Config}
 
 import coinffeine.common.akka.ServiceRegistryActor
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NodeId, PeerId}
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
@@ -33,7 +33,7 @@ object MessageGateway {
   case class JoinAsPeer(localPort: Int, connectTo: BrokerAddress) extends Join
 
   /** A message sent in order to forward a message to a given destination. */
-  case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
+  case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
 
   /** A message sent in order to forward a message to a the broker node. */
   case class ForwardMessageToBroker[M <: PublicMessage](message: M)
@@ -57,7 +57,7 @@ object MessageGateway {
   case object Unsubscribe
 
   /** A message send back to the subscriber. */
-  case class ReceiveMessage[M <: PublicMessage](msg: M, sender: PeerId)
+  case class ReceiveMessage[M <: PublicMessage](msg: M, sender: NodeId)
 
   /** An exception thrown when an error is found on message forward. */
   case class ForwardException(message: String, cause: Throwable = null)

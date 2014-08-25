@@ -16,7 +16,7 @@ import net.tomp2p.storage.Data
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.event.CoinffeineConnectionStatus
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
@@ -147,7 +147,8 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     }
 
     private val handlingMessages: Receive = {
-      case SendProtoMessage(to, msg) => sendMessage(to, msg)
+      case SendProtoMessage(to: PeerId, msg) => sendMessage(to, msg)
+      case SendProtoMessage(BrokerId, msg) => sendMessage(brokerId, msg)
       case SendProtoMessageToBroker(msg) => sendMessage(brokerId, msg)
       case ReceiveData(from, data) =>
         val msg = CoinffeineMessage.parseFrom(data)
@@ -218,7 +219,7 @@ private[gateway] object ProtobufServerActor {
     new ProtobufServerActor(ignoredNetworkInterfaces))
 
   /** Send a message to a peer */
-  case class SendProtoMessage(to: PeerId, msg: CoinffeineMessage)
+  case class SendProtoMessage(to: NodeId, msg: CoinffeineMessage)
   /** Send a message to the broker */
   case class SendProtoMessageToBroker(msg: CoinffeineMessage)
 
