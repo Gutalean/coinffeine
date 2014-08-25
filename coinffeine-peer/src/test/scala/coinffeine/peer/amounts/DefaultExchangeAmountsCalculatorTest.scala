@@ -6,7 +6,8 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.{Amounts, StepAmounts}
+import coinffeine.model.exchange.Exchange.Amounts
+import coinffeine.model.payment.PaymentProcessor
 
 class DefaultExchangeAmountsCalculatorTest extends UnitTest {
 
@@ -66,9 +67,18 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
   it must "have steps summing up to the total amounts" in new Fixture {
     forAnyAmountOrPrice { (bitcoinAmount, price, amounts) =>
       val stepsSum = amounts.steps.reduce(_ + _)
-      stepsSum should be (StepAmounts(bitcoinAmount, price * bitcoinAmount.value))
+      stepsSum.bitcoinAmount should be (bitcoinAmount)
+      stepsSum.fiatAmount should be (price * bitcoinAmount.value)
     }
   }
+
+  it must "add fiat fees to each step and to the required fiat amount" in
+    new Fixture(paymentProcessor = new FixedFeeProcessor(0.5)) {
+      forAnyAmountOrPrice { (bitcoinAmount, price, amounts) =>
+        amounts.steps.map(_.fiatFee).toSet should be (Set(0.5.EUR))
+        amounts.fiatRequired.buyer - amounts.fiatExchanged should be (5.EUR)
+      }
+    }
 
   val exampleCases = Seq(
     1.BTC -> 500.EUR,
@@ -76,9 +86,9 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
     0.3.BTC -> 1234.EUR
   )
 
-  trait Fixture {
+  abstract class Fixture(paymentProcessor: PaymentProcessor = NoFeesProcessor) {
 
-    val instance = new DefaultExchangeAmountsCalculator
+    val instance = new DefaultExchangeAmountsCalculator(paymentProcessor)
 
     type Euros = Euro.type
 
@@ -91,5 +101,14 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
         test(bitcoin, price, instance.amountsFor(bitcoin, price))
       }
     }
+  }
+
+  object NoFeesProcessor extends PaymentProcessor {
+    override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) = amount.currency.Zero
+  }
+
+  class FixedFeeProcessor(fee: BigDecimal) extends PaymentProcessor {
+    override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
+      amount.currency.amount(fee)
   }
 }

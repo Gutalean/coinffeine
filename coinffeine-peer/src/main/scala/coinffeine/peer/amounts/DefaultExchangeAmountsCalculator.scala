@@ -2,15 +2,19 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange._
+import coinffeine.model.payment.PaymentProcessor
 
-private[amounts] class DefaultExchangeAmountsCalculator extends ExchangeAmountsCalculator {
+private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: PaymentProcessor)
+  extends ExchangeAmountsCalculator {
   import DefaultExchangeAmountsCalculator._
 
   override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                              price: CurrencyAmount[C]) = {
+    val stepFiatAmount = price * bitcoinAmount.value / Steps
     val step = Exchange.StepAmounts(
       bitcoinAmount = bitcoinAmount / Steps,
-      fiatAmount = price * bitcoinAmount.value / Steps
+      fiatAmount = stepFiatAmount,
+      fiatFee = paymentProcessor.calculateFee(stepFiatAmount)
     )
     val deposits = Both(
       buyer = step.bitcoinAmount * EscrowSteps.buyer,

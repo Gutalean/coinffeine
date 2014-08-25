@@ -42,13 +42,15 @@ object Exchange {
 
   /** Amounts involved on one exchange step */
   case class StepAmounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                             fiatAmount: CurrencyAmount[C]) {
+                                             fiatAmount: CurrencyAmount[C],
+                                             fiatFee: CurrencyAmount[C]) {
     require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
 
     def +[C2 >: C <: FiatCurrency](other: StepAmounts[C2]) = StepAmounts(
       bitcoinAmount + other.bitcoinAmount,
-      fiatAmount + other.fiatAmount
+      fiatAmount + other.fiatAmount,
+      fiatFee + other.fiatFee
     )
   }
 
@@ -71,7 +73,10 @@ object Exchange {
     val fiatExchanged: CurrencyAmount[C] =
       steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatAmount)
 
-    val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
+    val fiatRequired = Both[CurrencyAmount[C]](
+      buyer = fiatExchanged + steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatFee),
+      seller = currency.Zero
+    )
 
     val breakdown = Exchange.StepBreakdown(steps.length)
   }
