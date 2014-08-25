@@ -33,6 +33,12 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     subscription
   }
 
+  def expectUnsubscription(timeout: FiniteDuration): Unsubscribe.type =
+    probe.expectMsg(timeout, hint = "expected unsubscription to broker", Unsubscribe)
+
+  def expectUnsubscription(): Unsubscribe.type =
+    expectUnsubscription(probe.testKitSettings.DefaultTimeout.duration)
+
   def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
     expectForwarding(payload, brokerId, timeout)
 
@@ -59,18 +65,20 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
   def isBroker(nodeId: NodeId): Boolean = nodeId == BrokerId || nodeId == brokerId
 
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: PublicMessage, origin: NodeId): Unit = {
+  def relayMessage(message: PublicMessage, origin: NodeId, checkSubscriptions: Boolean = true): Unit = {
     val notification = ReceiveMessage(message, origin)
     val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters if filter.isDefinedAt(notification)
     } yield ref
-    assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
+    if (checkSubscriptions) {
+      assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
+    }
     targets.foreach { target =>
-
       probe.send(target, notification)
     }
   }
 
-  def relayMessageFromBroker(message: PublicMessage): Unit = relayMessage(message, BrokerId)
+  def relayMessageFromBroker(message: PublicMessage, checkSubscriptions: Boolean = true): Unit =
+    relayMessage(message, BrokerId, checkSubscriptions)
 }
