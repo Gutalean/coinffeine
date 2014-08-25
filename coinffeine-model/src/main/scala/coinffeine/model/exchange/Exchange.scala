@@ -54,9 +54,18 @@ object Exchange {
     )
   }
 
+  /** Characterizes the amounts to be deposited by a part. The difference between input and
+    * output is the fee.
+    */
+  case class DepositAmounts(input: BitcoinAmount, output: BitcoinAmount) {
+    require(input.isPositive, "Cannot spent a negative or zero amount")
+    require(output.isPositive, "Should not deposit non-positive amount")
+    require(input >= output, "Deposits should have a greater or equal input versus output")
+  }
+
   /** Amounts of money involved on an exchange.
     *
-    * @param deposits          Bitcoins deposited in multisign by each part
+    * @param deposits          Net bitcoin amount deposited in multisign by each part
     * @param refunds           Amount refundable by each part after a lock time
     * @param steps             Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
@@ -78,7 +87,12 @@ object Exchange {
       buyer = fiatExchanged + steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatFee),
       seller = currency.Zero
     )
-    val bitcoinRequired = deposits.map(_ + transactionFee * 1.5)
+
+    val depositTransactionAmounts = deposits.map(netAmount => DepositAmounts(
+      input = netAmount + transactionFee * 1.5,
+      output = netAmount + transactionFee / 2
+    ))
+    val bitcoinRequired = depositTransactionAmounts.map(_.input)
 
     val breakdown = Exchange.StepBreakdown(steps.length)
   }

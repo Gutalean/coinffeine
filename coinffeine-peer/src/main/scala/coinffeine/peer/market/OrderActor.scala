@@ -68,7 +68,7 @@ class OrderActor(exchangeActorProps: Props,
       val amounts = amountsCalculator.amountsFor(currentOrder)
       fundsActor ! OrderFundsActor.BlockFunds(
         fiatAmount = role.select(amounts.fiatRequired),
-        bitcoinAmount = role.select(amounts.deposits),
+        bitcoinAmount = role.select(amounts.depositTransactionAmounts).input,
         wallet,
         paymentProcessor
       )
