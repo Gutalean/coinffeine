@@ -152,8 +152,8 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
       case SendProtoMessageToBroker(msg) => sendMessage(brokerId, msg)
       case ReceiveData(from, data) =>
         val msg = CoinffeineMessage.parseFrom(data)
-        val fromBroker = from == brokerId
-        listener ! ReceiveProtoMessage(from, msg, fromBroker)
+        val source = if (from == brokerId) BrokerId else from
+        listener ! ReceiveProtoMessage(source, msg)
     }
 
     private def sendMessage(to: PeerId, msg: CoinffeineMessage) = {
@@ -224,5 +224,5 @@ private[gateway] object ProtobufServerActor {
   case class SendProtoMessageToBroker(msg: CoinffeineMessage)
 
   /** Sent to the listener when a message is received */
-  case class ReceiveProtoMessage(senderId: PeerId, msg: CoinffeineMessage, fromBroker: Boolean)
+  case class ReceiveProtoMessage(senderId: NodeId, msg: CoinffeineMessage)
 }

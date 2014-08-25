@@ -1,13 +1,13 @@
 package coinffeine.protocol.gateway
 
-import scala.collection.JavaConversions._
 import java.net.NetworkInterface
+import scala.collection.JavaConversions._
 
 import akka.actor.Props
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.{Config, ConfigException}
 
 import coinffeine.common.akka.ServiceRegistryActor
-import coinffeine.model.network.{NodeId, PeerId}
+import coinffeine.model.network.{BrokerId, NodeId}
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
@@ -50,8 +50,13 @@ object MessageGateway {
     */
   case class Subscribe(filter: ReceiveFilter)
 
-  /** A message sent in order to subscribe for messages from the broker peer. */
-  case class SubscribeToBroker(filter: MessageFilter)
+  object Subscribe {
+
+    /** Create a [[Subscribe]] message for messages from the broker peer. */
+    def fromBroker(filter: MessageFilter): Subscribe = Subscribe {
+      case ReceiveMessage(msg, BrokerId) if filter.isDefinedAt(msg) =>
+    }
+  }
 
   /** A message sent in order to unsubscribe from incoming message reception. */
   case object Unsubscribe

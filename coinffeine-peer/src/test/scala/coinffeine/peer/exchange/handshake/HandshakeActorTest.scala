@@ -12,7 +12,7 @@ import coinffeine.peer.exchange.handshake.HandshakeActor.StartHandshake
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.protocol.gateway.MessageGateway.{SubscribeToBroker, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
@@ -34,7 +34,6 @@ abstract class HandshakeActorTest(systemName: String)
   }
 
   def givenActorIsSubscribedToMessages(): Unit = {
-    gateway.expectMsgClass(classOf[SubscribeToBroker])
     gateway.expectMsgClass(classOf[Subscribe])
   }
 

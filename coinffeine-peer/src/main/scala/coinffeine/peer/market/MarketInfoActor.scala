@@ -5,7 +5,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ReceiveMessage, SubscribeToBroker}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
@@ -32,7 +32,7 @@ class MarketInfoActor extends Actor {
     }
 
     private def subscribeToMessages(): Unit = {
-      gateway ! SubscribeToBroker {
+      gateway ! Subscribe.fromBroker {
         case Quote(_, _, _) | OpenOrders(_) =>
       }
     }

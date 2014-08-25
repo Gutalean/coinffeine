@@ -76,6 +76,6 @@ class MarketInfoActorTest extends AkkaSpec {
     val sampleOpenOrders = OpenOrders(PeerPositions.empty(eurMarket))
 
     actor ! MarketInfoActor.Start(registryActor)
-    messageGateway.expectSubscriptionToBroker()
+    messageGateway.expectSubscription()
   }
 }

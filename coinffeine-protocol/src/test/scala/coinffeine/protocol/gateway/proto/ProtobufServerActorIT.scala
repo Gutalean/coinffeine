@@ -35,7 +35,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
     val peerId2 = expectMsgType[ReceiveProtoMessage].senderId
 
     peer1 ! SendProtoMessage(peerId2, msg)
-    expectMsg(ReceiveProtoMessage(peerId1, msg, fromBroker = false))
+    expectMsg(ReceiveProtoMessage(peerId1, msg))
   }
 
   private def createBroker(port: Int): (ActorRef, PeerId) = {

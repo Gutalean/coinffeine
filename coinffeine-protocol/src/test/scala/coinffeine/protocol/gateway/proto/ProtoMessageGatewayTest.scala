@@ -1,5 +1,7 @@
 package coinffeine.protocol.gateway.proto
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
@@ -9,7 +11,7 @@ import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -26,15 +28,15 @@ class ProtoMessageGatewayTest
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
     new FreshBrokerAndPeer {
       val msg = randomOrderMatch()
-      peerGateway ! ForwardMessage(msg, brokerId)
+      peerGateway ! ForwardMessage(msg, BrokerId)
       brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
     }
 
   it must "send a known message twice reusing the connection to the remote peer" in
     new FreshBrokerAndPeer {
       val (msg1, msg2) = (randomOrderMatch(), randomOrderMatch())
-      peerGateway ! ForwardMessage(msg1, brokerId)
-      peerGateway ! ForwardMessage(msg2, brokerId)
+      peerGateway ! ForwardMessage(msg1, BrokerId)
+      peerGateway ! ForwardMessage(msg2, BrokerId)
       brokerProbe.expectMsgAllOf(ReceiveMessage(msg1, peerId), ReceiveMessage(msg2, peerId))
     }
 
@@ -42,7 +44,7 @@ class ProtoMessageGatewayTest
     val msg = randomOrderMatch()
     peerGateway ! subscribeToOrderMatches
     brokerGateway ! ForwardMessage(msg, peerId)
-    expectMsg(ReceiveMessage(msg, brokerId))
+    expectMsg(ReceiveMessage(msg, BrokerId))
   }
 
   it must "support multiple subscriptions from the same actor" in new FreshBrokerAndPeer {
@@ -55,16 +57,16 @@ class ProtoMessageGatewayTest
       case ReceiveMessage(OrderMatch(OrderId("2"), _, _, _, _, _), _) =>
     }
     brokerGateway ! ForwardMessage(msg1, peerId)
-    expectMsg(ReceiveMessage(msg1, brokerId))
+    expectMsg(ReceiveMessage(msg1, BrokerId))
     brokerGateway ! ForwardMessage(msg2, peerId)
-    expectMsg(ReceiveMessage(msg2, brokerId))
+    expectMsg(ReceiveMessage(msg2, BrokerId))
   }
 
   it must "do not deliver messages to subscribers when filter doesn't match" in
     new FreshBrokerAndPeer {
       peerGateway ! Subscribe(Map.empty)
       brokerGateway ! ForwardMessage(randomOrderMatch(), peerId)
-      expectNoMsg()
+      expectNoMsg(100.millis)
     }
 
   it must "deliver messages to several subscribers when filter match" in new FreshBrokerAndPeer {
@@ -72,7 +74,7 @@ class ProtoMessageGatewayTest
     val subs = for (i <- 1 to 5) yield TestProbe()
     subs.foreach(_.send(peerGateway, subscribeToOrderMatches))
     brokerGateway ! ForwardMessage(msg, peerId)
-    subs.foreach(_.expectMsg(ReceiveMessage(msg, brokerId)))
+    subs.foreach(_.expectMsg(ReceiveMessage(msg, BrokerId)))
   }
 
   it must "retrieve the connection status" in new FreshBrokerAndPeer {
@@ -93,12 +95,12 @@ class ProtoMessageGatewayTest
 
   it must "subscribe to broker messages" in new FreshBrokerAndPeer {
     val probe = TestProbe()
-    probe.send(peerGateway, SubscribeToBroker {
+    probe.send(peerGateway, Subscribe.fromBroker {
       case _: OrderMatch =>
     })
     val message = randomOrderMatch()
     brokerGateway ! ForwardMessage(message, peerId)
-    probe.expectMsg(ReceiveMessage(message, brokerId))
+    probe.expectMsg(ReceiveMessage(message, BrokerId))
   }
 
   it must "forward messages to the broker" in new FreshBrokerAndPeer {
@@ -150,7 +152,7 @@ class ProtoMessageGatewayTest
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
-    peerGateway ! ForwardMessage(randomOrderMatch(), brokerId)
+    peerGateway ! ForwardMessage(randomOrderMatch(), BrokerId)
     private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch]]
     val peerId = msg.sender
   }

@@ -7,12 +7,12 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.pattern._
 
-import coinffeine.common.akka.{ServiceRegistry, AskPattern}
+import coinffeine.common.akka.{AskPattern, ServiceRegistry}
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
+import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
@@ -21,7 +21,7 @@ import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, Inva
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{SubscribeToBroker, ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -200,11 +200,9 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private def subscribeToMessages(): Unit = {
       val id = exchange.id
-      messageGateway ! SubscribeToBroker {
-        case CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _) =>
-      }
       val counterpart = exchange.counterpartId
       messageGateway ! Subscribe {
+        case ReceiveMessage(CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _), BrokerId) =>
         case ReceiveMessage(PeerHandshake(`id`, _, _) |
                             RefundSignatureRequest(`id`, _) |
                             RefundSignatureResponse(`id`, _), `counterpart`) =>

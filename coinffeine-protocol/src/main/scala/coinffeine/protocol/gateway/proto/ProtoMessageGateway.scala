@@ -6,7 +6,6 @@ import akka.actor._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
-import coinffeine.model.network.BrokerId
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage, SendProtoMessageToBroker}
@@ -33,7 +32,7 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
   }
 
   private def started: Receive = {
-    case msg @ (Subscribe(_) | SubscribeToBroker(_)) =>
+    case msg @ Subscribe(_) =>
       context.watch(sender())
       subscriptions forward msg
 
@@ -51,9 +50,9 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
       log.debug("Forwarding message {} to broker", msg)
       server ! SendProtoMessageToBroker(serialization.toProtobuf(msg))
 
-    case ReceiveProtoMessage(senderId, protoMessage, fromBroker) =>
+    case ReceiveProtoMessage(senderId, protoMessage) =>
       val message = serialization.fromProtobuf(protoMessage)
-      subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId), fromBroker)
+      subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId))
   }
 
   override protected def stopping(): Receive = {

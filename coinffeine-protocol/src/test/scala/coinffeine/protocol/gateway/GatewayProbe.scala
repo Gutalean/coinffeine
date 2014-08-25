@@ -18,7 +18,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
 
   /** Mapping of subscriptions used to relay only what is subscribed or fail otherwise. */
   private var subscriptions: Map[ActorRef, Set[ReceiveFilter]] = Map.empty
-  private var brokerSubscriptions: Map[ActorRef, Set[MessageFilter]] = Map.empty
 
   def ref = probe.ref
 
@@ -31,19 +30,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     }
     val currentSubscription = subscriptions.getOrElse(probe.sender(), Set.empty)
     subscriptions = subscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
-    subscription
-  }
-
-  def expectSubscriptionToBroker(): SubscribeToBroker =
-    expectSubscriptionToBroker(probe.testKitSettings.DefaultTimeout.duration)
-
-  def expectSubscriptionToBroker(timeout: Duration): SubscribeToBroker = {
-    val subscription =probe.expectMsgPF(timeout, hint = "expected subscription to broker") {
-      case s: SubscribeToBroker => s
-    }
-    val currentSubscription = brokerSubscriptions.getOrElse(probe.sender(), Set.empty)
-    brokerSubscriptions =
-      brokerSubscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
     subscription
   }
 
@@ -79,24 +65,16 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
   def relayMessage(message: PublicMessage, origin: NodeId): Unit = {
     val notification = ReceiveMessage(message, origin)
-    val subscriptionTargets = for {
+    val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters if filter.isDefinedAt(notification)
     } yield ref
-    val brokerSubscriptionTargets =
-      if (origin != brokerId) Set.empty
-      else for {
-        (ref, filters) <- brokerSubscriptions.toSet
-        filter <- filters if filter.isDefinedAt(notification.msg)
-      } yield ref
-    val targets = subscriptionTargets ++ brokerSubscriptionTargets
     assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
+
       probe.send(target, notification)
     }
   }
 
-  def relayMessageFromBroker(message: PublicMessage): Unit = {
-    relayMessage(message, brokerId)
-  }
+  def relayMessageFromBroker(message: PublicMessage): Unit = relayMessage(message, BrokerId)
 }

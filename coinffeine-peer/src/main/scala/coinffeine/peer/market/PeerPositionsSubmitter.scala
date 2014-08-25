@@ -44,7 +44,7 @@ class PeerPositionsSubmitter[C <: FiatCurrency](
     val reg = new ServiceRegistry(registry)
     val gateway = reg.eventuallyLocate(MessageGateway.ServiceId)
 
-    gateway ! MessageGateway.SubscribeToBroker {
+    gateway ! MessageGateway.Subscribe.fromBroker {
       case _: PeerPositionsReceived =>
     }
 
