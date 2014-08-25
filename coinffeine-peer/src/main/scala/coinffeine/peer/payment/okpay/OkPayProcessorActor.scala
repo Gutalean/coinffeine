@@ -24,7 +24,8 @@ import coinffeine.peer.payment.okpay.BlockingFundsActor._
 class OkPayProcessorActor(
     accountId: AccountId,
     client: OkPayClient,
-    pollingInterval: FiniteDuration) extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
+    pollingInterval: FiniteDuration)
+  extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
 
   import context.dispatcher
   import OkPayProcessorActor._
