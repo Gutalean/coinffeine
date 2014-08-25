@@ -5,6 +5,7 @@ import scala.util.Random
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 
 class PimpMyWalletTest extends UnitTest with BitcoinjTest {
@@ -16,8 +17,9 @@ class PimpMyWalletTest extends UnitTest with BitcoinjTest {
   }
 
   it must "block funds in create multisign transaction" in new Fixture {
-    val tx = instance.blockMultisignFunds(Seq(keyPair, someoneElseKeyPair), 1.BTC)
-    instance.value(tx) should be (-1.BTC)
+    val tx = instance.blockMultisignFunds(Seq(keyPair, someoneElseKeyPair), 1.BTC, 0.1.BTC)
+    instance.value(tx) should be (-1.1.BTC)
+    Bitcoin.fromSatoshi(tx.getOutput(0).getValue) should be (1.BTC)
     instance.balance() should be (initialFunds - instance.valueSentFromMe(tx))
   }
 
