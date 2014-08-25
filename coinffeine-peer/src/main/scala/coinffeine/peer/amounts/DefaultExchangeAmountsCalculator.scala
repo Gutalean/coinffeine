@@ -1,10 +1,12 @@
 package coinffeine.peer.amounts
 
+import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.payment.PaymentProcessor
 
-private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: PaymentProcessor)
+private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: PaymentProcessor,
+                                                        bitcoinFeeCalculator: BitcoinFeeCalculator)
   extends ExchangeAmountsCalculator {
   import DefaultExchangeAmountsCalculator._
 
@@ -23,7 +25,8 @@ private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: Paymen
     Exchange.Amounts[C](
       deposits,
       refunds = deposits.map(_ - step.bitcoinAmount),
-      steps = Seq.fill(Steps)(step)
+      steps = Seq.fill(Steps)(step),
+      transactionFee = bitcoinFeeCalculator.defaultTransactionFee
     )
   }
 }

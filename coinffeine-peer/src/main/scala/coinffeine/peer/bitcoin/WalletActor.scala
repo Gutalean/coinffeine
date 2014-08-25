@@ -29,10 +29,12 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
 
   override def receive: Receive = {
 
-    case req@CreateDeposit(coinsId, signatures, amount) =>
+    case req@CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
-        val inputs = blockedOutputs.use(coinsId, amount)
-        val tx = ImmutableTransaction(wallet.blockMultisignFunds(inputs, signatures, amount))
+        val inputs = blockedOutputs.use(coinsId, amount + transactionFee)
+        val tx = ImmutableTransaction(
+          wallet.blockMultisignFunds(inputs, signatures, amount, transactionFee)
+        )
         sender ! WalletActor.DepositCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
@@ -143,10 +145,12 @@ object WalletActor {
     * @param coinsId            Source of the bitcoins to use for this deposit
     * @param requiredSignatures The signatures required to spend the tx in a multisign script
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
+    * @param transactionFee     The fee to include in the transaction
     */
   case class CreateDeposit(coinsId: BlockedCoinsId,
                            requiredSignatures: Seq[KeyPair],
-                           amount: BitcoinAmount)
+                           amount: BitcoinAmount,
+                           transactionFee: BitcoinAmount)
 
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * a successful funds blocking.

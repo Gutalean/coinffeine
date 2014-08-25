@@ -11,6 +11,7 @@ import coinffeine.common.akka.{ServiceRegistry, AskPattern}
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
@@ -89,11 +90,14 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
       val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
-      val depositAmount = exchange.role.select(exchange.amounts.deposits)
+      val depositAmount = exchange.role.select(exchange.amounts.depositTransactionAmounts).output
       AskPattern(
         to = wallet,
         request = WalletActor.CreateDeposit(
-          exchange.blockedFunds.bitcoin, requiredSignatures, depositAmount),
+          exchange.blockedFunds.bitcoin,
+          requiredSignatures,
+          depositAmount,
+          exchange.amounts.transactionFee),
         errorMessage = s"Cannot block $depositAmount in multisig"
       ).withImmediateReplyOrError[DepositCreated, DepositCreationError](_.error).map(_.tx)
     }

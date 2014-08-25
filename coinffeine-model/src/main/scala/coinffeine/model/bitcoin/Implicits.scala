@@ -61,21 +61,24 @@ object Implicits {
     }
 
     def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
-                            amount: BitcoinAmount): MutableTransaction =
-      blockMultisignFunds(collectFunds(amount), requiredSignatures, amount)
+                            amount: BitcoinAmount,
+                            fee: BitcoinAmount = 0.BTC): MutableTransaction =
+      blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
 
     def blockMultisignFunds(inputs: Traversable[MutableTransactionOutput],
                             requiredSignatures: Seq[PublicKey],
-                            amount: BitcoinAmount): MutableTransaction = {
+                            amount: BitcoinAmount,
+                            fee: BitcoinAmount): MutableTransaction = {
       require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
+      require(!fee.isNegative, s"Fee should be non-negative ($fee given)")
       val totalInputFunds = valueOf(inputs)
-      require(totalInputFunds >= amount,
-        "Input funds must cover the amount of funds to commit")
+      require(totalInputFunds >= amount + fee,
+        "Input funds must cover the amount of funds to commit and the TX fee")
 
       val tx = new MutableTransaction(wallet.getNetworkParameters)
       inputs.foreach(tx.addInput)
       tx.addMultisignOutput(amount, requiredSignatures)
-      tx.addChangeOutput(totalInputFunds, amount, wallet.getChangeAddress)
+      tx.addChangeOutput(totalInputFunds, amount + fee, wallet.getChangeAddress)
       tx.signInputs(SigHash.ALL, wallet)
       blockFunds(tx)
       tx

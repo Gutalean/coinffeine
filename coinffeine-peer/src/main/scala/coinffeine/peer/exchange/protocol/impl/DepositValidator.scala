@@ -18,19 +18,21 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
 
   def requireValidBuyerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val buyerFunds = transaction.get.getOutput(0)
-    requireValidFunds(buyerFunds)
-    require(Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.deposits.buyer,
+    requireValidMultisignature(buyerFunds)
+    require(
+      Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.depositTransactionAmounts.buyer.output,
       "The amount of committed funds by the buyer does not match the expected amount")
   }
 
   def requireValidSellerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val sellerFunds = transaction.get.getOutput(0)
+    requireValidMultisignature(sellerFunds)
     require(
-      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.deposits.seller,
+      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.depositTransactionAmounts.seller.output,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
-  private def requireValidFunds(funds: MutableTransactionOutput): Unit = {
+  private def requireValidMultisignature(funds: MutableTransactionOutput): Unit = {
     val MultiSigInfo(possibleKeys, requiredKeyCount) = MultiSigInfo.fromScript(funds.getScriptPubKey)
       .getOrElse(throw new IllegalArgumentException(
         "Transaction with funds is invalid because is not sending the funds to a multisig"))

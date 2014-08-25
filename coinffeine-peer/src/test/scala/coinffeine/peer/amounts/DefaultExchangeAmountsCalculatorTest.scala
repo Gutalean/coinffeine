@@ -3,6 +3,7 @@ package coinffeine.peer.amounts
 import java.math.BigInteger
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
@@ -80,15 +81,23 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
       }
     }
 
+  it must "split 3 transaction fees equally between buyer and seller" in
+    new Fixture(bitcoinFeeCalculator = new FixedBitcoinFee(0.001.BTC)) {
+      forAnyAmountOrPrice { amounts =>
+        amounts.transactionFee should be (0.001.BTC)
+      }
+    }
+
   val exampleCases = Seq(
     1.BTC -> 500.EUR,
     2.BTC -> 3000.EUR,
     0.3.BTC -> 1234.EUR
   )
 
-  abstract class Fixture(paymentProcessor: PaymentProcessor = NoFeesProcessor) {
+  abstract class Fixture(paymentProcessor: PaymentProcessor = NoFeesProcessor,
+                         bitcoinFeeCalculator: BitcoinFeeCalculator = NoBitcoinFees) {
 
-    val instance = new DefaultExchangeAmountsCalculator(paymentProcessor)
+    val instance = new DefaultExchangeAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
 
     type Euros = Euro.type
 
@@ -110,5 +119,13 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
   class FixedFeeProcessor(fee: BigDecimal) extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       amount.currency.amount(fee)
+  }
+
+  object NoBitcoinFees extends BitcoinFeeCalculator {
+    override val defaultTransactionFee: BitcoinAmount = 0.BTC
+  }
+
+  class FixedBitcoinFee(fee: BitcoinAmount) extends BitcoinFeeCalculator {
+    override val defaultTransactionFee: BitcoinAmount = fee
   }
 }
