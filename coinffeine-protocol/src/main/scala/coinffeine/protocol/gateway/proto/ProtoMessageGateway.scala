@@ -46,10 +46,6 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
       log.debug("Forwarding message {} to {}", msg, to)
       server ! SendProtoMessage(to, serialization.toProtobuf(msg))
 
-    case ForwardMessageToBroker(msg) =>
-      log.debug("Forwarding message {} to broker", msg)
-      server ! SendProtoMessageToBroker(serialization.toProtobuf(msg))
-
     case ReceiveProtoMessage(senderId, protoMessage) =>
       val message = serialization.fromProtobuf(protoMessage)
       subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId))

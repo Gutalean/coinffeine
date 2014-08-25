@@ -1,16 +1,15 @@
 package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
-import org.scalatest.matchers.{MatchResult, Matcher}
 
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange._
 import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.peer.exchange.protocol._
-import coinffeine.protocol.gateway.{SubscriptionMatchers, MessageGateway}
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.{MessageGateway, SubscriptionMatchers}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
@@ -29,9 +28,7 @@ abstract class CoinffeineClientTest(systemName: String)
   }
 
   def shouldForward(message: PublicMessage) = new ValidateWithPeer({receiver =>
-    val expectedMessages = Seq(ForwardMessage(message, receiver)) ++
-      (if (receiver == BrokerId) Some(ForwardMessageToBroker(message)) else None)
-    gateway.expectMsgAnyOf(expectedMessages: _*)
+    gateway.expectMsg(ForwardMessage(message, receiver))
   })
 
   protected class ValidateAllMessagesWithPeer {

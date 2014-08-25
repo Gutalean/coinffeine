@@ -7,6 +7,7 @@ import akka.actor._
 import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.OrderBookEntry
+import coinffeine.model.network.BrokerId
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, Offline}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
@@ -48,7 +49,7 @@ class PeerPositionsSubmitter[C <: FiatCurrency](
       case _: PeerPositionsReceived =>
     }
 
-    gateway ! MessageGateway.ForwardMessageToBroker(peerPositions)
+    gateway ! MessageGateway.ForwardMessage(peerPositions, BrokerId)
 
     context.setReceiveTimeout(timeout)
   }

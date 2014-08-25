@@ -40,7 +40,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
       case message @ ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
-      case message @ ForwardMessageToBroker(`payload`) if isBroker(dest) => message
     }
 
   def expectForwardingPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
@@ -49,9 +48,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
       case ForwardMessage(payload, BrokerId)
-          if isBroker(dest) && payloadMatcher.isDefinedAt(payload) =>
-        payloadMatcher.apply(payload)
-      case ForwardMessageToBroker(payload)
           if isBroker(dest) && payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
     }

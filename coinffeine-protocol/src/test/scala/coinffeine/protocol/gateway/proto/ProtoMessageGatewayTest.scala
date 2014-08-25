@@ -105,7 +105,7 @@ class ProtoMessageGatewayTest
 
   it must "forward messages to the broker" in new FreshBrokerAndPeer {
     val msg = randomOrderMatch()
-    peerGateway ! ForwardMessageToBroker(msg)
+    peerGateway ! ForwardMessage(msg, BrokerId)
     brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
   }
 

@@ -35,9 +35,6 @@ object MessageGateway {
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
 
-  /** A message sent in order to forward a message to a the broker node. */
-  case class ForwardMessageToBroker[M <: PublicMessage](message: M)
-
   type ReceiveFilter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
   type MessageFilter = PartialFunction[PublicMessage, Unit]
 
