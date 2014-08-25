@@ -61,8 +61,7 @@ object Exchange {
     */
   case class Amounts[+C <: FiatCurrency](deposits: Both[BitcoinAmount],
                                          refunds: Both[BitcoinAmount],
-                                         steps: Seq[StepAmounts[C]],
-                                         breakdown: Exchange.StepBreakdown) {
+                                         steps: Seq[StepAmounts[C]]) {
     require(steps.nonEmpty, "There should be at least one step")
     val currency = steps.head.fiatAmount.currency
 
@@ -73,6 +72,8 @@ object Exchange {
       steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatAmount)
 
     val fiatRequired = Both[CurrencyAmount[C]](buyer = fiatExchanged, seller = currency.Zero)
+
+    val breakdown = Exchange.StepBreakdown(steps.length)
   }
 
   /** Funds reserved for the order this exchange belongs to */

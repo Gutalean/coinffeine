@@ -19,8 +19,7 @@ private[amounts] class DefaultExchangeAmountsCalculator extends ExchangeAmountsC
     Exchange.Amounts[C](
       deposits,
       refunds = deposits.map(_ - step.bitcoinAmount),
-      steps = Seq.fill(Steps)(step),
-      breakdown = Exchange.StepBreakdown(10)
+      steps = Seq.fill(Steps)(step)
     )
   }
 }
