@@ -24,9 +24,9 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
 
   val amounts = Exchange.Amounts(
-    bitcoinAmount = 10.BTC,
-    fiatAmount = 10.EUR,
-    breakdown = Exchange.StepBreakdown(intermediateSteps = 10)
+    deposits = Both(buyer = 2.BTC, seller = 11.BTC),
+    refunds = Both(buyer = 1.BTC, seller = 10.BTC),
+    steps = Seq.fill(10)(Exchange.StepAmounts(1.BTC, 1.EUR, 0.05.EUR))
   )
 
   val exchangeId = ExchangeId("id")

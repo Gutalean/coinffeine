@@ -9,13 +9,13 @@ import com.typesafe.config.Config
 
 import coinffeine.common.akka.{AskPattern, ServiceRegistry}
 import coinffeine.model.bitcoin.KeyPair
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.peer.amounts.OrderFundsCalculator
+import coinffeine.peer.amounts.ExchangeAmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
@@ -29,8 +29,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 intermediateSteps: Int,
-                 orderFundsCalculator: OrderFundsCalculator)
+                 amountsCalculator: ExchangeAmountsCalculator)
   extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
@@ -42,11 +41,7 @@ class OrderActor(exchangeActorProps: Props,
   private class InitializedOrderActor[C <: FiatCurrency](init: Initialize[C]) {
     import init.{order => _, _}
 
-    private val role = init.order.orderType match {
-      case Bid => BuyerRole
-      case Ask => SellerRole
-    }
-
+    private val role = Role.fromOrderType(init.order.orderType)
     private var currentOrder = init.order
     private var blockedFunds: Option[BlockedFunds] = None
     private val fundsActor = context.actorOf(orderFundsActorProps, "funds")
@@ -70,8 +65,13 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def blockFunds(): Unit = {
-      val (fiatToBlock, bitcoinToBlock) = orderFundsCalculator.calculateFunds(currentOrder)
-      fundsActor ! OrderFundsActor.BlockFunds(fiatToBlock, bitcoinToBlock, wallet, paymentProcessor)
+      val amounts = amountsCalculator.amountsFor(currentOrder)
+      fundsActor ! OrderFundsActor.BlockFunds(
+        fiatAmount = role.select(amounts.fiatRequired),
+        bitcoinAmount = role.select(amounts.deposits),
+        wallet,
+        paymentProcessor
+      )
     }
 
     private def stalled: Receive = running orElse {
@@ -154,15 +154,12 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def buildExchange(orderMatch: OrderMatch): NonStartedExchange[C] = {
-      val fiatAmount = orderMatch.price * currentOrder.amount.value
-      val amounts = Exchange.Amounts(
-        currentOrder.amount, fiatAmount.asInstanceOf[CurrencyAmount[C]],
-        Exchange.StepBreakdown(intermediateSteps))
+      val amounts = amountsCalculator.amountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]]
       Exchange.notStarted(
         id = orderMatch.exchangeId,
         role = role,
         counterpartId = orderMatch.counterpart,
-        amounts = amounts,
+        amounts,
         blockedFunds = blockedFunds.get,
         parameters = Exchange.Parameters(orderMatch.lockTime, network)
       )
@@ -228,13 +225,11 @@ object OrderActor {
   def props(exchangeActorProps: Props,
             config: Config,
             network: NetworkParameters,
-            orderFundsCalculator: OrderFundsCalculator): Props = {
-    val intermediateSteps = config.getInt("coinffeine.hardcoded.intermediateSteps")
+            amountsCalculator: ExchangeAmountsCalculator): Props = {
     Props(new OrderActor(
       exchangeActorProps,
       OrderFundsActor.props,
       network,
-      intermediateSteps,
-      orderFundsCalculator))
+      amountsCalculator))
   }
 }

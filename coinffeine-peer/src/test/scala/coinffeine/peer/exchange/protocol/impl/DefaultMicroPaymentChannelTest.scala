@@ -22,7 +22,7 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
         val tx = currentBuyerChannel.closingTransaction(currentSellerChannel.signCurrentTransaction)
         sendToBlockChain(tx.get)
         (balance(buyerWallet) + balance(sellerWallet)) should be (10.BTC)
-        balance(buyerWallet) should be (1.BTC * (step - 1))
+        balance(buyerWallet) should be (1.BTC * step)
       }
   }
 

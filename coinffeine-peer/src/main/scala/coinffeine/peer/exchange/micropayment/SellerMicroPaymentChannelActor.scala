@@ -132,7 +132,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
         PaymentFound(payment) <- paymentProcessor
           .ask(PaymentProcessorActor.FindPayment(paymentId)).mapTo[PaymentFound]
       } yield {
-        require(payment.amount == exchange.amounts.stepFiatAmount,
+        require(payment.amount == step.select(exchange.amounts).fiatAmount,
           s"Payment $step amount does not match expected amount")
         require(payment.receiverId == exchange.participants.seller.paymentProcessorAccount,
           s"Payment $step is not being sent to the seller")

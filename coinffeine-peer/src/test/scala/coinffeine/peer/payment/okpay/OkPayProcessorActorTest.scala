@@ -53,7 +53,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
 
-  it must "be able to send a payment" in new WithOkPayProcessor {
+  it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment"))
       .willReturn(Future.successful(payment))
     givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
@@ -64,6 +64,14 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     expectMsgPF() {
       case PaymentProcessorActor.Paid(Payment(
         payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
+    }
+
+    withClue("the fee has been taken into account") {
+      processor ! PaymentProcessorActor.Pay(funds, receiverAccount, 0.01.USD, "comment")
+      expectMsgPF() {
+        case PaymentProcessorActor.PaymentFailed(_, ex) =>
+          ex.toString should include ("fail to use funds")
+      }
     }
   }
 

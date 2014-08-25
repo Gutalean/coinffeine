@@ -3,7 +3,8 @@ package coinffeine.peer.exchange.micropayment
 import scala.concurrent.ExecutionContext
 
 import coinffeine.common.akka.ServiceRegistry
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import coinffeine.peer.exchange.util.MessageForwarding
@@ -19,9 +20,12 @@ private[micropayment] abstract class InitializedChannelBehavior[C <: FiatCurrenc
 
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
-      btcAmount = exchange.amounts.stepBitcoinAmount * signatures,
-      fiatAmount = exchange.amounts.stepFiatAmount * payments
+      btcAmount = stepsUntil(signatures).foldLeft(Bitcoin.Zero)(_ + _.bitcoinAmount),
+      fiatAmount = stepsUntil(payments)
+        .foldLeft[CurrencyAmount[C]](exchange.currency.Zero)(_ + _.fiatAmount)
     )
     resultListeners.foreach { _ ! ExchangeProgress(progressUpdate) }
   }
+
+  private def stepsUntil(step: Int) = exchange.amounts.steps.take(step)
 }

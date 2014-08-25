@@ -176,7 +176,7 @@ object CoinffeinePeerActor {
         messageGatewayProps(config),
         MarketInfoActor.props,
         OrderSupervisor.props(exchangeActorProps, config, network, protocolConstants,
-          orderFundsCalculator),
+          exchangeAmountsCalculator),
         bitcoinPeerProps,
         OkPayProcessorActor.props(config)
       )
