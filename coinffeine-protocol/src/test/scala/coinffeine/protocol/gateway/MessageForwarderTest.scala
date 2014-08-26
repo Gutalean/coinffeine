@@ -22,7 +22,6 @@ class MessageForwarderTest extends AkkaSpec {
     gw.relayMessage(SomeResponseMessage("Hello World!"), somePeerId)
 
     expectMsg("Hello World!")
-    gw.expectUnsubscription()
   }
 
   it should "retry to forward when no response is received" in new Fixture {
@@ -37,7 +36,6 @@ class MessageForwarderTest extends AkkaSpec {
     gw.relayMessage(SomeResponseMessage("Hello World!"), somePeerId)
 
     expectMsg("Hello World!")
-    gw.expectUnsubscription()
   }
 
   it should "retry to forward until max retries" in new Fixture {
@@ -52,7 +50,6 @@ class MessageForwarderTest extends AkkaSpec {
     gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second)
 
     expectMsg(MessageForwarder.ConfirmationFailed(SomeRequestMessage))
-    gw.expectUnsubscription()
   }
 
   trait Fixture {

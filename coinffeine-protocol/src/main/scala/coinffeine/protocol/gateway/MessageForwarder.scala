@@ -63,12 +63,7 @@ class MessageForwarder[A](requester: ActorRef,
   }
 
   private def terminate(): Unit = {
-    messageGateway ! Unsubscribe
-    cancelReceptionTimeout()
-    self ! PoisonPill
-
-    // This prevents a possibly queued timeout to be processed
-    context.become { case _ => }
+    context.stop(self)
   }
 
   private def waitForConfirmation(remainingRetries: Int): Receive = {
