@@ -100,4 +100,28 @@ object MessageForwarder {
                confirmation: PartialFunction[PublicMessage, A],
                retry: RetrySettings = MessageForwarder.DefaultRetrySettings): Props =
     Props(new MessageForwarder(requester, messageGateway, msg, destination, confirmation, retry))
+
+  def cancel(forwarder: ActorRef)(implicit context: ActorContext): Unit = {
+    context.stop(forwarder)
+  }
+
+  /** A factory of forward messages that operates with a fixed message gateway and actor context.
+    *
+    * It is specially useful instantiated once in an actor and used many times to forward
+    * indicating only the message, the destination and the confirmation.
+    */
+  class Factory(messageGateway: ActorRef, context: ActorContext) {
+
+    def forward[A](msg: PublicMessage,
+                   destination: NodeId,
+                   retry: RetrySettings = MessageForwarder.DefaultRetrySettings)
+                  (confirmation: PartialFunction[PublicMessage, A]) : ActorRef =
+      context.actorOf(props(context.self, messageGateway, msg, destination, confirmation, retry))
+  }
+
+  object Factory {
+
+    def apply(messageGateway: ActorRef)(implicit context: ActorContext): Factory =
+      new Factory(messageGateway, context)
+  }
 }
