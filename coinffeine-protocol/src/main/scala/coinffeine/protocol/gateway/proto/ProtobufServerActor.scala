@@ -3,11 +3,12 @@ package coinffeine.protocol.gateway.proto
 import java.net.{InetAddress, NetworkInterface}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util._
 
 import akka.actor._
 import akka.pattern._
-import net.tomp2p.connection.Bindings
+import net.tomp2p.connection.{PeerConnection, Bindings}
 import net.tomp2p.futures.{FutureBootstrap, FutureDHT, FutureDiscover}
 import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.peers.{Number160, PeerAddress, PeerMapChangeListener}
@@ -31,6 +32,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     .filterNot(ignoredNetworkInterfaces.contains)
 
   private var me: Peer = _
+  private var connections: Map[PeerAddress, PeerConnection] = Map.empty
   private var connectionStatus = CoinffeineConnectionStatus(activePeers = 0, brokerId = None)
 
   override protected def starting(args: Join): Receive = {
@@ -51,6 +53,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
+    connections.values.foreach(_.close())
     Option(me).map(_.shutdown())
     becomeStopped()
   }
@@ -157,7 +160,16 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 
     private def sendMessage(to: PeerId, msg: CoinffeineMessage) = {
       val sendMsg = me.get(createNumber160(to)).start().flatMap(dhtEntry => {
-        me.sendDirect(new PeerAddress(dhtEntry.getData.getData))
+        val peerAddress = new PeerAddress(dhtEntry.getData.getData)
+        val connection = connections.get(peerAddress).filter(!_.isClosed).getOrElse {
+          val connection = me.createPeerConnection(peerAddress, IdleTCPMillisTimeout)
+          if (connection == null) {
+            throw new IllegalStateException(s"Could not create connection to $peerAddress")
+          }
+          connections = connections.updated(peerAddress, connection)
+          connection
+        }
+        me.sendDirect(connection)
           .setObject(msg.toByteArray)
           .start()
       })
@@ -213,6 +225,8 @@ private[gateway] object ProtobufServerActor {
   private case class AddressPublicationResult(result: Try[FutureDHT])
   private case object PeerMapChanged
   private case class ReceiveData(from: PeerId, data: Array[Byte])
+
+  private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
   def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
     new ProtobufServerActor(ignoredNetworkInterfaces))
