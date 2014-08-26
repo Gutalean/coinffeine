@@ -33,6 +33,12 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     subscription
   }
 
+  def expectUnsubscription(timeout: FiniteDuration): Unsubscribe.type =
+    probe.expectMsg(timeout, hint = "expected unsubscription to broker", Unsubscribe)
+
+  def expectUnsubscription(): Unsubscribe.type =
+    expectUnsubscription(probe.testKitSettings.DefaultTimeout.duration)
+
   def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
     expectForwarding(payload, brokerId, timeout)
 
@@ -67,7 +73,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     } yield ref
     assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
-
       probe.send(target, notification)
     }
   }
