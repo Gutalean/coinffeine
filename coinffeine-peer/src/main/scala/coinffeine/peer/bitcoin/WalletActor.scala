@@ -4,7 +4,7 @@ import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
 import akka.actor._
-import com.google.bitcoin.core.AbstractWalletEventListener
+import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
@@ -27,9 +27,9 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
     updateSpendCandidates()
   }
 
-  override def receive: Receive = {
+  override val receive: Receive = {
 
-    case req@CreateDeposit(coinsId, signatures, amount, transactionFee) =>
+    case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
         val inputs = blockedOutputs.use(coinsId, amount + transactionFee)
         val tx = ImmutableTransaction(
@@ -57,7 +57,7 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
       wallet.addKey(keyPair)
       sender() ! KeyPairCreated(keyPair)
 
-    case WalletChanged =>
+    case InternalWalletChanged =>
       updateBalance()
       updateSpendCandidates()
       notifyListeners()
@@ -95,10 +95,18 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
 
   private def subscribeToWalletChanges(): Unit = {
     wallet.addEventListener(new AbstractWalletEventListener {
-      override def onChange(): Unit = {
-        self ! WalletChanged
+      override def onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction): Unit = {
+        // Don't notify confidence changes for already confirmed transactions to reduce load
+        if (tx.getConfidence.getConfidenceType != TransactionConfidence.ConfidenceType.BUILDING ||
+          tx.getConfidence.getDepthInBlocks == 1) {
+          onChange()
+        }
       }
-    }, context.dispatcher)
+
+      override def onChange(): Unit = {
+        self ! InternalWalletChanged
+      }
+    })
   }
 
   private def notifyListeners(): Unit = {
@@ -108,6 +116,8 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
 
 object WalletActor {
   private[bitcoin] def props(wallet: Wallet) = Props(new WalletActor(wallet))
+
+  private case object InternalWalletChanged
 
   /** Subscribe to wallet changes. The sender will receive [[WalletChanged]] after sending this
     * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].
