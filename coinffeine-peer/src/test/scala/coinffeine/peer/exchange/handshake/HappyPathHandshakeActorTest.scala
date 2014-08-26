@@ -10,7 +10,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
-import coinffeine.protocol.gateway.MessageGateway.{SubscribeToBroker, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -29,18 +29,17 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     val relevantPeerHandshake =
       PeerHandshake(exchange.id, handshake.exchange.state.counterpart.bitcoinKey.publicKey, "foo")
     val otherId = ExchangeId("other-id")
-    val brokerSubscription = gateway.expectMsgType[SubscribeToBroker]
-    brokerSubscription should not(subscribeTo(relevantPeerHandshake))
-    brokerSubscription should subscribeTo(
+    val subscription = gateway.expectMsgType[Subscribe]
+    subscription should not(subscribeToBroker(relevantPeerHandshake))
+    subscription should subscribeToBroker(
       CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))
-    brokerSubscription should subscribeTo(ExchangeAborted(exchange.id, "failed"))
-    brokerSubscription should not(subscribeTo(ExchangeAborted(otherId, "failed")))
+    subscription should subscribeToBroker(ExchangeAborted(exchange.id, "failed"))
+    subscription should not(subscribeToBroker(ExchangeAborted(otherId, "failed")))
 
     val relevantSignatureRequest =
       RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
     val irrelevantSignatureRequest =
       RefundSignatureRequest(otherId, ImmutableTransaction(handshake.counterpartRefund))
-    val subscription = gateway.expectMsgType[Subscribe]
     subscription should subscribeTo(relevantPeerHandshake, counterpartId)
     subscription should subscribeTo(relevantSignatureRequest, counterpartId)
     subscription should not(subscribeTo(relevantSignatureRequest, PeerId("other")))

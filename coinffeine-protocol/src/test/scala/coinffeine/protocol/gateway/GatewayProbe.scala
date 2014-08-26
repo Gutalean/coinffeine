@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, ActorSystem}
 import akka.testkit.TestProbe
 import org.scalatest.Assertions
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.PublicMessage
 
@@ -18,7 +18,6 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
 
   /** Mapping of subscriptions used to relay only what is subscribed or fail otherwise. */
   private var subscriptions: Map[ActorRef, Set[ReceiveFilter]] = Map.empty
-  private var brokerSubscriptions: Map[ActorRef, Set[MessageFilter]] = Map.empty
 
   def ref = probe.ref
 
@@ -34,34 +33,22 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
     subscription
   }
 
-  def expectSubscriptionToBroker(): SubscribeToBroker =
-    expectSubscriptionToBroker(probe.testKitSettings.DefaultTimeout.duration)
-
-  def expectSubscriptionToBroker(timeout: Duration): SubscribeToBroker = {
-    val subscription =probe.expectMsgPF(timeout, hint = "expected subscription to broker") {
-      case s: SubscribeToBroker => s
-    }
-    val currentSubscription = brokerSubscriptions.getOrElse(probe.sender(), Set.empty)
-    brokerSubscriptions =
-      brokerSubscriptions.updated(probe.sender(), currentSubscription + subscription.filter)
-    subscription
-  }
-
   def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
     expectForwarding(payload, brokerId, timeout)
 
-  def expectForwarding(payload: Any, dest: PeerId, timeout: Duration = Duration.Undefined): Unit =
+  def expectForwarding(payload: Any, dest: NodeId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
-      case message @ ForwardMessageToBroker(`payload`) if dest == brokerId => message
+      case message @ ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
     }
 
-  def expectForwardingPF[T](dest: PeerId, timeout: Duration = Duration.Undefined)
+  def expectForwardingPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
                            (payloadMatcher: PartialFunction[Any, T]): T =
     probe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
-      case ForwardMessageToBroker(payload) if dest == brokerId && payloadMatcher.isDefinedAt(payload) =>
+      case ForwardMessage(payload, BrokerId)
+          if isBroker(dest) && payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
     }
 
@@ -69,27 +56,21 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
 
   def expectNoMsg(timeout: FiniteDuration): Unit = probe.expectNoMsg(timeout)
 
+  def isBroker(nodeId: NodeId): Boolean = nodeId == BrokerId || nodeId == brokerId
+
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: PublicMessage, origin: PeerId): Unit = {
+  def relayMessage(message: PublicMessage, origin: NodeId): Unit = {
     val notification = ReceiveMessage(message, origin)
-    val subscriptionTargets = for {
+    val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters if filter.isDefinedAt(notification)
     } yield ref
-    val brokerSubscriptionTargets =
-      if (origin != brokerId) Set.empty
-      else for {
-        (ref, filters) <- brokerSubscriptions.toSet
-        filter <- filters if filter.isDefinedAt(notification.msg)
-      } yield ref
-    val targets = subscriptionTargets ++ brokerSubscriptionTargets
     assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
+
       probe.send(target, notification)
     }
   }
 
-  def relayMessageFromBroker(message: PublicMessage): Unit = {
-    relayMessage(message, brokerId)
-  }
+  def relayMessageFromBroker(message: PublicMessage): Unit = relayMessage(message, BrokerId)
 }

@@ -1,13 +1,13 @@
 package coinffeine.protocol.gateway
 
-import scala.collection.JavaConversions._
 import java.net.NetworkInterface
+import scala.collection.JavaConversions._
 
 import akka.actor.Props
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.{Config, ConfigException}
 
 import coinffeine.common.akka.ServiceRegistryActor
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, NodeId}
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
@@ -33,10 +33,7 @@ object MessageGateway {
   case class JoinAsPeer(localPort: Int, connectTo: BrokerAddress) extends Join
 
   /** A message sent in order to forward a message to a given destination. */
-  case class ForwardMessage[M <: PublicMessage](message: M, dest: PeerId)
-
-  /** A message sent in order to forward a message to a the broker node. */
-  case class ForwardMessageToBroker[M <: PublicMessage](message: M)
+  case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
 
   type ReceiveFilter = PartialFunction[ReceiveMessage[_ <: PublicMessage], Unit]
   type MessageFilter = PartialFunction[PublicMessage, Unit]
@@ -50,14 +47,19 @@ object MessageGateway {
     */
   case class Subscribe(filter: ReceiveFilter)
 
-  /** A message sent in order to subscribe for messages from the broker peer. */
-  case class SubscribeToBroker(filter: MessageFilter)
+  object Subscribe {
+
+    /** Create a [[Subscribe]] message for messages from the broker peer. */
+    def fromBroker(filter: MessageFilter): Subscribe = Subscribe {
+      case ReceiveMessage(msg, BrokerId) if filter.isDefinedAt(msg) =>
+    }
+  }
 
   /** A message sent in order to unsubscribe from incoming message reception. */
   case object Unsubscribe
 
   /** A message send back to the subscriber. */
-  case class ReceiveMessage[M <: PublicMessage](msg: M, sender: PeerId)
+  case class ReceiveMessage[M <: PublicMessage](msg: M, sender: NodeId)
 
   /** An exception thrown when an error is found on message forward. */
   case class ForwardException(message: String, cause: Throwable = null)

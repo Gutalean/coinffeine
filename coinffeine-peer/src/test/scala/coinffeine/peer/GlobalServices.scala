@@ -11,9 +11,8 @@ class GlobalServices(implicit system: ActorSystem) {
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
 
-  val broker = PeerId("broker")
   val messageGateway = {
-    val gateway = new GatewayProbe(broker)
+    val gateway = new GatewayProbe(PeerId("broker"))
     registry.register(MessageGateway.ServiceId, gateway.ref)
     gateway
   }

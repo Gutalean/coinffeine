@@ -2,8 +2,8 @@ package coinffeine.peer.exchange.util
 
 import akka.actor.ActorRef
 
-import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ForwardMessageToBroker}
+import coinffeine.model.network.{BrokerId, PeerId}
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.PublicMessage
 
 class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId) {
@@ -13,7 +13,7 @@ class MessageForwarding(messageGateway: ActorRef, counterpart: PeerId) {
   }
 
   def forwardToBroker(message: PublicMessage): Unit = {
-    messageGateway ! ForwardMessageToBroker(message)
+    messageGateway ! ForwardMessage(message, BrokerId)
   }
 
   def forwardMessage(message: PublicMessage, address: PeerId): Unit = {

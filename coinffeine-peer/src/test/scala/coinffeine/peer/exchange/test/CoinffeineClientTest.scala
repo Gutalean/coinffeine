@@ -1,44 +1,40 @@
 package coinffeine.peer.exchange.test
 
 import akka.testkit.TestProbe
-import org.scalatest.matchers.{MatchResult, Matcher}
 
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.exchange._
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.peer.exchange.protocol._
-import coinffeine.protocol.gateway.{SubscriptionMatchers, MessageGateway}
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.{MessageGateway, SubscriptionMatchers}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange with SubscriptionMatchers {
 
-  val brokerId = PeerId("broker")
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
   val gateway = TestProbe()
   registry.register(MessageGateway.ServiceId, gateway.ref)
 
-  def fromBroker(message: PublicMessage) = ReceiveMessage(message, brokerId)
+  def fromBroker(message: PublicMessage) = ReceiveMessage(message, BrokerId)
 
-  protected class ValidateWithPeer(validation: PeerId => Unit) {
+  protected class ValidateWithPeer(validation: NodeId => Unit) {
     def to(receiver: PeerId): Unit = validation(receiver)
-    def toBroker: Unit = validation(brokerId)
+    def toBroker: Unit = validation(BrokerId)
   }
 
   def shouldForward(message: PublicMessage) = new ValidateWithPeer({receiver =>
-    val expectedMessages = Seq(ForwardMessage(message, receiver)) ++
-      (if (receiver == brokerId) Some(ForwardMessageToBroker(message)) else None)
-    gateway.expectMsgAnyOf(expectedMessages: _*)
+    gateway.expectMsg(ForwardMessage(message, receiver))
   })
 
   protected class ValidateAllMessagesWithPeer {
-    private var messages: List[PeerId => Any] = List.empty
+    private var messages: List[NodeId => Any] = List.empty
     def message(msg: PublicMessage): ValidateAllMessagesWithPeer = {
-      messages = ((receiver: PeerId) => ForwardMessage(msg, receiver)) :: messages
+      messages = ((receiver: NodeId) => ForwardMessage(msg, receiver)) :: messages
       this
     }
     def to(receiver: PeerId): Unit = {

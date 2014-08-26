@@ -4,8 +4,9 @@ import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.network.BrokerId
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessageToBroker, ReceiveMessage, SubscribeToBroker}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
@@ -13,7 +14,7 @@ import coinffeine.protocol.messages.brokerage._
   */
 class MarketInfoActor extends Actor {
 
-  import coinffeine.peer.market.MarketInfoActor._
+  import MarketInfoActor._
 
   override def receive: Receive = {
     case init: Start => new InitializedActor(init).start()
@@ -32,7 +33,7 @@ class MarketInfoActor extends Actor {
     }
 
     private def subscribeToMessages(): Unit = {
-      gateway ! SubscribeToBroker {
+      gateway ! Subscribe.fromBroker {
         case Quote(_, _, _) | OpenOrders(_) =>
       }
     }
@@ -40,12 +41,12 @@ class MarketInfoActor extends Actor {
     private val initializedReceive: Receive = {
       case request @ RequestQuote(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessageToBroker(QuoteRequest(market))
+          gateway ! ForwardMessage(QuoteRequest(market), BrokerId)
         }
 
       case request @ RequestOpenOrders(market) =>
         startRequest(request, sender()) {
-          gateway ! ForwardMessageToBroker(OpenOrdersRequest(market))
+          gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
         }
 
       case ReceiveMessage(quote: Quote[FiatCurrency], _) =>
