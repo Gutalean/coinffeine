@@ -65,20 +65,17 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
   def isBroker(nodeId: NodeId): Boolean = nodeId == BrokerId || nodeId == brokerId
 
   /** Relay a message to subscribed actors or make the test fail if none is subscribed. */
-  def relayMessage(message: PublicMessage, origin: NodeId, checkSubscriptions: Boolean = true): Unit = {
+  def relayMessage(message: PublicMessage, origin: NodeId): Unit = {
     val notification = ReceiveMessage(message, origin)
     val targets = for {
       (ref, filters) <- subscriptions.toSet
       filter <- filters if filter.isDefinedAt(notification)
     } yield ref
-    if (checkSubscriptions) {
-      assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
-    }
+    assert(targets.nonEmpty, s"No one is expecting $notification, check subscription filters")
     targets.foreach { target =>
       probe.send(target, notification)
     }
   }
 
-  def relayMessageFromBroker(message: PublicMessage, checkSubscriptions: Boolean = true): Unit =
-    relayMessage(message, BrokerId, checkSubscriptions)
+  def relayMessageFromBroker(message: PublicMessage): Unit = relayMessage(message, BrokerId)
 }

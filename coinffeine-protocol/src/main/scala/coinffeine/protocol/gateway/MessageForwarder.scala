@@ -5,7 +5,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.util.Timeout
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NodeId, PeerId}
+import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
 import coinffeine.protocol.messages.PublicMessage
 
 /** A message forwarder actor.
@@ -24,34 +25,37 @@ import coinffeine.protocol.messages.PublicMessage
   *
   * @param messageGateway The actor that implements the message gateway logic
   */
-class MessageForwarder(messageGateway: ActorRef) extends Actor with ActorLogging {
+class MessageForwarder[A](requester: ActorRef,
+                          messageGateway: ActorRef,
+                          message: PublicMessage,
+                          destination: NodeId,
+                          confirmation: PartialFunction[PublicMessage, A],
+                          retry: RetrySettings = MessageForwarder.DefaultRetrySettings)
+    extends Actor with ActorLogging {
 
   import MessageForwarder._
   import MessageGateway._
 
-  override val receive = waitForForward
+  override val receive = waitForConfirmation(retry.maxRetries)
 
-  private def waitForForward: Receive = {
-    case Forward(msg, to, confirmation, timeout, retries) =>
-      subscribeTo(confirmation, to)
-      forwardTo(msg, to)
-      setReceptionTimeout(timeout)
-      context.become(waitForConfirmation(msg, confirmation, to, sender(), retries))
+  override def preStart() = {
+    subscribeToDestinationMessages()
+    forwardMessageToDestination()
+    setReceptionTimeout()
   }
 
-  private def subscribeTo[A](confirmation: PartialFunction[PublicMessage, A],
-                             from: PeerId): Unit = {
+  private def subscribeToDestinationMessages(): Unit = {
     messageGateway ! Subscribe {
-      case ReceiveMessage(msg, `from`) if confirmation.isDefinedAt(msg) =>
+      case ReceiveMessage(msg, `destination`) if confirmation.isDefinedAt(msg) =>
     }
   }
 
-  private def forwardTo(msg: PublicMessage, to: PeerId): Unit = {
-    messageGateway ! ForwardMessage(msg, to)
+  private def forwardMessageToDestination(): Unit = {
+    messageGateway ! ForwardMessage(message, destination)
   }
 
-  private def setReceptionTimeout(timeout: Timeout): Unit = {
-    context.setReceiveTimeout(timeout.duration)
+  private def setReceptionTimeout(): Unit = {
+    context.setReceiveTimeout(retry.timeout.duration)
   }
 
   private def cancelReceptionTimeout(): Unit = {
@@ -67,21 +71,15 @@ class MessageForwarder(messageGateway: ActorRef) extends Actor with ActorLogging
     context.become { case _ => }
   }
 
-  private def waitForConfirmation[A](
-      msg: PublicMessage,
-      confirmation: PartialFunction[PublicMessage, A],
-      destination: PeerId,
-      requester: ActorRef,
-      remainingRetries: Int): Receive = {
+  private def waitForConfirmation(remainingRetries: Int): Receive = {
     case ReceiveMessage(response, `destination`) if confirmation.isDefinedAt(response) =>
       requester ! confirmation(response)
       terminate()
     case ReceiveTimeout if remainingRetries > 0 =>
-      forwardTo(msg, destination)
-      context.become(
-        waitForConfirmation(msg, confirmation, destination, requester, remainingRetries - 1))
+      forwardMessageToDestination()
+      context.become(waitForConfirmation(remainingRetries - 1))
     case ReceiveTimeout =>
-      requester ! ConfirmationFailed(msg)
+      requester ! ConfirmationFailed(message)
       terminate()
   }
 }
@@ -91,41 +89,20 @@ object MessageForwarder {
   val DefaultTimeout = Timeout(5.seconds)
   val DefaultMaxRetries = 3
 
-  // TODO: don't pass the request in a actor message but to its constructor
-  /** A request to forward the given message.
-    *
-    * This message is sent to the message forwarder in order to request it to forward a message.
-    * When received, it will send the message using the gateway and will wait for a confirmation.
-    * If the confirmation is not received, it will resend the message up to a number of retries.
-    * If the message is finally received, the resulting confirmation is sent to the requester actor.
-    * If the message is not confirmed, a [[ConfirmationFailed]] message is sent.
-    *
-    * @param msg              The message to be forwarded
-    * @param to               The destination of the message
-    * @param maxRetries  The maximum number of times the message will be retries to be
-    *                         forwarded
-    * @param confirmation     A partial function that determines an incoming message that confirms
-    *                         the forwarded one.
-    */
-  case class Forward[A](msg: PublicMessage,
-                        to: PeerId,
-                        confirmation: PartialFunction[PublicMessage, A],
-                        timeout: Timeout,
-                        maxRetries: Int) {
-
+  case class RetrySettings(timeout: Timeout = DefaultTimeout, maxRetries: Int = DefaultMaxRetries) {
     require(maxRetries >= 0, "number of retries must not be negative")
   }
 
-  object Forward {
-
-    def apply[A](msg: PublicMessage, to: PeerId,
-                 timeout: Timeout = DefaultTimeout, maxRetries: Int = DefaultMaxRetries)
-                (confirmation: PartialFunction[PublicMessage, A]): Forward[A] =
-      apply(msg, to, confirmation, timeout, maxRetries)
-  }
+  val DefaultRetrySettings = RetrySettings()
 
   /** A response message indicating the given message couldn't be confirmed. */
   case class ConfirmationFailed(msg: PublicMessage)
 
-  def props(messageGateway: ActorRef): Props = Props(new MessageForwarder(messageGateway))
+  def props[A](requester: ActorRef,
+               messageGateway: ActorRef,
+               msg: PublicMessage,
+               destination: NodeId,
+               confirmation: PartialFunction[PublicMessage, A],
+               retry: RetrySettings = MessageForwarder.DefaultRetrySettings): Props =
+    Props(new MessageForwarder(requester, messageGateway, msg, destination, confirmation, retry))
 }

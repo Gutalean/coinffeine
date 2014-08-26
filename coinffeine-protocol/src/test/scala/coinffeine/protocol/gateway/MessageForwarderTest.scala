@@ -2,8 +2,10 @@ package coinffeine.protocol.gateway
 
 import scala.concurrent.duration._
 
+import akka.actor.ActorRef
+
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NodeId, PeerId}
 import coinffeine.protocol.messages.PublicMessage
 
 class MessageForwarderTest extends AkkaSpec {
@@ -11,7 +13,7 @@ class MessageForwarderTest extends AkkaSpec {
   import MessageForwarder._
 
   "A message forwarder" should "forward a message" in new Fixture {
-    fw ! Forward(SomeRequestMessage, somePeerId) {
+    val fw = forwarder(SomeRequestMessage, somePeerId) {
       case SomeResponseMessage(data) => data
     }
 
@@ -24,7 +26,7 @@ class MessageForwarderTest extends AkkaSpec {
   }
 
   it should "retry to forward when no response is received" in new Fixture {
-    fw ! Forward(SomeRequestMessage, somePeerId, timeout = 500.millis) {
+    val fw = forwarder(SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis)) {
       case SomeResponseMessage(data) => data
     }
 
@@ -39,7 +41,8 @@ class MessageForwarderTest extends AkkaSpec {
   }
 
   it should "retry to forward until max retries" in new Fixture {
-    fw ! Forward(SomeRequestMessage, somePeerId, timeout = 500.millis, maxRetries = 2) {
+    val fw = forwarder(
+        SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis, maxRetries = 2)) {
       case SomeResponseMessage(data) => data
     }
 
@@ -52,28 +55,16 @@ class MessageForwarderTest extends AkkaSpec {
     gw.expectUnsubscription()
   }
 
-  it should "ignore forwarding requests once processing one" in new Fixture {
-    fw ! Forward(SomeRequestMessage, somePeerId, timeout = 500.millis, maxRetries = 0) {
-      case SomeResponseMessage(data) => data
-    }
-    fw ! MessageForwarder.Forward(SomeRequestMessage, somePeerId) {
-      case SomeOtherResponseMessage(num) => num
-    }
-
-    gw.expectSubscription()
-    gw.expectForwarding(SomeRequestMessage, somePeerId)
-    gw.relayMessage(SomeOtherResponseMessage(7), somePeerId, checkSubscriptions = false)
-    gw.relayMessage(SomeResponseMessage("Hello World!"), somePeerId)
-
-    expectMsg("Hello World!")
-    gw.expectUnsubscription()
-  }
-
   trait Fixture {
     val brokerId = PeerId("broker")
     val somePeerId = PeerId("some-peer")
     val gw = new GatewayProbe(brokerId)
-    val fw = system.actorOf(MessageForwarder.props(gw.ref))
+
+    def forwarder[A](message: PublicMessage, destination: NodeId,
+                     retry: RetrySettings = DefaultRetrySettings)
+                    (confirmation: PartialFunction[PublicMessage, A]): ActorRef = {
+      system.actorOf(MessageForwarder.props(self, gw.ref, message, destination, confirmation, retry))
+    }
   }
 
   case object SomeRequestMessage extends PublicMessage
