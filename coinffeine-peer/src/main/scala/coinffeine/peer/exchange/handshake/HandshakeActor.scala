@@ -18,9 +18,8 @@ import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError
 import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
 import coinffeine.peer.exchange.protocol.Handshake.InvalidRefundSignature
 import coinffeine.peer.exchange.protocol._
-import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -45,7 +44,6 @@ private class HandshakeActor[C <: FiatCurrency](
 
     private val messageGateway = new ServiceRegistry(registry)
       .eventuallyLocate(MessageGateway.ServiceId)
-    private val forwarding = new MessageForwarding(messageGateway, exchange.counterpartId)
     private val counterpartRefundSigner =
       context.actorOf(CounterpartRefundSigner.props(messageGateway, exchange))
 
@@ -95,7 +93,7 @@ private class HandshakeActor[C <: FiatCurrency](
       case ReceiveMessage(RefundSignatureResponse(_, herSignature), _) =>
         try {
           val signedRefund = handshake.signMyRefund(herSignature)
-          forwarding.forwardToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
+          messageGateway ! ForwardMessage(ExchangeCommitment(exchange.id, handshake.myDeposit), BrokerId)
           log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
           context.become(waitForPublication(handshake, signedRefund))
         } catch {
@@ -112,7 +110,7 @@ private class HandshakeActor[C <: FiatCurrency](
     private val abortOnSignatureTimeout: Receive = {
       case RequestSignatureTimeout =>
         val cause = RefundSignatureTimeoutException(exchange.id)
-        forwarding.forwardToBroker(ExchangeRejection(exchange.id, cause.toString))
+        messageGateway ! ForwardMessage(ExchangeRejection(exchange.id, cause.toString), BrokerId)
         finishWithResult(Failure(cause))
     }
 
@@ -214,13 +212,14 @@ private class HandshakeActor[C <: FiatCurrency](
     }
 
     private def handshakePeer(): Unit = {
-      forwarding.forwardToCounterpart(
-        PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount))
+      val handshake = PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount)
+      messageGateway ! ForwardMessage(handshake, exchange.counterpartId)
     }
 
     private def requestRefundSignature(handshake: Handshake[C]): Unit = {
       log.debug("Handshake {}: requesting refund signature", exchange.id)
-      forwarding.forwardToCounterpart(RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund))
+      messageGateway ! ForwardMessage(
+        RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund), exchange.counterpartId)
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
