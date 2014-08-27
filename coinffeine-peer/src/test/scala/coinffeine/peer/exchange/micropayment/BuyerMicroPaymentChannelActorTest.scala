@@ -8,8 +8,7 @@ import org.joda.time.DateTime
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, ExchangeId}
-import coinffeine.model.network.PeerId
+import coinffeine.model.exchange.Both
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
@@ -17,8 +16,6 @@ import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.MessageGateway.Subscribe
-import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
@@ -47,17 +44,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     actor ! StartMicroPaymentChannel(
       runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
     )
-
-    val subscription = gateway.expectMsgType[Subscribe]
-    val otherId = ExchangeId("other-id")
-    val relevantOfferAccepted = StepSignatures(exchange.id, 5, signatures)
-    val irrelevantOfferAccepted = StepSignatures(otherId, 2, signatures)
-    val anotherPeer = PeerId("some-random-peer")
-    subscription should subscribeTo(relevantOfferAccepted, counterpartId)
-    subscription should not(subscribeTo(relevantOfferAccepted, anotherPeer))
-    subscription should not(subscribeTo(irrelevantOfferAccepted, counterpartId))
-    val randomMessage = PeerPositions.empty(Market(Euro))
-    subscription should not(subscribeTo(randomMessage, counterpartId))
+    gateway.expectSubscription()
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
@@ -71,18 +58,18 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
           completed = true)
       ))
       expectProgress(signatures = i, payments = i)
-      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartId
+      gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i"), counterpartId)
       gateway.expectNoMsg(100 milliseconds)
     }
   }
 
   it should "resubmit payment proof when last signature is resubmitted by the seller" in {
     actor ! fromCounterpart(StepSignatures(exchange.id, lastStep, signatures))
-    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
   }
 
   it should "resubmit payment proof when no response is get" in {
-    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

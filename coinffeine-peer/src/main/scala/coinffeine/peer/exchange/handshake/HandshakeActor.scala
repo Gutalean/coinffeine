@@ -16,7 +16,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
 import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
-import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
+import coinffeine.peer.exchange.protocol.Handshake.InvalidRefundSignature
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.util.MessageForwarding
 import coinffeine.protocol.gateway.MessageGateway
@@ -46,6 +46,8 @@ private class HandshakeActor[C <: FiatCurrency](
     private val messageGateway = new ServiceRegistry(registry)
       .eventuallyLocate(MessageGateway.ServiceId)
     private val forwarding = new MessageForwarding(messageGateway, exchange.counterpartId)
+    private val counterpartRefundSigner =
+      context.actorOf(CounterpartRefundSigner.props(messageGateway, exchange))
 
     def startHandshake(): Unit = {
       subscribeToMessages()
@@ -53,19 +55,6 @@ private class HandshakeActor[C <: FiatCurrency](
       scheduleTimeouts()
       log.info("Handshake {}: Handshake started", exchange.id)
       context.become(waitForPeerHandshake)
-    }
-
-    private def signCounterpartRefund(handshake: Handshake[C]): Receive = {
-      case ReceiveMessage(RefundSignatureRequest(_, refundTransaction), _) =>
-        try {
-          val refundSignature = handshake.signHerRefund(refundTransaction)
-          forwarding.forwardToCounterpart(RefundSignatureResponse(exchange.id, refundSignature))
-          log.info("Handshake {}: Signing refund TX {}", exchange.id,
-            refundTransaction.get.getHashAsString)
-        } catch {
-          case cause: InvalidRefundTransaction =>
-            log.warning("Handshake {}: Dropping invalid refund: {}", exchange.id, cause)
-        }
     }
 
     private def receivePeerHandshake: Receive = {
@@ -79,6 +68,7 @@ private class HandshakeActor[C <: FiatCurrency](
       case handshake: Handshake[C] =>
         blockchain ! BlockchainActor.WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq)
         requestRefundSignature(handshake)
+        counterpartRefundSigner ! CounterpartRefundSigner.StartSigningRefunds(handshake)
         context.become(waitForRefundSignature(handshake))
 
       case Status.Failure(cause) =>
@@ -132,6 +122,7 @@ private class HandshakeActor[C <: FiatCurrency](
         bothCommitments.toSeq.foreach { tx =>
           blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
         }
+        context.stop(counterpartRefundSigner)
         log.info("Handshake {}: The broker published {}, waiting for confirmations",
           exchange.id, bothCommitments)
         context.become(waitForConfirmations(handshake, bothCommitments, refund))
@@ -147,12 +138,11 @@ private class HandshakeActor[C <: FiatCurrency](
       receivePeerHandshake orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
 
     private def waitForRefundSignature(handshake: Handshake[C]) =
-      receiveRefundSignature(handshake) orElse signCounterpartRefund(handshake) orElse
-        abortOnSignatureTimeout orElse abortOnBrokerNotification
+      receiveRefundSignature(handshake) orElse abortOnSignatureTimeout orElse
+        abortOnBrokerNotification
 
     private def waitForPublication(handshake: Handshake[C], signedRefund: ImmutableTransaction) =
-      getNotifiedByBroker(handshake, signedRefund) orElse signCounterpartRefund(handshake) orElse
-        abortOnBrokerNotification
+      getNotifiedByBroker(handshake, signedRefund) orElse abortOnBrokerNotification
 
     private def waitForConfirmations(handshake: Handshake[C],
                                      commitmentIds: Both[Hash],
@@ -203,7 +193,6 @@ private class HandshakeActor[C <: FiatCurrency](
       messageGateway ! Subscribe {
         case ReceiveMessage(CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _), BrokerId) =>
         case ReceiveMessage(PeerHandshake(`id`, _, _) |
-                            RefundSignatureRequest(`id`, _) |
                             RefundSignatureResponse(`id`, _), `counterpart`) =>
       }
     }
