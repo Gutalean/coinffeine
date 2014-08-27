@@ -54,12 +54,13 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .build()
   "BTC amount" should behave like thereIsAMappingBetween(btcAmount, btcAmountMessage)
 
-  "Fiat amount" should behave like thereIsAMappingBetween(3 EUR: FiatAmount, msg.FiatAmount.newBuilder
-    .setCurrency("EUR")
-    .setScale(0)
-    .setValue(3)
-    .build
-  )
+  "Fiat amount" should behave like thereIsAMappingBetween[FiatAmount, msg.FiatAmount](
+    3.EUR, msg.FiatAmount.newBuilder
+      .setCurrency("EUR")
+      .setScale(0)
+      .setValue(3)
+      .build
+    )
 
   val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
   val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
@@ -69,7 +70,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
     .build
 
-  "Order" should behave like thereIsAMappingBetween[OrderBookEntry[FiatAmount], msg.OrderBookEntry](
+  "Order" should behave like thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
     orderBookEntry, orderBookEntryMessage)
 
   val positions = PeerPositions(Market(Euro), Seq(orderBookEntry), "nonce-1234567890")
@@ -80,7 +81,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .build
 
   "Peer positions" should behave like
-    thereIsAMappingBetween[PeerPositions[FiatCurrency], msg.PeerPositions](
+    thereIsAMappingBetween[PeerPositions[_ <: FiatCurrency], msg.PeerPositions](
       positions, positionsMessage)
 
   val positionsReceived = PeerPositionsReceived("nonce-1234567890")
@@ -152,7 +153,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
     .build
   val emptyQuote = Quote.empty(Market(Euro))
-  "Empty quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
+  "Empty quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](
     emptyQuote, emptyQuoteMessage)
 
   val quoteMessage = emptyQuoteMessage.toBuilder
@@ -161,7 +162,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](22 EUR))
     .build
   val quote = Quote(20.EUR -> 30.EUR, 22 EUR)
-  "Quote" must behave like thereIsAMappingBetween[Quote[FiatCurrency], msg.Quote](
+  "Quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](
     quote, quoteMessage)
 
   val quoteRequest = QuoteRequest(Market(Euro))

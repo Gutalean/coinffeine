@@ -1,7 +1,5 @@
 package coinffeine.peer.exchange
 
-import scala.language.existentials
-
 import akka.actor.{ActorRef, Props}
 
 import coinffeine.model.bitcoin._

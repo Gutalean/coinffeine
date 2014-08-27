@@ -73,7 +73,7 @@ class OrderSupervisorTest extends AkkaSpec {
       submissionProbe.expectMsg(SubmissionSupervisor.Initialize(gatewayRef))
     }
 
-    def givenOpenOrder(order: Order[FiatCurrency]): Unit = {
+    def givenOpenOrder(order: Order[_ <: FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
       orderActorProbe.expectMsgPF() {
         case init: OrderActor.Initialize[_] if init.order == order =>

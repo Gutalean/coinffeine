@@ -9,14 +9,15 @@ import coinffeine.peer.payment.PaymentProcessorActor
 class BlockingFundsActor extends Actor with ActorLogging {
   import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
-  private case class BlockedFundsInfo(id: BlockedFundsId, remainingAmount: FiatAmount, listener: ActorRef) {
+  private case class BlockedFundsInfo[C <: FiatCurrency](
+      id: BlockedFundsId, remainingAmount: CurrencyAmount[C], listener: ActorRef) {
 
-    def canUseFunds(amount: FiatAmount): Boolean = amount <= remainingAmount
+    def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
 
   private var nextId = 1
   private var balances: Map[FiatCurrency, FiatAmount] = Map.empty
-  private var funds: Map[BlockedFundsId, BlockedFundsInfo] = Map.empty
+  private var funds: Map[BlockedFundsId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
   private var backedFunds = Set.empty[BlockedFundsId]
   private var notBackedFunds = Set.empty[BlockedFundsId]
   private var neverBackedFunds = Set.empty[BlockedFundsId]
@@ -49,9 +50,13 @@ class BlockingFundsActor extends Actor with ActorLogging {
       updateBackedFunds()
   }
 
-  private def useFunds(fundsId: BlockedFundsId, amount: FiatAmount, requester: ActorRef): Unit = {
+  private def useFunds[C <: FiatCurrency](fundsId: BlockedFundsId,
+                                          amount: CurrencyAmount[C],
+                                          requester: ActorRef): Unit = {
     funds.get(fundsId) match {
-      case Some(blockedFunds) =>
+      case Some(blockedFunds) if blockedFunds.remainingAmount.currency != amount.currency =>
+        throw new IllegalArgumentException(s"Cannot use $amount out of ${blockedFunds.remainingAmount}")
+      case Some(blockedFunds: BlockedFundsInfo[C]) =>
         if (amount > blockedFunds.remainingAmount) {
           requester ! CannotUseFunds(fundsId, amount,
             s"insufficient blocked funds for id $fundsId: " +
@@ -69,14 +74,16 @@ class BlockingFundsActor extends Actor with ActorLogging {
     }
   }
 
-  private def areBacked(blockedFunds: BlockedFundsInfo): Boolean = backedFunds.contains(blockedFunds.id)
+  private def areBacked(blockedFunds: BlockedFundsInfo[_]): Boolean =
+    backedFunds.contains(blockedFunds.id)
 
-  private def updateFunds(newFunds: BlockedFundsInfo): Unit = {
+  private def updateFunds(newFunds: BlockedFundsInfo[_ <: FiatCurrency]): Unit = {
     funds += newFunds.id -> newFunds
   }
 
-  private def reduceBalance(amount: FiatAmount): Unit = {
-    val prevAmount = balances.getOrElse(amount.currency, amount.currency.Zero)
+  private def reduceBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
+    val prevAmount = balances.getOrElse(amount.currency, CurrencyAmount.zero(amount.currency))
+      .asInstanceOf[CurrencyAmount[C]]
     require(amount <= prevAmount)
     balances += amount.currency -> (prevAmount - amount)
   }
@@ -98,15 +105,16 @@ class BlockingFundsActor extends Actor with ActorLogging {
     newlyBacked.foreach(setBacked)
   }
 
-  private def fundsThatCanBeBacked(currency: FiatCurrency): Set[BlockedFundsId] = {
+  private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[BlockedFundsId] = {
     val availableBalance = balances.getOrElse(currency, currency.Zero)
     val eligibleFunds = funds
       .values
       .filter(_.remainingAmount.currency == currency)
+      .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
       .toSeq
       .sortBy(_.id.underlying)
     val fundsThatCanBeBacked =
-      eligibleFunds.scanLeft(currency.Zero: FiatAmount)(_ + _.remainingAmount)
+      eligibleFunds.scanLeft(CurrencyAmount.zero(currency))(_ + _.remainingAmount)
         .takeWhile(_ <= availableBalance)
         .size - 1
     eligibleFunds.take(fundsThatCanBeBacked).map(_.id).toSet
@@ -168,7 +176,9 @@ class BlockingFundsActor extends Actor with ActorLogging {
   }
 
   private def totalBlockedForCurrency[C <: FiatCurrency](currency: C): Option[FiatAmount] = {
-    val fundsForCurrency = funds.values.filter(_.remainingAmount.currency == currency)
+    val fundsForCurrency = funds.values
+      .filter(_.remainingAmount.currency == currency)
+      .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
     if (fundsForCurrency.isEmpty) None
     else Some(fundsForCurrency.map(_.remainingAmount).reduce(_ + _))
   }

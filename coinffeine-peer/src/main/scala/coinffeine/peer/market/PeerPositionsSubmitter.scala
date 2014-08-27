@@ -5,7 +5,7 @@ import scala.concurrent.duration.Duration
 import akka.actor._
 
 import coinffeine.common.akka.ServiceRegistry
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, Offline}
@@ -29,11 +29,11 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositi
   */
 class PeerPositionsSubmitter[C <: FiatCurrency](
     market: Market[C],
-    requests: Set[(ActorRef, OrderBookEntry[FiatAmount])],
+    requests: Set[(ActorRef, OrderBookEntry[C])],
     registry: ActorRef,
     timeout: Duration) extends Actor with ActorLogging {
 
-  private val peerPositions: PeerPositions[FiatCurrency] =
+  private val peerPositions: PeerPositions[C] =
     PeerPositions(market, requests.map(_._2).toSeq)
 
   private val nonce = peerPositions.nonce
@@ -75,7 +75,7 @@ object PeerPositionsSubmitter {
 
   def props[C <: FiatCurrency](
       market: Market[C],
-      requests: Set[(ActorRef, OrderBookEntry[FiatAmount])],
+      requests: Set[(ActorRef, OrderBookEntry[C])],
       registry: ActorRef,
       timeout: Duration): Props =
     Props(new PeerPositionsSubmitter(market, requests, registry, timeout))

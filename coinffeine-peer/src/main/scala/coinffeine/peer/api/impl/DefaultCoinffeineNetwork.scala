@@ -26,8 +26,7 @@ private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
     if (status.connected) Connected else Disconnected
   })
 
-  override def orders: Set[Order[FiatCurrency]] =
-    await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
+  override def orders = await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
     peer ! OpenOrder(order)

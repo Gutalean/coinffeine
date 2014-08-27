@@ -17,5 +17,5 @@ object OkPayPaymentProcessor extends PaymentProcessor {
   }
 
   private def roundUp[C <: FiatCurrency](amount: BigDecimal, currency: C): CurrencyAmount[C] =
-    currency(amount.setScale(currency.precision, RoundingMode.UP))
+    CurrencyAmount(amount.setScale(currency.precision, RoundingMode.UP), currency)
 }

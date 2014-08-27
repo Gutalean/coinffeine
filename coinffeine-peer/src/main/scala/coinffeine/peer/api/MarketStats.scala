@@ -2,7 +2,7 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.protocol.messages.brokerage.{Market, Quote}
 
@@ -13,5 +13,5 @@ trait MarketStats {
   def currentQuote[C <: FiatCurrency](market: Market[C]): Future[Quote[C]]
 
   /** Current open orders for a given market (anonymized order book) */
-  def openOrders[C <: FiatCurrency](market: Market[C]): Future[Set[OrderBookEntry[CurrencyAmount[C]]]]
+  def openOrders[C <: FiatCurrency](market: Market[C]): Future[Set[OrderBookEntry[C]]]
 }

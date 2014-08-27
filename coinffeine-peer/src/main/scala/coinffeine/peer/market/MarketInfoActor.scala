@@ -49,7 +49,7 @@ class MarketInfoActor extends Actor {
           gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
         }
 
-      case ReceiveMessage(quote: Quote[FiatCurrency], _) =>
+      case ReceiveMessage(quote @ Quote(_, _, _), _) =>
         completeRequest(RequestQuote(quote.market), quote)
 
       case ReceiveMessage(openOrders: OpenOrders[_], _) =>

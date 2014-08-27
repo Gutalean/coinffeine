@@ -2,7 +2,7 @@ package coinffeine.peer.market
 
 import akka.actor._
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -23,7 +23,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
     import init._
     implicit val executor = context.dispatcher
 
-    type SubmittingOrders = Set[(ActorRef, OrderBookEntry[FiatAmount])]
+    type SubmittingOrders = Set[(ActorRef, OrderBookEntry[C])]
     val SubmittingOrders = Set
 
     def start(): Unit = {
@@ -49,8 +49,8 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
     private def handleOpenOrders(orders: SubmittingOrders): Receive = {
 
-      case KeepSubmitting(order) =>
-        val newOrders = orders + (sender -> order)
+      case KeepSubmitting(order: OrderBookEntry[C]) if order.price.currency == market.currency =>
+        val newOrders = orders + (sender() -> order)
         forwardOrders(newOrders)
         context.become(keepingOpenOrders(newOrders))
     }

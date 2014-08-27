@@ -1,7 +1,6 @@
 package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.Future
-import scala.language.existentials
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._

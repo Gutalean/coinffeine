@@ -61,10 +61,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val funds = expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
     expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     processor ! PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
-    expectMsgPF() {
-      case PaymentProcessorActor.Paid(Payment(
-        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
-    }
+    val response = expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
+    response.id should be (payment.id)
+    response.senderId should be (senderAccount)
+    response.receiverId should be (receiverAccount)
+    response.amount should be (amount)
+    response.description should be ("comment")
 
     withClue("the fee has been taken into account") {
       processor ! PaymentProcessorActor.Pay(funds, receiverAccount, 0.01.USD, "comment")
@@ -99,10 +101,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.findPayment(payment.id)).willReturn(Future.successful(Some(payment)))
     givenPaymentProcessorIsInitialized()
     processor ! PaymentProcessorActor.FindPayment(payment.id)
-    expectMsgPF() {
-      case PaymentProcessorActor.PaymentFound(Payment(
-        payment.id, `senderAccount`, `receiverAccount`, `amount`, _, "comment", _)) =>
-    }
+    expectMsgType[PaymentProcessorActor.PaymentFound]
   }
 
   it must "be able to check a payment does not exist"  in new WithOkPayProcessor {

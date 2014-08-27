@@ -3,7 +3,6 @@ package coinffeine.protocol.serialization
 import com.google.protobuf.Descriptors.FieldDescriptor
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
@@ -42,8 +41,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
-      case m: Quote[FiatCurrency] =>
-        builder.setQuote(ProtoMapping.toProtobuf(m))
+      case m @ Quote(_, _, _) =>
+        builder.setQuote(ProtoMapping.toProtobuf[Quote[_ <: FiatCurrency], proto.Quote](m))
       case m: ExchangeRejection =>
         builder.setExchangeRejection(ProtoMapping.toProtobuf(m))
       case m: PeerHandshake =>
@@ -58,10 +57,12 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))
       case m: OpenOrdersRequest =>
         builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m))
-      case m: OpenOrders[FiatCurrency] =>
-        builder.setOpenOrders(ProtoMapping.toProtobuf(m))
-      case m: PeerPositions[FiatCurrency] =>
-        builder.setPeerPositions(ProtoMapping.toProtobuf(m))
+      case m @ OpenOrders(_) =>
+        builder.setOpenOrders(
+          ProtoMapping.toProtobuf[OpenOrders[_ <: FiatCurrency], proto.OpenOrders](m))
+      case m @ PeerPositions(_, _, _) =>
+        builder.setPeerPositions(
+          ProtoMapping.toProtobuf[PeerPositions[_ <: FiatCurrency], proto.PeerPositions](m))
       case m: PeerPositionsReceived =>
         builder.setPeerPositionsReceived(ProtoMapping.toProtobuf(m))
       case _ => throw new IllegalArgumentException("Unsupported message: " + message)

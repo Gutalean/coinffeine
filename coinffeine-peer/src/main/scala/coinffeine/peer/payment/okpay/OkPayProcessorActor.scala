@@ -31,7 +31,8 @@ class OkPayProcessorActor(
   import OkPayProcessorActor._
 
   private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
-  private var currentBalances = Map.empty[FiatCurrency, Balance[FiatCurrency]]
+  private var currentBalances: Map[c forSome { type c <: FiatCurrency },
+                                   Balance[c] forSome { type c <: FiatCurrency} ] = Map.empty
 
   private var timer: Cancellable = _
 
@@ -112,6 +113,7 @@ class OkPayProcessorActor(
       totalAmount <- balances.map { b =>
         b.find(_.currency == currency)
           .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
+          .asInstanceOf[CurrencyAmount[C]]
       }
       blockedAmount <- blockedFunds
     } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
@@ -138,7 +140,7 @@ class OkPayProcessorActor(
     }
   }
 
-  private def updateBalance(balance: Balance[FiatCurrency]): Unit = {
+  private def updateBalance[C <: FiatCurrency](balance: Balance[C]): Unit = {
     if (currentBalances.get(balance.amount.currency) != Some(balance)) {
       publishEvent(FiatBalanceChangeEvent(balance))
       currentBalances += balance.amount.currency -> balance

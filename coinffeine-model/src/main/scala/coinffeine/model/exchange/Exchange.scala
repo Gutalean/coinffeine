@@ -6,7 +6,7 @@ import coinffeine.model.currency.{CurrencyAmount, BitcoinAmount, FiatCurrency}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
-case class Exchange[+C <: FiatCurrency, +S <: Exchange.State[C]](
+case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
     id: ExchangeId,
     role: Role,
     counterpartId: PeerId,
@@ -41,13 +41,13 @@ object Exchange {
   }
 
   /** Amounts involved on one exchange step */
-  case class StepAmounts[+C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                             fiatAmount: CurrencyAmount[C],
-                                             fiatFee: CurrencyAmount[C]) {
+  case class StepAmounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                            fiatAmount: CurrencyAmount[C],
+                                            fiatFee: CurrencyAmount[C]) {
     require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
     require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
 
-    def +[C2 >: C <: FiatCurrency](other: StepAmounts[C2]) = StepAmounts(
+    def +(other: StepAmounts[C]) = StepAmounts(
       bitcoinAmount + other.bitcoinAmount,
       fiatAmount + other.fiatAmount,
       fiatFee + other.fiatFee
@@ -70,22 +70,22 @@ object Exchange {
     * @param steps             Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
-  case class Amounts[+C <: FiatCurrency](deposits: Both[BitcoinAmount],
-                                         refunds: Both[BitcoinAmount],
-                                         steps: Seq[StepAmounts[C]],
-                                         transactionFee: BitcoinAmount) {
+  case class Amounts[C <: FiatCurrency](deposits: Both[BitcoinAmount],
+                                        refunds: Both[BitcoinAmount],
+                                        steps: Seq[StepAmounts[C]],
+                                        transactionFee: BitcoinAmount) {
     require(steps.nonEmpty, "There should be at least one step")
-    val currency = steps.head.fiatAmount.currency
+    val currency: C = steps.head.fiatAmount.currency
 
     /** Amount of bitcoins to be exchanged */
     val bitcoinExchanged: BitcoinAmount = steps.foldLeft(Bitcoin.Zero)(_ + _.bitcoinAmount)
     /** Amount of fiat to be exchanged */
     val fiatExchanged: CurrencyAmount[C] =
-      steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatAmount)
+      steps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
 
     val fiatRequired = Both[CurrencyAmount[C]](
-      buyer = fiatExchanged + steps.foldLeft[CurrencyAmount[C]](currency.Zero)(_ + _.fiatFee),
-      seller = currency.Zero
+      buyer = fiatExchanged + steps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),
+      seller = CurrencyAmount.zero(currency)
     )
 
     val depositTransactionAmounts = deposits.map(netAmount => DepositAmounts(
@@ -102,10 +102,10 @@ object Exchange {
 
   case class Deposits(transactions: Both[ImmutableTransaction])
 
-  case class Progress[+C <: FiatCurrency](bitcoinsTransferred: BitcoinAmount,
-                                          fiatTransferred: CurrencyAmount[C]) {
+  case class Progress[C <: FiatCurrency](bitcoinsTransferred: BitcoinAmount,
+                                         fiatTransferred: CurrencyAmount[C]) {
 
-    def +[C2 >: C <: FiatCurrency](other: Progress[C2]) = Progress(
+    def +(other: Progress[C]) = Progress(
       bitcoinsTransferred = bitcoinsTransferred + other.bitcoinsTransferred,
       fiatTransferred = fiatTransferred + other.fiatTransferred
     )
@@ -113,8 +113,7 @@ object Exchange {
     override def toString = s"progressed $bitcoinsTransferred by $fiatTransferred"
   }
 
-  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, c.Zero)
-
+  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, CurrencyAmount.zero(c))
 
   def notStarted[C <: FiatCurrency](id: ExchangeId,
                                     role: Role,
@@ -124,11 +123,11 @@ object Exchange {
                                     blockedFunds: Exchange.BlockedFunds) = Exchange(
     id, role, counterpartId, amounts, parameters, blockedFunds, NotStarted()(amounts.currency))
 
-  sealed trait State[+C <: FiatCurrency] {
+  sealed trait State[C <: FiatCurrency] {
     val progress: Exchange.Progress[C]
   }
 
-  case class NotStarted[C <: FiatCurrency]()(currency: C) extends State[C] {
+  case class NotStarted[C <: FiatCurrency]()(val currency: C) extends State[C] {
     override val progress = Exchange.noProgress(currency)
   }
 
@@ -141,7 +140,7 @@ object Exchange {
   }
 
   case class Handshaking[C <: FiatCurrency](user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo)
-                                           (currency: C) extends State[C] with StartedHandshake[C] {
+                                           (val currency: C) extends State[C] with StartedHandshake[C] {
     override val progress = Exchange.noProgress(currency)
   }
 
@@ -164,7 +163,7 @@ object Exchange {
                                  previousState: Handshaking[C],
                                  deposits: Exchange.Deposits): Exchanging[C] =
       Exchanging(previousState.user, previousState.counterpart, deposits,
-        Exchange.noProgress(currency))
+        Exchange.noProgress[C](currency))
   }
 
   implicit class ExchangingTransitions[C <: FiatCurrency](val exchange: Exchange[C, Exchanging[C]])
