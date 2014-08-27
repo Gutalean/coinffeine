@@ -4,8 +4,7 @@ import scala.concurrent.duration._
 
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
-import coinffeine.protocol.messages.handshake.ExchangeRejection
+import coinffeine.protocol.messages.handshake.{PeerHandshake, ExchangeRejection}
 
 class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
 
@@ -19,14 +18,17 @@ class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-tim
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
     givenActorIsInitialized()
+    gateway.expectSubscription()
     listener.expectMsgClass(classOf[HandshakeFailure])
     listener.expectTerminated(actor)
   }
 
   it must "notify the broker that the exchange is rejected" in {
-    gateway.fishForMessage() {
-      case ForwardMessage(ExchangeRejection(exchange.`id`, _), BrokerId) => true
-      case _ => false
+    gateway.expectForwardingPF(counterpartId) {
+      case _: PeerHandshake =>
+    }
+    gateway.expectForwardingPF(BrokerId) {
+      case ExchangeRejection(exchange.`id`, _) =>
     }
   }
 }

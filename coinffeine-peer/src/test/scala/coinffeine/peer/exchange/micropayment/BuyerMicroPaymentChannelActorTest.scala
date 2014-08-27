@@ -16,7 +16,6 @@ import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
 class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
@@ -45,7 +44,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     actor ! StartMicroPaymentChannel(
       runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
     )
-    gateway.expectMsgType[Subscribe]
+    gateway.expectSubscription()
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
@@ -59,18 +58,18 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
           completed = true)
       ))
       expectProgress(signatures = i, payments = i)
-      shouldForward(PaymentProof(exchange.id, s"payment$i")) to counterpartId
+      gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i"), counterpartId)
       gateway.expectNoMsg(100 milliseconds)
     }
   }
 
   it should "resubmit payment proof when last signature is resubmitted by the seller" in {
     actor ! fromCounterpart(StepSignatures(exchange.id, lastStep, signatures))
-    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
   }
 
   it should "resubmit payment proof when no response is get" in {
-    shouldForward(PaymentProof(exchange.id, s"payment$lastStep")) to counterpartId
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {

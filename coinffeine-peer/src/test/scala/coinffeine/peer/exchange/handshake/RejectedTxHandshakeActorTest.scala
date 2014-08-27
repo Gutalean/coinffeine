@@ -25,10 +25,11 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
     shouldForwardRefundSignatureRequest()
     expectNoMsg()
     givenValidRefundSignatureResponse()
-    gateway.send(actor, fromBroker(CommitmentNotification(
+    val notification = CommitmentNotification(
       exchange.id,
       Both(handshake.myDeposit.get.getHash, handshake.counterpartCommitmentTransaction.getHash)
-    )))
+    )
+    gateway.relayMessageFromBroker(notification)
     blockchain.send(actor, TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
 
     val result = listener.expectMsgClass(classOf[HandshakeFailure])

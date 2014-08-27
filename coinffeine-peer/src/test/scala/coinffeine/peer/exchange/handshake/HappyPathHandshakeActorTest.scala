@@ -7,7 +7,6 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
-import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
@@ -22,7 +21,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   "Handshake happy path" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
     givenActorIsInitialized()
-    gateway.expectMsgType[Subscribe]
+    gateway.expectSubscription()
   }
 
   it should "send peer handshake" in {
@@ -39,7 +38,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   it should "reject signature of invalid counterpart refund transactions" in {
     val invalidRequest =
       RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction))
-    gateway.send(actor, fromCounterpart(invalidRequest))
+    gateway.relayMessage(invalidRequest, counterpartId)
     gateway.expectNoMsg(100 millis)
   }
 
@@ -48,14 +47,14 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   }
 
   it should "don't be fooled by invalid refund TX or source and resubmit signature request" in {
-    gateway.send(
-      actor, fromCounterpart(RefundSignatureResponse(exchange.id, mock[TransactionSignature])))
+    val invalidSignature = RefundSignatureResponse(exchange.id, mock[TransactionSignature])
+    gateway.relayMessage(invalidSignature, counterpartId)
     shouldForwardRefundSignatureRequest()
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     givenValidRefundSignatureResponse()
-    shouldForward (ExchangeCommitment(exchange.id, handshake.myDeposit)) toBroker
+    gateway.expectForwardingToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
   }
 
   it should "sign counterpart refund after having our refund signed" in {
@@ -64,13 +63,14 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
-    gateway.send(actor, fromBroker(CommitmentNotification(
+    val notification = CommitmentNotification(
       exchange.id,
       Both(
         handshake.myDeposit.get.getHash,
         handshake.counterpartCommitmentTransaction.getHash
       )
-    )))
+    )
+    gateway.relayMessageFromBroker(notification)
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
       WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),

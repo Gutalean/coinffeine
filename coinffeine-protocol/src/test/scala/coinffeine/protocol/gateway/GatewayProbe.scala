@@ -39,17 +39,17 @@ class GatewayProbe(brokerId: PeerId)(implicit system: ActorSystem) extends Asser
   def expectUnsubscription(): Unsubscribe.type =
     expectUnsubscription(probe.testKitSettings.DefaultTimeout.duration)
 
-  def expectForwardingToBroker(payload: Any, timeout: Duration = Duration.Undefined): Unit =
+  def expectForwardingToBroker(payload: PublicMessage, timeout: Duration = Duration.Undefined): Unit =
     expectForwarding(payload, brokerId, timeout)
 
-  def expectForwarding(payload: Any, dest: NodeId, timeout: Duration = Duration.Undefined): Unit =
+  def expectForwarding(payload: PublicMessage, dest: NodeId, timeout: Duration = Duration.Undefined): Unit =
     probe.expectMsgPF(timeout) {
       case message @ ForwardMessage(`payload`, `dest`) => message
       case message @ ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
     }
 
   def expectForwardingPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
-                           (payloadMatcher: PartialFunction[Any, T]): T =
+                           (payloadMatcher: PartialFunction[PublicMessage, T]): T =
     probe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
