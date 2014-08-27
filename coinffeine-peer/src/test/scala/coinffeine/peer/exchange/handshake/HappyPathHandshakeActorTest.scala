@@ -2,14 +2,11 @@ package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.duration._
 
-import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
-import coinffeine.model.exchange.{Both, ExchangeId}
-import coinffeine.model.network.PeerId
+import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
@@ -25,28 +22,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   "Handshake happy path" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
     givenActorIsInitialized()
-
-    val relevantPeerHandshake =
-      PeerHandshake(exchange.id, handshake.exchange.state.counterpart.bitcoinKey.publicKey, "foo")
-    val otherId = ExchangeId("other-id")
-    val subscription = gateway.expectMsgType[Subscribe]
-    subscription should not(subscribeToBroker(relevantPeerHandshake))
-    subscription should subscribeToBroker(
-      CommitmentNotification(exchange.id, Both(mock[Hash], mock[Hash])))
-    subscription should subscribeToBroker(ExchangeAborted(exchange.id, "failed"))
-    subscription should not(subscribeToBroker(ExchangeAborted(otherId, "failed")))
-
-    val relevantSignatureRequest =
-      RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
-    val irrelevantSignatureRequest =
-      RefundSignatureRequest(otherId, ImmutableTransaction(handshake.counterpartRefund))
-    subscription should subscribeTo(relevantPeerHandshake, counterpartId)
-    subscription should subscribeTo(relevantSignatureRequest, counterpartId)
-    subscription should not(subscribeTo(relevantSignatureRequest, PeerId("other")))
-    subscription should not(subscribeTo(irrelevantSignatureRequest, counterpartId))
-    subscription should subscribeTo(
-      RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature), counterpartId)
-    subscription should not(subscribeTo(ExchangeAborted(exchange.id, "failed"), counterpartId))
+    gateway.expectMsgType[Subscribe]
   }
 
   it should "send peer handshake" in {

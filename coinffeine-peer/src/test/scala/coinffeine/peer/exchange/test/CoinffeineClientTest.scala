@@ -9,11 +9,11 @@ import coinffeine.model.exchange._
 import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
-import coinffeine.protocol.gateway.{MessageGateway, SubscriptionMatchers}
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
-  extends AkkaSpec(systemName) with SampleExchange with SubscriptionMatchers {
+  extends AkkaSpec(systemName) with SampleExchange {
 
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)

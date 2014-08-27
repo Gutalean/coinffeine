@@ -8,8 +8,6 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.network.PeerId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
@@ -19,7 +17,6 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, PaymentFound}
 import coinffeine.protocol.gateway.MessageGateway.Subscribe
-import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
@@ -46,15 +43,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   )
 
   "The seller exchange actor" should "subscribe to the relevant messages" in {
-    val subscription = gateway.expectMsgClass(classOf[Subscribe])
-    val anotherPeer = PeerId("some-random-peer")
-    val relevantPayment = PaymentProof(exchange.id, null)
-    val irrelevantPayment = PaymentProof(ExchangeId("another-id"), null)
-    subscription should subscribeTo(relevantPayment, counterpartId)
-    subscription should not(subscribeTo(relevantPayment, anotherPeer))
-    subscription should not(subscribeTo(irrelevantPayment, counterpartId))
-    val randomMessage = PeerPositions.empty(Market(Euro))
-    subscription should not(subscribeTo(randomMessage, counterpartId))
+    gateway.expectMsgClass(classOf[Subscribe])
   }
 
   val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
