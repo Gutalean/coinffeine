@@ -24,8 +24,7 @@ case class Position[T <: OrderType, C <: FiatCurrency](
       case _: Ask.type => ask(this.asInstanceOf[Position[Ask.type, C]])
     }
 
-  def toOrderBookEntry: OrderBookEntry[CurrencyAmount[C]] =
-    OrderBookEntry(id.orderId, orderType, amount, price)
+  def toOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id.orderId, orderType, amount, price)
 }
 
 object Position {

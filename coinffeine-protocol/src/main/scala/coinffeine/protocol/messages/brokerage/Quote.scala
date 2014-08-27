@@ -4,7 +4,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.market.OrderBook
 import coinffeine.protocol.messages.PublicMessage
 
-case class Quote[+C <: FiatCurrency](
+case class Quote[C <: FiatCurrency](
     market: Market[C],
     spread: OrderBook.Spread[C] = (None, None),
     lastPrice: Option[CurrencyAmount[C]] = None) extends PublicMessage {

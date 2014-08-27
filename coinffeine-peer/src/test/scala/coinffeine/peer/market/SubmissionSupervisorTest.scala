@@ -7,16 +7,16 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.Inside
 
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.gateway.{MessageGateway, GatewayProbe}
+import coinffeine.protocol.gateway.{GatewayProbe, MessageGateway}
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
@@ -42,17 +42,17 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
     actor ! SubmissionSupervisor.Initialize(registryActor)
 
-    def keepSubmitting(entry: OrderBookEntry[FiatAmount]): Unit = {
+    def keepSubmitting(entry: OrderBookEntry[_ <: FiatCurrency]): Unit = {
       requester.send(actor, KeepSubmitting(entry))
     }
 
-    def stopSubmitting(entry: OrderBookEntry[FiatAmount]): Unit = {
+    def stopSubmitting(entry: OrderBookEntry[_ <: FiatCurrency]): Unit = {
       requester.send(actor, StopSubmitting(entry.id))
     }
 
     def expectPeerPositionsForwarding(timeout: Duration,
-                                      market: Market[FiatCurrency],
-                                      entries: OrderBookEntry[FiatAmount]*): Unit = {
+                                      market: Market[_ <: FiatCurrency],
+                                      entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
       gateway.expectSubscription(timeout)
       gateway.expectForwardingPF(BrokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
@@ -61,12 +61,12 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
       }
     }
 
-    def expectPeerPositionsForwarding(market: Market[FiatCurrency],
-                                      entries: OrderBookEntry[FiatAmount]*): Unit = {
+    def expectPeerPositionsForwarding(market: Market[_ <: FiatCurrency],
+                                      entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
       expectPeerPositionsForwarding(Duration.Undefined, market, entries: _*)
     }
 
-    def expectOrdersInMarket[F <: FiatAmount](entries: OrderBookEntry[F]*): Unit = {
+    def expectOrdersInMarket[C <: FiatCurrency](entries: OrderBookEntry[C]*): Unit = {
       requester.expectMsgAllOf(entries.map(e => InMarket(e)): _*)
     }
   }

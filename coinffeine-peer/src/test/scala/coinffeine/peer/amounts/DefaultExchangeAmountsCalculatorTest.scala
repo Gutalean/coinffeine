@@ -113,12 +113,13 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
   }
 
   object NoFeesProcessor extends PaymentProcessor {
-    override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) = amount.currency.Zero
+    override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
+      CurrencyAmount.zero(amount.currency)
   }
 
   class FixedFeeProcessor(fee: BigDecimal) extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
-      amount.currency.amount(fee)
+      CurrencyAmount(fee, amount.currency)
   }
 
   object NoBitcoinFees extends BitcoinFeeCalculator {

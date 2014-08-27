@@ -23,7 +23,7 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange._
 
 class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
-  with SellerPerspective with ProgressExpectations with Eventually {
+  with SellerPerspective with ProgressExpectations[Euro.type] with Eventually {
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()

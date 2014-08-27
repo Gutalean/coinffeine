@@ -21,8 +21,8 @@ import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions}
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
-class BuyerMicroPaymentChannelActorTest
-  extends CoinffeineClientTest("buyerExchange") with BuyerPerspective with ProgressExpectations {
+class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
+  with BuyerPerspective with ProgressExpectations[Euro.type] {
 
   val listener = TestProbe()
   val paymentProcessor = TestProbe()

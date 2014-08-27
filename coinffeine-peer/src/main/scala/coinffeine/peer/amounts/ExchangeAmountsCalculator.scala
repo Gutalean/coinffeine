@@ -13,6 +13,6 @@ trait ExchangeAmountsCalculator {
   def amountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] =
     amountsFor(order.amount, order.price)
 
-  def amountsFor(orderMatch: OrderMatch): Exchange.Amounts[FiatCurrency] =
+  def amountsFor(orderMatch: OrderMatch): Exchange.Amounts[_ <: FiatCurrency] =
     amountsFor(orderMatch.amount, orderMatch.price)
 }

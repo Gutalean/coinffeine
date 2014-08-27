@@ -9,9 +9,9 @@ trait CoinffeineNetwork {
 
   def status: CoinffeineNetwork.Status
 
-  def orders: Set[Order[FiatCurrency]]
+  def orders: Set[Order[c] forSome { type c <: FiatCurrency }]
 
-  def exchanges: Set[AnyExchange[FiatCurrency]] = orders.flatMap(_.exchanges.values)
+  def exchanges: Set[AnyExchange] = orders.flatMap[AnyExchange, Set[AnyExchange]](_.exchanges.values)
 
   /** Submit an order to buy bitcoins.
     *

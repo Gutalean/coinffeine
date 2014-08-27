@@ -37,17 +37,20 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      val deltas: List[CurrencyAmount[C]] = payments.collect {
-        case Payment(_, `fiatAddress`, `fiatAddress`, out: CurrencyAmount[C], _, _, _) => currency.Zero
-        case Payment(_, _, `fiatAddress`, in: CurrencyAmount[C], _, _, _) => in
-        case Payment(_, `fiatAddress`, _, out: CurrencyAmount[C], _, _, _) => -out
+      val deltas: List[CurrencyAmount[C]] = paymentsForCurrency(currency).collect {
+        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _) => CurrencyAmount.zero(currency)
+        case Payment(_, _, `fiatAddress`, in, _, _, _) => in
+        case Payment(_, `fiatAddress`, _, out, _, _, _) => -out
       }
       val initial = initialBalances.collectFirst {
-        case a: CurrencyAmount[C] => a
-      }.getOrElse(currency.Zero)
+        case a if a.currency == currency => a.asInstanceOf[CurrencyAmount[C]]
+      }.getOrElse(CurrencyAmount.zero(currency))
       val balance = deltas.foldLeft(initial)(_ + _)
-      requester ! PaymentProcessorActor.BalanceRetrieved(balance, currency.Zero)
+      requester ! PaymentProcessorActor.BalanceRetrieved(balance, CurrencyAmount.zero(currency))
     }
+
+    private def paymentsForCurrency[C <: FiatCurrency](currency: C): List[Payment[C]] =
+      payments.filter(_.amount.currency == currency).asInstanceOf[List[Payment[C]]]
 
     private def sendPayment[C <: FiatCurrency](
         requester: ActorRef, pay: PaymentProcessorActor.Pay[C]): Unit =

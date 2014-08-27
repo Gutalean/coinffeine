@@ -7,13 +7,13 @@ import coinffeine.model.market.OrderBookEntry
 import coinffeine.protocol.messages.PublicMessage
 
 /** Represents the set of orders placed by a peer for a given market. */
-case class PeerPositions[+C <: FiatCurrency](
+case class PeerPositions[C <: FiatCurrency](
     market: Market[C],
-    entries: Seq[OrderBookEntry[CurrencyAmount[C]]],
+    entries: Seq[OrderBookEntry[C]],
     nonce: PeerPositions.Nonce = PeerPositions.createNonce()) extends PublicMessage {
   require(entries.forall(_.price.currency == market.currency), s"Mixed currencies in $this")
 
-  def addEntry[B >: C <: FiatCurrency](order: OrderBookEntry[CurrencyAmount[B]]): PeerPositions[B] =
+  def addEntry(order: OrderBookEntry[C]): PeerPositions[C] =
     copy(entries = entries :+ order, nonce = PeerPositions.createNonce())
 }
 

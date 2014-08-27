@@ -64,15 +64,15 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     asks = asks.decreaseAmount(positionId, amount)
   )
 
-  def crosses: Seq[Cross] = crosses(bids.positions.toStream, asks.positions.toStream, Seq.empty)
+  def crosses: Seq[Cross[C]] = crosses(bids.positions.toStream, asks.positions.toStream, Seq.empty)
 
-  def anonymizedEntries: Seq[OrderBookEntry[CurrencyAmount[C]]] =
+  def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
 
   @tailrec
   private def crosses(bids: Stream[Position[Bid.type, C]],
                       asks: Stream[Position[Ask.type, C]],
-                      accum: Seq[Cross]): Seq[Cross] = {
+                      accum: Seq[Cross[C]]): Seq[Cross[C]] = {
     (bids.headOption, asks.headOption) match {
       case (None, _) | (_, None) => accum
 
@@ -93,7 +93,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
 
   private def crossAmount(bid: Position[Bid.type, C],
                           ask: Position[Ask.type, C],
-                          amount: BitcoinAmount): Cross =
+                          amount: BitcoinAmount): Cross[C] =
     Cross(amount, (bid.price + ask.price) / 2, Both(bid.id, ask.id))
 
   /** Clear the market by removing crossed bid and ask orders. */
@@ -110,7 +110,9 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
 
 object OrderBook {
 
-  case class Cross(amount: BitcoinAmount, price: FiatAmount, positions: Both[PositionId])
+  case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
+                                      price: CurrencyAmount[C],
+                                      positions: Both[PositionId])
 
   type Spread[C <: FiatCurrency] = (Option[CurrencyAmount[C]], Option[CurrencyAmount[C]])
 

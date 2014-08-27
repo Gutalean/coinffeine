@@ -8,7 +8,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Deposits
 import coinffeine.model.exchange.{Both, Exchange}
 
-private[impl] class DepositValidator(amounts: Exchange.Amounts[FiatCurrency],
+private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],
                                      requiredSignatures: Both[PublicKey]) {
 
   def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {

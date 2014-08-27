@@ -67,7 +67,7 @@ object PaymentProcessorActor {
   case class FindPayment(payment: PaymentId)
 
   /** A message sent by the payment processor to notify a found payment. */
-  case class PaymentFound(payment: Payment[FiatCurrency])
+  case class PaymentFound(payment: Payment[_ <: FiatCurrency])
 
   /** A message sent by the payment processor to notify a not found payment. */
   case class PaymentNotFound(payment: PaymentId)

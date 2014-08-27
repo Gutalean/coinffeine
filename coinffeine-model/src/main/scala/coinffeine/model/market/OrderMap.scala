@@ -41,7 +41,7 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
   def cancelPositions(peerId: PeerId): OrderMap[T, C] =
     copy(tree = removeEmptyQueues(tree.mapValues(_.removeByPeerId(peerId))))
 
-  def anonymizedEntries: Seq[OrderBookEntry[CurrencyAmount[C]]] = for {
+  def anonymizedEntries: Seq[OrderBookEntry[C]] = for {
     queue <- tree.values.toSeq
     position <- queue.positions
   } yield position.toOrderBookEntry

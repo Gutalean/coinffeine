@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{OrderBookEntry, OrderId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -37,7 +37,8 @@ class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor w
       delegatesByMarket.values.foreach(_ forward message)
     }
 
-    private def marketOf(order: OrderBookEntry[FiatAmount]) = Market(currency = order.price.currency)
+    private def marketOf(order: OrderBookEntry[_ <: FiatCurrency]) =
+      Market(currency = order.price.currency)
 
     private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
     delegatesByMarket.getOrElse(market, createDelegate(market))
@@ -56,13 +57,13 @@ object SubmissionSupervisor {
 
   case class Initialize(registry: ActorRef)
 
-  case class KeepSubmitting(order: OrderBookEntry[FiatAmount])
+  case class KeepSubmitting(order: OrderBookEntry[_ <: FiatCurrency])
 
   case class StopSubmitting(orderId: OrderId)
 
-  case class InMarket(order: OrderBookEntry[FiatAmount])
+  case class InMarket(order: OrderBookEntry[_ <: FiatCurrency])
 
-  case class Offline(order: OrderBookEntry[FiatAmount])
+  case class Offline(order: OrderBookEntry[_ <: FiatCurrency])
 
   def props(constants: ProtocolConstants) = Props(new SubmissionSupervisor(constants))
 }

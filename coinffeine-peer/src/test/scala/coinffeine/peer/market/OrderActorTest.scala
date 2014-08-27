@@ -178,7 +178,7 @@ class OrderActorTest extends AkkaSpec {
   trait Fixture extends SampleExchange with CoinffeineUnitTestNetwork.Component { this: Perspective =>
     val role: Role
     def fiatFunds: Option[BlockedFundsId]
-    val order: Order[FiatCurrency]
+    val order: Order[_ <: FiatCurrency]
     val gatewayProbe = new GatewayProbe(PeerId("broker"))
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
@@ -266,7 +266,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait BuyerFixture extends Fixture with BuyerPerspective {
-    override lazy val order: Order[FiatCurrency] = Order(Bid, 5.BTC, 500.EUR)
+    override lazy val order = Order(Bid, 5.BTC, 500.EUR)
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
 
@@ -280,7 +280,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait SellerFixture extends Fixture with SellerPerspective {
-    override lazy val order: Order[FiatCurrency] = Order(Ask, 5.BTC, 500.EUR)
+    override lazy val order = Order(Ask, 5.BTC, 500.EUR)
     override val role: Role = SellerRole
     override val fiatFunds = None
   }

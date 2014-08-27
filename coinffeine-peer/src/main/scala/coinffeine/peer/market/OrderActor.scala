@@ -104,11 +104,11 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def exchanging: Receive = running orElse availableFunds orElse {
-      case ExchangeActor.ExchangeProgress(exchange: AnyExchange[C]) =>
+      case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
         log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
         updateExchangeInOrder(exchange)
 
-      case ExchangeActor.ExchangeSuccess(exchange: AnyExchange[C]) =>
+      case ExchangeActor.ExchangeSuccess(exchange: AnyStateExchange[C]) =>
         log.debug("Order actor received success for {}", exchange.id)
         updateExchangeInOrder(exchange)
         terminate(CompletedOrder)
@@ -187,7 +187,7 @@ class OrderActor(exchangeActorProps: Props,
       publishEvent(OrderSubmittedEvent(currentOrder))
     }
 
-    private def updateExchangeInOrder(exchange: AnyExchange[C]): Unit = {
+    private def updateExchangeInOrder(exchange: AnyStateExchange[C]): Unit = {
       val prevProgress = currentOrder.progress
       currentOrder = currentOrder.withExchange(exchange)
       val newProgress = currentOrder.progress

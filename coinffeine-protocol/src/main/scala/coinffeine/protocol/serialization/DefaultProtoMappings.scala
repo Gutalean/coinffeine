@@ -7,7 +7,7 @@ import com.google.protobuf.ByteString
 
 import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
@@ -78,12 +78,12 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val fiatAmountMapping = new ProtoMapping[CurrencyAmount[FiatCurrency], msg.FiatAmount] {
+  implicit val fiatAmountMapping = new ProtoMapping[FiatAmount, msg.FiatAmount] {
 
-    override def fromProtobuf(amount: msg.FiatAmount): CurrencyAmount[FiatCurrency] =
+    override def fromProtobuf(amount: msg.FiatAmount): FiatAmount =
       FiatAmount(BigDecimal.valueOf(amount.getValue, amount.getScale), amount.getCurrency)
 
-    override def toProtobuf(amount: CurrencyAmount[FiatCurrency]): msg.FiatAmount =
+    override def toProtobuf(amount: FiatAmount): msg.FiatAmount =
       msg.FiatAmount.newBuilder
         .setValue(amount.value.underlying().unscaledValue.longValue)
         .setScale(amount.value.scale)
@@ -102,17 +102,17 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build
   }
 
-  implicit val marketMapping = new ProtoMapping[Market[FiatCurrency], msg.Market] {
+  implicit val marketMapping = new ProtoMapping[Market[_ <: FiatCurrency], msg.Market] {
 
-    override def fromProtobuf(market: msg.Market): Market[FiatCurrency] =
+    override def fromProtobuf(market: msg.Market): Market[_ <: FiatCurrency] =
       Market(FiatCurrency(market.getCurrency))
 
-    override def toProtobuf(market: Market[FiatCurrency]): msg.Market = msg.Market.newBuilder
+    override def toProtobuf(market: Market[_ <: FiatCurrency]): msg.Market = msg.Market.newBuilder
       .setCurrency(market.currency.javaCurrency.getCurrencyCode)
       .build
   }
 
-  implicit val orderBookEntryMapping = new ProtoMapping[OrderBookEntry[FiatAmount], msg.OrderBookEntry] {
+  implicit val orderBookEntryMapping = new ProtoMapping[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry] {
 
     override def fromProtobuf(entry: msg.OrderBookEntry) = OrderBookEntry(
       id = OrderId(entry.getId),
@@ -124,37 +124,37 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       price = ProtoMapping.fromProtobuf(entry.getPrice)
     )
 
-    override def toProtobuf(entry: OrderBookEntry[FiatAmount]) = msg.OrderBookEntry.newBuilder
+    override def toProtobuf(entry: OrderBookEntry[_ <: FiatCurrency]) = msg.OrderBookEntry.newBuilder
       .setId(entry.id.value)
       .setOrderType(entry.orderType match {
         case Bid => msg.OrderBookEntry.OrderType.BID
         case Ask => msg.OrderBookEntry.OrderType.ASK
       })
       .setAmount(ProtoMapping.toProtobuf(entry.amount))
-      .setPrice(ProtoMapping.toProtobuf(entry.price))
+      .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](entry.price))
       .build
   }
 
-  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions[FiatCurrency],
+  implicit val peerPositionsMapping = new ProtoMapping[PeerPositions[_ <: FiatCurrency],
       msg.PeerPositions] {
 
-    override def fromProtobuf(message: msg.PeerPositions) = {
-      val market = ProtoMapping.fromProtobuf(message.getMarket)
+    override def fromProtobuf(message: msg.PeerPositions): PeerPositions[_ <: FiatCurrency] = {
+      val market = marketMapping.fromProtobuf(message.getMarket)
       val protobufEntries = message.getEntriesList.asScala
       val positions = for (protoEntry <- protobufEntries) yield {
-        val pos = ProtoMapping.fromProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](protoEntry)
+        val pos = orderBookEntryMapping.fromProtobuf(protoEntry)
         require(pos.price.currency == market.currency, s"Mixed currencies on $message")
-        pos
+        pos.asInstanceOf[OrderBookEntry[market.currency.type]]
       }
-      PeerPositions(market, positions, message.getNonce)
+      PeerPositions(market.asInstanceOf[Market[market.currency.type]], positions, message.getNonce)
     }
 
-    override def toProtobuf(positions: PeerPositions[FiatCurrency]) = {
+    override def toProtobuf(positions: PeerPositions[_ <: FiatCurrency]) = {
       val builder = msg.PeerPositions.newBuilder
-        .setMarket(ProtoMapping.toProtobuf(positions.market))
+        .setMarket(marketMapping.toProtobuf(positions.market))
         .setNonce(positions.nonce)
       for (entry <- positions.entries) {
-        builder.addEntries(ProtoMapping.toProtobuf[OrderBookEntry[FiatAmount], msg.OrderBookEntry](entry))
+        builder.addEntries(orderBookEntryMapping.toProtobuf(entry))
       }
       builder.build
     }
@@ -186,38 +186,45 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .setOrderId(orderMatch.orderId.value)
       .setExchangeId(orderMatch.exchangeId.value)
       .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
-      .setPrice(ProtoMapping.toProtobuf(orderMatch.price))
+      .setPrice(fiatAmountMapping.toProtobuf(orderMatch.price))
       .setLockTime(orderMatch.lockTime)
       .setCounterpart(orderMatch.counterpart.value)
       .build
   }
 
-  implicit val quoteMapping = new ProtoMapping[Quote[FiatCurrency], msg.Quote] {
+  implicit val quoteMapping = new ProtoMapping[Quote[_ <: FiatCurrency], msg.Quote] {
 
-    override def fromProtobuf(quote: msg.Quote): Quote[FiatCurrency] = {
+    override def fromProtobuf(quote: msg.Quote): Quote[_ <: FiatCurrency] = {
       val bidOption =
-        if (quote.hasHighestBid) Some(ProtoMapping.fromProtobuf(quote.getHighestBid)) else None
+        if (quote.hasHighestBid) Some(fiatAmountMapping.fromProtobuf(quote.getHighestBid)) else None
       val askOption =
-        if (quote.hasLowestAsk) Some(ProtoMapping.fromProtobuf(quote.getLowestAsk)) else None
+        if (quote.hasLowestAsk) Some(fiatAmountMapping.fromProtobuf(quote.getLowestAsk)) else None
       val lastPriceOption =
-        if (quote.hasLastPrice) Some(ProtoMapping.fromProtobuf(quote.getLastPrice)) else None
-      val market = ProtoMapping.fromProtobuf(quote.getMarket)
-      def requireCorrectCurrency(amount: Option[CurrencyAmount[FiatCurrency]]): Unit = {
+        if (quote.hasLastPrice) Some(fiatAmountMapping.fromProtobuf(quote.getLastPrice)) else None
+      val market = ProtoMapping.fromProtobuf[Market[_ <: FiatCurrency], msg.Market](quote.getMarket)
+
+      def requireMarketCurrency(amount: Option[FiatAmount]): Option[market.currency.Amount] = {
         require(amount.forall(_.currency == market.currency),
           s"Incorrect currency. Expected ${market.currency}, received ${amount.get.currency}")
+        amount.asInstanceOf[Option[market.currency.Amount]]
       }
-      requireCorrectCurrency(bidOption)
-      requireCorrectCurrency(askOption)
-      requireCorrectCurrency(lastPriceOption)
-      Quote(market, bidOption -> askOption, lastPriceOption)
+
+      Quote(
+        market = market.asInstanceOf[Market[market.currency.type]],
+        spread = (requireMarketCurrency(bidOption), requireMarketCurrency(askOption)),
+        lastPrice = requireMarketCurrency(lastPriceOption)
+      )
     }
 
-    override def toProtobuf(quote: Quote[FiatCurrency]): msg.Quote = {
+    override def toProtobuf(quote: Quote[_ <: FiatCurrency]): msg.Quote = {
       val Quote(market, (bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder.setMarket(ProtoMapping.toProtobuf(market))
-      bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid)))
-      askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask)))
-      lastPriceOption.foreach(lastPrice => builder.setLastPrice(ProtoMapping.toProtobuf(lastPrice)))
+      bidOption.foreach(bid => builder.setHighestBid(
+        ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](bid)))
+      askOption.foreach(ask =>
+        builder.setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](ask)))
+      lastPriceOption.foreach(lastPrice =>
+        builder.setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](lastPrice)))
       builder.build
     }
   }
@@ -233,14 +240,14 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         .build
   }
 
-  implicit val openOrdersMapping = new ProtoMapping[OpenOrders[FiatCurrency], msg.OpenOrders] {
+  implicit val openOrdersMapping = new ProtoMapping[OpenOrders[_ <: FiatCurrency], msg.OpenOrders] {
 
-    override def fromProtobuf(openOrders: msg.OpenOrders): OpenOrders[FiatCurrency] =
+    override def fromProtobuf(openOrders: msg.OpenOrders): OpenOrders[_ <: FiatCurrency] =
       OpenOrders(ProtoMapping.fromProtobuf(openOrders.getOrders))
 
-    override def toProtobuf(openOrders: OpenOrders[FiatCurrency]): msg.OpenOrders = {
+    override def toProtobuf(openOrders: OpenOrders[_ <: FiatCurrency]): msg.OpenOrders = {
       msg.OpenOrders.newBuilder
-        .setOrders(ProtoMapping.toProtobuf[PeerPositions[FiatCurrency], msg.PeerPositions](
+        .setOrders(ProtoMapping.toProtobuf[PeerPositions[_ <: FiatCurrency], msg.PeerPositions](
           openOrders.orders))
         .build
     }
