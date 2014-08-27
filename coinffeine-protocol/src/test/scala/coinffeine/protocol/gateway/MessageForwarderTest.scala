@@ -55,7 +55,7 @@ class MessageForwarderTest extends AkkaSpec {
   trait Fixture {
     val brokerId = PeerId("broker")
     val somePeerId = PeerId("some-peer")
-    val gw = new GatewayProbe(brokerId)
+    val gw = new MockGateway(brokerId)
 
     def forwarder[A](message: PublicMessage, destination: NodeId,
                      retry: RetrySettings = DefaultRetrySettings)

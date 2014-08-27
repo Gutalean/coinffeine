@@ -7,7 +7,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
-import coinffeine.protocol.gateway.{GatewayProbe, MessageGateway}
+import coinffeine.protocol.gateway.{MockGateway, MessageGateway}
 import coinffeine.protocol.messages.PublicMessage
 
 abstract class CoinffeineClientTest(systemName: String)
@@ -15,7 +15,7 @@ abstract class CoinffeineClientTest(systemName: String)
 
   val registryActor = system.actorOf(ServiceRegistryActor.props())
   val registry = new ServiceRegistry(registryActor)
-  val gateway = new GatewayProbe(PeerId("broker"))
+  val gateway = new MockGateway(PeerId("broker"))
   registry.register(MessageGateway.ServiceId, gateway.ref)
 
   def fromBroker(message: PublicMessage) = ReceiveMessage(message, BrokerId)
