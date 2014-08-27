@@ -18,7 +18,6 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   "Handshakes in which TX are rejected" should "have a failed handshake result" in {
     givenActorIsInitialized()
-    givenActorIsSubscribedToMessages()
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()

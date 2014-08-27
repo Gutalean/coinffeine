@@ -32,10 +32,6 @@ abstract class HandshakeActorTest(systemName: String)
     actor ! StartHandshake(exchange, user, registryActor, blockchain.ref, wallet.ref, listener.ref)
   }
 
-  def givenActorIsSubscribedToMessages(): Unit = {
-    gateway.expectSubscription()
-  }
-
   def givenCounterpartPeerHandshake(): Unit = {
     val peerHandshake =
       PeerHandshake(exchange.id, counterpart.bitcoinKey.publicKey, counterpart.paymentProcessorAccount)

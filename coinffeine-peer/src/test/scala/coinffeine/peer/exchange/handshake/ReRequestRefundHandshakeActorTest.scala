@@ -15,7 +15,7 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
 
   "The handshake actor" should "request refund transaction signature after a timeout" in {
     givenActorIsInitialized()
-    givenActorIsSubscribedToMessages()
+    shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     gateway.expectForwardingPF(counterpartId) {
       case _: PeerHandshake =>

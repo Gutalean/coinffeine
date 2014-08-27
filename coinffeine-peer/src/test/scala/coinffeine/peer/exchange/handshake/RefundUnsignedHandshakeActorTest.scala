@@ -18,7 +18,6 @@ class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-tim
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
     givenActorIsInitialized()
-    gateway.expectSubscription()
     gateway.expectForwardingPF(counterpartId) {
       case _: PeerHandshake =>
     }

@@ -18,13 +18,9 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     refundSignatureAbortTimeout = 1 minute
   )
 
-  "Handshake happy path" should "subscribe to the relevant messages when initialized" in {
+  "Handshake happy path" should "send peer handshake when initialized" in {
     gateway.expectNoMsg()
     givenActorIsInitialized()
-    gateway.expectSubscription()
-  }
-
-  it should "send peer handshake" in {
     shouldForwardPeerHandshake()
   }
 
@@ -33,7 +29,6 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
-    gateway.expectSubscription()
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
