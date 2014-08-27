@@ -24,16 +24,16 @@ abstract class HandshakeActorTest(systemName: String)
   val listener, blockchain, wallet = TestProbe()
   val actor = system.actorOf(
     HandshakeActor.props(
-      new MockExchangeProtocol,
+      HandshakeActor.ExchangeToHandshake(exchange, user),
       HandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-      protocolConstants
+      HandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
     ),
     "handshake-actor"
   )
   listener.watch(actor)
 
   def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake(exchange, user)
+    actor ! StartHandshake()
   }
 
   def givenCounterpartPeerHandshake(): Unit = {

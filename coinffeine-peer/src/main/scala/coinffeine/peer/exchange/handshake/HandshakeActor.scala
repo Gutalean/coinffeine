@@ -23,10 +23,11 @@ import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
 private class HandshakeActor[C <: FiatCurrency](
-    exchangeProtocol: ExchangeProtocol,
+    exchange: HandshakeActor.ExchangeToHandshake[C],
     collaborators: HandshakeActor.Collaborators,
-    constants: ProtocolConstants) extends Actor with ActorLogging {
-  import coinffeine.peer.exchange.handshake.HandshakeActor._
+    protocol: HandshakeActor.ProtocolDetails) extends Actor with ActorLogging {
+
+  import HandshakeActor._
 
   private var timers = Seq.empty[Cancellable]
 
@@ -39,27 +40,26 @@ private class HandshakeActor[C <: FiatCurrency](
   }
 
   private class InitializedHandshake(init: StartHandshake[C]) {
-    import constants._
+    import protocol.constants._
     import context.dispatcher
-    import init._
 
     private val counterpartRefundSigner =
-      context.actorOf(CounterpartRefundSigner.props(collaborators.gateway, exchange))
+      context.actorOf(CounterpartRefundSigner.props(collaborators.gateway, exchange.info))
 
     def startHandshake(): Unit = {
       subscribeToMessages()
       handshakePeer()
       scheduleTimeouts()
-      log.info("Handshake {}: Handshake started", exchange.id)
+      log.info("Handshake {}: Handshake started", exchange.info.id)
       context.become(waitForPeerHandshake)
     }
 
     private def receivePeerHandshake: Receive = {
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-        val handshakingExchange = exchange.startHandshaking(user, counterpart)
+        val handshakingExchange = exchange.info.startHandshaking(exchange.user, counterpart)
         createDeposit(handshakingExchange)
-          .map(deposit => exchangeProtocol.createHandshake(handshakingExchange, deposit))
+          .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
           .pipeTo(self)
 
       case handshake: Handshake[C] =>
@@ -94,25 +94,26 @@ private class HandshakeActor[C <: FiatCurrency](
         try {
           val signedRefund = handshake.signMyRefund(herSignature)
           collaborators.gateway ! ForwardMessage(
-            ExchangeCommitment(exchange.id, handshake.myDeposit), BrokerId)
-          log.info("Handshake {}: Got a valid refund TX signature", exchange.id)
+            ExchangeCommitment(exchange.info.id, handshake.myDeposit), BrokerId)
+          log.info("Handshake {}: Got a valid refund TX signature", exchange.info.id)
           context.become(waitForPublication(handshake, signedRefund))
         } catch {
           case cause: InvalidRefundSignature =>
             requestRefundSignature(handshake)
-            log.warning("Handshake {}: Rejecting invalid refund signature: {}", exchange.id, cause)
+            log.warning("Handshake {}: Rejecting invalid refund signature: {}",
+              exchange.info.id, cause)
         }
 
       case ResubmitRequest =>
         requestRefundSignature(handshake)
-        log.info("Handshake {}: Re-requesting refund signature", exchange.id)
+        log.info("Handshake {}: Re-requesting refund signature", exchange.info.id)
     }
 
     private val abortOnSignatureTimeout: Receive = {
       case RequestSignatureTimeout =>
-        val cause = RefundSignatureTimeoutException(exchange.id)
+        val cause = RefundSignatureTimeoutException(exchange.info.id)
         collaborators.gateway ! ForwardMessage(
-          ExchangeRejection(exchange.id, cause.toString), BrokerId)
+          ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
         finishWithResult(Failure(cause))
     }
 
@@ -124,14 +125,14 @@ private class HandshakeActor[C <: FiatCurrency](
         }
         context.stop(counterpartRefundSigner)
         log.info("Handshake {}: The broker published {}, waiting for confirmations",
-          exchange.id, bothCommitments)
+          exchange.info.id, bothCommitments)
         context.become(waitForConfirmations(handshake, bothCommitments, refund))
     }
 
     private val abortOnBrokerNotification: Receive = {
       case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-        log.info("Handshake {}: Aborted by the broker: {}", exchange.id, reason)
-        finishWithResult(Failure(HandshakeAbortedException(exchange.id, reason)))
+        log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
+        finishWithResult(Failure(HandshakeAbortedException(exchange.info.id, reason)))
     }
 
     private val waitForPeerHandshake: Receive =
@@ -155,8 +156,8 @@ private class HandshakeActor[C <: FiatCurrency](
 
         case TransactionRejected(tx) =>
           val isOwn = tx == handshake.myDeposit.get.getHash
-          val cause = CommitmentTransactionRejectedException(exchange.id, tx, isOwn)
-          log.error("Handshake {}: {}", exchange.id, cause.getMessage)
+          val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
+          log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
           finishWithResult(Failure(cause))
       }
 
@@ -188,8 +189,8 @@ private class HandshakeActor[C <: FiatCurrency](
       ).withImmediateReplyOrError[TransactionFound, TransactionNotFound]().map(_.tx)
 
     private def subscribeToMessages(): Unit = {
-      val id = exchange.id
-      val counterpart = exchange.counterpartId
+      val id = exchange.info.id
+      val counterpart = exchange.info.counterpartId
       collaborators.gateway ! Subscribe {
         case ReceiveMessage(CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _), BrokerId) =>
         case ReceiveMessage(PeerHandshake(`id`, _, _) |
@@ -214,23 +215,24 @@ private class HandshakeActor[C <: FiatCurrency](
     }
 
     private def handshakePeer(): Unit = {
-      val handshake = PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount)
-      collaborators.gateway ! ForwardMessage(handshake, exchange.counterpartId)
+      val handshake = PeerHandshake(
+        exchange.info.id, exchange.user.bitcoinKey.publicKey, exchange.user.paymentProcessorAccount)
+      collaborators.gateway ! ForwardMessage(handshake, exchange.info.counterpartId)
     }
 
     private def requestRefundSignature(handshake: Handshake[C]): Unit = {
-      log.debug("Handshake {}: requesting refund signature", exchange.id)
-      collaborators.gateway ! ForwardMessage(
-        RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund), exchange.counterpartId)
+      log.debug("Handshake {}: requesting refund signature", exchange.info.id)
+      val signatureRequest = RefundSignatureRequest(exchange.info.id, handshake.myUnsignedRefund)
+      collaborators.gateway ! ForwardMessage(signatureRequest, exchange.info.counterpartId)
     }
 
     private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
       val message = result match {
         case Success(success) =>
-          log.info("Handshake {}: succeeded", exchange.id)
+          log.info("Handshake {}: succeeded", exchange.info.id)
           success
         case Failure(cause) =>
-          log.error(cause, "Handshake {}: handshake failed with", exchange.id)
+          log.error(cause, "Handshake {}: handshake failed with", exchange.info.id)
           HandshakeFailure(cause)
       }
       collaborators.listener ! message
@@ -244,6 +246,10 @@ private class HandshakeActor[C <: FiatCurrency](
   */
 object HandshakeActor {
 
+  /** Details of the exchange to perform the handshake of. */
+  case class ExchangeToHandshake[C <: FiatCurrency](info: NonStartedExchange[C],
+                                                    user: Exchange.PeerInfo)
+
   /** Compact list of actors that collaborate with the handshake actor.
     *
     * @param gateway     Message gateway for external communication
@@ -256,19 +262,15 @@ object HandshakeActor {
                            wallet: ActorRef,
                            listener: ActorRef)
 
-  def props(exchangeProtocol: ExchangeProtocol,
-            collaborators: Collaborators,
-            constants: ProtocolConstants) =
-    Props(new HandshakeActor(exchangeProtocol, collaborators, constants))
+  case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
-  /** Sent to the actor to start the handshake
-    *
-    * @constructor
-    * @param exchange         Exchange to start the handshake for
-    * @param user             User key and payment id
-    */
-  case class StartHandshake[C <: FiatCurrency](exchange: NonStartedExchange[C],
-                                               user: Exchange.PeerInfo)
+  def props(exchange: ExchangeToHandshake[_ <: FiatCurrency],
+            collaborators: Collaborators,
+            protocol: ProtocolDetails) =
+    Props(new HandshakeActor(exchange, collaborators, protocol))
+
+  /** Sent to the actor to start the handshake */
+  @deprecated case class StartHandshake[C <: FiatCurrency]()
 
   /** Sent to the handshake listeners to notify success with a refundSignature transaction or
     * failure with an exception.

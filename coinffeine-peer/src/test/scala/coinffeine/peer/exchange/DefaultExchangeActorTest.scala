@@ -48,7 +48,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val listener, blockchain, peers, walletActor = TestProbe()
     val handshakeActor, micropaymentChannelActor, transactionBroadcastActor = new MockSupervisedActor()
     val actor = system.actorOf(Props(new DefaultExchangeActor(
-      _ => handshakeActor.props,
+      (_, _) => handshakeActor.props,
       _ => micropaymentChannelActor.props,
       transactionBroadcastActor.props,
       new MockExchangeProtocol,
