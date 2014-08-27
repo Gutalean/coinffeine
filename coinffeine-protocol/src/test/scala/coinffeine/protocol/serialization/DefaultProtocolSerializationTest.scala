@@ -116,7 +116,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         RefundSignatureRequest(exchangeId, transaction),
         RefundSignatureResponse(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Both(transactionSignature, transactionSignature)),
-        PaymentProof(exchangeId, "paymentId"),
+        PaymentProof(exchangeId, "paymentId", 5),
         OpenOrdersRequest(market),
         OpenOrders(peerPositions),
         peerPositions,

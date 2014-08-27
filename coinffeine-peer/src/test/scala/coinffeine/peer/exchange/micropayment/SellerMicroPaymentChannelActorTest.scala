@@ -54,15 +54,20 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "not send the second step signature until complete payment proof has been provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "INCOMPLETE"))
+    actor ! fromCounterpart(PaymentProof(exchange.id, "INCOMPLETE", 1))
     expectPayment(firstStep, completed = false)
     withClue("instead, send previous signatures") {
       gateway.expectForwarding(firstSignatures, counterpartId)
     }
   }
 
+  it should "ignore payment proofs that don't apply to the current step" in {
+    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 3))
+    expectNoMsg()
+  }
+
   it should "send the second step signature once payment proof has been provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
+    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 1))
     expectPayment(firstStep)
     expectProgress(signatures = 1, payments = 1)
     eventually {
@@ -77,13 +82,13 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send step signatures as new payment proofs are provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
+    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 2))
     expectPayment(IntermediateStep(2, exchange.amounts.breakdown))
     expectProgress(signatures = 2, payments = 2)
     for (i <- 3 to exchange.amounts.breakdown.intermediateSteps) {
       val step = IntermediateStep(i, exchange.amounts.breakdown)
       expectProgress(signatures = i, payments = i - 1)
-      actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!"))
+      actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", i))
       expectPayment(step)
       expectProgress(signatures = i, payments = i)
       val signatures = StepSignatures(exchange.id, i, MockExchangeProtocol.DummySignatures)

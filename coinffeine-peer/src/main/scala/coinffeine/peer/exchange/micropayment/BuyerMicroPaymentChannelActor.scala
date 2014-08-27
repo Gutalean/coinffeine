@@ -121,9 +121,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
         case ReceiveTimeout =>
           previousPaymentProof.foreach(forwarding.forwardToCounterpart)
-
-        case ReceiveMessage(StepSignatures(_, step, _), _) if step < channel.currentStep.value =>
-          previousPaymentProof.foreach(forwarding.forwardToCounterpart)
       }
       context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
       behavior
@@ -155,7 +152,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       AskPattern(paymentProcessor, request, errorMessage = s"Cannot pay at $step")
         .withReplyOrError[PaymentProcessorActor.Paid[C],
                           PaymentProcessorActor.PaymentFailed[C]](_.error)
-        .map(paid => PaymentProof(exchange.id, paid.payment.id))
+        .map(paid => PaymentProof(exchange.id, paid.payment.id, step.value))
         .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
         .pipeTo(self)
     }

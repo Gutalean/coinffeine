@@ -58,18 +58,20 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
           completed = true)
       ))
       expectProgress(signatures = i, payments = i)
-      gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i"), counterpartId)
+      gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
       gateway.expectNoMsg(100 milliseconds)
     }
   }
 
   it should "resubmit payment proof when last signature is resubmitted by the seller" in {
     actor ! fromCounterpart(StepSignatures(exchange.id, lastStep, signatures))
-    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep", lastStep),
+      counterpartId)
   }
 
   it should "resubmit payment proof when no response is get" in {
-    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep"), counterpartId)
+    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep", lastStep),
+      counterpartId)
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
