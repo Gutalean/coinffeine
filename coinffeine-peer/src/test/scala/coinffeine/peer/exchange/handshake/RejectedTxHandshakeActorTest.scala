@@ -12,7 +12,7 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1.minute,
+    resubmitHandshakeMessagesTimeout = 1.minute,
     refundSignatureAbortTimeout = 1.minute
   )
 

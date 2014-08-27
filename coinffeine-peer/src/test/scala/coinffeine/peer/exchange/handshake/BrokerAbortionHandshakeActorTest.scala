@@ -10,7 +10,7 @@ class BrokerAbortionHandshakeActorTest extends HandshakeActorTest("broker-aborts
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 10 seconds,
+    resubmitHandshakeMessagesTimeout = 10 seconds,
     refundSignatureAbortTimeout = 10 seconds
   )
 

@@ -25,7 +25,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   val paymentProcessor = TestProbe()
   val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
+    resubmitHandshakeMessagesTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute,
     microPaymentChannelResubmitTimeout = 2.seconds
   )

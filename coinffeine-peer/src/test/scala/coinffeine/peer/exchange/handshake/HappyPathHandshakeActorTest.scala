@@ -14,7 +14,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 minute,
+    resubmitHandshakeMessagesTimeout = 1 minute,
     refundSignatureAbortTimeout = 1 minute
   )
 

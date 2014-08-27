@@ -9,7 +9,7 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 500 millis,
+    resubmitHandshakeMessagesTimeout = 500 millis,
     refundSignatureAbortTimeout = 1 minute
   )
 

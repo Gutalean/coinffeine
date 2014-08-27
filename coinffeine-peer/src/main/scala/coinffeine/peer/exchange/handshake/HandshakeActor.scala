@@ -200,8 +200,8 @@ private class HandshakeActor[C <: FiatCurrency](
     private def scheduleTimeouts(): Unit = {
       timers = Seq(
         context.system.scheduler.schedule(
-          initialDelay = resubmitRefundSignatureTimeout,
-          interval = resubmitRefundSignatureTimeout,
+          initialDelay = resubmitHandshakeMessagesTimeout,
+          interval = resubmitHandshakeMessagesTimeout,
           receiver = self,
           message = ResubmitRequest
         ),

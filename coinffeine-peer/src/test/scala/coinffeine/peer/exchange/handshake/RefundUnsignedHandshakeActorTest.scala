@@ -12,7 +12,7 @@ class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-tim
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 10 seconds,
+    resubmitHandshakeMessagesTimeout = 10 seconds,
     refundSignatureAbortTimeout = 100 millis
   )
 

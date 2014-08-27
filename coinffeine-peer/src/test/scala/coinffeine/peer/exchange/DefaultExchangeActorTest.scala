@@ -30,7 +30,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   implicit def testTimeout = new Timeout(5 second)
   private val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
+    resubmitHandshakeMessagesTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute
   )
 
