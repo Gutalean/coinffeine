@@ -79,7 +79,6 @@ class DefaultExchangeActor(
       )
       handshakeActor = context.actorOf(
         handshakeActorProps(exchangeToHandshake, collaborators), HandshakeActorName)
-      handshakeActor ! StartHandshake()
     }
 
     private def finishingExchange(

@@ -18,9 +18,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     refundSignatureAbortTimeout = 1 minute
   )
 
-  "Handshake happy path" should "send peer handshake when initialized" in {
-    gateway.expectNoMsg()
-    givenActorIsInitialized()
+  "Handshake happy path" should "send peer handshake when started" in {
     shouldForwardPeerHandshake()
   }
 

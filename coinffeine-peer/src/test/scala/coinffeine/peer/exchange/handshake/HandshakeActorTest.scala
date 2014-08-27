@@ -8,7 +8,6 @@ import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.exchange.handshake.HandshakeActor.StartHandshake
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
@@ -31,10 +30,6 @@ abstract class HandshakeActorTest(systemName: String)
     "handshake-actor"
   )
   listener.watch(actor)
-
-  def givenActorIsInitialized(): Unit = {
-    actor ! StartHandshake()
-  }
 
   def givenCounterpartPeerHandshake(): Unit = {
     val peerHandshake =
