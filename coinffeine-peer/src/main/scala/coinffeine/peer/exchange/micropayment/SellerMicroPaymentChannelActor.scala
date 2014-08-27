@@ -48,7 +48,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     private def subscribeToMessages(): Unit = {
       val counterpart = exchange.counterpartId
       messageGateway ! Subscribe {
-        case ReceiveMessage(PaymentProof(exchange.`id`, _), `counterpart`) =>
+        case ReceiveMessage(PaymentProof(exchange.`id`, _, _), `counterpart`) =>
       }
     }
 
@@ -81,7 +81,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       }
 
       private def waitForPaymentProof(step: IntermediateStep): Receive = {
-        case ReceiveMessage(PaymentProof(_, paymentId), _) =>
+        case ReceiveMessage(PaymentProof(_, paymentId, step.value), _) =>
           cancelTimeout()
           validatePayment(step, paymentId).onComplete { tryResult =>
             self ! PaymentValidationResult(tryResult)

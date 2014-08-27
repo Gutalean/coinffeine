@@ -333,12 +333,14 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def fromProtobuf(message: msg.PaymentProof) = PaymentProof(
       exchangeId = ExchangeId(message.getExchangeId),
-      paymentId = message.getPaymentId
+      paymentId = message.getPaymentId,
+      step = message.getStep
     )
 
     override def toProtobuf(obj: PaymentProof): msg.PaymentProof = msg.PaymentProof.newBuilder
       .setExchangeId(obj.exchangeId.value)
       .setPaymentId(obj.paymentId)
+      .setStep(obj.step)
       .build()
   }
 }
