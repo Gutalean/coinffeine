@@ -68,9 +68,9 @@ abstract class HandshakeActorTest(systemName: String)
   def shouldSignCounterpartRefund(): Unit = {
     val request = RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
     gateway.relayMessage(request, counterpartId)
-    val refundSignatureRequest =
+    val refundSignature =
       RefundSignatureResponse(exchange.id, MockExchangeProtocol.CounterpartRefundSignature)
-    gateway.expectForwarding(refundSignatureRequest, counterpartId)
+    gateway.expectForwarding(refundSignature, counterpartId)
   }
 
   override protected def resetBlockchainBetweenTests = false

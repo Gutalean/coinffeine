@@ -33,6 +33,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    gateway.expectSubscription()
   }
 
   it should "reject signature of invalid counterpart refund transactions" in {
