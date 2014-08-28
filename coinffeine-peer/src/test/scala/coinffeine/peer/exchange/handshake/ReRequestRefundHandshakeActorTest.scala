@@ -21,7 +21,7 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
     }
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
-    gateway.expectSubscription()
+    shouldSignCounterpartRefund()
     shouldForwardRefundSignatureRequest()
   }
 
