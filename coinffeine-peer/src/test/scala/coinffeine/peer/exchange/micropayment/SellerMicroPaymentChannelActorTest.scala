@@ -41,20 +41,16 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
     runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
   )
 
-  "The seller exchange actor" should "subscribe to the relevant messages" in {
-    gateway.expectSubscription()
-  }
-
   val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
   val secondSignatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
 
-  it should "send the first step signature as soon as the exchange starts" in {
+  "The seller exchange actor" should "send the first step signature as soon as the exchange starts" in {
     expectProgress(signatures = 1, payments = 0)
     gateway.expectForwarding(firstSignatures, counterpartId)
   }
 
   it should "not send the second step signature until complete payment proof has been provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "INCOMPLETE", 1))
+    gateway.relayMessage(PaymentProof(exchange.id, "INCOMPLETE", 1), counterpartId)
     expectPayment(firstStep, completed = false)
     withClue("instead, send previous signatures") {
       gateway.expectForwarding(firstSignatures, counterpartId)
@@ -62,12 +58,12 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "ignore payment proofs that don't apply to the current step" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 3))
+    gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", 3), counterpartId)
     expectNoMsg()
   }
 
   it should "send the second step signature once payment proof has been provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 1))
+    gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", 1), counterpartId)
     expectPayment(firstStep)
     expectProgress(signatures = 1, payments = 1)
     eventually {
@@ -82,13 +78,13 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send step signatures as new payment proofs are provided" in {
-    actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", 2))
+    gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", 2), counterpartId)
     expectPayment(IntermediateStep(2, exchange.amounts.breakdown))
     expectProgress(signatures = 2, payments = 2)
     for (i <- 3 to exchange.amounts.breakdown.intermediateSteps) {
       val step = IntermediateStep(i, exchange.amounts.breakdown)
       expectProgress(signatures = i, payments = i - 1)
-      actor ! fromCounterpart(PaymentProof(exchange.id, "PROOF!", i))
+      gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", i), counterpartId)
       expectPayment(step)
       expectProgress(signatures = i, payments = i)
       val signatures = StepSignatures(exchange.id, i, MockExchangeProtocol.DummySignatures)
@@ -104,6 +100,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   }
 
   it should "send a notification to the listeners once the exchange has finished" in {
+    gateway.relayMessage(MicropaymentChannelClosed(exchangeId), counterpartId)
     listener.expectMsg(ExchangeSuccess(None))
   }
 
