@@ -15,7 +15,6 @@ import coinffeine.protocol.messages.PublicMessage
 /** MessageGateway mock to ease testing of actors communicating with other nodes. */
 class MockGateway(brokerId: PeerId)(implicit system: ActorSystem) extends Assertions {
 
-  /** Underlying probe used for poking actors. */ // TODO: rename
   private val messagesProbe = TestProbe()
   private val subscriptionsProbe = TestProbe()
 
@@ -25,8 +24,8 @@ class MockGateway(brokerId: PeerId)(implicit system: ActorSystem) extends Assert
     var subscriptions: Map[ActorRef, Set[ReceiveFilter]] = Map.empty.withDefaultValue(Set.empty)
 
     become {
-      case msg @ Subscribe(filter) => subscribe(sender(), filter)
-      case msg @ Unsubscribe => subscriptionsProbe.ref forward msg
+      case Subscribe(filter) => subscribe(sender(), filter)
+      case Unsubscribe => unsubscribe(sender())
       case Relay(msg) => relayMessage(msg)
       case other => messagesProbe.ref forward other
     }
@@ -34,6 +33,11 @@ class MockGateway(brokerId: PeerId)(implicit system: ActorSystem) extends Assert
     def subscribe(ref: ActorRef, filter: ReceiveFilter): Unit = {
       subscriptions = subscriptions.updated(sender(), subscriptions(sender()) + filter)
       subscriptionsProbe.ref forward Subscribe(filter)
+    }
+
+    def unsubscribe(ref: ActorRef): Unit = {
+      subscriptions -= ref
+      subscriptionsProbe.ref forward Unsubscribe
     }
 
     def relayMessage(notification: ReceiveMessage[_ <: PublicMessage]): Unit = {
