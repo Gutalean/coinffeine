@@ -140,9 +140,6 @@ private class HandshakeActor[C <: FiatCurrency](
 
     val getNotifiedByBroker: Receive = {
       case CommitmentNotification(_, bothCommitments) =>
-        bothCommitments.toSeq.foreach { tx =>
-          collaborators.blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
-        }
         context.stop(counterpartRefundSigner)
         log.info("Handshake {}: The broker published {}, waiting for confirmations",
           exchange.info.id, bothCommitments)
@@ -159,33 +156,36 @@ private class HandshakeActor[C <: FiatCurrency](
     def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
       case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
         val stillPending = pendingConfirmation - tx
-        if (stillPending.isEmpty) retrieveCommitmentsAndFinish()
-        else context.become(waitForPendingConfirmations(stillPending))
+        if (stillPending.isEmpty) {
+          retrieveCommitmentTransactions(commitmentIds).map { commitmentTxs =>
+            HandshakeSuccess(handshake.exchange, commitmentTxs, refund)
+          }.pipeTo(self)
+        } else {
+          context.become(waitForPendingConfirmations(stillPending))
+        }
 
       case TransactionRejected(tx) =>
         val isOwn = tx == handshake.myDeposit.get.getHash
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
         finishWithResult(Failure(cause))
+
+      case result: HandshakeSuccess => finishWithResult(Success(result))
+      case Status.Failure(cause) => finishWithResult(Failure(cause))
     }
 
-    def retrieveCommitmentsAndFinish(): Unit = {
-      retrieveCommitmentTransactions(commitmentIds).onComplete { // FIXME: send self-message
-        case Success(commitmentTxs) =>
-          finishWithResult(Success(HandshakeSuccess(handshake.exchange, commitmentTxs, refund)))
-        case Failure(cause) =>
-          finishWithResult(Failure(cause))
-      }
+    commitmentIds.toSeq.foreach { txId =>
+      collaborators.blockchain ! WatchTransactionConfirmation(txId, commitmentConfirmations)
     }
-
     waitForPendingConfirmations(commitmentIds.toSet)
   }
 
   private def retrieveCommitmentTransactions(
       commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
+    val retrievals = commitmentIds.map(retrieveCommitmentTransaction)
     for {
-      buyerTx <- retrieveCommitmentTransaction(commitmentIds.buyer)
-      sellerTx <- retrieveCommitmentTransaction(commitmentIds.seller)
+      buyerTx <- retrievals.buyer
+      sellerTx <- retrievals.seller
     } yield Both(buyer = buyerTx, seller = sellerTx)
   }
 

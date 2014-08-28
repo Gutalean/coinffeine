@@ -2,13 +2,10 @@ package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.duration._
 
-import coinffeine.model.exchange.Both
-import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.bitcoin.BlockchainActor
 import coinffeine.peer.bitcoin.BlockchainActor.TransactionRejected
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
-import coinffeine.protocol.messages.handshake.ExchangeCommitment
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
@@ -25,15 +22,14 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
     shouldForwardRefundSignatureRequest()
     expectNoMsg()
     givenValidRefundSignatureResponse()
-    gateway.expectForwardingPF(BrokerId) {
-      case ExchangeCommitment(_, _) =>
+    shouldForwardCommitmentToBroker()
+    givenCommitmentPublicationNotification()
+
+    blockchain.fishForMessage() {
+      case _: BlockchainActor.WatchTransactionConfirmation => true
+      case _ => false
     }
-    val notification = CommitmentNotification(
-      exchange.id,
-      Both(handshake.myDeposit.get.getHash, handshake.counterpartCommitmentTransaction.getHash)
-    )
-    gateway.relayMessageFromBroker(notification)
-    blockchain.send(actor, TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
+    blockchain.reply(TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
 
     val result = listener.expectMsgClass(classOf[HandshakeFailure])
     result.e.toString should include (
