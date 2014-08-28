@@ -121,8 +121,6 @@ private class HandshakeActor[C <: FiatCurrency](
 
     val receiveRefundSignature: Receive = {
       case signedRefund: ImmutableTransaction =>
-        collaborators.gateway ! ForwardMessage(
-          ExchangeCommitment(exchange.info.id, handshake.myDeposit), BrokerId)
         log.info("Handshake {}: Got a valid refund TX signature", exchange.info.id)
         context.become(waitForPublication(handshake, signedRefund))
     }
@@ -130,68 +128,64 @@ private class HandshakeActor[C <: FiatCurrency](
     receiveRefundSignature orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
   }
 
-  private val abortOnSignatureTimeout: Receive = {
-    case RequestSignatureTimeout =>
-      val cause = RefundSignatureTimeoutException(exchange.info.id)
-      collaborators.gateway ! ForwardMessage(
-        ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
-      finishWithResult(Failure(cause))
-  }
+  private def waitForPublication(handshake: Handshake[C], refund: ImmutableTransaction) = {
 
-  private def getNotifiedByBroker(handshake: Handshake[C],
-                                  refund: ImmutableTransaction): Receive = {
-    case ReceiveMessage(CommitmentNotification(_, bothCommitments), _) =>
-      bothCommitments.toSeq.foreach { tx =>
-        collaborators.blockchain ! WatchTransactionConfirmation(tx, commitmentConfirmations)
-      }
-      context.stop(counterpartRefundSigner)
-      log.info("Handshake {}: The broker published {}, waiting for confirmations",
-        exchange.info.id, bothCommitments)
-      context.become(waitForConfirmations(handshake, bothCommitments, refund))
-  }
+    forwarding.forward(
+      msg = ExchangeCommitment(exchange.info.id, handshake.myDeposit),
+      destination = BrokerId,
+      retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
+    ) {
+      case commitments: CommitmentNotification => commitments
+    }
 
-  private val abortOnBrokerNotification: Receive = {
-    case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-      log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
-      finishWithResult(Failure(HandshakeAbortedException(exchange.info.id, reason)))
-  }
+    val getNotifiedByBroker: Receive = {
+      case CommitmentNotification(_, bothCommitments) =>
+        context.stop(counterpartRefundSigner)
+        log.info("Handshake {}: The broker published {}, waiting for confirmations",
+          exchange.info.id, bothCommitments)
+        context.become(waitForConfirmations(handshake, bothCommitments, refund))
+    }
 
-  private def waitForPublication(handshake: Handshake[C], signedRefund: ImmutableTransaction) =
-    getNotifiedByBroker(handshake, signedRefund) orElse abortOnBrokerNotification
+    getNotifiedByBroker orElse abortOnBrokerNotification
+  }
 
   private def waitForConfirmations(handshake: Handshake[C],
                                    commitmentIds: Both[Hash],
                                    refund: ImmutableTransaction): Receive = {
+
     def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
       case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
         val stillPending = pendingConfirmation - tx
-        if (stillPending.isEmpty) retrieveCommitmentsAndFinish()
-        else context.become(waitForPendingConfirmations(stillPending))
+        if (stillPending.isEmpty) {
+          retrieveCommitmentTransactions(commitmentIds).map { commitmentTxs =>
+            HandshakeSuccess(handshake.exchange, commitmentTxs, refund)
+          }.pipeTo(self)
+        } else {
+          context.become(waitForPendingConfirmations(stillPending))
+        }
 
       case TransactionRejected(tx) =>
         val isOwn = tx == handshake.myDeposit.get.getHash
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
         finishWithResult(Failure(cause))
+
+      case result: HandshakeSuccess => finishWithResult(Success(result))
+      case Status.Failure(cause) => finishWithResult(Failure(cause))
     }
 
-    def retrieveCommitmentsAndFinish(): Unit = {
-      retrieveCommitmentTransactions(commitmentIds).onComplete { // FIXME: send self-message
-        case Success(commitmentTxs) =>
-          finishWithResult(Success(HandshakeSuccess(handshake.exchange, commitmentTxs, refund)))
-        case Failure(cause) =>
-          finishWithResult(Failure(cause))
-      }
+    commitmentIds.toSeq.foreach { txId =>
+      collaborators.blockchain ! WatchTransactionConfirmation(txId, commitmentConfirmations)
     }
-
     waitForPendingConfirmations(commitmentIds.toSet)
   }
 
   private def retrieveCommitmentTransactions(
       commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
+    val retrievals = commitmentIds.map(retrieveCommitmentTransaction)
     for {
-      buyerTx <- retrieveCommitmentTransaction(commitmentIds.buyer)
-      sellerTx <- retrieveCommitmentTransaction(commitmentIds.seller)
+      buyerTx <- retrievals.buyer
+      sellerTx <- retrievals.seller
     } yield Both(buyer = buyerTx, seller = sellerTx)
   }
 
@@ -202,11 +196,25 @@ private class HandshakeActor[C <: FiatCurrency](
       errorMessage = s"Cannot retrieve TX $commitmentId"
     ).withImmediateReplyOrError[TransactionFound, TransactionNotFound]().map(_.tx)
 
+  private val abortOnSignatureTimeout: Receive = {
+    case RequestSignatureTimeout =>
+      val cause = RefundSignatureTimeoutException(exchange.info.id)
+      collaborators.gateway ! ForwardMessage(
+        ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
+      finishWithResult(Failure(cause))
+  }
+
+  private val abortOnBrokerNotification: Receive = {
+    case ReceiveMessage(ExchangeAborted(_, reason), _) =>
+      log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
+      finishWithResult(Failure(HandshakeAbortedException(exchange.info.id, reason)))
+  }
+
   private def subscribeToMessages(): Unit = {
     val id = exchange.info.id
     val counterpart = exchange.info.counterpartId
     collaborators.gateway ! Subscribe {
-      case ReceiveMessage(CommitmentNotification(`id`, _) | ExchangeAborted(`id`, _), BrokerId) =>
+      case ReceiveMessage(ExchangeAborted(`id`, _), BrokerId) =>
       case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) =>
     }
   }

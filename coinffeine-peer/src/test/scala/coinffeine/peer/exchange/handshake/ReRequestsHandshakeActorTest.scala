@@ -3,9 +3,8 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.peer.ProtocolConstants
-import coinffeine.protocol.messages.handshake.PeerHandshake
 
-class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path") {
+class ReRequestsHandshakeActorTest extends HandshakeActorTest("retries") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
@@ -13,12 +12,13 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
     refundSignatureAbortTimeout = 1 minute
   )
 
-  "The handshake actor" should "request refund transaction signature after a timeout" in {
+  "The handshake actor" should "resubmit the counterpart peer handshake" in {
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
-    gateway.expectForwardingPF(counterpartId) {
-      case _: PeerHandshake =>
-    }
+    shouldForwardPeerHandshake()
+  }
+
+  it should "request refund transaction signature after a timeout" in {
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     shouldSignCounterpartRefund()
@@ -28,5 +28,12 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
   it should "request it again after signing counterpart refund" in {
     shouldSignCounterpartRefund()
     shouldForwardRefundSignatureRequest()
+  }
+
+  it should "send commitment to the broker until publication" in {
+    givenValidRefundSignatureResponse()
+    shouldForwardCommitmentToBroker()
+    shouldForwardCommitmentToBroker()
+    givenCommitmentPublicationNotification()
   }
 }

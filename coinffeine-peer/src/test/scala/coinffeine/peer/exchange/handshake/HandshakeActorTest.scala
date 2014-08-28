@@ -6,12 +6,14 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.protocol.messages.handshake.{PeerHandshake, RefundSignatureRequest, RefundSignatureResponse}
+import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class HandshakeActorTest(systemName: String)
@@ -42,6 +44,17 @@ abstract class HandshakeActorTest(systemName: String)
     gateway.relayMessage(validSignature, counterpartId)
   }
 
+  def givenCommitmentPublicationNotification(): Unit = {
+    val notification = CommitmentNotification(
+      exchange.id,
+      Both(
+        handshake.myDeposit.get.getHash,
+        handshake.counterpartCommitmentTransaction.getHash
+      )
+    )
+    gateway.relayMessageFromBroker(notification)
+  }
+
   def shouldCreateDeposits(): Unit = {
     val request = wallet.expectMsgClass(classOf[WalletActor.CreateDeposit])
     request.amount should be (exchange.amounts.depositTransactionAmounts.seller.output)
@@ -66,6 +79,10 @@ abstract class HandshakeActorTest(systemName: String)
     val refundSignature =
       RefundSignatureResponse(exchange.id, MockExchangeProtocol.CounterpartRefundSignature)
     gateway.expectForwarding(refundSignature, counterpartId)
+  }
+
+  def shouldForwardCommitmentToBroker(): Unit = {
+    gateway.expectForwardingToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
   }
 
   override protected def resetBlockchainBetweenTests = false

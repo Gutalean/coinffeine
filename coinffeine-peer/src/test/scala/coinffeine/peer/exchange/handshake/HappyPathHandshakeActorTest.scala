@@ -7,7 +7,6 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.handshake._
 
 class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
@@ -47,7 +46,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     givenValidRefundSignatureResponse()
-    gateway.expectForwardingToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
+    shouldForwardCommitmentToBroker()
   }
 
   it should "sign counterpart refund after having our refund signed" in {
@@ -56,14 +55,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
-    val notification = CommitmentNotification(
-      exchange.id,
-      Both(
-        handshake.myDeposit.get.getHash,
-        handshake.counterpartCommitmentTransaction.getHash
-      )
-    )
-    gateway.relayMessageFromBroker(notification)
+    givenCommitmentPublicationNotification()
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
       WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
