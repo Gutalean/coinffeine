@@ -10,13 +10,12 @@ class BrokerAbortionHandshakeActorTest extends HandshakeActorTest("broker-aborts
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 10 seconds,
+    resubmitHandshakeMessagesTimeout = 10 seconds,
     refundSignatureAbortTimeout = 10 seconds
   )
 
   "Handshakes aborted by the broker" should "make the handshake to fail" in {
-    givenActorIsInitialized()
-    gateway.expectSubscription()
+    shouldForwardPeerHandshake()
     gateway.relayMessageFromBroker(ExchangeAborted(exchange.id, "test abortion"))
     val result = listener.expectMsgClass(classOf[HandshakeFailure])
     result.e.toString should include ("test abortion")

@@ -12,13 +12,11 @@ class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-tim
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 10 seconds,
+    resubmitHandshakeMessagesTimeout = 10 seconds,
     refundSignatureAbortTimeout = 100 millis
   )
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
-    givenActorIsInitialized()
-    gateway.expectSubscription()
     gateway.expectForwardingPF(counterpartId) {
       case _: PeerHandshake =>
     }

@@ -2,6 +2,7 @@ package coinffeine.peer.exchange
 
 import akka.actor._
 
+import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -14,9 +15,11 @@ import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
+import coinffeine.protocol.gateway.MessageGateway
 
 class DefaultExchangeActor(
-    handshakeActorProps: Props,
+    handshakeActorProps: (HandshakeActor.ExchangeToHandshake[_ <: FiatCurrency],
+                          HandshakeActor.Collaborators) => Props,
     channelActorProps: Role => Props,
     transactionBroadcastActorProps: Props,
     exchangeProtocol: ExchangeProtocol,
@@ -32,7 +35,7 @@ class DefaultExchangeActor(
     private var blockchain: ActorRef = _
     private val txBroadcaster =
       context.actorOf(transactionBroadcastActorProps, TransactionBroadcastActorName)
-    private val handshakeActor = context.actorOf(handshakeActorProps, HandshakeActorName)
+    private var handshakeActor: ActorRef = _
 
     def start(): Unit = {
       log.info(s"Starting exchange ${exchange.id}")
@@ -66,8 +69,16 @@ class DefaultExchangeActor(
     }
 
     private def startHandshake(): Unit = {
-      handshakeActor !
-        StartHandshake(exchange, user, registry, blockchain, wallet, listener = self)
+      import context.dispatcher
+      val exchangeToHandshake = HandshakeActor.ExchangeToHandshake(exchange, user)
+      val collaborators = HandshakeActor.Collaborators(
+        gateway = new ServiceRegistry(registry).eventuallyLocate(MessageGateway.ServiceId),
+        blockchain,
+        wallet,
+        listener = self
+      )
+      handshakeActor = context.actorOf(
+        handshakeActorProps(exchangeToHandshake, collaborators), HandshakeActorName)
     }
 
     private def finishingExchange(
@@ -123,7 +134,8 @@ object DefaultExchangeActor {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
     override lazy val exchangeActorProps = Props(new DefaultExchangeActor(
-      HandshakeActor.props(exchangeProtocol, protocolConstants),
+      (exchange, collaborators) => HandshakeActor.props(exchange, collaborators,
+        HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)),
       channelActorProps = {
         case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
         case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)

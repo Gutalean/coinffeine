@@ -22,7 +22,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Per
 import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.{GatewayProbe, MessageGateway}
+import coinffeine.protocol.gateway.{MockGateway, MessageGateway}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderActorTest extends AkkaSpec {
@@ -179,7 +179,7 @@ class OrderActorTest extends AkkaSpec {
     val role: Role
     def fiatFunds: Option[BlockedFundsId]
     val order: Order[_ <: FiatCurrency]
-    val gatewayProbe = new GatewayProbe(PeerId("broker"))
+    val gatewayProbe = new MockGateway(PeerId("broker"))
     val fundsActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
     val eventChannelProbe = EventChannelProbe()

@@ -9,13 +9,12 @@ class ReRequestRefundHandshakeActorTest extends HandshakeActorTest("happy-path")
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 500 millis,
+    resubmitHandshakeMessagesTimeout = 500 millis,
     refundSignatureAbortTimeout = 1 minute
   )
 
   "The handshake actor" should "request refund transaction signature after a timeout" in {
-    givenActorIsInitialized()
-    givenActorIsSubscribedToMessages()
+    shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     gateway.expectForwardingPF(counterpartId) {
       case _: PeerHandshake =>

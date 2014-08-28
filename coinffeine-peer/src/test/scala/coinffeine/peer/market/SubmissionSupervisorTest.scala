@@ -16,7 +16,7 @@ import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.gateway.{GatewayProbe, MessageGateway}
+import coinffeine.protocol.gateway.{MockGateway, MessageGateway}
 import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
@@ -35,7 +35,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
   trait Fixture {
     val registryActor = system.actorOf(ServiceRegistryActor.props(), "registry-"+Random.nextInt())
     val registry = new ServiceRegistry(registryActor)
-    val gateway = new GatewayProbe(PeerId("broker"))
+    val gateway = new MockGateway(PeerId("broker"))
     registry.register(MessageGateway.ServiceId, gateway.ref)
 
     val requester = TestProbe()

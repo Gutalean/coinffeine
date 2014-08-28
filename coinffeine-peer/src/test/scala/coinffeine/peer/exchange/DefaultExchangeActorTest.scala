@@ -16,7 +16,7 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
-import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess, StartHandshake}
+import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
@@ -30,7 +30,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   implicit def testTimeout = new Timeout(5 second)
   private val protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1 second,
+    resubmitHandshakeMessagesTimeout = 1 second,
     refundSignatureAbortTimeout = 1 minute
   )
 
@@ -48,7 +48,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     val listener, blockchain, peers, walletActor = TestProbe()
     val handshakeActor, micropaymentChannelActor, transactionBroadcastActor = new MockSupervisedActor()
     val actor = system.actorOf(Props(new DefaultExchangeActor(
-      handshakeActor.props,
+      (_, _) => handshakeActor.props,
       _ => micropaymentChannelActor.props,
       transactionBroadcastActor.props,
       new MockExchangeProtocol,
@@ -57,18 +57,17 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     listener.watch(actor)
 
     def startExchange(): Unit = {
-      listener.send(actor, StartExchange(exchange, user, walletActor.ref,
-        dummyPaymentProcessor, gateway.ref, peers.ref))
+      listener.send(actor, StartExchange(exchange, user, walletActor.ref, dummyPaymentProcessor,
+        registryActor, peers.ref))
       peers.expectMsg(RetrieveBlockchainActor)
       peers.reply(BlockchainActorRef(blockchain.ref))
-      handshakeActor.expectCreation()
       transactionBroadcastActor.expectCreation()
     }
 
     def givenHandshakeSuccess(): Unit = {
-      handshakeActor.expectAskWithReply {
-        case _: StartHandshake[_] => HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx)
-      }
+      handshakeActor.expectCreation()
+      handshakeActor.probe.send(actor,
+        HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
       transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
     }
 
@@ -85,7 +84,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenMicropaymentChannelSuccess(): Unit = {
       givenMicropaymentChannelCreation()
       val initMessage = StartMicroPaymentChannel(runningExchange, dummyPaymentProcessor,
-        gateway.ref, Set(actor, transactionBroadcastActor.ref))
+        registryActor, Set(actor, transactionBroadcastActor.ref))
       micropaymentChannelActor.expectAskWithReply {
         case `initMessage` => MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx))
       }
@@ -128,9 +127,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   it should "report a failure if the handshake fails" in new Fixture {
     startExchange()
     val error = new Error("Handshake error")
-    handshakeActor.expectAskWithReply {
-      case _: StartHandshake[_] => HandshakeFailure(error)
-    }
+    handshakeActor.expectCreation()
+    handshakeActor.probe.send(actor, HandshakeFailure(error))
     listener.expectMsg(ExchangeFailure(error))
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)

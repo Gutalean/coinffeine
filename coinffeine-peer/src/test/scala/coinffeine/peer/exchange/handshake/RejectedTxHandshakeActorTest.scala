@@ -3,28 +3,31 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.model.exchange.Both
+import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor.TransactionRejected
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.handshake.ExchangeCommitment
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitRefundSignatureTimeout = 1.minute,
+    resubmitHandshakeMessagesTimeout = 1.minute,
     refundSignatureAbortTimeout = 1.minute
   )
 
   "Handshakes in which TX are rejected" should "have a failed handshake result" in {
-    givenActorIsInitialized()
-    givenActorIsSubscribedToMessages()
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     expectNoMsg()
     givenValidRefundSignatureResponse()
+    gateway.expectForwardingPF(BrokerId) {
+      case ExchangeCommitment(_, _) =>
+    }
     val notification = CommitmentNotification(
       exchange.id,
       Both(handshake.myDeposit.get.getHash, handshake.counterpartCommitmentTransaction.getHash)
