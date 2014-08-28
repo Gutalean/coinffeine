@@ -40,10 +40,9 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
     shouldSignCounterpartRefund()
   }
 
-  it should "don't be fooled by invalid refund TX or source and resubmit signature request" in {
+  it should "don't be fooled by invalid refund TX or source" in {
     val invalidSignature = RefundSignatureResponse(exchange.id, mock[TransactionSignature])
     gateway.relayMessage(invalidSignature, counterpartId)
-    shouldForwardRefundSignatureRequest()
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
