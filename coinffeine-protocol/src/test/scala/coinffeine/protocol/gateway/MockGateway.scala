@@ -112,6 +112,6 @@ class MockGateway(brokerId: PeerId)(implicit system: ActorSystem)
   }
 }
 
-private object MockGateway {
+object MockGateway {
   case class Relay(receive: ReceiveMessage[_ <: PublicMessage])
 }
