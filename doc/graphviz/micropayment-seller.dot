@@ -1,0 +1,26 @@
+digraph {
+
+	fontname="Helvetica";
+	label="SellerMicropaymentChannelActor state diagram\n\n";
+	labelloc=t;
+	node [fontname="Helvetica", shape="box", style="rounded"];
+	edge [fontsize=8, fontname="Helvetica"];
+
+	Created [color="#777777", fontcolor="#777777"]; 
+	Failed [color="#aa0000", fontcolor="#aa0000"];
+
+	node [color="#00aa00", fontcolor="#00aa00"];
+	WaitForPaymentProof [label="Wait for payment proof"]; 
+	WaitForProofValidation [label="Wait for proof validation"]; 
+	Done; 
+
+	Created -> WaitForPaymentProof [label="  send tx signature  ", color="#777777", fontcolor="#777777"];
+	edge [color="#00aa00", fontcolor="#00aa00"];
+	WaitForPaymentProof:sw -> WaitForProofValidation:nw [xlabel="  receive buyer payment proof\nrequest validation  "];
+	WaitForProofValidation:ne -> WaitForPaymentProof:se [label="  proof is valid, not final step\nsend tx signature  ", color="#00aa00", fontcolor="#00aa00"];
+	WaitForProofValidation:se -> Done [label="  proof is valid, final step  ", color="#00aa00", fontcolor="#00aa00"];
+
+	edge [color="#aa0000", fontcolor="#aa0000"];
+	WaitForPaymentProof -> WaitForPaymentProof [label="  signature timeout\nsend tx signature  "];
+	WaitForProofValidation:sw -> Failed [xlabel="  proof is invalid  "];
+}
