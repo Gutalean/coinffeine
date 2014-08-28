@@ -118,6 +118,10 @@ message PaymentProof {
     required string paymentId = 3;
 }
 
+message MicropaymentChannelClosed {
+    required string exchangeId = 1;
+}
+
 message Payload {
     optional ExchangeAborted exchangeAborted = 1;
     optional ExchangeCommitment exchangeCommitment = 2;
@@ -133,8 +137,9 @@ message Payload {
     optional RefundSignatureResponse refundSignatureResponse = 12;
     optional StepSignature stepSignature = 13;
     optional PaymentProof paymentProof = 14;
-    optional OpenOrdersRequest openOrderRequest = 15;
-    optional OpenOrders openOrders = 16;
+    optional MicropaymentChannelClosed micropaymentChannelClosed = 15;
+    optional OpenOrdersRequest openOrderRequest = 16;
+    optional OpenOrders openOrders = 17;
 }
 
 message ProtocolVersion {

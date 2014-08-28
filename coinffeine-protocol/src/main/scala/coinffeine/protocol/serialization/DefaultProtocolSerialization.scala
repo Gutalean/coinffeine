@@ -55,6 +55,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setStepSignature(ProtoMapping.toProtobuf(m))
       case m: PaymentProof =>
         builder.setPaymentProof(ProtoMapping.toProtobuf(m))
+      case m: MicropaymentChannelClosed =>
+        builder.setMicropaymentChannelClosed(ProtoMapping.toProtobuf(m))
       case m: OpenOrdersRequest =>
         builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m))
       case m @ OpenOrders(_) =>
@@ -112,6 +114,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getStepSignature)
       case PAYMENTPROOF_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getPaymentProof)
+      case MICROPAYMENTCHANNELCLOSED_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getMicropaymentChannelClosed)
       case OPENORDERREQUEST_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOpenOrderRequest)
       case OPENORDERS_FIELD_NUMBER =>
