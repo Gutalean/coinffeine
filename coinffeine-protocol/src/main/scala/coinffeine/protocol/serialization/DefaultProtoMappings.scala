@@ -343,4 +343,16 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .setStep(obj.step)
       .build()
   }
+
+  implicit val micropaymentChannelClosedMapping =
+    new ProtoMapping[MicropaymentChannelClosed, msg.MicropaymentChannelClosed] {
+
+      override def fromProtobuf(message: msg.MicropaymentChannelClosed) =
+        MicropaymentChannelClosed(exchangeId = ExchangeId(message.getExchangeId))
+
+      override def toProtobuf(obj: MicropaymentChannelClosed) =
+        msg.MicropaymentChannelClosed.newBuilder()
+          .setExchangeId(obj.exchangeId.value)
+          .build()
+    }
 }

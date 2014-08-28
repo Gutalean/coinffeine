@@ -17,6 +17,7 @@ import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.brokerage._
+import coinffeine.protocol.messages.exchange.MicropaymentChannelClosed
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => msg}
 
@@ -201,4 +202,12 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Refund signature response" must behave like thereIsAMappingBetween(
     refundSignatureResponse, refundSignatureResponseMessage)
+
+  val micropaymentChannelClosed = MicropaymentChannelClosed(sampleExchangeId)
+  val micropaymentChannelClosedMessage = msg.MicropaymentChannelClosed.newBuilder()
+    .setExchangeId(sampleExchangeId.value)
+    .build()
+
+  "Micropayment channel closed" must behave like thereIsAMappingBetween(
+    micropaymentChannelClosed, micropaymentChannelClosedMessage)
 }

@@ -18,7 +18,7 @@ import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.arbitration.CommitmentNotification
 import coinffeine.protocol.messages.brokerage._
-import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
+import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
@@ -117,6 +117,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         RefundSignatureResponse(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Both(transactionSignature, transactionSignature)),
         PaymentProof(exchangeId, "paymentId", 5),
+        MicropaymentChannelClosed(exchangeId),
         OpenOrdersRequest(market),
         OpenOrders(peerPositions),
         peerPositions,

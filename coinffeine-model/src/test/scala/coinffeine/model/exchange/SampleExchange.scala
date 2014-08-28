@@ -45,7 +45,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   val buyerHandshakingExchange =
     buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
-  val sellerExchange = Exchange.notStarted(exchangeId, SellerRole, peerIds.seller, amounts,
+  val sellerExchange = Exchange.notStarted(exchangeId, SellerRole, peerIds.buyer, amounts,
     parameters, buyerBlockedFunds)
   val sellerHandshakingExchange =
     sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)

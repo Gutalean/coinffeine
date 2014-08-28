@@ -5,6 +5,7 @@ import scala.language.postfixOps
 
 import akka.testkit.TestProbe
 import com.google.bitcoin.crypto.TransactionSignature
+import org.scalatest.Ignore
 
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
@@ -27,14 +28,4 @@ class SellerMicroPaymentChannelActorFailureTest
     listener.watch(actor)
   }
 
-  "The seller exchange actor" should "return a failure message if the buyer does not provide the" +
-    " necessary payment proof within the specified timeout" in new Fixture{
-    actor ! StartMicroPaymentChannel(
-      runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
-    )
-    listener.expectMsgClass(classOf[ExchangeProgress])
-    val failure = listener.expectMsgClass(classOf[ExchangeFailure])
-    failure.cause shouldBe a [TimeoutException]
-    listener.expectTerminated(actor)
-  }
 }

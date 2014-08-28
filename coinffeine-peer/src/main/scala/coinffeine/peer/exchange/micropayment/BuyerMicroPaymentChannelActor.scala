@@ -17,7 +17,7 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
+import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
@@ -84,6 +84,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
             case _: FinalStep =>
               log.info("Exchange {}: micropayment channel finished with success", exchange.id)
+              reportClosedChannel()
               finishWith(ExchangeSuccess(lastSignedOffer))
           }
         }
@@ -94,7 +95,8 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         case proof: PaymentProof =>
           val completedSteps = channel.currentStep.value
           reportProgress(signatures = completedSteps, payments = completedSteps)
-          log.debug("Exchange {}: payment {} done", exchange.id, completedSteps)
+          log.debug("Exchange {}: payment {} for step {} done",
+            exchange.id, proof.paymentId, completedSteps)
           forwarding.forwardToCounterpart(proof)
           context.become(waitForNextStepSignature(channel.nextStep, Some(proof)))
 
@@ -155,6 +157,10 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         .map(paid => PaymentProof(exchange.id, paid.payment.id, step.value))
         .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
         .pipeTo(self)
+    }
+
+    private def reportClosedChannel(): Unit = {
+      forwarding.forwardToCounterpart(MicropaymentChannelClosed(exchange.id))
     }
   }
 }
