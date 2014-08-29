@@ -5,7 +5,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
@@ -37,6 +37,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setExchangeCommitment(ProtoMapping.toProtobuf(m))
       case m: CommitmentNotification =>
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
+      case m: CommitmentNotificationAck =>
+        builder.setCommitmentNotificationAck(ProtoMapping.toProtobuf(m))
       case m: OrderMatch =>
         builder.setOrderMatch(ProtoMapping.toProtobuf(m))
       case m: QuoteRequest =>
@@ -96,6 +98,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getExchangeCommitment)
       case COMMITMENTNOTIFICATION_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
+      case COMMITMENTNOTIFICATIONACK_FIELD_NUMBER =>
+        ProtoMapping.fromProtobuf(payload.getCommitmentNotificationAck)
       case ORDERMATCH_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getOrderMatch)
       case QUOTEREQUEST_FIELD_NUMBER =>
