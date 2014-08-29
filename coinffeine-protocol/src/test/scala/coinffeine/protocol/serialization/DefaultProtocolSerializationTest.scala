@@ -16,7 +16,7 @@ import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
@@ -108,6 +108,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         ExchangeAborted(exchangeId, "reason"),
         ExchangeCommitment(exchangeId, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
+        CommitmentNotificationAck(exchangeId),
         OrderMatch(orderId, exchangeId, btcAmount, fiatAmount, 310000L, PeerId("peer")),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),

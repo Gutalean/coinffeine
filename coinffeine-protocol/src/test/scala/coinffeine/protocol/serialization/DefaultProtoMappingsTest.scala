@@ -15,7 +15,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.MicropaymentChannelClosed
 import coinffeine.protocol.messages.handshake._
@@ -103,6 +103,14 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Commitment notification" should behave like thereIsAMappingBetween(
     commitmentNotification, commitmentNotificationMessage)
+
+  val commitmentNotificationAck = CommitmentNotificationAck(sampleExchangeId)
+  val commitmentNotificationAckMessage = msg.CommitmentNotificationAck.newBuilder()
+    .setExchangeId(sampleExchangeId.value)
+    .build()
+
+  "Commitment notification acknowledge" should behave like thereIsAMappingBetween(
+    commitmentNotificationAck, commitmentNotificationAckMessage)
 
   val commitment = ExchangeCommitment(sampleExchangeId, commitmentTransaction)
   val commitmentMessage = msg.ExchangeCommitment.newBuilder()

@@ -11,7 +11,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
@@ -36,6 +36,18 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           .setExchangeId(commitment.exchangeId.value)
           .setBuyerTxId(ByteString.copyFrom(commitment.bothCommitments.buyer.getBytes))
           .setSellerTxId(ByteString.copyFrom(commitment.bothCommitments.seller.getBytes))
+          .build
+    }
+
+  implicit val commitmentNotificationAckMapping =
+    new ProtoMapping[CommitmentNotificationAck, msg.CommitmentNotificationAck] {
+
+      override def fromProtobuf(commitment: msg.CommitmentNotificationAck) =
+        CommitmentNotificationAck(ExchangeId(commitment.getExchangeId))
+
+      override def toProtobuf(commitment: CommitmentNotificationAck) =
+        msg.CommitmentNotificationAck.newBuilder
+          .setExchangeId(commitment.exchangeId.value)
           .build
     }
 
