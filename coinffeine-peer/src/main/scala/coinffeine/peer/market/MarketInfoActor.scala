@@ -4,7 +4,9 @@ import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.BrokerId
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageForwarder
+import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
+import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
@@ -13,50 +15,82 @@ import coinffeine.protocol.messages.brokerage._
 private class MarketInfoActor(gateway: ActorRef) extends Actor {
   import coinffeine.peer.market.MarketInfoActor._
 
-  override def preStart(): Unit = {
-    subscribeToMessages()
+  private abstract class PendingRequest {
+    private var listeners: Set[ActorRef] = Set.empty
+
+    protected val request: PublicMessage
+    protected val responseMatcher: PartialFunction[PublicMessage, Unit]
+
+    def addListener(listener: ActorRef): Unit = {
+      listeners = listeners + listener
+    }
+
+    def notifyListeners(message: PublicMessage): Unit = {
+      listeners.foreach(_ ! message)
+    }
+
+    def startForwarding(): Unit = {
+      MessageForwarder.Factory(gateway).forward(request, BrokerId, MarketInfoActor.RetryPolicy) {
+        case message if responseMatcher.isDefinedAt(message) => message
+      }
+    }
   }
 
-  private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
+  private class PendingQuoteRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+    override protected val request = QuoteRequest(market)
+    override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
+      case Quote(`market`, _, _) =>
+    }
+  }
+
+  private class PendingOpenOrdersRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+    override protected val request = OpenOrdersRequest(market)
+    override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
+      case OpenOrders(PeerPositions(`market`, _, _)) =>
+    }
+  }
+
+  private var pendingRequests = Map.empty[InfoRequest, PendingRequest]
 
   override def receive: Receive = {
     case request @ RequestQuote(market) =>
-      startRequest(request, sender()) {
-        gateway ! ForwardMessage(QuoteRequest(market), BrokerId)
-      }
+      startOrAddToExistingRequest(request, sender())
 
     case request @ RequestOpenOrders(market) =>
-      startRequest(request, sender()) {
-        gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
-      }
+      startOrAddToExistingRequest(request, sender())
 
-    case ReceiveMessage(quote @ Quote(_, _, _), _) =>
+    case quote @ Quote(_, _, _) =>
       completeRequest(RequestQuote(quote.market), quote)
 
-    case ReceiveMessage(openOrders: OpenOrders[_], _) =>
+    case openOrders @ OpenOrders(_) =>
       completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)
   }
 
-  private def subscribeToMessages(): Unit = {
-    gateway ! Subscribe.fromBroker {
-      case Quote(_, _, _) | OpenOrders(_) =>
+  private def startOrAddToExistingRequest(request: InfoRequest, listener: ActorRef): Unit = {
+    if (!pendingRequests.contains(request)) {
+      startNewRequest(request)
     }
+    pendingRequests(request).addListener(listener)
   }
 
-  private def startRequest(request: InfoRequest, listener: ActorRef)(block: => Unit): Unit = {
-    if (pendingRequests(request).isEmpty) {
-      block
+  private def startNewRequest(request: InfoRequest): Unit = {
+    val pendingRequest = request match {
+      case RequestQuote(market) => new PendingQuoteRequest(market)
+      case RequestOpenOrders(market) => new PendingOpenOrdersRequest(market)
     }
-    pendingRequests += request -> (pendingRequests(request) + listener)
+    pendingRequest.startForwarding()
+    pendingRequests += request -> pendingRequest
   }
 
-  private def completeRequest(request: InfoRequest, response: Any): Unit = {
-    pendingRequests(request).foreach(_ ! response)
-    pendingRequests += request -> Set.empty
+  private def completeRequest(request: InfoRequest, response: PublicMessage): Unit = {
+    pendingRequests(request).notifyListeners(response)
+    pendingRequests -= request
   }
 }
 
 object MarketInfoActor {
+
+  val RetryPolicy = RetrySettings(maxRetries = 2)
 
   def props(gateway: ActorRef): Props = Props(new MarketInfoActor(gateway))
 

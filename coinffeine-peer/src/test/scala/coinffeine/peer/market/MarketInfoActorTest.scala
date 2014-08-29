@@ -1,5 +1,7 @@
 package coinffeine.peer.market
 
+import scala.concurrent.duration._
+
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
@@ -24,7 +26,7 @@ class MarketInfoActorTest extends AkkaSpec {
     messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestQuote(eurMarket))
-    messageGateway.expectNoMsg()
+    messageGateway.expectNoMsg(100.millis)
 
     messageGateway.relayMessageFromBroker(sampleEurQuote)
     expectMsg(sampleEurQuote)
@@ -45,7 +47,7 @@ class MarketInfoActorTest extends AkkaSpec {
     messageGateway.expectForwardingToBroker(OpenOrdersRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestOpenOrders(eurMarket))
-    messageGateway.expectNoMsg()
+    messageGateway.expectNoMsg(100.millis)
 
     messageGateway.relayMessageFromBroker(sampleOpenOrders)
     expectMsg(sampleOpenOrders)
@@ -65,6 +67,18 @@ class MarketInfoActorTest extends AkkaSpec {
 
     messageGateway.relayMessageFromBroker(sampleUsdQuote)
     usdRequester.expectMsg(sampleUsdQuote)
+  }
+
+  it should "perform retries" in new Fixture {
+    actor ! MarketInfoActor.RequestQuote(eurMarket)
+    messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
+    messageGateway.expectNoMsg(100.millis)
+    messageGateway.expectForwardingToBroker(
+      payload = QuoteRequest(eurMarket),
+      timeout = MarketInfoActor.RetryPolicy.timeout.duration
+    )
+    messageGateway.relayMessageFromBroker(sampleEurQuote)
+    expectMsg(sampleEurQuote)
   }
 
   trait Fixture {
