@@ -20,7 +20,7 @@ import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.handshake._
 
 private class HandshakeActor[C <: FiatCurrency](
@@ -143,6 +143,7 @@ private class HandshakeActor[C <: FiatCurrency](
         context.stop(counterpartRefundSigner)
         log.info("Handshake {}: The broker published {}, waiting for confirmations",
           exchange.info.id, bothCommitments)
+        collaborators.gateway ! ForwardMessage(CommitmentNotificationAck(exchange.info.id), BrokerId)
         context.become(waitForConfirmations(handshake, bothCommitments, refund))
     }
 
