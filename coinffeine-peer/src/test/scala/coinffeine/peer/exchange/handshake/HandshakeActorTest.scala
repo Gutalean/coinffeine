@@ -12,7 +12,7 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.protocol.messages.arbitration.CommitmentNotification
+import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
@@ -83,6 +83,10 @@ abstract class HandshakeActorTest(systemName: String)
 
   def shouldForwardCommitmentToBroker(): Unit = {
     gateway.expectForwardingToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
+  }
+
+  def shouldAckCommitmentNotification(): Unit = {
+    gateway.expectForwardingToBroker(CommitmentNotificationAck(exchange.id))
   }
 
   override protected def resetBlockchainBetweenTests = false

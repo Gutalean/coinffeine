@@ -56,6 +56,7 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   it should "wait until the broker publishes commitments" in {
     listener.expectNoMsg(100 millis)
     givenCommitmentPublicationNotification()
+    shouldAckCommitmentNotification()
     val confirmations = protocolConstants.commitmentConfirmations
     blockchain.expectMsgAllOf(
       WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
