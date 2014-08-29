@@ -13,7 +13,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
-import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
+import coinffeine.peer.market.OrderSupervisor
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
@@ -21,10 +21,7 @@ import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteR
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
-  "A peer" must "start its children upon start" in new StartedFixture {
-  }
-
-  it must "report the connection status" in new StartedFixture {
+  "A peer" must "report the connection status" in new StartedFixture {
     peer ! CoinffeinePeerActor.RetrieveConnectionStatus
     val bitcoinStatus = BitcoinConnectionStatus(0, BitcoinConnectionStatus.NotDownloading)
     bitcoinPeer.expectAskWithReply {
@@ -84,7 +81,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
       PropsCatalogue(
         gateway = gateway.props,
-        marketInfo = marketInfo.props,
+        marketInfo = _ => marketInfo.props,
         orderSupervisor = orders.props,
         paymentProcessor = paymentProcessor.props,
         bitcoinPeer = bitcoinPeer.props))))
@@ -132,9 +129,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     receivedPaymentProc should be (paymentProcessor.ref)
     receivedBitcoinPeer should be (bitcoinPeer.ref)
     receivedWallet should be (wallet.ref)
-
-    // Then the market info is requested to start
-    marketInfo.expectMsgPF { case MarketInfoActor.Start(_) => }
 
     // And finally indicate it succeed to start
     expectMsg(ServiceActor.Started)

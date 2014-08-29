@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.peer.GlobalServices
+import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage._
 
 class MarketInfoActorTest extends AkkaSpec {
@@ -67,15 +67,13 @@ class MarketInfoActorTest extends AkkaSpec {
     usdRequester.expectMsg(sampleUsdQuote)
   }
 
-  trait Fixture extends GlobalServices {
+  trait Fixture {
     val eurMarket = Market(Euro)
     val usdMarket = Market(UsDollar)
-    val actor = system.actorOf(MarketInfoActor.props)
+    val messageGateway = new MockGateway()
+    val actor = system.actorOf(MarketInfoActor.props(messageGateway.ref))
     val sampleEurQuote = Quote(spread = 900.EUR -> 905.EUR, lastPrice = 904.EUR)
     val sampleUsdQuote = Quote(spread = 1000.USD -> 1010.USD, lastPrice = 1005.USD)
     val sampleOpenOrders = OpenOrders(PeerPositions.empty(eurMarket))
-
-    actor ! MarketInfoActor.Start(registryActor)
-    messageGateway.expectSubscription()
   }
 }

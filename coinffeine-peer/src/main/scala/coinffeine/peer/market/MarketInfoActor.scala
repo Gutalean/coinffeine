@@ -2,80 +2,63 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.BrokerId
-import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
   * It avoid unnecessary multiple concurrent requests and notify listeners.
   */
-class MarketInfoActor extends Actor {
+private class MarketInfoActor(gateway: ActorRef) extends Actor {
+  import coinffeine.peer.market.MarketInfoActor._
 
-  import MarketInfoActor._
-
-  override def receive: Receive = {
-    case init: Start => new InitializedActor(init).start()
+  override def preStart(): Unit = {
+    subscribeToMessages()
   }
 
-  private class InitializedActor(init: Start) {
-    import context.dispatcher
-    import init._
+  private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
 
-    private val gateway = new ServiceRegistry(registry).eventuallyLocate(MessageGateway.ServiceId)
-    private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
-
-    def start(): Unit = {
-      subscribeToMessages()
-      context.become(initializedReceive)
-    }
-
-    private def subscribeToMessages(): Unit = {
-      gateway ! Subscribe.fromBroker {
-        case Quote(_, _, _) | OpenOrders(_) =>
+  override def receive: Receive = {
+    case request @ RequestQuote(market) =>
+      startRequest(request, sender()) {
+        gateway ! ForwardMessage(QuoteRequest(market), BrokerId)
       }
-    }
 
-    private val initializedReceive: Receive = {
-      case request @ RequestQuote(market) =>
-        startRequest(request, sender()) {
-          gateway ! ForwardMessage(QuoteRequest(market), BrokerId)
-        }
-
-      case request @ RequestOpenOrders(market) =>
-        startRequest(request, sender()) {
-          gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
-        }
-
-      case ReceiveMessage(quote @ Quote(_, _, _), _) =>
-        completeRequest(RequestQuote(quote.market), quote)
-
-      case ReceiveMessage(openOrders: OpenOrders[_], _) =>
-        completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)
-    }
-
-    private def startRequest(request: InfoRequest, listener: ActorRef)(block: => Unit): Unit = {
-      if (pendingRequests(request).isEmpty) {
-        block
+    case request @ RequestOpenOrders(market) =>
+      startRequest(request, sender()) {
+        gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
       }
-      pendingRequests += request -> (pendingRequests(request) + listener)
-    }
 
-    private def completeRequest(request: InfoRequest, response: Any): Unit = {
-      pendingRequests(request).foreach(_ ! response)
-      pendingRequests += request -> Set.empty
+    case ReceiveMessage(quote @ Quote(_, _, _), _) =>
+      completeRequest(RequestQuote(quote.market), quote)
+
+    case ReceiveMessage(openOrders: OpenOrders[_], _) =>
+      completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)
+  }
+
+  private def subscribeToMessages(): Unit = {
+    gateway ! Subscribe.fromBroker {
+      case Quote(_, _, _) | OpenOrders(_) =>
     }
+  }
+
+  private def startRequest(request: InfoRequest, listener: ActorRef)(block: => Unit): Unit = {
+    if (pendingRequests(request).isEmpty) {
+      block
+    }
+    pendingRequests += request -> (pendingRequests(request) + listener)
+  }
+
+  private def completeRequest(request: InfoRequest, response: Any): Unit = {
+    pendingRequests(request).foreach(_ ! response)
+    pendingRequests += request -> Set.empty
   }
 }
 
 object MarketInfoActor {
 
-  val props: Props = Props(new MarketInfoActor)
-
-  /** Initialize the actor to subscribe for market information */
-  case class Start(registry: ActorRef)
+  def props(gateway: ActorRef): Props = Props(new MarketInfoActor(gateway))
 
   sealed trait InfoRequest
 

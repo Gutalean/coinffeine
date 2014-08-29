@@ -43,7 +43,7 @@ import coinffeine.peer.CoinffeinePeerActor._
 
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
-  private val marketInfoRef = context.actorOf(props.marketInfo, "marketInfo")
+  private val marketInfoRef = context.actorOf(props.marketInfo(gatewayRef), "marketInfo")
   private val orderSupervisorRef = context.actorOf(props.orderSupervisor, "orders")
   private var walletRef: ActorRef = _
 
@@ -64,7 +64,6 @@ import coinffeine.peer.CoinffeinePeerActor._
         walletRef = retrievedWalletRef
         orderSupervisorRef !
           OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
-        marketInfoRef ! MarketInfoActor.Start(registryRef)
         becomeStarted(handleMessages)
         log.info("Coinffeine peer actor successfully started!")
       case Status.Failure(cause) =>
@@ -155,7 +154,7 @@ object CoinffeinePeerActor {
   private val BrokerPortSetting = "coinffeine.broker.port"
 
   case class PropsCatalogue(gateway: Props,
-                            marketInfo: Props,
+                            marketInfo: ActorRef => Props,
                             orderSupervisor: Props,
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
