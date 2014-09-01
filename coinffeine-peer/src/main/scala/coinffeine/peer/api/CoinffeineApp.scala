@@ -10,6 +10,7 @@ trait CoinffeineApp {
   def wallet: CoinffeineWallet
   def paymentProcessor: CoinffeinePaymentProcessor
   def marketStats: MarketStats
+  def utils: CoinffeineUtils
 
   def observe(handler: EventHandler): Unit
 

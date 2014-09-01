@@ -25,14 +25,6 @@ case class Order[C <: FiatCurrency](
     price: CurrencyAmount[C],
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
 
-  val fiatAmount = price * amount.value
-
-  /** The required fiat amount for the owner of this order. */
-  val requiredFiatAmount: CurrencyAmount[C] = orderType match {
-    case Bid => fiatAmount
-    case Ask => CurrencyAmount.zero(fiatAmount.currency)
-  }
-
   /** Create a new copy of this order with the given status. */
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
 

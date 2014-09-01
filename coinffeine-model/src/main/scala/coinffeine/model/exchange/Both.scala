@@ -1,11 +1,18 @@
 package coinffeine.model.exchange
 
+import coinffeine.model.market.{Bid, Ask, OrderType}
+
 /** Utility class for a pair of values belonging to buyer and seller respectively.
   *
   * This class follows the convention for the buyer-seller ordering. Use only with immutable
   * classes.
   */
 case class Both[+T](buyer: T, seller: T) {
+
+  def apply(orderType: OrderType): T = orderType match {
+    case Ask => seller
+    case Bid => buyer
+  }
 
   def map[S](f: T => S): Both[S] = Both(
     buyer = f(buyer),
