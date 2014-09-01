@@ -9,5 +9,6 @@ libraryDependencies ++= Dependencies.akka ++ Seq(
   // Support libraries for scalaxb
   Dependencies.dispatch,
   Dependencies.scalaParser,
-  Dependencies.scalaXml
+  Dependencies.scalaXml,
+  Dependencies.htmlunit
 )

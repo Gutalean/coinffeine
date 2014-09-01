@@ -27,6 +27,7 @@ object Build extends sbt.Build {
     lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
     lazy val h2 = "com.h2database" % "h2" % "1.3.175"
+    lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
     lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
     lazy val jcommander = "com.beust" % "jcommander" % "1.35"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"

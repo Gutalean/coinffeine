@@ -15,6 +15,10 @@
 
     <logger name="com.ning.http" level="WARN"/>
 
+    <logger name="com.gargoylesoftware.htmlunit" level="OFF"/>
+    <logger name="org.apache.http.client.protocol.ResponseProcessCookies" level="OFF"/>
+    <logger name="org.apache.commons.httpclient" level="OFF"/>
+
     <root level="debug">
         <appender-ref ref="STDOUT" />
     </root>
