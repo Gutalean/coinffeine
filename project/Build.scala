@@ -27,6 +27,7 @@ object Build extends sbt.Build {
     lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
     lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
     lazy val h2 = "com.h2database" % "h2" % "1.3.175"
+    lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
     lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
     lazy val jcommander = "com.beust" % "jcommander" % "1.35"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
@@ -48,7 +49,6 @@ object Build extends sbt.Build {
     lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
     lazy val tomp2p = "net.tomp2p" % "TomP2P" % "4.4"
     lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
-    lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))

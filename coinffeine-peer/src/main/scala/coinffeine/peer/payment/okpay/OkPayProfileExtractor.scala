@@ -11,10 +11,13 @@ import org.eclipse.jetty.util.ajax.JSON
 
 class OkPayProfileExtractor(username: String, password: String) {
 
-  import coinffeine.peer.payment.okpay.OkPayProfileExtractor._
+  import OkPayProfileExtractor._
 
-  private val client = new WebClient(BrowserVersion.INTERNET_EXPLORER_11)
-  client.getOptions.setUseInsecureSSL(true)
+  private val client = {
+    val result = new WebClient(BrowserVersion.INTERNET_EXPLORER_11)
+    result.getOptions.setUseInsecureSSL(true)
+    result
+  }
 
   def configureProfile(): Future[Option[OkPayProfile]] = Future {
     login()
@@ -22,8 +25,6 @@ class OkPayProfileExtractor(username: String, password: String) {
     lookupWalletsIds().headOption.map { walletId =>
       enableAPI(walletId)
       val token = configureSeedToken(walletId)
-      require(token.length == SeedTokenLength,
-        s"Received a token which size is not $SeedTokenLength: $token (size ${token.length}})")
       OkPayProfile(token, walletId)
     }
   }
@@ -34,9 +35,14 @@ class OkPayProfileExtractor(username: String, password: String) {
     loginForm.getInputByName("ctl00$MainContent$txtLogin").asInstanceOf[HtmlInput]
       .setValueAttribute(username)
     loginForm.getInputByName[HtmlInput]("ctl00$MainContent$txtPassword")
-      .setValueAttribute(password)
-    loginForm.getInputByName("ctl00$MainContent$btnLogin")
+      .setValueAttribute(username)
+    val dashboardPage = loginForm.getInputByName("ctl00$MainContent$btnLogin")
       .asInstanceOf[HtmlInput].click().asInstanceOf[HtmlPage]
+    dashboardPage.asText()
+    Option(dashboardPage.getFirstByXPath("//div[@id='activity']")).getOrElse {
+      throw new LoginException(s"Login failed, the page returned was not the Dashboard: " +
+        s"${dashboardPage.asText}")
+    }
   }
 
   private[okpay] def lookupWalletsIds(): Seq[String] = {
@@ -65,7 +71,7 @@ class OkPayProfileExtractor(username: String, password: String) {
   }
 
   private[okpay] def enableAPI(walletId: String): Unit = {
-    val settingsPage = retrievePage("wallet/" + walletId)
+    val settingsPage = retrievePage(s"wallet/$walletId")
     val settingsForm: HtmlForm = settingsPage.getHtmlElementById("aspnetForm")
     val checkButtonApi = settingsForm
       .getInputByName[HtmlCheckBoxInput](
@@ -109,8 +115,11 @@ object OkPayProfileExtractor {
 
   val SeedTokenLength = 25
 
-  case class OkPayProfile(token: String, walletId: String)
+  case class OkPayProfile(token: String, walletId: String) {
+    require(token.length == SeedTokenLength,
+      s"Received a token which size is not $SeedTokenLength: $token (size ${token.length}})")
+  }
 
-  case class TokenRetrievalException(message: String, cause: Throwable = null)
+  case class LoginException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
 }
