@@ -51,18 +51,19 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           .build
     }
 
-  implicit val enterExchangeMapping = new ProtoMapping[ExchangeCommitment, msg.ExchangeCommitment] {
+  implicit val exchangeCommitmentMapping = new ProtoMapping[ExchangeCommitment, msg.ExchangeCommitment] {
 
-      override def fromProtobuf(enter: msg.ExchangeCommitment) = ExchangeCommitment(
-        commitmentTransaction = txSerialization.deserializeTransaction(
-          enter.getCommitmentTransaction),
-        exchangeId = ExchangeId(enter.getExchangeId)
-      )
+    override def fromProtobuf(message: msg.ExchangeCommitment) = ExchangeCommitment(
+      exchangeId = ExchangeId(message.getExchangeId),
+      publicKey = txSerialization.deserializePublicKey(message.getPublicKey),
+      commitmentTransaction = txSerialization.deserializeTransaction(message.getCommitmentTransaction)
+    )
 
-      override def toProtobuf(enter: ExchangeCommitment) = msg.ExchangeCommitment.newBuilder
-        .setExchangeId(enter.exchangeId.value)
-        .setCommitmentTransaction(txSerialization.serialize(enter.commitmentTransaction)).build
-    }
+    override def toProtobuf(message: ExchangeCommitment) = msg.ExchangeCommitment.newBuilder
+      .setExchangeId(message.exchangeId.value)
+      .setPublicKey(txSerialization.serialize(message.publicKey))
+      .setCommitmentTransaction(txSerialization.serialize(message.commitmentTransaction)).build
+  }
 
   implicit val exchangeAbortedMapping = new ProtoMapping[ExchangeAborted, msg.ExchangeAborted] {
 

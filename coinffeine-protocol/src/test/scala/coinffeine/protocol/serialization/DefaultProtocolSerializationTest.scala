@@ -104,16 +104,17 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
         OrderBookEntry(Bid, 1.BTC, 400.USD),
         OrderBookEntry(Ask, 0.4.BTC, 600.USD)
       ))
+      val publicKey = new KeyPair().publicKey
       Seq(
         ExchangeAborted(exchangeId, "reason"),
-        ExchangeCommitment(exchangeId, transaction),
+        ExchangeCommitment(exchangeId, publicKey, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         CommitmentNotificationAck(exchangeId),
         OrderMatch(orderId, exchangeId, btcAmount, fiatAmount, 310000L, PeerId("peer")),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, "reason"),
-        PeerHandshake(exchangeId, new KeyPair().publicKey, "paymentAccount"),
+        PeerHandshake(exchangeId, publicKey, "paymentAccount"),
         RefundSignatureRequest(exchangeId, transaction),
         RefundSignatureResponse(exchangeId, transactionSignature),
         StepSignatures(exchangeId, 1, Both(transactionSignature, transactionSignature)),

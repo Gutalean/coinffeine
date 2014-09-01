@@ -97,7 +97,8 @@ message RefundSignatureResponse {
 // Sent by the parts to enter an exchange with a deposit commitment
 message ExchangeCommitment {
     required string exchangeId = 1;
-    required bytes commitmentTransaction = 2;
+    required bytes publicKey = 2;
+    required bytes commitmentTransaction = 3;
 }
 
 // Notification to the exchange parts of the actual commitments

@@ -131,7 +131,7 @@ private class HandshakeActor[C <: FiatCurrency](
   private def waitForPublication(handshake: Handshake[C], refund: ImmutableTransaction) = {
 
     forwarding.forward(
-      msg = ExchangeCommitment(exchange.info.id, handshake.myDeposit),
+      msg = ExchangeCommitment(exchange.info.id, exchange.user.bitcoinKey.publicKey, handshake.myDeposit),
       destination = BrokerId,
       retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
     ) {
