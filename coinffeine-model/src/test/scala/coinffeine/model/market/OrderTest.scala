@@ -9,8 +9,7 @@ import coinffeine.model.exchange._
 class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetwork.Component {
 
   val exchangeParameters = Exchange.Parameters(10, network)
-  val dummyDeposits =
-    Exchange.Deposits(Both.fill(ImmutableTransaction(new MutableTransaction(network))))
+  val dummyDeposits = Both.fill(ImmutableTransaction(new MutableTransaction(network)))
 
   "Order" must "report no progress with no exchanges" in {
     val order = Order(OrderId.random(), Bid, 10.BTC, 10.EUR)

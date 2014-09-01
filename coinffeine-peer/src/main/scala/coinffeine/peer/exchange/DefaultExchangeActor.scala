@@ -52,7 +52,7 @@ class DefaultExchangeActor(
         val deposits = exchangeProtocol.validateDeposits(
           commitmentTxs, handshakingExchange.amounts, handshakingExchange.requiredSignatures).get
         val runningExchange =
-          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(deposits)
+          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(commitmentTxs)
         val props = channelActorProps(runningExchange.role)
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
         ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,

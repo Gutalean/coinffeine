@@ -25,14 +25,14 @@ class MockExchangeProtocol extends ExchangeProtocol {
         Failure(new IllegalArgumentException("Invalid buyer deposit"))
       case Seq(_, MockExchangeProtocol.InvalidDeposit) =>
         Failure(new IllegalArgumentException("Invalid seller deposit"))
-      case _ => Success(Exchange.Deposits(transactions))
+      case _ => Success(transactions)
     }
 }
 
 object MockExchangeProtocol {
 
   val DummyDeposit = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
-  val DummyDeposits = Exchange.Deposits(Both(DummyDeposit, DummyDeposit))
+  val DummyDeposits = Both(DummyDeposit, DummyDeposit)
 
   /** Magic deposit that is always rejected */
   val InvalidDeposit = ImmutableTransaction {
