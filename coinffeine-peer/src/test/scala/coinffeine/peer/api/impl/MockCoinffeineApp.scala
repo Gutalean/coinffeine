@@ -33,6 +33,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
   }
 
+  override def utils = ???
+
   override def start(timeout: FiniteDuration) = Future.successful {}
   override def stop(timeout: FiniteDuration) = Future.successful {}
 

@@ -11,6 +11,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
+import coinffeine.peer.amounts.{DefaultAmountsComponent, ExchangeAmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
@@ -24,7 +25,8 @@ import coinffeine.peer.event.EventObserverActor
   */
 class DefaultCoinffeineApp(name: String,
                            accountId: PaymentProcessor.AccountId,
-                           peerProps: Props) extends CoinffeineApp {
+                           peerProps: Props,
+                           amountsCalculator: ExchangeAmountsCalculator) extends CoinffeineApp {
 
   private val system = ActorSystem(name)
   private val peerRef = system.actorOf(peerProps, "peer")
@@ -36,6 +38,8 @@ class DefaultCoinffeineApp(name: String,
   override val marketStats = new DefaultMarketStats(peerRef)
 
   override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(accountId, peerRef)
+
+  override val utils = new DefaultCoinffeineUtils(amountsCalculator)
 
   override def observe(handler: EventHandler): Unit = {
     val observer = system.actorOf(EventObserverActor.props(handler))
@@ -64,10 +68,11 @@ object DefaultCoinffeineApp {
   private val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineApp])
 
   trait Component extends CoinffeineAppComponent {
-    this: CoinffeinePeerActor.Component with ConfigComponent =>
+    this: CoinffeinePeerActor.Component with ConfigComponent with DefaultAmountsComponent =>
 
     private val accountId = config.getString("coinffeine.okpay.id")
 
-    override lazy val app = new DefaultCoinffeineApp(name = accountId, accountId, peerProps)
+    override lazy val app = new DefaultCoinffeineApp(
+      name = accountId, accountId, peerProps, exchangeAmountsCalculator)
   }
 }
