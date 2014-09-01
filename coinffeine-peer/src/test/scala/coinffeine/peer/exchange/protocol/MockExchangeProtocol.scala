@@ -19,13 +19,11 @@ class MockExchangeProtocol extends ExchangeProtocol {
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
-                                requiredSignatures: Both[PublicKey]): Try[Exchange.Deposits] =
-    transactions.toSeq match {
-      case Seq(MockExchangeProtocol.InvalidDeposit, _) =>
+                                requiredSignatures: Both[PublicKey]): Both[Try[Unit]] =
+    transactions.map {
+      case MockExchangeProtocol.InvalidDeposit =>
         Failure(new IllegalArgumentException("Invalid buyer deposit"))
-      case Seq(_, MockExchangeProtocol.InvalidDeposit) =>
-        Failure(new IllegalArgumentException("Invalid seller deposit"))
-      case _ => Success(transactions)
+      case _ => Success {}
     }
 }
 

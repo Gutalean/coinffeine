@@ -5,16 +5,15 @@ import scala.util.Try
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.Deposits
 import coinffeine.model.exchange.{Both, Exchange}
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],
                                      requiredSignatures: Both[PublicKey]) {
 
-  def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {
-    _ <- requireValidBuyerFunds(transactions.buyer)
-    _ <- requireValidSellerFunds(transactions.seller)
-  } yield Deposits(transactions)
+  def validate(transactions: Both[ImmutableTransaction]): Both[Try[Unit]] = Both(
+    buyer = requireValidBuyerFunds(transactions.buyer),
+    seller = requireValidSellerFunds(transactions.seller)
+  )
 
   def requireValidBuyerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val buyerFunds = transaction.get.getOutput(0)

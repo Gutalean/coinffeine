@@ -3,26 +3,37 @@ package coinffeine.peer.exchange.protocol.impl
 import scala.collection.JavaConversions._
 
 import com.google.bitcoin.core.Transaction.SigHash
+import org.scalatest.Inside
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Both
 
-class DepositValidatorTest extends ExchangeTest {
+class DepositValidatorTest extends ExchangeTest with Inside {
 
   "Valid deposits" should "not be built from an invalid buyer commitment transaction" in
     new Fixture {
-      validator.validate(Both(
+      val deposits = Both(
         buyer = ImmutableTransaction(invalidFundsCommitment),
         seller = sellerHandshake.myDeposit
-      )) should be ('failure)
+      )
+      inside(validator.validate(deposits)) {
+        case Both(buyerResult, sellerResult) =>
+          buyerResult should be ('failure)
+          sellerResult should be ('success)
+      }
   }
 
   it should "not be built from an invalid seller commitment transaction" in new Fixture {
-    validator.validate(Both(
+    private val deposits = Both(
       buyer = buyerHandshake.myDeposit,
       seller = ImmutableTransaction(invalidFundsCommitment)
-    )) should be ('failure)
+    )
+    inside(validator.validate(deposits)) {
+      case Both(buyerResult, sellerResult) =>
+        buyerResult should be ('success)
+        sellerResult should be ('failure)
+    }
   }
 
   trait Fixture extends BuyerHandshake with SellerHandshake {
