@@ -18,6 +18,8 @@ import scala.language.postfixOps
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
   * @param orderResubmitInterval   Open orders should be resubmitted after this interval to avoid
   *                                being discarded
+  * @param orderAcknowledgeTimeout Time to wait for an order publication acknowledge
+  * @param orderAcknowledgeRetries Number of retries to perform when publishing orders
   * @param refundLockTime         The number of blocks to wait for the refund transactions to be
   *                               valid
   * @param refundSafetyBlockCount The number of blocks before the refund can be broadcast where we
@@ -33,7 +35,8 @@ case class ProtocolConstants(
   microPaymentChannelResubmitTimeout: FiniteDuration = 3 seconds,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,
-  orderAcknowledgeTimeout: FiniteDuration = 15 seconds,
+  orderAcknowledgeTimeout: FiniteDuration = 5 seconds,
+  orderAcknowledgeRetries: Int = 2,
   refundLockTime: Int = 10,
   refundSafetyBlockCount: Int = 2
 )
