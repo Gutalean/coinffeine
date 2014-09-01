@@ -1,11 +1,13 @@
 package coinffeine.peer.market
 
+import scala.concurrent.duration._
+
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.peer.GlobalServices
+import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage._
 
 class MarketInfoActorTest extends AkkaSpec {
@@ -24,7 +26,7 @@ class MarketInfoActorTest extends AkkaSpec {
     messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestQuote(eurMarket))
-    messageGateway.expectNoMsg()
+    messageGateway.expectNoMsg(100.millis)
 
     messageGateway.relayMessageFromBroker(sampleEurQuote)
     expectMsg(sampleEurQuote)
@@ -45,7 +47,7 @@ class MarketInfoActorTest extends AkkaSpec {
     messageGateway.expectForwardingToBroker(OpenOrdersRequest(eurMarket))
 
     concurrentRequester.send(actor, MarketInfoActor.RequestOpenOrders(eurMarket))
-    messageGateway.expectNoMsg()
+    messageGateway.expectNoMsg(100.millis)
 
     messageGateway.relayMessageFromBroker(sampleOpenOrders)
     expectMsg(sampleOpenOrders)
@@ -67,15 +69,25 @@ class MarketInfoActorTest extends AkkaSpec {
     usdRequester.expectMsg(sampleUsdQuote)
   }
 
-  trait Fixture extends GlobalServices {
+  it should "perform retries" in new Fixture {
+    actor ! MarketInfoActor.RequestQuote(eurMarket)
+    messageGateway.expectForwardingToBroker(QuoteRequest(eurMarket))
+    messageGateway.expectNoMsg(100.millis)
+    messageGateway.expectForwardingToBroker(
+      payload = QuoteRequest(eurMarket),
+      timeout = MarketInfoActor.RetryPolicy.timeout.duration
+    )
+    messageGateway.relayMessageFromBroker(sampleEurQuote)
+    expectMsg(sampleEurQuote)
+  }
+
+  trait Fixture {
     val eurMarket = Market(Euro)
     val usdMarket = Market(UsDollar)
-    val actor = system.actorOf(MarketInfoActor.props)
+    val messageGateway = new MockGateway()
+    val actor = system.actorOf(MarketInfoActor.props(messageGateway.ref))
     val sampleEurQuote = Quote(spread = 900.EUR -> 905.EUR, lastPrice = 904.EUR)
     val sampleUsdQuote = Quote(spread = 1000.USD -> 1010.USD, lastPrice = 1005.USD)
     val sampleOpenOrders = OpenOrders(PeerPositions.empty(eurMarket))
-
-    actor ! MarketInfoActor.Start(registryActor)
-    messageGateway.expectSubscription()
   }
 }

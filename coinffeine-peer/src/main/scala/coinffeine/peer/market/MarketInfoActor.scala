@@ -2,80 +2,97 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.BrokerId
-import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
+import coinffeine.protocol.gateway.MessageForwarder
+import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
+import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage._
 
 /** Actor that subscribe for a market information on behalf of other actors.
   * It avoid unnecessary multiple concurrent requests and notify listeners.
   */
-class MarketInfoActor extends Actor {
+private class MarketInfoActor(gateway: ActorRef) extends Actor {
+  import coinffeine.peer.market.MarketInfoActor._
 
-  import MarketInfoActor._
+  private abstract class PendingRequest {
+    private var listeners: Set[ActorRef] = Set.empty
 
-  override def receive: Receive = {
-    case init: Start => new InitializedActor(init).start()
+    protected val request: PublicMessage
+    protected val responseMatcher: PartialFunction[PublicMessage, Unit]
+
+    def addListener(listener: ActorRef): Unit = {
+      listeners = listeners + listener
+    }
+
+    def notifyListeners(message: PublicMessage): Unit = {
+      listeners.foreach(_ ! message)
+    }
+
+    def startForwarding(): Unit = {
+      MessageForwarder.Factory(gateway).forward(request, BrokerId, MarketInfoActor.RetryPolicy) {
+        case message if responseMatcher.isDefinedAt(message) => message
+      }
+    }
   }
 
-  private class InitializedActor(init: Start) {
-    import context.dispatcher
-    import init._
-
-    private val gateway = new ServiceRegistry(registry).eventuallyLocate(MessageGateway.ServiceId)
-    private var pendingRequests = Map.empty[InfoRequest, Set[ActorRef]].withDefaultValue(Set.empty)
-
-    def start(): Unit = {
-      subscribeToMessages()
-      context.become(initializedReceive)
+  private class PendingQuoteRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+    override protected val request = QuoteRequest(market)
+    override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
+      case Quote(`market`, _, _) =>
     }
+  }
 
-    private def subscribeToMessages(): Unit = {
-      gateway ! Subscribe.fromBroker {
-        case Quote(_, _, _) | OpenOrders(_) =>
-      }
+  private class PendingOpenOrdersRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+    override protected val request = OpenOrdersRequest(market)
+    override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
+      case OpenOrders(PeerPositions(`market`, _, _)) =>
     }
+  }
 
-    private val initializedReceive: Receive = {
-      case request @ RequestQuote(market) =>
-        startRequest(request, sender()) {
-          gateway ! ForwardMessage(QuoteRequest(market), BrokerId)
-        }
+  private var pendingRequests = Map.empty[InfoRequest, PendingRequest]
 
-      case request @ RequestOpenOrders(market) =>
-        startRequest(request, sender()) {
-          gateway ! ForwardMessage(OpenOrdersRequest(market), BrokerId)
-        }
+  override def receive: Receive = {
+    case request @ RequestQuote(market) =>
+      startOrAddToExistingRequest(request, sender())
 
-      case ReceiveMessage(quote @ Quote(_, _, _), _) =>
-        completeRequest(RequestQuote(quote.market), quote)
+    case request @ RequestOpenOrders(market) =>
+      startOrAddToExistingRequest(request, sender())
 
-      case ReceiveMessage(openOrders: OpenOrders[_], _) =>
-        completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)
+    case quote @ Quote(_, _, _) =>
+      completeRequest(RequestQuote(quote.market), quote)
+
+    case openOrders @ OpenOrders(_) =>
+      completeRequest(RequestOpenOrders(openOrders.orders.market), openOrders)
+  }
+
+  private def startOrAddToExistingRequest(request: InfoRequest, listener: ActorRef): Unit = {
+    if (!pendingRequests.contains(request)) {
+      startNewRequest(request)
     }
+    pendingRequests(request).addListener(listener)
+  }
 
-    private def startRequest(request: InfoRequest, listener: ActorRef)(block: => Unit): Unit = {
-      if (pendingRequests(request).isEmpty) {
-        block
-      }
-      pendingRequests += request -> (pendingRequests(request) + listener)
+  private def startNewRequest(request: InfoRequest): Unit = {
+    val pendingRequest = request match {
+      case RequestQuote(market) => new PendingQuoteRequest(market)
+      case RequestOpenOrders(market) => new PendingOpenOrdersRequest(market)
     }
+    pendingRequest.startForwarding()
+    pendingRequests += request -> pendingRequest
+  }
 
-    private def completeRequest(request: InfoRequest, response: Any): Unit = {
-      pendingRequests(request).foreach(_ ! response)
-      pendingRequests += request -> Set.empty
-    }
+  private def completeRequest(request: InfoRequest, response: PublicMessage): Unit = {
+    pendingRequests(request).notifyListeners(response)
+    pendingRequests -= request
   }
 }
 
 object MarketInfoActor {
 
-  val props: Props = Props(new MarketInfoActor)
+  val RetryPolicy = RetrySettings(maxRetries = 2)
 
-  /** Initialize the actor to subscribe for market information */
-  case class Start(registry: ActorRef)
+  def props(gateway: ActorRef): Props = Props(new MarketInfoActor(gateway))
 
   sealed trait InfoRequest
 

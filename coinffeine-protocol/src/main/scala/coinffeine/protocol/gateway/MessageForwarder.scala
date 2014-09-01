@@ -58,10 +58,6 @@ class MessageForwarder[A](requester: ActorRef,
     context.setReceiveTimeout(retry.timeout.duration)
   }
 
-  private def cancelReceptionTimeout(): Unit = {
-    context.setReceiveTimeout(Duration.Undefined)
-  }
-
   private def terminate(): Unit = {
     context.stop(self)
   }
