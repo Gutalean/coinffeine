@@ -43,7 +43,8 @@ trait ExchangeTest extends BitcoinjTest {
       seller = sellerHandshake.myDeposit
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
-    val deposits = protocol.validateDeposits(commitments, buyerHandshakingExchange).get
+    val deposits =
+      protocol.validateDeposits(commitments, amounts, Both.fromSeq(requiredSignatures)).get
     val buyerRunningExchange = buyerHandshakingExchange.startExchanging(deposits)
     val sellerRunningExchange = sellerHandshakingExchange.startExchanging(deposits)
     val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)

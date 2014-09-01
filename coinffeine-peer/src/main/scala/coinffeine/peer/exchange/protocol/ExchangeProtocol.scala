@@ -18,13 +18,10 @@ trait ExchangeProtocol {
   def createHandshake[C <: FiatCurrency](exchange: HandshakingExchange[C],
                                          deposit: ImmutableTransaction): Handshake[C]
 
-  /** Validate buyer and seller commitment transactions from the point of view of a broker */
-  def validateCommitments(transactions: Both[ImmutableTransaction],
-                          amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit]
-
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
-                       exchange: HandshakingExchange[_ <: FiatCurrency]): Try[Exchange.Deposits]
+                       amounts: Exchange.Amounts[_ <: FiatCurrency],
+                       requiredSignatures: Both[PublicKey]): Try[Exchange.Deposits]
 
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.

@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
+import coinffeine.model.exchange._
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
@@ -18,17 +18,14 @@ class MockExchangeProtocol extends ExchangeProtocol {
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[_ <: FiatCurrency]): Try[Exchange.Deposits] =
-    validateCommitments(transactions, null).map(_ => Exchange.Deposits(transactions))
-
-  override def validateCommitments(transactions: Both[ImmutableTransaction],
-                                   amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit] =
+                                amounts: Exchange.Amounts[_ <: FiatCurrency],
+                                requiredSignatures: Both[PublicKey]): Try[Exchange.Deposits] =
     transactions.toSeq match {
       case Seq(MockExchangeProtocol.InvalidDeposit, _) =>
         Failure(new IllegalArgumentException("Invalid buyer deposit"))
       case Seq(_, MockExchangeProtocol.InvalidDeposit) =>
         Failure(new IllegalArgumentException("Invalid seller deposit"))
-      case _ => Success {}
+      case _ => Success(Exchange.Deposits(transactions))
     }
 }
 

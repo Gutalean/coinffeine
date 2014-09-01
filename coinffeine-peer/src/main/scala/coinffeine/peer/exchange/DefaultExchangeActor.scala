@@ -49,7 +49,8 @@ class DefaultExchangeActor(
           if handshakingExchange.currency == exchange.currency =>
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         // TODO: what if counterpart deposit is not valid?
-        val deposits = exchangeProtocol.validateDeposits(commitmentTxs, handshakingExchange).get
+        val deposits = exchangeProtocol.validateDeposits(
+          commitmentTxs, handshakingExchange.amounts, handshakingExchange.requiredSignatures).get
         val runningExchange =
           handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(deposits)
         val props = channelActorProps(runningExchange.role)
