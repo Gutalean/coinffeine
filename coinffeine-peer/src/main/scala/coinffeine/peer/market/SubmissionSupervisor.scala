@@ -11,7 +11,9 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage.Market
 
-class SubmissionSupervisor(protocolConstants: ProtocolConstants) extends Actor with ActorLogging{
+private class SubmissionSupervisor(protocolConstants: ProtocolConstants)
+  extends Actor with ActorLogging {
+
   private implicit val timeout = Timeout(1.second)
 
   override def receive: Receive = {

@@ -21,10 +21,6 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositi
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
-  val constants = ProtocolConstants.Default.copy(
-    orderExpirationInterval = 6.seconds,
-    orderResubmitInterval = 4.seconds
-  )
   val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
   val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
   val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
@@ -33,6 +29,12 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
   val bothEurOrders = firstEurOrder.addEntry(eurOrder2)
 
   trait Fixture {
+    def orderAcknowledgeTimeout = 1.minute
+    val constants = ProtocolConstants.Default.copy(
+      orderExpirationInterval = 6.seconds,
+      orderResubmitInterval = 4.seconds,
+      orderAcknowledgeTimeout = orderAcknowledgeTimeout
+    )
     val registryActor = system.actorOf(ServiceRegistryActor.props(), "registry-"+Random.nextInt())
     val registry = new ServiceRegistry(registryActor)
     val gateway = new MockGateway(PeerId("broker"))
@@ -50,10 +52,19 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
       requester.send(actor, StopSubmitting(entry.id))
     }
 
-    def expectPeerPositionsForwarding(timeout: Duration,
-                                      market: Market[_ <: FiatCurrency],
-                                      entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
-      gateway.expectSubscription(timeout)
+    def expectPeerPositionsForwarding(
+        market: Market[_ <: FiatCurrency],
+        entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
+      gateway.expectForwardingFromPF(BrokerId) {
+        case PeerPositions(`market`, entriesInMsg, nonce) =>
+          entries.foreach(e => entriesInMsg should contain (e))
+      }
+    }
+
+    def expectPeerPositionsForwardingAndAcknowledgeThem(
+        timeout: Duration,
+        market: Market[_ <: FiatCurrency],
+        entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
       gateway.expectForwardingFromPF(BrokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
@@ -61,9 +72,9 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
       }
     }
 
-    def expectPeerPositionsForwarding(market: Market[_ <: FiatCurrency],
-                                      entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
-      expectPeerPositionsForwarding(Duration.Undefined, market, entries: _*)
+    def expectPeerPositionsForwardingAndAcknowledgeThem(
+        market: Market[_ <: FiatCurrency], entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
+      expectPeerPositionsForwardingAndAcknowledgeThem(Duration.Undefined, market, entries: _*)
     }
 
     def expectOrdersInMarket[C <: FiatCurrency](entries: OrderBookEntry[C]*): Unit = {
@@ -77,58 +88,67 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
   it must "submit all orders as soon as a new one is open" in new Fixture {
     keepSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
     keepSubmitting(eurOrder2)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1, eurOrder2)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1, eurOrder2)
     expectOrdersInMarket(eurOrder1, eurOrder2)
+  }
+
+  it must "resubmit orders after a timeout" in new Fixture {
+    override def orderAcknowledgeTimeout = 1.second
+    keepSubmitting(eurOrder1)
+    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
+    expectOrdersInMarket(eurOrder1)
   }
 
   it must "keep resubmitting open orders to avoid them being discarded" in new Fixture {
     keepSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
-    expectPeerPositionsForwarding(
+    expectPeerPositionsForwardingAndAcknowledgeThem(
       timeout = constants.orderExpirationInterval, Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
-    expectPeerPositionsForwarding(
+    expectPeerPositionsForwardingAndAcknowledgeThem(
       timeout = constants.orderExpirationInterval, Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
   }
 
   it must "group orders by target market" in new Fixture {
     keepSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
     keepSubmitting(usdOrder)
-    expectPeerPositionsForwarding(Market(UsDollar), usdOrder)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(UsDollar), usdOrder)
     expectOrdersInMarket(usdOrder)
   }
 
   it must "keep resubmitting remaining orders after a cancellation" in new Fixture {
     keepSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
     keepSubmitting(eurOrder2)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1, eurOrder2)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1, eurOrder2)
     expectOrdersInMarket(eurOrder1, eurOrder2)
     stopSubmitting(eurOrder2)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
-    expectPeerPositionsForwarding(
+    expectPeerPositionsForwardingAndAcknowledgeThem(
       timeout = constants.orderExpirationInterval, Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
-    expectPeerPositionsForwarding(
+    expectPeerPositionsForwardingAndAcknowledgeThem(
       timeout = constants.orderExpirationInterval, Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
   }
 
   it must "keep silent if all the orders get cancelled" in new Fixture {
     keepSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro), eurOrder1)
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro), eurOrder1)
     expectOrdersInMarket(eurOrder1)
     stopSubmitting(eurOrder1)
-    expectPeerPositionsForwarding(Market(Euro))
+    expectPeerPositionsForwardingAndAcknowledgeThem(Market(Euro))
     gateway.expectNoMsg(constants.orderExpirationInterval)
   }
 }
