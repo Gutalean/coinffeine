@@ -15,6 +15,7 @@ import org.controlsfx.dialog.{Dialog, Dialogs}
 import coinffeine.gui.control.DecimalNumberTextField
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, Currency, CurrencyAmount}
+import coinffeine.model.exchange.Both
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -183,13 +184,15 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
 
   private def checkEnoughFiatFunds(order: Order[Currency.Euro.type]): Boolean = {
+    val calc = app.utils.exchangeAmountsCalculator
+    val amounts = calc.amountsFor(order).fiatRequired(order.orderType)
     app.paymentProcessor.currentBalance() match {
-      case Some(balance) if order.requiredFiatAmount <= balance.availableFunds => true
+      case Some(balance) if amounts <= balance.availableFunds => true
       case Some(balance) =>
         val response = Dialogs.create()
-          .title("Insufficient funds")
+          .title("Insufficient FIAT funds")
           .message(
-            """Your balance is insufficient to submit this order.
+            """Your FIAT balance is insufficient to submit this order.
               |
               |You may proceed, but your order will be stalled until enough funds are available in your payment processor.
               |
@@ -211,7 +214,32 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   }
 
   private def checkEnoughBitcoinFunds(order: Order[Currency.Euro.type]): Boolean = {
-    // TODO: check enough bitcoin funds
-    true
+    val calc = app.utils.exchangeAmountsCalculator
+    val amounts = calc.amountsFor(order).bitcoinRequired(order.orderType)
+    app.wallet.currentBalance() match {
+      case Some(balance) if amounts < balance => true
+      case Some(balance) =>
+        val response = Dialogs.create()
+          .title("Insufficient bitcoin funds")
+          .message(
+            """Your bitcoin balance is insufficient to submit this order.
+              |
+              |You may proceed, but your order will be stalled until enough funds are available in your Bitcoin wallet.
+              |
+              |Do you want to proceed with the order submission?""".stripMargin)
+          .showConfirm()
+        response == Dialog.Actions.YES
+      case None =>
+        val response = Dialogs.create()
+          .title("Wallet unavailable")
+          .message(
+            """You are not connected to the Bitcoin network. That means your wallet balance cannot be checked to verify the correctness of this order.
+              |
+              |It can be submitted anyway, but it might be stalled until the Bitcoin network is available and it has enough funds to satisfy the order.
+              |
+              |Do you want to proceed with the order submission?""".stripMargin)
+          .showConfirm()
+        response == Dialog.Actions.YES
+    }
   }
 }
