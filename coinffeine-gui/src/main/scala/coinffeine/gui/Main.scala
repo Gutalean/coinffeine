@@ -1,7 +1,7 @@
 package coinffeine.gui
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.util.Random
 import scalafx.application.JFXApp
@@ -22,6 +22,8 @@ import coinffeine.peer.payment.okpay.OkPayCredentials
 object Main extends JFXApp
   with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
 
+  val properties = new ApplicationProperties(app)
+  val notificationManager = new NotificationManager(app)
   JFXApp.AUTO_SHOW = false
 
   val validator = new CredentialsValidator {
@@ -34,9 +36,7 @@ object Main extends JFXApp
   val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
   val setupConfig = new SetupWizard(sampleAddress, validator).run()
 
-  val properties = new ApplicationProperties(app)
-  val notificationManager = new NotificationManager(app)
-  app.startAndWait(30.seconds)
+  val appStart = app.start(30.seconds)
   stage = new PrimaryStage {
     title = "Coinffeine"
     scene = new ApplicationScene(
@@ -52,6 +52,7 @@ object Main extends JFXApp
     icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
   }
   stage.show()
+  Await.result(appStart, Duration.Inf)
 
   override def stopApp(): Unit = {
     app.stopAndWait(30.seconds)
