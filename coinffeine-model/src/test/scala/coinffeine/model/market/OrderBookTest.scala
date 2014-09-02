@@ -1,10 +1,10 @@
 package coinffeine.model.market
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.{FiatCurrency, BitcoinAmount}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{ExchangeId, Both}
 import coinffeine.model.network.PeerId
 
 class OrderBookTest extends UnitTest {
@@ -20,6 +20,17 @@ class OrderBookTest extends UnitTest {
       buyer = bid.id,
       seller = ask.id
     ))
+
+  def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] = {
+    var intermediateBook = book
+    for ((cross, index) <- book.crosses.zipWithIndex) {
+      val exchangeId = ExchangeId(index.toString)
+      intermediateBook = intermediateBook.startHandshake(exchangeId, cross)
+        .completeHandshake(exchangeId)
+    }
+    intermediateBook
+  }
+
 
   val buyer = PeerId("buyer")
   val seller = PeerId("seller")
@@ -52,7 +63,7 @@ class OrderBookTest extends UnitTest {
       ask(btc = 3, eur = 125, by = "user3")
     )
     val updatedBook = book.addPosition(bid(btc = 3, eur = 120, by = "user2", orderId = "2"))
-    updatedBook.positions.count(p => p.id.peerId == PeerId("user2")) should be (2)
+    updatedBook.userPositions(PeerId("user2")).size should be (2)
   }
 
   it should "cancel positions by requester" in {
@@ -94,12 +105,22 @@ class OrderBookTest extends UnitTest {
       OrderBook(unchangedOrder))
   }
 
+  it should "not consider positions for matching once they are handshaking" in {
+    val book = OrderBook(
+      bid(btc = 1, eur = 20, by = "buyer1"),
+      bid(btc = 1, eur = 20, by = "buyer2"),
+      ask(btc = 2, eur = 20, by = "seller")
+    )
+    val cross = book.crosses.head
+    book.startHandshake(ExchangeId.random(), cross) should not be 'crossed
+  }
+
   it should "be cleared with no changes when there is no cross" in {
     val book = OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
     )
-    book.clearMarket should be (book)
+    clearAllCrosses(book) should be (book)
   }
 
   it should "be cleared with a cross when two orders match perfectly" in {
@@ -109,7 +130,7 @@ class OrderBookTest extends UnitTest {
     val book = OrderBook(crossedBid, bid(btc = 1, eur = 20, by = "other buyer"), crossedAsk)
 
     book.crosses should be (Seq(cross(crossedBid, crossedAsk, 2.BTC)))
-    book.clearMarket should be(OrderBook(
+    clearAllCrosses(book) should be(OrderBook(
       bid(btc = 1, eur = 20, by = "other buyer")
     ))
   }
@@ -128,7 +149,21 @@ class OrderBookTest extends UnitTest {
     )
     book.crosses.map(_.amount) should be (Seq(1.BTC))
     val clearedBook = OrderBook(bid(btc = 1, eur = 25, by = "buyer"))
-    book.clearMarket should be (clearedBook)
+    clearAllCrosses(book) should be (clearedBook)
+  }
+
+  it should "cancel handshakes" in {
+    var book = OrderBook(
+      bid(btc = 1, eur = 100, by = "buyer"),
+      ask(btc = 1, eur = 100, by = "seller")
+    )
+    val originalCross = book.crosses.head
+
+    val exchangeId = ExchangeId("cancellable")
+    book = book.startHandshake(exchangeId, originalCross)
+    book should not be 'crossed
+
+    book.cancelHandshake(exchangeId).crosses should be (Seq(originalCross))
   }
 
   it should "clear multiple orders against one if necessary" in {
@@ -136,12 +171,20 @@ class OrderBookTest extends UnitTest {
     val sellerOrder1 = ask(btc = 2, eur = 15, by = "seller1")
     val sellerOrder2 = ask(btc = 2, eur = 20, by = "seller2")
     val sellerOrder3 = ask(btc = 2, eur = 25, by = "seller3")
-    val book = OrderBook(buyerOrder, sellerOrder1, sellerOrder2, sellerOrder3)
-    book.crosses should be (Seq(
-      cross(buyerOrder, sellerOrder1, 2.BTC),
-      cross(buyerOrder, sellerOrder2, 2.BTC),
-      cross(buyerOrder, sellerOrder3, 1.BTC)
-    ))
-    book.clearMarket should be(OrderBook(ask(btc = 1, eur = 25, by = "seller3")))
+
+    var book = OrderBook(buyerOrder, sellerOrder1, sellerOrder2, sellerOrder3)
+    book.crosses should be (Seq(cross(buyerOrder, sellerOrder1, 2.BTC)))
+
+    book = book.startHandshake(ExchangeId("1"), book.crosses.head)
+      .completeHandshake(ExchangeId("1"))
+    book.crosses should be (Seq(cross(buyerOrder, sellerOrder2, 2.BTC)))
+
+    book = book.startHandshake(ExchangeId("2"), book.crosses.head)
+      .completeHandshake(ExchangeId("2"))
+    book.crosses should be (Seq(cross(buyerOrder, sellerOrder3, 1.BTC)))
+
+    book = book.startHandshake(ExchangeId("3"), book.crosses.head)
+      .completeHandshake(ExchangeId("3"))
+    book should be(OrderBook(ask(btc = 1, eur = 25, by = "seller3")))
   }
 }

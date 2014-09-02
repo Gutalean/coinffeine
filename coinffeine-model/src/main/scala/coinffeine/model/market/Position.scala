@@ -1,10 +1,15 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.exchange.ExchangeId
 
 /** Bidding or asking position taken by a requester */
-case class Position[T <: OrderType, C <: FiatCurrency](
-    orderType: T, amount: BitcoinAmount, price: Price[C], id: PositionId) {
+case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
+                                                       amount: BitcoinAmount,
+                                                       price: Price[C],
+                                                       id: PositionId,
+                                                       handshake: Option[ExchangeId] = None) {
+  val inHandshake: Boolean = handshake.isDefined
 
   def decreaseAmount(decrease: BitcoinAmount): Position[T, C] = {
     require(decrease < amount)

@@ -3,15 +3,16 @@ package coinffeine.model.market
 import scala.annotation.tailrec
 
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{ExchangeId, Both}
+import coinffeine.model.market.OrderBook.Cross
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
-case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
+case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
+                                        asks: AskMap[C],
+                                        handshakes: Map[ExchangeId, Cross[C]]) {
   import coinffeine.model.market.OrderBook._
   require(bids.currency == asks.currency)
-
-  def positions: Iterable[Position[_, C]] = bids.positions ++ asks.positions
 
   def userPositions(userId: PeerId): Seq[Position[_, C]] =
     bids.userPositions(userId) ++ asks.userPositions(userId)
@@ -25,9 +26,18 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
   /** Get current spread (interval between the highest bet price to the lowest bid price */
   def spread: Spread[C] = highestBid -> lowestAsk
 
-  def highestBid: Option[Price[C]] = bids.firstPrice
+  private def highestBid: Option[Price[C]] = bids.bestPrice
 
-  def lowestAsk: Option[Price[C]] = asks.firstPrice
+  private def lowestAsk: Option[Price[C]] = asks.bestPrice
+
+  def startHandshake(exchangeId: ExchangeId, cross: Cross[C]): OrderBook[C] = {
+    require(crosses.contains(cross))
+    copy(
+      bids = bids.startHandshake(exchangeId, cross.positions.buyer),
+      asks = asks.startHandshake(exchangeId, cross.positions.seller),
+      handshakes = handshakes + (exchangeId -> cross)
+    )
+  }
 
   /** Add a new position
     *
@@ -64,7 +74,11 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     asks = asks.decreaseAmount(positionId, amount)
   )
 
-  def crosses: Seq[Cross[C]] = crosses(bids.positions.toStream, asks.positions.toStream, Seq.empty)
+  def crosses: Seq[Cross[C]] = crosses(
+    bids.positionsNotInHandshake.toStream,
+    asks.positionsNotInHandshake.toStream,
+    accum = Seq.empty
+  )
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
@@ -78,16 +92,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
 
       case (Some(bid), Some(ask)) if bid.price < ask.price => accum
 
-      case (Some(bid), Some(ask)) if bid.amount > ask.amount =>
-        val remainingBid = bid.decreaseAmount(ask.amount)
-        crosses(remainingBid +: bids.tail, asks.tail, accum :+ crossAmount(bid, ask, ask.amount))
-
-      case (Some(bid), Some(ask)) if bid.amount < ask.amount =>
-        val remainingAsk = ask.decreaseAmount(bid.amount)
-        crosses(bids.tail, remainingAsk +: asks.tail, accum :+ crossAmount(bid, ask, bid.amount))
-
       case (Some(bid), Some(ask)) =>
-        crosses(bids.tail, asks.tail, accum :+ crossAmount(bid, ask, bid.amount))
+        crosses(bids.tail, asks.tail, accum :+ crossAmount(bid, ask, bid.amount min ask.amount))
     }
   }
 
@@ -96,15 +102,23 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
                           amount: BitcoinAmount): Cross[C] =
     Cross(amount, (bid.price + ask.price) / 2, Both(bid.id, ask.id))
 
-  /** Clear the market by removing crossed bid and ask orders. */
-  def clearMarket: OrderBook[C] = {
-    val crossedAmounts = for {
-      cross <- crosses
-      position <- cross.positions.toSeq
-    } yield position -> cross.amount
-    crossedAmounts.foldLeft(this) { case (book, (position, amount)) =>
-      book.decreaseAmount(position, amount)
-    }
+  def completeHandshake(exchangeId: ExchangeId): OrderBook[C] = {
+    val cross = handshakes.getOrElse(exchangeId,
+      throw new IllegalArgumentException(s"Unknown exchange $exchangeId"))
+    copy(
+      bids = bids.completeHandshake(exchangeId, cross.amount),
+      asks = asks.completeHandshake(exchangeId, cross.amount),
+      handshakes = handshakes - exchangeId
+    )
+  }
+
+  def cancelHandshake(exchangeId: ExchangeId): OrderBook[C] = {
+    require(handshakes.contains(exchangeId))
+    copy(
+      bids = bids.cancelHandshake(exchangeId),
+      asks = asks.cancelHandshake(exchangeId),
+      handshakes = handshakes - exchangeId
+    )
   }
 }
 
@@ -122,6 +136,7 @@ object OrderBook {
 
   def empty[C <: FiatCurrency](currency: C): OrderBook[C] = OrderBook(
     bids = OrderMap.empty(Bid, currency),
-    asks = OrderMap.empty(Ask, currency)
+    asks = OrderMap.empty(Ask, currency),
+    handshakes = Map.empty[ExchangeId, Cross[C]]
   )
 }
