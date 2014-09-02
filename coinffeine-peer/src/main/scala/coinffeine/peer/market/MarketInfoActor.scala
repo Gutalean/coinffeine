@@ -97,8 +97,8 @@ object MarketInfoActor {
   sealed trait InfoRequest
 
   /** The sender of this message will receive a [[Quote]] in response */
-  case class RequestQuote(market: Market[FiatCurrency]) extends InfoRequest
+  case class RequestQuote(market: Market[_ <: FiatCurrency]) extends InfoRequest
 
   /** The sender of this message will receive an [[OpenOrders]] in response */
-  case class RequestOpenOrders(market: Market[FiatCurrency]) extends InfoRequest
+  case class RequestOpenOrders(market: Market[_ <: FiatCurrency]) extends InfoRequest
 }
