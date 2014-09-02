@@ -2,6 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 
 private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
@@ -22,9 +23,27 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
   def removeByPeerId(peerId: PeerId): PositionQueue[T, C] =
     copy(positions.filterNot(_.id.peerId == peerId))
 
+  def startHandshake(exchangeId: ExchangeId, positionId: PositionId): PositionQueue[T, C] =
+    copy(positions.collect {
+      case position if position.id == positionId => position.copy(handshake = Some(exchangeId))
+      case otherPosition => otherPosition
+    })
+
+  def completeHandshake(exchangeId: ExchangeId, amount: BitcoinAmount): PositionQueue[T, C] =
+    copy(positions.collect {
+      case position if position.handshake == Some(exchangeId) && position.amount > amount =>
+        position.decreaseAmount(amount).copy(handshake = None)
+      case otherPositions if otherPositions.handshake != Some(exchangeId) => otherPositions
+    })
+
+  def cancelHandshake(exchangeId: ExchangeId): PositionQueue[T, C] = copy(positions.collect {
+    case position if position.handshake == Some(exchangeId) => position.copy(handshake = None)
+    case otherPositions => otherPositions
+  })
+
   def decreaseAmount(id: PositionId, amount: BitcoinAmount): PositionQueue[T, C] =
     copy(positions.collect {
-      case position @ Position(_, previousAmount, _, `id`) if previousAmount > amount =>
+      case position @ Position(_, _, _, `id`, _) if position.amount > amount =>
         position.decreaseAmount(amount)
       case position if position.id != id => position
     })

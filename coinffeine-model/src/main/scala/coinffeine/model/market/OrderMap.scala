@@ -3,6 +3,7 @@ package coinffeine.model.market
 import scala.collection.immutable.{SortedMap, TreeMap}
 
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 
 /** Data structure that holds orders sorted by price and, within a given price, keep
@@ -21,14 +22,14 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
   /** Sorted client positions */
   def positions: Iterable[Pos] = tree.values.flatMap(_.positions)
 
+  def positionsNotInHandshake: Iterable[Pos] = positions.filterNot(_.inHandshake)
+
   def userPositions(userId: PeerId): Seq[Pos] =
     positions.filter(_.id.peerId == userId).toSeq
 
   def get(positionId: PositionId): Option[Pos] = positions.find(_.id == positionId)
 
-  def firstPosition: Option[Pos] = positions.headOption
-
-  def firstPrice: Option[Price[C]] = tree.headOption.map(_._1)
+  def bestPrice: Option[Price[C]] = positionsNotInHandshake.headOption.map(_.price)
 
   def decreaseAmount(id: PositionId, amount: BitcoinAmount): OrderMap[T, C] =
     get(id).fold(this) { position =>
@@ -36,10 +37,18 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
     }
 
   def cancelPosition(positionId: PositionId): OrderMap[T, C] =
-    copy(tree = removeEmptyQueues(tree.mapValues(_.removeByPositionId(positionId))))
+    mapQueues(_.removeByPositionId(positionId))
 
-  def cancelPositions(peerId: PeerId): OrderMap[T, C] =
-    copy(tree = removeEmptyQueues(tree.mapValues(_.removeByPeerId(peerId))))
+  def cancelPositions(peerId: PeerId): OrderMap[T, C] = mapQueues(_.removeByPeerId(peerId))
+
+  def startHandshake(exchangeId: ExchangeId, positionId: PositionId): OrderMap[T, C] =
+    mapQueues(_.startHandshake(exchangeId, positionId))
+
+  def completeHandshake(exchangeId: ExchangeId, amount: BitcoinAmount): OrderMap[T, C] =
+    mapQueues(_.completeHandshake(exchangeId, amount))
+
+  def cancelHandshake(exchangeId: ExchangeId): OrderMap[T, C] =
+    mapQueues(_.cancelHandshake(exchangeId))
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] = for {
     queue <- tree.values.toSeq
@@ -51,6 +60,9 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
     if (modifiedQueue.isEmpty) copy(tree = tree - price)
     else copy(tree = tree.updated(price, modifiedQueue))
   }
+
+  private def mapQueues(f: Queue => Queue): OrderMap[T, C] =
+    copy(tree = removeEmptyQueues(tree.mapValues(f)))
 
   private def removeEmptyQueues(tree: SortedMap[Price[C], Queue]) = tree.filter {
     case (_, queue) => queue.positions.nonEmpty
