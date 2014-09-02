@@ -26,6 +26,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val commitmentTransaction = ImmutableTransaction(new MutableTransaction(network))
   val txSerialization = new TransactionSerialization(network)
   val testMappings = new DefaultProtoMappings(txSerialization)
+  val publicKey = new KeyPair().publicKey
   import testMappings._
 
   def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
@@ -112,9 +113,10 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Commitment notification acknowledge" should behave like thereIsAMappingBetween(
     commitmentNotificationAck, commitmentNotificationAckMessage)
 
-  val commitment = ExchangeCommitment(sampleExchangeId, commitmentTransaction)
+  val commitment = ExchangeCommitment(sampleExchangeId, publicKey, commitmentTransaction)
   val commitmentMessage = msg.ExchangeCommitment.newBuilder()
     .setExchangeId(sampleExchangeId.value)
+    .setPublicKey(txSerialization.serialize(publicKey))
     .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
     .build()
 
@@ -181,7 +183,6 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Quote request" must behave like thereIsAMappingBetween(quoteRequest, quoteRequestMessage)
 
-  val publicKey = new KeyPair().publicKey
   val peerHandshake = PeerHandshake(sampleExchangeId, publicKey, "accountId")
   val peerHandshakeMessage = msg.PeerHandshake.newBuilder()
     .setExchangeId(sampleExchangeId.value)

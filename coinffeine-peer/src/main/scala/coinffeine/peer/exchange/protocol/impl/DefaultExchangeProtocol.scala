@@ -1,8 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import scala.util.Try
-
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin.{ImmutableTransaction, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._
@@ -29,17 +27,10 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
     new DefaultMicroPaymentChannel(exchange)
 
-  override def validateCommitments(transactions: Both[ImmutableTransaction],
-                                   amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit] = for {
-    requiredSignatures <- DepositValidator.validateRequiredSignatures(transactions)
-    validator = new DepositValidator(amounts, requiredSignatures)
-    _ <- validator.requireValidBuyerFunds(transactions.buyer)
-    _ <- validator.requireValidSellerFunds(transactions.seller)
-  } yield ()
-
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[_ <: FiatCurrency]) =
-    new DepositValidator(exchange.amounts, exchange.requiredSignatures).validate(transactions)
+                                amounts: Exchange.Amounts[_ <: FiatCurrency],
+                                requiredSignatures: Both[PublicKey]) =
+    new DepositValidator(amounts, requiredSignatures).validate(transactions)
 }
 
 object DefaultExchangeProtocol {

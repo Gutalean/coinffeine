@@ -1,20 +1,19 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.Deposits
 import coinffeine.model.exchange.{Both, Exchange}
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],
                                      requiredSignatures: Both[PublicKey]) {
 
-  def validate(transactions: Both[ImmutableTransaction]): Try[Exchange.Deposits] = for {
-    _ <- requireValidBuyerFunds(transactions.buyer)
-    _ <- requireValidSellerFunds(transactions.seller)
-  } yield Deposits(transactions)
+  def validate(transactions: Both[ImmutableTransaction]): Both[Try[Unit]] = Both(
+    buyer = requireValidBuyerFunds(transactions.buyer),
+    seller = requireValidSellerFunds(transactions.seller)
+  )
 
   def requireValidBuyerFunds(transaction: ImmutableTransaction): Try[Unit] = Try {
     val buyerFunds = transaction.get.getOutput(0)
@@ -40,34 +39,4 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency
     require(possibleKeys == requiredSignatures.toSeq,
       "Possible keys in multisig script does not match the expected keys")
   }
-}
-
-private[impl] object DepositValidator {
-
-  /** Buyer and seller deposits must share multisig keys to be coherent to each other */
-  def validateRequiredSignatures(commitments: Both[ImmutableTransaction]): Try[Both[PublicKey]] =
-    for {
-      buyerKeys <- validateTwoRequiredKeys(commitments.buyer)
-      sellerKeys <- validateTwoRequiredKeys(commitments.seller)
-    } yield {
-      require(buyerKeys == sellerKeys,
-        s"Buyer and seller deposit keys doesn't match: $buyerKeys != $sellerKeys")
-      buyerKeys
-    }
-
-  private def validateTwoRequiredKeys(transaction: ImmutableTransaction): Try[Both[PublicKey]] =
-    for {
-      multisigInfo <- validateMultisigTransaction(transaction)
-    } yield {
-      require(multisigInfo.possibleKeys.size == 2, "Number of possible keys other than 2")
-      require(multisigInfo.requiredKeyCount == 2, "Number of required keys other than 2")
-      Both.fromSeq(multisigInfo.possibleKeys)
-    }
-
-  private def validateMultisigTransaction(transaction: ImmutableTransaction): Try[MultiSigInfo] =
-    getOrFail(MultiSigInfo.fromScript(transaction.get.getOutput(0).getScriptPubKey),
-      new IllegalArgumentException(s"$transaction not in multisig"))
-
-  private def getOrFail[T](opt: Option[T], cause: => Throwable): Try[T] =
-    opt.map(Success.apply).getOrElse(Failure(cause))
 }

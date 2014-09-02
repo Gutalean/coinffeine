@@ -38,6 +38,8 @@ case class Both[+T](buyer: T, seller: T) {
   def toTuple: (T, T) = (buyer, seller)
 
   def swap: Both[T] = Both(seller, buyer)
+
+  def toMap: Map[Role, T] = Map(BuyerRole -> buyer, SellerRole -> seller)
 }
 
 object Both {

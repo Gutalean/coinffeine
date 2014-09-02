@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, Exchange, HandshakingExchange, RunningExchange}
+import coinffeine.model.exchange._
 
 class MockExchangeProtocol extends ExchangeProtocol {
 
@@ -18,16 +18,11 @@ class MockExchangeProtocol extends ExchangeProtocol {
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                exchange: HandshakingExchange[_ <: FiatCurrency]): Try[Exchange.Deposits] =
-    validateCommitments(transactions, null).map(_ => Exchange.Deposits(transactions))
-
-  override def validateCommitments(transactions: Both[ImmutableTransaction],
-                                   amounts: Exchange.Amounts[_ <: FiatCurrency]): Try[Unit] =
-    transactions.toSeq match {
-      case Seq(MockExchangeProtocol.InvalidDeposit, _) =>
+                                amounts: Exchange.Amounts[_ <: FiatCurrency],
+                                requiredSignatures: Both[PublicKey]): Both[Try[Unit]] =
+    transactions.map {
+      case MockExchangeProtocol.InvalidDeposit =>
         Failure(new IllegalArgumentException("Invalid buyer deposit"))
-      case Seq(_, MockExchangeProtocol.InvalidDeposit) =>
-        Failure(new IllegalArgumentException("Invalid seller deposit"))
       case _ => Success {}
     }
 }
@@ -35,7 +30,7 @@ class MockExchangeProtocol extends ExchangeProtocol {
 object MockExchangeProtocol {
 
   val DummyDeposit = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
-  val DummyDeposits = Exchange.Deposits(Both(DummyDeposit, DummyDeposit))
+  val DummyDeposits = Both(DummyDeposit, DummyDeposit)
 
   /** Magic deposit that is always rejected */
   val InvalidDeposit = ImmutableTransaction {

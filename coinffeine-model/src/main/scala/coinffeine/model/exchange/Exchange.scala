@@ -101,7 +101,7 @@ object Exchange {
   /** Funds reserved for the order this exchange belongs to */
   case class BlockedFunds(fiat: Option[PaymentProcessor.BlockedFundsId], bitcoin: BlockedCoinsId)
 
-  case class Deposits(transactions: Both[ImmutableTransaction])
+  type Deposits = Both[ImmutableTransaction]
 
   case class Progress[C <: FiatCurrency](bitcoinsTransferred: BitcoinAmount,
                                          fiatTransferred: CurrencyAmount[C]) {

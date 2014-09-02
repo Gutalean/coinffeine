@@ -33,7 +33,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
       )
     }
 
-    val depositOutputs = exchange.state.deposits.transactions.toSeq.map(_.get.getOutput(0))
+    val depositOutputs = exchange.state.deposits.toSeq.map(_.get.getOutput(0))
     val availableAmount = Bitcoin.fromSatoshi(depositOutputs.foldLeft(BigInteger.ZERO) {
       (accum, output) => accum.add(output.getValue)
     })

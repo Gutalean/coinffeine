@@ -82,7 +82,8 @@ abstract class HandshakeActorTest(systemName: String)
   }
 
   def shouldForwardCommitmentToBroker(): Unit = {
-    gateway.expectForwardingToBroker(ExchangeCommitment(exchange.id, handshake.myDeposit))
+    gateway.expectForwardingToBroker(
+      ExchangeCommitment(exchange.id, user.bitcoinKey.publicKey, handshake.myDeposit))
   }
 
   def shouldAckCommitmentNotification(): Unit = {

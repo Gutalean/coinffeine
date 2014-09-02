@@ -48,10 +48,12 @@ class DefaultExchangeActor(
       case HandshakeSuccess(handshakingExchange, commitmentTxs, refundTx)
           if handshakingExchange.currency == exchange.currency =>
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
+        val validationResult = exchangeProtocol.validateDeposits(
+          commitmentTxs, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
         // TODO: what if counterpart deposit is not valid?
-        val deposits = exchangeProtocol.validateDeposits(commitmentTxs, handshakingExchange).get
+        require(validationResult.forall(_.isSuccess), "Invalid deposits")
         val runningExchange =
-          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(deposits)
+          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(commitmentTxs)
         val props = channelActorProps(runningExchange.role)
         val ref = context.actorOf(props, MicroPaymentChannelActorName)
         ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
