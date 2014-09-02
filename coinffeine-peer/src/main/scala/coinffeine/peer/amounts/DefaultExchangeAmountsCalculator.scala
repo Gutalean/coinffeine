@@ -11,8 +11,8 @@ private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: Paymen
   import DefaultExchangeAmountsCalculator._
 
   override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                             price: CurrencyAmount[C]) = {
-    val stepFiatAmount = price * bitcoinAmount.value / Steps
+                                             fiatAmount: CurrencyAmount[C]) = {
+    val stepFiatAmount = fiatAmount / Steps
     val step = Exchange.StepAmounts(
       bitcoinAmount = bitcoinAmount / Steps,
       fiatAmount = stepFiatAmount,

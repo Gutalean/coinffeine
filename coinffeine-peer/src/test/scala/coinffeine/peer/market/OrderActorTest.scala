@@ -187,7 +187,7 @@ class OrderActorTest extends AkkaSpec {
     val exchangeActor = new MockSupervisedActor()
     def calculator = new ExchangeAmountsCalculator {
       override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                                 price: CurrencyAmount[C]) =
+                                                 fiatAmount: CurrencyAmount[C]) =
         amounts.asInstanceOf[Amounts[C]]
     }
     val actor =
