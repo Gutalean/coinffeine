@@ -109,9 +109,10 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
       log.info(s"Attempting connection to Coinffeine using IP $realIp")
       dis.getReporter
     }).flatMap(bootstrap).recoverWith {
-      case err =>
+      case err if me.getPeerAddress.getInetAddress.isLinkLocalAddress =>
         log.warning("TomP2P bootstrap with discover failed: " + err)
         log.warning("Attempting bootstrap without discover")
+        me.getConfiguration.setBehindFirewall(false)
         bootstrap(brokerAddress)
     }
 
