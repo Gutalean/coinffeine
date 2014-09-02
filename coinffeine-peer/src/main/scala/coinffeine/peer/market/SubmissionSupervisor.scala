@@ -24,7 +24,7 @@ private class SubmissionSupervisor(protocolConstants: ProtocolConstants)
   private class InitializedSubmissionSupervisor(init: SubmissionSupervisor.Initialize) {
     import init._
 
-    private var delegatesByMarket = Map.empty[Market[FiatCurrency], ActorRef]
+    private var delegatesByMarket = Map.empty[Market[_ <: FiatCurrency], ActorRef]
 
     def start(): Unit = {
       context.become(waitingForOrders)
@@ -42,10 +42,10 @@ private class SubmissionSupervisor(protocolConstants: ProtocolConstants)
     private def marketOf(order: OrderBookEntry[_ <: FiatCurrency]) =
       Market(currency = order.price.currency)
 
-    private def getOrCreateDelegate(market: Market[FiatCurrency]): ActorRef =
+    private def getOrCreateDelegate(market: Market[_ <: FiatCurrency]): ActorRef =
     delegatesByMarket.getOrElse(market, createDelegate(market))
 
-    private def createDelegate(market: Market[FiatCurrency]): ActorRef = {
+    private def createDelegate(market: Market[_ <: FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
       val newDelegate = context.actorOf(MarketSubmissionActor.props(protocolConstants))
       newDelegate ! MarketSubmissionActor.Initialize(market, registry)

@@ -231,7 +231,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def toProtobuf(quote: Quote[_ <: FiatCurrency]): msg.Quote = {
       val Quote(market, (bidOption, askOption), lastPriceOption) = quote
-      val builder = msg.Quote.newBuilder.setMarket(ProtoMapping.toProtobuf(market))
+      val builder = msg.Quote.newBuilder.setMarket(marketMapping.toProtobuf(market))
       bidOption.foreach(bid => builder.setHighestBid(
         ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](bid)))
       askOption.foreach(ask =>
@@ -249,7 +249,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
 
     override def toProtobuf(openOrdersRequest: OpenOrdersRequest): msg.OpenOrdersRequest =
       msg.OpenOrdersRequest.newBuilder
-        .setMarket(ProtoMapping.toProtobuf(openOrdersRequest.market))
+        .setMarket(marketMapping.toProtobuf(openOrdersRequest.market))
         .build
   }
 
@@ -272,7 +272,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       QuoteRequest(ProtoMapping.fromProtobuf(request.getMarket))
 
     override def toProtobuf(request: QuoteRequest): msg.QuoteRequest = msg.QuoteRequest.newBuilder
-      .setMarket(ProtoMapping.toProtobuf(request.market))
+      .setMarket(marketMapping.toProtobuf(request.market))
       .build
   }
 
