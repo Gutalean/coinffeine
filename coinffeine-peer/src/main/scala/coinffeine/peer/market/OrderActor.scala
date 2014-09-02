@@ -60,7 +60,7 @@ class OrderActor(exchangeActorProps: Props,
     private def subscribeToMessages(): Unit = {
       messageGateway ! MessageGateway.Subscribe.fromBroker {
         case orderMatch: OrderMatch if orderMatch.orderId == currentOrder.id &&
-          orderMatch.price.currency == init.order.price.currency =>
+          orderMatch.fiatAmount.currency == init.order.price.currency =>
       }
     }
 

@@ -10,8 +10,8 @@ import coinffeine.protocol.messages.PublicMessage
 case class OrderMatch(
     orderId: OrderId,
     exchangeId: ExchangeId,
-    amount: BitcoinAmount,
-    price: FiatAmount,
+    bitcoinAmount: BitcoinAmount,
+    fiatAmount: FiatAmount,
     lockTime: Long,
     counterpart: PeerId
 ) extends PublicMessage

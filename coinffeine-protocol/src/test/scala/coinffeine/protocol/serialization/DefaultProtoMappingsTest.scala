@@ -145,16 +145,16 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val orderMatch = OrderMatch(
     orderId = sampleOrderId,
     exchangeId = sampleExchangeId,
-    amount = 0.1 BTC,
-    price = 10000 EUR,
+    bitcoinAmount = 0.1 BTC,
+    fiatAmount = 10000 EUR,
     lockTime = 310000L,
     counterpart = PeerId("buyer")
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setOrderId(sampleOrderId.value)
     .setExchangeId(sampleExchangeId.value)
-    .setAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
-    .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
+    .setBitcoinAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
+    .setFiatAmount(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
     .setLockTime(310000L)
     .setCounterpart("buyer")
     .build

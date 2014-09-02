@@ -14,5 +14,5 @@ trait ExchangeAmountsCalculator {
     amountsFor(order.amount, order.price)
 
   def amountsFor(orderMatch: OrderMatch): Exchange.Amounts[_ <: FiatCurrency] =
-    amountsFor(orderMatch.amount, orderMatch.price)
+    amountsFor(orderMatch.bitcoinAmount, orderMatch.fiatAmount / orderMatch.bitcoinAmount.value)
 }

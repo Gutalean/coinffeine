@@ -200,7 +200,8 @@ class OrderActorTest extends AkkaSpec {
     new ServiceRegistry(registryActor).register(MessageGateway.ServiceId, gatewayProbe.ref)
 
     val orderMatch = OrderMatch(
-      order.id, exchangeId, order.amount, order.price, lockTime = 400000L, exchange.counterpartId)
+      order.id, exchangeId, order.amount, order.price * order.amount.value,
+      lockTime = 400000L, exchange.counterpartId)
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, registryActor,
       paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref)
