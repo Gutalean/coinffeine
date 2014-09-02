@@ -35,7 +35,7 @@ class OkPayProfileExtractor(username: String, password: String) {
     loginForm.getInputByName("ctl00$MainContent$txtLogin").asInstanceOf[HtmlInput]
       .setValueAttribute(username)
     loginForm.getInputByName[HtmlInput]("ctl00$MainContent$txtPassword")
-      .setValueAttribute(username)
+      .setValueAttribute(password)
     val dashboardPage = loginForm.getInputByName("ctl00$MainContent$btnLogin")
       .asInstanceOf[HtmlInput].click().asInstanceOf[HtmlPage]
     dashboardPage.asText()
