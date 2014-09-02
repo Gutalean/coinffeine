@@ -15,7 +15,7 @@ import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.peer.amounts.ExchangeAmountsCalculator
+import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
@@ -29,7 +29,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
-                 amountsCalculator: ExchangeAmountsCalculator)
+                 amountsCalculator: AmountsCalculator)
   extends Actor with ActorLogging with EventPublisher {
 
   import context.dispatcher
@@ -65,7 +65,7 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def blockFunds(): Unit = {
-      val amounts = amountsCalculator.amountsFor(currentOrder)
+      val amounts = amountsCalculator.exchangeAmountsFor(currentOrder)
       fundsActor ! OrderFundsActor.BlockFunds(
         fiatAmount = role.select(amounts.fiatRequired),
         bitcoinAmount = role.select(amounts.bitcoinRequired),
@@ -154,7 +154,7 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def buildExchange(orderMatch: OrderMatch): NonStartedExchange[C] = {
-      val amounts = amountsCalculator.amountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]]
+      val amounts = amountsCalculator.exchangeAmountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]]
       Exchange.notStarted(
         id = orderMatch.exchangeId,
         role = role,
@@ -225,7 +225,7 @@ object OrderActor {
   def props(exchangeActorProps: Props,
             config: Config,
             network: NetworkParameters,
-            amountsCalculator: ExchangeAmountsCalculator): Props = {
+            amountsCalculator: AmountsCalculator): Props = {
     Props(new OrderActor(
       exchangeActorProps,
       OrderFundsActor.props,

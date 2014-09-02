@@ -5,13 +5,15 @@ import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.payment.PaymentProcessor
 
-private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: PaymentProcessor,
-                                                        bitcoinFeeCalculator: BitcoinFeeCalculator)
-  extends ExchangeAmountsCalculator {
-  import DefaultExchangeAmountsCalculator._
+private[amounts] class DefaultAmountsCalculator(
+    paymentProcessor: PaymentProcessor,
+    bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
-  override def amountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                             fiatAmount: CurrencyAmount[C]) = {
+  import DefaultAmountsCalculator._
+
+  override def exchangeAmountsFor[C <: FiatCurrency](
+      bitcoinAmount: BitcoinAmount,
+      fiatAmount: CurrencyAmount[C]) = {
     val stepFiatAmount = fiatAmount / Steps
     val step = Exchange.StepAmounts(
       bitcoinAmount = bitcoinAmount / Steps,
@@ -31,7 +33,7 @@ private[amounts] class DefaultExchangeAmountsCalculator(paymentProcessor: Paymen
   }
 }
 
-private object DefaultExchangeAmountsCalculator {
+private object DefaultAmountsCalculator {
   /** Number of steps for the exchange */
   private val Steps = 10
 

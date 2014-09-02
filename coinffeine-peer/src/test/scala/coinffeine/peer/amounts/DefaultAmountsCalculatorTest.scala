@@ -10,26 +10,26 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.payment.PaymentProcessor
 
-class DefaultExchangeAmountsCalculatorTest extends UnitTest {
+class DefaultAmountsCalculatorTest extends UnitTest {
 
   "The funds calculator" must "reject non positive bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.amountsFor(bitcoinAmount = 0.BTC, fiatAmount = 1.EUR)
+      instance.exchangeAmountsFor(bitcoinAmount = 0.BTC, fiatAmount = 1.EUR)
     }
   }
 
   it must "reject non positive prices" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.amountsFor(bitcoinAmount = 1.BTC, fiatAmount = 0.EUR)
+      instance.exchangeAmountsFor(bitcoinAmount = 1.BTC, fiatAmount = 0.EUR)
     }
   }
 
   it must "reject amounts not divisible by the number of steps" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.amountsFor(1.BTC, 1.01.EUR)
+      instance.exchangeAmountsFor(1.BTC, 1.01.EUR)
     }
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.amountsFor(Bitcoin.fromSatoshi(BigInteger.ONE), 1.EUR)
+      instance.exchangeAmountsFor(Bitcoin.fromSatoshi(BigInteger.ONE), 1.EUR)
     }
   }
 
@@ -97,7 +97,7 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
   abstract class Fixture(paymentProcessor: PaymentProcessor = NoFeesProcessor,
                          bitcoinFeeCalculator: BitcoinFeeCalculator = NoBitcoinFees) {
 
-    val instance = new DefaultExchangeAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
+    val instance = new DefaultAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
 
     type Euros = Euro.type
 
@@ -107,7 +107,7 @@ class DefaultExchangeAmountsCalculatorTest extends UnitTest {
 
     def forAnyAmounts(test: (BitcoinAmount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
       for ((bitcoin, amount) <- exampleCases) {
-        test(bitcoin, amount, instance.amountsFor(bitcoin, amount))
+        test(bitcoin, amount, instance.exchangeAmountsFor(bitcoin, amount))
       }
     }
   }

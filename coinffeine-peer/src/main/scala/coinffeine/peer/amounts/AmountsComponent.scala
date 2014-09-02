@@ -2,5 +2,5 @@ package coinffeine.peer.amounts
 
 trait AmountsComponent {
 
-  def exchangeAmountsCalculator: ExchangeAmountsCalculator
+  def exchangeAmountsCalculator: AmountsCalculator
 }

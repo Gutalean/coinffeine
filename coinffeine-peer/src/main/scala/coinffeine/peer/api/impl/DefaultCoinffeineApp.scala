@@ -11,7 +11,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
-import coinffeine.peer.amounts.{DefaultAmountsComponent, ExchangeAmountsCalculator}
+import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
@@ -26,7 +26,7 @@ import coinffeine.peer.event.EventObserverActor
 class DefaultCoinffeineApp(name: String,
                            accountId: PaymentProcessor.AccountId,
                            peerProps: Props,
-                           amountsCalculator: ExchangeAmountsCalculator) extends CoinffeineApp {
+                           amountsCalculator: AmountsCalculator) extends CoinffeineApp {
 
   private val system = ActorSystem(name)
   private val peerRef = system.actorOf(peerProps, "peer")
