@@ -15,7 +15,6 @@ import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
 import coinffeine.protocol.gateway.MessageForwarder
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.exchange._
 
@@ -24,13 +23,9 @@ import coinffeine.protocol.messages.exchange._
   */
 private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants)
-  extends Actor with ActorLogging with Stash with StepTimeout {
+  extends Actor with ActorLogging with Stash {
 
   import context.dispatcher
-
-  override def postStop(): Unit = {
-    cancelTimeout()
-  }
 
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C] => new InitializedSellerExchange(init).start()
@@ -39,7 +34,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   private class InitializedSellerExchange(init: StartMicroPaymentChannel[C])
     extends InitializedChannelBehavior(init) {
     import init._
-    import constants.exchangePaymentProofTimeout
 
     val forwarderFactory = new MessageForwarder.Factory(messageGateway, context)
 
@@ -102,9 +96,11 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
             self ! PaymentValidationResult(tryResult)
           }
           context.become(waitForPaymentValidation(paymentId, step))
+
         case PaymentProof(_, paymentId, otherStep) =>
           log.debug("Received a payment with ID {} for an unexpected step {}: ignored",
             paymentId, otherStep)
+
         case MessageForwarder.ConfirmationFailed(_) =>
           val errorMsg = "Timed out waiting for the buyer to provide a valid " +
             s"payment proof ${channel.currentStep}"

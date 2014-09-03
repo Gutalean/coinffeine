@@ -43,31 +43,39 @@ class DefaultExchangeActor(
       context.become(retrievingBlockchain)
     }
 
-    private val inHandshake: Receive = {
-
-      case HandshakeSuccess(handshakingExchange, commitmentTxs, refundTx)
-          if handshakingExchange.currency == exchange.currency =>
-        txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
-        val validationResult = exchangeProtocol.validateDeposits(
-          commitmentTxs, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
-        // TODO: what if counterpart deposit is not valid?
-        require(validationResult.forall(_.isSuccess), "Invalid deposits")
-        val runningExchange =
-          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(commitmentTxs)
-        val props = channelActorProps(runningExchange.role)
-        val ref = context.actorOf(props, MicroPaymentChannelActorName)
-        ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
-          resultListeners = Set(self, txBroadcaster))
-        context.become(inMicropaymentChannel(runningExchange))
-
-      case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
-    }
-
-    private val retrievingBlockchain: Receive = {
+    private def retrievingBlockchain: Receive = {
       case BlockchainActorRef(blockchainRef) =>
         blockchain = blockchainRef
         startHandshake()
         context.become(inHandshake)
+    }
+
+    private def inHandshake: Receive = {
+
+      case HandshakeSuccess(rawExchange, commitments, refundTx)
+          if rawExchange.currency == exchange.currency =>
+        val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
+        txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
+        val validationResult = exchangeProtocol.validateDeposits(
+          commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
+        if(validationResult.forall(_.isSuccess)) {
+          startMicropaymentChannel(commitments, handshakingExchange)
+        } else {
+          txBroadcaster ! FinishExchange
+          context.become(finishingExchange(ExchangeFailure(InvalidCommitments(validationResult))))
+        }
+
+      case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
+    }
+
+    private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
+                                         handshakingExchange: HandshakingExchange[C]): Unit = {
+      val runningExchange = handshakingExchange.startExchanging(commitments)
+      val props = channelActorProps(runningExchange.role)
+      val ref = context.actorOf(props, MicroPaymentChannelActorName)
+      ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
+        resultListeners = Set(self, txBroadcaster))
+      context.become(inMicropaymentChannel(runningExchange))
     }
 
     private def startHandshake(): Unit = {
@@ -83,25 +91,6 @@ class DefaultExchangeActor(
         handshakeActorProps(exchangeToHandshake, collaborators), HandshakeActorName)
     }
 
-    private def finishingExchange(
-        result: ExchangeResult, expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
-      case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
-          if expectedFinishingTx.exists(_ != originalTx) =>
-        val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
-        log.error(err, "The transaction broadcast for this exchange is different from the one " +
-          "that was being expected.")
-        log.error("The previous exchange result is going to be overridden by this unexpected error.")
-        log.error(s"Previous result: $result")
-        finishWith(ExchangeFailure(err))
-      case ExchangeFinished(_) =>
-        finishWith(result)
-      case ExchangeFinishFailure(err) =>
-        log.error(err, "The finishing transaction could not be broadcast")
-        log.error("The previous exchange result is going to be overridden by this unexpected error.")
-        log.error(s"Previous result: $result")
-        finishWith(ExchangeFailure(TxBroadcastFailed(err)))
-    }
-
     private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
 
       case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
@@ -114,13 +103,33 @@ class DefaultExchangeActor(
         log.error(cause,
           s"Finishing exchange '${exchange.id}' with a failure due to ${cause.toString}")
         txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeFailure(cause), None))
+        context.become(finishingExchange(ExchangeFailure(cause)))
 
       case progress: ExchangeProgress =>
         resultListener ! progress
 
       case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
+    }
+
+    private def finishingExchange(result: ExchangeResult,
+                                  expectedFinishingTx: Option[ImmutableTransaction] = None): Receive = {
+      case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
+          if expectedFinishingTx.exists(_ != originalTx) =>
+        val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
+        log.error(err, "The transaction broadcast for this exchange is different from the one " +
+          "that was being expected.")
+        log.error("The previous exchange result is going to be overridden by this unexpected error.")
+        log.error(s"Previous result: $result")
+        finishWith(ExchangeFailure(err))
+
+      case ExchangeFinished(_) => finishWith(result)
+
+      case ExchangeFinishFailure(err) =>
+        log.error(err, "The finishing transaction could not be broadcast")
+        log.error("The previous exchange result is going to be overridden by this unexpected error.")
+        log.error(s"Previous result: $result")
+        finishWith(ExchangeFailure(TxBroadcastFailed(err)))
     }
 
     private def finishWith(result: Any): Unit = {
