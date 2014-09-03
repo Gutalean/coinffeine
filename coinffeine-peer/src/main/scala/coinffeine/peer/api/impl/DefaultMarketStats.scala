@@ -5,9 +5,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
-import akka.pattern._
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import akka.util.Timeout
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.api.MarketStats
 import coinffeine.protocol.messages.brokerage._
@@ -15,11 +15,13 @@ import coinffeine.protocol.messages.brokerage._
 private[impl] class DefaultMarketStats(override val peer: ActorRef)
   extends MarketStats with PeerActorWrapper {
 
-  implicit private val requestTimeout = Timeout(20.seconds)
+  implicit protected override val timeout = Timeout(20.seconds)
 
   override def currentQuote[C <: FiatCurrency](market: Market[C]): Future[Quote[C]] =
-    (peer ? QuoteRequest(market)).mapTo[Quote[C]]
+    AskPattern(peer, QuoteRequest(market)).withReply[Quote[C]]()
 
   override def openOrders[C <: FiatCurrency](market: Market[C]) =
-    (peer ? OpenOrdersRequest(market)).mapTo[OpenOrders[C]].map(_.orders.entries.toSet)
+    AskPattern(peer, OpenOrdersRequest(market))
+      .withReply[OpenOrders[C]]()
+      .map(_.orders.entries.toSet)
 }
