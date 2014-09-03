@@ -70,7 +70,7 @@ object DefaultCoinffeineApp {
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent with DefaultAmountsComponent =>
 
-    private val accountId = config.getString("coinffeine.okpay.id")
+    private val accountId = settingsProvider.config.getString("coinffeine.okpay.id")
 
     override lazy val app = new DefaultCoinffeineApp(
       name = accountId, accountId, peerProps, exchangeAmountsCalculator)
