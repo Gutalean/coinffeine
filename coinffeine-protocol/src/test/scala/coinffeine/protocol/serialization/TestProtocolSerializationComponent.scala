@@ -26,8 +26,8 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
   def randomOrderMatch(): OrderMatch = OrderMatch(
     orderId = OrderId.random(),
     exchangeId = ExchangeId.random(),
-    amount = randomSatoshi() BTC,
-    price = randomEuros() EUR,
+    bitcoinAmount = randomSatoshi() BTC,
+    fiatAmount = randomEuros() EUR,
     lockTime = 42L,
     counterpart = PeerId("bob")
   )

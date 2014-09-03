@@ -54,8 +54,8 @@ message Quote {
 message OrderMatch {
     required string orderId = 1;
     required string exchangeId = 2;
-    required BtcAmount amount = 3;
-    required FiatAmount price = 4;
+    required BtcAmount bitcoinAmount = 3;
+    required FiatAmount fiatAmount = 4;
     required int64 lockTime = 5;
     required string counterpart = 6;
 }

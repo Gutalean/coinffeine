@@ -189,8 +189,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
       orderId = OrderId(orderMatch.getOrderId),
       exchangeId = ExchangeId(orderMatch.getExchangeId),
-      amount = ProtoMapping.fromProtobuf(orderMatch.getAmount),
-      price = ProtoMapping.fromProtobuf(orderMatch.getPrice),
+      bitcoinAmount = ProtoMapping.fromProtobuf(orderMatch.getBitcoinAmount),
+      fiatAmount = ProtoMapping.fromProtobuf(orderMatch.getFiatAmount),
       lockTime = orderMatch.getLockTime,
       counterpart = PeerId(orderMatch.getCounterpart)
     )
@@ -198,8 +198,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
       .setOrderId(orderMatch.orderId.value)
       .setExchangeId(orderMatch.exchangeId.value)
-      .setAmount(ProtoMapping.toProtobuf(orderMatch.amount))
-      .setPrice(fiatAmountMapping.toProtobuf(orderMatch.price))
+      .setBitcoinAmount(ProtoMapping.toProtobuf(orderMatch.bitcoinAmount))
+      .setFiatAmount(fiatAmountMapping.toProtobuf(orderMatch.fiatAmount))
       .setLockTime(orderMatch.lockTime)
       .setCounterpart(orderMatch.counterpart.value)
       .build
