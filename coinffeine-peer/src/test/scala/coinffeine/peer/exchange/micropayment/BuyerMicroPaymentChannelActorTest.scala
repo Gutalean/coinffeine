@@ -63,12 +63,6 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     }
   }
 
-  it should "resubmit payment proof when last signature is resubmitted by the seller" in {
-    actor ! fromCounterpart(StepSignatures(exchange.id, lastStep, signatures))
-    gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep", lastStep),
-      counterpartId)
-  }
-
   it should "resubmit payment proof when no response is get" in {
     gateway.expectForwarding(PaymentProof(exchange.id, s"payment$lastStep", lastStep),
       counterpartId)

@@ -24,11 +24,7 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, Payment
   */
 private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol, constants: ProtocolConstants)
-  extends Actor with ActorLogging with StepTimeout {
-
-  override def postStop(): Unit = {
-    cancelTimeout()
-  }
+  extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case init: StartMicroPaymentChannel[C] => new InitializedBuyer(init).startExchange()
@@ -37,7 +33,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   private class InitializedBuyer(init: StartMicroPaymentChannel[C])
     extends InitializedChannelBehavior(init)(context.dispatcher) {
 
-    import constants.exchangeSignatureTimeout
     import init._
 
     private var lastSignedOffer: Option[ImmutableTransaction] = None
@@ -56,54 +51,37 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       }
     }
 
-    private def withStepTimeout(channel: MicroPaymentChannel[C])(receive: Receive): Receive = {
-      cancelTimeout()
-      scheduleStepTimeout(exchangeSignatureTimeout)
-      receive.orElse(handleTimeout(channel.currentStep))
-    }
-
-    private def handleTimeout(step: Step): Receive = {
-      case StepSignatureTimeout =>
-        val errorMsg = s"Timed out waiting for the seller to provide the signature for $step" +
-          s" (out of ${exchange.amounts.breakdown.intermediateSteps}})"
-        log.warning(errorMsg)
-        finishWith(ExchangeFailure(TimeoutException(errorMsg)))
-    }
-
     private def waitForNextStepSignature(channel: MicroPaymentChannel[C],
                                          previousPaymentProof: Option[PaymentProof] = None): Receive =
-      withStepTimeout(channel) {
-        waitForValidSignature(channel, previousPaymentProof) { signatures =>
-          updateLastSignedOffer(channel.closingTransaction(signatures))
-          channel.currentStep match {
-            case step: IntermediateStep =>
-              log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
-              reportProgress(signatures = step.value, payments = step.value - 1)
-              pay(step)
-              context.become(waitForPaymentResult(channel))
+      waitForValidSignature(channel, previousPaymentProof) { signatures =>
+        updateLastSignedOffer(channel.closingTransaction(signatures))
+        channel.currentStep match {
+          case step: IntermediateStep =>
+            log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
+            reportProgress(signatures = step.value, payments = step.value - 1)
+            pay(step)
+            context.become(waitForPaymentResult(channel))
 
-            case _: FinalStep =>
-              log.info("Exchange {}: micropayment channel finished with success", exchange.id)
-              reportClosedChannel()
-              finishWith(ExchangeSuccess(lastSignedOffer))
-          }
+          case _: FinalStep =>
+            log.info("Exchange {}: micropayment channel finished with success", exchange.id)
+            reportClosedChannel()
+            finishWith(ExchangeSuccess(lastSignedOffer))
         }
       }
 
-    private def waitForPaymentResult(channel: MicroPaymentChannel[C]): Receive =
-      withStepTimeout(channel) {
-        case proof: PaymentProof =>
-          val completedSteps = channel.currentStep.value
-          reportProgress(signatures = completedSteps, payments = completedSteps)
-          log.debug("Exchange {}: payment {} for step {} done",
-            exchange.id, proof.paymentId, completedSteps)
-          forwarding.forwardToCounterpart(proof)
-          context.become(waitForNextStepSignature(channel.nextStep, Some(proof)))
+    private def waitForPaymentResult(channel: MicroPaymentChannel[C]): Receive = {
+      case proof: PaymentProof =>
+        val completedSteps = channel.currentStep.value
+        reportProgress(signatures = completedSteps, payments = completedSteps)
+        log.debug("Exchange {}: payment {} for step {} done",
+          exchange.id, proof.paymentId, completedSteps)
+        forwarding.forwardToCounterpart(proof)
+        context.become(waitForNextStepSignature(channel.nextStep, Some(proof)))
 
-        case PaymentProcessorActor.PaymentFailed(_, cause) =>
-          // TODO: look more carefully to the error and consider retrying
-          finishWith(ExchangeFailure(cause))
-      }
+      case PaymentProcessorActor.PaymentFailed(_, cause) =>
+        // TODO: look more carefully to the error and consider retrying
+        finishWith(ExchangeFailure(cause))
+    }
 
     private def waitForValidSignature(channel: MicroPaymentChannel[C],
                                       previousPaymentProof: Option[PaymentProof])
