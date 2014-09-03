@@ -108,7 +108,7 @@ class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps
           updateConnectionStatus(connectionStatus.copy(blockchainStatus =
             Downloading(totalBlocks, remainingBlocks)))
         case otherStatus =>
-          log.warning("Received download progress ({}) when having status {}",
+          log.debug("Received download progress ({}) when having status {}",
             remainingBlocks, otherStatus)
       }
 
