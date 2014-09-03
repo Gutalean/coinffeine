@@ -1,5 +1,7 @@
 package coinffeine.peer.exchange
 
+import scala.util.Try
+
 import akka.actor.{ActorRef, Props}
 
 import coinffeine.model.bitcoin._
@@ -33,6 +35,9 @@ object ExchangeActor {
 
   /** This is a message sent to the listener to indicate that an exchange failed */
   case class ExchangeFailure(e: Throwable) extends ExchangeResult
+
+  case class InvalidCommitments(validationResult: Both[Try[Unit]])
+    extends RuntimeException(s"Commitments were invalid: $validationResult")
 
   case class CommitmentTxNotInBlockChain(txId: Hash) extends RuntimeException(
     s"Handshake reported that the commitment transaction with hash $txId was in " +

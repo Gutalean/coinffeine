@@ -52,22 +52,30 @@ class DefaultExchangeActor(
 
     private def inHandshake: Receive = {
 
-      case HandshakeSuccess(handshakingExchange, commitmentTxs, refundTx)
-          if handshakingExchange.currency == exchange.currency =>
+      case HandshakeSuccess(rawExchange, commitments, refundTx)
+          if rawExchange.currency == exchange.currency =>
+        val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
         txBroadcaster ! StartBroadcastHandling(refundTx, bitcoinPeer, resultListeners = Set(self))
         val validationResult = exchangeProtocol.validateDeposits(
-          commitmentTxs, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
-        // TODO: what if counterpart deposit is not valid?
-        require(validationResult.forall(_.isSuccess), "Invalid deposits")
-        val runningExchange =
-          handshakingExchange.asInstanceOf[HandshakingExchange[C]].startExchanging(commitmentTxs)
-        val props = channelActorProps(runningExchange.role)
-        val ref = context.actorOf(props, MicroPaymentChannelActorName)
-        ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
-          resultListeners = Set(self, txBroadcaster))
-        context.become(inMicropaymentChannel(runningExchange))
+          commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
+        if(validationResult.forall(_.isSuccess)) {
+          startMicropaymentChannel(commitments, handshakingExchange)
+        } else {
+          txBroadcaster ! FinishExchange
+          context.become(finishingExchange(ExchangeFailure(InvalidCommitments(validationResult))))
+        }
 
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
+    }
+
+    private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
+                                         handshakingExchange: HandshakingExchange[C]): Unit = {
+      val runningExchange = handshakingExchange.startExchanging(commitments)
+      val props = channelActorProps(runningExchange.role)
+      val ref = context.actorOf(props, MicroPaymentChannelActorName)
+      ref ! StartMicroPaymentChannel(runningExchange, paymentProcessor, registry,
+        resultListeners = Set(self, txBroadcaster))
+      context.become(inMicropaymentChannel(runningExchange))
     }
 
     private def startHandshake(): Unit = {
@@ -95,7 +103,7 @@ class DefaultExchangeActor(
         log.error(cause,
           s"Finishing exchange '${exchange.id}' with a failure due to ${cause.toString}")
         txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeFailure(cause), None))
+        context.become(finishingExchange(ExchangeFailure(cause)))
 
       case progress: ExchangeProgress =>
         resultListener ! progress
@@ -105,7 +113,7 @@ class DefaultExchangeActor(
     }
 
     private def finishingExchange(result: ExchangeResult,
-                                  expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
+                                  expectedFinishingTx: Option[ImmutableTransaction] = None): Receive = {
       case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
           if expectedFinishingTx.exists(_ != originalTx) =>
         val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)

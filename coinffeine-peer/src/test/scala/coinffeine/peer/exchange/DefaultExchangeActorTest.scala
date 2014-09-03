@@ -1,10 +1,12 @@
 package coinffeine.peer.exchange
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 import akka.actor.{Props, Terminated}
 import akka.testkit.TestProbe
 import akka.util.Timeout
+import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.MockSupervisedActor
@@ -25,7 +27,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 
 class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
-  with SellerPerspective with Eventually {
+  with SellerPerspective with Eventually with Inside {
 
   implicit def testTimeout = new Timeout(5 second)
   private val protocolConstants = ProtocolConstants(
@@ -68,6 +70,14 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeActor.expectCreation()
       handshakeActor.probe.send(actor,
         HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
+      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
+    }
+
+    def givenHandshakeSuccessWithInvalidCounterpartCommitment(): Unit = {
+      handshakeActor.expectCreation()
+      val invalidCommitment = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
+      val handshakeSuccess = HandshakeSuccess(handshakingExchange, invalidCommitment,dummyTx)
+      handshakeActor.probe.send(actor,handshakeSuccess)
       transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
     }
 
@@ -130,9 +140,21 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     handshakeActor.expectCreation()
     handshakeActor.probe.send(actor, HandshakeFailure(error))
     listener.expectMsg(ExchangeFailure(error))
-    listener.expectMsgClass(classOf[Terminated])
+    listener.expectTerminated(actor)
     system.stop(actor)
   }
+
+  it should "report a failure and ask the broadcaster publish the refund if commitments are invalid" in
+    new Fixture {
+      startExchange()
+      givenHandshakeSuccessWithInvalidCounterpartCommitment()
+      givenTransactionIsCorrectlyBroadcast()
+      inside (listener.expectMsgType[ExchangeFailure]) {
+        case ExchangeFailure(InvalidCommitments(Both(Failure(_), Success(_)))) =>
+      }
+      listener.expectTerminated(actor)
+      system.stop(actor)
+    }
 
   it should "report a failure if the actual exchange fails" in new Fixture {
     startExchange()
