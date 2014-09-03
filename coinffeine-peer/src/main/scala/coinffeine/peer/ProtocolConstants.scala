@@ -12,7 +12,6 @@ import scala.language.postfixOps
   * @param commitmentAbortTimeout  Maximum time than a broker will wait for buyer and seller
   *                                commitments
   * @param exchangeSignatureTimeout Amount of time the actor will wait for a step signature
-  * @param exchangePaymentProofTimeout Amount of time the actor will wait for a payment proof
   * @param microPaymentChannelResubmitTimeout  Amount of time before resubmitting information
   *                                            during the micro payment channel exchange
   * @param orderExpirationInterval Time that orders take to be discarded if not renewed
@@ -31,7 +30,6 @@ case class ProtocolConstants(
   refundSignatureAbortTimeout: FiniteDuration = 5 minutes,
   commitmentAbortTimeout: FiniteDuration = 5 minutes,
   exchangeSignatureTimeout: FiniteDuration = 5 minutes,
-  exchangePaymentProofTimeout: FiniteDuration = 5 minutes,
   microPaymentChannelResubmitTimeout: FiniteDuration = 3 seconds,
   orderExpirationInterval: FiniteDuration = 1 minute,
   orderResubmitInterval: FiniteDuration = 30 seconds,

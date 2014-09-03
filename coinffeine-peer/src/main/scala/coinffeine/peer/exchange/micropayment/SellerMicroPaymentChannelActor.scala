@@ -15,7 +15,6 @@ import coinffeine.peer.exchange.protocol.{ExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
 import coinffeine.protocol.gateway.MessageForwarder
-import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.exchange._
 
@@ -39,7 +38,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   private class InitializedSellerExchange(init: StartMicroPaymentChannel[C])
     extends InitializedChannelBehavior(init) {
     import init._
-    import constants.exchangePaymentProofTimeout
 
     val forwarderFactory = new MessageForwarder.Factory(messageGateway, context)
 
