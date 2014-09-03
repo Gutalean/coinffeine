@@ -43,7 +43,14 @@ class DefaultExchangeActor(
       context.become(retrievingBlockchain)
     }
 
-    private val inHandshake: Receive = {
+    private def retrievingBlockchain: Receive = {
+      case BlockchainActorRef(blockchainRef) =>
+        blockchain = blockchainRef
+        startHandshake()
+        context.become(inHandshake)
+    }
+
+    private def inHandshake: Receive = {
 
       case HandshakeSuccess(handshakingExchange, commitmentTxs, refundTx)
           if handshakingExchange.currency == exchange.currency =>
@@ -63,13 +70,6 @@ class DefaultExchangeActor(
       case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
     }
 
-    private val retrievingBlockchain: Receive = {
-      case BlockchainActorRef(blockchainRef) =>
-        blockchain = blockchainRef
-        startHandshake()
-        context.become(inHandshake)
-    }
-
     private def startHandshake(): Unit = {
       import context.dispatcher
       val exchangeToHandshake = HandshakeActor.ExchangeToHandshake(exchange, user)
@@ -81,25 +81,6 @@ class DefaultExchangeActor(
       )
       handshakeActor = context.actorOf(
         handshakeActorProps(exchangeToHandshake, collaborators), HandshakeActorName)
-    }
-
-    private def finishingExchange(
-        result: ExchangeResult, expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
-      case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
-          if expectedFinishingTx.exists(_ != originalTx) =>
-        val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
-        log.error(err, "The transaction broadcast for this exchange is different from the one " +
-          "that was being expected.")
-        log.error("The previous exchange result is going to be overridden by this unexpected error.")
-        log.error(s"Previous result: $result")
-        finishWith(ExchangeFailure(err))
-      case ExchangeFinished(_) =>
-        finishWith(result)
-      case ExchangeFinishFailure(err) =>
-        log.error(err, "The finishing transaction could not be broadcast")
-        log.error("The previous exchange result is going to be overridden by this unexpected error.")
-        log.error(s"Previous result: $result")
-        finishWith(ExchangeFailure(TxBroadcastFailed(err)))
     }
 
     private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
@@ -121,6 +102,26 @@ class DefaultExchangeActor(
 
       case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
         finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
+    }
+
+    private def finishingExchange(result: ExchangeResult,
+                                  expectedFinishingTx: Option[ImmutableTransaction]): Receive = {
+      case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
+          if expectedFinishingTx.exists(_ != originalTx) =>
+        val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
+        log.error(err, "The transaction broadcast for this exchange is different from the one " +
+          "that was being expected.")
+        log.error("The previous exchange result is going to be overridden by this unexpected error.")
+        log.error(s"Previous result: $result")
+        finishWith(ExchangeFailure(err))
+
+      case ExchangeFinished(_) => finishWith(result)
+
+      case ExchangeFinishFailure(err) =>
+        log.error(err, "The finishing transaction could not be broadcast")
+        log.error("The previous exchange result is going to be overridden by this unexpected error.")
+        log.error(s"Previous result: $result")
+        finishWith(ExchangeFailure(TxBroadcastFailed(err)))
     }
 
     private def finishWith(result: Any): Unit = {
