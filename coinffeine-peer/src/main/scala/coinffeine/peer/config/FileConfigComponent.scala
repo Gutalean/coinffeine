@@ -2,5 +2,5 @@ package coinffeine.peer.config
 
 trait FileConfigComponent extends ConfigComponent {
 
-  def settingsProvider = FileConfigProvider()
+  def configProvider = FileConfigProvider()
 }
