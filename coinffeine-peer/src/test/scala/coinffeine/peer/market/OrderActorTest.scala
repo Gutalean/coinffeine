@@ -22,8 +22,9 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Per
 import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.{MockGateway, MessageGateway}
+import coinffeine.protocol.gateway.{MessageGateway, MockGateway}
 import coinffeine.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActorTest extends AkkaSpec {
 
@@ -53,6 +54,12 @@ class OrderActorTest extends AkkaSpec {
       submissionProbe.expectMsg(StopSubmitting(order.id))
     }
 
+  it should "reject order matches when stalled" in new BuyerFixture {
+    givenOfflineOrder()
+    givenFundsBecomeUnavailable()
+    shouldRejectAnOrderMatch("Order is stalled")
+  }
+
   it should "move to offline when receive available funds" in new BuyerFixture {
     givenStalledOrder()
     givenFundsBecomeAvailable()
@@ -79,6 +86,12 @@ class OrderActorTest extends AkkaSpec {
     eventChannelProbe.expectMsgPF() {
       case OrderStatusChangedEvent(orderId, _, CancelledOrder(`reason`)) if orderId == order.id =>
     }
+  }
+
+  it should "reject order matches after being cancelled" in new BuyerFixture {
+    givenOfflineOrder()
+    actor ! OrderActor.CancelOrder("got bored")
+    shouldRejectAnOrderMatch("Already finished")
   }
 
   it should "release funds when being cancelled" in new BuyerFixture {
@@ -127,6 +140,15 @@ class OrderActorTest extends AkkaSpec {
       case ExchangeActor.StartExchange(ex, `peerInfo`, _, _, _, _)
         if ex.id == exchangeId =>
     }
+  }
+
+  it should "reject order matches if an exchange is active" in new BuyerFixture {
+    givenInMarketOrder()
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenAFreshKeyIsGenerated()
+    givenPaymentProcessorAccountIsRetrieved()
+    exchangeActor.expectCreation()
+    shouldRejectAnOrderMatch("Exchange already in progress")
   }
 
   it should "release remaining funds after completing exchanges" in new BuyerFixture {
@@ -263,6 +285,13 @@ class OrderActorTest extends AkkaSpec {
       gatewayProbe.relayMessageFromBroker(orderMatch)
       expectAPerfectMatchExchangeToBeStarted()
       exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
+    }
+
+    def shouldRejectAnOrderMatch(errorMessage: String): Unit = {
+      val otherExchangeId = ExchangeId.random()
+      gatewayProbe.relayMessageFromBroker(orderMatch.copy(exchangeId = otherExchangeId))
+      gatewayProbe.expectForwardingToBroker(
+        ExchangeRejection(otherExchangeId, errorMessage))
     }
   }
 

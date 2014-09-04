@@ -14,6 +14,7 @@ import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, Or
 import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.network.BrokerId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
@@ -23,8 +24,9 @@ import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor(exchangeActorProps: Props,
                  orderFundsActorProps: Props,
@@ -74,10 +76,10 @@ class OrderActor(exchangeActorProps: Props,
       )
     }
 
-    private def stalled: Receive = running orElse {
+    private def stalled: Receive = running orElse rejectOrderMatches("Order is stalled") orElse {
       case OrderFundsActor.AvailableFunds(availableBlockedFunds) =>
         blockedFunds = Some(availableBlockedFunds)
-        log.info(s"{} received available funds {}. Moving to offline status",
+        log.info("{} received available funds {}. Moving to offline status",
           currentOrder.id, availableBlockedFunds)
         updateOrderStatus(OfflineOrder)
         submissionSupervisor ! KeepSubmitting(OrderBookEntry(currentOrder))
@@ -103,22 +105,23 @@ class OrderActor(exchangeActorProps: Props,
         context.become(exchanging)
     }
 
-    private def exchanging: Receive = running orElse availableFunds orElse {
-      case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
-        log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
-        updateExchangeInOrder(exchange)
+    private def exchanging: Receive = running orElse availableFunds orElse
+      rejectOrderMatches("Exchange already in progress") orElse {
+        case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
+          log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
+          updateExchangeInOrder(exchange)
 
-      case ExchangeActor.ExchangeSuccess(exchange: AnyStateExchange[C]) =>
-        log.debug("Order actor received success for {}", exchange.id)
-        updateExchangeInOrder(exchange)
-        terminate(CompletedOrder)
-    }
+        case ExchangeActor.ExchangeSuccess(exchange: AnyStateExchange[C]) =>
+          log.debug("Order actor received success for {}", exchange.id)
+          updateExchangeInOrder(exchange)
+          terminate(CompletedOrder)
+      }
 
     private def availableFunds: Receive = {
       case OrderFundsActor.UnavailableFunds =>
         updateOrderStatus(StalledOrder(NoFundsMessage))
         submissionSupervisor ! StopSubmitting(currentOrder.id)
-        log.warning("${} is stalled due to unavailable funds", currentOrder.id)
+        log.warning("{} is stalled due to unavailable funds", currentOrder.id)
         context.become(stalled)
     }
 
@@ -132,11 +135,17 @@ class OrderActor(exchangeActorProps: Props,
         terminate(CancelledOrder(reason))
     }
 
+    private def rejectOrderMatches(errorMessage: String): Receive = {
+      case ReceiveMessage(orderMatch: OrderMatch, _) =>
+        val rejection = ExchangeRejection(orderMatch.exchangeId, errorMessage)
+        messageGateway ! ForwardMessage(rejection, BrokerId)
+    }
+
     private def terminate(finalStatus: OrderStatus): Unit = {
       updateOrderStatus(finalStatus)
       submissionSupervisor ! StopSubmitting(currentOrder.id)
       fundsActor ! OrderFundsActor.UnblockFunds
-      context.become(Map.empty)
+      context.become(rejectOrderMatches("Already finished"))
     }
 
     private def startExchange(newExchange: NonStartedExchange[C]): Unit = {
