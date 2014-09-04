@@ -168,16 +168,16 @@ object CoinffeinePeerActor {
     with AmountsComponent =>
 
     lazy val peerProps: Props = {
-      val ownPort = settingsProvider.messageGatewaySettings.peerPort
-      val brokerHostname = settingsProvider.messageGatewaySettings.brokerHost
-      val brokerPort= settingsProvider.messageGatewaySettings.brokerPort
+      val ownPort = configProvider.messageGatewaySettings.peerPort
+      val brokerHostname = configProvider.messageGatewaySettings.brokerHost
+      val brokerPort= configProvider.messageGatewaySettings.brokerPort
       val props = PropsCatalogue(
-        messageGatewayProps(settingsProvider.messageGatewaySettings),
+        messageGatewayProps(configProvider.messageGatewaySettings),
         MarketInfoActor.props,
         OrderSupervisor.props(
           exchangeActorProps, network, protocolConstants, exchangeAmountsCalculator),
         bitcoinPeerProps,
-        OkPayProcessorActor.props(settingsProvider.okPaySettings)
+        OkPayProcessorActor.props(configProvider.okPaySettings)
       )
       Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
     }
