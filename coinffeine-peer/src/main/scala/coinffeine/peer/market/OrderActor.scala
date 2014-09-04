@@ -5,7 +5,6 @@ import scala.util.{Failure, Success}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import com.google.bitcoin.core.NetworkParameters
-import com.typesafe.config.Config
 
 import coinffeine.common.akka.{AskPattern, ServiceRegistry}
 import coinffeine.model.bitcoin.KeyPair
@@ -137,8 +136,13 @@ class OrderActor(exchangeActorProps: Props,
 
     private def rejectOrderMatches(errorMessage: String): Receive = {
       case ReceiveMessage(orderMatch: OrderMatch, _) =>
-        val rejection = ExchangeRejection(orderMatch.exchangeId, errorMessage)
-        messageGateway ! ForwardMessage(rejection, BrokerId)
+        if (currentOrder.exchanges.values.map(_.id).toSet.contains(orderMatch.exchangeId)) {
+          log.debug("Received order match for the already accepted exchange {}",
+            orderMatch.exchangeId)
+        } else {
+          val rejection = ExchangeRejection(orderMatch.exchangeId, errorMessage)
+          messageGateway ! ForwardMessage(rejection, BrokerId)
+        }
     }
 
     private def terminate(finalStatus: OrderStatus): Unit = {
