@@ -1,5 +1,7 @@
 package coinffeine.peer.market
 
+import scala.concurrent.duration._
+
 import akka.actor.Props
 import akka.testkit.TestProbe
 
@@ -28,6 +30,8 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActorTest extends AkkaSpec {
 
+  val idleTime = 500.millis
+
   "A bidding order actor" should "keep order info" in new BuyerFixture {
     actor ! OrderActor.RetrieveStatus
     expectMsg(blockingFundsOrder)
@@ -41,8 +45,8 @@ class OrderActorTest extends AkkaSpec {
     new BuyerFixture {
       givenInitializedOrder()
       givenFundsBecomeUnavailable()
-      eventChannelProbe.expectNoMsg()
-      submissionProbe.expectNoMsg()
+      eventChannelProbe.expectNoMsg(idleTime)
+      submissionProbe.expectNoMsg(idleTime)
     }
 
   it should "move to stalled when payment processor reports unavailable funds" in
@@ -79,7 +83,7 @@ class OrderActorTest extends AkkaSpec {
 
   it should "keep submitting to the broker until been cancelled" in new BuyerFixture {
     givenOfflineOrder()
-    expectNoMsg()
+    expectNoMsg(idleTime)
     val reason = "some reason"
     actor ! OrderActor.CancelOrder(reason)
     submissionProbe.expectMsg(StopSubmitting(order.id))
@@ -142,13 +146,24 @@ class OrderActorTest extends AkkaSpec {
     }
   }
 
-  it should "reject order matches if an exchange is active" in new BuyerFixture {
+  it should "reject new order matches if an exchange is active" in new BuyerFixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     givenAFreshKeyIsGenerated()
     givenPaymentProcessorAccountIsRetrieved()
     exchangeActor.expectCreation()
     shouldRejectAnOrderMatch("Exchange already in progress")
+  }
+
+  it should "not reject resubmissions of already accepted order matches" in new BuyerFixture {
+    givenInMarketOrder()
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenAFreshKeyIsGenerated()
+    givenPaymentProcessorAccountIsRetrieved()
+    exchangeActor.expectCreation()
+
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    gatewayProbe.expectNoMsg(idleTime)
   }
 
   it should "release remaining funds after completing exchanges" in new BuyerFixture {
