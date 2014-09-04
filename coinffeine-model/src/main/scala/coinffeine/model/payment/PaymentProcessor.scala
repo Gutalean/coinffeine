@@ -11,6 +11,9 @@ trait PaymentProcessor {
 
   def amountMinusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
     amount - calculateFee(amount)
+
+  /** Best step size balancing fees paid and risk taken for this payment processor and currency. */
+  def bestStepSize[C <: FiatCurrency](currency: C): CurrencyAmount[C]
 }
 
 object PaymentProcessor {

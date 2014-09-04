@@ -115,11 +115,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   object NoFeesProcessor extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount.zero(amount.currency)
+    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(1, currency)
   }
 
   class FixedFeeProcessor(fee: BigDecimal) extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount(fee, amount.currency)
+    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(1, currency)
   }
 
   object NoBitcoinFees extends BitcoinFeeCalculator {
