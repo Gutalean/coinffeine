@@ -54,7 +54,6 @@ class OrderActor(exchangeActorProps: Props,
       subscribeToMessages()
       blockFunds()
       startWithOrderStatus(StalledOrder(BlockingFundsMessage))
-      log.warning(s"${currentOrder.id} is stalled until enough funds are available".capitalize)
       context.become(stalled)
     }
 
@@ -67,12 +66,11 @@ class OrderActor(exchangeActorProps: Props,
 
     private def blockFunds(): Unit = {
       val amounts = amountsCalculator.exchangeAmountsFor(currentOrder)
-      fundsActor ! OrderFundsActor.BlockFunds(
-        fiatAmount = role.select(amounts.fiatRequired),
-        bitcoinAmount = role.select(amounts.bitcoinRequired),
-        wallet,
-        paymentProcessor
-      )
+      val fiatAmount = role.select(amounts.fiatRequired)
+      val bitcoinAmount = role.select(amounts.bitcoinRequired)
+      log.info("{} is stalled until enough funds are available {}", currentOrder.id,
+        (fiatAmount, bitcoinAmount))
+      fundsActor ! OrderFundsActor.BlockFunds(fiatAmount, bitcoinAmount, wallet, paymentProcessor)
     }
 
     private def stalled: Receive = running orElse rejectOrderMatches("Order is stalled") orElse {
