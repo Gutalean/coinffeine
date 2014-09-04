@@ -12,7 +12,7 @@ trait ConfigProvider extends SettingsProvider {
   def userConfig: Config
 
   /** Save the given user config using this provider. */
-  def saveUserConfig(userConfig: Config): Unit
+  def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit
 
   /** Retrieve the reference configuration obtained from the app bundle. */
   def referenceConfig: Config = ConfigFactory.load()

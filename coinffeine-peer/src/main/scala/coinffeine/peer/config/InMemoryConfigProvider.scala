@@ -4,5 +4,5 @@ import com.typesafe.config.Config
 
 class InMemoryConfigProvider(val userConfig: Config) extends ConfigProvider {
 
-  override def saveUserConfig(userConfig: Config) = {}
+  override def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true) = {}
 }

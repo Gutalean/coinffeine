@@ -4,6 +4,7 @@ import java.io.{File, FileOutputStream}
 import java.nio.charset.Charset
 import java.nio.file.{Path, Paths}
 import java.util.concurrent.atomic.AtomicReference
+import scala.collection.JavaConversions._
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
@@ -18,8 +19,9 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
     _userConfig.get.get
   }
 
-  override def saveUserConfig(userConfig: Config): Unit = {
-    val rendered = userConfig.root().render(ConfigRenderOptions.concise())
+  override def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit = {
+    val config = if (dropReferenceValues) diff(userConfig, referenceConfig) else userConfig
+    val rendered = config.root().render(ConfigRenderOptions.concise())
     val file = new FileOutputStream(userConfigFile().toFile)
     try {
       file.write(rendered.getBytes(Charset.defaultCharset()))
@@ -33,6 +35,12 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
     val path = userSettingsPath().resolve(filename)
     ensureUserSettingsFileExists(path.toFile)
     path
+  }
+
+  private def diff(c1: Config, c2: Config): Config = {
+    val c1Items = c1.root().unwrapped().toSet
+    val c2Items = c2.root().unwrapped().toSet
+    ConfigFactory.parseMap(c1Items.diff(c2Items).toMap[String, AnyRef])
   }
 
   private def userSettingsPath(): Path = {
