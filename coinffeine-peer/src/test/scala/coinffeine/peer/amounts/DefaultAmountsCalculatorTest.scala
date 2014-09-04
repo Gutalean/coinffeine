@@ -1,7 +1,5 @@
 package coinffeine.peer.amounts
 
-import java.math.BigInteger
-
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
@@ -24,44 +22,46 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
   }
 
-  it must "reject amounts not divisible by the number of steps" in new Fixture {
-    an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(1.BTC, 1.01.EUR)
+  it must "have all steps but the last of the optimum size for the payment processor" in
+    new Fixture {
+      forAnyAmounts { amounts =>
+        amounts.steps.init.forall(_.fiatAmount == paymentProcessor.bestStepSize(Euro))
+      }
     }
-    an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(Bitcoin.fromSatoshi(BigInteger.ONE), 1.EUR)
-    }
-  }
-
-  it must "have ten steps independently of amount or price" in new Fixture {
-    forAnyAmounts { amounts =>
-      amounts.breakdown.intermediateSteps should be (10)
-    }
-  }
 
   it must "require the buyer to deposit two steps worth of bitcoins" in new Fixture {
     forAnyAmounts { amounts =>
-      amounts.deposits.buyer should be (amounts.steps.head.bitcoinAmount * 2)
+      val depositStep = amounts.steps.map(_.bitcoinAmount).reduce(_ max _)
+      amounts.deposits.buyer should be (depositStep * 2)
     }
   }
 
   it must "require the seller to deposit one steps worth of bitcoins apart from the principal" in
     new Fixture {
       forAnyAmounts { amounts =>
-        amounts.deposits.seller - amounts.bitcoinExchanged should be (amounts.steps.head.bitcoinAmount)
+        val depositStep = amounts.steps.map(_.bitcoinAmount).reduce(_ max _)
+        amounts.deposits.seller - amounts.bitcoinExchanged should be (depositStep)
       }
     }
 
   it must "refund deposited amounts but one step worth of bitcoins" in new Fixture {
     forAnyAmounts { amounts =>
-      amounts.deposits.buyer - amounts.refunds.buyer should be (amounts.steps.head.bitcoinAmount)
-      amounts.deposits.seller - amounts.refunds.seller should be (amounts.steps.head.bitcoinAmount)
+      val depositStep = amounts.steps.map(_.bitcoinAmount).reduce(_ max _)
+      amounts.deposits.buyer - amounts.refunds.buyer should be (depositStep)
+      amounts.deposits.seller - amounts.refunds.seller should be (depositStep)
     }
   }
 
-  it must "have same sized steps" in new Fixture {
+  it must "have all but last steps of the same fiat size" in new Fixture {
     forAnyAmounts { amounts =>
-      amounts.steps.toSet should have size 1
+      amounts.steps.init.map(_.fiatAmount).toSet should have size 1
+    }
+  }
+
+  it must "have all but last steps of about same bitcoin size" in new Fixture {
+    forAnyAmounts { amounts =>
+      val steps = amounts.steps.init.map(_.bitcoinAmount.value)
+      steps.max should equal (steps.min +- Bitcoin.fromSatoshi(1).value)
     }
   }
 
@@ -77,7 +77,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     new Fixture(paymentProcessor = new FixedFeeProcessor(0.5)) {
       forAnyAmounts { (bitcoinAmount, price, amounts) =>
         amounts.steps.map(_.fiatFee).toSet should be (Set(0.5.EUR))
-        amounts.fiatRequired.buyer - amounts.fiatExchanged should be (5.EUR)
+        amounts.fiatRequired.buyer - amounts.fiatExchanged should be (0.5.EUR * amounts.steps.size)
       }
     }
 
@@ -94,8 +94,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     0.3.BTC -> 370.2.EUR
   )
 
-  abstract class Fixture(paymentProcessor: PaymentProcessor = NoFeesProcessor,
-                         bitcoinFeeCalculator: BitcoinFeeCalculator = NoBitcoinFees) {
+  abstract class Fixture(val paymentProcessor: PaymentProcessor = NoFeesProcessor,
+                         val bitcoinFeeCalculator: BitcoinFeeCalculator = NoBitcoinFees) {
 
     val instance = new DefaultAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
 
@@ -107,7 +107,9 @@ class DefaultAmountsCalculatorTest extends UnitTest {
 
     def forAnyAmounts(test: (BitcoinAmount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
       for ((bitcoin, amount) <- exampleCases) {
-        test(bitcoin, amount, instance.exchangeAmountsFor(bitcoin, amount))
+        withClue(s"exchanging $bitcoin for $amount: ") {
+          test(bitcoin, amount, instance.exchangeAmountsFor(bitcoin, amount))
+        }
       }
     }
   }
@@ -115,13 +117,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   object NoFeesProcessor extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount.zero(amount.currency)
-    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(1, currency)
+    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(10, currency)
   }
 
   class FixedFeeProcessor(fee: BigDecimal) extends PaymentProcessor {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount(fee, amount.currency)
-    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(1, currency)
+    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(10, currency)
   }
 
   object NoBitcoinFees extends BitcoinFeeCalculator {
