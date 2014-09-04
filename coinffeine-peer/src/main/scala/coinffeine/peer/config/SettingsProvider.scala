@@ -2,14 +2,18 @@ package coinffeine.peer.config
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.payment.okpay.OkPaySettings
+import coinffeine.protocol.MessageGatewaySettings
+
 trait SettingsProvider {
 
-  /** Retrieve the user configuration. */
-  def userConfig: Config
+  /** Retrieve the settings of the Bitcoin network. */
+  def bitcoinSettings: BitcoinSettings
 
-  /** Retrieve the reference configuration obtained from the app bundle. */
-  def referenceConfig: Config = ConfigFactory.load()
+  /** Retrieve the message gateway settings. */
+  def messageGatewaySettings: MessageGatewaySettings
 
-  /** Retrieve the whole configuration, including reference and user config. */
-  def config: Config = userConfig.withFallback(referenceConfig)
+  /** Retrieve the OKPay settings. */
+  def okPaySettings: OkPaySettings
 }

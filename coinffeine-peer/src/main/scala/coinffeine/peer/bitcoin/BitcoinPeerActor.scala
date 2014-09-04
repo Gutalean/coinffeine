@@ -256,7 +256,7 @@ object BitcoinPeerActor {
 
     lazy val bitcoinPeerProps: Props = {
       val connectionRetryInterval =
-        settingsProvider.config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds
+        settingsProvider.bitcoinSettings.connectionRetryInterval
       Props(new BitcoinPeerActor(
         createPeerGroup(blockchain),
         BlockchainActor.props(blockchain, network),

@@ -4,13 +4,13 @@ import com.typesafe.config.ConfigFactory
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.peer.config.{InMemorySettingsProvider, ConfigComponent}
+import coinffeine.peer.config.{InMemoryConfigProvider, ConfigComponent}
 
 class DummyPrivateKeysComponentTest extends UnitTest {
 
   class TestComponent(rawConfig: String) extends DummyPrivateKeysComponent
     with CoinffeineUnitTestNetwork.Component with ConfigComponent {
-    override val settingsProvider = new InMemorySettingsProvider(ConfigFactory.parseString(rawConfig))
+    override val settingsProvider = new InMemoryConfigProvider(ConfigFactory.parseString(rawConfig))
   }
 
   "A dummy wallet component" should "provide a wallet with a private key taken from the config" in {
