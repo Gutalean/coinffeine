@@ -1,13 +1,12 @@
 package coinffeine.protocol.gateway
 
 import java.net.NetworkInterface
-import scala.collection.JavaConversions._
 
 import akka.actor.Props
-import com.typesafe.config.{Config, ConfigException}
 
 import coinffeine.common.akka.ServiceRegistryActor
 import coinffeine.model.network.{BrokerId, NodeId}
+import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
@@ -67,16 +66,9 @@ object MessageGateway {
 
   trait Component {
 
-    def messageGatewayProps(config: Config): Props =
-      messageGatewayProps(ignoredNetworkInterfaces(config))
+    def messageGatewayProps(settings: MessageGatewaySettings): Props =
+      messageGatewayProps(settings.ignoredNetworkInterfaces)
 
     def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props
-
-    private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
-      config.getStringList("coinffeine.peer.ifaces.ignore")
-        .flatMap(name => Option(NetworkInterface.getByName(name)))
-    } catch {
-      case _: ConfigException.Missing => Seq.empty
-    }
   }
 }

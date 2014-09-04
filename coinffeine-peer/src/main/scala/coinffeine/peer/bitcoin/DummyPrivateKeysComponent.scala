@@ -12,5 +12,5 @@ trait DummyPrivateKeysComponent extends PrivateKeysComponent {
   override lazy val keyPairs: Seq[KeyPair] = Seq(parsePrivateKey())
 
   private def parsePrivateKey(): KeyPair =
-    new DumpedPrivateKey(network, settingsProvider.config.getString("coinffeine.wallet.key")).getKey
+    new DumpedPrivateKey(network, settingsProvider.bitcoinSettings.walletPrivateKey).getKey
 }

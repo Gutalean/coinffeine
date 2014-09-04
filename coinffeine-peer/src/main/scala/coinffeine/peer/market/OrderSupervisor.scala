@@ -68,11 +68,10 @@ object OrderSupervisor {
                         wallet: ActorRef)
 
   def props(exchangeActorProps: Props,
-            config: Config,
             network: NetworkParameters,
             constants: ProtocolConstants,
             amountsCalculator: AmountsCalculator) = Props(new OrderSupervisor(
-      OrderActor.props(exchangeActorProps, config, network, amountsCalculator),
+      OrderActor.props(exchangeActorProps, network, amountsCalculator),
       SubmissionSupervisor.props(constants),
       constants
     ))

@@ -232,7 +232,6 @@ object OrderActor {
   case object RetrieveStatus
 
   def props(exchangeActorProps: Props,
-            config: Config,
             network: NetworkParameters,
             amountsCalculator: AmountsCalculator): Props = {
     Props(new OrderActor(

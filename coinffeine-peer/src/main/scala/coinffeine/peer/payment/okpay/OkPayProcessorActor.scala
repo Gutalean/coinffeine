@@ -1,7 +1,5 @@
 package coinffeine.peer.payment.okpay
 
-import java.net.URI
-import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
@@ -9,9 +7,8 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.pattern._
-import com.typesafe.config.Config
 
-import coinffeine.common.akka.{ServiceActor, AskPattern}
+import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.event.{Balance, FiatBalanceChangeEvent}
 import coinffeine.model.payment.OkPayPaymentProcessor
@@ -167,16 +164,12 @@ object OkPayProcessorActor {
   /** Self-message to report balance polling failures */
   private case class BalanceUpdateFailed(cause: Throwable)
 
-  def props(config: Config) = {
-    val account = config.getString("coinffeine.okpay.id")
-    val endpoint = URI.create(config.getString("coinffeine.okpay.endpoint"))
+  def props(settings: OkPaySettings) = {
     val client = new OkPayWebServiceClient(
-      account = config.getString("coinffeine.okpay.id"),
-      seedToken = config.getString("coinffeine.okpay.token"),
-      baseAddressOverride = Some(endpoint)
+      account = settings.userAccount,
+      seedToken = settings.seedToken,
+      baseAddressOverride = Some(settings.serverEndpoint)
     )
-    val pollingInterval =
-      config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
-    Props(new OkPayProcessorActor(account, client, pollingInterval))
+    Props(new OkPayProcessorActor(settings.userAccount, client, settings.pollingInterval))
   }
 }

@@ -5,7 +5,7 @@ import java.nio.file.{Paths, Path}
 
 import com.typesafe.config.ConfigFactory
 
-class FileSettingsProvider(filename: String) extends SettingsProvider {
+class FileConfigProvider(filename: String) extends ConfigProvider {
 
   override lazy val userConfig = ConfigFactory.parseFile(userConfigFile().toFile)
 
@@ -60,10 +60,10 @@ class FileSettingsProvider(filename: String) extends SettingsProvider {
   }
 }
 
-object FileSettingsProvider {
+object FileConfigProvider {
 
   val DefaultUserSettingsFilename = "user-settings.conf"
 
-  def apply(filename: String = DefaultUserSettingsFilename): FileSettingsProvider =
-    new FileSettingsProvider(filename)
+  def apply(filename: String = DefaultUserSettingsFilename): FileConfigProvider =
+    new FileConfigProvider(filename)
 }
