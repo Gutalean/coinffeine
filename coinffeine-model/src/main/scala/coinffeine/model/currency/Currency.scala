@@ -51,6 +51,7 @@ object Currency {
     override val toString = "BTC"
 
     def fromSatoshi(amount: BigInteger) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
+    def fromSatoshi(amount: BigInt) = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
   }
 }
 
