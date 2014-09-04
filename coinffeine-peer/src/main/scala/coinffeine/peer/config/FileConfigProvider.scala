@@ -1,20 +1,21 @@
 package coinffeine.peer.config
 
-import java.io.{ByteArrayOutputStream, FileOutputStream, File}
+import java.io.{File, FileOutputStream}
 import java.nio.charset.Charset
-import java.nio.file.{Paths, Path}
+import java.nio.file.{Path, Paths}
+import java.util.concurrent.atomic.AtomicReference
 
-import com.typesafe.config.{ConfigRenderOptions, Config, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
 class FileConfigProvider(filename: String) extends ConfigProvider {
 
-  private var _userConfig: Option[Config] = None
+  private var _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
 
   override def userConfig = {
-    if (_userConfig.isEmpty) {
-      _userConfig = Some(ConfigFactory.parseFile(userConfigFile().toFile))
+    if (_userConfig.get.isEmpty) {
+      _userConfig.compareAndSet(None, Some(ConfigFactory.parseFile(userConfigFile().toFile)))
     }
-    _userConfig.get
+    _userConfig.get.get
   }
 
   override def saveUserConfig(userConfig: Config): Unit = {
@@ -25,7 +26,7 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
     } finally {
       file.close()
     }
-    _userConfig = None
+    _userConfig.set(None)
   }
 
   def userConfigFile(): Path = {
