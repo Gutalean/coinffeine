@@ -1,13 +1,32 @@
 package coinffeine.peer.config
 
-import java.io.File
+import java.io.{ByteArrayOutputStream, FileOutputStream, File}
+import java.nio.charset.Charset
 import java.nio.file.{Paths, Path}
 
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigRenderOptions, Config, ConfigFactory}
 
 class FileConfigProvider(filename: String) extends ConfigProvider {
 
-  override lazy val userConfig = ConfigFactory.parseFile(userConfigFile().toFile)
+  private var _userConfig: Option[Config] = None
+
+  override def userConfig = {
+    if (_userConfig.isEmpty) {
+      _userConfig = Some(ConfigFactory.parseFile(userConfigFile().toFile))
+    }
+    _userConfig.get
+  }
+
+  override def saveUserConfig(userConfig: Config): Unit = {
+    val rendered = userConfig.root().render(ConfigRenderOptions.concise())
+    val file = new FileOutputStream(userConfigFile().toFile)
+    try {
+      file.write(rendered.getBytes(Charset.defaultCharset()))
+    } finally {
+      file.close()
+    }
+    _userConfig = None
+  }
 
   def userConfigFile(): Path = {
     val path = userSettingsPath().resolve(filename)
