@@ -33,7 +33,7 @@ case class ProtocolConstants(
   orderResubmitInterval: FiniteDuration = 30 seconds,
   orderAcknowledgeTimeout: FiniteDuration = 5 seconds,
   orderAcknowledgeRetries: Int = 2,
-  refundLockTime: Int = 10,
+  refundLockTime: Int = 18,
   refundSafetyBlockCount: Int = 2
 )
 
