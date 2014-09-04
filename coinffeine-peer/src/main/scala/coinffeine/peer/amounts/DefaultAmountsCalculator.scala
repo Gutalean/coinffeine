@@ -1,5 +1,7 @@
 package coinffeine.peer.amounts
 
+import scala.math.BigDecimal.RoundingMode
+
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
@@ -14,7 +16,7 @@ private[amounts] class DefaultAmountsCalculator(
   override def exchangeAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                                      fiatAmount: CurrencyAmount[C]) = {
     require(bitcoinAmount.isPositive && fiatAmount.isPositive)
-    val steps = stepsFor(bitcoinAmount, fiatAmount)
+    val steps = new StepsAmountsCalculator(bitcoinAmount, fiatAmount).steps
     val stepDeposit = steps.map(_.bitcoinAmount).reduce(_ max _)
     val deposits = Both(
       buyer = stepDeposit * DefaultAmountsCalculator.EscrowSteps.buyer,
@@ -24,35 +26,37 @@ private[amounts] class DefaultAmountsCalculator(
     Exchange.Amounts(deposits, refunds, steps, bitcoinFeeCalculator.defaultTransactionFee)
   }
 
-  private def stepsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                          fiatAmount: CurrencyAmount[C]): Seq[StepAmounts[C]] = {
-    val fiatStepAmounts = fiatStepAmountsFor(fiatAmount)
-    val bitcoinStepAmounts: Seq[Bitcoin.Amount] = bitcoinStepAmountsFor(bitcoinAmount, fiatAmount, fiatStepAmounts)
-    for ((fiatAmount, bitcoinAmount) <- fiatStepAmounts.zip(bitcoinStepAmounts))
-    yield Exchange.StepAmounts(bitcoinAmount, fiatAmount, paymentProcessor.calculateFee(fiatAmount))
-  }
+  private class StepsAmountsCalculator[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                                          fiatAmount: CurrencyAmount[C]) {
 
-  private def bitcoinStepAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                                       fiatAmount: CurrencyAmount[C],
-                                                       fiatStepAmounts: Seq[CurrencyAmount[C]]): Seq[BitcoinAmount] = {
-    val precision = BigDecimal(0.00000001)
-    val (initialSteps, _) = fiatStepAmounts.init.foldLeft((Seq.empty[BitcoinAmount], BigDecimal(0))) {
-      case ((bitcoinSteps, accumError), fiatStep) =>
-        val (bitcoinStep, nextAccumError) =
-          (fiatStep.value * bitcoinAmount.value / fiatAmount.value + accumError) /% precision
-        (bitcoinSteps :+ Bitcoin.fromSatoshi(bitcoinStep.toBigInt()), nextAccumError)
+    private val bestFiatSize = paymentProcessor.bestStepSize(fiatAmount.currency)
+
+    def steps: Seq[StepAmounts[C]] = {
+      val fiatStepAmounts = fiatStepAmountsFor(fiatAmount)
+      val bitcoinStepAmounts: Seq[Bitcoin.Amount] = bitcoinStepAmountsFor(fiatStepAmounts.size)
+      for ((fiat, bitcoin) <- fiatStepAmounts.zip(bitcoinStepAmounts))
+      yield Exchange.StepAmounts(bitcoin, fiat, paymentProcessor.calculateFee(fiat))
     }
 
-    val lastStep = bitcoinAmount - initialSteps.fold(Bitcoin.Zero)(_ + _)
-    initialSteps :+ lastStep
-  }
+    private def fiatStepAmountsFor(fiatAmount: CurrencyAmount[C]): Seq[CurrencyAmount[C]] = {
+      val (exactSteps, remainingAmount) = fiatAmount.value /% bestFiatSize.value
+      val wholeFiatSteps = Seq.fill(exactSteps.toIntExact)(bestFiatSize)
+      val remainingFiatStep = Some(CurrencyAmount(remainingAmount, fiatAmount.currency))
+      wholeFiatSteps ++ remainingFiatStep.filter(_.isPositive)
+    }
 
-  private def fiatStepAmountsFor[C <: FiatCurrency](fiatAmount: CurrencyAmount[C]): Seq[CurrencyAmount[C]] = {
-    val bestFiatSize = paymentProcessor.bestStepSize(fiatAmount.currency)
-    val (exactSteps, remainingAmount) = fiatAmount.value /% bestFiatSize.value
-    val wholeFiatSteps = Seq.fill(exactSteps.toIntExact)(bestFiatSize)
-    val remainingFiatStep = Some(CurrencyAmount(remainingAmount, fiatAmount.currency))
-    wholeFiatSteps ++ remainingFiatStep.filter(_.isPositive)
+    private def bitcoinStepAmountsFor(numSteps: Int): Seq[BitcoinAmount] = {
+      val exactBitcoinStep = bestFiatSize.value * bitcoinAmount.value / fiatAmount.value
+      val initialSteps = Seq.tabulate[BitcoinAmount](numSteps - 1) { index =>
+        closestBitcoinAmount((index + 1) * exactBitcoinStep) -
+          closestBitcoinAmount(index * exactBitcoinStep)
+      }
+      val lastStep = bitcoinAmount - initialSteps.fold(Bitcoin.Zero)(_ + _)
+      initialSteps :+ lastStep
+    }
+
+    private def closestBitcoinAmount(value: BigDecimal): BitcoinAmount =
+      Bitcoin(value.setScale(Bitcoin.precision, RoundingMode.HALF_EVEN))
   }
 }
 
