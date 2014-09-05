@@ -10,6 +10,12 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
 class FileConfigProvider(filename: String) extends ConfigProvider {
 
+  private val configRenderOpts = ConfigRenderOptions.defaults()
+    .setComments(true)
+    .setOriginComments(false)
+    .setFormatted(true)
+    .setJson(false)
+
   private var _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
 
   override def userConfig = {
@@ -21,7 +27,7 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
 
   override def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit = {
     val config = if (dropReferenceValues) diff(userConfig, referenceConfig) else userConfig
-    val rendered = config.root().render(ConfigRenderOptions.concise())
+    val rendered = config.root().render(configRenderOpts)
     val file = new FileOutputStream(userConfigFile().toFile)
     try {
       file.write(rendered.getBytes(Charset.defaultCharset()))
