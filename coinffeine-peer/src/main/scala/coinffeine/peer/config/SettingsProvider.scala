@@ -16,4 +16,7 @@ trait SettingsProvider {
 
   /** Retrieve the OKPay settings. */
   def okPaySettings: OkPaySettings
+
+  /** Save the given user settings. */
+  def saveUserSettings[A : SettingsMapping](settings: A): Unit
 }

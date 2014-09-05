@@ -13,7 +13,12 @@ trait ConfigProvider extends SettingsProvider {
   /** Retrieve the user configuration. */
   def userConfig: Config
 
-  /** Save the given user config using this provider. */
+  /** Save the given user config using this provider.
+    *
+    * This function will save the given user config, **replacing the previous one** if any.
+    * The `dropReferenceValues` flag indicates whether those config items that does not
+    * override the reference config must be drop away so they are not included in user config.
+    */
   def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit
 
   /** Retrieve the reference configuration obtained from the app bundle. */
@@ -30,4 +35,12 @@ trait ConfigProvider extends SettingsProvider {
 
   override lazy val okPaySettings =
     SettingsMapping.fromConfig[OkPaySettings](config)
+
+  /** Save the given settings as part of user config using this provider.
+    *
+    * This function maps the settings to a config object that is then merged with the current
+    * user configuration before being persisted.
+    */
+  override def saveUserSettings[A : SettingsMapping](settings: A): Unit =
+    saveUserConfig(SettingsMapping.toConfig(settings, userConfig), dropReferenceValues = true)
 }
