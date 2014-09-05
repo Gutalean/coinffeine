@@ -10,5 +10,5 @@ class SetupWizard(walletAddress: String, validator: CredentialsValidator) extend
     new OkPayCredentialsStepPane(validator),
     new TopUpStepPane(walletAddress)
   ),
-  initialData = SetupConfig(password = None, okPayCredentials = None)
+  initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None)
 )
