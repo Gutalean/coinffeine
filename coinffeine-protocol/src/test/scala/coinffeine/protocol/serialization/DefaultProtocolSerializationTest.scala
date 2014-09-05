@@ -12,7 +12,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{Both, ExchangeId}
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
@@ -101,8 +101,8 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
     val sampleMessages = {
       val market = Market(UsDollar)
       val peerPositions = PeerPositions(market, Seq(
-        OrderBookEntry(Bid, 1.BTC, 400.USD),
-        OrderBookEntry(Ask, 0.4.BTC, 600.USD)
+        OrderBookEntry(Bid, 1.BTC, Price(400.USD)),
+        OrderBookEntry(Ask, 0.4.BTC, Price(600.USD))
       ))
       val publicKey = new KeyPair().publicKey
       Seq(

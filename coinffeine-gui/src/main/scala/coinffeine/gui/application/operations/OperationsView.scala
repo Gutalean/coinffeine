@@ -1,7 +1,6 @@
 package coinffeine.gui.application.operations
 
-import javafx.beans.binding.{BooleanBinding, Bindings}
-import javafx.beans.property.BooleanPropertyBase
+import javafx.beans.binding.{Bindings, BooleanBinding}
 import scalafx.Includes._
 import scalafx.event.ActionEvent
 import scalafx.geometry.Insets
@@ -15,8 +14,8 @@ import org.controlsfx.dialog.Dialogs
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
-import coinffeine.model.market.{CompletedOrder, CancelledOrder, OrderStatus, OrderType}
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
@@ -45,7 +44,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         cellValueFactory = { _.value.amountProperty}
         prefWidth = 100
       },
-      new TableColumn[OrderProperties, FiatAmount] {
+      new TableColumn[OrderProperties, Price[_ <: FiatCurrency]] {
         text = "Price"
         cellValueFactory = { _.value.priceProperty }
         prefWidth = 100

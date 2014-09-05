@@ -1,6 +1,6 @@
 package coinffeine.peer.api
 
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
 
@@ -15,23 +15,21 @@ trait CoinffeineNetwork {
 
   /** Submit an order to buy bitcoins.
     *
-    * @param btcAmount           Amount to buy
-    * @param fiatAmount          Fiat money to use
-    * @return                    A new exchange if submitted successfully
+    * @param amount  Amount to buy
+    * @param price   Price in fiat
+    * @return        A new exchange if submitted successfully
     */
-  def submitBuyOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
-                                        fiatAmount: CurrencyAmount[C]): Order[C] =
-    submitOrder(Order(Bid, btcAmount, fiatAmount))
+  def submitBuyOrder[C <: FiatCurrency](amount: BitcoinAmount, price: Price[C]): Order[C] =
+    submitOrder(Order(Bid, amount, price))
 
   /** Submit an order to sell bitcoins.
     *
-    * @param btcAmount           Amount to sell
-    * @param fiatAmount          Fiat money to use
-    * @return                    A new exchange if submitted successfully
+    * @param amount  Amount to sell
+    * @param price   Price in fiat
+    * @return        A new exchange if submitted successfully
     */
-  def submitSellOrder[C <: FiatCurrency](btcAmount: BitcoinAmount,
-                                         fiatAmount: CurrencyAmount[C]): Order[C] =
-    submitOrder(Order(Ask, btcAmount, fiatAmount))
+  def submitSellOrder[C <: FiatCurrency](amount: BitcoinAmount, price: Price[C]): Order[C] =
+    submitOrder(Order(Ask, amount, price))
 
   /** Submit an order. */
   def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C]

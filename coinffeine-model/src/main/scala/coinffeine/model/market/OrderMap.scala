@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import scala.collection.immutable.{SortedMap, TreeMap}
 
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 
@@ -55,7 +55,7 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
     position <- queue.positions
   } yield position.toOrderBookEntry
 
-  private def updateQueue(price: CurrencyAmount[C], f: Queue => Queue): OrderMap[T, C] = {
+  private def updateQueue(price: Price[C], f: Queue => Queue): OrderMap[T, C] = {
     val modifiedQueue = f(tree.getOrElse(price, PositionQueue.empty[T, C]))
     if (modifiedQueue.isEmpty) copy(tree = tree - price)
     else copy(tree = tree.updated(price, modifiedQueue))

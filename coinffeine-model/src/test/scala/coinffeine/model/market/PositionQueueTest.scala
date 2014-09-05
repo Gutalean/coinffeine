@@ -8,9 +8,9 @@ import coinffeine.model.network.PeerId
 class PositionQueueTest extends UnitTest {
 
   val emptyQueue = PositionQueue.empty(Bid, Euro)
-  val posA1 = Position(Bid, 1.BTC, 100.EUR, PositionId(PeerId("A"), OrderId("A1")))
-  val posA2 = Position(Bid, 0.3.BTC, 100.EUR, PositionId(PeerId("A"), OrderId("A2")))
-  val posB = Position(Bid, 0.2.BTC, 100.EUR, PositionId(PeerId("B"), OrderId("B")))
+  val posA1 = Position(Bid, 1.BTC, Price(100.EUR), PositionId(PeerId("A"), OrderId("A1")))
+  val posA2 = Position(Bid, 0.3.BTC, Price(100.EUR), PositionId(PeerId("A"), OrderId("A2")))
+  val posB = Position(Bid, 0.2.BTC, Price(100.EUR), PositionId(PeerId("B"), OrderId("B")))
   val queue = emptyQueue.enqueue(posA1).enqueue(posB).enqueue(posA2)
 
   "A position queue" should "enqueue new positions at the end" in new {
@@ -51,7 +51,7 @@ class PositionQueueTest extends UnitTest {
 
   it should "be price-homogeneous" in new {
     an [IllegalArgumentException] shouldBe thrownBy {
-      queue.enqueue(Position(Bid, 1.BTC, 120.EUR, PositionId(PeerId("A"), OrderId("A3"))))
+      queue.enqueue(Position(Bid, 1.BTC, Price(120.EUR), PositionId(PeerId("A"), OrderId("A3"))))
     }
   }
 }

@@ -30,7 +30,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   it must "show an order once submitted" in new Fixture {
-    val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, 561.EUR)
+    val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
     app.produceEvent(OrderSubmittedEvent(sampleOrder))
     eventually {
       find(sampleOrder.id) should be ('defined)
@@ -94,7 +94,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     shownOrders.find(_.idProperty.value == orderId)
 
   trait OrderIsPresentFixture extends Fixture {
-    val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, 561.EUR)
+    val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
 
     app.produceEvent(OrderSubmittedEvent(sampleOrder))
     eventually {

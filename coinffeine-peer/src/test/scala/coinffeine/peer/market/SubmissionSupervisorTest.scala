@@ -12,7 +12,7 @@ import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
@@ -21,9 +21,9 @@ import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositi
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
-  val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, 556.EUR)
-  val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, 640.EUR)
-  val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, 500.USD)
+  val eurOrder1 = OrderBookEntry(OrderId("eurOrder1"), Bid, 1.3.BTC, Price(556.EUR))
+  val eurOrder2 = OrderBookEntry(OrderId("eurOrder2"), Ask, 0.7.BTC, Price(640.EUR))
+  val usdOrder = OrderBookEntry(OrderId("usdOrder"), Ask, 0.5.BTC, Price(500.USD))
   val noEurOrders = PeerPositions.empty(Market(Euro))
   val firstEurOrder = noEurOrders.addEntry(eurOrder1)
   val bothEurOrders = firstEurOrder.addEntry(eurOrder2)
