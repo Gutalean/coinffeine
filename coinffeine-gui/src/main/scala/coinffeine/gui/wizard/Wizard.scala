@@ -85,9 +85,9 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
   }
 
   private def initializeSteps(): Unit = {
-    steps.foreach(page => page.bindTo(data))
     currentStep.onChange {
       val stepPane = steps(currentStep.value - 1)
+      stepPane.bindTo(data)
       currentStepPane.value = stepPane
       rootWizardPane.center = stepPane
       nextButton.disable <== stepPane.canContinue.not()
