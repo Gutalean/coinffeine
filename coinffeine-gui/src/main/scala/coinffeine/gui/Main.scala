@@ -66,8 +66,15 @@ object Main extends JFXApp
     val keys = new KeyPair()
     val address = keys.toAddress(network)
     val setupConfig = new SetupWizard(address.toString, validator).run()
+
     val bitcoinSettings = configProvider.bitcoinSettings
     configProvider.saveUserSettings(
       bitcoinSettings.copy(walletPrivateKey = keys.getPrivateKeyEncoded(network).toString))
+
+    setupConfig.okPayWalletAccess.foreach { access =>
+      val okPaySettings = configProvider.okPaySettings
+      configProvider.saveUserSettings(
+        okPaySettings.copy(userAccount = access.walletId, seedToken = access.seedToken))
+    }
   }
 }
