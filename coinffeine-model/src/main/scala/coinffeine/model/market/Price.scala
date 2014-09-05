@@ -33,4 +33,8 @@ case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
 object Price {
   def apply[C <: FiatCurrency](price: CurrencyAmount[C]): Price[C] =
     Price(price.value, price.currency)
+
+  def whenExchanging[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+                                        fiatAmount: CurrencyAmount[C]): Price[C] =
+    Price(fiatAmount.value / bitcoinAmount.value, fiatAmount.currency)
 }
