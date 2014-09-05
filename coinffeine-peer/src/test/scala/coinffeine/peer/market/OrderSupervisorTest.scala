@@ -6,7 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Ask, Bid, Order}
+import coinffeine.model.market._
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
 
@@ -61,8 +61,8 @@ class OrderSupervisorTest extends AkkaSpec {
     val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
       submissionProbe.props, protocolConstants)))
 
-    val order1 = Order(Bid, 5.BTC, 500.EUR)
-    val order2 = Order(Ask, 2.BTC, 800.EUR)
+    val order1 = Order(Bid, 5.BTC, Price(500.EUR))
+    val order2 = Order(Ask, 2.BTC, Price(800.EUR))
 
     def givenOrderSupervisorIsInitialized(): Unit = {
       val initMessage = OrderSupervisor.Initialize(

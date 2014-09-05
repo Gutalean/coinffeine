@@ -9,7 +9,7 @@ import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
 import coinffeine.protocol.messages.brokerage._
@@ -104,6 +104,19 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         .build
   }
 
+  implicit val priceMapping = new ProtoMapping[Price[_ <: FiatCurrency], msg.Price] {
+
+    override def fromProtobuf(amount: msg.Price) =
+      Price(BigDecimal.valueOf(amount.getValue, amount.getScale), FiatCurrency(amount.getCurrency))
+
+    override def toProtobuf(amount: Price[_ <: FiatCurrency]): msg.Price =
+      msg.Price.newBuilder
+        .setValue(amount.value.underlying().unscaledValue.longValue)
+        .setScale(amount.value.scale)
+        .setCurrency(amount.currency.javaCurrency.getCurrencyCode)
+        .build
+  }
+
   implicit val btcAmountMapping = new ProtoMapping[BitcoinAmount, msg.BtcAmount] {
 
     override def fromProtobuf(amount: msg.BtcAmount): BitcoinAmount =
@@ -144,7 +157,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         case Ask => msg.OrderBookEntry.OrderType.ASK
       })
       .setAmount(ProtoMapping.toProtobuf(entry.amount))
-      .setPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](entry.price))
+      .setPrice(priceMapping.toProtobuf(entry.price))
       .build
   }
 
@@ -208,18 +221,18 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
   implicit val quoteMapping = new ProtoMapping[Quote[_ <: FiatCurrency], msg.Quote] {
 
     override def fromProtobuf(quote: msg.Quote): Quote[_ <: FiatCurrency] = {
-      val bidOption =
-        if (quote.hasHighestBid) Some(fiatAmountMapping.fromProtobuf(quote.getHighestBid)) else None
-      val askOption =
-        if (quote.hasLowestAsk) Some(fiatAmountMapping.fromProtobuf(quote.getLowestAsk)) else None
-      val lastPriceOption =
-        if (quote.hasLastPrice) Some(fiatAmountMapping.fromProtobuf(quote.getLastPrice)) else None
       val market = ProtoMapping.fromProtobuf[Market[_ <: FiatCurrency], msg.Market](quote.getMarket)
+      val bidOption =
+        if (quote.hasHighestBid) Some(priceMapping.fromProtobuf(quote.getHighestBid)) else None
+      val askOption =
+        if (quote.hasLowestAsk) Some(priceMapping.fromProtobuf(quote.getLowestAsk)) else None
+      val lastPriceOption =
+        if (quote.hasLastPrice) Some(priceMapping.fromProtobuf(quote.getLastPrice)) else None
 
-      def requireMarketCurrency(amount: Option[FiatAmount]): Option[market.currency.Amount] = {
+      def requireMarketCurrency(amount: Option[Price[FiatCurrency]]): Option[Price[market.currency.type]] = {
         require(amount.forall(_.currency == market.currency),
           s"Incorrect currency. Expected ${market.currency}, received ${amount.get.currency}")
-        amount.asInstanceOf[Option[market.currency.Amount]]
+        amount.asInstanceOf[Option[Price[market.currency.type]]]
       }
 
       Quote(
@@ -232,12 +245,9 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
     override def toProtobuf(quote: Quote[_ <: FiatCurrency]): msg.Quote = {
       val Quote(market, (bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder.setMarket(marketMapping.toProtobuf(market))
-      bidOption.foreach(bid => builder.setHighestBid(
-        ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](bid)))
-      askOption.foreach(ask =>
-        builder.setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](ask)))
-      lastPriceOption.foreach(lastPrice =>
-        builder.setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](lastPrice)))
+      bidOption.foreach(bid => builder.setHighestBid(priceMapping.toProtobuf(bid)))
+      askOption.foreach(ask => builder.setLowestAsk(priceMapping.toProtobuf(ask)))
+      lastPriceOption.foreach(lastPrice => builder.setLastPrice(priceMapping.toProtobuf(lastPrice)))
       builder.build
     }
   }

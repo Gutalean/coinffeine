@@ -15,6 +15,12 @@ message FiatAmount {
     required string currency = 3;
 }
 
+message Price {
+    required int64 value = 1;
+    required int32 scale = 2;
+    required string currency = 3;
+}
+
 message Market {
     required string currency = 1;
 }
@@ -27,7 +33,7 @@ message OrderBookEntry {
     required string id = 1;
     required OrderType orderType = 2;
     required BtcAmount amount = 3;
-    required FiatAmount price = 4;
+    required Price price = 4;
 }
 
 message PeerPositions {
@@ -46,9 +52,9 @@ message QuoteRequest {
 
 message Quote {
     required Market market = 1;
-    optional FiatAmount highestBid = 2;
-    optional FiatAmount lowestAsk = 3;
-    optional FiatAmount lastPrice = 4;
+    optional Price highestBid = 2;
+    optional Price lowestAsk = 3;
+    optional Price lastPrice = 4;
 }
 
 message OrderMatch {

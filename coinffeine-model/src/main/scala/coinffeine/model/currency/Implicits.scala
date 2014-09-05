@@ -10,7 +10,7 @@ object Implicits {
     def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
   }
 
-  class UnitImplicits(i: BigDecimal) {
+  class UnitImplicits(val i: BigDecimal) extends AnyVal {
     def BTC: BitcoinAmount = Bitcoin(i)
 
     def EUR: CurrencyAmount[Euro.type] = Euro(i)

@@ -9,17 +9,15 @@ import coinffeine.model.network.PeerId
 
 class OrderBookTest extends UnitTest {
   def bid(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
-    Position.bid(btc.BTC, eur.EUR, PositionId(PeerId(by), OrderId(orderId)))
+    Position.bid(btc.BTC, Price(eur, Euro), PositionId(PeerId(by), OrderId(orderId)))
 
   def ask(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
-    Position.ask(btc.BTC, eur.EUR, PositionId(PeerId(by), OrderId(orderId)))
+    Position.ask(btc.BTC, Price(eur, Euro), PositionId(PeerId(by), OrderId(orderId)))
 
-  def cross(bid: Position[Bid.type, Euro.type], ask: Position[Ask.type, Euro.type],
+  def cross(bid: Position[Bid.type, Euro.type],
+            ask: Position[Ask.type, Euro.type],
             amount: BitcoinAmount) =
-    OrderBook.Cross(amount, (bid.price + ask.price) / 2, Both(
-      buyer = bid.id,
-      seller = ask.id
-    ))
+    OrderBook.Cross(amount, bid.price.averageWith(ask.price), Both(buyer = bid.id, seller = ask.id))
 
   def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] = {
     var intermediateBook = book
@@ -53,7 +51,7 @@ class OrderBookTest extends UnitTest {
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
-    ).spread should be (Some(20 EUR), Some(25 EUR))
+    ).spread shouldBe (Some(Price(20 EUR)), Some(Price(25 EUR)))
   }
 
   it should "keep previous unresolved orders when inserting a new one" in {

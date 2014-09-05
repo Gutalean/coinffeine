@@ -13,7 +13,7 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.{Both, ExchangeId}
-import coinffeine.model.market.{Bid, OrderBookEntry, OrderId}
+import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.brokerage._
@@ -64,12 +64,12 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
       .build
     )
 
-  val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, 400.EUR)
+  val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, Price(400.EUR))
   val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
     .setOrderType(msg.OrderBookEntry.OrderType.BID)
     .setAmount(msg.BtcAmount.newBuilder.setValue(10).setScale(0))
-    .setPrice(msg.FiatAmount.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
+    .setPrice(msg.Price.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
     .build
 
   "Order" should behave like thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
@@ -168,9 +168,9 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     emptyQuote, emptyQuoteMessage)
 
   val quoteMessage = emptyQuoteMessage.toBuilder
-    .setHighestBid(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](20 EUR))
-    .setLowestAsk(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](30 EUR))
-    .setLastPrice(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](22 EUR))
+    .setHighestBid(priceMapping.toProtobuf(Price(20 EUR)))
+    .setLowestAsk(priceMapping.toProtobuf(Price(30 EUR)))
+    .setLastPrice(priceMapping.toProtobuf(Price(22 EUR)))
     .build
   val quote = Quote(20.EUR -> 30.EUR, 22 EUR)
   "Quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](

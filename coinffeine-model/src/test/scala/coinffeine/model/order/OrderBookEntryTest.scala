@@ -3,49 +3,55 @@ package coinffeine.model.order
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Ask, Bid, OrderBookEntry}
+import coinffeine.model.market._
 
 class OrderBookEntryTest extends UnitTest {
 
   "An order" should "correspond to a non-negative amount" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      OrderBookEntry(null, Bid, 0 BTC, 550 EUR)
+      OrderBookEntry(Bid, 0 BTC, Price(550 EUR))
     }
     ex.getMessage should include ("Amount ordered must be strictly positive")
   }
 
   it should "have non-negative price" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      OrderBookEntry(null, Bid, 10 BTC, 0 EUR)
+      OrderBookEntry(Bid, 10 BTC, Price(0 EUR))
     }
     ex.getMessage should include ("Price must be strictly positive")
   }
 
   "A bid" should "be sorted only by decreasing price" in {
+    val entryHalfAt980 = OrderBookEntry(Bid, 0.5 BTC, Price(980 EUR))
+    val entry10At950 = OrderBookEntry(Bid, 10 BTC, Price(950 EUR))
+    val entry1At950 = OrderBookEntry(Bid, 1 BTC, Price(950 EUR))
     Seq(
-      OrderBookEntry(null, Bid, 0.5 BTC, 980 EUR),
-      OrderBookEntry(null, Bid, 10 BTC, 950 EUR),
-      OrderBookEntry(null, Bid, 0.5 BTC, 980 EUR),
-      OrderBookEntry(null, Bid, 1 BTC, 950 EUR)
+      entryHalfAt980,
+      entry10At950,
+      entryHalfAt980,
+      entry1At950
     ).sorted(OrderBookEntry.ordering(Euro)) should equal (Seq(
-      OrderBookEntry(null, Bid, 0.5 BTC, 980 EUR),
-      OrderBookEntry(null, Bid, 0.5 BTC, 980 EUR),
-      OrderBookEntry(null, Bid, 10 BTC, 950 EUR),
-      OrderBookEntry(null, Bid, 1 BTC, 950 EUR)
+      entryHalfAt980,
+      entryHalfAt980,
+      entry10At950,
+      entry1At950
     ))
   }
 
   "An ask" should "be sorted only by increasing price" in {
+    val entryHalfAt930 = OrderBookEntry(Ask, 0.5 BTC, Price(930 EUR))
+    val entry10At940 = OrderBookEntry(Ask, 10 BTC, Price(940 EUR))
+    val entry1At940 = OrderBookEntry(Ask, 1 BTC, Price(940 EUR))
     Seq(
-      OrderBookEntry(null, Ask, 0.5 BTC, 930 EUR),
-      OrderBookEntry(null, Ask, 10 BTC, 940 EUR),
-      OrderBookEntry(null, Ask, 0.5 BTC, 930 EUR),
-      OrderBookEntry(null, Ask, 1 BTC, 940 EUR)
+      entryHalfAt930,
+      entry10At940,
+      entryHalfAt930,
+      entry1At940
     ).sorted(OrderBookEntry.ordering(Euro)) should equal (Seq(
-      OrderBookEntry(null, Ask, 0.5 BTC, 930 EUR),
-      OrderBookEntry(null, Ask, 0.5 BTC, 930 EUR),
-      OrderBookEntry(null, Ask, 10 BTC, 940 EUR),
-      OrderBookEntry(null, Ask, 1 BTC, 940 EUR)
+      entryHalfAt930,
+      entryHalfAt930,
+      entry10At940,
+      entry1At940
     ))
   }
 }

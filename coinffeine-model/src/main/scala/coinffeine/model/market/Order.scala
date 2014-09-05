@@ -22,7 +22,7 @@ case class Order[C <: FiatCurrency](
     orderType: OrderType,
     status: OrderStatus,
     amount: BitcoinAmount,
-    price: CurrencyAmount[C],
+    price: Price[C],
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
 
   /** Create a new copy of this order with the given status. */
@@ -68,11 +68,11 @@ object Order {
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
                                amount: BitcoinAmount,
-                               price: CurrencyAmount[C]): Order[C] =
+                               price: Price[C]): Order[C] =
     Order(id, orderType, status = OfflineOrder, amount, price, exchanges = Map.empty)
 
   def apply[C <: FiatCurrency](orderType: OrderType,
                                amount: BitcoinAmount,
-                               price: CurrencyAmount[C]): Order[C] =
+                               price: Price[C]): Order[C] =
     Order(OrderId.random(), orderType, amount, price)
 }

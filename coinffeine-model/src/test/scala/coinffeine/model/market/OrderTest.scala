@@ -12,18 +12,18 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   val dummyDeposits = Both.fill(ImmutableTransaction(new MutableTransaction(network)))
 
   "Order" must "report no progress with no exchanges" in {
-    val order = Order(OrderId.random(), Bid, 10.BTC, 10.EUR)
+    val order = Order(OrderId.random(), Bid, 10.BTC, Price(10.EUR))
     order.progress should be (0.0)
   }
 
   it must "report progress with one incomplete exchange" in {
-    val order = Order(OrderId.random(), Bid, 10.BTC, 10.EUR)
+    val order = Order(OrderId.random(), Bid, 10.BTC, Price(10.EUR))
       .withExchange(createExchange(0.5))
     order.progress should be (0.5)
   }
 
   it must "report progress with one incomplete exchange that overwrites itself" in {
-    val order = Order(OrderId.random(), Bid, 10.BTC, 10.EUR)
+    val order = Order(OrderId.random(), Bid, 10.BTC, Price(10.EUR))
       .withExchange(createExchange(0.5))
       .withExchange(createExchange(0.6))
     order.progress should be (0.6)

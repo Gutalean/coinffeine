@@ -46,4 +46,9 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
 
 object CurrencyAmount {
   def zero[C <: Currency](currency: C): CurrencyAmount[C] = CurrencyAmount(0, currency)
+
+  def smallestAmount[C <: Currency](currency: C) = {
+    val smallestUnit = Seq.fill(currency.precision)(10).foldLeft(BigDecimal(1))(_ / _)
+    CurrencyAmount(smallestUnit, currency)
+  }
 }

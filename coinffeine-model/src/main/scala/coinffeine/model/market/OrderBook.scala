@@ -19,7 +19,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   /** Tells if a transaction is possible with current orders. */
   def isCrossed: Boolean = spread match {
-    case (Some(bidPrice), Some(askPrice)) if bidPrice >= askPrice => true
+    case (Some(bidPrice), Some(askPrice)) if bidPrice.outbidsOrMatches(askPrice) => true
     case _ => false
   }
 
@@ -90,7 +90,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     (bids.headOption, asks.headOption) match {
       case (None, _) | (_, None) => accum
 
-      case (Some(bid), Some(ask)) if bid.price < ask.price => accum
+      case (Some(bid), Some(ask)) if bid.price.underbids(ask.price) => accum
 
       case (Some(bid), Some(ask)) =>
         crosses(bids.tail, asks.tail, accum :+ crossAmount(bid, ask, bid.amount min ask.amount))
@@ -100,7 +100,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   private def crossAmount(bid: Position[Bid.type, C],
                           ask: Position[Ask.type, C],
                           amount: BitcoinAmount): Cross[C] =
-    Cross(amount, (bid.price + ask.price) / 2, Both(bid.id, ask.id))
+    Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
 
   def completeHandshake(exchangeId: ExchangeId): OrderBook[C] = {
     val cross = handshakes.getOrElse(exchangeId,
@@ -125,10 +125,10 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 object OrderBook {
 
   case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
-                                      price: CurrencyAmount[C],
+                                      price: Price[C],
                                       positions: Both[PositionId])
 
-  type Spread[C <: FiatCurrency] = (Option[CurrencyAmount[C]], Option[CurrencyAmount[C]])
+  type Spread[C <: FiatCurrency] = (Option[Price[C]], Option[Price[C]])
 
   def apply[C <: FiatCurrency](position: Position[_ <: OrderType, C],
                                otherPositions: Position[_ <: OrderType, C]*): OrderBook[C] =

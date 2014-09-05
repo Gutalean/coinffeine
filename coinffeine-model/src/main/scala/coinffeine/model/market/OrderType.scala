@@ -1,10 +1,10 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 
 sealed trait OrderType {
   def name: String
-  def priceOrdering[C <: FiatCurrency]: Ordering[CurrencyAmount[C]]
+  def priceOrdering[C <: FiatCurrency]: Ordering[Price[C]]
 
   override def toString = name
 }
@@ -12,13 +12,11 @@ sealed trait OrderType {
 /** Trying to buy bitcoins */
 case object Bid extends OrderType {
   override val name = "Bid (buy)"
-  override def priceOrdering[C <: FiatCurrency] =
-    Ordering.by[CurrencyAmount[C], BigDecimal](x => -x.value)
+  override def priceOrdering[C <: FiatCurrency] = Ordering.by[Price[C], BigDecimal](x => -x.value)
 }
 
 /** Trying to sell bitcoins */
 case object Ask extends OrderType {
   override val name = "Ask (sell)"
-  override def priceOrdering[C <: FiatCurrency] =
-    Ordering.by[CurrencyAmount[C], BigDecimal](_.value)
+  override def priceOrdering[C <: FiatCurrency] = Ordering.by[Price[C], BigDecimal](_.value)
 }

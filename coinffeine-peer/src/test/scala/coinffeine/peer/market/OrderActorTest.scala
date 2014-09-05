@@ -237,7 +237,7 @@ class OrderActorTest extends AkkaSpec {
     new ServiceRegistry(registryActor).register(MessageGateway.ServiceId, gatewayProbe.ref)
 
     val orderMatch = OrderMatch(
-      order.id, exchangeId, order.amount, order.price * order.amount.value,
+      order.id, exchangeId, order.amount, order.price.of(order.amount),
       lockTime = 400000L, exchange.counterpartId)
 
     actor ! OrderActor.Initialize(order, submissionProbe.ref, registryActor,
@@ -311,7 +311,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait BuyerFixture extends Fixture with BuyerPerspective {
-    override lazy val order = Order(Bid, 5.BTC, 500.EUR)
+    override lazy val order = Order(Bid, 5.BTC, Price(500.EUR))
     override val role: Role = BuyerRole
     override val fiatFunds = Some(BlockedFundsId(1))
 
@@ -325,7 +325,7 @@ class OrderActorTest extends AkkaSpec {
   }
 
   trait SellerFixture extends Fixture with SellerPerspective {
-    override lazy val order = Order(Ask, 5.BTC, 500.EUR)
+    override lazy val order = Order(Ask, 5.BTC, Price(500.EUR))
     override val role: Role = SellerRole
     override val fiatFunds = None
   }

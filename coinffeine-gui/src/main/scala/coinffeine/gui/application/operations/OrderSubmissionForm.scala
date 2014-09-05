@@ -175,7 +175,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     val order = Order(
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
-      price = limitAmount.get)
+      price = Price(limitAmount.get))
     if (checkPrerequisites(order)) {
       app.network.submitOrder(order)
     }
