@@ -4,15 +4,14 @@ option java_package = "coinffeine.protocol.protobuf";
 option java_outer_classname = "CoinffeineProtobuf";
 option java_generic_services = true;
 
-message BtcAmount {
+message DecimalNumber {
     required int64 value = 1;
     required int32 scale = 2;
 }
 
 message FiatAmount {
-    required int64 value = 1;
-    required int32 scale = 2;
-    required string currency = 3;
+    required DecimalNumber amount = 1;
+    required string currency = 2;
 }
 
 message Price {
@@ -32,7 +31,7 @@ message OrderBookEntry {
     }
     required string id = 1;
     required OrderType orderType = 2;
-    required BtcAmount amount = 3;
+    required DecimalNumber amount = 3;
     required Price price = 4;
 }
 
@@ -52,15 +51,15 @@ message QuoteRequest {
 
 message Quote {
     required Market market = 1;
-    optional Price highestBid = 2;
-    optional Price lowestAsk = 3;
-    optional Price lastPrice = 4;
+    optional DecimalNumber highestBid = 2;
+    optional DecimalNumber lowestAsk = 3;
+    optional DecimalNumber lastPrice = 4;
 }
 
 message OrderMatch {
     required string orderId = 1;
     required string exchangeId = 2;
-    required BtcAmount bitcoinAmount = 3;
+    required DecimalNumber bitcoinAmount = 3;
     required FiatAmount fiatAmount = 4;
     required int64 lockTime = 5;
     required string counterpart = 6;

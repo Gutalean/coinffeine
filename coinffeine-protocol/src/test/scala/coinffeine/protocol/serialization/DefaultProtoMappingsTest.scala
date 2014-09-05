@@ -11,7 +11,7 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -49,18 +49,17 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val sampleOrderId = OrderId.random()
   val sampleExchangeId = ExchangeId.random()
 
-  val btcAmount = 1.1 BTC
-  val btcAmountMessage = msg.BtcAmount.newBuilder
+  val bigDecimal = BigDecimal(1.1)
+  val decimalNumber = msg.DecimalNumber.newBuilder
     .setValue(11)
     .setScale(1)
     .build()
-  "BTC amount" should behave like thereIsAMappingBetween(btcAmount, btcAmountMessage)
+  "Decimal number" should behave like thereIsAMappingBetween(bigDecimal, decimalNumber)
 
   "Fiat amount" should behave like thereIsAMappingBetween[FiatAmount, msg.FiatAmount](
     3.EUR, msg.FiatAmount.newBuilder
       .setCurrency("EUR")
-      .setScale(0)
-      .setValue(3)
+      .setAmount(msg.DecimalNumber.newBuilder.setValue(3).setScale(0).build())
       .build
     )
 
@@ -68,7 +67,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
     .setOrderType(msg.OrderBookEntry.OrderType.BID)
-    .setAmount(msg.BtcAmount.newBuilder.setValue(10).setScale(0))
+    .setAmount(msg.DecimalNumber.newBuilder.setValue(10).setScale(0))
     .setPrice(msg.Price.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
     .build
 
@@ -153,7 +152,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setOrderId(sampleOrderId.value)
     .setExchangeId(sampleExchangeId.value)
-    .setBitcoinAmount(ProtoMapping.toProtobuf[BitcoinAmount, msg.BtcAmount](0.1 BTC))
+    .setBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1)))
     .setFiatAmount(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
     .setLockTime(310000L)
     .setCounterpart("buyer")
@@ -168,9 +167,9 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     emptyQuote, emptyQuoteMessage)
 
   val quoteMessage = emptyQuoteMessage.toBuilder
-    .setHighestBid(priceMapping.toProtobuf(Price(20 EUR)))
-    .setLowestAsk(priceMapping.toProtobuf(Price(30 EUR)))
-    .setLastPrice(priceMapping.toProtobuf(Price(22 EUR)))
+    .setHighestBid(decimalNumberMapping.toProtobuf(20))
+    .setLowestAsk(decimalNumberMapping.toProtobuf(30))
+    .setLastPrice(decimalNumberMapping.toProtobuf(22))
     .build
   val quote = Quote(20.EUR -> 30.EUR, 22 EUR)
   "Quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](
