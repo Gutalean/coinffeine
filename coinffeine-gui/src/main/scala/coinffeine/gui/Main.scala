@@ -14,7 +14,7 @@ import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, Noti
 import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
 import coinffeine.gui.setup.CredentialsValidator.Result
 import coinffeine.gui.setup.{CredentialsValidator, SetupWizard}
-import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
+import coinffeine.model.bitcoin.{KeyPair, IntegrationTestNetworkComponent}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 import coinffeine.peer.payment.okpay.OkPayCredentials
@@ -33,8 +33,10 @@ object Main extends JFXApp
       else CredentialsValidator.InvalidCredentials("Random failure")
     }
   }
-  val sampleAddress = "124U4qQA7g33C4YDJFpwqXd2XJiA3N6Eb7"
-  val setupConfig = new SetupWizard(sampleAddress, validator).run()
+
+  if (mustRunWizard) {
+    runSetupWizard()
+  }
 
   val appStart = app.start(30.seconds)
   stage = new PrimaryStage {
@@ -56,5 +58,16 @@ object Main extends JFXApp
 
   override def stopApp(): Unit = {
     app.stopAndWait(30.seconds)
+  }
+
+  private def mustRunWizard: Boolean = configProvider.userConfig.isEmpty
+
+  private def runSetupWizard(): Unit = {
+    val keys = new KeyPair()
+    val address = keys.toAddress(network)
+    val setupConfig = new SetupWizard(address.toString, validator).run()
+    val bitcoinSettings = configProvider.bitcoinSettings
+    configProvider.saveUserSettings(
+      bitcoinSettings.copy(walletPrivateKey = keys.getPrivateKeyEncoded(network).toString))
   }
 }
