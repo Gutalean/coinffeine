@@ -8,6 +8,8 @@ import coinffeine.protocol.MessageGatewaySettings
 
 trait ConfigProvider extends SettingsProvider {
 
+  import SettingsMapping._
+
   /** Retrieve the user configuration. */
   def userConfig: Config
 
@@ -20,7 +22,12 @@ trait ConfigProvider extends SettingsProvider {
   /** Retrieve the whole configuration, including reference and user config. */
   def config: Config = userConfig.withFallback(referenceConfig)
 
-  override lazy val bitcoinSettings = BitcoinSettings(config)
-  override lazy val messageGatewaySettings = MessageGatewaySettings(config)
-  override lazy val okPaySettings = OkPaySettings(config)
+  override lazy val bitcoinSettings =
+    SettingsMapping.fromConfig[BitcoinSettings](config)
+
+  override lazy val messageGatewaySettings =
+    SettingsMapping.fromConfig[MessageGatewaySettings](config)
+
+  override lazy val okPaySettings =
+    SettingsMapping.fromConfig[OkPaySettings](config)
 }
