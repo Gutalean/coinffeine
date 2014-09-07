@@ -10,7 +10,6 @@ import scala.util.Try
 import com.google.bitcoin.core.{FullPrunedBlockChain, StoredBlock}
 import com.google.bitcoin.store.H2FullPrunedBlockStore
 import com.google.bitcoin.utils.BriefLogFormatter
-import org.scalatest.BeforeAndAfterAll
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
@@ -25,29 +24,14 @@ private object BitcoinjTest {
 }
 
 /** Base class for testing against an in-memory, validated blockchain.  */
-trait BitcoinjTest extends UnitTest with BeforeAndAfterAll with CoinffeineUnitTestNetwork.Component {
+trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
   var blockStorePath: File = _
   var blockStore: H2FullPrunedBlockStore = _
   var chain: FullPrunedBlockChain = _
 
-  if (resetBlockchainBetweenTests) {
-    before { startBitcoinj() }
-    after { stopBitcoinj() }
-  }
-
-  override abstract protected def beforeAll(): Unit = {
-    super.beforeAll()
-    if (!resetBlockchainBetweenTests) {
-      startBitcoinj()
-    }
-  }
-  override protected def afterAll(): Unit = {
-    if (!resetBlockchainBetweenTests) {
-      stopBitcoinj()
-    }
-    super.afterAll()
-  }
+  before { startBitcoinj() }
+  after { stopBitcoinj() }
 
   def chainHead(): StoredBlock = chain.getChainHead
 
@@ -147,10 +131,6 @@ trait BitcoinjTest extends UnitTest with BeforeAndAfterAll with CoinffeineUnitTe
 
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
   def throughWire(sig: TransactionSignature) = TransactionSignature.decode(sig.encodeToBitcoin())
-
-  /** Most test classes require blockchain isolation between tests. Tests building a step-by-step
-    * history should override this function. */
-  protected def resetBlockchainBetweenTests: Boolean = true
 
   private def startBitcoinj(): Unit = {
     BitcoinjTest.ExecutionLock.lock()
