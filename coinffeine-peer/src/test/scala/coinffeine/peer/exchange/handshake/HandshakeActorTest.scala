@@ -5,19 +5,18 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
+import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class HandshakeActorTest(systemName: String)
-  extends CoinffeineClientTest(systemName) with SellerPerspective with BitcoinjTest with MockitoSugar {
+  extends CoinffeineClientTest(systemName) with SellerPerspective with MockitoSugar {
 
   def protocolConstants: ProtocolConstants
 
@@ -89,6 +88,4 @@ abstract class HandshakeActorTest(systemName: String)
   def shouldAckCommitmentNotification(): Unit = {
     gateway.expectForwardingToBroker(CommitmentNotificationAck(exchange.id))
   }
-
-  override protected def resetBlockchainBetweenTests = false
 }
