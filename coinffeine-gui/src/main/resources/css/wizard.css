@@ -9,3 +9,20 @@
 .errorLabel {
   -fx-text-fill: #da4100;
 }
+
+.stepIndexActive Label {
+  -fx-text-fill: #ffffff;
+}
+
+.stepIndexInactive Label {
+  -fx-text-fill: #ccc;
+}
+
+.stepIndexActive Circle {
+  -fx-fill: #51350C;
+  -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.6) , 5, 0.0 , 0 , 1 );
+}
+
+.stepIndexInactive Circle {
+  -fx-fill: #aaa;
+}
