@@ -1,4 +1,4 @@
-package coinffeine.peer.config
+package coinffeine.peer.config.user
 
 import java.io.{File, FileOutputStream}
 import java.nio.charset.Charset
@@ -8,7 +8,9 @@ import scala.collection.JavaConversions._
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
-class FileConfigProvider(filename: String) extends ConfigProvider {
+import coinffeine.peer.config.ConfigProvider
+
+private[user] class UserFileConfigProvider(filename: String) extends ConfigProvider {
 
   private val configRenderOpts = ConfigRenderOptions.defaults()
     .setComments(true)
@@ -97,10 +99,10 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
   }
 }
 
-object FileConfigProvider {
+object UserFileConfigProvider {
 
   val DefaultUserSettingsFilename = "user-settings.conf"
 
-  def apply(filename: String = DefaultUserSettingsFilename): FileConfigProvider =
-    new FileConfigProvider(filename)
+  def apply(filename: String = DefaultUserSettingsFilename): UserFileConfigProvider =
+    new UserFileConfigProvider(filename)
 }

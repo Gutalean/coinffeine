@@ -1,7 +1,5 @@
 package coinffeine.peer.config
 
-import com.typesafe.config.{Config, ConfigFactory}
-
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
