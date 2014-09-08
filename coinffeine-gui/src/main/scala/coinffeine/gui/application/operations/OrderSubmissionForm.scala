@@ -14,8 +14,7 @@ import org.controlsfx.dialog.{Dialog, Dialogs}
 
 import coinffeine.gui.control.DecimalNumberTextField
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, Currency, CurrencyAmount}
-import coinffeine.model.exchange.Both
+import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -162,11 +161,6 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     stage.get.show()
   }
 
-  private def rightAlignedLabel(labelText: String) = new Label {
-    text = labelText
-    alignmentInParent = Pos.CENTER_RIGHT
-  }
-
   private def closeForm(): Unit = {
     stage.foreach(_.close())
   }
@@ -199,7 +193,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
       required: Amount, available: Option[Amount]): Boolean = {
     val currency = required.currency
     available match {
-      case Some(balance) if required < balance => true
+      case Some(balance) if required <= balance => true
       case Some(balance) =>
         val response = Dialogs.create()
           .title(s"Insufficient $currency funds")
