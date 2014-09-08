@@ -14,8 +14,7 @@ import org.controlsfx.dialog.{Dialog, Dialogs}
 
 import coinffeine.gui.control.DecimalNumberTextField
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{FiatCurrency, BitcoinAmount, Currency, CurrencyAmount}
-import coinffeine.model.exchange.Both
+import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -160,11 +159,6 @@ class OrderSubmissionForm(app: CoinffeineApp) {
       initOwner(parentWindow)
     })
     stage.get.show()
-  }
-
-  private def rightAlignedLabel(labelText: String) = new Label {
-    text = labelText
-    alignmentInParent = Pos.CENTER_RIGHT
   }
 
   private def closeForm(): Unit = {
