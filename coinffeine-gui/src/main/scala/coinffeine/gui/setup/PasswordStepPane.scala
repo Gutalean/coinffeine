@@ -5,7 +5,6 @@ import scalafx.event.Event
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
-import scalafx.scene.paint.Color
 import scalafx.scene.text.TextAlignment
 
 import coinffeine.gui.wizard.StepPane
@@ -45,7 +44,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   }
   private val passwordWarningLabel = new Label() {
     id = "passwordWarningLabel"
-    textFill = Color.web("#da4100")
+    styleClass.add("errorLabel")
     textAlignment = TextAlignment.CENTER
     alignment = Pos.TOP_CENTER
     prefHeight = 35

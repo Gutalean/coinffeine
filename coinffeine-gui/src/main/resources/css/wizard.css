@@ -1,3 +1,11 @@
 .stepTitle {
   -fx-font-size: 16;
 }
+
+.errorProgressBar {
+  -fx-accent: red;
+}
+
+.errorLabel {
+  -fx-text-fill: #da4100;
+}
