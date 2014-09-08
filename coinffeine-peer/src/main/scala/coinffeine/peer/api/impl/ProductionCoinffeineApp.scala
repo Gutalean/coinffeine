@@ -3,7 +3,7 @@ package coinffeine.peer.api.impl
 import coinffeine.model.bitcoin.{NetworkComponent, PeerGroupComponent}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.bitcoin._
-import coinffeine.peer.config.FileConfigComponent
+import coinffeine.peer.config.user.UserFileConfigComponent
 import coinffeine.peer.exchange.DefaultExchangeActor
 import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
@@ -24,7 +24,7 @@ object ProductionCoinffeineApp {
       with MockBlockchainComponent
       with ProtoMessageGateway.Component
       with DefaultProtocolSerializationComponent
-      with FileConfigComponent {
+      with UserFileConfigComponent {
     this: NetworkComponent with PeerGroupComponent =>
   }
 }

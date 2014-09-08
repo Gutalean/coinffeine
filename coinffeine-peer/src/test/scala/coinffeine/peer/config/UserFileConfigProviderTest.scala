@@ -6,10 +6,11 @@ import com.typesafe.config.{Config, ConfigValueFactory, ConfigFactory}
 import org.scalatest.BeforeAndAfterAll
 
 import coinffeine.common.test.UnitTest
+import coinffeine.peer.config.user.UserFileConfigProvider
 
-class FileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
+class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
 
-  val provider = FileConfigProvider("testing-file")
+  val provider = UserFileConfigProvider("testing-file")
   val configFile = provider.userConfigFile().toFile
   val sampleRefConfigItem = provider.referenceConfig.root().entrySet().head
   val otherSampleRefConfigItem = provider.referenceConfig.root().entrySet().last
@@ -18,11 +19,11 @@ class FileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
     configFile.delete()
   }
 
-  "File config provider" should "retrieve fresh user config file" in {
+  "User file config provider" should "retrieve fresh user config file" in {
     provider.userConfigFile().toFile should be ('file)
     provider.userConfig should be (ConfigFactory.empty())
   }
-  
+
   it should "save some user config" in {
     val cfg = ConfigFactory.parseString("my.prop = 7")
     provider.saveUserConfig(cfg)
