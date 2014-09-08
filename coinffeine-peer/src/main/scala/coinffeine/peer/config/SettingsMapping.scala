@@ -77,7 +77,7 @@ object SettingsMapping {
       seedToken = config.getString("coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
       pollingInterval =
-        config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.MILLISECONDS).millis
+        config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS).seconds
     )
 
     /** Write settings to given config. */
@@ -86,7 +86,7 @@ object SettingsMapping {
       .withValue("coinffeine.okpay.token", configValue(settings.seedToken))
       .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
       .withValue("coinffeine.okpay.pollingInterval",
-        configValue(s"${settings.pollingInterval.toMillis}ms"))
+        configValue(s"${settings.pollingInterval.toSeconds}s"))
   }
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
