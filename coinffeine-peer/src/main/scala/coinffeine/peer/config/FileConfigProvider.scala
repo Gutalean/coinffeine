@@ -16,7 +16,7 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
     .setFormatted(true)
     .setJson(false)
 
-  private var _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
+  private val _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
 
   override def userConfig = {
     if (_userConfig.get.isEmpty) {
