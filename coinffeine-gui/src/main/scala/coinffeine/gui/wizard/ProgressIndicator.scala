@@ -1,8 +1,10 @@
 package coinffeine.gui.wizard
 
-import scalafx.Includes._
+import javafx.collections.ObservableList
 import scalafx.beans.property.IntegerProperty
-import scalafx.scene.layout.HBox
+import scalafx.scene.Node
+import scalafx.scene.control.Label
+import scalafx.scene.layout.{HBox, StackPane}
 import scalafx.scene.paint.Color
 import scalafx.scene.shape.Circle
 
@@ -10,12 +12,22 @@ import scalafx.scene.shape.Circle
 private[wizard] class ProgressIndicator(steps: Int, currentStep: IntegerProperty) {
 
   val pane = new HBox(spacing = 5) {
-    content = for (index <- 1 to steps) yield new Circle {
-      radius = 5
-      fill <== (when(currentStep === index)
-        choose ProgressIndicator.SelectedColor
-        otherwise ProgressIndicator.UnselectedColor)
+    content = for (index <- 1 to steps) yield stepIndicator(index)
+  }
+
+  private def stepIndicator(step: Int): Node = new StackPane() {
+    content = Seq(
+      new Circle { radius = 10 },
+      new Label(s"$step")
+    )
+    currentStep.onChange {
+      setStepStyle(step, styleClass)
     }
+  }
+
+  private def setStepStyle(index: Int, styles: ObservableList[String]): Unit = {
+    styles.removeAll("stepIndexActive", "stepIndexInactive")
+    styles.add(if (currentStep.value == index) "stepIndexActive" else "stepIndexInactive")
   }
 }
 
