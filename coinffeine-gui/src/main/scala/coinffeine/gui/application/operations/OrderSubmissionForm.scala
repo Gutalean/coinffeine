@@ -199,7 +199,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
       required: Amount, available: Option[Amount]): Boolean = {
     val currency = required.currency
     available match {
-      case Some(balance) if required < balance => true
+      case Some(balance) if required <= balance => true
       case Some(balance) =>
         val response = Dialogs.create()
           .title(s"Insufficient $currency funds")
