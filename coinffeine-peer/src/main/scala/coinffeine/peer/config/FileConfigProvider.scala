@@ -44,9 +44,12 @@ class FileConfigProvider(filename: String) extends ConfigProvider {
   }
 
   private def diff(c1: Config, c2: Config): Config = {
-    val c1Items = c1.root().unwrapped().toSet
-    val c2Items = c2.root().unwrapped().toSet
-    ConfigFactory.parseMap(c1Items.diff(c2Items).toMap[String, AnyRef])
+    val c1Items = c1.entrySet().map(entry => entry.getKey -> entry.getValue)
+    val c2Items = c2.entrySet().map(entry => entry.getKey -> entry.getValue)
+    val c3Items = c1Items.diff(c2Items)
+    c3Items.foldLeft(ConfigFactory.empty()) { case (conf, (key, value)) =>
+        conf.withValue(key, value)
+    }
   }
 
   private def userSettingsPath(): Path = {
