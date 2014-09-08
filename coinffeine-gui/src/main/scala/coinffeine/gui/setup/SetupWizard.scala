@@ -8,7 +8,8 @@ class SetupWizard(walletAddress: String, validator: CredentialsValidator) extend
   steps = Seq(
     new PasswordStepPane,
     new OkPayCredentialsStepPane(validator),
+    new OkPaySeedTokenRetrievalPane,
     new TopUpStepPane(walletAddress)
   ),
-  initialData = SetupConfig(password = None, okPayCredentials = None)
+  initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None)
 )
