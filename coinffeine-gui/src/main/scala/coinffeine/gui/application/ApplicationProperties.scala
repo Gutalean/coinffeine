@@ -39,7 +39,7 @@ class ApplicationProperties(app: CoinffeineApp) {
       require(!orderExist(order.id), s"Duplicated OrderId: ${order.id}")
       ordersProperty.add(new OrderProperties(order))
 
-    case OrderStatusChangedEvent(order, prevStatus, newStatus) =>
+    case OrderStatusChangedEvent(order, prevStatus, newStatus) if prevStatus != newStatus =>
       withOrder(order) { o => o.updateStatus(newStatus) }
 
     case OrderProgressedEvent(order, _, newProgress) =>
