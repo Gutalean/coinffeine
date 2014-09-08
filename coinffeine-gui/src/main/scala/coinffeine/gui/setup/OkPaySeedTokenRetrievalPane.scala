@@ -8,7 +8,6 @@ import scalafx.event.EventIncludes._
 import scalafx.geometry.{HPos, Pos, Insets}
 import scalafx.scene.control.{Button, Label, ProgressBar}
 import scalafx.scene.layout._
-import scalafx.scene.paint.Color
 
 import org.controlsfx.dialog.Dialogs
 
@@ -32,7 +31,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
     visible <== retrievalError.isNotNull
 
     add(new Label("Please go back and double check your credentials.") {
-      textFill = Color.web("#da4100")
+      styleClass.add("errorLabel")
       hgrow = Priority.ALWAYS
     }, 0, 0)
     add(new Button("Details") {
@@ -47,13 +46,13 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   def initFields(): Unit = {
     progressHint.text = "Obtaining a token for your OKPay account (this may take a while)..."
     retrievalProgress.progress = -1.0f
-    retrievalProgress.setStyle("")
+    retrievalProgress.styleClass.removeAll("errorProgressBar")
     retrievalError.value = null
   }
 
   def reportError(error: Throwable): Unit = {
     progressHint.text = "Something went wrong while retrieving the token."
-    retrievalProgress.setStyle("-fx-accent: red;")
+    retrievalProgress.styleClass.add("errorProgressBar")
     retrievalProgress.progress = 1.0f
     retrievalError.value = error
   }
