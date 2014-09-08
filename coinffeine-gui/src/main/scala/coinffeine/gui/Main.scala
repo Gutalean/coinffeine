@@ -22,6 +22,10 @@ import coinffeine.peer.payment.okpay.OkPayCredentials
 object Main extends JFXApp
   with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
 
+  if (mustRunWizard) {
+    runSetupWizard()
+  }
+
   val properties = new ApplicationProperties(app)
   val notificationManager = new NotificationManager(app)
   JFXApp.AUTO_SHOW = false
@@ -32,10 +36,6 @@ object Main extends JFXApp
       if (Random.nextBoolean()) CredentialsValidator.ValidCredentials
       else CredentialsValidator.InvalidCredentials("Random failure")
     }
-  }
-
-  if (mustRunWizard) {
-    runSetupWizard()
   }
 
   val appStart = app.start(30.seconds)
