@@ -10,11 +10,9 @@ import scala.concurrent.duration._
 class OkPayProfileExtractorTest extends UnitTest with FutureMatchers {
 
   "The OkPay profile extractor" must "retrieve the walletId and token" in new Fixture {
-
     val profile = instance.configureProfile()
     val result = profile.futureValue(timeout)
-    result should be('defined)
-    result.get.walletId should be("OK734039871")
+    result.walletId should be("OK734039871")
   }
 
   trait Fixture {

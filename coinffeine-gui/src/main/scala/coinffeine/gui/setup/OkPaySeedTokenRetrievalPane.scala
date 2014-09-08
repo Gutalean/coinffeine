@@ -64,7 +64,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
       val credentials = data.value.okPayCredentials.get
       val extractor = new OkPayProfileExtractor(credentials.id, credentials.password)
       extractor.configureProfile().onComplete {
-        case Success(Some(profile)) =>
+        case Success(profile) =>
           progressHint.text = "Token retrieved successfully."
           retrievalProgress.progress = 1.0f
           data.value = data.value.copy(okPayWalletAccess =

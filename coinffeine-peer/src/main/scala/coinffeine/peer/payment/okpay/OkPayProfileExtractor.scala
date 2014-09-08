@@ -19,14 +19,13 @@ class OkPayProfileExtractor(username: String, password: String) {
     result
   }
 
-  def configureProfile(): Future[Option[OkPayProfile]] = Future {
+  def configureProfile(): Future[OkPayProfile] = Future {
     login()
     configureBusinessMode()
-    lookupWalletsIds().headOption.map { walletId =>
-      enableAPI(walletId)
-      val token = configureSeedToken(walletId)
-      OkPayProfile(token, walletId)
-    }
+    val walletId = lookupWalletsIds().headOption
+      .getOrElse(throw new NoSuchElementException("No wallet was found"))
+    enableAPI(walletId)
+    OkPayProfile(configureSeedToken(walletId), walletId)
   }
 
   private[okpay] def login(): Unit = {
