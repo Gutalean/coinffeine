@@ -3,11 +3,11 @@ package coinffeine.gui.setup
 import coinffeine.gui.wizard.Wizard
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard(walletAddress: String, validator: CredentialsValidator) extends Wizard[SetupConfig](
+class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
   wizardTitle = "Initial setup",
   steps = Seq(
     new PasswordStepPane,
-    new OkPayCredentialsStepPane(validator),
+    new OkPayCredentialsStepPane,
     new OkPaySeedTokenRetrievalPane,
     new TopUpStepPane(walletAddress)
   ),
