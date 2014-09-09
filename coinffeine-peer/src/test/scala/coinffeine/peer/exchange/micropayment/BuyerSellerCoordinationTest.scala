@@ -1,7 +1,6 @@
 package coinffeine.peer.exchange.micropayment
 
 import akka.testkit.TestProbe
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Implicits._
@@ -14,7 +13,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 import coinffeine.protocol.gateway.{LinkedMessageGateways, MessageGateway}
 
-class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") with MockitoSugar {
+class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") {
   val buyerListener = TestProbe()
   val sellerListener = TestProbe()
   val protocolConstants = ProtocolConstants()

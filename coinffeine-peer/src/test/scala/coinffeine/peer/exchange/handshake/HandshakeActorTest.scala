@@ -1,7 +1,6 @@
 package coinffeine.peer.exchange.handshake
 
 import akka.testkit.TestProbe
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.Implicits._
@@ -16,7 +15,7 @@ import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
 abstract class HandshakeActorTest(systemName: String)
-  extends CoinffeineClientTest(systemName) with SellerPerspective with MockitoSugar {
+  extends CoinffeineClientTest(systemName) with SellerPerspective {
 
   def protocolConstants: ProtocolConstants
 
