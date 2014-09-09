@@ -3,6 +3,7 @@ package coinffeine.model.exchange
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.Exchange.DepositAmounts
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
@@ -25,9 +26,13 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val amounts = Exchange.Amounts(
     deposits = Both(buyer = 2.BTC, seller = 11.BTC),
+    depositTransactionAmounts = Both(
+      buyer = DepositAmounts(input = 2.003.BTC, output = 2.001.BTC),
+      seller = DepositAmounts(input = 11.003.BTC, output = 11.001.BTC)
+    ),
     refunds = Both(buyer = 1.BTC, seller = 10.BTC),
     steps = Seq.fill(10)(Exchange.StepAmounts(1.BTC, 1.EUR, 0.05.EUR)),
-    transactionFee = 0.003.BTC
+    transactionFee = 0.002.BTC
   )
 
   val exchangeId = ExchangeId("id")

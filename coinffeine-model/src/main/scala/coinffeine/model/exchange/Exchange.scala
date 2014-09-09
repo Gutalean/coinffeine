@@ -65,12 +65,16 @@ object Exchange {
 
   /** Amounts of money involved on an exchange.
     *
-    * @param deposits          Net bitcoin amount deposited in multisign by each part
+    * @param deposits          Net bitcoin amount deposited in multisign by each part (no fees
+    *                          are considered)
+    * @param depositTransactionAmounts Exact amounts of bitcoins used on the deposit transactions,
+    *                          considering fees
     * @param refunds           Amount refundable by each part after a lock time
     * @param steps             Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
   case class Amounts[C <: FiatCurrency](deposits: Both[BitcoinAmount],
+                                        depositTransactionAmounts: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
                                         steps: Seq[StepAmounts[C]],
                                         transactionFee: BitcoinAmount = Bitcoin.Zero) {
@@ -89,10 +93,6 @@ object Exchange {
       seller = CurrencyAmount.zero(currency)
     )
 
-    val depositTransactionAmounts = deposits.map(netAmount => DepositAmounts(
-      input = netAmount + transactionFee * 1.5,
-      output = netAmount + transactionFee / 2
-    ))
     val bitcoinRequired = depositTransactionAmounts.map(_.input)
 
     val breakdown = Exchange.StepBreakdown(steps.length)

@@ -5,7 +5,7 @@ import scala.math.BigDecimal.RoundingMode
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.Exchange.StepAmounts
+import coinffeine.model.exchange.Exchange.{DepositAmounts, StepAmounts}
 import coinffeine.model.exchange._
 import coinffeine.model.payment.PaymentProcessor
 
@@ -22,8 +22,13 @@ private[amounts] class DefaultAmountsCalculator(
       buyer = stepDeposit * DefaultAmountsCalculator.EscrowSteps.buyer,
       seller = bitcoinAmount + stepDeposit * DefaultAmountsCalculator.EscrowSteps.seller
     )
+    val txFee = bitcoinFeeCalculator.defaultTransactionFee
+    val depositTransactionAmounts = deposits.map(netAmount => DepositAmounts(
+      input = netAmount + txFee * 1.5,
+      output = netAmount + txFee / 2
+    ))
     val refunds = deposits.map(_ - stepDeposit)
-    Exchange.Amounts(deposits, refunds, steps, bitcoinFeeCalculator.defaultTransactionFee)
+    Exchange.Amounts(deposits, depositTransactionAmounts, refunds, steps, txFee)
   }
 
   private class StepsAmountsCalculator[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
