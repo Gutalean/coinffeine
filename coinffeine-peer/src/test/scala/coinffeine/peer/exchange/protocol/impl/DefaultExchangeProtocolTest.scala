@@ -10,14 +10,14 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
   "An exchange protocol" should
     "start a handshake with a deposit of the right amount for the buyer" in new BuyerHandshake {
       val deposit = buyerHandshake.myDeposit.get
-      Bitcoin.fromSatoshi(deposit.getValue(buyerWallet)) should be (-2.BTC - amounts.transactionFee * 3/2)
+      Bitcoin.fromSatoshi(deposit.getValue(buyerWallet)) should be (-2.BTC - amounts.transactionFee)
       sendToBlockChain(deposit)
     }
 
   it should "start a handshake with a deposit of the right amount for the seller" in
     new SellerHandshake {
       val deposit = sellerHandshake.myDeposit.get
-      Bitcoin.fromSatoshi(deposit.getValue(sellerWallet)) should be (-11.BTC - amounts.transactionFee * 3/2)
+      Bitcoin.fromSatoshi(deposit.getValue(sellerWallet)) should be (-11.BTC - amounts.transactionFee * 3)
       sendToBlockChain(deposit)
     }
 

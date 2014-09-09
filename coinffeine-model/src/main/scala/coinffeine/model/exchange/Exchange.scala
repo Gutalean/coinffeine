@@ -3,6 +3,7 @@ package coinffeine.model.exchange
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{CurrencyAmount, BitcoinAmount, FiatCurrency}
+import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
@@ -97,13 +98,14 @@ object Exchange {
       val splits = intermediateSteps.map(_.depositSplit.toSeq.reduce(_ + _))
       require(splits.distinct.size == 1,
         s"The amount to split should be constant over steps but was: $splits")
-      splits.head
+      splits.head - transactionFee
     }
 
     /** Amount of fiat to be exchanged */
     val fiatExchanged: CurrencyAmount[C] =
       intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
-    val price: CurrencyAmount[C] = fiatExchanged / bitcoinExchanged.value
+
+    val price: Price[C] = Price.whenExchanging(bitcoinExchanged, fiatExchanged)
 
     val fiatRequired = Both[CurrencyAmount[C]](
       buyer = fiatExchanged + intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),

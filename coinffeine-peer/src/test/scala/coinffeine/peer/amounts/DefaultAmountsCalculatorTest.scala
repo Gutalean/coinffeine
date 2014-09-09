@@ -105,10 +105,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
       }
     }
 
-  it must "split 3 transaction fees equally between buyer and seller" in
+  it must "charge bitcoin transaction fees to the seller" in
     new Fixture(bitcoinFeeCalculator = new FixedBitcoinFee(0.001.BTC)) {
-      forAnyAmounts { amounts =>
+      forAnyAmounts { (bitcoinAmount, _, amounts) =>
         amounts.transactionFee should be (0.001.BTC)
+        amounts.bitcoinRequired.buyer + bitcoinAmount shouldBe amounts.finalStep.depositSplit.buyer
+        amounts.bitcoinRequired.seller - bitcoinAmount shouldBe
+          (amounts.finalStep.depositSplit.seller + 0.003.BTC)
       }
     }
 

@@ -48,7 +48,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   }
 
   it should "respond to step signature messages by sending a payment until all steps are done" in {
-    for (i <- 1 to lastStep) {
+    for (i <- 1 to lastStep) withClue(s"At step $i:") {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       listener.expectMsgType[LastBroadcastableOffer]
       expectProgress(signatures = i, payments = i - 1)

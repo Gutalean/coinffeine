@@ -13,6 +13,8 @@ private[amounts] class DefaultAmountsCalculator(
     paymentProcessor: PaymentProcessor,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
+  import DefaultAmountsCalculator._
+
   override def exchangeAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                                      fiatAmount: CurrencyAmount[C]) = {
     require(bitcoinAmount.isPositive && fiatAmount.isPositive)
@@ -20,14 +22,17 @@ private[amounts] class DefaultAmountsCalculator(
     val intermediateSteps = stepsCalculator.intermediateSteps
     val stepDeposit = stepsCalculator.maxBitcoinStepSize
     val deposits = Both(
-      buyer = stepDeposit * DefaultAmountsCalculator.EscrowSteps.buyer,
-      seller = bitcoinAmount + stepDeposit * DefaultAmountsCalculator.EscrowSteps.seller
+      buyer = stepDeposit * EscrowSteps.buyer,
+      seller = bitcoinAmount + stepDeposit * EscrowSteps.seller
     )
     val txFee = bitcoinFeeCalculator.defaultTransactionFee
-    val depositTransactionAmounts = deposits.map(netAmount => DepositAmounts(
-      input = netAmount + txFee * 1.5,
-      output = netAmount + txFee / 2
-    ))
+    val depositTransactionAmounts = Both(
+      buyer = DepositAmounts(input = deposits.buyer + txFee, output = deposits.buyer),
+      seller = DepositAmounts(
+        input = deposits.seller + txFee * HappyPathTransactions,
+        output = deposits.seller + txFee * (HappyPathTransactions - 1)
+      )
+    )
     val refunds = deposits.map(_ - stepDeposit)
     Exchange.Amounts(deposits, depositTransactionAmounts, refunds, intermediateSteps,
       stepsCalculator.finalStep(deposits), txFee)
@@ -38,6 +43,8 @@ private[amounts] class DefaultAmountsCalculator(
 
     /** Best step size in fiat */
     private val bestFiatSize = paymentProcessor.bestStepSize(fiatAmount.currency)
+
+    private val txFee = bitcoinFeeCalculator.defaultTransactionFee
 
     /** Fiat amount exchanged per step: best amount except for the last step  */
     private val fiatStepAmounts: Seq[CurrencyAmount[C]] = {
@@ -63,7 +70,7 @@ private[amounts] class DefaultAmountsCalculator(
     /** How the amount to exchange is split per step */
     private val depositSplits: Seq[Both[BitcoinAmount]] = {
       val cumulativeAmounts = bitcoinStepAmounts.tail.scan(bitcoinStepAmounts.head)(_ + _)
-      cumulativeAmounts.map(buyerSplit => Both(buyerSplit, bitcoinAmount - buyerSplit))
+      cumulativeAmounts.map(boughtAmount => Both(boughtAmount + txFee, bitcoinAmount - boughtAmount))
     }
 
     val maxBitcoinStepSize: BitcoinAmount = bitcoinStepAmounts.reduce(_ max _)
@@ -74,7 +81,7 @@ private[amounts] class DefaultAmountsCalculator(
     }
 
     def finalStep(deposits: Both[BitcoinAmount]): FinalStepAmounts[C] = FinalStepAmounts(Both(
-      buyer = deposits.buyer + bitcoinAmount,
+      buyer = deposits.buyer + bitcoinAmount + txFee,
       seller = deposits.seller - bitcoinAmount
     ))
 
@@ -86,4 +93,6 @@ private[amounts] class DefaultAmountsCalculator(
 private object DefaultAmountsCalculator {
   /** Amount of escrow deposits in terms of the amount exchanged on every step */
   private val EscrowSteps = Both(buyer = 2, seller = 1)
+
+  private val HappyPathTransactions = 3
 }

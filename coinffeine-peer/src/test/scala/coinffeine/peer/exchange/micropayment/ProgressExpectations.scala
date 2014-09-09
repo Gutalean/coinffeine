@@ -22,7 +22,8 @@ trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
       actualPayments shouldBe payments
     }
     withClue("Wrong number of signatures") {
-      val actualSignatures = exchange.amounts.intermediateSteps.map(_.depositSplit.buyer)
+      val actualSignatures = exchange.amounts.intermediateSteps
+        .map(_.depositSplit.buyer - exchange.amounts.transactionFee)
         .indexOf(progress.bitcoinsTransferred) + 1
       actualSignatures shouldBe signatures
     }
