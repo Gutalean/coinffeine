@@ -16,7 +16,7 @@ case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
     blockedFunds: Exchange.BlockedFunds,
     state: S) {
 
-  val currency: C = amounts.fiatExchanged.currency
+  val currency: C = amounts.netFiatExchanged.currency
 
   val progress: Exchange.Progress[C] = state.progress
   require(progress.bitcoinsTransferred <= amounts.netBitcoinExchanged,
@@ -74,16 +74,20 @@ object Exchange {
 
   /** Amounts of money involved on an exchange.
     *
-    * @param grossBitcoinExchanged  Overall amount of bitcoins to be exchanged
+    * @param grossBitcoinExchanged  Overall amount of bitcoins to be exchanged (counterpart will
+    *                               receive less due to fees)
+    * @param grossFiatExchanged     Overall amount of fiat to be exchanged (counterpart will
     * @param deposits          Net bitcoin amount deposited in multisign by each part (no fees
     *                          are considered)
     * @param depositTransactionAmounts Exact amounts of bitcoins used on the deposit transactions,
+    *                               receive less due to fees)
     *                          considering fees
     * @param refunds           Amount refundable by each part after a lock time
     * @param intermediateSteps Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
   case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: BitcoinAmount,
+                                        grossFiatExchanged: CurrencyAmount[C],
                                         deposits: Both[BitcoinAmount],
                                         depositTransactionAmounts: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
@@ -92,29 +96,28 @@ object Exchange {
                                         transactionFee: BitcoinAmount = Bitcoin.Zero) {
     require(grossBitcoinExchanged.isPositive,
       s"Cannot exchange a gross amount of $grossBitcoinExchanged")
+    require(grossFiatExchanged.isPositive, s"Cannot exchange a gross amount of $grossFiatExchanged")
     require(intermediateSteps.nonEmpty, "There should be at least one step")
+
+    val currency: C = grossFiatExchanged.currency
 
     /** Net amount of bitcoins to be exchanged */
     val netBitcoinExchanged: BitcoinAmount =
       finalStep.depositSplit.buyer - depositTransactionAmounts.buyer.input
     require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
 
-    val currency: C = intermediateSteps.head.fiatAmount.currency
+    /** Net amount of fiat to be exchanged */
+    val netFiatExchanged: CurrencyAmount[C] =
+      intermediateSteps.foldLeft(CurrencyAmount.zero(currency))(_ + _.fiatAmount)
+    require(netFiatExchanged <= grossFiatExchanged)
+    require(netFiatExchanged.isPositive, s"Cannot exchange a net amount of $netFiatExchanged")
 
     val steps: Seq[StepAmounts[C]] = intermediateSteps :+ finalStep
 
-    /** Amount of fiat to be exchanged */
-    val fiatExchanged: CurrencyAmount[C] =
-      intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
-
-    val price: Price[C] = Price.whenExchanging(netBitcoinExchanged, fiatExchanged)
-
-    val fiatRequired = Both[CurrencyAmount[C]](
-      buyer = fiatExchanged + intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),
-      seller = CurrencyAmount.zero(currency)
-    )
+    val price: Price[C] = Price.whenExchanging(netBitcoinExchanged, netFiatExchanged)
 
     val bitcoinRequired = depositTransactionAmounts.map(_.input)
+    val fiatRequired = Both(buyer = grossFiatExchanged, seller = CurrencyAmount.zero(currency))
 
     val breakdown = Exchange.StepBreakdown(intermediateSteps.length)
   }
@@ -205,7 +208,7 @@ object Exchange {
                                           counterpart: Exchange.PeerInfo,
                                           deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends State[C] with StartedExchange[C] {
-    override val progress = Progress(amounts.netBitcoinExchanged, amounts.fiatExchanged)
+    override val progress = Progress(amounts.netBitcoinExchanged, amounts.netFiatExchanged)
   }
 
   object Completed {

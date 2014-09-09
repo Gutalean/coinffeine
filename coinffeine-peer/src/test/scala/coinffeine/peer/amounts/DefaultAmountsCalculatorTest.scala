@@ -50,25 +50,20 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   }
 
   it must "require the buyer to deposit two steps worth of bitcoins" in new Fixture {
-    forAnyAmounts { amounts =>
-      val depositStep = bitcoinStepSize(amounts)
-      amounts.deposits.buyer should be (depositStep * 2)
-    }
+    private val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
+    amounts.depositTransactionAmounts.buyer.input should be (0.2.BTC)
   }
 
   it must "require the seller to deposit one steps worth of bitcoins apart from the principal" in
     new Fixture {
-      forAnyAmounts { amounts =>
-        amounts.deposits.seller - amounts.netBitcoinExchanged should be(bitcoinStepSize(amounts))
-      }
+      private val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
+      amounts.depositTransactionAmounts.seller.input should be (1.1.BTC)
     }
 
   it must "refund deposited amounts but one step worth of bitcoins" in new Fixture {
-    forAnyAmounts { amounts =>
-      val depositStep = bitcoinStepSize(amounts)
-      amounts.deposits.buyer - amounts.refunds.buyer should be (depositStep)
-      amounts.deposits.seller - amounts.refunds.seller should be (depositStep)
-    }
+    val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
+    amounts.depositTransactionAmounts.buyer.input - amounts.refunds.buyer should be (0.1.BTC)
+    amounts.depositTransactionAmounts.seller.input - amounts.refunds.seller should be (0.1.BTC)
   }
 
   it must "have all but last steps of the same fiat size" in new Fixture {
@@ -101,7 +96,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     new Fixture(paymentProcessor = new FixedFeeProcessor(0.5)) {
       forAnyAmounts { (bitcoinAmount, price, amounts) =>
         amounts.intermediateSteps.map(_.fiatFee).toSet should be (Set(0.5.EUR))
-        amounts.fiatRequired.buyer - amounts.fiatExchanged should be (0.5.EUR * amounts.intermediateSteps.size)
+        amounts.fiatRequired.buyer - amounts.netFiatExchanged should
+          be (0.5.EUR * amounts.intermediateSteps.size)
       }
     }
 
@@ -141,7 +137,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
 
     def bitcoinStepSize(amounts: Amounts[Euros]): BitcoinAmount = {
-      val price = amounts.netBitcoinExchanged.value / amounts.fiatExchanged.value
+      val price = amounts.netBitcoinExchanged.value / amounts.netFiatExchanged.value
       val stepSize = paymentProcessor.bestStepSize(Euro).value * price
       Bitcoin(stepSize.setScale(Bitcoin.precision, RoundingMode.UP))
     }

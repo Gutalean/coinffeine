@@ -26,6 +26,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val amounts = Exchange.Amounts(
     grossBitcoinExchanged = 10.006.BTC,
+    grossFiatExchanged = 10.5.EUR,
     deposits = Both(buyer = 2.BTC, seller = 11.BTC),
     depositTransactionAmounts = Both(
       buyer = DepositAmounts(input = 2.002.BTC, output = 2.BTC),
