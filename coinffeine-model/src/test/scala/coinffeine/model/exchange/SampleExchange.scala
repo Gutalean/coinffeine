@@ -3,7 +3,7 @@ package coinffeine.model.exchange
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Exchange.DepositAmounts
+import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
@@ -37,10 +37,14 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
       Exchange.IntermediateStepAmounts(
         depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
         fiatAmount = 1.EUR,
-        fiatFee = 0.05.EUR
+        fiatFee = 0.05.EUR,
+        progress = Progress(1.BTC * step, 1.EUR * step)
       )
     },
-    finalStep = Exchange.FinalStepAmounts(Both(buyer = 12.002.BTC, seller = 1.BTC)),
+    finalStep = Exchange.FinalStepAmounts(
+      depositSplit = Both(buyer = 12.002.BTC, seller = 1.BTC),
+      progress = Progress(10.BTC, 10.EUR)
+    ),
     transactionFee = 0.002.BTC
   )
 

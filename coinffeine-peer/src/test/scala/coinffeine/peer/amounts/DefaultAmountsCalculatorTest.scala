@@ -14,13 +14,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
 
   "The funds calculator" must "reject non positive bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(netBitcoinAmount = 0.BTC, fiatAmount = 1.EUR)
+      instance.exchangeAmountsFor(netBitcoinAmount = 0.BTC, netFiatAmount = 1.EUR)
     }
   }
 
   it must "reject non positive prices" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(netBitcoinAmount = 1.BTC, fiatAmount = 0.EUR)
+      instance.exchangeAmountsFor(netBitcoinAmount = 1.BTC, netFiatAmount = 0.EUR)
     }
   }
 

@@ -43,6 +43,7 @@ object Exchange {
 
   trait StepAmounts[C <: FiatCurrency] {
     val depositSplit: Both[BitcoinAmount]
+    val progress: Progress[C]
   }
 
   /** Amounts involved on one exchange step.
@@ -54,14 +55,16 @@ object Exchange {
   case class IntermediateStepAmounts[C <: FiatCurrency](
       override val depositSplit: Both[BitcoinAmount],
       fiatAmount: CurrencyAmount[C],
-      fiatFee: CurrencyAmount[C]) extends StepAmounts[C] {
+      fiatFee: CurrencyAmount[C],
+      override val progress: Progress[C]) extends StepAmounts[C] {
     require(!depositSplit.forall(_.isNegative),
       s"deposit split amounts must be non-negative ($depositSplit given)")
     require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
   }
 
-  case class FinalStepAmounts[C <: FiatCurrency](override val depositSplit: Both[BitcoinAmount])
-    extends StepAmounts[C]
+  case class FinalStepAmounts[C <: FiatCurrency](
+      override val depositSplit: Both[BitcoinAmount],
+      override val progress: Progress[C]) extends StepAmounts[C]
 
   /** Characterizes the amounts to be deposited by a part. The difference between input and
     * output is the fee.
@@ -82,6 +85,7 @@ object Exchange {
     *                               considering fees
     * @param refunds                Amount refundable by each part after a lock time
     * @param intermediateSteps      Per-step exchanged amounts
+    * @param finalStep              Final step amounts
     * @tparam C                     Fiat currency exchanged
     */
   case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: BitcoinAmount,
