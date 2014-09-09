@@ -11,6 +11,8 @@ trait IntegrationTestNetworkComponent extends NetworkComponent with PeerGroupCom
     dnsSeeds = Array.empty
   }
 
+  override lazy val peerAddresses = Seq(testnetAddress())
+
   override def createPeerGroup(blockchain: AbstractBlockChain): PeerGroup = {
     val group = new PeerGroup(network, blockchain)
     group.addAddress(testnetAddress())
