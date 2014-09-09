@@ -5,7 +5,7 @@ import scala.math.BigDecimal.RoundingMode
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.Exchange.{DepositAmounts, StepAmounts}
+import coinffeine.model.exchange.Exchange.{DepositAmounts, FinalStepAmounts, IntermediateStepAmounts}
 import coinffeine.model.exchange._
 import coinffeine.model.payment.PaymentProcessor
 
@@ -16,8 +16,9 @@ private[amounts] class DefaultAmountsCalculator(
   override def exchangeAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                                      fiatAmount: CurrencyAmount[C]) = {
     require(bitcoinAmount.isPositive && fiatAmount.isPositive)
-    val steps = new StepsAmountsCalculator(bitcoinAmount, fiatAmount).steps
-    val stepDeposit = steps.map(_.bitcoinAmount).reduce(_ max _)
+    val stepsCalculator = new StepsAmountsCalculator(bitcoinAmount, fiatAmount)
+    val intermediateSteps = stepsCalculator.intermediateSteps
+    val stepDeposit = stepsCalculator.maxBitcoinStepSize
     val deposits = Both(
       buyer = stepDeposit * DefaultAmountsCalculator.EscrowSteps.buyer,
       seller = bitcoinAmount + stepDeposit * DefaultAmountsCalculator.EscrowSteps.seller
@@ -28,29 +29,28 @@ private[amounts] class DefaultAmountsCalculator(
       output = netAmount + txFee / 2
     ))
     val refunds = deposits.map(_ - stepDeposit)
-    Exchange.Amounts(deposits, depositTransactionAmounts, refunds, steps, txFee)
+    Exchange.Amounts(deposits, depositTransactionAmounts, refunds, intermediateSteps,
+      stepsCalculator.finalStep(deposits), txFee)
   }
 
   private class StepsAmountsCalculator[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
                                                           fiatAmount: CurrencyAmount[C]) {
 
+    /** Best step size in fiat */
     private val bestFiatSize = paymentProcessor.bestStepSize(fiatAmount.currency)
 
-    def steps: Seq[StepAmounts[C]] = {
-      val fiatStepAmounts = fiatStepAmountsFor(fiatAmount)
-      val bitcoinStepAmounts: Seq[Bitcoin.Amount] = bitcoinStepAmountsFor(fiatStepAmounts.size)
-      for ((fiat, bitcoin) <- fiatStepAmounts.zip(bitcoinStepAmounts))
-      yield Exchange.StepAmounts(bitcoin, fiat, paymentProcessor.calculateFee(fiat))
-    }
-
-    private def fiatStepAmountsFor(fiatAmount: CurrencyAmount[C]): Seq[CurrencyAmount[C]] = {
+    /** Fiat amount exchanged per step: best amount except for the last step  */
+    private val fiatStepAmounts: Seq[CurrencyAmount[C]] = {
       val (exactSteps, remainingAmount) = fiatAmount.value /% bestFiatSize.value
       val wholeFiatSteps = Seq.fill(exactSteps.toIntExact)(bestFiatSize)
       val remainingFiatStep = Some(CurrencyAmount(remainingAmount, fiatAmount.currency))
       wholeFiatSteps ++ remainingFiatStep.filter(_.isPositive)
     }
 
-    private def bitcoinStepAmountsFor(numSteps: Int): Seq[BitcoinAmount] = {
+    /** Bitcoin amount exchanged per step. It mirrors the fiat amounts with a rounding error of at
+      * most one satoshi. */
+    private val bitcoinStepAmounts = {
+      val numSteps = fiatStepAmounts.size
       val exactBitcoinStep = bestFiatSize.value * bitcoinAmount.value / fiatAmount.value
       val initialSteps = Seq.tabulate[BitcoinAmount](numSteps - 1) { index =>
         closestBitcoinAmount((index + 1) * exactBitcoinStep) -
@@ -59,6 +59,24 @@ private[amounts] class DefaultAmountsCalculator(
       val lastStep = bitcoinAmount - initialSteps.fold(Bitcoin.Zero)(_ + _)
       initialSteps :+ lastStep
     }
+
+    /** How the amount to exchange is split per step */
+    private val depositSplits: Seq[Both[BitcoinAmount]] = {
+      val cumulativeAmounts = bitcoinStepAmounts.tail.scan(bitcoinStepAmounts.head)(_ + _)
+      cumulativeAmounts.map(buyerSplit => Both(buyerSplit, bitcoinAmount - buyerSplit))
+    }
+
+    val maxBitcoinStepSize: BitcoinAmount = bitcoinStepAmounts.reduce(_ max _)
+
+    val intermediateSteps: Seq[IntermediateStepAmounts[C]] = {
+      for ((fiat, bitcoinSplit) <- fiatStepAmounts.zip(depositSplits))
+      yield Exchange.IntermediateStepAmounts(bitcoinSplit, fiat, paymentProcessor.calculateFee(fiat))
+    }
+
+    def finalStep(deposits: Both[BitcoinAmount]): FinalStepAmounts[C] = FinalStepAmounts(Both(
+      buyer = deposits.buyer + bitcoinAmount,
+      seller = deposits.seller - bitcoinAmount
+    ))
 
     private def closestBitcoinAmount(value: BigDecimal): BitcoinAmount =
       Bitcoin(value.setScale(Bitcoin.precision, RoundingMode.HALF_EVEN))

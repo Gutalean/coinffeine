@@ -4,7 +4,7 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.StepBreakdown
+import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange.{Exchange, Both, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
@@ -53,6 +53,8 @@ object MicroPaymentChannel {
     /** Step after this one */
     @throws[IllegalArgumentException]("if this step is final")
     def next: Step
+
+    def select[C <: FiatCurrency](amounts: Exchange.Amounts[C]): Exchange.StepAmounts[C]
   }
 
   case class IntermediateStep(override val value: Int, breakdown: StepBreakdown) extends Step {
@@ -65,8 +67,9 @@ object MicroPaymentChannel {
       if (value == breakdown.intermediateSteps) FinalStep(breakdown) else copy(value = value + 1)
     override val toString = s"step $value/${breakdown.totalSteps}"
 
-    def select[C <: FiatCurrency](amounts: Exchange.Amounts[C]): Exchange.StepAmounts[C] =
-      amounts.steps(value - 1)
+    override def select[C <: FiatCurrency](
+        amounts: Exchange.Amounts[C]): Exchange.IntermediateStepAmounts[C] =
+      amounts.intermediateSteps(value - 1)
   }
 
   case class FinalStep(breakdown: StepBreakdown) extends Step {
@@ -74,6 +77,8 @@ object MicroPaymentChannel {
     override val isFinal = true
     override def next = throw new IllegalArgumentException("Already at the last step")
     override def toString = s"step $value/$value"
+    override def select[C <: FiatCurrency](amounts: Amounts[C]): FinalStepAmounts[C] =
+      amounts.finalStep
   }
 
   case class InvalidSignaturesException(signatures: Both[TransactionSignature], cause: Throwable = null)

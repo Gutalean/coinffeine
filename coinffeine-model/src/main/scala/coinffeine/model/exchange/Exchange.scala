@@ -40,19 +40,27 @@ object Exchange {
     val totalSteps = intermediateSteps + 1
   }
 
-  /** Amounts involved on one exchange step */
-  case class StepAmounts[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                            fiatAmount: CurrencyAmount[C],
-                                            fiatFee: CurrencyAmount[C]) {
-    require(bitcoinAmount.isPositive, s"bitcoin amount must be positive ($bitcoinAmount given)")
-    require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
-
-    def +(other: StepAmounts[C]) = StepAmounts(
-      bitcoinAmount + other.bitcoinAmount,
-      fiatAmount + other.fiatAmount,
-      fiatFee + other.fiatFee
-    )
+  trait StepAmounts[C <: FiatCurrency] {
+    val depositSplit: Both[BitcoinAmount]
   }
+
+  /** Amounts involved on one exchange step.
+    *
+    * @param depositSplit   How to distribute funds on this step
+    * @param fiatAmount     Net fiat amount to change hands on this step
+    * @param fiatFee        Fiat fees to be payed on this step
+    */
+  case class IntermediateStepAmounts[C <: FiatCurrency](
+      override val depositSplit: Both[BitcoinAmount],
+      fiatAmount: CurrencyAmount[C],
+      fiatFee: CurrencyAmount[C]) extends StepAmounts[C] {
+    require(!depositSplit.forall(_.isNegative),
+      s"deposit split amounts must be non-negative ($depositSplit given)")
+    require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
+  }
+
+  case class FinalStepAmounts[C <: FiatCurrency](override val depositSplit: Both[BitcoinAmount])
+    extends StepAmounts[C]
 
   /** Characterizes the amounts to be deposited by a part. The difference between input and
     * output is the fee.
@@ -70,32 +78,41 @@ object Exchange {
     * @param depositTransactionAmounts Exact amounts of bitcoins used on the deposit transactions,
     *                          considering fees
     * @param refunds           Amount refundable by each part after a lock time
-    * @param steps             Per-step exchanged amounts
+    * @param intermediateSteps Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
   case class Amounts[C <: FiatCurrency](deposits: Both[BitcoinAmount],
                                         depositTransactionAmounts: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
-                                        steps: Seq[StepAmounts[C]],
+                                        intermediateSteps: Seq[IntermediateStepAmounts[C]],
+                                        finalStep: FinalStepAmounts[C],
                                         transactionFee: BitcoinAmount = Bitcoin.Zero) {
-    require(steps.nonEmpty, "There should be at least one step")
-    val currency: C = steps.head.fiatAmount.currency
+    require(intermediateSteps.nonEmpty, "There should be at least one step")
+    val currency: C = intermediateSteps.head.fiatAmount.currency
+
+    val steps: Seq[StepAmounts[C]] = intermediateSteps :+ finalStep
 
     /** Amount of bitcoins to be exchanged */
-    val bitcoinExchanged: BitcoinAmount = steps.foldLeft(Bitcoin.Zero)(_ + _.bitcoinAmount)
+    val bitcoinExchanged: BitcoinAmount = {
+      val splits = intermediateSteps.map(_.depositSplit.toSeq.reduce(_ + _))
+      require(splits.distinct.size == 1,
+        s"The amount to split should be constant over steps but was: $splits")
+      splits.head
+    }
+
     /** Amount of fiat to be exchanged */
     val fiatExchanged: CurrencyAmount[C] =
-      steps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
+      intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
     val price: CurrencyAmount[C] = fiatExchanged / bitcoinExchanged.value
 
     val fiatRequired = Both[CurrencyAmount[C]](
-      buyer = fiatExchanged + steps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),
+      buyer = fiatExchanged + intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),
       seller = CurrencyAmount.zero(currency)
     )
 
     val bitcoinRequired = depositTransactionAmounts.map(_.input)
 
-    val breakdown = Exchange.StepBreakdown(steps.length)
+    val breakdown = Exchange.StepBreakdown(intermediateSteps.length)
   }
 
   /** Funds reserved for the order this exchange belongs to */

@@ -16,19 +16,19 @@ trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
     val progress = listener.expectMsgType[ExchangeProgress].exchange.progress
     progress.fiatTransferred.currency should be (exchange.currency)
     val fiat = progress.fiatTransferred.asInstanceOf[CurrencyAmount[C]]
-    val actualPayments = countUntilAddingTo[C](fiat, exchange.amounts.steps.map(_.fiatAmount))
     withClue("Wrong number of payments") {
-      actualPayments should be(payments)
+      val actualPayments =
+        countUntilAddingTo(fiat, exchange.amounts.intermediateSteps.map(_.fiatAmount))
+      actualPayments shouldBe payments
     }
-    val actualSignatures =
-      countUntilAddingTo(progress.bitcoinsTransferred, exchange.amounts.steps.map(_.bitcoinAmount))
     withClue("Wrong number of signatures") {
-      actualSignatures should be (signatures)
+      val actualSignatures = exchange.amounts.intermediateSteps.map(_.depositSplit.buyer)
+        .indexOf(progress.bitcoinsTransferred) + 1
+      actualSignatures shouldBe signatures
     }
   }
 
-  def countUntilAddingTo[C <: Currency](total: CurrencyAmount[C],
-                                        elements: Seq[CurrencyAmount[C]]): Int =
+  def countUntilAddingTo(total: CurrencyAmount[C], elements: Seq[CurrencyAmount[C]]): Int =
     elements.scan(CurrencyAmount.zero(total.currency))(_ + _)
       .takeWhile(_ <= total)
       .size - 1

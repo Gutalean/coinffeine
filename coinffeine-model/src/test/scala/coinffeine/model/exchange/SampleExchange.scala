@@ -31,7 +31,15 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
       seller = DepositAmounts(input = 11.003.BTC, output = 11.001.BTC)
     ),
     refunds = Both(buyer = 1.BTC, seller = 10.BTC),
-    steps = Seq.fill(10)(Exchange.StepAmounts(1.BTC, 1.EUR, 0.05.EUR)),
+    intermediateSteps = Seq.tabulate(10) { index =>
+      val step = index + 1
+      Exchange.IntermediateStepAmounts(
+        depositSplit = Both(buyer = 1.BTC * step, seller = 10.BTC - 1.BTC * step),
+        fiatAmount = 1.EUR,
+        fiatFee = 0.05.EUR
+      )
+    },
+    finalStep = Exchange.FinalStepAmounts(Both(buyer = 12.BTC, seller = 1.BTC)),
     transactionFee = 0.002.BTC
   )
 

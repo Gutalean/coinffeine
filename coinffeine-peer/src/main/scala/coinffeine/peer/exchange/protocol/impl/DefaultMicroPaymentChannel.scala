@@ -22,17 +22,7 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
   private val currentUnsignedTransaction = ImmutableTransaction {
     import exchange.amounts._
 
-    val split = if (currentStep.isFinal) Both(
-      buyer = deposits.buyer + bitcoinExchanged,
-      seller = deposits.seller - bitcoinExchanged
-    ) else {
-      val alreadyExchanged = steps.take(currentStep.value).reduce(_ + _).bitcoinAmount
-      Both(
-        buyer = alreadyExchanged,
-        seller = bitcoinExchanged - alreadyExchanged
-      )
-    }
-
+    val split = currentStep.select(exchange.amounts).depositSplit
     val depositOutputs = exchange.state.deposits.toSeq.map(_.get.getOutput(0))
     val availableAmount = Bitcoin.fromSatoshi(depositOutputs.foldLeft(BigInteger.ZERO) {
       (accum, output) => accum.add(output.getValue)
