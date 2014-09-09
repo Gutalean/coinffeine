@@ -44,26 +44,26 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   it must "have last step splitting the deposited amount" in new Fixture {
     forAnyAmounts { (bitcoinAmount, _, amounts) =>
       val splitAmount = amounts.finalStep.depositSplit.toSeq.reduce(_ + _)
-      val depositAmount = amounts.depositTransactionAmounts.map(_.input).toSeq.reduce(_ + _)
+      val depositAmount = amounts.deposits.map(_.input).toSeq.reduce(_ + _)
       splitAmount shouldBe (depositAmount - amounts.transactionFee * 3)
     }
   }
 
   it must "require the buyer to deposit two steps worth of bitcoins" in new Fixture {
     private val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
-    amounts.depositTransactionAmounts.buyer.input should be (0.2.BTC)
+    amounts.deposits.buyer.input should be (0.2.BTC)
   }
 
   it must "require the seller to deposit one steps worth of bitcoins apart from the principal" in
     new Fixture {
       private val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
-      amounts.depositTransactionAmounts.seller.input should be (1.1.BTC)
+      amounts.deposits.seller.input should be (1.1.BTC)
     }
 
   it must "refund deposited amounts but one step worth of bitcoins" in new Fixture {
     val amounts = instance.exchangeAmountsFor(1.BTC, 100.EUR)
-    amounts.depositTransactionAmounts.buyer.input - amounts.refunds.buyer should be (0.1.BTC)
-    amounts.depositTransactionAmounts.seller.input - amounts.refunds.seller should be (0.1.BTC)
+    amounts.deposits.buyer.input - amounts.refunds.buyer should be (0.1.BTC)
+    amounts.deposits.seller.input - amounts.refunds.seller should be (0.1.BTC)
   }
 
   it must "have all but last steps of the same fiat size" in new Fixture {

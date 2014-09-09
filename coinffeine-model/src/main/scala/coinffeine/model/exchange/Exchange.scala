@@ -77,19 +77,16 @@ object Exchange {
     * @param grossBitcoinExchanged  Overall amount of bitcoins to be exchanged (counterpart will
     *                               receive less due to fees)
     * @param grossFiatExchanged     Overall amount of fiat to be exchanged (counterpart will
-    * @param deposits          Net bitcoin amount deposited in multisign by each part (no fees
-    *                          are considered)
-    * @param depositTransactionAmounts Exact amounts of bitcoins used on the deposit transactions,
     *                               receive less due to fees)
-    *                          considering fees
-    * @param refunds           Amount refundable by each part after a lock time
-    * @param intermediateSteps Per-step exchanged amounts
-    * @tparam C                Fiat currency defined to this exchange
+    * @param deposits               Exact amounts of bitcoins used on the deposit transactions,
+    *                               considering fees
+    * @param refunds                Amount refundable by each part after a lock time
+    * @param intermediateSteps      Per-step exchanged amounts
+    * @tparam C                     Fiat currency exchanged
     */
   case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: BitcoinAmount,
                                         grossFiatExchanged: CurrencyAmount[C],
-                                        deposits: Both[BitcoinAmount],
-                                        depositTransactionAmounts: Both[DepositAmounts],
+                                        deposits: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
                                         intermediateSteps: Seq[IntermediateStepAmounts[C]],
                                         finalStep: FinalStepAmounts[C],
@@ -103,7 +100,7 @@ object Exchange {
 
     /** Net amount of bitcoins to be exchanged */
     val netBitcoinExchanged: BitcoinAmount =
-      finalStep.depositSplit.buyer - depositTransactionAmounts.buyer.input
+      finalStep.depositSplit.buyer - deposits.buyer.input
     require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
 
     /** Net amount of fiat to be exchanged */
@@ -116,7 +113,7 @@ object Exchange {
 
     val price: Price[C] = Price.whenExchanging(netBitcoinExchanged, netFiatExchanged)
 
-    val bitcoinRequired = depositTransactionAmounts.map(_.input)
+    val bitcoinRequired = deposits.map(_.input)
     val fiatRequired = Both(buyer = grossFiatExchanged, seller = CurrencyAmount.zero(currency))
 
     val breakdown = Exchange.StepBreakdown(intermediateSteps.length)

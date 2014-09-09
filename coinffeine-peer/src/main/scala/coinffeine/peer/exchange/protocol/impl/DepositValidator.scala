@@ -19,7 +19,7 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency
     val buyerFunds = transaction.get.getOutput(0)
     requireValidMultisignature(buyerFunds)
     require(
-      Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.depositTransactionAmounts.buyer.output,
+      Bitcoin.fromSatoshi(buyerFunds.getValue) == amounts.deposits.buyer.output,
       "The amount of committed funds by the buyer does not match the expected amount")
   }
 
@@ -27,7 +27,7 @@ private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency
     val sellerFunds = transaction.get.getOutput(0)
     requireValidMultisignature(sellerFunds)
     require(
-      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.depositTransactionAmounts.seller.output,
+      Bitcoin.fromSatoshi(sellerFunds.getValue) == amounts.deposits.seller.output,
       "The amount of committed funds by the seller does not match the expected amount")
   }
 
