@@ -38,7 +38,7 @@ private[amounts] class DefaultAmountsCalculator(
     val grossFiatAmount =
       stepsCalculator.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).reduce(_ + _)
     Exchange.Amounts(grossBitcoinAmount, grossFiatAmount, depositTransactionAmounts,
-      refunds, intermediateSteps, stepsCalculator.finalStep(deposits), txFee)
+      refunds, intermediateSteps, stepsCalculator.finalStep(deposits))
   }
 
   private class StepsAmountsCalculator[C <: FiatCurrency](netBitcoinAmount: BitcoinAmount,

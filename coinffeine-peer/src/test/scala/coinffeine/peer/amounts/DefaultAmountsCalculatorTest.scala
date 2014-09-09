@@ -45,7 +45,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     forAnyAmounts { (bitcoinAmount, _, amounts) =>
       val splitAmount = amounts.finalStep.depositSplit.toSeq.reduce(_ + _)
       val depositAmount = amounts.deposits.map(_.input).toSeq.reduce(_ + _)
-      splitAmount shouldBe (depositAmount - amounts.transactionFee * 3)
+      splitAmount shouldBe (depositAmount - txFee * 3)
     }
   }
 
@@ -104,7 +104,6 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   it must "charge bitcoin transaction fees to the seller" in
     new Fixture(bitcoinFeeCalculator = new FixedBitcoinFee(0.001.BTC)) {
       forAnyAmounts { (bitcoinAmount, _, amounts) =>
-        amounts.transactionFee should be (0.001.BTC)
         amounts.bitcoinRequired.buyer + bitcoinAmount shouldBe amounts.finalStep.depositSplit.buyer
         amounts.bitcoinRequired.seller - bitcoinAmount shouldBe
           (amounts.finalStep.depositSplit.seller + 0.003.BTC)
@@ -121,6 +120,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
                          val bitcoinFeeCalculator: BitcoinFeeCalculator = NoBitcoinFees) {
 
     val instance = new DefaultAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
+
+    val txFee = bitcoinFeeCalculator.defaultTransactionFee
 
     type Euros = Euro.type
 

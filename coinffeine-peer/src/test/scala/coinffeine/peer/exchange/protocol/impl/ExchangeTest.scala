@@ -23,16 +23,20 @@ trait ExchangeTest extends BitcoinjTest {
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
     val buyerWallet = createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer)
-    val buyerDeposit = ImmutableTransaction(buyerWallet.blockMultisignFunds(
-      requiredSignatures, amounts.deposits.buyer.output, amounts.transactionFee))
+    val buyerDeposit = ImmutableTransaction {
+      val depositAmounts = amounts.deposits.buyer
+      buyerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+    }
     val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
   }
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
     val sellerWallet = createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller)
-    val sellerDeposit = ImmutableTransaction(sellerWallet.blockMultisignFunds(
-      requiredSignatures, amounts.deposits.seller.output, amounts.transactionFee))
+    val sellerDeposit = ImmutableTransaction {
+      val depositAmounts = amounts.deposits.seller
+      sellerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+    }
     val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)
   }
 

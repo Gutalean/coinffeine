@@ -73,6 +73,8 @@ object Exchange {
     require(input.isPositive, "Cannot spent a negative or zero amount")
     require(output.isPositive, "Should not deposit non-positive amount")
     require(input >= output, "Deposits should have a greater or equal input versus output")
+
+    def fee: BitcoinAmount = input - output
   }
 
   /** Amounts of money involved on an exchange.
@@ -93,8 +95,7 @@ object Exchange {
                                         deposits: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
                                         intermediateSteps: Seq[IntermediateStepAmounts[C]],
-                                        finalStep: FinalStepAmounts[C],
-                                        transactionFee: BitcoinAmount = Bitcoin.Zero) {
+                                        finalStep: FinalStepAmounts[C]) {
     require(grossBitcoinExchanged.isPositive,
       s"Cannot exchange a gross amount of $grossBitcoinExchanged")
     require(grossFiatExchanged.isPositive, s"Cannot exchange a gross amount of $grossFiatExchanged")

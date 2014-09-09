@@ -44,8 +44,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     finalStep = Exchange.FinalStepAmounts(
       depositSplit = Both(buyer = 12.002.BTC, seller = 1.BTC),
       progress = Progress(10.BTC, 10.EUR)
-    ),
-    transactionFee = 0.002.BTC
+    )
   )
 
   val exchangeId = ExchangeId("id")

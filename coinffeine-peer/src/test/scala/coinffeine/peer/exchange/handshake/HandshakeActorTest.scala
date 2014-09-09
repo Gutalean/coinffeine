@@ -55,8 +55,9 @@ abstract class HandshakeActorTest(systemName: String)
 
   def shouldCreateDeposits(): Unit = {
     val request = wallet.expectMsgClass(classOf[WalletActor.CreateDeposit])
-    request.amount should be (exchange.amounts.deposits.seller.output)
-    request.transactionFee should be (exchange.amounts.transactionFee)
+    val depositAmounts = exchange.amounts.deposits.seller
+    request.amount shouldBe depositAmounts.output
+    request.transactionFee shouldBe depositAmounts.fee
     wallet.reply(WalletActor.DepositCreated(request, MockExchangeProtocol.DummyDeposit))
   }
 
