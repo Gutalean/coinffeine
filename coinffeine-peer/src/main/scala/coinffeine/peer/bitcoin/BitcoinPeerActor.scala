@@ -258,7 +258,7 @@ object BitcoinPeerActor {
       val connectionRetryInterval =
         configProvider.bitcoinSettings.connectionRetryInterval
       Props(new BitcoinPeerActor(
-        createPeerGroup(blockchain),
+        peerGroup,
         BlockchainActor.props(blockchain, network),
         WalletActor.props,
         keyPairs,
