@@ -1,16 +1,21 @@
 package coinffeine.peer.bitcoin
 
-import com.google.bitcoin.core.{FullPrunedBlockChain, PeerGroup, AbstractBlockChain}
-import com.google.bitcoin.kits.WalletAppKit
+import java.io.File
+import java.util.concurrent.TimeUnit
+
+import com.google.bitcoin.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 
-import coinffeine.model.bitcoin.{NetworkComponent, BlockchainComponent, PeerGroupComponent}
-import coinffeine.peer.config.SettingsProvider
+import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.peer.config.user.LocalAppDataDir
 
-trait DefaultBitcoinComponents extends PeerGroupComponent with BlockchainComponent {
+trait DefaultBitcoinComponents
+    extends PeerGroupComponent with BlockchainComponent with WalletComponent {
 
   this: NetworkComponent =>
+
+  import coinffeine.peer.bitcoin.DefaultBitcoinComponents._
 
   override lazy val blockchain: AbstractBlockChain = {
     val blockStore = new MemoryFullPrunedBlockStore(network, 1000)
@@ -22,4 +27,21 @@ trait DefaultBitcoinComponents extends PeerGroupComponent with BlockchainCompone
     peerAddresses.foreach(peerGroup.addAddress)
     peerGroup
   }
+
+  override lazy val wallet = {
+    val wallet = new Wallet(network)
+    if (UserWalletFile.exists()) {
+      wallet.loadFromFile(UserWalletFile)
+    }
+    blockchain.addWallet(wallet)
+    peerGroup.addWallet(wallet)
+    wallet.autosaveToFile(UserWalletFile, 250, TimeUnit.MILLISECONDS, null)
+    wallet
+
+  }
+}
+
+object DefaultBitcoinComponents {
+
+  lazy val UserWalletFile: File = LocalAppDataDir.getFile("user.wallet", false).toFile
 }

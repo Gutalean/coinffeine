@@ -1,10 +1,12 @@
 package coinffeine.model.bitcoin
 
+import java.io.{FileInputStream, File}
 import java.math.BigInteger
 import scala.collection.JavaConversions._
 
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
+import com.google.bitcoin.store.WalletProtobufSerializer
 import com.google.bitcoin.wallet.WalletTransaction
 
 import coinffeine.model.currency.Currency.Bitcoin
@@ -38,6 +40,16 @@ object Implicits {
   }
 
   implicit class PimpMyWallet(val wallet: Wallet) extends AnyVal {
+
+    def loadFromFile(file: File): Unit = {
+      val stream = new FileInputStream(file)
+      try {
+        new WalletProtobufSerializer()
+          .readWallet(WalletProtobufSerializer.parseToProto(stream), wallet)
+      } finally {
+        stream.close()
+      }
+    }
 
     def value(tx: MutableTransaction): BitcoinAmount =
       Currency.Bitcoin.fromSatoshi(tx.getValue(wallet))
