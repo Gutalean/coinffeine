@@ -247,9 +247,8 @@ object BitcoinPeerActor {
 
   trait Component {
 
-    this: PeerGroupComponent with NetworkComponent with BlockchainComponent with WalletComponent
-
-    with PrivateKeysComponent with ConfigComponent =>
+    this: PeerGroupComponent with NetworkComponent with
+      BlockchainComponent with WalletComponent with ConfigComponent =>
 
     lazy val bitcoinPeerProps: Props = {
       val connectionRetryInterval =
