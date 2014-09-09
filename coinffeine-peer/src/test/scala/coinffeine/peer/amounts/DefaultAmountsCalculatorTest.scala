@@ -14,13 +14,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
 
   "The funds calculator" must "reject non positive bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(bitcoinAmount = 0.BTC, fiatAmount = 1.EUR)
+      instance.exchangeAmountsFor(netBitcoinAmount = 0.BTC, fiatAmount = 1.EUR)
     }
   }
 
   it must "reject non positive prices" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(bitcoinAmount = 1.BTC, fiatAmount = 0.EUR)
+      instance.exchangeAmountsFor(netBitcoinAmount = 1.BTC, fiatAmount = 0.EUR)
     }
   }
 
@@ -59,7 +59,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
   it must "require the seller to deposit one steps worth of bitcoins apart from the principal" in
     new Fixture {
       forAnyAmounts { amounts =>
-        amounts.deposits.seller - amounts.bitcoinExchanged should be(bitcoinStepSize(amounts))
+        amounts.deposits.seller - amounts.netBitcoinExchanged should be(bitcoinStepSize(amounts))
       }
     }
 
@@ -141,7 +141,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
 
     def bitcoinStepSize(amounts: Amounts[Euros]): BitcoinAmount = {
-      val price = amounts.bitcoinExchanged.value / amounts.fiatExchanged.value
+      val price = amounts.netBitcoinExchanged.value / amounts.fiatExchanged.value
       val stepSize = paymentProcessor.bestStepSize(Euro).value * price
       Bitcoin(stepSize.setScale(Bitcoin.precision, RoundingMode.UP))
     }

@@ -15,15 +15,15 @@ private[amounts] class DefaultAmountsCalculator(
 
   import DefaultAmountsCalculator._
 
-  override def exchangeAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+  override def exchangeAmountsFor[C <: FiatCurrency](netBitcoinAmount: BitcoinAmount,
                                                      fiatAmount: CurrencyAmount[C]) = {
-    require(bitcoinAmount.isPositive && fiatAmount.isPositive)
-    val stepsCalculator = new StepsAmountsCalculator(bitcoinAmount, fiatAmount)
+    require(netBitcoinAmount.isPositive && fiatAmount.isPositive)
+    val stepsCalculator = new StepsAmountsCalculator(netBitcoinAmount, fiatAmount)
     val intermediateSteps = stepsCalculator.intermediateSteps
     val stepDeposit = stepsCalculator.maxBitcoinStepSize
     val deposits = Both(
       buyer = stepDeposit * EscrowSteps.buyer,
-      seller = bitcoinAmount + stepDeposit * EscrowSteps.seller
+      seller = netBitcoinAmount + stepDeposit * EscrowSteps.seller
     )
     val txFee = bitcoinFeeCalculator.defaultTransactionFee
     val depositTransactionAmounts = Both(
@@ -34,8 +34,9 @@ private[amounts] class DefaultAmountsCalculator(
       )
     )
     val refunds = deposits.map(_ - stepDeposit)
-    Exchange.Amounts(deposits, depositTransactionAmounts, refunds, intermediateSteps,
-      stepsCalculator.finalStep(deposits), txFee)
+    val grossBitcoinAmount = netBitcoinAmount + txFee * HappyPathTransactions
+    Exchange.Amounts(grossBitcoinAmount, deposits, depositTransactionAmounts, refunds,
+      intermediateSteps, stepsCalculator.finalStep(deposits), txFee)
   }
 
   private class StepsAmountsCalculator[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,

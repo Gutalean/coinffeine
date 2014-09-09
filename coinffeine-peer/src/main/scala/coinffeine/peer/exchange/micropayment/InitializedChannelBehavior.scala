@@ -20,7 +20,7 @@ private[micropayment] abstract class InitializedChannelBehavior[C <: FiatCurrenc
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
       btcAmount =
-        exchange.amounts.bitcoinExchanged - stepsUntil(signatures).last.depositSplit.seller,
+        exchange.amounts.netBitcoinExchanged - stepsUntil(signatures).last.depositSplit.seller,
       fiatAmount = stepsUntil(payments)
         .foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(exchange.currency))(_ + _.fiatAmount)
     )

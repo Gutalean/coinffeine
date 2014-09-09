@@ -19,7 +19,7 @@ case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
   val currency: C = amounts.fiatExchanged.currency
 
   val progress: Exchange.Progress[C] = state.progress
-  require(progress.bitcoinsTransferred <= amounts.bitcoinExchanged,
+  require(progress.bitcoinsTransferred <= amounts.netBitcoinExchanged,
     "invalid running exchange instantiation: " +
       s"progress $progress is inconsistent with amounts $amounts")
 }
@@ -74,6 +74,7 @@ object Exchange {
 
   /** Amounts of money involved on an exchange.
     *
+    * @param grossBitcoinExchanged  Overall amount of bitcoins to be exchanged
     * @param deposits          Net bitcoin amount deposited in multisign by each part (no fees
     *                          are considered)
     * @param depositTransactionAmounts Exact amounts of bitcoins used on the deposit transactions,
@@ -82,30 +83,31 @@ object Exchange {
     * @param intermediateSteps Per-step exchanged amounts
     * @tparam C                Fiat currency defined to this exchange
     */
-  case class Amounts[C <: FiatCurrency](deposits: Both[BitcoinAmount],
+  case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: BitcoinAmount,
+                                        deposits: Both[BitcoinAmount],
                                         depositTransactionAmounts: Both[DepositAmounts],
                                         refunds: Both[BitcoinAmount],
                                         intermediateSteps: Seq[IntermediateStepAmounts[C]],
                                         finalStep: FinalStepAmounts[C],
                                         transactionFee: BitcoinAmount = Bitcoin.Zero) {
+    require(grossBitcoinExchanged.isPositive,
+      s"Cannot exchange a gross amount of $grossBitcoinExchanged")
     require(intermediateSteps.nonEmpty, "There should be at least one step")
+
+    /** Net amount of bitcoins to be exchanged */
+    val netBitcoinExchanged: BitcoinAmount =
+      finalStep.depositSplit.buyer - depositTransactionAmounts.buyer.input
+    require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
+
     val currency: C = intermediateSteps.head.fiatAmount.currency
 
     val steps: Seq[StepAmounts[C]] = intermediateSteps :+ finalStep
-
-    /** Amount of bitcoins to be exchanged */
-    val bitcoinExchanged: BitcoinAmount = {
-      val splits = intermediateSteps.map(_.depositSplit.toSeq.reduce(_ + _))
-      require(splits.distinct.size == 1,
-        s"The amount to split should be constant over steps but was: $splits")
-      splits.head - transactionFee
-    }
 
     /** Amount of fiat to be exchanged */
     val fiatExchanged: CurrencyAmount[C] =
       intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatAmount)
 
-    val price: Price[C] = Price.whenExchanging(bitcoinExchanged, fiatExchanged)
+    val price: Price[C] = Price.whenExchanging(netBitcoinExchanged, fiatExchanged)
 
     val fiatRequired = Both[CurrencyAmount[C]](
       buyer = fiatExchanged + intermediateSteps.foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(currency))(_ + _.fiatFee),
@@ -203,7 +205,7 @@ object Exchange {
                                           counterpart: Exchange.PeerInfo,
                                           deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends State[C] with StartedExchange[C] {
-    override val progress = Progress(amounts.bitcoinExchanged, amounts.fiatExchanged)
+    override val progress = Progress(amounts.netBitcoinExchanged, amounts.fiatExchanged)
   }
 
   object Completed {
