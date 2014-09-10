@@ -18,21 +18,17 @@ class SettingsMappingTest extends UnitTest {
 
   "Bitcoins settings mapping" should "map from config" in {
     val conf = makeConfig(
-      "coinffeine.wallet.key" -> "privateWalletKey",
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s"
     )
     val settings = SettingsMapping.fromConfig[BitcoinSettings](conf)
-    settings.walletPrivateKey should be ("privateWalletKey")
     settings.connectionRetryInterval should be (30.seconds)
   }
 
   it should "map to config" in {
     val settings = BitcoinSettings(
-      walletPrivateKey = "privateWalletKey",
       connectionRetryInterval = 50.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getString("coinffeine.wallet.key") should be ("privateWalletKey")
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) should be (50)
   }
 

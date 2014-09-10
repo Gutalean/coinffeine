@@ -58,10 +58,6 @@ object Main extends JFXApp
 
     createWallet(keys)
 
-    val bitcoinSettings = configProvider.bitcoinSettings
-    configProvider.saveUserSettings(
-      bitcoinSettings.copy(walletPrivateKey = keys.getPrivateKeyEncoded(network).toString))
-
     setupConfig.okPayWalletAccess.foreach { access =>
       val okPaySettings = configProvider.okPaySettings
       configProvider.saveUserSettings(
