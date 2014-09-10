@@ -11,9 +11,10 @@ import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, NotificationManager}
 import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
 import coinffeine.gui.setup.SetupWizard
-import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair}
+import coinffeine.model.bitcoin.{Wallet, IntegrationTestNetworkComponent, KeyPair}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
+import coinffeine.peer.bitcoin.DefaultBitcoinComponents
 
 object Main extends JFXApp
   with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
@@ -55,14 +56,18 @@ object Main extends JFXApp
     val address = keys.toAddress(network)
     val setupConfig = new SetupWizard(address.toString).run()
 
-    val bitcoinSettings = configProvider.bitcoinSettings
-    configProvider.saveUserSettings(
-      bitcoinSettings.copy(walletPrivateKey = keys.getPrivateKeyEncoded(network).toString))
+    createWallet(keys)
 
     setupConfig.okPayWalletAccess.foreach { access =>
       val okPaySettings = configProvider.okPaySettings
       configProvider.saveUserSettings(
         okPaySettings.copy(userAccount = access.walletId, seedToken = access.seedToken))
     }
+  }
+
+  private def createWallet(keys: KeyPair): Unit = {
+    val wallet = new Wallet(network)
+    wallet.addKey(keys)
+    wallet.saveToFile(DefaultBitcoinComponents.UserWalletFile)
   }
 }

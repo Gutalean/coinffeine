@@ -5,17 +5,13 @@ import java.net.InetAddress
 import com.google.bitcoin.core.{AbstractBlockChain, PeerAddress, PeerGroup}
 import com.google.bitcoin.params.TestNet3Params
 
-trait IntegrationTestNetworkComponent extends NetworkComponent with PeerGroupComponent {
+trait IntegrationTestNetworkComponent extends NetworkComponent {
 
   override lazy val network = new TestNet3Params() {
     dnsSeeds = Array.empty
   }
 
-  override def createPeerGroup(blockchain: AbstractBlockChain): PeerGroup = {
-    val group = new PeerGroup(network, blockchain)
-    group.addAddress(testnetAddress())
-    group
-  }
+  override lazy val peerAddresses = Seq(testnetAddress())
 
   def testnetAddress() = new PeerAddress(
     InetAddress.getByName(IntegrationTestNetworkComponent.Hostname),

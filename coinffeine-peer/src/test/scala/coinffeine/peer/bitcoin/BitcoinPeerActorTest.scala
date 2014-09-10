@@ -3,7 +3,7 @@ package coinffeine.peer.bitcoin
 import scala.concurrent.duration._
 
 import akka.actor.Props
-import com.google.bitcoin.core.{FullPrunedBlockChain, PeerGroup}
+import com.google.bitcoin.core.{Wallet, FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.scalatest.mock.MockitoSugar
 
@@ -56,9 +56,14 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     val peerGroup = new PeerGroup(network)
     val blockchainActor, walletActor = new MockSupervisedActor()
     val eventChannelProbe = EventChannelProbe()
+    val wallet = new Wallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
+
+    blockchain.addWallet(wallet)
+    peerGroup.addWallet(wallet)
+
     val actor = system.actorOf(Props(new BitcoinPeerActor(peerGroup, blockchainActor.props,
-      _ => walletActor.props, keyPairs = Seq.empty, blockchain, network, connectionRetryInterval)))
+      _ => walletActor.props, wallet, blockchain, network, connectionRetryInterval)))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
   }

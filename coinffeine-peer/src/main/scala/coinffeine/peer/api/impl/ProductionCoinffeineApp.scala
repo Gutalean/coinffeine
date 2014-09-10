@@ -19,9 +19,8 @@ object ProductionCoinffeineApp {
       with ProtocolConstants.DefaultComponent
       with DefaultExchangeActor.Component
       with DefaultExchangeProtocol.Component
-      with DummyPrivateKeysComponent
       with BitcoinPeerActor.Component
-      with MockBlockchainComponent
+      with DefaultBitcoinComponents
       with ProtoMessageGateway.Component
       with DefaultProtocolSerializationComponent
       with UserFileConfigComponent {

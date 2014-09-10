@@ -33,14 +33,11 @@ object SettingsMapping {
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(config: Config) = BitcoinSettings(
-      walletPrivateKey = config.getString("coinffeine.wallet.key"),
       connectionRetryInterval =
         config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds
     )
 
     override def toConfig(settings: BitcoinSettings, config: Config) = config
-      .withValue("coinffeine.wallet.key",
-        configValue(settings.walletPrivateKey))
       .withValue("coinffeine.bitcoin.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
   }
