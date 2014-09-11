@@ -9,8 +9,8 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.event.{Balance, WalletBalanceChangeEvent}
+import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.event.WalletBalanceChangeEvent
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 

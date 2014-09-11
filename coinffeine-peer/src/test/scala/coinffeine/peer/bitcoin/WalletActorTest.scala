@@ -11,7 +11,7 @@ import coinffeine.model.bitcoin.{MutableWalletProperties, BlockedCoinsId, KeyPai
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.{Balance, EventChannelProbe, WalletBalanceChangeEvent}
+import coinffeine.model.event.{EventChannelProbe, WalletBalanceChangeEvent}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}

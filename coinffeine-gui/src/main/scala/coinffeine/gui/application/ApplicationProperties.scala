@@ -6,6 +6,7 @@ import scalafx.collections.ObservableBuffer
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
+import coinffeine.model.currency.Balance
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.model.event._

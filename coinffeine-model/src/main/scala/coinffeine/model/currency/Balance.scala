@@ -1,6 +1,4 @@
-package coinffeine.model.event
-
-import coinffeine.model.currency.{CurrencyAmount, Currency}
+package coinffeine.model.currency
 
 /** Represents a balance and whether it is a current or expired.
   *
