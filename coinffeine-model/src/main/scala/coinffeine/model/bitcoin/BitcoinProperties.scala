@@ -1,8 +1,8 @@
 package coinffeine.model.bitcoin
 
 trait BitcoinProperties {
-  def wallet: WalletProperties
-  def network: NetworkProperties
+  val wallet: WalletProperties
+  val network: NetworkProperties
 }
 
 class MutableBitcoinProperties extends BitcoinProperties {

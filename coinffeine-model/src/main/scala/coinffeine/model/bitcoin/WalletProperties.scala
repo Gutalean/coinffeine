@@ -4,8 +4,8 @@ import coinffeine.model.currency.BitcoinBalance
 import coinffeine.model.properties.{MutableProperty, Property}
 
 trait WalletProperties {
-  def balance: Property[Option[BitcoinBalance]]
-  def primaryKeyPair: Property[Option[Address]]
+  val balance: Property[Option[BitcoinBalance]]
+  val primaryKeyPair: Property[Option[Address]]
 }
 
 class MutableWalletProperties extends WalletProperties {
