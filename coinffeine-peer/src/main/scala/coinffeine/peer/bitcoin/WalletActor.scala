@@ -9,15 +9,14 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinBalance, Balance, BitcoinAmount}
-import coinffeine.model.event.WalletBalanceChangeEvent
+import coinffeine.model.currency.{Balance, BitcoinAmount}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 
 private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
     extends Actor with ActorLogging with EventPublisher {
 
-  import coinffeine.peer.bitcoin.WalletActor._
+  import WalletActor._
 
   private var lastBalanceReported: Option[BitcoinAmount] = None
   private val blockedOutputs = new BlockedOutputs()
@@ -85,14 +84,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
   }
 
   private def updateBalance(): Unit = {
-    // TODO: do not use the event stream to inform of the balance
-    val currentBalance = wallet.balance()
-    if (lastBalanceReported != Some(currentBalance)) {
-      publishEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
-      lastBalanceReported = Some(currentBalance)
-    }
-
-    properties.balance.set(Some(Balance(currentBalance)))
+    properties.balance.set(Some(Balance(wallet.balance())))
   }
 
   private def updateSpendCandidates(): Unit = {

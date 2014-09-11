@@ -7,11 +7,11 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{MutableWalletProperties, BlockedCoinsId, KeyPair}
-import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.{EventChannelProbe, WalletBalanceChangeEvent}
+import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.event.EventChannelProbe
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
