@@ -15,7 +15,8 @@ import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloadi
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
-class BitcoinPeerActor(peerGroup: PeerGroup, blockchainProps: Props, walletProps: Wallet => Props,
+class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
+                       blockchainProps: Props, walletProps: Wallet => Props,
                        wallet: Wallet, blockchain: AbstractBlockChain,
                        network: NetworkParameters, connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging with EventPublisher {
@@ -244,13 +245,14 @@ object BitcoinPeerActor {
 
   trait Component {
 
-    this: PeerGroupComponent with NetworkComponent with
-      BlockchainComponent with WalletComponent with ConfigComponent =>
+    this: PeerGroupComponent with NetworkComponent with BlockchainComponent
+      with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
       val connectionRetryInterval =
         configProvider.bitcoinSettings.connectionRetryInterval
       Props(new BitcoinPeerActor(
+        bitcoinProperties,
         peerGroup,
         BlockchainActor.props(blockchain, network),
         WalletActor.props,

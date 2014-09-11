@@ -9,6 +9,7 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.model.bitcoin.MutableBitcoinProperties
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.model.event.{BitcoinConnectionStatus, EventChannelProbe}
@@ -58,12 +59,14 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     val eventChannelProbe = EventChannelProbe()
     val wallet = new Wallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
+    val properties = new MutableBitcoinProperties
 
     blockchain.addWallet(wallet)
     peerGroup.addWallet(wallet)
 
-    val actor = system.actorOf(Props(new BitcoinPeerActor(peerGroup, blockchainActor.props,
-      _ => walletActor.props, wallet, blockchain, network, connectionRetryInterval)))
+    val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
+      peerGroup, blockchainActor.props, _ => walletActor.props, wallet,
+      blockchain, network, connectionRetryInterval)))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
   }

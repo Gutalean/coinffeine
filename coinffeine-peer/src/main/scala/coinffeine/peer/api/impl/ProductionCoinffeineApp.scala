@@ -6,6 +6,7 @@ import coinffeine.peer.bitcoin._
 import coinffeine.peer.config.user.UserFileConfigComponent
 import coinffeine.peer.exchange.DefaultExchangeActor
 import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
+import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.protocol.gateway.proto.ProtoMessageGateway
 import coinffeine.protocol.serialization.DefaultProtocolSerializationComponent
@@ -23,7 +24,8 @@ object ProductionCoinffeineApp {
       with DefaultBitcoinComponents
       with ProtoMessageGateway.Component
       with DefaultProtocolSerializationComponent
-      with UserFileConfigComponent {
+      with UserFileConfigComponent
+      with DefaultCoinffeinePropertiesComponent {
     this: NetworkComponent with PeerGroupComponent =>
   }
 }
