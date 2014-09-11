@@ -1,6 +1,7 @@
 package coinffeine.peer.config
 
-import java.net.{URI, NetworkInterface}
+import java.io.File
+import java.net.{NetworkInterface, URI}
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
@@ -34,12 +35,14 @@ object SettingsMapping {
 
     override def fromConfig(config: Config) = BitcoinSettings(
       connectionRetryInterval =
-        config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds
+        config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds,
+      walletFile = new File(config.getString("coinffeine.bitcoin.walletFile"))
     )
 
     override def toConfig(settings: BitcoinSettings, config: Config) = config
       .withValue("coinffeine.bitcoin.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
+      .withValue("coinffeine.bitcoin.walletFile", configValue(settings.walletFile.toString))
   }
 
   implicit val messageGateway = new SettingsMapping[MessageGatewaySettings] {

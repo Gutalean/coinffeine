@@ -1,21 +1,18 @@
 package coinffeine.peer.bitcoin
 
-import java.io.File
 import java.util.concurrent.TimeUnit
 
 import com.google.bitcoin.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
+import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.peer.config.user.LocalAppDataDir
+import coinffeine.peer.config.ConfigComponent
 
 trait DefaultBitcoinComponents
     extends PeerGroupComponent with BlockchainComponent with WalletComponent {
-
-  this: NetworkComponent =>
-
-  import coinffeine.peer.bitcoin.DefaultBitcoinComponents._
+  this: NetworkComponent with ConfigComponent =>
 
   override lazy val blockchain: AbstractBlockChain = {
     val blockStore = new MemoryFullPrunedBlockStore(network, 1000)
@@ -30,18 +27,20 @@ trait DefaultBitcoinComponents
 
   override lazy val wallet = {
     val wallet = new Wallet(network)
-    if (UserWalletFile.exists()) {
-      wallet.loadFromFile(UserWalletFile)
+    val walletFile = configProvider.bitcoinSettings.walletFile
+    if (walletFile.exists()) {
+      DefaultBitcoinComponents.Log.info("Loading wallet from {}", walletFile)
+      wallet.loadFromFile(walletFile)
+    } else {
+      DefaultBitcoinComponents.Log.warn("{} doesn't exists, starting with an empty wallet", walletFile)
     }
     blockchain.addWallet(wallet)
     peerGroup.addWallet(wallet)
-    wallet.autosaveToFile(UserWalletFile, 250, TimeUnit.MILLISECONDS, null)
+    wallet.autosaveToFile(walletFile, 250, TimeUnit.MILLISECONDS, null)
     wallet
-
   }
 }
 
 object DefaultBitcoinComponents {
-
-  lazy val UserWalletFile: File = LocalAppDataDir.getFile("user.wallet", false).toFile
+  private val Log = LoggerFactory.getLogger(classOf[DefaultBitcoinComponents])
 }

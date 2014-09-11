@@ -1,5 +1,6 @@
 package coinffeine.peer.config
 
+import java.io.File
 import java.net.{URI, NetworkInterface}
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
@@ -18,18 +19,22 @@ class SettingsMappingTest extends UnitTest {
 
   "Bitcoins settings mapping" should "map from config" in {
     val conf = makeConfig(
-      "coinffeine.bitcoin.connectionRetryInterval" -> "30s"
+      "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
+      "coinffeine.bitcoin.walletFile" -> "user.wallet"
     )
     val settings = SettingsMapping.fromConfig[BitcoinSettings](conf)
     settings.connectionRetryInterval should be (30.seconds)
+    settings.walletFile should be (new File("user.wallet"))
   }
 
   it should "map to config" in {
     val settings = BitcoinSettings(
-      connectionRetryInterval = 50.seconds
+      connectionRetryInterval = 50.seconds,
+      walletFile = new File("/tmp/user.wallet")
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) should be (50)
+    cfg.getString("coinffeine.bitcoin.walletFile") should be ("/tmp/user.wallet")
   }
 
   "Message Gateway settings mapping" should "map from config" in {
