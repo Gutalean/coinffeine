@@ -1,20 +1,17 @@
 package coinffeine.peer.bitcoin
 
-import java.io.File
-import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import com.google.bitcoin.core._
-import com.google.bitcoin.wallet.WalletFiles
-import com.google.common.util.concurrent.{ListenableFuture, FutureCallback, Futures, Service}
+import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
-import coinffeine.common.akka.{ServiceActor, AskPattern}
+import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
 import coinffeine.model.event.BitcoinConnectionStatus
-import coinffeine.model.event.BitcoinConnectionStatus.{NotDownloading, Downloading}
+import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 

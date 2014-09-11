@@ -1,5 +1,6 @@
 package coinffeine.gui
 
+import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scalafx.application.JFXApp
@@ -11,10 +12,10 @@ import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, NotificationManager}
 import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
 import coinffeine.gui.setup.SetupWizard
-import coinffeine.model.bitcoin.{Wallet, IntegrationTestNetworkComponent, KeyPair}
+import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair, Wallet}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
-import coinffeine.peer.bitcoin.DefaultBitcoinComponents
+import coinffeine.peer.config.user.LocalAppDataDir
 
 object Main extends JFXApp
   with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
@@ -56,7 +57,8 @@ object Main extends JFXApp
     val address = keys.toAddress(network)
     val setupConfig = new SetupWizard(address.toString).run()
 
-    createWallet(keys)
+    configProvider.saveUserSettings(
+      configProvider.bitcoinSettings.copy(walletFile = createWallet(keys)))
 
     setupConfig.okPayWalletAccess.foreach { access =>
       val okPaySettings = configProvider.okPaySettings
@@ -65,9 +67,11 @@ object Main extends JFXApp
     }
   }
 
-  private def createWallet(keys: KeyPair): Unit = {
+  private def createWallet(keys: KeyPair): File = {
     val wallet = new Wallet(network)
     wallet.addKey(keys)
-    wallet.saveToFile(DefaultBitcoinComponents.UserWalletFile)
+    val walletFile = LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toFile
+    wallet.saveToFile(walletFile)
+    walletFile
   }
 }
