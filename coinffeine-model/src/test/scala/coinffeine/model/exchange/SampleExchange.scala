@@ -3,6 +3,7 @@ package coinffeine.model.exchange
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 
@@ -24,10 +25,26 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
 
   val amounts = Exchange.Amounts(
-    deposits = Both(buyer = 2.BTC, seller = 11.BTC),
+    grossBitcoinExchanged = 10.006.BTC,
+    grossFiatExchanged = 10.5.EUR,
+    deposits = Both(
+      buyer = DepositAmounts(input = 2.002.BTC, output = 2.BTC),
+      seller = DepositAmounts(input = 11.006.BTC, output = 11.004.BTC)
+    ),
     refunds = Both(buyer = 1.BTC, seller = 10.BTC),
-    steps = Seq.fill(10)(Exchange.StepAmounts(1.BTC, 1.EUR, 0.05.EUR)),
-    transactionFee = 0.003.BTC
+    intermediateSteps = Seq.tabulate(10) { index =>
+      val step = index + 1
+      Exchange.IntermediateStepAmounts(
+        depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
+        fiatAmount = 1.EUR,
+        fiatFee = 0.05.EUR,
+        progress = Progress(1.BTC * step, 1.EUR * step)
+      )
+    },
+    finalStep = Exchange.FinalStepAmounts(
+      depositSplit = Both(buyer = 12.002.BTC, seller = 1.BTC),
+      progress = Progress(10.BTC, 10.EUR)
+    )
   )
 
   val exchangeId = ExchangeId("id")

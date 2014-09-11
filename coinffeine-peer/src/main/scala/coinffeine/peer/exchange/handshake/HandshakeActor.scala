@@ -86,15 +86,16 @@ private class HandshakeActor[C <: FiatCurrency](
 
   private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
     val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
-    val depositAmount = exchange.role.select(exchange.amounts.depositTransactionAmounts).output
+    val depositAmounts = exchange.role.select(exchange.amounts.deposits)
     AskPattern(
       to = collaborators.wallet,
       request = WalletActor.CreateDeposit(
         exchange.blockedFunds.bitcoin,
         requiredSignatures,
-        depositAmount,
-        exchange.amounts.transactionFee),
-      errorMessage = s"Cannot block $depositAmount in multisig"
+        depositAmounts.output,
+        depositAmounts.fee
+      ),
+      errorMessage = s"Cannot block ${depositAmounts.output} in multisig"
     ).withImmediateReplyOrError[DepositCreated, DepositCreationError](_.error).map(_.tx)
   }
 

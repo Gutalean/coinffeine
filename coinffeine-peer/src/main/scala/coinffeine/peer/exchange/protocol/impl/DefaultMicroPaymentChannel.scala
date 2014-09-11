@@ -1,11 +1,9 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import java.math.BigInteger
 import scala.util.Try
 import scala.util.control.NonFatal
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
@@ -20,25 +18,8 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   private val currentUnsignedTransaction = ImmutableTransaction {
-    import exchange.amounts._
-
-    val split = if (currentStep.isFinal) Both(
-      buyer = deposits.buyer + bitcoinExchanged,
-      seller = deposits.seller - bitcoinExchanged
-    ) else {
-      val alreadyExchanged = steps.take(currentStep.value).reduce(_ + _).bitcoinAmount
-      Both(
-        buyer = alreadyExchanged,
-        seller = bitcoinExchanged - alreadyExchanged
-      )
-    }
-
+    val split = currentStep.select(exchange.amounts).depositSplit
     val depositOutputs = exchange.state.deposits.toSeq.map(_.get.getOutput(0))
-    val availableAmount = Bitcoin.fromSatoshi(depositOutputs.foldLeft(BigInteger.ZERO) {
-      (accum, output) => accum.add(output.getValue)
-    })
-    require(availableAmount == deposits.toSeq.reduce(_ + _) + exchange.amounts.transactionFee)
-
     TransactionProcessor.createUnsignedTransaction(
       inputs = depositOutputs,
       outputs = Seq(

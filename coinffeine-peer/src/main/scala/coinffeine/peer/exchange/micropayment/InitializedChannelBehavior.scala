@@ -20,12 +20,13 @@ private[micropayment] abstract class InitializedChannelBehavior[C <: FiatCurrenc
 
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
-      btcAmount = stepsUntil(signatures).foldLeft(Bitcoin.Zero)(_ + _.bitcoinAmount),
-      fiatAmount = stepsUntil(payments)
-        .foldLeft[CurrencyAmount[C]](CurrencyAmount.zero(exchange.currency))(_ + _.fiatAmount)
+      btcAmount =
+        if (signatures == 0) Bitcoin.Zero
+        else exchange.amounts.steps(signatures - 1).progress.bitcoinsTransferred,
+      fiatAmount =
+        if (payments == 0) CurrencyAmount.zero(exchange.currency)
+        else exchange.amounts.steps(payments - 1).progress.fiatTransferred
     )
     resultListeners.foreach { _ ! ExchangeProgress(progressUpdate) }
   }
-
-  private def stepsUntil(step: Int) = exchange.amounts.steps.take(step)
 }

@@ -1,10 +1,9 @@
 package coinffeine.peer.payment.okpay
 
 import org.joda.time.format.DateTimeFormat
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
-class TokenGeneratorTest extends FlatSpec with ShouldMatchers with MockitoSugar {
+class TokenGeneratorTest extends FlatSpec with ShouldMatchers {
 
   val instance = new TokenGenerator("seedToken")
 

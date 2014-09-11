@@ -2,11 +2,12 @@ package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.duration._
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
+import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.messages.handshake._
 
 class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
@@ -40,8 +41,8 @@ class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
   }
 
   it should "don't be fooled by invalid refund TX or source" in {
-    val invalidSignature = RefundSignatureResponse(exchange.id, mock[TransactionSignature])
-    gateway.relayMessage(invalidSignature, counterpartId)
+    val invalidReply = RefundSignatureResponse(exchange.id, MockExchangeProtocol.InvalidSignature)
+    gateway.relayMessage(invalidReply, counterpartId)
   }
 
   it should "send commitment TX to the broker after getting his refund TX signed" in {
