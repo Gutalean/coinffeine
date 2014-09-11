@@ -13,7 +13,8 @@ import coinffeine.model.event.{Balance, WalletBalanceChangeEvent}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 
-private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with EventPublisher {
+private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
+    extends Actor with ActorLogging with EventPublisher {
 
   import coinffeine.peer.bitcoin.WalletActor._
 
@@ -115,7 +116,8 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
 }
 
 object WalletActor {
-  private[bitcoin] def props(wallet: Wallet) = Props(new WalletActor(wallet))
+  private[bitcoin] def props(properties: MutableWalletProperties, wallet: Wallet) =
+    Props(new WalletActor(properties, wallet))
 
   private case object InternalWalletChanged
 

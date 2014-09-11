@@ -65,7 +65,7 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
     peerGroup.addWallet(wallet)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
-      peerGroup, blockchainActor.props, _ => walletActor.props, wallet,
+      peerGroup, blockchainActor.props, (_, _) => walletActor.props, wallet,
       blockchain, network, connectionRetryInterval)))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
