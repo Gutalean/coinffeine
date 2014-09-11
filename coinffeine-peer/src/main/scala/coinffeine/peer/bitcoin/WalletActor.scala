@@ -1,5 +1,6 @@
 package coinffeine.peer.bitcoin
 
+import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
@@ -26,6 +27,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
     subscribeToWalletChanges()
     updateBalance()
     updateSpendCandidates()
+    updateWalletPrimaryKeys()
   }
 
   override val receive: Receive = {
@@ -83,15 +85,23 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
   }
 
   private def updateBalance(): Unit = {
+    // TODO: do not use the event stream to inform of the balance
     val currentBalance = wallet.balance()
     if (lastBalanceReported != Some(currentBalance)) {
       publishEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
       lastBalanceReported = Some(currentBalance)
     }
+
+    properties.balance.set(Some(currentBalance))
   }
 
   private def updateSpendCandidates(): Unit = {
     blockedOutputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).asScala.toSet)
+  }
+
+  private def updateWalletPrimaryKeys(): Unit = {
+    val network = wallet.getNetworkParameters
+    properties.primaryKeyPair.set(wallet.getKeys.headOption.map(_.toAddress(network)))
   }
 
   private def subscribeToWalletChanges(): Unit = {

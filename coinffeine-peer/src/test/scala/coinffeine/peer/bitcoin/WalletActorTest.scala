@@ -18,7 +18,19 @@ import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, Unsubscrib
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
-  "The wallet actor" must "create a deposit as a multisign transaction" in new Fixture {
+  "The wallet actor" must "update wallet primary address upon start" in new Fixture {
+    eventually {
+      properties.primaryKeyPair.get should be (Some(keyPair.toAddress(network)))
+    }
+  }
+
+  it must "update the balance upon start" in new Fixture {
+    eventually {
+      properties.balance.get should be (Some(initialFunds))
+    }
+  }
+
+  it must "create a deposit as a multisign transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
     val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.1.BTC)
     instance ! request
@@ -59,12 +71,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     expectMsg(WalletBalance(10.BTC))
   }
 
-  it must "produce balance change events" in new Fixture {
-    eventChannelProbe.expectMsg(WalletBalanceChangeEvent(Balance(initialFunds)))
+  it must "update balance property when changed" in new Fixture {
     sendMoneyToWallet(wallet, 1.BTC)
     val expectedBalance = initialFunds + 1.BTC
-    eventChannelProbe.fishForMessage() {
-      case WalletBalanceChangeEvent(balance) => balance.amount == expectedBalance
+    eventually {
+      properties.balance.get should be (Some(expectedBalance))
     }
   }
 
@@ -82,8 +93,8 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
-    val wallet = createWallet(keyPair, 10.BTC)
-    val initialFunds = wallet.balance()
+    val initialFunds = 10.BTC
+    val wallet = createWallet(keyPair, initialFunds)
     val eventChannelProbe = EventChannelProbe()
     val properties = new MutableWalletProperties
     val instance = system.actorOf(WalletActor.props(properties, wallet))
