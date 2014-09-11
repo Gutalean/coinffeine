@@ -9,7 +9,7 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.currency.{BitcoinBalance, Balance, BitcoinAmount}
 import coinffeine.model.event.WalletBalanceChangeEvent
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
@@ -92,7 +92,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
       lastBalanceReported = Some(currentBalance)
     }
 
-    properties.balance.set(Some(currentBalance))
+    properties.balance.set(Some(Balance(currentBalance)))
   }
 
   private def updateSpendCandidates(): Unit = {
