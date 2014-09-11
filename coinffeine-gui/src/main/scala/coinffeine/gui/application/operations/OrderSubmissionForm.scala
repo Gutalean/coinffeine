@@ -186,7 +186,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
 
   private def checkEnoughBitcoinFunds(order: Order[Currency.Euro.type]): Boolean = checkFunds(
     required = amountsCalculator.exchangeAmountsFor(order).bitcoinRequired(order.orderType),
-    available = app.wallet.currentBalance()
+    available = app.wallet.balance.get.map(_.amount)
   )
 
   private def checkFunds[Amount <: CurrencyAmount[_]](
