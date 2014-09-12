@@ -45,6 +45,16 @@ class ApplicationProperties(app: CoinffeineApp) {
       status.value = status.value.copy(
         bitcoinStatus = bitcoinStatus.copy(blockchainStatus = newValue))
     }
+    app.network.activePeers.onChange { case (_, newValue) =>
+      val coinffeineStatus = status.value.coinffeineStatus
+      status.value = status.value.copy(
+        coinffeineStatus = coinffeineStatus.copy(activePeers = newValue))
+    }
+    app.network.brokerId.onChange { case (_, newValue) =>
+      val coinffeineStatus = status.value.coinffeineStatus
+      status.value = status.value.copy(
+        coinffeineStatus = coinffeineStatus.copy(brokerId = newValue))
+    }
     status
   }
 
