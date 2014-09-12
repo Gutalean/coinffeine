@@ -7,6 +7,7 @@ import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
@@ -23,7 +24,7 @@ abstract class HandshakeActorTest(systemName: String)
   val listener, blockchain, wallet = TestProbe()
   val actor = system.actorOf(
     HandshakeActor.props(
-      HandshakeActor.ExchangeToHandshake(exchange, user),
+      ExchangeToStart(exchange, user),
       HandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
       HandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
     ),

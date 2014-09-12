@@ -38,7 +38,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   listener.watch(actor)
 
   actor ! StartMicroPaymentChannel(
-    runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
+    runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
   )
 
   val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)

@@ -35,7 +35,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     extends InitializedChannelBehavior(init) {
     import init._
 
-    val forwarderFactory = new MessageForwarder.Factory(messageGateway, context)
+    val forwarderFactory = new MessageForwarder.Factory(gateway, context)
 
     def start(): Unit = {
       log.info("Exchange {}: seller micropayment channel started", exchange.id)

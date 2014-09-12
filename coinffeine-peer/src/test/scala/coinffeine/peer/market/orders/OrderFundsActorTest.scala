@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
 
@@ -11,7 +11,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.bitcoin.WalletActor.BlockedBitcoins
-import coinffeine.peer.market.OrderFundsActor._
+import coinffeine.peer.market.orders.OrderFundsActor._
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OrderFundsActorTest extends AkkaSpec {
@@ -31,7 +31,7 @@ class OrderFundsActorTest extends AkkaSpec {
   }
 
   it should "keep requesting bitcoin funds until succeeding" in new Fixture {
-    actor ! BlockFunds(100.EUR, 1.BTC, walletProbe.ref, paymentProcessor.ref)
+    actor ! BlockFunds(100.EUR, 1.BTC)
     givenFiatBlockingOf(100.EUR)
     givenFiatBecomeAvailable()
 
@@ -66,7 +66,7 @@ class OrderFundsActorTest extends AkkaSpec {
   trait Fixture {
     val walletProbe = TestProbe()
     val paymentProcessor = TestProbe()
-    val actor = system.actorOf(OrderFundsActor.props)
+    val actor = system.actorOf(OrderFundsActor.props(walletProbe.ref, paymentProcessor.ref))
     val fiatFunds = BlockedFundsId(1)
     val btcFunds = BlockedCoinsId(1)
 
@@ -93,7 +93,7 @@ class OrderFundsActorTest extends AkkaSpec {
     }
 
     def givenRequestedFunds(fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount): Unit = {
-      actor ! BlockFunds(fiatAmount, bitcoinAmount, walletProbe.ref, paymentProcessor.ref)
+      actor ! BlockFunds(fiatAmount, bitcoinAmount)
       if (fiatAmount.isPositive) {
         givenFiatBlockingOf(fiatAmount)
       } else {

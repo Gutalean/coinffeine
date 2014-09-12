@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
@@ -12,22 +12,20 @@ import coinffeine.peer.ProtocolConstants
 
 class OrderSupervisorTest extends AkkaSpec {
 
-  class MockOrderActor(listener: ActorRef) extends Actor {
-    private var order: Order[FiatCurrency] = _
+  class MockOrderActor(order: Order[_ <: FiatCurrency], listener: ActorRef) extends Actor {
+    override def preStart(): Unit = {
+      listener ! order
+    }
 
     override def receive: Receive = {
-      case init @ OrderActor.Initialize(_, _, _, _, _, _) =>
-        order = init.order
-        listener ! init
-      case OrderActor.RetrieveStatus =>
-        sender() ! order
-      case other =>
-        listener ! other
+      case OrderActor.RetrieveStatus => sender() ! order
+      case other => listener ! other
     }
   }
 
   object MockOrderActor {
-    def props(probe: TestProbe) = Props(new MockOrderActor(probe.ref))
+    def props(order: Order[_ <: FiatCurrency], probe: TestProbe) =
+      Props(new MockOrderActor(order, probe.ref))
   }
 
   "An OrderSupervisor" should "initialize the OrderSubmissionSupervisor" in new Fixture {
@@ -56,28 +54,21 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
-    val orderActorProbe, eventChannel, gateway, paymentProcessor, bitcoinPeer, wallet = TestProbe()
+    val orderActorProbe, eventChannel, paymentProcessor, bitcoinPeer, wallet = TestProbe()
     val submissionProbe = new MockSupervisedActor()
-    val actor = system.actorOf(Props(new OrderSupervisor(MockOrderActor.props(orderActorProbe),
-      submissionProbe.props, protocolConstants)))
+    val actor = system.actorOf(OrderSupervisor.props(
+      (order, _) => MockOrderActor.props(order, orderActorProbe), submissionProbe.props))
 
     val order1 = Order(Bid, 5.BTC, Price(500.EUR))
     val order2 = Order(Ask, 2.BTC, Price(800.EUR))
 
     def givenOrderSupervisorIsInitialized(): Unit = {
-      val initMessage = OrderSupervisor.Initialize(
-        gateway.ref, paymentProcessor.ref, bitcoinPeer.ref, wallet.ref)
-      actor ! initMessage
       submissionProbe.expectCreation()
-      val gatewayRef = gateway.ref
-      submissionProbe.expectMsg(SubmissionSupervisor.Initialize(gatewayRef))
     }
 
     def givenOpenOrder(order: Order[_ <: FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
-      orderActorProbe.expectMsgPF() {
-        case init: OrderActor.Initialize[_] if init.order == order =>
-      }
+      orderActorProbe.expectMsg(order)
     }
   }
 }

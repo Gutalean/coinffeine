@@ -6,7 +6,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.{AskPattern, ServiceActor, ServiceRegistry, ServiceRegistryActor}
+import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
@@ -15,7 +15,8 @@ import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
+import coinffeine.peer.market._
+import coinffeine.peer.market.orders.{OrderSupervisor, OrderActor}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -34,17 +35,11 @@ class CoinffeinePeerActor(
 
 import coinffeine.peer.CoinffeinePeerActor._
 
-  private val registryRef = context.actorOf(ServiceRegistryActor.props(), "registry")
-  private val registry = new ServiceRegistry(registryRef)
-
   private val gatewayRef = context.actorOf(props.gateway, "gateway")
-
-  registry.register(MessageGateway.ServiceId, gatewayRef)
-
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
   private val marketInfoRef = context.actorOf(props.marketInfo(gatewayRef), "marketInfo")
-  private val orderSupervisorRef = context.actorOf(props.orderSupervisor, "orders")
+  private var orderSupervisorRef: ActorRef = _
   private var walletRef: ActorRef = _
 
   override def starting(args: Unit) = {
@@ -62,8 +57,9 @@ import coinffeine.peer.CoinffeinePeerActor._
     handle {
       case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
         walletRef = retrievedWalletRef
-        orderSupervisorRef !
-          OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+        val collaborators = OrderSupervisorCollaborators(
+          gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+        orderSupervisorRef = context.actorOf(props.orderSupervisor(collaborators), "orders")
         becomeStarted(handleMessages)
         log.info("Coinffeine peer actor successfully started!")
       case Status.Failure(cause) =>
@@ -149,13 +145,15 @@ object CoinffeinePeerActor {
   /** Response for [[RetrieveWalletBalance]] */
   case class WalletBalance(amount: BitcoinAmount)
 
-  private val PortSetting = "coinffeine.peer.port"
-  private val BrokerHostnameSetting = "coinffeine.broker.hostname"
-  private val BrokerPortSetting = "coinffeine.broker.port"
+
+  case class OrderSupervisorCollaborators(gateway: ActorRef,
+                                          paymentProcessor: ActorRef,
+                                          bitcoinPeer: ActorRef,
+                                          wallet: ActorRef)
 
   case class PropsCatalogue(gateway: Props,
                             marketInfo: ActorRef => Props,
-                            orderSupervisor: Props,
+                            orderSupervisor: OrderSupervisorCollaborators => Props,
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
@@ -174,12 +172,22 @@ object CoinffeinePeerActor {
       val props = PropsCatalogue(
         messageGatewayProps(configProvider.messageGatewaySettings),
         MarketInfoActor.props,
-        OrderSupervisor.props(
-          exchangeActorProps, network, protocolConstants, exchangeAmountsCalculator),
+        collaborators => OrderSupervisor.props(
+          orderActorProps(collaborators),
+          SubmissionSupervisor.props(collaborators.gateway, protocolConstants)
+        ),
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings)
       )
       Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
+    }
+
+    private def orderActorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators)
+                               (order: Order[_ <: FiatCurrency], submissionSupervisor: ActorRef) = {
+      import orderSupervisorCollaborators._
+      val collaborators = OrderActor.Collaborators(
+        wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer)
+      OrderActor.props(exchangeActorProps, network, exchangeAmountsCalculator, order, collaborators)
     }
   }
 }
