@@ -47,8 +47,8 @@ private class SubmissionSupervisor(protocolConstants: ProtocolConstants)
 
     private def createDelegate(market: Market[_ <: FiatCurrency]): ActorRef = {
       log.info(s"Start submitting to $market")
-      val newDelegate = context.actorOf(MarketSubmissionActor.props(protocolConstants))
-      newDelegate ! MarketSubmissionActor.Initialize(market, gateway)
+      val newDelegate =
+        context.actorOf(MarketSubmissionActor.props(market, gateway, protocolConstants))
       delegatesByMarket += market -> newDelegate
       newDelegate
     }
