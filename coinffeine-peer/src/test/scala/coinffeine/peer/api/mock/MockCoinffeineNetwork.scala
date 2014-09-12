@@ -14,8 +14,6 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
   override val activePeers: MutableProperty[Int] = new MutableProperty(0)
   override val brokerId: MutableProperty[Option[PeerId]] = new MutableProperty(None)
 
-  override def status: Status = ???
-
   override def orders = _orders
 
   override def cancelOrder(orderId: OrderId, reason: String): Unit = {

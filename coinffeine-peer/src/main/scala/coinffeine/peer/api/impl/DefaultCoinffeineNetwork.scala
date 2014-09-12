@@ -24,14 +24,6 @@ private[impl] class DefaultCoinffeineNetwork(
   override val activePeers: Property[Int] = properties.activePeers
   override val brokerId: Property[Option[PeerId]] = properties.brokerId
 
-  override def status = await(AskPattern(
-    to = peer,
-    request = CoinffeinePeerActor.RetrieveConnectionStatus,
-    errorMessage = "Cannot get connection status"
-  ).withImmediateReply[CoinffeinePeerActor.ConnectionStatus]().map { status =>
-    if (status.connected) Connected else Disconnected
-  })
-
   override def orders = await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {

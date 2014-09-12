@@ -9,8 +9,6 @@ import coinffeine.model.properties.Property
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork extends CoinffeineNetworkProperties {
 
-  def status: CoinffeineNetwork.Status
-
   def orders: Set[Order[c] forSome { type c <: FiatCurrency }]
 
   def exchanges: Set[AnyExchange] = orders.flatMap[AnyExchange, Set[AnyExchange]](_.exchanges.values)
@@ -45,10 +43,6 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
 }
 
 object CoinffeineNetwork {
-
-  sealed trait Status
-  case object Disconnected extends Status
-  case object Connected extends Status
 
   case class ConnectException(cause: Throwable)
     extends Exception("Cannot connect to the P2P network", cause)
