@@ -6,9 +6,9 @@ import scalafx.collections.ObservableBuffer
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.{BitcoinBalance, Balance}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
-import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.model.event._
 import coinffeine.model.market.OrderId
 import coinffeine.model.properties.Property
@@ -33,7 +33,7 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
     CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
-      BitcoinConnectionStatus(0, NotDownloading)))
+      BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading)))
 
   private val eventHandler: EventHandler = FxEventHandler {
 

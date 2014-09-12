@@ -1,6 +1,6 @@
 package coinffeine.gui.control
 
-import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 
 /** Combines Coinffeine and Bitcoin Connection status information */
@@ -12,8 +12,8 @@ case class CombinedConnectionStatus(
   val color: StatusColor =
     if (!coinffeineStatus.connected || !bitcoinStatus.connected) Red
     else bitcoinStatus.blockchainStatus match {
-      case NotDownloading => Green
-      case _: Downloading => Yellow
+      case BlockchainStatus.NotDownloading => Green
+      case _: BlockchainStatus.Downloading => Yellow
     }
 
   val description: String = "%s, %s%s".format(
@@ -29,8 +29,8 @@ case class CombinedConnectionStatus(
 
   private def formatBlockchainSyncing: String = {
     bitcoinStatus.blockchainStatus match {
-      case NotDownloading => ""
-      case download: Downloading =>
+      case BlockchainStatus.NotDownloading => ""
+      case download: BlockchainStatus.Downloading =>
         val percent = (download.progress * 100).toInt
         s", syncing blockchain ($percent%)"
     }

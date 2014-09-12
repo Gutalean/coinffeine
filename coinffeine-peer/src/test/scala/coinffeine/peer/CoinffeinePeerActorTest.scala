@@ -5,6 +5,7 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus, EventChannelProbe}
@@ -22,7 +23,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   "A peer" must "report the connection status" in new StartedFixture {
     peer ! CoinffeinePeerActor.RetrieveConnectionStatus
-    val bitcoinStatus = BitcoinConnectionStatus(0, BitcoinConnectionStatus.NotDownloading)
+    val bitcoinStatus = BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading)
     bitcoinPeer.expectAskWithReply {
       case BitcoinPeerActor.RetrieveConnectionStatus => bitcoinStatus
     }

@@ -7,7 +7,7 @@ import scalafx.beans.property.ObjectProperty
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
-import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 
 class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
@@ -15,7 +15,7 @@ class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
 
   val status = ObjectProperty(CombinedConnectionStatus(
     CoinffeineConnectionStatus(0),
-    BitcoinConnectionStatus(activePeers = 0, NotDownloading)
+    BitcoinConnectionStatus(activePeers = 0, BlockchainStatus.NotDownloading)
   ))
   override def createRootNode() = new ConnectionStatusWidget(status)
 
@@ -27,7 +27,7 @@ class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
     Platform.runLater {
       status.set(CombinedConnectionStatus(
         CoinffeineConnectionStatus(5),
-        BitcoinConnectionStatus(activePeers = 10, NotDownloading)
+        BitcoinConnectionStatus(activePeers = 10, BlockchainStatus.NotDownloading)
       ))
     }
     eventually {

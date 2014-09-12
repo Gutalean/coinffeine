@@ -9,9 +9,9 @@ import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
+import coinffeine.model.bitcoin.BlockchainStatus.NotDownloading
 import coinffeine.model.bitcoin._
 import coinffeine.model.event.BitcoinConnectionStatus
-import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
@@ -27,7 +27,7 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
   private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
   private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
   private var connectionStatus =
-    BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
+    BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), BlockchainStatus.NotDownloading)
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
@@ -89,17 +89,17 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
 
     case DownloadStarted(remainingBlocks) =>
-      updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloading(
+      updateConnectionStatus(connectionStatus.copy(blockchainStatus = BlockchainStatus.Downloading(
         totalBlocks = remainingBlocks,
         remainingBlocks = remainingBlocks
       )))
 
     case DownloadProgress(remainingBlocks) =>
       connectionStatus.blockchainStatus match {
-        case Downloading(totalBlocks, previouslyRemainingBlocks)
+        case BlockchainStatus.Downloading(totalBlocks, previouslyRemainingBlocks)
           if remainingBlocks <= previouslyRemainingBlocks =>
           updateConnectionStatus(connectionStatus.copy(blockchainStatus =
-            Downloading(totalBlocks, remainingBlocks)))
+            BlockchainStatus.Downloading(totalBlocks, remainingBlocks)))
         case otherStatus =>
           log.debug("Received download progress ({}) when having status {}",
             remainingBlocks, otherStatus)

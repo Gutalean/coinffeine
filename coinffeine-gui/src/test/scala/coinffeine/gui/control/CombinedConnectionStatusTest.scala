@@ -2,19 +2,19 @@ package coinffeine.gui.control
 
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.control.CombinedConnectionStatus.{Red, Yellow, Green}
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.event.{CoinffeineConnectionStatus, BitcoinConnectionStatus}
-import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
 import coinffeine.model.network.PeerId
 
 class CombinedConnectionStatusTest extends UnitTest {
 
   val bitcoinStatuses = Set(
-    BitcoinConnectionStatus(0, NotDownloading),
-    BitcoinConnectionStatus(0, Downloading(100, 50)),
-    BitcoinConnectionStatus(1, NotDownloading),
-    BitcoinConnectionStatus(1, Downloading(100, 50)),
-    BitcoinConnectionStatus(2, NotDownloading),
-    BitcoinConnectionStatus(3, Downloading(100, 10))
+    BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading),
+    BitcoinConnectionStatus(0, BlockchainStatus.Downloading(100, 50)),
+    BitcoinConnectionStatus(1, BlockchainStatus.NotDownloading),
+    BitcoinConnectionStatus(1, BlockchainStatus.Downloading(100, 50)),
+    BitcoinConnectionStatus(2, BlockchainStatus.NotDownloading),
+    BitcoinConnectionStatus(3, BlockchainStatus.Downloading(100, 10))
   )
   val coinffeineStatuses = Set(
     CoinffeineConnectionStatus(0),
@@ -33,7 +33,7 @@ class CombinedConnectionStatusTest extends UnitTest {
       for {
         coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
         bitcoinStatus <- bitcoinStatuses
-        if bitcoinStatus.connected && bitcoinStatus.blockchainStatus == NotDownloading
+        if bitcoinStatus.connected && bitcoinStatus.blockchainStatus == BlockchainStatus.NotDownloading
         combinedStatus = CombinedConnectionStatus(coinffeineStatus, bitcoinStatus)
       } withClue(combinedStatus) {
         combinedStatus.color should be (Green)
@@ -44,7 +44,7 @@ class CombinedConnectionStatusTest extends UnitTest {
     for {
       coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
       bitcoinStatus <- bitcoinStatuses
-      if bitcoinStatus.connected && bitcoinStatus.blockchainStatus != NotDownloading
+      if bitcoinStatus.connected && bitcoinStatus.blockchainStatus != BlockchainStatus.NotDownloading
       combinedStatus = CombinedConnectionStatus(coinffeineStatus, bitcoinStatus)
     } withClue(combinedStatus) {
       combinedStatus.color should be (Yellow)
@@ -81,7 +81,7 @@ class CombinedConnectionStatusTest extends UnitTest {
 
   it should "report the blockchain syncing progress" in {
     forEveryStatus { status =>
-      if (status.bitcoinStatus.blockchainStatus == NotDownloading) {
+      if (status.bitcoinStatus.blockchainStatus == BlockchainStatus.NotDownloading) {
         status.description should not include "syncing blockchain"
       } else {
         status.description should include("syncing blockchain")
