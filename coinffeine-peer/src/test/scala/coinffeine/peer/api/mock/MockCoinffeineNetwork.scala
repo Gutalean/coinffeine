@@ -2,12 +2,17 @@ package coinffeine.peer.api.mock
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.network.PeerId
+import coinffeine.model.properties.MutableProperty
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
 class MockCoinffeineNetwork extends CoinffeineNetwork {
 
   private var _orders: Set[Order[c] forSome { type c <: FiatCurrency }] = Set.empty
+
+  override val activePeers: MutableProperty[Int] = new MutableProperty(0)
+  override val brokerId: MutableProperty[Option[PeerId]] = new MutableProperty(None)
 
   override def status: Status = ???
 

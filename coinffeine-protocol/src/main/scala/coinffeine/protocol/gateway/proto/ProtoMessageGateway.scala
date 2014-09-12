@@ -6,19 +6,21 @@ import akka.actor._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, CoinffeineNetworkProperties}
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage, SendProtoMessageToBroker}
 import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.NotifySubscribers
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
-private class ProtoMessageGateway(serialization: ProtocolSerialization,
+private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties,
+                                  serialization: ProtocolSerialization,
                                   ignoredNetworkInterfaces: Seq[NetworkInterface])
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props, "subscriptions")
   private val server = context.actorOf(
-    ProtobufServerActor.props(ignoredNetworkInterfaces), "server")
+    ProtobufServerActor.props(properties, ignoredNetworkInterfaces), "server")
 
   override protected def starting(join: Join): Receive = {
     server ! ServiceActor.Start(join)
@@ -63,9 +65,11 @@ private class ProtoMessageGateway(serialization: ProtocolSerialization,
 object ProtoMessageGateway {
 
   trait Component extends MessageGateway.Component {
-    this: ProtocolSerializationComponent with NetworkComponent=>
+    this: ProtocolSerializationComponent with NetworkComponent
+      with MutableCoinffeineNetworkProperties.Component =>
 
     override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface]) = Props(
-      new ProtoMessageGateway(protocolSerialization, ignoredNetworkInterfaces))
+      new ProtoMessageGateway(
+        coinffeineNetworkProperties, protocolSerialization, ignoredNetworkInterfaces))
   }
 }

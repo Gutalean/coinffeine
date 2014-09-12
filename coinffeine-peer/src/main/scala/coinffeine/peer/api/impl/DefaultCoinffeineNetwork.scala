@@ -10,13 +10,19 @@ import org.slf4j.LoggerFactory
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
+import coinffeine.model.properties.Property
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import coinffeine.peer.api.CoinffeineNetwork
 import coinffeine.peer.api.CoinffeineNetwork._
 
-private[impl] class DefaultCoinffeineNetwork(override val peer: ActorRef)
-  extends CoinffeineNetwork with PeerActorWrapper {
+private[impl] class DefaultCoinffeineNetwork(
+    properties: CoinffeineNetworkProperties,
+    override val peer: ActorRef) extends CoinffeineNetwork with PeerActorWrapper {
+
+  override val activePeers: Property[Int] = properties.activePeers
+  override val brokerId: Property[Option[PeerId]] = properties.brokerId
 
   override def status = await(AskPattern(
     to = peer,

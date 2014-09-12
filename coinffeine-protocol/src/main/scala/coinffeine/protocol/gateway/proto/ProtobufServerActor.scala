@@ -8,7 +8,7 @@ import scala.util._
 
 import akka.actor._
 import akka.pattern._
-import net.tomp2p.connection.{PeerConnection, Bindings}
+import net.tomp2p.connection.{Bindings, PeerConnection}
 import net.tomp2p.futures.{FutureBootstrap, FutureDHT, FutureDiscover}
 import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.peers.{Number160, PeerAddress, PeerMapChangeListener}
@@ -17,12 +17,13 @@ import net.tomp2p.storage.Data
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.event.CoinffeineConnectionStatus
-import coinffeine.model.network.{BrokerId, NodeId, PeerId}
+import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface])
+private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   import coinffeine.protocol.gateway.proto.ProtobufServerActor._
@@ -56,6 +57,19 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     connections.values.foreach(_.close())
     Option(me).map(_.shutdown())
     becomeStopped()
+  }
+
+  private def updateConnectionStatus(activePeers: Int, brokerId: Option[PeerId]): Unit = {
+    updateConnectionStatus(activePeers)
+    updateConnectionStatus(brokerId)
+  }
+
+  private def updateConnectionStatus(activePeers: Int): Unit = {
+    properties.activePeers.set(activePeers)
+  }
+
+  private def updateConnectionStatus(brokerId: Option[PeerId]): Unit = {
+    properties.brokerId.set(brokerId)
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
@@ -142,10 +156,12 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
 
     def start(): Unit = {
+      // TODO: remove this once connection status event is not needed
       connectionStatus = CoinffeineConnectionStatus(
         activePeers = me.getPeerBean.getPeerMap.getAll.size(),
         brokerId = Some(brokerId)
       )
+      updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size(), Some(brokerId))
       publishConnectionStatusEvent()
       become(handlingMessages orElse manageConnectionStatus)
     }
@@ -186,7 +202,9 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
       sender() ! connectionStatus
 
     case PeerMapChanged =>
+      // TODO: remove this once connection status event is not needed
       connectionStatus = connectionStatus.copy(activePeers = me.getPeerBean.getPeerMap.getAll.size())
+      updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size())
       publishConnectionStatusEvent()
   }
 
@@ -230,8 +248,9 @@ private[gateway] object ProtobufServerActor {
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
-  def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
-    new ProtobufServerActor(ignoredNetworkInterfaces))
+  def props(properties: MutableCoinffeineNetworkProperties,
+            ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
+    new ProtobufServerActor(properties, ignoredNetworkInterfaces))
 
   /** Send a message to a peer */
   case class SendProtoMessage(to: NodeId, msg: CoinffeineMessage)

@@ -11,7 +11,7 @@ import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{BrokerId, PeerId}
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -117,9 +117,12 @@ class ProtoMessageGatewayTest
   trait Fixture extends ProtoMessageGateway.Component
       with TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
-      with IgnoredNetworkInterfaces {
+      with IgnoredNetworkInterfaces
+      with MutableCoinffeineNetworkProperties.Component {
 
     private val subscribeToAnything = Subscribe { case _ => }
+
+    override val coinffeineNetworkProperties = new MutableCoinffeineNetworkProperties
 
     def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
 

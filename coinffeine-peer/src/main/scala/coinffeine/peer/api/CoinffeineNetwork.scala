@@ -3,9 +3,11 @@ package coinffeine.peer.api
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
+import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
+import coinffeine.model.properties.Property
 
 /** Represents how the app takes part on the P2P network */
-trait CoinffeineNetwork {
+trait CoinffeineNetwork extends CoinffeineNetworkProperties {
 
   def status: CoinffeineNetwork.Status
 
