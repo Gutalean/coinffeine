@@ -8,7 +8,6 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 
 class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
   with Eventually {

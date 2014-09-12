@@ -10,7 +10,6 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFut
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
-import coinffeine.model.event.BitcoinConnectionStatus
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
@@ -72,12 +71,6 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
   }
 
   private def commonHandling: Receive = {
-    case RetrieveConnectionStatus =>
-      sender() ! BitcoinConnectionStatus(
-        activePeers = properties.network.activePeers.get,
-        blockchainStatus = properties.network.blockchainStatus.get
-      )
-
     case RetrieveBlockchainActor =>
       sender ! BlockchainActorRef(blockchainRef)
 
@@ -208,9 +201,6 @@ object BitcoinPeerActor {
       request = BitcoinPeerActor.RetrieveBlockchainActor,
       errorMessage = s"Cannot retrieve blockchain actor from $bitcoinPeer"
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
-
-  /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
-  case object RetrieveConnectionStatus
 
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.
