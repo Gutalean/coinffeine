@@ -2,15 +2,10 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
+import coinffeine.model.bitcoin.{WalletProperties, Address, Hash, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 
-trait CoinffeineWallet {
-
-  def currentBalance(): Option[BitcoinAmount]
-
-  /** Where to transfer BTC funds to top-up Coinffeine */
-  def depositAddress: Address
+trait CoinffeineWallet extends WalletProperties {
 
   def importPrivateKey(address: Address, key: KeyPair): Unit
 

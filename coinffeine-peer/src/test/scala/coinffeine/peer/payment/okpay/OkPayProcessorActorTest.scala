@@ -14,8 +14,8 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
-import coinffeine.model.event.{Balance, EventChannelProbe, FiatBalanceChangeEvent}
+import coinffeine.model.currency.{Balance, FiatAmount, FiatCurrency}
+import coinffeine.model.event.{EventChannelProbe, FiatBalanceChangeEvent}
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.PaymentProcessorActor
 

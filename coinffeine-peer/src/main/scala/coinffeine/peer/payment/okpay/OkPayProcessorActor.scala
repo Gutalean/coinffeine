@@ -9,8 +9,8 @@ import akka.actor._
 import akka.pattern._
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.event.{Balance, FiatBalanceChangeEvent}
+import coinffeine.model.currency.{Balance, CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.event.FiatBalanceChangeEvent
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.event.EventPublisher

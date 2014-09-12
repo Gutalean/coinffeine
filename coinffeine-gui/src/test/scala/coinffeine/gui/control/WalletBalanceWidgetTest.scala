@@ -9,9 +9,9 @@ import scalafx.beans.property.ObjectProperty
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
+import coinffeine.model.currency.Balance
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.Balance
 
 class WalletBalanceWidgetTest extends GuiTest[WalletBalanceWidget[Bitcoin.type]] with Eventually {
 

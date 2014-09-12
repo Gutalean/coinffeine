@@ -1,5 +1,6 @@
 package coinffeine.peer.bitcoin
 
+import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
@@ -8,14 +9,14 @@ import com.google.bitcoin.core._
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.event.{Balance, WalletBalanceChangeEvent}
+import coinffeine.model.currency.{Balance, BitcoinAmount}
 import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 
-private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with EventPublisher {
+private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
+    extends Actor with ActorLogging with EventPublisher {
 
-  import coinffeine.peer.bitcoin.WalletActor._
+  import WalletActor._
 
   private var lastBalanceReported: Option[BitcoinAmount] = None
   private val blockedOutputs = new BlockedOutputs()
@@ -25,6 +26,7 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
     subscribeToWalletChanges()
     updateBalance()
     updateSpendCandidates()
+    updateWalletPrimaryKeys()
   }
 
   override val receive: Receive = {
@@ -82,15 +84,16 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
   }
 
   private def updateBalance(): Unit = {
-    val currentBalance = wallet.balance()
-    if (lastBalanceReported != Some(currentBalance)) {
-      publishEvent(WalletBalanceChangeEvent(Balance(currentBalance)))
-      lastBalanceReported = Some(currentBalance)
-    }
+    properties.balance.set(Some(Balance(wallet.balance())))
   }
 
   private def updateSpendCandidates(): Unit = {
     blockedOutputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).asScala.toSet)
+  }
+
+  private def updateWalletPrimaryKeys(): Unit = {
+    val network = wallet.getNetworkParameters
+    properties.primaryAddress.set(wallet.getKeys.headOption.map(_.toAddress(network)))
   }
 
   private def subscribeToWalletChanges(): Unit = {
@@ -115,7 +118,8 @@ private class WalletActor(wallet: Wallet) extends Actor with ActorLogging with E
 }
 
 object WalletActor {
-  private[bitcoin] def props(wallet: Wallet) = Props(new WalletActor(wallet))
+  private[bitcoin] def props(properties: MutableWalletProperties, wallet: Wallet) =
+    Props(new WalletActor(properties, wallet))
 
   private case object InternalWalletChanged
 

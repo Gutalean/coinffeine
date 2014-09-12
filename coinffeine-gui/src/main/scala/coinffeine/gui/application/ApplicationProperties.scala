@@ -6,25 +6,27 @@ import scalafx.collections.ObservableBuffer
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.CombinedConnectionStatus
 import coinffeine.gui.util.FxEventHandler
+import coinffeine.model.currency.{BitcoinBalance, Balance}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
 import coinffeine.model.event._
 import coinffeine.model.market.OrderId
+import coinffeine.model.properties.Property
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) {
-  type BitcoinBalance = Balance[Bitcoin.type]
+
   type FiatBalance = Balance[Euro.type]
+
+  import coinffeine.gui.util.FxExecutor.asContext
 
   val ordersProperty = ObservableBuffer[OrderProperties]()
 
-  def walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] = _walletBalanceProperty
+  val walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] =
+    bindTo(app.wallet.balance, "WalletBalance")
   def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
   def connectionStatusProperty: ReadOnlyObjectProperty[CombinedConnectionStatus] =
     _connectionStatus
-
-  private val _walletBalanceProperty = new ObjectProperty[Option[BitcoinBalance]](
-    this, "walletBalance", app.wallet.currentBalance().map(amount => Balance(amount)))
 
   private val _fiatBalanceProperty =
     new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
@@ -45,9 +47,6 @@ class ApplicationProperties(app: CoinffeineApp) {
     case OrderProgressedEvent(order, _, newProgress) =>
       withOrder(order) { o => o.updateProgress(newProgress) }
 
-    case WalletBalanceChangeEvent(newBalance) =>
-      _walletBalanceProperty.set(Some(newBalance))
-
     case FiatBalanceChangeEvent(newBalance) if newBalance.amount.currency == Euro =>
       _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
 
@@ -63,6 +62,12 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private def withOrder(orderId: OrderId)(f: OrderProperties => Unit): Unit =
     ordersProperty.find(_.idProperty.value == orderId).foreach(f)
+
+  private def bindTo[A](prop: Property[A], name: String): ReadOnlyObjectProperty[A] = {
+    val result = new ObjectProperty[A](this, name, prop.get)
+    prop.onChange { case (_, newValue) => result.value = newValue }
+    result
+  }
 
   app.observe(eventHandler)
 }

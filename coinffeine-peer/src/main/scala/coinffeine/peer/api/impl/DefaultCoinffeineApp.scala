@@ -8,6 +8,7 @@ import akka.util.Timeout
 import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
+import coinffeine.model.bitcoin.BitcoinProperties
 import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
@@ -15,15 +16,18 @@ import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
+import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 
 /** Implements the coinffeine application API as an actor system.
   *
   * @constructor
   * @param name       Name used for the actor system (useful for making sense of actor refs)
+  * @param bitcoinProperties The bitcoin properties of the app
   * @param accountId  Payment processor account to use
   * @param peerProps  Props to start the main actor
   */
 class DefaultCoinffeineApp(name: String,
+                           bitcoinProperties: BitcoinProperties,
                            accountId: PaymentProcessor.AccountId,
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator) extends CoinffeineApp {
@@ -33,7 +37,7 @@ class DefaultCoinffeineApp(name: String,
 
   override val network = new DefaultCoinffeineNetwork(peerRef)
 
-  override lazy val wallet = new DefaultCoinffeineWallet(peerRef)
+  override lazy val wallet = new DefaultCoinffeineWallet(bitcoinProperties.wallet)
 
   override val marketStats = new DefaultMarketStats(peerRef)
 
@@ -68,11 +72,12 @@ object DefaultCoinffeineApp {
   private val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineApp])
 
   trait Component extends CoinffeineAppComponent {
-    this: CoinffeinePeerActor.Component with ConfigComponent with DefaultAmountsComponent =>
+    this: CoinffeinePeerActor.Component with ConfigComponent
+      with DefaultAmountsComponent with DefaultCoinffeinePropertiesComponent =>
 
     private lazy val accountId = configProvider.okPaySettings.userAccount
 
     override lazy val app = new DefaultCoinffeineApp(
-      name = accountId, accountId, peerProps, exchangeAmountsCalculator)
+      name = accountId, bitcoinProperties, accountId, peerProps, exchangeAmountsCalculator)
   }
 }

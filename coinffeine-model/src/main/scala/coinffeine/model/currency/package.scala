@@ -2,6 +2,7 @@ package coinffeine.model
 
 package object currency {
   type BitcoinAmount = CurrencyAmount[Currency.Bitcoin.type]
+  type BitcoinBalance = Balance[Currency.Bitcoin.type]
 
   type FiatAmount = CurrencyAmount[_ <: FiatCurrency]
   object FiatAmount {
