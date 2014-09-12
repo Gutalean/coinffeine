@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.testkit.TestProbe
 
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
@@ -11,7 +10,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeS
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.payment.MockPaymentProcessorFactory
-import coinffeine.protocol.gateway.{LinkedMessageGateways, MessageGateway}
+import coinffeine.protocol.gateway.LinkedMessageGateways
 
 class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") {
   val buyerListener = TestProbe()
@@ -38,17 +37,13 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val sellerRunningExchange =
     sellerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
 
-  val buyerRegistry, sellerRegistry = system.actorOf(ServiceRegistryActor.props())
   val gateways = new LinkedMessageGateways(PeerId("broker"), peerIds.buyer, peerIds.seller)
-
-  new ServiceRegistry(buyerRegistry).register(MessageGateway.ServiceId, gateways.leftGateway)
-  new ServiceRegistry(sellerRegistry).register(MessageGateway.ServiceId, gateways.rightGateway)
 
   "The buyer and seller actors" should "be able to perform an exchange" in {
     buyer ! StartMicroPaymentChannel(buyerRunningExchange, buyerPaymentProc,
-      buyerRegistry, Set(buyerListener.ref))
+      gateways.leftGateway, Set(buyerListener.ref))
     seller ! StartMicroPaymentChannel(sellerRunningExchange, sellerPaymentProc,
-      sellerRegistry, Set(sellerListener.ref))
+      gateways.rightGateway, Set(sellerListener.ref))
     buyerListener.receiveWhile() {
       case LastBroadcastableOffer(_) =>
       case ExchangeProgress(_) =>

@@ -6,7 +6,7 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.{AskPattern, ServiceActor, ServiceRegistry, ServiceRegistryActor}
+import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
@@ -34,13 +34,7 @@ class CoinffeinePeerActor(
 
 import coinffeine.peer.CoinffeinePeerActor._
 
-  private val registryRef = context.actorOf(ServiceRegistryActor.props(), "registry")
-  private val registry = new ServiceRegistry(registryRef)
-
   private val gatewayRef = context.actorOf(props.gateway, "gateway")
-
-  registry.register(MessageGateway.ServiceId, gatewayRef)
-
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
   private val marketInfoRef = context.actorOf(props.marketInfo(gatewayRef), "marketInfo")
@@ -63,10 +57,10 @@ import coinffeine.peer.CoinffeinePeerActor._
       case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
         walletRef = retrievedWalletRef
         val collaborators = OrderSupervisor.Collaborators(
-          registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+          gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
         orderSupervisorRef = context.actorOf(props.orderSupervisor(collaborators), "orders")
         orderSupervisorRef !
-          OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+          OrderSupervisor.Initialize(gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
         becomeStarted(handleMessages)
         log.info("Coinffeine peer actor successfully started!")
       case Status.Failure(cause) =>
@@ -185,7 +179,7 @@ object CoinffeinePeerActor {
                                (order: Order[_ <: FiatCurrency], submissionSupervisor: ActorRef) = {
       import orderSupervisorCollaborators._
       val collaborators = OrderActor.Collaborators(
-        wallet, paymentProcessor, submissionSupervisor, registry, bitcoinPeer)
+        wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer)
       OrderActor.props(exchangeActorProps, network, exchangeAmountsCalculator, order, collaborators)
     }
   }

@@ -6,7 +6,7 @@ import scala.util.{Failure, Success}
 import akka.actor._
 import com.google.bitcoin.core.NetworkParameters
 
-import coinffeine.common.akka.{AskPattern, ServiceRegistry}
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
@@ -42,8 +42,6 @@ class OrderActor[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
   private var currentOrder = initialOrder
   private var blockedFunds: Option[BlockedFunds] = None
   private val fundsActor = context.actorOf(orderFundsActorProps, "funds")
-  private val messageGateway = new ServiceRegistry(collaborators.registry)
-    .eventuallyLocate(MessageGateway.ServiceId)
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", initialOrder.id)
@@ -55,7 +53,7 @@ class OrderActor[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
   override def receive = stalled
 
   private def subscribeToMessages(): Unit = {
-    messageGateway ! MessageGateway.Subscribe.fromBroker {
+    collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
       case orderMatch: OrderMatch if orderMatch.orderId == currentOrder.id &&
         orderMatch.fiatAmount.currency == initialOrder.price.currency =>
     }
@@ -136,7 +134,7 @@ class OrderActor[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
           orderMatch.exchangeId)
       } else {
         val rejection = ExchangeRejection(orderMatch.exchangeId, errorMessage)
-        messageGateway ! ForwardMessage(rejection, BrokerId)
+        collaborators.gateway ! ForwardMessage(rejection, BrokerId)
       }
   }
 
@@ -177,7 +175,7 @@ class OrderActor[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
     import collaborators._
     val props = exchangeActorProps(
       ExchangeActor.ExchangeToStart(exchange, user),
-      ExchangeActor.Collaborators(wallet, paymentProcessor, registry, bitcoinPeer, resultListener = self)
+      ExchangeActor.Collaborators(wallet, paymentProcessor, gateway, bitcoinPeer, resultListener = self)
     )
     context.actorOf(props, exchange.id.value)
   }
@@ -224,7 +222,7 @@ object OrderActor {
   case class Collaborators(wallet: ActorRef,
                            paymentProcessor: ActorRef,
                            submissionSupervisor: ActorRef,
-                           registry: ActorRef,
+                           gateway: ActorRef,
                            bitcoinPeer: ActorRef)
 
   case class CancelOrder(reason: String)

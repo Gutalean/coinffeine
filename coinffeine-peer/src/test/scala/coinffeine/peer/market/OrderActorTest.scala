@@ -6,7 +6,6 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.common.akka.{ServiceRegistry, ServiceRegistryActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.Implicits._
@@ -24,7 +23,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Per
 import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.protocol.gateway.{MessageGateway, MockGateway}
+import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
@@ -218,17 +217,15 @@ class OrderActorTest extends AkkaSpec {
     val exchangeActor = new MockSupervisedActor()
     def calculator = new AmountsCalculator {
       override def exchangeAmountsFor[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
-                                                 fiatAmount: CurrencyAmount[C]) =
+                                                         fiatAmount: CurrencyAmount[C]) =
         amounts.asInstanceOf[Amounts[C]]
     }
     val paymentProcessorId = exchange.role.select(participants).paymentProcessorAccount
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)
-    val registryActor = system.actorOf(ServiceRegistryActor.props())
-    new ServiceRegistry(registryActor).register(MessageGateway.ServiceId, gatewayProbe.ref)
     private val collaborators = OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
-      submissionProbe.ref, registryActor, bitcoinPeerProbe.ref)
+      submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref)
     val actor = system.actorOf(Props(new OrderActor(
       (_, _) => exchangeActor.props,
       fundsActor.props,

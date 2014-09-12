@@ -57,7 +57,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
     private def forwardOrders(orders: SubmittingOrders): Unit = {
       context.actorOf(PeerPositionsSubmitter.props(
-        market, orders, registry, protocolConstants))
+        market, orders, gateway, protocolConstants))
       context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
     }
   }
@@ -65,7 +65,7 @@ private[market] class MarketSubmissionActor(protocolConstants: ProtocolConstants
 
 private[market] object MarketSubmissionActor {
 
-  case class Initialize[C <: FiatCurrency](market: Market[C], registry: ActorRef)
+  case class Initialize[C <: FiatCurrency](market: Market[C], gateway: ActorRef)
 
   def props(constants: ProtocolConstants) = Props(new MarketSubmissionActor(constants))
 }

@@ -2,7 +2,6 @@ package coinffeine.peer.exchange
 
 import akka.actor._
 
-import coinffeine.common.akka.ServiceRegistry
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -15,7 +14,6 @@ import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
-import coinffeine.protocol.gateway.MessageGateway
 
 class DefaultExchangeActor[C <: FiatCurrency](
     handshakeActorProps: (ExchangeActor.ExchangeToStart[_ <: FiatCurrency],
@@ -66,19 +64,13 @@ class DefaultExchangeActor[C <: FiatCurrency](
     val runningExchange = handshakingExchange.startExchanging(commitments)
     val ref = context.actorOf(channelActorProps, MicroPaymentChannelActorName)
     ref ! StartMicroPaymentChannel(runningExchange, collaborators.paymentProcessor,
-      collaborators.registry, resultListeners = Set(self, txBroadcaster))
+      collaborators.gateway, resultListeners = Set(self, txBroadcaster))
     context.become(inMicropaymentChannel(runningExchange))
   }
 
   private def startHandshake(): Unit = {
-    import context.dispatcher
     val handshakeCollaborators = HandshakeActor.Collaborators(
-      gateway = new ServiceRegistry(collaborators.registry)
-        .eventuallyLocate(MessageGateway.ServiceId),
-      blockchain,
-      collaborators.wallet,
-      listener = self
-    )
+      collaborators.gateway, blockchain, collaborators.wallet, listener = self)
     handshakeActor = context.actorOf(
       handshakeActorProps(exchange, handshakeCollaborators), HandshakeActorName)
   }

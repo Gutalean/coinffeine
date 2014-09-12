@@ -18,7 +18,7 @@ object ExchangeActor {
 
   case class Collaborators(wallet: ActorRef,
                            paymentProcessor: ActorRef,
-                           registry: ActorRef,
+                           gateway: ActorRef,
                            bitcoinPeer: ActorRef,
                            resultListener: ActorRef)
 

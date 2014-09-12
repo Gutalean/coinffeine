@@ -29,7 +29,7 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(registry)
+      submission ! SubmissionSupervisor.Initialize(gateway)
       context.become(waitingForOrders)
     }
 
@@ -57,12 +57,12 @@ object OrderSupervisor {
 
   type OrderActorProps = (Order[_ <: FiatCurrency], ActorRef) => Props
 
-  case class Collaborators(registry: ActorRef,
+  case class Collaborators(gateway: ActorRef,
                            paymentProcessor: ActorRef,
                            bitcoinPeer: ActorRef,
                            wallet: ActorRef)
 
-  case class Initialize(registry: ActorRef,
+  case class Initialize(gateway: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)

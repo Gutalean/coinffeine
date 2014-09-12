@@ -55,7 +55,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       transactionBroadcastActor.props,
       new MockExchangeProtocol,
       ExchangeToStart(exchange, user),
-      Collaborators(walletActor.ref, dummyPaymentProcessor, registryActor, peers.ref, listener.ref)
+      Collaborators(walletActor.ref, dummyPaymentProcessor, gateway.ref, peers.ref, listener.ref)
     )))
     listener.watch(actor)
 
@@ -93,7 +93,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenMicropaymentChannelSuccess(): Unit = {
       givenMicropaymentChannelCreation()
       val initMessage = StartMicroPaymentChannel(runningExchange, dummyPaymentProcessor,
-        registryActor, Set(actor, transactionBroadcastActor.ref))
+        gateway.ref, Set(actor, transactionBroadcastActor.ref))
       micropaymentChannelActor.expectAskWithReply {
         case `initMessage` => MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx))
       }

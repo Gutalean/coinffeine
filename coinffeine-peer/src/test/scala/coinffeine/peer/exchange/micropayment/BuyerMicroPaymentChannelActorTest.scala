@@ -42,7 +42,7 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
     actor ! StartMicroPaymentChannel(
-      runningExchange, paymentProcessor.ref, registryActor, Set(listener.ref)
+      runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
     )
     gateway.expectSubscription()
   }
