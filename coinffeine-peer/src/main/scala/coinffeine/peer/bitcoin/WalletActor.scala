@@ -93,7 +93,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 
   private def updateWalletPrimaryKeys(): Unit = {
     val network = wallet.getNetworkParameters
-    properties.primaryKeyPair.set(wallet.getKeys.headOption.map(_.toAddress(network)))
+    properties.primaryAddress.set(wallet.getKeys.headOption.map(_.toAddress(network)))
   }
 
   private def subscribeToWalletChanges(): Unit = {

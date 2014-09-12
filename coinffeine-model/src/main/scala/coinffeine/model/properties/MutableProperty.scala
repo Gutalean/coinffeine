@@ -4,16 +4,24 @@ import scala.concurrent.ExecutionContext
 
 class MutableProperty[A](initialValue: A) extends Property[A] {
 
-  case class HandlerInfo(handler: OnChangeHandler, executor: ExecutionContext)
+  private case class Listener(handler: OnChangeHandler, executor: ExecutionContext) {
+    def apply(oldValue: A, newValue: A): Unit = {
+      if (handler.isDefinedAt(oldValue, newValue)) {
+        executor.execute(new Runnable {
+          override def run() = handler(oldValue, newValue)
+        })
+      }
+    }
+  }
 
   private var value: A = initialValue
-  private var handlers: Set[HandlerInfo] = Set.empty
+  private var listeners: Set[Listener] = Set.empty
 
   override def get: A = value
 
   override def onChange(handler: OnChangeHandler)
                        (implicit executor: ExecutionContext): Unit = synchronized {
-    handlers += HandlerInfo(handler, executor)
+    listeners += Listener(handler, executor)
   }
 
   val readOnly: Property[A] = this
@@ -22,13 +30,7 @@ class MutableProperty[A](initialValue: A) extends Property[A] {
     val oldValue = value
     if (oldValue != newValue) {
       value = newValue
-      handlers.foreach { handlerInfo =>
-        if (handlerInfo.handler.isDefinedAt(oldValue, newValue)) {
-          handlerInfo.executor.execute(new Runnable {
-            override def run() = handlerInfo.handler(oldValue, newValue)
-          })
-        }
-      }
+      listeners.foreach(_(oldValue, newValue))
     }
   }
 }

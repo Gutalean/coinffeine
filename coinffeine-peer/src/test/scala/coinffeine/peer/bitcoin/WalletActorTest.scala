@@ -20,7 +20,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   "The wallet actor" must "update wallet primary address upon start" in new Fixture {
     eventually {
-      properties.primaryKeyPair.get should be (Some(keyPair.toAddress(network)))
+      properties.primaryAddress.get should be (Some(keyPair.toAddress(network)))
     }
   }
 
