@@ -14,41 +14,28 @@ import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
 private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
-                              submissionSupervisorProps: OrderSupervisor.SubmissionSupervisorProps)
+                              submissionSupervisorProps: Props)
   extends Actor with ActorLogging {
 
+  private val submission = context.actorOf(submissionSupervisorProps)
+  private var orders = Map.empty[OrderId, ActorRef]
+
   override def receive: Receive = {
-    case init: OrderSupervisor.Initialize =>
-      new InitializedOrdersActor(init).start()
-  }
 
-  private class InitializedOrdersActor(init: OrderSupervisor.Initialize) {
-    import init._
+    case OpenOrder(order) =>
+      val ref = context.actorOf(orderActorProps(order, submission), s"order-${order.id.value}")
+      orders += order.id -> ref
 
-    private val submission = context.actorOf(submissionSupervisorProps(gateway))
-    private var orders = Map.empty[OrderId, ActorRef]
+    case CancelOrder(orderId, reason) =>
+      orders.get(orderId).foreach(_ ! OrderActor.CancelOrder(reason))
+      orders = orders.filterNot(_._1 == orderId)
 
-    def start(): Unit = {
-      context.become(waitingForOrders)
-    }
-
-    private val waitingForOrders: Receive = {
-
-      case OpenOrder(order) =>
-        val ref = context.actorOf(orderActorProps(order, submission), s"order-${order.id.value}")
-        orders += order.id -> ref
-
-      case CancelOrder(orderId, reason) =>
-        orders.get(orderId).foreach(_ ! OrderActor.CancelOrder(reason))
-        orders = orders.filterNot(_._1 == orderId)
-
-      case RetrieveOpenOrders =>
-        import context.dispatcher
-        implicit val timeout = Timeout(1.second)
-        Future.sequence(orders.values.toSeq.map { ref =>
-          (ref ? RetrieveStatus).mapTo[Order[FiatCurrency]]
-        }).map(RetrievedOpenOrders.apply).pipeTo(sender())
-    }
+    case RetrieveOpenOrders =>
+      import context.dispatcher
+      implicit val timeout = Timeout(1.second)
+      Future.sequence(orders.values.toSeq.map { ref =>
+        (ref ? RetrieveStatus).mapTo[Order[FiatCurrency]]
+      }).map(RetrievedOpenOrders.apply).pipeTo(sender())
   }
 }
 
@@ -59,16 +46,6 @@ object OrderSupervisor {
 
   type OrderActorProps = (Order[_ <: FiatCurrency], ActorRef) => Props
 
-  case class Collaborators(gateway: ActorRef,
-                           paymentProcessor: ActorRef,
-                           bitcoinPeer: ActorRef,
-                           wallet: ActorRef)
-
-  case class Initialize(gateway: ActorRef,
-                        paymentProcessor: ActorRef,
-                        bitcoinPeer: ActorRef,
-                        wallet: ActorRef)
-
-  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: SubmissionSupervisorProps) =
+  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: Props) =
     Props(new OrderSupervisor(orderActorProps, submissionSupervisorProps))
 }
