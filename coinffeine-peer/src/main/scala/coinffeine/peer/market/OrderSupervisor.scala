@@ -13,7 +13,8 @@ import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
-private class OrderSupervisor(orderActorProps: Props, submissionSupervisorProps: Props)
+private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
+                              submissionSupervisorProps: Props)
   extends Actor with ActorLogging {
 
   override def receive: Receive = {
@@ -35,10 +36,7 @@ private class OrderSupervisor(orderActorProps: Props, submissionSupervisorProps:
     private val waitingForOrders: Receive = {
 
       case OpenOrder(order) =>
-        val ref = context.actorOf(orderActorProps, s"order-${order.id.value}")
-
-        ref ! OrderActor.Initialize(order, submission, registry, paymentProcessor,
-          bitcoinPeer, wallet)
+        val ref = context.actorOf(orderActorProps(order, submission), s"order-${order.id.value}")
         orders += order.id -> ref
 
       case CancelOrder(orderId, reason) =>
@@ -57,11 +55,18 @@ private class OrderSupervisor(orderActorProps: Props, submissionSupervisorProps:
 
 object OrderSupervisor {
 
+  type OrderActorProps = (Order[_ <: FiatCurrency], ActorRef) => Props
+
+  case class Collaborators(registry: ActorRef,
+                           paymentProcessor: ActorRef,
+                           bitcoinPeer: ActorRef,
+                           wallet: ActorRef)
+
   case class Initialize(registry: ActorRef,
                         paymentProcessor: ActorRef,
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)
 
-  def props(orderActorProps: Props, submissionSupervisorProps: Props) =
+  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: Props) =
     Props(new OrderSupervisor(orderActorProps, submissionSupervisorProps))
 }

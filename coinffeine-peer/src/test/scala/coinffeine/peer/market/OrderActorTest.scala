@@ -221,21 +221,27 @@ class OrderActorTest extends AkkaSpec {
                                                  fiatAmount: CurrencyAmount[C]) =
         amounts.asInstanceOf[Amounts[C]]
     }
-    val actor = system.actorOf(Props(
-      new OrderActor((_, _) => exchangeActor.props, fundsActor.props, network, calculator)))
     val paymentProcessorId = exchange.role.select(participants).paymentProcessorAccount
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
     val inMarketOrder = order.withStatus(InMarketOrder)
     val registryActor = system.actorOf(ServiceRegistryActor.props())
     new ServiceRegistry(registryActor).register(MessageGateway.ServiceId, gatewayProbe.ref)
+    private val collaborators = OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
+      submissionProbe.ref, registryActor, bitcoinPeerProbe.ref)
+    val actor = system.actorOf(Props(new OrderActor(
+      (_, _) => exchangeActor.props,
+      fundsActor.props,
+      network,
+      calculator,
+      order,
+      collaborators
+    )))
 
     val orderMatch = OrderMatch(
       order.id, exchangeId, order.amount, order.price.of(order.amount),
       lockTime = 400000L, exchange.counterpartId)
 
-    actor ! OrderActor.Initialize(order, submissionProbe.ref, registryActor,
-      paymentProcessorProbe.ref, bitcoinPeerProbe.ref, walletProbe.ref)
     gatewayProbe.expectSubscription()
     fundsActor.expectCreation()
 
