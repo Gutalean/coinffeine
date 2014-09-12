@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
 
@@ -11,7 +11,7 @@ import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.bitcoin.WalletActor.BlockedBitcoins
-import coinffeine.peer.market.OrderFundsActor._
+import coinffeine.peer.market.orders.OrderFundsActor._
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class OrderFundsActorTest extends AkkaSpec {

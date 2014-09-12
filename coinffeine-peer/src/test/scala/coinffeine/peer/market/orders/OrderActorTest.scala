@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
 
@@ -20,8 +20,8 @@ import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.{BuyerPerspective, Perspective, SellerPerspective}
-import coinffeine.peer.market.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.orders.OrderActor.{BlockingFundsMessage, NoFundsMessage}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch

@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -20,7 +20,6 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeActorProps
-import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -33,9 +32,10 @@ class OrderActor[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
                                     network: NetworkParameters,
                                     amountsCalculator: AmountsCalculator,
                                     initialOrder: Order[C],
-                                    collaborators: Collaborators)
+                                    collaborators: OrderActor.Collaborators)
   extends Actor with ActorLogging with EventPublisher {
 
+  import OrderActor._
   import context.dispatcher
 
   private val role = Role.fromOrderType(initialOrder.orderType)

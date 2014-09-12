@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe

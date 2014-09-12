@@ -1,6 +1,6 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
-import akka.actor.{Props, Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
@@ -13,7 +13,7 @@ import coinffeine.peer.payment.PaymentProcessorActor
 private class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef)
   extends Actor with ActorLogging {
 
-  import coinffeine.peer.market.OrderFundsActor._
+  import OrderFundsActor._
 
   override def receive: Receive = {
     case init: BlockFunds =>

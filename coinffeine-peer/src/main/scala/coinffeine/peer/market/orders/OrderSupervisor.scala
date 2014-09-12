@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.orders
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -10,7 +10,6 @@ import akka.util.Timeout
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
 private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
@@ -34,7 +33,7 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
       import context.dispatcher
       implicit val timeout = Timeout(1.second)
       Future.sequence(orders.values.toSeq.map { ref =>
-        (ref ? RetrieveStatus).mapTo[Order[FiatCurrency]]
+        (ref ? OrderActor.RetrieveStatus).mapTo[Order[FiatCurrency]]
       }).map(RetrievedOpenOrders.apply).pipeTo(sender())
   }
 }
