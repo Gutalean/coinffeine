@@ -9,7 +9,6 @@ import com.google.bitcoin.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
-import coinffeine.model.bitcoin.BlockchainStatus.NotDownloading
 import coinffeine.model.bitcoin._
 import coinffeine.model.event.BitcoinConnectionStatus
 import coinffeine.peer.config.ConfigComponent
@@ -26,13 +25,10 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
 
   private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
   private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
-  private var connectionStatus =
-    BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), BlockchainStatus.NotDownloading)
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
     peerGroup.addEventListener(PeerGroupListener)
-    publishEvent(connectionStatus)
     startConnecting()
     becomeStarted(joining orElse commonHandling)
   }
@@ -77,7 +73,10 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
 
   private def commonHandling: Receive = {
     case RetrieveConnectionStatus =>
-      sender() ! connectionStatus
+      sender() ! BitcoinConnectionStatus(
+        activePeers = properties.network.activePeers.get,
+        blockchainStatus = properties.network.blockchainStatus.get
+      )
 
     case RetrieveBlockchainActor =>
       sender ! BlockchainActorRef(blockchainRef)
@@ -86,34 +85,40 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       sender() ! WalletActorRef(walletRef)
 
     case PeerGroupSize(activePeers) =>
-      updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
+      updateConnectionStatus(activePeers)
 
     case DownloadStarted(remainingBlocks) =>
-      updateConnectionStatus(connectionStatus.copy(blockchainStatus = BlockchainStatus.Downloading(
+      updateConnectionStatus(BlockchainStatus.Downloading(
         totalBlocks = remainingBlocks,
         remainingBlocks = remainingBlocks
-      )))
+      ))
 
     case DownloadProgress(remainingBlocks) =>
-      connectionStatus.blockchainStatus match {
+      properties.network.blockchainStatus.get match {
         case BlockchainStatus.Downloading(totalBlocks, previouslyRemainingBlocks)
           if remainingBlocks <= previouslyRemainingBlocks =>
-          updateConnectionStatus(connectionStatus.copy(blockchainStatus =
-            BlockchainStatus.Downloading(totalBlocks, remainingBlocks)))
+          updateConnectionStatus(BlockchainStatus.Downloading(totalBlocks, remainingBlocks))
         case otherStatus =>
           log.debug("Received download progress ({}) when having status {}",
             remainingBlocks, otherStatus)
       }
 
     case DownloadCompleted =>
-      updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
+      updateConnectionStatus(BlockchainStatus.NotDownloading)
   }
 
-  private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
-    if (newConnectionStatus != connectionStatus) {
-      publishEvent(newConnectionStatus)
-    }
-    connectionStatus = newConnectionStatus
+  private def updateConnectionStatus(activePeers: Int,
+                                     blockchainStatus: BlockchainStatus): Unit = {
+    updateConnectionStatus(activePeers)
+    updateConnectionStatus(blockchainStatus)
+  }
+
+  private def updateConnectionStatus(activePeers: Int): Unit = {
+    properties.network.activePeers.set(activePeers)
+  }
+
+  private def updateConnectionStatus(blockchainStatus: BlockchainStatus): Unit = {
+    properties.network.blockchainStatus.set(blockchainStatus)
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)

@@ -31,9 +31,22 @@ class ApplicationProperties(app: CoinffeineApp) {
   private val _fiatBalanceProperty =
     new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
 
-  private val _connectionStatus = new ObjectProperty(this, "connectionStatus",
-    CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
-      BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading)))
+  private val _connectionStatus = {
+    val status = new ObjectProperty(this, "connectionStatus",
+      CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
+        BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading)))
+    app.bitcoinNetwork.activePeers.onChange { case (_, newValue) =>
+      val bitcoinStatus = status.value.bitcoinStatus
+      status.value = status.value.copy(
+        bitcoinStatus = bitcoinStatus.copy(activePeers = newValue))
+    }
+    app.bitcoinNetwork.blockchainStatus.onChange { case (_, newValue) =>
+      val bitcoinStatus = status.value.bitcoinStatus
+      status.value = status.value.copy(
+        bitcoinStatus = bitcoinStatus.copy(blockchainStatus = newValue))
+    }
+    status
+  }
 
   private val eventHandler: EventHandler = FxEventHandler {
 
