@@ -137,13 +137,7 @@ class OrderActorTest extends AkkaSpec {
     gatewayProbe.relayMessageFromBroker(orderMatch)
     val keyPair = givenAFreshKeyIsGenerated()
     givenPaymentProcessorAccountIsRetrieved()
-
     exchangeActor.expectCreation()
-    val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
-    exchangeActor.expectMsgPF {
-      case ExchangeActor.StartExchange(ex, `peerInfo`, _, _, _, _)
-        if ex.id == exchangeId =>
-    }
   }
 
   it should "reject new order matches if an exchange is active" in new BuyerFixture {
@@ -227,8 +221,8 @@ class OrderActorTest extends AkkaSpec {
                                                  fiatAmount: CurrencyAmount[C]) =
         amounts.asInstanceOf[Amounts[C]]
     }
-    val actor =
-      system.actorOf(Props(new OrderActor(exchangeActor.props, fundsActor.props, network, calculator)))
+    val actor = system.actorOf(Props(
+      new OrderActor((_, _) => exchangeActor.props, fundsActor.props, network, calculator)))
     val paymentProcessorId = exchange.role.select(participants).paymentProcessorAccount
     val blockingFundsOrder = order.withStatus(StalledOrder(BlockingFundsMessage))
     val offlineOrder = order.withStatus(OfflineOrder)
@@ -285,15 +279,9 @@ class OrderActorTest extends AkkaSpec {
     }
 
     def expectAPerfectMatchExchangeToBeStarted(): Unit = {
-      val keyPair = givenAFreshKeyIsGenerated()
+      givenAFreshKeyIsGenerated()
       givenPaymentProcessorAccountIsRetrieved()
-
       exchangeActor.expectCreation()
-      val peerInfo = Exchange.PeerInfo(paymentProcessorId, keyPair)
-      exchangeActor.expectMsgPF {
-        case ExchangeActor.StartExchange(ex, `peerInfo`, _, _, _, _)
-          if ex.id == exchangeId =>
-      }
     }
 
     def givenASuccessfulPerfectMatchExchange(): Unit = {

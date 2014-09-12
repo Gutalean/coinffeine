@@ -10,20 +10,20 @@ import coinffeine.model.exchange._
 
 /** This actor handles all the necessary steps for an exchange to happen */
 object ExchangeActor {
+  type ExchangeActorProps = (ExchangeToStart[_ <: FiatCurrency], Collaborators) => Props
 
   val HandshakeActorName = "handshake"
   val MicroPaymentChannelActorName = "exchange"
   val TransactionBroadcastActorName = "transactionBroadcast"
 
-  /** This is a request for the actor to start the exchange to be replied with status updates and
-    * the exchange result.
-    */
-  case class StartExchange[C <: FiatCurrency](exchange: NonStartedExchange[C],
-                                              user: Exchange.PeerInfo,
-                                              wallet: ActorRef,
-                                              paymentProcessor: ActorRef,
-                                              registry: ActorRef,
-                                              bitcoinPeer: ActorRef)
+  case class Collaborators(wallet: ActorRef,
+                           paymentProcessor: ActorRef,
+                           registry: ActorRef,
+                           bitcoinPeer: ActorRef,
+                           resultListener: ActorRef)
+
+  case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],
+                                                user: Exchange.PeerInfo)
 
   /** This is sent back to listener to indicate exchange progress. */
   case class ExchangeProgress(exchange: RunningExchange[_ <: FiatCurrency])
@@ -58,6 +58,6 @@ object ExchangeActor {
   )
 
   trait Component {
-    def exchangeActorProps: Props
+    def exchangeActorProps: ExchangeActorProps
   }
 }

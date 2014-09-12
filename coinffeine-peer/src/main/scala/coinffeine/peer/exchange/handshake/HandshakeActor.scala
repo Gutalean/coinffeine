@@ -16,6 +16,8 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
 import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
+import coinffeine.peer.exchange.ExchangeActor
+import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
@@ -24,7 +26,7 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, Comm
 import coinffeine.protocol.messages.handshake._
 
 private class HandshakeActor[C <: FiatCurrency](
-    exchange: HandshakeActor.ExchangeToHandshake[C],
+    exchange: ExchangeActor.ExchangeToStart[C],
     collaborators: HandshakeActor.Collaborators,
     protocol: HandshakeActor.ProtocolDetails) extends Actor with ActorLogging {
 
@@ -250,10 +252,6 @@ private class HandshakeActor[C <: FiatCurrency](
   */
 object HandshakeActor {
 
-  /** Details of the exchange to perform the handshake of. */
-  case class ExchangeToHandshake[C <: FiatCurrency](info: NonStartedExchange[C],
-                                                    user: Exchange.PeerInfo)
-
   /** Compact list of actors that collaborate with the handshake actor.
     *
     * @param gateway     Message gateway for external communication
@@ -268,7 +266,7 @@ object HandshakeActor {
 
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
-  def props(exchange: ExchangeToHandshake[_ <: FiatCurrency],
+  def props(exchange: ExchangeToStart[_ <: FiatCurrency],
             collaborators: Collaborators,
             protocol: ProtocolDetails) =
     Props(new HandshakeActor(exchange, collaborators, protocol))

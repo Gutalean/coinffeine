@@ -7,13 +7,13 @@ import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 import com.google.bitcoin.core.NetworkParameters
-import com.typesafe.config.Config
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.amounts.AmountsCalculator
+import coinffeine.peer.exchange.ExchangeActor.ExchangeActorProps
 import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
@@ -67,7 +67,7 @@ object OrderSupervisor {
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)
 
-  def props(exchangeActorProps: Props,
+  def props(exchangeActorProps: ExchangeActorProps,
             network: NetworkParameters,
             constants: ProtocolConstants,
             amountsCalculator: AmountsCalculator) = Props(new OrderSupervisor(

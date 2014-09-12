@@ -19,6 +19,7 @@ import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
+import coinffeine.peer.exchange.ExchangeActor.ExchangeActorProps
 import coinffeine.peer.market.OrderActor._
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, Offline, StopSubmitting}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -27,7 +28,7 @@ import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessag
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
-class OrderActor(exchangeActorProps: Props,
+class OrderActor(exchangeActorProps: ExchangeActorProps,
                  orderFundsActorProps: Props,
                  network: NetworkParameters,
                  amountsCalculator: AmountsCalculator)
@@ -177,8 +178,10 @@ class OrderActor(exchangeActorProps: Props,
     }
 
     private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {
-      context.actorOf(exchangeActorProps, exchange.id.value) ! ExchangeActor.StartExchange(
-        exchange, user, wallet, paymentProcessor, registry, bitcoinPeer)
+      val collaborators = ExchangeActor.Collaborators(
+        wallet, paymentProcessor, registry, bitcoinPeer, resultListener = self)
+      val props = exchangeActorProps(ExchangeActor.ExchangeToStart(exchange, user), collaborators)
+      context.actorOf(props, exchange.id.value)
     }
 
     private def createFreshKeyPair(): Future[KeyPair] = AskPattern(
@@ -233,7 +236,7 @@ object OrderActor {
   /** Ask for order status. To be replied with an [[Order]]. */
   case object RetrieveStatus
 
-  def props(exchangeActorProps: Props,
+  def props(exchangeActorProps: ExchangeActorProps,
             network: NetworkParameters,
             amountsCalculator: AmountsCalculator): Props = {
     Props(new OrderActor(
