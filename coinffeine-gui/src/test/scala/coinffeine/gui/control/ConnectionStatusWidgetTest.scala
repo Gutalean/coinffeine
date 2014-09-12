@@ -13,9 +13,9 @@ import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStat
 class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
   with Eventually {
 
-  val status = ObjectProperty(CombinedConnectionStatus(
-    CoinffeineConnectionStatus(0),
-    BitcoinConnectionStatus(activePeers = 0, BlockchainStatus.NotDownloading)
+  val status = ObjectProperty(ConnectionStatus(
+    ConnectionStatus.Coinffeine(0),
+    ConnectionStatus.Bitcoin(activePeers = 0, BlockchainStatus.NotDownloading)
   ))
   override def createRootNode() = new ConnectionStatusWidget(status)
 
@@ -25,9 +25,9 @@ class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
 
   it should "respond to status updates" in new Fixture {
     Platform.runLater {
-      status.set(CombinedConnectionStatus(
-        CoinffeineConnectionStatus(5),
-        BitcoinConnectionStatus(activePeers = 10, BlockchainStatus.NotDownloading)
+      status.set(ConnectionStatus(
+        ConnectionStatus.Coinffeine(5),
+        ConnectionStatus.Bitcoin(activePeers = 10, BlockchainStatus.NotDownloading)
       ))
     }
     eventually {

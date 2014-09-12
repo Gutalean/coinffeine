@@ -4,7 +4,7 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.application.properties.OrderProperties
-import coinffeine.gui.control.CombinedConnectionStatus
+import coinffeine.gui.control.ConnectionStatus
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.{BitcoinBalance, Balance}
@@ -25,7 +25,7 @@ class ApplicationProperties(app: CoinffeineApp) {
   val walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] =
     bindTo(app.wallet.balance, "WalletBalance")
   def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
-  def connectionStatusProperty: ReadOnlyObjectProperty[CombinedConnectionStatus] =
+  def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus
 
   private val _fiatBalanceProperty =
@@ -33,27 +33,28 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private val _connectionStatus = {
     val status = new ObjectProperty(this, "connectionStatus",
-      CombinedConnectionStatus(CoinffeineConnectionStatus(0, None),
-        BitcoinConnectionStatus(0, BlockchainStatus.NotDownloading)))
+      ConnectionStatus(
+        ConnectionStatus.Coinffeine(0, None),
+        ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading)))
     app.bitcoinNetwork.activePeers.onChange { case (_, newValue) =>
-      val bitcoinStatus = status.value.bitcoinStatus
+      val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(
-        bitcoinStatus = bitcoinStatus.copy(activePeers = newValue))
+        bitcoin = bitcoinStatus.copy(activePeers = newValue))
     }
     app.bitcoinNetwork.blockchainStatus.onChange { case (_, newValue) =>
-      val bitcoinStatus = status.value.bitcoinStatus
+      val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(
-        bitcoinStatus = bitcoinStatus.copy(blockchainStatus = newValue))
+        bitcoin = bitcoinStatus.copy(blockchainStatus = newValue))
     }
     app.network.activePeers.onChange { case (_, newValue) =>
-      val coinffeineStatus = status.value.coinffeineStatus
+      val coinffeineStatus = status.value.coinffeine
       status.value = status.value.copy(
-        coinffeineStatus = coinffeineStatus.copy(activePeers = newValue))
+        coinffeine = coinffeineStatus.copy(activePeers = newValue))
     }
     app.network.brokerId.onChange { case (_, newValue) =>
-      val coinffeineStatus = status.value.coinffeineStatus
+      val coinffeineStatus = status.value.coinffeine
       status.value = status.value.copy(
-        coinffeineStatus = coinffeineStatus.copy(brokerId = newValue))
+        coinffeine = coinffeineStatus.copy(brokerId = newValue))
     }
     status
   }
@@ -72,12 +73,6 @@ class ApplicationProperties(app: CoinffeineApp) {
 
     case FiatBalanceChangeEvent(newBalance) if newBalance.amount.currency == Euro =>
       _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
-
-    case status: BitcoinConnectionStatus =>
-      _connectionStatus.set(_connectionStatus.value.copy(bitcoinStatus = status))
-
-    case status: CoinffeineConnectionStatus =>
-      _connectionStatus.set(_connectionStatus.value.copy(coinffeineStatus = status))
   }
 
   private def orderExist(orderId: OrderId): Boolean =
