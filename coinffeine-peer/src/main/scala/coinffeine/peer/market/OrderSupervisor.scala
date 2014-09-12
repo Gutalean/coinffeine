@@ -6,20 +6,15 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
-import com.google.bitcoin.core.NetworkParameters
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.exchange.ExchangeActor.ExchangeActorProps
 import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
-class OrderSupervisor(orderActorProps: Props,
-                      submissionSupervisorProps: Props,
-                      protocolConstants: ProtocolConstants) extends Actor with ActorLogging {
+private class OrderSupervisor(orderActorProps: Props, submissionSupervisorProps: Props)
+  extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case init: OrderSupervisor.Initialize =>
@@ -67,12 +62,6 @@ object OrderSupervisor {
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)
 
-  def props(exchangeActorProps: ExchangeActorProps,
-            network: NetworkParameters,
-            constants: ProtocolConstants,
-            amountsCalculator: AmountsCalculator) = Props(new OrderSupervisor(
-      OrderActor.props(exchangeActorProps, network, amountsCalculator),
-      SubmissionSupervisor.props(constants),
-      constants
-    ))
+  def props(orderActorProps: Props, submissionSupervisorProps: Props) =
+    Props(new OrderSupervisor(orderActorProps, submissionSupervisorProps))
 }

@@ -82,7 +82,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       PropsCatalogue(
         gateway = gateway.props,
         marketInfo = _ => marketInfo.props,
-        orderSupervisor = orders.props,
+        orderSupervisor = _ => orders.props,
         paymentProcessor = paymentProcessor.props,
         bitcoinPeer = bitcoinPeer.props))))
 
@@ -104,7 +104,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait StartedFixture extends Fixture {
     // Firstly, the actors are created before peer is started
-    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo, orders)
+    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
     peer ! ServiceActor.Start({})
@@ -124,6 +124,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     }
 
     // Then request the order supervisor to initialize
+    orders.expectCreation()
     val OrderSupervisor.Initialize(_, receivedPaymentProc, receivedBitcoinPeer, receivedWallet) =
       orders.expectMsgType[OrderSupervisor.Initialize]
     receivedPaymentProc should be (paymentProcessor.ref)

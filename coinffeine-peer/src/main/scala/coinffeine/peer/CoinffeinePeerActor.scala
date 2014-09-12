@@ -15,7 +15,7 @@ import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.{MarketInfoActor, OrderSupervisor}
+import coinffeine.peer.market._
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -44,7 +44,7 @@ import coinffeine.peer.CoinffeinePeerActor._
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
   private val marketInfoRef = context.actorOf(props.marketInfo(gatewayRef), "marketInfo")
-  private val orderSupervisorRef = context.actorOf(props.orderSupervisor, "orders")
+  private var orderSupervisorRef: ActorRef = _
   private var walletRef: ActorRef = _
 
   override def starting(args: Unit) = {
@@ -62,6 +62,8 @@ import coinffeine.peer.CoinffeinePeerActor._
     handle {
       case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
         walletRef = retrievedWalletRef
+        orderSupervisorRef = context.actorOf(props.orderSupervisor(
+          OrderActor.Collaborators(walletRef, paymentProcessorRef)), "orders")
         orderSupervisorRef !
           OrderSupervisor.Initialize(registryRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
         becomeStarted(handleMessages)
@@ -155,7 +157,7 @@ object CoinffeinePeerActor {
 
   case class PropsCatalogue(gateway: Props,
                             marketInfo: ActorRef => Props,
-                            orderSupervisor: Props,
+                            orderSupervisor: OrderActor.Collaborators => Props,
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
@@ -174,8 +176,10 @@ object CoinffeinePeerActor {
       val props = PropsCatalogue(
         messageGatewayProps(configProvider.messageGatewaySettings),
         MarketInfoActor.props,
-        OrderSupervisor.props(
-          exchangeActorProps, network, protocolConstants, exchangeAmountsCalculator),
+        collaborators => OrderSupervisor.props(
+          OrderActor.props(exchangeActorProps, network, exchangeAmountsCalculator, collaborators),
+          SubmissionSupervisor.props(protocolConstants)
+        ),
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings)
       )

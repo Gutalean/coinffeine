@@ -10,7 +10,9 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
 /** Manages funds blocking for an order */
-class OrderFundsActor extends Actor with ActorLogging {
+private class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef)
+  extends Actor with ActorLogging {
+
   import coinffeine.peer.market.OrderFundsActor._
 
   override def receive: Receive = {
@@ -100,13 +102,11 @@ class OrderFundsActor extends Actor with ActorLogging {
 
 object OrderFundsActor {
 
-  val props = Props(new OrderFundsActor)
+  def props(wallet: ActorRef, paymentProcessor: ActorRef) =
+    Props(new OrderFundsActor(wallet, paymentProcessor))
 
   /** Sent to the [[OrderFundsActor]] to initialize it. */
-  case class BlockFunds(fiatAmount: FiatAmount,
-                        bitcoinAmount: BitcoinAmount,
-                        wallet: ActorRef,
-                        paymentProcessor: ActorRef)
+  case class BlockFunds(fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount)
 
   /** Whoever sent the [[BlockFunds]] message will receive this message when funds became
     * available. */

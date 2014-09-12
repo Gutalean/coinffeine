@@ -71,7 +71,7 @@ class OrderActor(exchangeActorProps: ExchangeActorProps,
       val bitcoinAmount = role.select(amounts.bitcoinRequired)
       log.info("{} is stalled until enough funds are available {}", currentOrder.id,
         (fiatAmount, bitcoinAmount))
-      fundsActor ! OrderFundsActor.BlockFunds(fiatAmount, bitcoinAmount, wallet, paymentProcessor)
+      fundsActor ! OrderFundsActor.BlockFunds(fiatAmount, bitcoinAmount)
     }
 
     private def stalled: Receive = running orElse rejectOrderMatches("Order is stalled") orElse {
@@ -224,6 +224,8 @@ object OrderActor {
   val BlockingFundsMessage = "blocking funds"
   val NoFundsMessage = "no funds available for order"
 
+  case class Collaborators(wallet: ActorRef, paymentProcessor: ActorRef)
+
   case class Initialize[C <: FiatCurrency](order: Order[C],
                                            submissionSupervisor: ActorRef,
                                            registry: ActorRef,
@@ -238,10 +240,11 @@ object OrderActor {
 
   def props(exchangeActorProps: ExchangeActorProps,
             network: NetworkParameters,
-            amountsCalculator: AmountsCalculator): Props = {
+            amountsCalculator: AmountsCalculator,
+            collaborators: Collaborators): Props = {
     Props(new OrderActor(
       exchangeActorProps,
-      OrderFundsActor.props,
+      OrderFundsActor.props(collaborators.wallet, collaborators.paymentProcessor),
       network,
       amountsCalculator))
   }
