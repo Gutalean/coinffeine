@@ -7,15 +7,14 @@ import scalafx.beans.property.ObjectProperty
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
-import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
+import coinffeine.model.bitcoin.BlockchainStatus
 
 class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
   with Eventually {
 
-  val status = ObjectProperty(CombinedConnectionStatus(
-    CoinffeineConnectionStatus(0),
-    BitcoinConnectionStatus(activePeers = 0, NotDownloading)
+  val status = ObjectProperty(ConnectionStatus(
+    ConnectionStatus.Coinffeine(0),
+    ConnectionStatus.Bitcoin(activePeers = 0, BlockchainStatus.NotDownloading)
   ))
   override def createRootNode() = new ConnectionStatusWidget(status)
 
@@ -25,9 +24,9 @@ class ConnectionStatusWidgetTest extends GuiTest[ConnectionStatusWidget]
 
   it should "respond to status updates" in new Fixture {
     Platform.runLater {
-      status.set(CombinedConnectionStatus(
-        CoinffeineConnectionStatus(5),
-        BitcoinConnectionStatus(activePeers = 10, NotDownloading)
+      status.set(ConnectionStatus(
+        ConnectionStatus.Coinffeine(5),
+        ConnectionStatus.Bitcoin(activePeers = 10, BlockchainStatus.NotDownloading)
       ))
     }
     eventually {

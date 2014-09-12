@@ -8,7 +8,7 @@ import scala.util._
 
 import akka.actor._
 import akka.pattern._
-import net.tomp2p.connection.{PeerConnection, Bindings}
+import net.tomp2p.connection.{Bindings, PeerConnection}
 import net.tomp2p.futures.{FutureBootstrap, FutureDHT, FutureDiscover}
 import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.peers.{Number160, PeerAddress, PeerMapChangeListener}
@@ -16,13 +16,12 @@ import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
 import coinffeine.common.akka.ServiceActor
-import coinffeine.model.event.CoinffeineConnectionStatus
-import coinffeine.model.network.{BrokerId, NodeId, PeerId}
-import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
-private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface])
+private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   import coinffeine.protocol.gateway.proto.ProtobufServerActor._
@@ -33,10 +32,8 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
 
   private var me: Peer = _
   private var connections: Map[PeerAddress, PeerConnection] = Map.empty
-  private var connectionStatus = CoinffeineConnectionStatus(activePeers = 0, brokerId = None)
 
   override protected def starting(args: Join): Receive = {
-    publishConnectionStatusEvent()
     becomeStarted(args match {
       case JoinAsBroker(port) =>
         initPeer(port, sender())
@@ -56,6 +53,19 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     connections.values.foreach(_.close())
     Option(me).map(_.shutdown())
     becomeStopped()
+  }
+
+  private def updateConnectionStatus(activePeers: Int, brokerId: Option[PeerId]): Unit = {
+    updateConnectionStatus(activePeers)
+    updateConnectionStatus(brokerId)
+  }
+
+  private def updateConnectionStatus(activePeers: Int): Unit = {
+    properties.activePeers.set(activePeers)
+  }
+
+  private def updateConnectionStatus(brokerId: Option[PeerId]): Unit = {
+    properties.brokerId.set(brokerId)
   }
 
   private def publishingAddress(listener: ActorRef): Receive = {
@@ -142,11 +152,7 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
 
     def start(): Unit = {
-      connectionStatus = CoinffeineConnectionStatus(
-        activePeers = me.getPeerBean.getPeerMap.getAll.size(),
-        brokerId = Some(brokerId)
-      )
-      publishConnectionStatusEvent()
+      updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size(), Some(brokerId))
       become(handlingMessages orElse manageConnectionStatus)
     }
 
@@ -182,12 +188,8 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
   }
 
   private def manageConnectionStatus: Receive = {
-    case MessageGateway.RetrieveConnectionStatus =>
-      sender() ! connectionStatus
-
     case PeerMapChanged =>
-      connectionStatus = connectionStatus.copy(activePeers = me.getPeerBean.getPeerMap.getAll.size())
-      publishConnectionStatusEvent()
+      updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size())
   }
 
   private object IncomingDataListener extends ObjectDataReply {
@@ -213,10 +215,6 @@ private class ProtobufServerActor(ignoredNetworkInterfaces: Seq[NetworkInterface
     }
   }
 
-  private def publishConnectionStatusEvent(): Unit = {
-    context.system.eventStream.publish(connectionStatus)
-  }
-
   private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString)
   private def createPeerId(address: PeerAddress): PeerId = createPeerId(address.getID)
   private def createPeerId(peer: Peer): PeerId = createPeerId(peer.getPeerID)
@@ -230,8 +228,9 @@ private[gateway] object ProtobufServerActor {
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
-  def props(ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
-    new ProtobufServerActor(ignoredNetworkInterfaces))
+  def props(properties: MutableCoinffeineNetworkProperties,
+            ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
+    new ProtobufServerActor(properties, ignoredNetworkInterfaces))
 
   /** Send a message to a peer */
   case class SendProtoMessage(to: NodeId, msg: CoinffeineMessage)

@@ -4,12 +4,19 @@ import scala.concurrent.ExecutionContext
 
 class MutableProperty[A](initialValue: A) extends Property[A] {
 
-  private case class Listener(handler: OnChangeHandler, executor: ExecutionContext) {
+  private case class Listener(handler: OnChangeHandler,
+                              executor: ExecutionContext) extends Property.Cancellable {
     def apply(oldValue: A, newValue: A): Unit = {
       if (handler.isDefinedAt(oldValue, newValue)) {
         executor.execute(new Runnable {
           override def run() = handler(oldValue, newValue)
         })
+      }
+    }
+
+    override def cancel() = {
+      MutableProperty.this.synchronized {
+        listeners -= this
       }
     }
   }
@@ -20,8 +27,10 @@ class MutableProperty[A](initialValue: A) extends Property[A] {
   override def get: A = value
 
   override def onChange(handler: OnChangeHandler)
-                       (implicit executor: ExecutionContext): Unit = synchronized {
-    listeners += Listener(handler, executor)
+                       (implicit executor: ExecutionContext): Property.Cancellable = synchronized {
+    val listener = Listener(handler, executor)
+    listeners += listener
+    listener
   }
 
   val readOnly: Property[A] = this

@@ -3,11 +3,11 @@ package coinffeine.peer.api
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
+import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
+import coinffeine.model.properties.Property
 
 /** Represents how the app takes part on the P2P network */
-trait CoinffeineNetwork {
-
-  def status: CoinffeineNetwork.Status
+trait CoinffeineNetwork extends CoinffeineNetworkProperties {
 
   def orders: Set[Order[c] forSome { type c <: FiatCurrency }]
 
@@ -43,10 +43,6 @@ trait CoinffeineNetwork {
 }
 
 object CoinffeineNetwork {
-
-  sealed trait Status
-  case object Disconnected extends Status
-  case object Connected extends Status
 
   case class ConnectException(cause: Throwable)
     extends Exception("Cannot connect to the P2P network", cause)

@@ -1,40 +1,39 @@
 package coinffeine.gui.control
 
 import coinffeine.common.test.UnitTest
-import coinffeine.gui.control.CombinedConnectionStatus.{Red, Yellow, Green}
-import coinffeine.model.event.{CoinffeineConnectionStatus, BitcoinConnectionStatus}
-import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
+import coinffeine.gui.control.ConnectionStatus.{Red, Yellow, Green}
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
 
-class CombinedConnectionStatusTest extends UnitTest {
+class ConnectionStatusTest extends UnitTest {
 
   val bitcoinStatuses = Set(
-    BitcoinConnectionStatus(0, NotDownloading),
-    BitcoinConnectionStatus(0, Downloading(100, 50)),
-    BitcoinConnectionStatus(1, NotDownloading),
-    BitcoinConnectionStatus(1, Downloading(100, 50)),
-    BitcoinConnectionStatus(2, NotDownloading),
-    BitcoinConnectionStatus(3, Downloading(100, 10))
+    ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(0, BlockchainStatus.Downloading(100, 50)),
+    ConnectionStatus.Bitcoin(1, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(1, BlockchainStatus.Downloading(100, 50)),
+    ConnectionStatus.Bitcoin(2, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(3, BlockchainStatus.Downloading(100, 10))
   )
   val coinffeineStatuses = Set(
-    CoinffeineConnectionStatus(0),
-    CoinffeineConnectionStatus(1),
-    CoinffeineConnectionStatus(2),
-    CoinffeineConnectionStatus(1, brokerId = Some(PeerId("broker"))),
-    CoinffeineConnectionStatus(2, brokerId = Some(PeerId("broker")))
+    ConnectionStatus.Coinffeine(0),
+    ConnectionStatus.Coinffeine(1),
+    ConnectionStatus.Coinffeine(2),
+    ConnectionStatus.Coinffeine(1, brokerId = Some(PeerId("broker"))),
+    ConnectionStatus.Coinffeine(2, brokerId = Some(PeerId("broker")))
   )
   val anyStatus = for {
     coinffeineStatus <- coinffeineStatuses
     bitcoinStatus <- bitcoinStatuses
-  } yield CombinedConnectionStatus(coinffeineStatus, bitcoinStatus)
+  } yield ConnectionStatus(coinffeineStatus, bitcoinStatus)
 
   "A combined connection status" should
     "have color green when connected to both networks and not downloading blocks" in {
       for {
         coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
         bitcoinStatus <- bitcoinStatuses
-        if bitcoinStatus.connected && bitcoinStatus.blockchainStatus == NotDownloading
-        combinedStatus = CombinedConnectionStatus(coinffeineStatus, bitcoinStatus)
+        if bitcoinStatus.connected && bitcoinStatus.blockchainStatus == BlockchainStatus.NotDownloading
+        combinedStatus = ConnectionStatus(coinffeineStatus, bitcoinStatus)
       } withClue(combinedStatus) {
         combinedStatus.color should be (Green)
       }
@@ -44,8 +43,8 @@ class CombinedConnectionStatusTest extends UnitTest {
     for {
       coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
       bitcoinStatus <- bitcoinStatuses
-      if bitcoinStatus.connected && bitcoinStatus.blockchainStatus != NotDownloading
-      combinedStatus = CombinedConnectionStatus(coinffeineStatus, bitcoinStatus)
+      if bitcoinStatus.connected && bitcoinStatus.blockchainStatus != BlockchainStatus.NotDownloading
+      combinedStatus = ConnectionStatus(coinffeineStatus, bitcoinStatus)
     } withClue(combinedStatus) {
       combinedStatus.color should be (Yellow)
     }
@@ -53,7 +52,7 @@ class CombinedConnectionStatusTest extends UnitTest {
 
   it should "have color red when disconnected from the coinffeine network" in {
     for {
-      status <- anyStatus if !status.coinffeineStatus.connected
+      status <- anyStatus if !status.coinffeine.connected
     } withClue(status) {
       status.color should be (Red)
     }
@@ -61,7 +60,7 @@ class CombinedConnectionStatusTest extends UnitTest {
 
   it should "have color red when disconnected from the bitcoin network" in {
     for {
-      status <- anyStatus if !status.bitcoinStatus.connected
+      status <- anyStatus if !status.bitcoin.connected
     } withClue(status) {
       status.color should be (Red)
     }
@@ -69,19 +68,19 @@ class CombinedConnectionStatusTest extends UnitTest {
 
   it should "report the number of coinffeine connected peers" in {
     forEveryStatus { status =>
-      status.description should include (s"${status.coinffeineStatus.activePeers} coinffeine peer")
+      status.description should include (s"${status.coinffeine.activePeers} coinffeine peer")
     }
   }
 
   it should "report the number of bitcoin connected peers" in {
     forEveryStatus { status =>
-      status.description should include (s"${status.bitcoinStatus.activePeers} bitcoin peer")
+      status.description should include (s"${status.bitcoin.activePeers} bitcoin peer")
     }
   }
 
   it should "report the blockchain syncing progress" in {
     forEveryStatus { status =>
-      if (status.bitcoinStatus.blockchainStatus == NotDownloading) {
+      if (status.bitcoin.blockchainStatus == BlockchainStatus.NotDownloading) {
         status.description should not include "syncing blockchain"
       } else {
         status.description should include("syncing blockchain")
@@ -89,7 +88,7 @@ class CombinedConnectionStatusTest extends UnitTest {
     }
   }
 
-  private def forEveryStatus(assertOnStatus: CombinedConnectionStatus => Unit): Unit = {
+  private def forEveryStatus(assertOnStatus: ConnectionStatus => Unit): Unit = {
     for {
       status <- anyStatus
     } withClue(status) {

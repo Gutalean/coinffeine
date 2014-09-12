@@ -7,7 +7,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus, EventChannelProbe}
+import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
@@ -20,20 +20,7 @@ import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteR
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
-  "A peer" must "report the connection status" in new StartedFixture {
-    peer ! CoinffeinePeerActor.RetrieveConnectionStatus
-    val bitcoinStatus = BitcoinConnectionStatus(0, BitcoinConnectionStatus.NotDownloading)
-    bitcoinPeer.expectAskWithReply {
-      case BitcoinPeerActor.RetrieveConnectionStatus => bitcoinStatus
-    }
-    val coinffeineStatus = CoinffeineConnectionStatus(10, Some(PeerId("broker")))
-    gateway.expectAskWithReply {
-      case MessageGateway.RetrieveConnectionStatus => coinffeineStatus
-    }
-    expectMsg(CoinffeinePeerActor.ConnectionStatus(bitcoinStatus, coinffeineStatus))
-  }
-
-  it must "delegate quote requests" in new StartedFixture {
+  "A peer" must "delegate quote requests" in new StartedFixture {
     peer ! QuoteRequest(Market(Euro))
     marketInfo.expectForward(RequestQuote(Market(Euro)), self)
     peer ! OpenOrdersRequest(Market(UsDollar))

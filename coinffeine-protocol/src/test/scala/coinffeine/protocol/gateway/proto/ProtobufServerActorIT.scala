@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Payload, ProtocolVersion}
@@ -39,18 +39,22 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   }
 
   private def createBroker(port: Int): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces), s"broker-$port")
+    val properties = new MutableCoinffeineNetworkProperties
+    val peer = system.actorOf(
+      ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"broker-$port")
     peer ! ServiceActor.Start(JoinAsBroker(port))
     expectMsg(ServiceActor.Started)
-    val brokerId = waitForConnections(peer, minConnections = 0)
+    val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)
   }
 
   private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
-    val peer = system.actorOf(ProtobufServerActor.props(ignoredNetworkInterfaces), s"peer-$port")
+    val properties = new MutableCoinffeineNetworkProperties
+    val peer = system.actorOf(
+      ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"peer-$port")
     peer ! ServiceActor.Start(JoinAsPeer(port, connectTo))
     expectMsg(ServiceActor.Started)
-    val brokerId = waitForConnections(peer, minConnections = 1)
+    val brokerId = waitForConnections(properties, minConnections = 1)
     (peer, brokerId)
   }
 }

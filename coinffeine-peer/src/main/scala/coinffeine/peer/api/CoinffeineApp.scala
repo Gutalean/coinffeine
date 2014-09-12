@@ -7,6 +7,7 @@ import scala.concurrent.{Await, Future}
 trait CoinffeineApp {
 
   def network: CoinffeineNetwork
+  def bitcoinNetwork: BitcoinNetwork
   def wallet: CoinffeineWallet
   def paymentProcessor: CoinffeinePaymentProcessor
   def marketStats: MarketStats

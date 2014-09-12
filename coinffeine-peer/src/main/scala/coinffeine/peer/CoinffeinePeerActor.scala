@@ -9,7 +9,6 @@ import akka.util.Timeout
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.event.{BitcoinConnectionStatus, CoinffeineConnectionStatus}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
@@ -89,14 +88,6 @@ import coinffeine.peer.CoinffeinePeerActor._
       marketInfoRef.forward(MarketInfoActor.RequestQuote(market))
     case OpenOrdersRequest(market) =>
       marketInfoRef.forward(MarketInfoActor.RequestOpenOrders(market))
-
-    case RetrieveConnectionStatus =>
-      (for {
-        bitcoinStatus <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveConnectionStatus)
-          .withImmediateReply[BitcoinConnectionStatus]()
-        coinffeineStatus <- AskPattern(gatewayRef, MessageGateway.RetrieveConnectionStatus)
-          .withImmediateReply[CoinffeineConnectionStatus]()
-      } yield ConnectionStatus(bitcoinStatus, coinffeineStatus)).pipeTo(sender())
   }
 }
 
@@ -104,13 +95,6 @@ import coinffeine.peer.CoinffeinePeerActor._
 object CoinffeinePeerActor {
 
   val ServiceStartStopTimeout = 10.seconds
-
-  /** Message sent to the peer to get a [[ConnectionStatus]] in response */
-  case object RetrieveConnectionStatus
-  case class ConnectionStatus(bitcoinStatus: BitcoinConnectionStatus,
-                              coinffeineStatus: CoinffeineConnectionStatus) {
-    def connected: Boolean = bitcoinStatus.connected && coinffeineStatus.connected
-  }
 
   /** Open a new order.
     *

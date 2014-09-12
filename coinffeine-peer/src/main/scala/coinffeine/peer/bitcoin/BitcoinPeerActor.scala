@@ -10,8 +10,6 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFut
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
-import coinffeine.model.event.BitcoinConnectionStatus
-import coinffeine.model.event.BitcoinConnectionStatus.{Downloading, NotDownloading}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventPublisher
 
@@ -26,13 +24,10 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
 
   private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
   private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
-  private var connectionStatus =
-    BitcoinConnectionStatus(peerGroup.getConnectedPeers.size(), NotDownloading)
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
     peerGroup.addEventListener(PeerGroupListener)
-    publishEvent(connectionStatus)
     startConnecting()
     becomeStarted(joining orElse commonHandling)
   }
@@ -76,9 +71,6 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
   }
 
   private def commonHandling: Receive = {
-    case RetrieveConnectionStatus =>
-      sender() ! connectionStatus
-
     case RetrieveBlockchainActor =>
       sender ! BlockchainActorRef(blockchainRef)
 
@@ -86,34 +78,40 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       sender() ! WalletActorRef(walletRef)
 
     case PeerGroupSize(activePeers) =>
-      updateConnectionStatus(connectionStatus.copy(activePeers = activePeers))
+      updateConnectionStatus(activePeers)
 
     case DownloadStarted(remainingBlocks) =>
-      updateConnectionStatus(connectionStatus.copy(blockchainStatus = Downloading(
+      updateConnectionStatus(BlockchainStatus.Downloading(
         totalBlocks = remainingBlocks,
         remainingBlocks = remainingBlocks
-      )))
+      ))
 
     case DownloadProgress(remainingBlocks) =>
-      connectionStatus.blockchainStatus match {
-        case Downloading(totalBlocks, previouslyRemainingBlocks)
+      properties.network.blockchainStatus.get match {
+        case BlockchainStatus.Downloading(totalBlocks, previouslyRemainingBlocks)
           if remainingBlocks <= previouslyRemainingBlocks =>
-          updateConnectionStatus(connectionStatus.copy(blockchainStatus =
-            Downloading(totalBlocks, remainingBlocks)))
+          updateConnectionStatus(BlockchainStatus.Downloading(totalBlocks, remainingBlocks))
         case otherStatus =>
           log.debug("Received download progress ({}) when having status {}",
             remainingBlocks, otherStatus)
       }
 
     case DownloadCompleted =>
-      updateConnectionStatus(connectionStatus.copy(blockchainStatus = NotDownloading))
+      updateConnectionStatus(BlockchainStatus.NotDownloading)
   }
 
-  private def updateConnectionStatus(newConnectionStatus: BitcoinConnectionStatus): Unit = {
-    if (newConnectionStatus != connectionStatus) {
-      publishEvent(newConnectionStatus)
-    }
-    connectionStatus = newConnectionStatus
+  private def updateConnectionStatus(activePeers: Int,
+                                     blockchainStatus: BlockchainStatus): Unit = {
+    updateConnectionStatus(activePeers)
+    updateConnectionStatus(blockchainStatus)
+  }
+
+  private def updateConnectionStatus(activePeers: Int): Unit = {
+    properties.network.activePeers.set(activePeers)
+  }
+
+  private def updateConnectionStatus(blockchainStatus: BlockchainStatus): Unit = {
+    properties.network.blockchainStatus.set(blockchainStatus)
   }
 
   private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
@@ -203,9 +201,6 @@ object BitcoinPeerActor {
       request = BitcoinPeerActor.RetrieveBlockchainActor,
       errorMessage = s"Cannot retrieve blockchain actor from $bitcoinPeer"
     ).withImmediateReply[BitcoinPeerActor.BlockchainActorRef]().map(_.ref)
-
-  /** A message sent to the peer actor to get the connection status as a [[BitcoinConnectionStatus]] */
-  case object RetrieveConnectionStatus
 
   /** A request for the actor to publish the transaction to its peers so it eventually
     * gets confirmed in the blockchain.

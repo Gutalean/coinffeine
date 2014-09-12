@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
 import coinffeine.model.event.CoinffeineAppEvent
+import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
@@ -28,6 +29,7 @@ import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
   */
 class DefaultCoinffeineApp(name: String,
                            bitcoinProperties: BitcoinProperties,
+                           networkProperties: CoinffeineNetworkProperties,
                            accountId: PaymentProcessor.AccountId,
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator) extends CoinffeineApp {
@@ -35,7 +37,9 @@ class DefaultCoinffeineApp(name: String,
   private val system = ActorSystem(name)
   private val peerRef = system.actorOf(peerProps, "peer")
 
-  override val network = new DefaultCoinffeineNetwork(peerRef)
+  override val network = new DefaultCoinffeineNetwork(networkProperties, peerRef)
+
+  override val bitcoinNetwork = new DefaultBitcoinNetwork(bitcoinProperties.network)
 
   override lazy val wallet = new DefaultCoinffeineWallet(bitcoinProperties.wallet)
 
@@ -78,6 +82,7 @@ object DefaultCoinffeineApp {
     private lazy val accountId = configProvider.okPaySettings.userAccount
 
     override lazy val app = new DefaultCoinffeineApp(
-      name = accountId, bitcoinProperties, accountId, peerProps, exchangeAmountsCalculator)
+      name = accountId, bitcoinProperties, coinffeineNetworkProperties,
+      accountId, peerProps, exchangeAmountsCalculator)
   }
 }

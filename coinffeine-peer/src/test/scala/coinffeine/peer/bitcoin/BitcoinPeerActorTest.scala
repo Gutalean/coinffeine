@@ -5,28 +5,20 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import com.google.bitcoin.core.{Wallet, FullPrunedBlockChain, PeerGroup}
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.MutableBitcoinProperties
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.event.BitcoinConnectionStatus.NotDownloading
-import coinffeine.model.event.{BitcoinConnectionStatus, EventChannelProbe}
+import coinffeine.model.event.EventChannelProbe
 
-class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar {
+class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
 
   "The bitcoin peer actor" should "join the bitcoin network" in new Fixture {
     actor ! ServiceActor.Start {}
     expectMsg(ServiceActor.Started)
-    eventChannelProbe.expectMsg(BitcoinConnectionStatus(0, NotDownloading))
-  }
-
-  it should "retrieve connection status on demand" in new Fixture {
-    actor ! ServiceActor.Start {}
-    actor ! BitcoinPeerActor.RetrieveConnectionStatus
-    expectMsg(ServiceActor.Started)
-    expectMsg(BitcoinConnectionStatus(activePeers = 0, NotDownloading))
   }
 
   it should "retrieve the blockchain actor" in new Fixture {
