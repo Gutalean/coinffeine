@@ -14,7 +14,7 @@ import coinffeine.peer.market.OrderActor.RetrieveStatus
 
 /** Manages orders */
 private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
-                              submissionSupervisorProps: Props)
+                              submissionSupervisorProps: OrderSupervisor.SubmissionSupervisorProps)
   extends Actor with ActorLogging {
 
   override def receive: Receive = {
@@ -25,11 +25,10 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
   private class InitializedOrdersActor(init: OrderSupervisor.Initialize) {
     import init._
 
-    private val submission = context.actorOf(submissionSupervisorProps)
+    private val submission = context.actorOf(submissionSupervisorProps(gateway))
     private var orders = Map.empty[OrderId, ActorRef]
 
     def start(): Unit = {
-      submission ! SubmissionSupervisor.Initialize(gateway)
       context.become(waitingForOrders)
     }
 
@@ -55,6 +54,9 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
 
 object OrderSupervisor {
 
+  /** Props of a submission supervisor given a message gateway */
+  type SubmissionSupervisorProps = ActorRef => Props
+
   type OrderActorProps = (Order[_ <: FiatCurrency], ActorRef) => Props
 
   case class Collaborators(gateway: ActorRef,
@@ -67,6 +69,6 @@ object OrderSupervisor {
                         bitcoinPeer: ActorRef,
                         wallet: ActorRef)
 
-  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: Props) =
+  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: SubmissionSupervisorProps) =
     Props(new OrderSupervisor(orderActorProps, submissionSupervisorProps))
 }

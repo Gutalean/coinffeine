@@ -2,7 +2,6 @@ package coinffeine.peer.market
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
 import akka.testkit.TestProbe
 import org.scalatest.Inside
 
@@ -36,8 +35,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     val gateway = new MockGateway(PeerId("broker"))
 
     val requester = TestProbe()
-    val actor = system.actorOf(Props(new SubmissionSupervisor(constants)))
-    actor ! SubmissionSupervisor.Initialize(gateway.ref)
+    val actor = system.actorOf(SubmissionSupervisor.props(gateway.ref, constants))
 
     def keepSubmitting(entry: OrderBookEntry[_ <: FiatCurrency]): Unit = {
       requester.send(actor, KeepSubmitting(entry))

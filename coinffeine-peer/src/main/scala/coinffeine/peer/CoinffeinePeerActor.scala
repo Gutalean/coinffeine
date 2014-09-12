@@ -168,7 +168,9 @@ object CoinffeinePeerActor {
         messageGatewayProps(configProvider.messageGatewaySettings),
         MarketInfoActor.props,
         collaborators => OrderSupervisor.props(
-          orderActorProps(collaborators), SubmissionSupervisor.props(protocolConstants)),
+          orderActorProps(collaborators),
+          gateway => SubmissionSupervisor.props(gateway, protocolConstants)
+        ),
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings)
       )
