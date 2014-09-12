@@ -20,6 +20,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
   override val network = new MockCoinffeineNetwork
 
+  override def bitcoinNetwork = ???
+
   override def wallet: CoinffeineWallet = new CoinffeineWallet {
     override val balance: Property[Option[BitcoinBalance]] = null
     override val primaryAddress: Property[Option[Address]] = null

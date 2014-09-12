@@ -37,6 +37,8 @@ class DefaultCoinffeineApp(name: String,
 
   override val network = new DefaultCoinffeineNetwork(peerRef)
 
+  override val bitcoinNetwork = new DefaultBitcoinNetwork(bitcoinProperties.network)
+
   override lazy val wallet = new DefaultCoinffeineWallet(bitcoinProperties.wallet)
 
   override val marketStats = new DefaultMarketStats(peerRef)
