@@ -2,14 +2,14 @@ package coinffeine.protocol.gateway.proto
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
+import akka.actor.{Props, ActorRef}
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.event.{CoinffeineConnectionStatus, EventChannelProbe}
+import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
@@ -77,19 +77,10 @@ class ProtoMessageGatewayTest
     subs.foreach(_.expectMsg(ReceiveMessage(msg, BrokerId)))
   }
 
-  it must "retrieve the connection status" in new FreshBrokerAndPeer {
-    peerGateway ! MessageGateway.RetrieveConnectionStatus
-    expectMsg(CoinffeineConnectionStatus(activePeers = 1, Some(brokerId)))
-  }
-
-  it must "produce connection status events" in new FreshBrokerAndPeer {
-    eventChannelProbe.fishForMessage(hint = "notify disconnected status") {
-      case CoinffeineConnectionStatus(0, None) => true
-      case _ => false
-    }
-    eventChannelProbe.fishForMessage(hint = "notify connected status") {
-      case CoinffeineConnectionStatus(1, Some(`brokerId`)) => true
-      case other => false
+  it must "set the connection status properties" in new FreshBrokerAndPeer {
+    eventually {
+      peerNetworkProperties.activePeers.get should be (1)
+      peerNetworkProperties.brokerId.get should be (Some(brokerId))
     }
   }
 
@@ -114,34 +105,37 @@ class ProtoMessageGatewayTest
     expectMsg(ServiceActor.Stopped)
   }
 
-  trait Fixture extends ProtoMessageGateway.Component
-      with TestProtocolSerializationComponent
+  trait Fixture extends TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
-      with IgnoredNetworkInterfaces
-      with MutableCoinffeineNetworkProperties.Component {
+      with IgnoredNetworkInterfaces {
 
     private val subscribeToAnything = Subscribe { case _ => }
 
-    override val coinffeineNetworkProperties = new MutableCoinffeineNetworkProperties
+    val peerNetworkProperties = new MutableCoinffeineNetworkProperties
+    val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
 
-    def createMessageGateway(): ActorRef = system.actorOf(messageGatewayProps(ignoredNetworkInterfaces))
+    def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties): Props = Props(
+      new ProtoMessageGateway(networkProperties, protocolSerialization, ignoredNetworkInterfaces))
+
+    def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
+      system.actorOf(messageGatewayProps(networkProperties))
 
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
-      val ref = createMessageGateway()
+      val ref = createMessageGateway(peerNetworkProperties)
       ref ! ServiceActor.Start(JoinAsPeer(localPort, connectTo))
       expectMsg(ServiceActor.Started)
-      waitForConnections(ref, minConnections = 1)
+      waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe)
     }
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
-      val ref = createMessageGateway()
+      val ref = createMessageGateway(brokerNetworkProperties)
       ref ! ServiceActor.Start(JoinAsBroker(localPort))
       expectMsg(ServiceActor.Started)
-      val brokerId = waitForConnections(ref, minConnections = 0)
+      val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe, brokerId)

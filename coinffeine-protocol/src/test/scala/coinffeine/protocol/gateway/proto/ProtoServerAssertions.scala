@@ -1,11 +1,7 @@
 package coinffeine.protocol.gateway.proto
 
-import akka.actor.ActorRef
-import akka.testkit.TestProbe
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.event.CoinffeineConnectionStatus
-import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.MessageGateway.RetrieveConnectionStatus
+import coinffeine.model.network.{CoinffeineNetworkProperties, PeerId}
 import org.scalatest.concurrent.{IntegrationPatience, Eventually}
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
@@ -15,15 +11,11 @@ trait ProtoServerAssertions extends Eventually with IntegrationPatience { this: 
 
   val connectionTimeout = 30.seconds
 
-  def waitForConnections(ref: ActorRef, minConnections: Int): PeerId = {
-    val pollingProbe = TestProbe()
+  def waitForConnections(properties: CoinffeineNetworkProperties, minConnections: Int): PeerId = {
     eventually(timeout = Timeout(connectionTimeout)) {
-      pollingProbe.send(ref, RetrieveConnectionStatus)
-      pollingProbe.expectMsgPF(hint =
-        s"waiting for knowing the broker and having $minConnections connections") {
-        case CoinffeineConnectionStatus(connections, Some(brokerId))
-          if connections >= minConnections => brokerId
-      }
+      properties.activePeers.get should be >= minConnections
+      properties.brokerId.get should be ('defined)
     }
+    properties.brokerId.get.get
   }
 }

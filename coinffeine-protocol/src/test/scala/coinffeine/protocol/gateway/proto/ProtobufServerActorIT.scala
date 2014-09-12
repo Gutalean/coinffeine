@@ -44,7 +44,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"broker-$port")
     peer ! ServiceActor.Start(JoinAsBroker(port))
     expectMsg(ServiceActor.Started)
-    val brokerId = waitForConnections(peer, minConnections = 0)
+    val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)
   }
 
@@ -54,7 +54,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"peer-$port")
     peer ! ServiceActor.Start(JoinAsPeer(port, connectTo))
     expectMsg(ServiceActor.Started)
-    val brokerId = waitForConnections(peer, minConnections = 1)
+    val brokerId = waitForConnections(properties, minConnections = 1)
     (peer, brokerId)
   }
 }

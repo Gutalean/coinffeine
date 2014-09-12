@@ -42,8 +42,6 @@ private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties
 
     case Terminated(actor) => subscriptions.tell(Unsubscribe, actor)
 
-    case msg @ RetrieveConnectionStatus => server forward msg
-
     case ForwardMessage(msg, to) =>
       log.debug("Forwarding message {} to {}", msg, to)
       server ! SendProtoMessage(to, serialization.toProtobuf(msg))

@@ -16,9 +16,7 @@ import net.tomp2p.rpc.ObjectDataReply
 import net.tomp2p.storage.Data
 
 import coinffeine.common.akka.ServiceActor
-import coinffeine.model.event.CoinffeineConnectionStatus
 import coinffeine.model.network._
-import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
@@ -34,10 +32,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private var me: Peer = _
   private var connections: Map[PeerAddress, PeerConnection] = Map.empty
-  private var connectionStatus = CoinffeineConnectionStatus(activePeers = 0, brokerId = None)
 
   override protected def starting(args: Join): Receive = {
-    publishConnectionStatusEvent()
     becomeStarted(args match {
       case JoinAsBroker(port) =>
         initPeer(port, sender())
@@ -156,13 +152,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
 
     def start(): Unit = {
-      // TODO: remove this once connection status event is not needed
-      connectionStatus = CoinffeineConnectionStatus(
-        activePeers = me.getPeerBean.getPeerMap.getAll.size(),
-        brokerId = Some(brokerId)
-      )
       updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size(), Some(brokerId))
-      publishConnectionStatusEvent()
       become(handlingMessages orElse manageConnectionStatus)
     }
 
@@ -198,14 +188,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   }
 
   private def manageConnectionStatus: Receive = {
-    case MessageGateway.RetrieveConnectionStatus =>
-      sender() ! connectionStatus
-
     case PeerMapChanged =>
-      // TODO: remove this once connection status event is not needed
-      connectionStatus = connectionStatus.copy(activePeers = me.getPeerBean.getPeerMap.getAll.size())
       updateConnectionStatus(me.getPeerBean.getPeerMap.getAll.size())
-      publishConnectionStatusEvent()
   }
 
   private object IncomingDataListener extends ObjectDataReply {
@@ -229,10 +213,6 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     override def peerUpdated(peerAddress: PeerAddress): Unit = {
       self ! PeerMapChanged
     }
-  }
-
-  private def publishConnectionStatusEvent(): Unit = {
-    context.system.eventStream.publish(connectionStatus)
   }
 
   private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString)
