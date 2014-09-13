@@ -3,6 +3,7 @@ package coinffeine.model.market
 sealed trait OrderStatus {
   def name: String
   def isCancellable: Boolean
+  def isFinal: Boolean
 
   override def toString: String = name
 }
@@ -17,6 +18,7 @@ sealed trait OrderStatus {
 case class StalledOrder(reason: String) extends OrderStatus {
   override val name = s"stalled ($reason)"
   override val isCancellable = true
+  override def isFinal = false
 }
 
 /** The order is offline.
@@ -28,6 +30,7 @@ case class StalledOrder(reason: String) extends OrderStatus {
 case object OfflineOrder extends OrderStatus {
   override val name = "offline"
   override val isCancellable = true
+  override def isFinal = false
 }
 
 /** The order is in the market.
@@ -38,6 +41,7 @@ case object OfflineOrder extends OrderStatus {
 case object InMarketOrder extends OrderStatus {
   override val name = "in market"
   override val isCancellable = true
+  override def isFinal = false
 }
 
 /** The order is in progress.
@@ -47,6 +51,7 @@ case object InMarketOrder extends OrderStatus {
 case object InProgressOrder extends OrderStatus {
   override val name ="in progress"
   override val isCancellable = true
+  override def isFinal = false
 }
 
 /** The order is completed.
@@ -57,6 +62,7 @@ case object InProgressOrder extends OrderStatus {
 case object CompletedOrder extends OrderStatus {
   override val name = "completed"
   override val isCancellable = false
+  override def isFinal = true
 }
 
 /** The order is cancelled.
@@ -69,6 +75,7 @@ case object CompletedOrder extends OrderStatus {
 case class CancelledOrder(reason: String) extends OrderStatus {
   override val name = s"cancelled ($reason)"
   override val isCancellable = false
+  override def isFinal = true
 }
 
 
