@@ -11,6 +11,12 @@ trait Property[A] {
     */
   type OnChangeHandler = PartialFunction[(A, A), Unit]
 
+  /** A partial function aimed to process new values on a property.
+    *
+    * It has the form: f(newValue: A): Unit
+    */
+  type OnNewValueHandler = PartialFunction[A, Unit]
+
   /** Retrieve the current value of the property. */
   def get: A
 
@@ -19,7 +25,17 @@ trait Property[A] {
     * @param handler    The handler to be invoked when the value of the property changes
     * @param executor   The executor used to invoke the handler
     */
-  def onChange(handler: OnChangeHandler)(implicit executor: ExecutionContext): Property.Cancellable
+  def onChange(handler: OnChangeHandler)
+              (implicit executor: ExecutionContext): Property.Cancellable
+
+  /** Set a on-change handler which will be invoked when a new value is set.
+    *
+    * @param handler    The handler to be invoked when the value of the property is set.
+    * @param executor   The executor used to invoke the handler
+    */
+  def onNewValue(handler: OnNewValueHandler)
+                (implicit executor: ExecutionContext): Property.Cancellable =
+    onChange { case (_, newValue) => handler(newValue) }
 
   /** Register a handler for a event on this property.
     *
