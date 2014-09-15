@@ -6,10 +6,10 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
+import coinffeine.peer.market.orders.controller.OrderFunds.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 /** Runs and order deciding when to accept/reject order matches and notifying order changes.
@@ -21,23 +21,18 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
   */
 private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: AmountsCalculator,
                                                          network: Network,
-                                                         val initialOrder: Order[C],
-                                                         publisher: OrderPublication[C]) {
-
-  import OrderController._
-
-  val id = initialOrder.id
-
+                                                         initialOrder: Order[C],
+                                                         publisher: OrderPublication[C],
+                                                         funds: OrderFunds) {
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
       override val network: Network,
-      var _order: Order[C],
-      var _funds: OrderFunds = NoFunds) extends StateContext[C] {
+      override val funds: OrderFunds,
+      var _order: Order[C]) extends StateContext[C] {
 
     var state: State[C] = _
 
     override def order = _order
-    override def funds = _funds
     override def isInMarket = publisher.isInMarket
 
     override def transitionTo(newState: State[C]): Unit = {
@@ -81,13 +76,21 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
   }
 
   private var listeners = Seq.empty[OrderController.Listener[C]]
-  private val context = new OrderControllerContext(amountsCalculator, network, initialOrder)
+  private val context = new OrderControllerContext(amountsCalculator, network, funds, initialOrder)
   publisher.addListener(new OrderPublication.Listener {
     override def inMarket(): Unit = {
       context.state.becomeInMarket(context)
     }
     override def offline(): Unit = {
       context.state.becomeOffline(context)
+    }
+  })
+  funds.addListener(new Listener {
+    override def onFundsUnavailable(funds: OrderFunds): Unit = {
+      context.state.fundsBecomeUnavailable(context)
+    }
+    override def onFundsAvailable(funds: OrderFunds): Unit = {
+      context.state.fundsBecomeAvailable(context)
     }
   })
   context.transitionTo(new StalledState)
@@ -97,38 +100,6 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
 
   def addListener(listener: OrderController.Listener[C]): Unit = {
     listeners :+= listener
-  }
-
-  def requiredFunds: (BitcoinAmount, CurrencyAmount[C]) = {
-    val amounts = amountsCalculator.exchangeAmountsFor(context._order)
-    val role = Role.fromOrderType(initialOrder.orderType)
-    (role.select(amounts.bitcoinRequired), role.select(amounts.fiatRequired))
-  }
-
-  def fundsBecomeAvailable(newFunds: BlockedFunds): Unit = {
-    context._funds match {
-      case AvailableFunds(oldFunds) =>
-        Log.warn("Notified of {} became available while {} ware already available",
-          Seq(newFunds, oldFunds): _*)
-      case UnavailableFunds(oldFunds) if newFunds != oldFunds =>
-        throw new IllegalArgumentException(
-          s"$newFunds become available while waiting for $oldFunds to become so")
-      case _ =>
-        context._funds = AvailableFunds(newFunds)
-        context.state.fundsBecomeAvailable(context)
-    }
-  }
-
-  def fundsBecomeUnavailable(): Unit = {
-    context._funds match {
-      case NoFunds =>
-        Log.warn("Notified of funds became unavailable before getting them blocked")
-      case UnavailableFunds(fundsId) =>
-        Log.warn("Notified of {} became unavailable when they were already so", fundsId)
-      case AvailableFunds(fundsId) =>
-        context._funds = UnavailableFunds(fundsId)
-        context.state.fundsBecomeUnavailable(context)
-    }
   }
 
   def acceptOrderMatch(orderMatch: OrderMatch): MatchResult[C] =

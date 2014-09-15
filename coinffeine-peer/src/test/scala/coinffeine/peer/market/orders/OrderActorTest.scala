@@ -46,23 +46,21 @@ class OrderActorTest extends AkkaSpec
     givenInitializedOrder()
   }
 
-  it should "keep in stalled status when there are not enough funds when buying" in
-    new Fixture {
-      givenInitializedOrder()
-      givenFundsBecomeUnavailable()
-      eventChannelProbe.expectNoMsg(idleTime)
-      submissionProbe.expectNoMsg(idleTime)
-    }
+  it should "keep in stalled status when there are not enough funds when buying" in new Fixture {
+    givenInitializedOrder()
+    givenFundsBecomeUnavailable()
+    eventChannelProbe.expectNoMsg(idleTime)
+    submissionProbe.expectNoMsg(idleTime)
+  }
 
-  it should "move to stalled when payment processor reports unavailable funds" in
-    new Fixture {
-      givenOfflineOrder()
-      givenFundsBecomeUnavailable()
-      submissionProbe.expectMsgType[StopSubmitting]
-      inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
-        case OrderStatusChangedEvent(order.id, OfflineOrder, StalledOrder(_)) =>
-      }
+  it should "move to stalled when payment processor reports unavailable funds" in new Fixture {
+    givenOfflineOrder()
+    givenFundsBecomeUnavailable()
+    submissionProbe.expectMsgType[StopSubmitting]
+    inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
+      case OrderStatusChangedEvent(order.id, OfflineOrder, StalledOrder(_)) =>
     }
+  }
 
   it should "reject order matches when stalled" in new Fixture {
     givenOfflineOrder()
@@ -111,13 +109,12 @@ class OrderActorTest extends AkkaSpec
     fundsActor.expectMsg(OrderFundsActor.UnblockFunds)
   }
 
-  it should "move from stalled to offline when available funds message is received" in
-    new Fixture {
-      givenStalledOrder()
-      givenFundsBecomeAvailable()
-      eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
-      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
-    }
+  it should "move from stalled to offline when available funds message is received" in new Fixture {
+    givenStalledOrder()
+    givenFundsBecomeAvailable()
+    eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
+    submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
+  }
 
   it should "stop submitting to the broker & report new status once matching is received" in
     new Fixture {
@@ -177,12 +174,13 @@ class OrderActorTest extends AkkaSpec
     val fundsActor, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
     val eventChannelProbe = EventChannelProbe()
+    private val calculatorStub = new AmountsCalculatorStub(amounts)
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
-      publisher => new OrderController(new AmountsCalculatorStub(amounts), network, order, publisher),
+      calculatorStub,
+      (publisher, funds) => new OrderController(calculatorStub, network, order, publisher, funds),
       new Delegates[Euro.type] {
-        override def exchangeActor(exchange: ExchangeToStart[Euro.type],
-                                   resultListener: ActorRef): Props =
+        override def exchangeActor(exchange: ExchangeToStart[Euro.type], resultListener: ActorRef) =
           Fixture.this.exchangeActor.props
         override def orderFundsActor: Props = fundsActor.props
       },
@@ -196,15 +194,6 @@ class OrderActorTest extends AkkaSpec
       fundsActor.expectMsgType[OrderFundsActor.BlockFunds]
     }
 
-    def givenOfflineOrder(): Unit = {
-      givenInitializedOrder()
-      givenFundsBecomeAvailable()
-      inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
-        case OrderStatusChangedEvent(order.`id`, StalledOrder(_), OfflineOrder) =>
-      }
-      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
-    }
-
     def givenFundsBecomeAvailable(): Unit = {
       val funds = Exchange.BlockedFunds(Some(BlockedFundsId(1)), BlockedCoinsId(1))
       fundsActor.probe.send(actor, OrderFundsActor.AvailableFunds(funds))
@@ -212,6 +201,15 @@ class OrderActorTest extends AkkaSpec
 
     def givenFundsBecomeUnavailable(): Unit = {
       fundsActor.probe.send(actor, OrderFundsActor.UnavailableFunds)
+    }
+
+    def givenOfflineOrder(): Unit = {
+      givenInitializedOrder()
+      givenFundsBecomeAvailable()
+      inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
+        case OrderStatusChangedEvent(order.`id`, StalledOrder(_), OfflineOrder) =>
+      }
+      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
     }
 
     def givenStalledOrder(): Unit = {

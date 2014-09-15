@@ -8,7 +8,7 @@ import coinffeine.peer.market.SubmissionSupervisor._
 import coinffeine.peer.market.orders.controller.OrderPublication
 import coinffeine.peer.market.orders.controller.OrderPublication.Listener
 
-private class DelegatedPublication[C <: FiatCurrency](
+private[orders] class DelegatedPublication[C <: FiatCurrency](
     entry: OrderBookEntry[C], submissionActor: ActorRef)(implicit context: ActorContext)
   extends OrderPublication[C] {
 

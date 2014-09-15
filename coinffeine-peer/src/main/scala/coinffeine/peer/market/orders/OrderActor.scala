@@ -8,7 +8,7 @@ import com.google.bitcoin.core.NetworkParameters
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency._
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -28,7 +28,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
-                                    controllerFactory: OrderPublication[C] => OrderController[C],
+                                    amountsCalculator: AmountsCalculator,
+                                    controllerFactory: (OrderPublication[C], OrderFunds) => OrderController[C],
                                     delegates: OrderActor.Delegates[C],
                                     collaborators: OrderActor.Collaborators)
   extends Actor with ActorLogging with EventPublisher {
@@ -36,22 +37,30 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   import OrderActor._
   import context.dispatcher
 
+  private val orderId = initialOrder.id
+  private val requiredFunds: (CurrencyAmount[C], BitcoinAmount) = {
+    val amounts = amountsCalculator.exchangeAmountsFor(initialOrder)
+    val role = Role.fromOrderType(initialOrder.orderType)
+    (role.select(amounts.fiatRequired), role.select(amounts.bitcoinRequired))
+  }
+  private val fundsBlocking =
+    new DelegatedOrderFunds(delegates.orderFundsActor, requiredFunds._1, requiredFunds._2)
   private val publisher = new DelegatedPublication(
     OrderBookEntry(initialOrder), collaborators.submissionSupervisor)
-  private val order = controllerFactory(publisher)
-  private val fundsActor = context.actorOf(delegates.orderFundsActor, "funds")
+  private val order = controllerFactory(publisher, fundsBlocking)
 
   override def preStart(): Unit = {
-    log.info("Order actor initialized for {}", order.id)
+    log.info("Order actor initialized for {}", orderId)
     subscribeToOrderMatches()
     subscribeToOrderChanges()
-    blockFunds()
     publishEvent(OrderSubmittedEvent(order.view))
   }
 
-  override def receive = publisher.receiveSubmissionEvents orElse {
+  override def receive = publisher.receiveSubmissionEvents orElse
+    fundsBlocking.managingFundsAvailability orElse {
+
     case RetrieveStatus =>
-      log.debug("Order actor requested to retrieve status for {}", order.id)
+      log.debug("Order actor requested to retrieve status for {}", orderId)
       sender() ! order.view
 
     case ReceiveMessage(orderMatch: OrderMatch, _) =>
@@ -62,14 +71,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
           log.debug("Received order match for the already accepted exchange {}", oldExchange)
       }
 
-    case OrderFundsActor.AvailableFunds(availableBlockedFunds) =>
-      order.fundsBecomeAvailable(availableBlockedFunds)
-
-    case OrderFundsActor.UnavailableFunds =>
-      order.fundsBecomeUnavailable()
-
     case CancelOrder(reason) =>
-      log.info("Cancelling order {}", order.id)
+      log.info("Cancelling order {}", orderId)
       order.cancel(reason)
 
     case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
@@ -85,7 +88,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
-      case orderMatch: OrderMatch if orderMatch.orderId == order.id &&
+      case orderMatch: OrderMatch if orderMatch.orderId == orderId &&
         orderMatch.fiatAmount.currency == order.view.price.currency =>
     }
   }
@@ -93,37 +96,30 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
       override def onProgress(prevProgress: Double, newProgress: Double): Unit = {
-        publishEvent(OrderProgressedEvent(order.id, prevProgress, newProgress))
+        publishEvent(OrderProgressedEvent(orderId, prevProgress, newProgress))
       }
 
       override def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit = {
-        log.info("Order {} status changed from {} to {}", order.id, oldStatus, newStatus)
-        publishEvent(OrderStatusChangedEvent(order.id, oldStatus, newStatus))
+        log.info("Order {} status changed from {} to {}", orderId, oldStatus, newStatus)
+        publishEvent(OrderStatusChangedEvent(orderId, oldStatus, newStatus))
       }
 
       override def onFinish(finalStatus: OrderStatus): Unit = {
-        fundsActor ! OrderFundsActor.UnblockFunds
+        fundsBlocking.release()
       }
     })
   }
 
-  private def blockFunds(): Unit = {
-    val (bitcoinAmount, fiatAmount) = order.requiredFunds
-    log.info("{} is stalled until enough funds are available {}", order.id,
-      (fiatAmount, bitcoinAmount))
-    fundsActor ! OrderFundsActor.BlockFunds(fiatAmount, bitcoinAmount)
-  }
-
   private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch): Unit = {
     log.info("Rejecting match for {} against counterpart {}: {}",
-      order.id, rejectedMatch.counterpart, cause)
+      orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
 
   private def startExchange(newExchange: NonStartedExchange[C]): Unit = {
     log.info("Accepting match for {} against counterpart {} identified as {}",
-      order.id, newExchange.counterpartId, newExchange.id)
+      orderId, newExchange.counterpartId, newExchange.id)
     val userInfoFuture = for {
       keyPair <- createFreshKeyPair()
       paymentProcessorId <- retrievePaymentProcessorId()
@@ -131,7 +127,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
     userInfoFuture.onComplete {
       case Success(userInfo) => spawnExchange(newExchange, userInfo)
       case Failure(cause) =>
-        log.error(cause, "Cannot start exchange {} for {} order", newExchange.id, order.id)
+        log.error(cause, "Cannot start exchange {} for {} order", newExchange.id, orderId)
         // TODO: mark exchange/order as failed
         collaborators.submissionSupervisor ! KeepSubmitting(OrderBookEntry(order.view))
     }
@@ -189,7 +185,8 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      publisher => new OrderController(amountsCalculator, network, order, publisher),
+      amountsCalculator,
+      (publisher, funds) => new OrderController(amountsCalculator, network, order, publisher, funds),
       delegates,
       collaborators
     ))
