@@ -13,7 +13,7 @@ private[controller] trait State[C <: FiatCurrency] {
   def fundsBecomeUnavailable(ctx: Context): Unit = {}
   def becomeInMarket(ctx: Context): Unit = {}
   def becomeOffline(ctx: Context): Unit = {}
-  def exchangeCompleted(ctx: Context, result: Try[CompletedExchange[C]]): Unit = {}
+  def exchangeCompleted(ctx: Context, result: Try[SuccessfulExchange[C]]): Unit = {}
   def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch): MatchResult[C]
   def cancel(ctx: Context, reason: String): Unit
 }

@@ -31,7 +31,7 @@ object ExchangeActor {
   sealed trait ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange succeeded */
-  case class ExchangeSuccess(exchange: CompletedExchange[_ <: FiatCurrency]) extends ExchangeResult
+  case class ExchangeSuccess(exchange: SuccessfulExchange[_ <: FiatCurrency]) extends ExchangeResult
 
   /** This is a message sent to the listener to indicate that an exchange failed */
   case class ExchangeFailure(e: Throwable) extends ExchangeResult

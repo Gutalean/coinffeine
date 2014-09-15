@@ -79,7 +79,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
       order.updateExchange(exchange)
 
-    case ExchangeActor.ExchangeSuccess(exchange: CompletedExchange[C]) =>
+    case ExchangeActor.ExchangeSuccess(exchange: SuccessfulExchange[C]) =>
       order.completeExchange(Success(exchange))
 
     case ExchangeActor.ExchangeFailure(cause) =>

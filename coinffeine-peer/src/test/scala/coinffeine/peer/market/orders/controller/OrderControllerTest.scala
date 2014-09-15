@@ -140,8 +140,8 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
       amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, publisher, funds)
     order.addListener(listener)
 
-    def complete(exchange: AnyStateExchange[Euro.type]): Try[CompletedExchange[Euro.type]] = {
-      val completedState = Exchange.Completed[Euro.type](
+    def complete(exchange: AnyStateExchange[Euro.type]): Try[SuccessfulExchange[Euro.type]] = {
+      val completedState = Exchange.Successful[Euro.type](
         participants.buyer, participants.seller, MockExchangeProtocol.DummyDeposits)(amounts)
       Success(exchange.copy(state = completedState))
     }

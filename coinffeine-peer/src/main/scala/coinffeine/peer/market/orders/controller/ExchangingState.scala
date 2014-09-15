@@ -19,7 +19,7 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     throw new UnsupportedOperationException("Case not yet considered")
   }
 
-  override def exchangeCompleted(ctx: Context, result: Try[CompletedExchange[C]]): Unit = {
+  override def exchangeCompleted(ctx: Context, result: Try[SuccessfulExchange[C]]): Unit = {
     result match {
       case Success(_) =>
         ctx.transitionTo(new FinalState(FinalState.OrderCompletion))
