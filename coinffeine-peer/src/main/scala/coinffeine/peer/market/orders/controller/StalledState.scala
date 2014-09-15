@@ -21,10 +21,7 @@ private[controller] case class StalledState[C <: FiatCurrency]() extends State[C
     ctx.transitionTo(new FinalState(FinalState.OrderCancellation(reason)))
   }
 
-  private def stallReason(ctx: Context): String = {
-    ctx.funds match {
-      case NoFunds => "Blocking funds"
-      case _ => "No funds available"
-    }
-  }
+  private def stallReason(ctx: Context): String =
+    if (ctx.funds.areBlocked) "No funds available"
+    else "Blocking funds"
 }

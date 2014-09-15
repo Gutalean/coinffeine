@@ -1,20 +1,35 @@
 package coinffeine.peer.market.orders.controller
 
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.exchange.Exchange.BlockedFunds
 
-sealed trait OrderFunds {
- def get: Exchange.BlockedFunds
+trait OrderFunds {
+
+  protected var listeners = Seq.empty[OrderFunds.Listener]
+
+  def addListener(listener: OrderFunds.Listener): Unit = {
+    listeners :+= listener
+  }
+
+  /** Whether the funds have been blocked */
+  def areBlocked: Boolean
+
+  /** Whether the funds are available for use */
+  def areAvailable: Boolean
+
+  /** Get the blocked funds if they were already blocked */
+  @throws[NoSuchElementException]
+  def get: Exchange.BlockedFunds
+
+  /** Release remaining funds if any.
+    *
+    * This should be the last method call on [[OrderFunds]].
+    */
+  def release(): Unit
 }
 
-case object NoFunds extends OrderFunds {
-  override def get: BlockedFunds = throw new NoSuchElementException("no funds")
-}
-
-case class AvailableFunds(ids: Exchange.BlockedFunds) extends OrderFunds {
-  override def get: BlockedFunds = ids
-}
-
-case class UnavailableFunds(ids: Exchange.BlockedFunds) extends OrderFunds {
-  override def get: BlockedFunds = ids
+object OrderFunds {
+  trait Listener {
+    def onFundsAvailable(funds: OrderFunds): Unit
+    def onFundsUnavailable(funds: OrderFunds): Unit
+  }
 }
