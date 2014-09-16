@@ -4,6 +4,7 @@ import scala.annotation.tailrec
 
 import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransactionOutput}
 import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.Currency.Bitcoin
 
 private[bitcoin] class BlockedOutputs {
@@ -34,6 +35,16 @@ private[bitcoin] class BlockedOutputs {
   private var nextId = 1
   private var spendableOutputs = Set.empty[MutableTransactionOutput]
   private var blockedFunds = Map.empty[BlockedCoinsId, BlockedFunds]
+
+  def blocked: BitcoinAmount = blockedOutputs.foldLeft(0.BTC)((acum, output) =>
+    acum + Bitcoin.fromSatoshi(output.getValue)
+  )
+
+  def available: BitcoinAmount = spendable - blocked
+
+  def spendable: BitcoinAmount = spendableOutputs.foldLeft(0.BTC)((acum, output) =>
+    acum + Bitcoin.fromSatoshi(output.getValue)
+  )
 
   def setSpendCandidates(spendCandidates: Outputs): Unit = {
     spendableOutputs = spendCandidates

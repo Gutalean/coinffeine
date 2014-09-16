@@ -29,6 +29,21 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     }
   }
 
+  it must "create a new transaction" in new Fixture {
+    val req = WalletActor.CreateTransaction(1.BTC, someAddress)
+    instance ! req
+    val WalletActor.TransactionCreated(`req`, tx) = expectMsgType[WalletActor.TransactionCreated]
+    Bitcoin.fromSatoshi(tx.get.getValue(wallet)) should be (-1.BTC)
+
+  }
+
+  it must "fail to create a new transaction when insufficient balance" in new Fixture {
+    val req = WalletActor.CreateTransaction(20.BTC, someAddress)
+    instance ! req
+    val WalletActor.TransactionCreationFailure(`req`, error: IllegalArgumentException) =
+      expectMsgType[WalletActor.TransactionCreationFailure]
+  }
+
   it must "create a deposit as a multisign transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
     val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.1.BTC)
@@ -92,6 +107,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val eventChannelProbe = EventChannelProbe()
     val properties = new MutableWalletProperties
     val instance = system.actorOf(WalletActor.props(properties, wallet))
+    val someAddress = new KeyPair().toAddress(network)
 
     def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = {
       instance ! WalletActor.BlockBitcoins(amount)

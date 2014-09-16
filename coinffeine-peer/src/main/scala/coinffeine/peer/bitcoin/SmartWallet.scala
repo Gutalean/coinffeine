@@ -46,6 +46,12 @@ class SmartWallet(wallet: Wallet) {
     blockedOutputs.unblock(coinsId)
   }
 
+  def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = synchronized {
+    require(amount < blockedOutputs.spendable,
+      s"cannot create a transaction of $amount: not enough funds in wallet")
+    ImmutableTransaction(wallet.blockFunds(to, amount))
+  }
+
   def createMultisignTransaction(coinsId: BlockedCoinsId,
                                  amount: BitcoinAmount,
                                  fee: BitcoinAmount,

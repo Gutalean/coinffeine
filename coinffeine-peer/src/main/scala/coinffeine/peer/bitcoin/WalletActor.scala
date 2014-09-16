@@ -3,6 +3,7 @@ package coinffeine.peer.bitcoin
 import scala.util.control.NonFatal
 
 import akka.actor._
+import com.google.bitcoin.core.{Address => BitcoinAddress}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
@@ -30,6 +31,14 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
         sender ! WalletActor.DepositCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
+      }
+
+    case req @ WalletActor.CreateTransaction(amount, to) =>
+      try {
+        val tx = smartWallet.createTransaction(amount, to)
+        sender ! WalletActor.TransactionCreated(req, tx)
+      } catch {
+        case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
@@ -85,6 +94,15 @@ object WalletActor {
     Props(new WalletActor(properties, wallet))
 
   private case object InternalWalletChanged
+
+  /** A request message to create a new transaction. */
+  case class CreateTransaction(amount: BitcoinAmount, to: BitcoinAddress)
+
+  /** A successful response to a transaction creation request. */
+  case class TransactionCreated(req: CreateTransaction, tx: ImmutableTransaction)
+
+  /** A failure response to a transaction creation request. */
+  case class TransactionCreationFailure(req: CreateTransaction, failure: Throwable)
 
   /** Subscribe to wallet changes. The sender will receive [[WalletChanged]] after sending this
     * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].
