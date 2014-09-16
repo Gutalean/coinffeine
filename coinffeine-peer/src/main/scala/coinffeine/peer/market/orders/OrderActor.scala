@@ -75,15 +75,15 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       log.info("Cancelling order {}", orderId)
       order.cancel(reason)
 
-    case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
-      log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
+    case ExchangeActor.ExchangeUpdate(exchange: AnyStateExchange[C]) =>
+      log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
       order.updateExchange(exchange)
 
-    case ExchangeActor.ExchangeSuccess(exchange: CompletedExchange[C]) =>
-      order.completeExchange(Success(exchange))
+    case ExchangeActor.ExchangeSuccess(exchange: SuccessfulExchange[C]) =>
+      order.completeExchange(exchange)
 
-    case ExchangeActor.ExchangeFailure(cause) =>
-      order.completeExchange(Failure(cause))
+    case ExchangeActor.ExchangeFailure(exchange: FailedExchange[C]) =>
+      order.completeExchange(exchange)
   }
 
   private def subscribeToOrderMatches(): Unit = {

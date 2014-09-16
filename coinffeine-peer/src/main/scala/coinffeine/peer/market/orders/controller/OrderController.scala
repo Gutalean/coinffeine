@@ -1,11 +1,9 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.Try
-
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin.Network
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
@@ -69,8 +67,8 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
       listeners.foreach(_.onProgress(prevProgress, newProgress))
     }
 
-    def completeExchange(exchange: Try[CompletedExchange[C]]): Unit = {
-      exchange.toOption.foreach(updateExchange)
+    def completeExchange(exchange: CompletedExchange[C]): Unit = {
+      updateExchange(exchange)
       context.state.exchangeCompleted(context, exchange)
     }
   }
@@ -106,9 +104,7 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
     context.state.acceptOrderMatch(context, orderMatch)
   def cancel(reason: String): Unit = { context.state.cancel(context, reason) }
   def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
-  def completeExchange(exchange: Try[CompletedExchange[C]]): Unit = {
-    context.completeExchange(exchange)
-  }
+  def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
 }
 
 private[orders] object OrderController {

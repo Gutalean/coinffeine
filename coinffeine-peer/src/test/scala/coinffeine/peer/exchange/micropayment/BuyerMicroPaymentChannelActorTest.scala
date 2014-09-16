@@ -26,7 +26,11 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
   val protocolConstants = ProtocolConstants(microPaymentChannelResubmitTimeout = 2.seconds)
   val exchangeProtocol = new MockExchangeProtocol
   val actor = system.actorOf(
-    BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants),
+    BuyerMicroPaymentChannelActor.props(
+      exchangeProtocol.createMicroPaymentChannel(runningExchange),
+      protocolConstants,
+      MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
+    ),
     "buyer-exchange-actor"
   )
   val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
@@ -41,9 +45,6 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
 
   "The buyer exchange actor" should "subscribe to the relevant messages when initialized" in {
     gateway.expectNoMsg()
-    actor ! StartMicroPaymentChannel(
-      runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
-    )
     gateway.expectSubscription()
   }
 
@@ -72,6 +73,6 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
-    listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
+    listener.expectMsg(ChannelSuccess(Some(expectedLastOffer)))
   }
 }

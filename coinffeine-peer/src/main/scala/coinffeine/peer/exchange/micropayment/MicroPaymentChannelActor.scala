@@ -3,44 +3,37 @@ package coinffeine.peer.exchange.micropayment
 import akka.actor.ActorRef
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.exchange.Both
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.
   */
 object MicroPaymentChannelActor {
 
-  /** Sent to the the actor to start the actual exchange through the micropayment channel.
+  /** Collaborator actors for a micropayment channel
     *
-    * @param exchange          Exchange to take part on
-    * @param paymentProcessor  Actor to use for making payments
     * @param gateway           Message gateway
+    * @param paymentProcessor  Actor to use for making payments
     * @param resultListeners   These actors will receive the result, [[LastBroadcastableOffer]] and
-    *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeProgress]]
+    *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate]]
     *                          notifications
     */
-  case class StartMicroPaymentChannel[C <: FiatCurrency](
-      exchange: RunningExchange[C],
-      paymentProcessor: ActorRef,
-      gateway: ActorRef,
-      resultListeners: Set[ActorRef]
-  )
+  case class Collaborators(gateway: ActorRef,
+                           paymentProcessor: ActorRef,
+                           resultListeners: Set[ActorRef])
 
   sealed trait ExchangeResult
 
   /** Sent to the exchange listeners to notify success of the exchange */
-  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
+  case class ChannelSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ExchangeFailure(cause: Throwable) extends ExchangeResult
+  case class ChannelFailure(step: Int, cause: Throwable) extends ExchangeResult
 
   /** Sent to the listeners to notify about what the last broadcastable offer is */
   case class LastBroadcastableOffer(transaction: ImmutableTransaction)
 
   private[micropayment] case object StepSignatureTimeout
-
-  case class TimeoutException(message: String) extends RuntimeException(message)
 
   case class InvalidStepSignatures(step: Int, sigs: Both[TransactionSignature], cause: Throwable)
     extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)

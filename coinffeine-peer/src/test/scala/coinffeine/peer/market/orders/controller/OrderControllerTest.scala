@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.{Try, Success}
-
 import org.mockito.Mockito.{times, verify}
 import org.scalatest.mock.MockitoSugar
 
@@ -140,10 +138,10 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
       amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, publisher, funds)
     order.addListener(listener)
 
-    def complete(exchange: AnyStateExchange[Euro.type]): Try[CompletedExchange[Euro.type]] = {
-      val completedState = Exchange.Completed[Euro.type](
+    def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {
+      val completedState = Exchange.Successful[Euro.type](
         participants.buyer, participants.seller, MockExchangeProtocol.DummyDeposits)(amounts)
-      Success(exchange.copy(state = completedState))
+      exchange.copy(state = completedState)
     }
   }
 }

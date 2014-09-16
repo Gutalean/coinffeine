@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.{Failure, Success, Try}
-
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market.InProgressOrder
@@ -19,13 +17,11 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     throw new UnsupportedOperationException("Case not yet considered")
   }
 
-  override def exchangeCompleted(ctx: Context, result: Try[CompletedExchange[C]]): Unit = {
-    result match {
-      case Success(_) =>
-        ctx.transitionTo(new FinalState(FinalState.OrderCompletion))
-      case Failure(cause) =>
-        // TODO: case not yet implemented
-        throw cause
+  override def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {
+    if (exchange.state.isSuccess) {
+      ctx.transitionTo(new FinalState(FinalState.OrderCompletion))
+    } else {
+      throw new NotImplementedError(s"Don't know what to do with $exchange")
     }
   }
 

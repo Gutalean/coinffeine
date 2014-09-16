@@ -21,20 +21,21 @@ class BuyerMicroPaymentChannelActorFailureTest
     val listener = TestProbe()
     val paymentProcessor = TestProbe()
     val actor = system.actorOf(
-      BuyerMicroPaymentChannelActor.props(new MockExchangeProtocol, ProtocolConstants.Default))
+      BuyerMicroPaymentChannelActor.props(
+        exchangeProtocol.createMicroPaymentChannel(runningExchange),
+        ProtocolConstants.Default,
+        MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
+      ),
+      "buyer-exchange-actor"
+    )
     listener.watch(actor)
 
-    def startMicroPaymentChannel(): Unit = {
-      actor ! StartMicroPaymentChannel(runningExchange, paymentProcessor.ref, gateway.ref,
-        Set(listener.ref))
-    }
   }
 
   "The buyer exchange actor" should "fail if the seller provides signatures" in new Fixture {
-    startMicroPaymentChannel()
     val invalidDeposits = signatures.copy(buyer = MockExchangeProtocol.InvalidSignature)
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
-    val failure = listener.expectMsgClass(classOf[ExchangeFailure])
+    val failure = listener.expectMsgClass(classOf[ChannelFailure])
     failure.cause shouldBe an [InvalidStepSignatures]
     failure.cause.asInstanceOf[InvalidStepSignatures].step should be (1)
     listener.expectTerminated(actor)

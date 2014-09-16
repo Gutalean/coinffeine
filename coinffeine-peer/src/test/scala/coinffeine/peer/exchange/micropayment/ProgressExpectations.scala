@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.AnyStateExchange
-import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
+import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 
 trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
 
@@ -13,7 +13,7 @@ trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
   protected def exchange: AnyStateExchange[C]
 
   def expectProgress(signatures: Int, payments: Int): Unit = {
-    val progress = listener.expectMsgType[ExchangeProgress].exchange.progress
+    val progress = listener.expectMsgType[ExchangeUpdate].exchange.progress
     progress.fiatTransferred.currency should be (exchange.currency)
     val fiat = progress.fiatTransferred.asInstanceOf[CurrencyAmount[C]]
 
