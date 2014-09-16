@@ -20,13 +20,13 @@ object ExchangeActor {
                            paymentProcessor: ActorRef,
                            gateway: ActorRef,
                            bitcoinPeer: ActorRef,
-                           resultListener: ActorRef)
+                           listener: ActorRef)
 
   case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],
                                                 user: Exchange.PeerInfo)
 
   /** This is sent back to listener to indicate exchange progress. */
-  case class ExchangeProgress(exchange: RunningExchange[_ <: FiatCurrency])
+  case class ExchangeUpdate(exchange: AnyStateExchange[_ <: FiatCurrency])
 
   sealed trait ExchangeResult
 

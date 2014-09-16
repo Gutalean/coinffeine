@@ -75,8 +75,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       log.info("Cancelling order {}", orderId)
       order.cancel(reason)
 
-    case ExchangeActor.ExchangeProgress(exchange: AnyStateExchange[C]) =>
-      log.debug("Order actor received progress for {}: {}", exchange.id, exchange.progress)
+    case ExchangeActor.ExchangeUpdate(exchange: AnyStateExchange[C]) =>
+      log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
       order.updateExchange(exchange)
 
     case ExchangeActor.ExchangeSuccess(exchange: CompletedExchange[C]) =>

@@ -84,8 +84,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
       txBroadcaster ! FinishExchange
       context.become(finishingExchange(ExchangeFailure(cause)))
 
-    case progress: ExchangeProgress =>
-      collaborators.resultListener ! progress
+    case update: ExchangeUpdate =>
+      collaborators.listener ! update
 
     case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
       finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
@@ -112,7 +112,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def finishWith(result: Any): Unit = {
-    collaborators.resultListener ! result
+    collaborators.listener ! result
     context.stop(self)
   }
 }

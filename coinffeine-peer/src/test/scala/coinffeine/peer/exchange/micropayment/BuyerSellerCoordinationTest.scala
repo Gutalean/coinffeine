@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.ExchangeActor.ExchangeProgress
+import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, LastBroadcastableOffer}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -46,10 +46,10 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     system.actorOf(sellerProps, "seller-exchange-actor")
     buyerListener.receiveWhile() {
       case LastBroadcastableOffer(_) =>
-      case ExchangeProgress(_) =>
+      case ExchangeUpdate(_) =>
     }
     sellerListener.receiveWhile() {
-      case ExchangeProgress(_) =>
+      case ExchangeUpdate(_) =>
     }
     buyerListener.expectMsgType[ExchangeSuccess]
     sellerListener.expectMsg(ExchangeSuccess(None))

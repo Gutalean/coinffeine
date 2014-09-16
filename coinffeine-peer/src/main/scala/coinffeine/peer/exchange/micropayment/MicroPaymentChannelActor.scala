@@ -15,7 +15,7 @@ object MicroPaymentChannelActor {
     * @param gateway           Message gateway
     * @param paymentProcessor  Actor to use for making payments
     * @param resultListeners   These actors will receive the result, [[LastBroadcastableOffer]] and
-    *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeProgress]]
+    *                          [[coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate]]
     *                          notifications
     */
   case class Collaborators(gateway: ActorRef,
