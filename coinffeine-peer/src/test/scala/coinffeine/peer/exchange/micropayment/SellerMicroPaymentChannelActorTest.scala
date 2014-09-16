@@ -10,7 +10,7 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, StartMicroPaymentChannel}
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ExchangeSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -32,14 +32,11 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
   val channel = new MockMicroPaymentChannel(runningExchange)
   val firstStep = IntermediateStep(1, exchange.amounts.breakdown)
   val actor = system.actorOf(
-    SellerMicroPaymentChannelActor.props(new MockExchangeProtocol(), protocolConstants),
+    SellerMicroPaymentChannelActor.props(channel, protocolConstants,
+      MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))),
     "seller-exchange-actor"
   )
   listener.watch(actor)
-
-  actor ! StartMicroPaymentChannel(
-    runningExchange, paymentProcessor.ref, gateway.ref, Set(listener.ref)
-  )
 
   val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
   val secondSignatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)

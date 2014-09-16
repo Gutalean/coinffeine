@@ -11,22 +11,18 @@ import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.StartMicroPaymentChannel
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
 
 class DefaultExchangeActor[C <: FiatCurrency](
-    handshakeActorProps: (ExchangeActor.ExchangeToStart[_ <: FiatCurrency],
-                          HandshakeActor.Collaborators) => Props,
-    channelActorProps: Props,
-    transactionBroadcastActorProps: Props,
     exchangeProtocol: ExchangeProtocol,
     exchange: ExchangeToStart[C],
+    delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
 
   private var blockchain: ActorRef = _
   private val txBroadcaster =
-    context.actorOf(transactionBroadcastActorProps, TransactionBroadcastActorName)
+    context.actorOf(delegates.transactionBroadcaster, TransactionBroadcastActorName)
   private var handshakeActor: ActorRef = _
 
   override def preStart(): Unit = {
@@ -62,9 +58,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
                                        handshakingExchange: HandshakingExchange[C]): Unit = {
     val runningExchange = handshakingExchange.startExchanging(commitments)
-    val ref = context.actorOf(channelActorProps, MicroPaymentChannelActorName)
-    ref ! StartMicroPaymentChannel(runningExchange, collaborators.paymentProcessor,
-      collaborators.gateway, resultListeners = Set(self, txBroadcaster))
+    val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
+    val resultListeners = Set(self, txBroadcaster)
+    context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName)
     context.become(inMicropaymentChannel(runningExchange))
   }
 
@@ -72,7 +68,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     val handshakeCollaborators = HandshakeActor.Collaborators(
       collaborators.gateway, blockchain, collaborators.wallet, listener = self)
     handshakeActor = context.actorOf(
-      handshakeActorProps(exchange, handshakeCollaborators), HandshakeActorName)
+      delegates.handshake(exchange, handshakeCollaborators), HandshakeActorName)
   }
 
   private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
@@ -123,24 +119,39 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
 object DefaultExchangeActor {
 
+  trait Delegates {
+    def handshake(exchange: ExchangeActor.ExchangeToStart[_ <: FiatCurrency],
+                  collaborators: HandshakeActor.Collaborators): Props
+    def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
+                            resultListeners: Set[ActorRef]): Props
+    def transactionBroadcaster: Props
+  }
+
   trait Component extends ExchangeActor.Component {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
     override lazy val exchangeActorProps = (exchange: ExchangeToStart[_ <: FiatCurrency],
                                             collaborators: ExchangeActor.Collaborators) => {
-      val channelActorProps = exchange.info.role match {
-        case BuyerRole => BuyerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
-        case SellerRole => SellerMicroPaymentChannelActor.props(exchangeProtocol, protocolConstants)
+      val delegates = new Delegates {
+        val transactionBroadcaster = TransactionBroadcastActor.props(protocolConstants)
+
+        def handshake(exchange: ExchangeToStart[_ <: FiatCurrency],
+                      collaborators: HandshakeActor.Collaborators) =
+          HandshakeActor.props(exchange, collaborators,
+            HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants))
+
+        def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
+                                resultListeners: Set[ActorRef]): Props = {
+          val propsFactory = exchange.info.role match {
+            case BuyerRole => BuyerMicroPaymentChannelActor.props _
+            case SellerRole => SellerMicroPaymentChannelActor.props _
+          }
+          propsFactory(channel, protocolConstants, MicroPaymentChannelActor.Collaborators(
+            collaborators.gateway, collaborators.paymentProcessor, resultListeners))
+        }
       }
-      Props(new DefaultExchangeActor(
-        (exchange, collaborators) => HandshakeActor.props(exchange, collaborators,
-          HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)),
-        channelActorProps,
-        TransactionBroadcastActor.props(protocolConstants),
-        exchangeProtocol,
-        exchange,
-        collaborators
-      ))
+
+      Props(new DefaultExchangeActor(exchangeProtocol, exchange, delegates, collaborators))
     }
   }
 }

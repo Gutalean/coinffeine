@@ -13,7 +13,7 @@ object ExchangeActor {
   type ExchangeActorProps = (ExchangeToStart[_ <: FiatCurrency], Collaborators) => Props
 
   val HandshakeActorName = "handshake"
-  val MicroPaymentChannelActorName = "exchange"
+  val ChannelActorName = "exchange"
   val TransactionBroadcastActorName = "transactionBroadcast"
 
   case class Collaborators(wallet: ActorRef,
