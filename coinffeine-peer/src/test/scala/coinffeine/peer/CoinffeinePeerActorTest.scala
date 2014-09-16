@@ -2,16 +2,18 @@ package coinffeine.peer
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import com.google.bitcoin.params.TestNet3Params
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, Address}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
@@ -50,7 +52,60 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.expectMsg(ServiceActor.Stop)
   }
 
+  it must "process wallet funds withdraw" in new StartedFixture {
+    val amount = 1.BTC
+    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
+    val tx = ImmutableTransaction(new MutableTransaction(network))
+    val createTxRequest = WalletActor.CreateTransaction(amount, to)
+    val createTxResponse = WalletActor.TransactionCreated(createTxRequest, tx)
+    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
+    val publishTxResponse = BitcoinPeerActor.TransactionPublished(tx, tx)
+    val withdrawRequest = WithdrawWalletFunds(amount, to)
+    val withdrawResponse = WalletFundsWithdrawn(amount, to, tx)
+
+    peer ! withdrawRequest
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxResponse)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
+    expectMsg(withdrawResponse)
+  }
+
+  it must "fail process wallet funds on tx creation errors" in new StartedFixture {
+    val amount = 1.BTC
+    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
+    val tx = ImmutableTransaction(new MutableTransaction(network))
+    val error = new Error
+    val createTxRequest = WalletActor.CreateTransaction(amount, to)
+    val createTxResponse = WalletActor.TransactionCreationFailure(createTxRequest, error)
+    val withdrawRequest = WithdrawWalletFunds(amount, to)
+
+    peer ! withdrawRequest
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxResponse)
+    bitcoinPeer.expectNoMsg()
+    val WalletFundsWithdrawFailure(`amount`, `to`, _) = expectMsgType[WalletFundsWithdrawFailure]
+  }
+
+  it must "fail process wallet funds on tx publishing errors" in new StartedFixture {
+    val amount = 1.BTC
+    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
+    val tx = ImmutableTransaction(new MutableTransaction(network))
+    val error = new Error
+    val createTxRequest = WalletActor.CreateTransaction(amount, to)
+    val createTxResponse = WalletActor.TransactionCreated(createTxRequest, tx)
+    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
+    val publishTxResponse = BitcoinPeerActor.TransactionNotPublished(tx, error)
+    val withdrawRequest = WithdrawWalletFunds(amount, to)
+
+    peer ! withdrawRequest
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxResponse)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
+    val WalletFundsWithdrawFailure(`amount`, `to`, _) = expectMsgType[WalletFundsWithdrawFailure]
+  }
+
   trait Fixture {
+    val network = new TestNet3Params
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
     val brokerId = PeerId("broker")
@@ -69,6 +124,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
       peer ! message
       delegate.expectForward(message, self)
+    }
+
+    def shouldForwardMessage(message: Any, delegate: TestProbe): Unit = {
+      peer ! message
+      delegate.expectMsg(message)
+      delegate.sender() should be (self)
     }
 
     def shouldCreateActors(actors: MockSupervisedActor*): Unit = {

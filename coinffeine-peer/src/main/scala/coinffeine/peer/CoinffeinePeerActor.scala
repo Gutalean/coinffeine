@@ -1,17 +1,20 @@
 package coinffeine.peer
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.pattern._
 import akka.util.Timeout
 
+import com.google.bitcoin.core.{Address => BitcoinAddress}
+
 import coinffeine.common.akka.{AskPattern, ServiceActor}
-import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.bitcoin.{ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.amounts.AmountsComponent
-import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
@@ -79,6 +82,18 @@ import coinffeine.peer.CoinffeinePeerActor._
   private val handleMessages: Receive = {
     case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
       orderSupervisorRef forward message
+    case message @ WithdrawWalletFunds(amount, to) =>
+      val requester = sender()
+      val transaction = for {
+        txCreated <- AskPattern(walletRef, WalletActor.CreateTransaction(amount, to))
+          .withImmediateReply[WalletActor.TransactionCreated]
+        txPublished <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.PublishTransaction(txCreated.tx))
+          .withImmediateReply[BitcoinPeerActor.TransactionPublished]
+      } yield txPublished.broadcastTx
+      transaction.onComplete {
+        case Success(tx) => requester ! WalletFundsWithdrawn(amount, to, tx)
+        case Failure(cause) => requester ! WalletFundsWithdrawFailure(amount, to, cause)
+      }
     case message @ RetrieveBalance(_) =>
       paymentProcessorRef forward message
 
@@ -120,6 +135,19 @@ object CoinffeinePeerActor {
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
+
+  /** A request to withdraw funds from Bitcoin wallet. */
+  case class WithdrawWalletFunds(amount: BitcoinAmount, to: BitcoinAddress)
+
+  /** A response reporting a successful withdraw of wallet funds. */
+  case class WalletFundsWithdrawn(amount: BitcoinAmount,
+                                  to: BitcoinAddress,
+                                  tx: ImmutableTransaction)
+
+  /** A response reporting a failure while withdrawing wallet funds. */
+  case class WalletFundsWithdrawFailure(amount: BitcoinAmount,
+                                        to: BitcoinAddress,
+                                        failure: Throwable)
 
   case class OrderSupervisorCollaborators(gateway: ActorRef,
                                           paymentProcessor: ActorRef,
