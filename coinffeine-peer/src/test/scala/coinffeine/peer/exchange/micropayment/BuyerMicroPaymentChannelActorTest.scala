@@ -73,6 +73,6 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
-    listener.expectMsg(ExchangeSuccess(Some(expectedLastOffer)))
+    listener.expectMsg(ChannelSuccess(Some(expectedLastOffer)))
   }
 }

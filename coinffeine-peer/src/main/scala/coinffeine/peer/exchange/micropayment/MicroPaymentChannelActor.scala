@@ -25,17 +25,15 @@ object MicroPaymentChannelActor {
   sealed trait ExchangeResult
 
   /** Sent to the exchange listeners to notify success of the exchange */
-  case class ExchangeSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
+  case class ChannelSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ExchangeFailure(cause: Throwable) extends ExchangeResult
+  case class ChannelFailure(step: Int, cause: Throwable) extends ExchangeResult
 
   /** Sent to the listeners to notify about what the last broadcastable offer is */
   case class LastBroadcastableOffer(transaction: ImmutableTransaction)
 
   private[micropayment] case object StepSignatureTimeout
-
-  case class TimeoutException(message: String) extends RuntimeException(message)
 
   case class InvalidStepSignatures(step: Int, sigs: Both[TransactionSignature], cause: Throwable)
     extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)

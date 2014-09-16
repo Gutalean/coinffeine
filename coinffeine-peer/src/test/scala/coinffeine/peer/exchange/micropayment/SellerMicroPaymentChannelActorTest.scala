@@ -10,7 +10,7 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ExchangeSuccess
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -98,7 +98,7 @@ class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExc
 
   it should "send a notification to the listeners once the exchange has finished" in {
     gateway.relayMessage(MicropaymentChannelClosed(exchangeId), counterpartId)
-    listener.expectMsg(ExchangeSuccess(None))
+    listener.expectMsg(ChannelSuccess(None))
   }
 
   private def expectPayment(step: IntermediateStep, completed: Boolean = true): Unit = {

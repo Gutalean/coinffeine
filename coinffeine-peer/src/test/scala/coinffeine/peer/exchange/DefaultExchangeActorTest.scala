@@ -6,14 +6,14 @@ import scala.util.{Failure, Success}
 import akka.actor.{ActorRef, Props, Terminated}
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
+import org.scalatest.{Inside, OptionValues}
 
 import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
 import coinffeine.peer.exchange.ExchangeActor._
@@ -27,7 +27,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 
 class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
-  with SellerPerspective with Eventually with Inside {
+  with SellerPerspective with Eventually with OptionValues with Inside {
 
   implicit def testTimeout = new Timeout(5 second)
 
@@ -92,7 +92,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenMicropaymentChannelSuccess(): Unit = {
       givenMicropaymentChannelCreation()
       micropaymentChannelActor.probe
-        .send(actor, MicroPaymentChannelActor.ExchangeSuccess(Some(dummyTx)))
+        .send(actor, MicroPaymentChannelActor.ChannelSuccess(Some(dummyTx)))
     }
 
     def shouldWatchForTheTransactions(): Unit = {
@@ -131,8 +131,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     startExchange()
     val error = new Error("Handshake error")
     handshakeActor.expectCreation()
-    handshakeActor.probe.send(actor, HandshakeFailure(error))
-    listener.expectMsg(ExchangeFailure(error))
+    handshakeActor.probe.send(actor, HandshakeFailure(error, refundTx = None))
+    listener.expectMsgType[ExchangeFailure]
     listener.expectTerminated(actor)
     system.stop(actor)
   }
@@ -142,8 +142,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       startExchange()
       givenHandshakeSuccessWithInvalidCounterpartCommitment()
       givenTransactionIsCorrectlyBroadcast()
-      inside (listener.expectMsgType[ExchangeFailure]) {
-        case ExchangeFailure(InvalidCommitments(Both(Failure(_), Success(_)))) =>
+      inside (listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
+        case Exchange.Abortion(Exchange.InvalidCommitments(Both(Failure(_), Success(_)))) =>
       }
       listener.expectTerminated(actor)
       system.stop(actor)
@@ -155,11 +155,11 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     val error = new Error("exchange failure")
     givenMicropaymentChannelCreation()
-    micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ExchangeFailure(error))
+    micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
     givenTransactionIsCorrectlyBroadcast()
 
-    listener.expectMsg(ExchangeFailure(error))
+    listener.expectMsgType[ExchangeFailure]
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)
   }
@@ -172,7 +172,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     transactionBroadcastActor.expectAskWithReply {
       case FinishExchange => ExchangeFinishFailure(broadcastError)
     }
-    listener.expectMsg(ExchangeFailure(TxBroadcastFailed(broadcastError)))
+    listener.expectMsgType[ExchangeFailure].exchange.state.cause shouldBe Exchange.NoBroadcast
     listener.expectMsgClass(classOf[Terminated])
     system.stop(actor)
   }
@@ -190,7 +190,9 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       transactionBroadcastActor.expectAskWithReply {
         case FinishExchange => ExchangeFinished(TransactionPublished(unexpectedTx, unexpectedTx))
       }
-      listener.expectMsg(ExchangeFailure(UnexpectedTxBroadcast(unexpectedTx, dummyTx)))
+      inside(listener.expectMsgType[ExchangeFailure].exchange.state) {
+        case Exchange.Failed(Exchange.UnexpectedBroadcast, _, _, Some(`unexpectedTx`)) =>
+      }
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }
@@ -208,7 +210,9 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       transactionBroadcastActor.expectNoMsg()
       transactionBroadcastActor.probe
         .send(actor, ExchangeFinished(TransactionPublished(midWayTx, midWayTx)))
-      listener.expectMsg(ExchangeFailure(RiskOfValidRefund(midWayTx)))
+      val failedState = listener.expectMsgType[ExchangeFailure].exchange.state
+      failedState.cause shouldBe Exchange.PanicBlockReached
+      failedState.transaction.value shouldBe midWayTx
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }

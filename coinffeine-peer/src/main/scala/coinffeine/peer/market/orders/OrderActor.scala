@@ -80,10 +80,10 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       order.updateExchange(exchange)
 
     case ExchangeActor.ExchangeSuccess(exchange: SuccessfulExchange[C]) =>
-      order.completeExchange(Success(exchange))
+      order.completeExchange(exchange)
 
-    case ExchangeActor.ExchangeFailure(cause) =>
-      order.completeExchange(Failure(cause))
+    case ExchangeActor.ExchangeFailure(exchange: FailedExchange[C]) =>
+      order.completeExchange(exchange)
   }
 
   private def subscribeToOrderMatches(): Unit = {

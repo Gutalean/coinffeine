@@ -1,14 +1,14 @@
 package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 import akka.actor._
 import akka.pattern._
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.{TransactionSignature, Hash, ImmutableTransaction}
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
@@ -22,7 +22,7 @@ import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
-import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
+import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.handshake._
 
 private class HandshakeActor[C <: FiatCurrency](
@@ -79,8 +79,7 @@ private class HandshakeActor[C <: FiatCurrency](
         counterpartRefundSigner ! CounterpartRefundSigner.StartSigningRefunds(handshake)
         context.become(waitForRefundSignature(handshake))
 
-      case Status.Failure(cause) =>
-        finishWithResult(Failure(cause))
+      case Status.Failure(cause) => finishWith(HandshakeFailure(cause, refundTx = None))
     }
 
     receivePeerHandshake orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
@@ -172,10 +171,10 @@ private class HandshakeActor[C <: FiatCurrency](
         val isOwn = tx == handshake.myDeposit.get.getHash
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
-        finishWithResult(Failure(cause))
+        finishWith(HandshakeFailure(cause, Some(refund)))
 
-      case result: HandshakeSuccess => finishWithResult(Success(result))
-      case Status.Failure(cause) => finishWithResult(Failure(cause))
+      case result: HandshakeSuccess => finishWith(result)
+      case Status.Failure(cause) => finishWith(HandshakeFailure(cause, Some(refund)))
     }
 
     commitmentIds.toSeq.foreach { txId =>
@@ -205,13 +204,13 @@ private class HandshakeActor[C <: FiatCurrency](
       val cause = RefundSignatureTimeoutException(exchange.info.id)
       collaborators.gateway ! ForwardMessage(
         ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
-      finishWithResult(Failure(cause))
+      finishWith(HandshakeFailure(cause, refundTx = None))
   }
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
       log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
-      finishWithResult(Failure(HandshakeAbortedException(exchange.info.id, reason)))
+      finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason), refundTx = None))
   }
 
   private def subscribeToMessages(): Unit = {
@@ -233,17 +232,9 @@ private class HandshakeActor[C <: FiatCurrency](
     )
   }
 
-  private def finishWithResult(result: Try[HandshakeSuccess]): Unit = {
-    val message = result match {
-      case Success(success) =>
-        log.info("Handshake {}: succeeded", exchange.info.id)
-        success
-      case Failure(cause) =>
-        log.error(cause, "Handshake {}: handshake failed with", exchange.info.id)
-        HandshakeFailure(cause)
-    }
-    collaborators.listener ! message
-    self ! PoisonPill
+  private def finishWith(result: HandshakeResult): Unit = {
+    collaborators.listener ! result
+    context.stop(self)
   }
 }
 
@@ -271,14 +262,21 @@ object HandshakeActor {
             protocol: ProtocolDetails) =
     Props(new HandshakeActor(exchange, collaborators, protocol))
 
-  /** Sent to the handshake listeners to notify success with a refundSignature transaction or
-    * failure with an exception.
-    */
+  sealed trait HandshakeResult
+
+  /** Sent to the handshake listeners to notify success. */
   case class HandshakeSuccess(exchange: HandshakingExchange[_ <: FiatCurrency],
                               bothCommitments: Both[ImmutableTransaction],
-                              refundTransaction: ImmutableTransaction)
+                              refundTransaction: ImmutableTransaction) extends HandshakeResult
 
-  case class HandshakeFailure(e: Throwable)
+  /** Sent to the handshake listeners to notify failure.
+    *
+    * @param refundTx  When not null, the commitment was created and the refund should be tried to
+    *                  broadcast
+    * @param cause     Failure cause
+    */
+  case class HandshakeFailure(cause: Throwable, refundTx: Option[ImmutableTransaction])
+    extends HandshakeResult
 
   case class RefundSignatureTimeoutException(exchangeId: ExchangeId) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")

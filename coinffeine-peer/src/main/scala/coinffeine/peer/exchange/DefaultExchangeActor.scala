@@ -4,6 +4,7 @@ import akka.actor._
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Exchange.{HandshakeFailed, HandshakeWithCommitmentFailed, InvalidCommitments}
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorRef, RetrieveBlockchainActor, TransactionPublished}
@@ -41,18 +42,27 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case HandshakeSuccess(rawExchange, commitments, refundTx)
       if rawExchange.currency == exchange.info.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
-      txBroadcaster ! StartBroadcastHandling(refundTx, collaborators.bitcoinPeer,
-        resultListeners = Set(self))
       val validationResult = exchangeProtocol.validateDeposits(
         commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
       if (validationResult.forall(_.isSuccess)) {
+        spawnBroadcaster(refundTx)
         startMicropaymentChannel(commitments, handshakingExchange)
       } else {
-        txBroadcaster ! FinishExchange
-        context.become(finishingExchange(ExchangeFailure(InvalidCommitments(validationResult))))
+        startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx),
+          refundTx)
       }
 
-    case HandshakeFailure(err) => finishWith(ExchangeFailure(err))
+    case HandshakeFailure(cause, None) =>
+      finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), exchange.user)))
+
+    case HandshakeFailure(cause, Some(refundTx)) =>
+      startAbortion(
+        exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx), refundTx)
+  }
+
+  private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
+    txBroadcaster ! StartBroadcastHandling(refundTx, collaborators.bitcoinPeer,
+      resultListeners = Set(self))
   }
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
@@ -73,45 +83,72 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
 
-    case MicroPaymentChannelActor.ExchangeSuccess(successTx) =>
+    case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.info.id)
       txBroadcaster ! FinishExchange
-      val result = ExchangeSuccess(runningExchange.complete)
-      context.become(finishingExchange(result, successTx))
+      context.become(waitingForFinalTransaction(runningExchange, successTx))
 
-    case MicroPaymentChannelActor.ExchangeFailure(cause) =>
-      log.error(cause, "Finishing exchange '{}' with a failure", exchange.info.id)
+    case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
+      log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.info.id, step)
       txBroadcaster ! FinishExchange
-      context.become(finishingExchange(ExchangeFailure(cause)))
+      context.become(failingAtStep(runningExchange, step, cause))
 
     case update: ExchangeUpdate =>
       collaborators.listener ! update
 
     case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
-      finishWith(ExchangeFailure(RiskOfValidRefund(broadcastTx)))
+      finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
   }
 
-  private def finishingExchange(result: ExchangeResult,
-                                expectedFinishingTx: Option[ImmutableTransaction] = None): Receive = {
+  private def startAbortion(abortingExchange: AbortingExchange[C],
+                            refundTx: ImmutableTransaction): Unit = {
+    spawnBroadcaster(refundTx)
+    txBroadcaster ! FinishExchange
+    context.become(aborting(abortingExchange, refundTx))
+  }
+
+  private def aborting(abortingExchange: AbortingExchange[C],
+                       refundTx: ImmutableTransaction): Receive = {
+    case ExchangeFinished(TransactionPublished(`refundTx`, broadcastTx)) =>
+      finishWith(ExchangeFailure(abortingExchange.broadcast(broadcastTx)))
+
+    case ExchangeFinished(TransactionPublished(finalTx, _)) =>
+      log.error("Cannot broadcast the refund transaction, broadcast {} instead", finalTx)
+      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
+
+    case ExchangeFinishFailure(cause) =>
+      log.error(cause, "Cannot broadcast the refund transaction")
+      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
+  }
+
+  private def failingAtStep(runningExchange: RunningExchange[C],
+                            step: Int,
+                            stepFailure: Throwable): Receive = {
+    case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
+      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(broadcastTx))))
+
+    case ExchangeFinishFailure(cause) =>
+      log.error(cause, "Cannot broadcast any recovery transaction")
+      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, transaction = None)))
+  }
+
+  private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
+                                         expectedLastTx: Option[ImmutableTransaction]): Receive = {
+
     case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
-      if expectedFinishingTx.exists(_ != originalTx) =>
-      val err = UnexpectedTxBroadcast(originalTx, expectedFinishingTx.get)
-      log.error(err, "The transaction broadcast for this exchange is different from the one " +
-        "that was being expected.")
-      log.error("The previous exchange result is going to be overridden by this unexpected error.")
-      log.error("Previous result: {}", result)
-      finishWith(ExchangeFailure(err))
+        if expectedLastTx.fold(false)(_ != originalTx) =>
+      log.error("{} was broadcast for exchange {} while {} was expected", broadcastTx,
+        exchange.info.id, expectedLastTx.get)
+      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
 
-    case ExchangeFinished(_) => finishWith(result)
+    case ExchangeFinished(_) => finishWith(ExchangeSuccess(runningExchange.complete))
 
-    case ExchangeFinishFailure(err) =>
-      log.error(err, "The finishing transaction could not be broadcast")
-      log.error("The previous exchange result is going to be overridden by this unexpected error.")
-      log.error("Previous result: {}", result)
-      finishWith(ExchangeFailure(TxBroadcastFailed(err)))
+    case ExchangeFinishFailure(cause) =>
+      log.error(cause, "The finishing transaction could not be broadcast")
+      finishWith(ExchangeFailure(runningExchange.noBroadcast))
   }
 
-  private def finishWith(result: Any): Unit = {
+  private def finishWith(result: ExchangeResult): Unit = {
     collaborators.listener ! result
     context.stop(self)
   }

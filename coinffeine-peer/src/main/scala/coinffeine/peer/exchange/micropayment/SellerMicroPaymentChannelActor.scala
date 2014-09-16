@@ -97,12 +97,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       case PaymentProof(_, paymentId, otherStep) =>
         log.debug("Received a payment with ID {} for an unexpected step {}: ignored",
           paymentId, otherStep)
-
-      case MessageForwarder.ConfirmationFailed(_) =>
-        val errorMsg = "Timed out waiting for the buyer to provide a valid " +
-          s"payment proof ${channel.currentStep}"
-        log.warning("Exchange {}: {}", exchange.id, errorMsg)
-        finishWith(ExchangeFailure(TimeoutException(errorMsg)))
     }
 
     private def waitForPaymentValidation(paymentId: String, step: IntermediateStep): Receive = {
@@ -129,7 +123,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
     private def finishExchange(): Unit = {
       log.info(s"Exchange {}: micropayment channel finished with success", exchange.id)
-      finishWith(ExchangeSuccess(None))
+      finishWith(ChannelSuccess(None))
     }
 
     private def validatePayment(step: IntermediateStep, paymentId: String): Future[Unit] = {

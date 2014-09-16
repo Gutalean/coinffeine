@@ -31,8 +31,7 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
     }
     blockchain.reply(TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
 
-    val result = listener.expectMsgClass(classOf[HandshakeFailure])
-    result.e.toString should include (
+    listener.expectMsgClass(classOf[HandshakeFailure]).cause.toString should include (
       s"transaction ${handshake.counterpartCommitmentTransaction.getHash} (counterpart) was rejected")
   }
 

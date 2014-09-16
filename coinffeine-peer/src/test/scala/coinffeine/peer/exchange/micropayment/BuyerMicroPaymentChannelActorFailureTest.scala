@@ -35,7 +35,7 @@ class BuyerMicroPaymentChannelActorFailureTest
   "The buyer exchange actor" should "fail if the seller provides signatures" in new Fixture {
     val invalidDeposits = signatures.copy(buyer = MockExchangeProtocol.InvalidSignature)
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
-    val failure = listener.expectMsgClass(classOf[ExchangeFailure])
+    val failure = listener.expectMsgClass(classOf[ChannelFailure])
     failure.cause shouldBe an [InvalidStepSignatures]
     failure.cause.asInstanceOf[InvalidStepSignatures].step should be (1)
     listener.expectTerminated(actor)

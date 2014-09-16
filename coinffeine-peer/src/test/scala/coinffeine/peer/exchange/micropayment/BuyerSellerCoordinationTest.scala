@@ -6,7 +6,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ExchangeSuccess, LastBroadcastableOffer}
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ChannelSuccess, LastBroadcastableOffer}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.payment.MockPaymentProcessorFactory
@@ -51,7 +51,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     sellerListener.receiveWhile() {
       case ExchangeUpdate(_) =>
     }
-    buyerListener.expectMsgType[ExchangeSuccess]
-    sellerListener.expectMsg(ExchangeSuccess(None))
+    buyerListener.expectMsgType[ChannelSuccess]
+    sellerListener.expectMsg(ChannelSuccess(None))
   }
 }

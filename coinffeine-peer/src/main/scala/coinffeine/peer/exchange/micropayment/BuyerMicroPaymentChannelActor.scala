@@ -59,7 +59,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
         case _: FinalStep =>
           log.info("Exchange {}: micropayment channel finished with success", exchange.id)
           reportClosedChannel()
-          finishWith(ExchangeSuccess(lastSignedOffer))
+          finishWith(ChannelSuccess(lastSignedOffer))
       }
     }
 
@@ -74,7 +74,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
     case PaymentProcessorActor.PaymentFailed(_, cause) =>
       // TODO: look more carefully to the error and consider retrying
-      finishWith(ExchangeFailure(cause))
+      finishWith(ChannelFailure(channel.currentStep.value, cause))
   }
 
   private def waitForValidSignature(channel: MicroPaymentChannel[C],
@@ -89,7 +89,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
           case Failure(cause) =>
             log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
               exchange.id, channel.currentStep, signatures)
-            finishWith(ExchangeFailure(
+            finishWith(ChannelFailure(channel.currentStep.value,
               InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
         }
 
