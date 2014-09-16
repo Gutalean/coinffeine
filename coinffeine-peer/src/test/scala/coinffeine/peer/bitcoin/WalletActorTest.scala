@@ -12,7 +12,6 @@ import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
 import coinffeine.model.event.EventChannelProbe
-import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
@@ -64,11 +63,6 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   it must "create new key pairs" in new Fixture {
     instance ! WalletActor.CreateKeyPair
     expectMsgClass(classOf[WalletActor.KeyPairCreated])
-  }
-
-  it must "report wallet balance" in new Fixture {
-    instance ! RetrieveWalletBalance
-    expectMsg(WalletBalance(10.BTC))
   }
 
   it must "update balance property when changed" in new Fixture {

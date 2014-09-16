@@ -43,12 +43,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
-  it must "delegate wallet balance requests" in new StartedFixture {
-    peer ! RetrieveWalletBalance
-    wallet.expectMsg(RetrieveWalletBalance)
-    wallet.sender() should be (self)
-  }
-
   it must "stop delegates on stop" in new StartedFixture {
     peer ! ServiceActor.Stop
     paymentProcessor.expectMsg(ServiceActor.Stop)

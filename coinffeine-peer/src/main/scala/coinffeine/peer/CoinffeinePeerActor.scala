@@ -79,8 +79,6 @@ import coinffeine.peer.CoinffeinePeerActor._
   private val handleMessages: Receive = {
     case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
       orderSupervisorRef forward message
-    case message @ RetrieveWalletBalance =>
-      walletRef forward message
     case message @ RetrieveBalance(_) =>
       paymentProcessorRef forward message
 
@@ -122,13 +120,6 @@ object CoinffeinePeerActor {
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
-
-  /** Ask for the current wallet balance */
-  case object RetrieveWalletBalance
-
-  /** Response for [[RetrieveWalletBalance]] */
-  case class WalletBalance(amount: BitcoinAmount)
-
 
   case class OrderSupervisorCollaborators(gateway: ActorRef,
                                           paymentProcessor: ActorRef,

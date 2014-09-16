@@ -1,13 +1,9 @@
 package coinffeine.peer.api.impl
 
-import scala.concurrent.{Future, TimeoutException}
-
-import akka.actor.ActorRef
-import akka.pattern._
+import scala.concurrent.Future
 
 import coinffeine.model.bitcoin.{WalletProperties, Address, Hash, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
-import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.api.CoinffeineWallet
 
 private[impl] class DefaultCoinffeineWallet(properties: WalletProperties) extends CoinffeineWallet {

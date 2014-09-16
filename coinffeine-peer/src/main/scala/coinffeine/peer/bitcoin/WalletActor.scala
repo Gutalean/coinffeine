@@ -10,7 +10,6 @@ import com.google.bitcoin.core._
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
-import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 
 private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
@@ -50,9 +49,6 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
         output <- Option(parentTx.getOutput(input.getOutpoint.getIndex.toInt))
       } yield output
       blockedOutputs.cancelUsage(releasedOutputs.toSet)
-
-    case RetrieveWalletBalance =>
-      sender() ! WalletBalance(wallet.balance())
 
     case CreateKeyPair =>
       val keyPair = new KeyPair()
