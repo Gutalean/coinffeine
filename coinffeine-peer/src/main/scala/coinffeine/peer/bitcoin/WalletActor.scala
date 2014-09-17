@@ -2,8 +2,7 @@ package coinffeine.peer.bitcoin
 
 import scala.util.control.NonFatal
 
-import akka.actor._
-import com.google.bitcoin.core.{Address => BitcoinAddress}
+import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
@@ -96,7 +95,7 @@ object WalletActor {
   private case object InternalWalletChanged
 
   /** A request message to create a new transaction. */
-  case class CreateTransaction(amount: BitcoinAmount, to: BitcoinAddress)
+  case class CreateTransaction(amount: BitcoinAmount, to: Address)
 
   /** A successful response to a transaction creation request. */
   case class TransactionCreated(req: CreateTransaction, tx: ImmutableTransaction)

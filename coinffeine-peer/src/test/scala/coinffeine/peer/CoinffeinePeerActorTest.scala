@@ -52,63 +52,34 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.expectMsg(ServiceActor.Stop)
   }
 
-  it must "process wallet funds withdraw" in new StartedFixture {
-    val amount = 1.BTC
-    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
-    val tx = ImmutableTransaction(new MutableTransaction(network))
-    val createTxRequest = WalletActor.CreateTransaction(amount, to)
-    val createTxResponse = WalletActor.TransactionCreated(createTxRequest, tx)
-    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
-    val publishTxResponse = BitcoinPeerActor.TransactionPublished(tx, tx)
-    val withdrawRequest = WithdrawWalletFunds(amount, to)
-    val withdrawResponse = WalletFundsWithdrawn(amount, to, tx)
-
+  it must "process wallet funds withdraw" in new StartedFixture with WithdrawParams {
     requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
-    wallet.reply(createTxResponse)
-    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
-    requester.expectMsg(withdrawResponse)
+    wallet.reply(createTxSuccess)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxSuccess }
+    requester.expectMsg(withdrawSuccess)
   }
 
-  it must "fail process wallet funds on tx creation errors" in new StartedFixture {
-    val amount = 1.BTC
-    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
-    val tx = ImmutableTransaction(new MutableTransaction(network))
-    val error = new Error
-    val createTxRequest = WalletActor.CreateTransaction(amount, to)
-    val createTxResponse = WalletActor.TransactionCreationFailure(createTxRequest, error)
-    val withdrawRequest = WithdrawWalletFunds(amount, to)
-
+  it must "fail process wallet funds on tx creation errors" in new StartedFixture with WithdrawParams {
     requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
-    wallet.reply(createTxResponse)
+    wallet.reply(createTxFailure)
     bitcoinPeer.expectNoMsg()
-    val WalletFundsWithdrawFailure(`amount`, `to`, _) =
+    val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
       requester.expectMsgType[WalletFundsWithdrawFailure]
   }
 
-  it must "fail process wallet funds on tx publishing errors" in new StartedFixture {
-    val amount = 1.BTC
-    val to = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
-    val tx = ImmutableTransaction(new MutableTransaction(network))
-    val error = new Error
-    val createTxRequest = WalletActor.CreateTransaction(amount, to)
-    val createTxResponse = WalletActor.TransactionCreated(createTxRequest, tx)
-    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
-    val publishTxResponse = BitcoinPeerActor.TransactionNotPublished(tx, error)
-    val withdrawRequest = WithdrawWalletFunds(amount, to)
-
+  it must "fail process wallet funds on tx publishing errors" in new StartedFixture with WithdrawParams {
     requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
-    wallet.reply(createTxResponse)
-    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
-    val WalletFundsWithdrawFailure(`amount`, `to`, _) =
+    wallet.reply(createTxSuccess)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxFailure }
+    val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
       requester.expectMsgType[WalletFundsWithdrawFailure]
   }
 
   trait Fixture {
     val requester = TestProbe()
-    val network = new TestNet3Params
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
     val brokerId = PeerId("broker")
@@ -172,5 +143,21 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
     // And finally indicate it succeed to start
     requester.expectMsg(ServiceActor.Started)
+  }
+
+  trait WithdrawParams {
+    val network = new TestNet3Params
+    val amount = 1.BTC
+    val someError = new Error
+    val someAddress = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
+    val tx = ImmutableTransaction(new MutableTransaction(network))
+    val createTxRequest = WalletActor.CreateTransaction(amount, someAddress)
+    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
+    val withdrawRequest = WithdrawWalletFunds(amount, someAddress)
+    val createTxSuccess = WalletActor.TransactionCreated(createTxRequest, tx)
+    val createTxFailure = WalletActor.TransactionCreationFailure(createTxRequest, someError)
+    val publishTxSuccess = BitcoinPeerActor.TransactionPublished(tx, tx)
+    val publishTxFailure = BitcoinPeerActor.TransactionNotPublished(tx, someError)
+    val withdrawSuccess = WalletFundsWithdrawn(amount, someAddress, tx)
   }
 }
