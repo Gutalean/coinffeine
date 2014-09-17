@@ -5,7 +5,7 @@ import javafx.beans.binding._
 import javafx.beans.value.ObservableValue
 import javafx.collections.{ObservableList, FXCollections}
 
-import coinffeine.model.properties.Property
+import coinffeine.model.properties.{Cancellable, Property}
 
 object ScalafxImplicits {
 
@@ -41,7 +41,7 @@ object ScalafxImplicits {
 
   class ObservableProperty[A](val property: Property[A]) extends Observable {
 
-    private var listeners: Map[InvalidationListener, Property.Cancellable] = Map.empty
+    private var listeners: Map[InvalidationListener, Cancellable] = Map.empty
 
     override def addListener(listener: InvalidationListener): Unit = {
       val cancellation = property.onNewValue(_ => listener.invalidated(this))
