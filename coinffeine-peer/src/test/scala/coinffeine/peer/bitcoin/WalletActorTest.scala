@@ -33,7 +33,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val req = WalletActor.CreateTransaction(1.BTC, someAddress)
     instance ! req
     val WalletActor.TransactionCreated(`req`, tx) = expectMsgType[WalletActor.TransactionCreated]
-    Bitcoin.fromSatoshi(tx.get.getValue(wallet)) should be (-1.BTC)
+    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate)) should be (-1.BTC)
 
   }
 
@@ -71,7 +71,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
     eventually {
-      wallet.balance() should be(initialFunds)
+      wallet.balance should be(initialFunds)
     }
   }
 
@@ -81,7 +81,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   }
 
   it must "update balance property when changed" in new Fixture {
-    sendMoneyToWallet(wallet, 1.BTC)
+    sendMoneyToWallet(wallet.delegate, 1.BTC)
     val expectedBalance = Balance(initialFunds + 1.BTC)
     eventually {
       properties.balance.get should be (Some(expectedBalance))
@@ -91,11 +91,11 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   it must "notify on wallet changes until being unsubscribed" in new Fixture {
     instance ! SubscribeToWalletChanges
     expectNoMsg(100.millis)
-    wallet.addKey(new KeyPair)
+    wallet.delegate.addKey(new KeyPair)
     expectMsg(WalletChanged)
     instance ! UnsubscribeToWalletChanges
     expectNoMsg(100.millis)
-    wallet.addKey(new KeyPair)
+    wallet.delegate.addKey(new KeyPair)
     expectNoMsg(100.millis)
   }
 
@@ -103,7 +103,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
     val initialFunds = 10.BTC
-    val wallet = createWallet(keyPair, initialFunds)
+    val wallet = new SmartWallet(createWallet(keyPair, initialFunds))
     val eventChannelProbe = EventChannelProbe()
     val properties = new MutableWalletProperties
     val instance = system.actorOf(WalletActor.props(properties, wallet))

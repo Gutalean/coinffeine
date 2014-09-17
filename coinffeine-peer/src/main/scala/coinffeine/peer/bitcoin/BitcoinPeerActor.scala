@@ -15,8 +15,8 @@ import coinffeine.peer.event.EventPublisher
 
 class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
                        blockchainProps: Props,
-                       walletProps: (MutableWalletProperties, Wallet) => Props,
-                       wallet: Wallet, blockchain: AbstractBlockChain,
+                       walletProps: (MutableWalletProperties, SmartWallet) => Props,
+                       wallet: SmartWallet, blockchain: AbstractBlockChain,
                        network: NetworkParameters, connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging with EventPublisher {
 

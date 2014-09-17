@@ -5,7 +5,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.core.{TransactionConfidence, Transaction, AbstractWalletEventListener}
+import com.google.bitcoin.core.{NetworkParameters, TransactionConfidence, Transaction, AbstractWalletEventListener}
 import com.google.bitcoin.store.WalletProtobufSerializer
 import com.google.bitcoin.wallet.WalletTransaction
 
@@ -15,13 +15,15 @@ import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
 import coinffeine.model.currency.Implicits._
 
-class SmartWallet(wallet: Wallet) {
+class SmartWallet(val delegate: Wallet) {
 
   import SmartWallet._
 
+  def this(network: NetworkParameters) = this(new Wallet(network))
+
   private val blockedOutputs = {
     val outputs = new BlockedOutputs
-    outputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).toSet)
+    outputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
     outputs
   }
 
@@ -35,25 +37,25 @@ class SmartWallet(wallet: Wallet) {
     val stream = new FileInputStream(file)
     try {
       new WalletProtobufSerializer()
-        .readWallet(WalletProtobufSerializer.parseToProto(stream), wallet)
+        .readWallet(WalletProtobufSerializer.parseToProto(stream), delegate)
     } finally {
       stream.close()
     }
   }
 
   def addresses: Seq[Address] = synchronized {
-    val network = wallet.getNetworkParameters
-    wallet.getKeys.map(_.toAddress(network))
+    val network = delegate.getNetworkParameters
+    delegate.getKeys.map(_.toAddress(network))
   }
 
-  def balance: BitcoinAmount = synchronized { Currency.Bitcoin.fromSatoshi(wallet.getBalance) }
+  def balance: BitcoinAmount = synchronized { Currency.Bitcoin.fromSatoshi(delegate.getBalance) }
 
   def value(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValue(wallet))
+    Currency.Bitcoin.fromSatoshi(tx.getValue(delegate))
 
   def createKeyPair(): KeyPair = synchronized {
     val keyPair = new KeyPair()
-    wallet.addKey(keyPair)
+    delegate.addKey(keyPair)
     keyPair
   }
 
@@ -83,25 +85,25 @@ class SmartWallet(wallet: Wallet) {
     releaseFunds(tx.get)
     val releasedOutputs = for {
       input <- tx.get.getInputs.toList
-      parentTx <- Option(wallet.getTransaction(input.getOutpoint.getHash))
+      parentTx <- Option(delegate.getTransaction(input.getOutpoint.getHash))
       output <- Option(parentTx.getOutput(input.getOutpoint.getIndex.toInt))
     } yield output
     blockedOutputs.cancelUsage(releasedOutputs.toSet)
   }
 
   private def update(): Unit = synchronized {
-    blockedOutputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).toSet)
+    blockedOutputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
     listeners.foreach { case (l, e) => e.execute(new Runnable {
       override def run() = l.onChange()
     })}
   }
 
   private def blockFunds(tx: MutableTransaction): Unit = {
-    wallet.commitTx(tx)
+    delegate.commitTx(tx)
   }
 
   private def blockFunds(to: Address, amount: BitcoinAmount): MutableTransaction = {
-    val tx = wallet.createSend(to, amount.asSatoshi)
+    val tx = delegate.createSend(to, amount.asSatoshi)
     blockFunds(tx)
     tx
   }
@@ -111,21 +113,22 @@ class SmartWallet(wallet: Wallet) {
                           fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction =
     blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
 
-  private def blockMultisignFunds(inputs: Traversable[MutableTransactionOutput],
-                          requiredSignatures: Seq[PublicKey],
-                          amount: BitcoinAmount,
-                          fee: BitcoinAmount): MutableTransaction = {
+  private def blockMultisignFunds(
+      inputs: Traversable[MutableTransactionOutput],
+      requiredSignatures: Seq[PublicKey],
+      amount: BitcoinAmount,
+      fee: BitcoinAmount): MutableTransaction = {
     require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
     require(!fee.isNegative, s"Fee should be non-negative ($fee given)")
     val totalInputFunds = valueOf(inputs)
     require(totalInputFunds >= amount + fee,
       "Input funds must cover the amount of funds to commit and the TX fee")
 
-    val tx = new MutableTransaction(wallet.getNetworkParameters)
+    val tx = new MutableTransaction(delegate.getNetworkParameters)
     inputs.foreach(tx.addInput)
     tx.addMultisignOutput(amount, requiredSignatures)
-    tx.addChangeOutput(totalInputFunds, amount + fee, wallet.getChangeAddress)
-    tx.signInputs(SigHash.ALL, wallet)
+    tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
+    tx.signInputs(SigHash.ALL, delegate)
     blockFunds(tx)
     tx
   }
@@ -146,7 +149,7 @@ class SmartWallet(wallet: Wallet) {
   }
 
   private def collectFunds(amount: BitcoinAmount): Set[MutableTransactionOutput] = {
-    val inputFundCandidates = wallet.calculateAllSpendCandidates(true)
+    val inputFundCandidates = delegate.calculateAllSpendCandidates(true)
     val necessaryInputCount =
       inputFundCandidates.view.scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
         accum + Currency.Bitcoin.fromSatoshi(output.getValue))
@@ -157,24 +160,24 @@ class SmartWallet(wallet: Wallet) {
 
   private def contains(tx: MutableTransaction): Boolean = getTransaction(tx.getHash).isDefined
 
-  private def getTransaction(txHash: Hash) = Option(wallet.getTransaction(txHash))
+  private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
   private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
     outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue))
       .foldLeft(Bitcoin.Zero)(_ + _)
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
-    val wtxs = wallet.getWalletTransactions
-    wallet.clearTransactions(0)
-    wallet.addWalletTransaction(new WalletTransaction(pool, tx))
+    val wtxs = delegate.getWalletTransactions
+    delegate.clearTransactions(0)
+    delegate.addWalletTransaction(new WalletTransaction(pool, tx))
     wtxs.foreach { wtx =>
       if (tx.getHash != wtx.getTransaction.getHash) {
-        wallet.addWalletTransaction(wtx)
+        delegate.addWalletTransaction(wtx)
       }
     }
   }
 
-  wallet.addEventListener(new AbstractWalletEventListener {
+  delegate.addEventListener(new AbstractWalletEventListener {
 
     override def onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction): Unit = {
       // Don't notify confidence changes for already confirmed transactions to reduce load

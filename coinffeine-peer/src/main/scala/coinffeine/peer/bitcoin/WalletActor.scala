@@ -8,12 +8,11 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
 import coinffeine.peer.event.EventPublisher
 
-private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
+private class WalletActor(properties: MutableWalletProperties, wallet: SmartWallet)
     extends Actor with ActorLogging with EventPublisher {
 
   import WalletActor._
 
-  private val smartWallet = new SmartWallet(wallet)
   private var listeners = Set.empty[ActorRef]
 
   override def preStart(): Unit = {
@@ -26,7 +25,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 
     case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
-        val tx = smartWallet.createMultisignTransaction(coinsId, amount, transactionFee, signatures)
+        val tx = wallet.createMultisignTransaction(coinsId, amount, transactionFee, signatures)
         sender ! WalletActor.DepositCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
@@ -34,28 +33,28 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 
     case req @ WalletActor.CreateTransaction(amount, to) =>
       try {
-        val tx = smartWallet.createTransaction(amount, to)
+        val tx = wallet.createTransaction(amount, to)
         sender ! WalletActor.TransactionCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
-      smartWallet.releaseTransaction(tx)
+      wallet.releaseTransaction(tx)
 
     case CreateKeyPair =>
-      sender() ! KeyPairCreated(smartWallet.createKeyPair())
+      sender() ! KeyPairCreated(wallet.createKeyPair())
 
     case InternalWalletChanged =>
       updateBalance()
       notifyListeners()
 
     case BlockBitcoins(amount) =>
-      sender() ! smartWallet.blockFunds(amount)
+      sender() ! wallet.blockFunds(amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
     case UnblockBitcoins(id) =>
-      smartWallet.unblockFunds(id)
+      wallet.unblockFunds(id)
 
     case SubscribeToWalletChanges =>
       context.watch(sender())
@@ -70,15 +69,15 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
   }
 
   private def updateBalance(): Unit = {
-    properties.balance.set(Some(Balance(smartWallet.balance)))
+    properties.balance.set(Some(Balance(wallet.balance)))
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
-    properties.primaryAddress.set(smartWallet.addresses.headOption)
+    properties.primaryAddress.set(wallet.addresses.headOption)
   }
 
   private def subscribeToWalletChanges(): Unit = {
-    smartWallet.addListener(new SmartWallet.Listener {
+    wallet.addListener(new SmartWallet.Listener {
       override def onChange() = self ! InternalWalletChanged
     })(context.dispatcher)
   }
@@ -89,7 +88,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 }
 
 object WalletActor {
-  private[bitcoin] def props(properties: MutableWalletProperties, wallet: Wallet) =
+  private[bitcoin] def props(properties: MutableWalletProperties, wallet: SmartWallet) =
     Props(new WalletActor(properties, wallet))
 
   private case object InternalWalletChanged

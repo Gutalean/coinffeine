@@ -6,7 +6,6 @@ import com.google.bitcoin.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGr
 import com.google.bitcoin.store.MemoryFullPrunedBlockStore
 import org.slf4j.LoggerFactory
 
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
 
@@ -26,7 +25,7 @@ trait DefaultBitcoinComponents
   }
 
   override lazy val wallet = {
-    val wallet = new Wallet(network)
+    val wallet = new SmartWallet(network)
     val walletFile = configProvider.bitcoinSettings.walletFile
     if (walletFile.exists()) {
       DefaultBitcoinComponents.Log.info("Loading wallet from {}", walletFile)
@@ -34,9 +33,9 @@ trait DefaultBitcoinComponents
     } else {
       DefaultBitcoinComponents.Log.warn("{} doesn't exists, starting with an empty wallet", walletFile)
     }
-    blockchain.addWallet(wallet)
-    peerGroup.addWallet(wallet)
-    wallet.autosaveToFile(walletFile, 250, TimeUnit.MILLISECONDS, null)
+    blockchain.addWallet(wallet.delegate)
+    peerGroup.addWallet(wallet.delegate)
+    wallet.delegate.autosaveToFile(walletFile, 250, TimeUnit.MILLISECONDS, null)
     wallet
   }
 }
