@@ -154,10 +154,12 @@ object Exchange {
 
   sealed trait State[C <: FiatCurrency] {
     val progress: Exchange.Progress[C]
+    val isCompleted: Boolean
   }
 
   case class NotStarted[C <: FiatCurrency]()(val currency: C) extends State[C] {
     override val progress = Exchange.noProgress(currency)
+    override val isCompleted = false
   }
 
   implicit class NonStartedTransitions[C <: FiatCurrency](val exchange: Exchange[C, NotStarted[C]])
@@ -179,6 +181,7 @@ object Exchange {
   case class Handshaking[C <: FiatCurrency](user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo)
                                            (val currency: C) extends State[C] with StartedHandshake[C] {
     override val progress = Exchange.noProgress(currency)
+    override val isCompleted = false
   }
 
   implicit class HandshakingTransitions[C <: FiatCurrency](val exchange: Exchange[C, Handshaking[C]])
@@ -198,7 +201,9 @@ object Exchange {
       user: Exchange.PeerInfo,
       counterpart: Exchange.PeerInfo,
       deposits: Exchange.Deposits,
-      progress: Exchange.Progress[C]) extends State[C] with StartedExchange[C]
+      progress: Exchange.Progress[C]) extends State[C] with StartedExchange[C] {
+    override val isCompleted = false
+  }
 
   object Exchanging {
     def apply[C <: FiatCurrency](currency: C,
@@ -240,6 +245,7 @@ object Exchange {
       user: Exchange.PeerInfo,
       refundTx: ImmutableTransaction)(currency: C) extends State[C] {
     override val progress = Exchange.noProgress(currency)
+    override val isCompleted = false
   }
 
   object Aborting {
@@ -267,6 +273,7 @@ object Exchange {
   trait Completed[C <: FiatCurrency] extends State[C] {
     def user: Exchange.PeerInfo
     def isSuccess: Boolean
+    override val isCompleted = true
   }
 
   sealed trait AbortionCause
