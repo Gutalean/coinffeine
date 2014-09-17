@@ -66,7 +66,12 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def blockFunds(amount: BitcoinAmount): Option[BlockedCoinsId] = synchronized {
-    blockedOutputs.block(amount)
+    try {
+      blockedOutputs.block(amount)
+    } catch {
+      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
+        "cannot create multisign transaction: not enough funds", e)
+    }
   }
 
   def unblockFunds(coinsId: BlockedCoinsId): Unit = synchronized {
@@ -74,17 +79,22 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = synchronized {
-    require(amount < blockedOutputs.spendable,
+    if (amount < blockedOutputs.spendable) ImmutableTransaction(blockFunds(to, amount))
+    else throw new NotEnoughFunds(
       s"cannot create a transaction of $amount: not enough funds in wallet")
-    ImmutableTransaction(blockFunds(to, amount))
   }
 
   def createMultisignTransaction(coinsId: BlockedCoinsId,
                                  amount: BitcoinAmount,
                                  fee: BitcoinAmount,
                                  signatures: Seq[KeyPair]): ImmutableTransaction = synchronized {
-    val inputs = blockedOutputs.use(coinsId, amount + fee)
-    ImmutableTransaction(blockMultisignFunds(inputs, signatures, amount, fee))
+    try {
+      val inputs = blockedOutputs.use(coinsId, amount + fee)
+      ImmutableTransaction(blockMultisignFunds(inputs, signatures, amount, fee))
+    } catch {
+      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
+        "cannot create multisign transaction: not enough funds", e)
+    }
   }
 
   def releaseTransaction(tx: ImmutableTransaction): Unit = synchronized {
@@ -99,8 +109,14 @@ class SmartWallet(val delegate: Wallet) {
 
   def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
                           amount: BitcoinAmount,
-                          fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction =
-    blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
+                          fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction = synchronized {
+    try {
+      blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
+    } catch {
+      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
+        "cannot block multisign funds: not enough funds", e)
+    }
+  }
 
   private def update(): Unit = synchronized {
     blockedOutputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
@@ -204,4 +220,7 @@ object SmartWallet {
   trait Listener {
     def onChange(): Unit
   }
+
+  case class NotEnoughFunds(message: String, cause: Throwable = null)
+    extends RuntimeException(message, cause)
 }

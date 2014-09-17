@@ -5,14 +5,13 @@ import scala.concurrent.duration._
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
 import coinffeine.model.event.EventChannelProbe
-import coinffeine.peer.bitcoin.BlockedOutputs.NotEnoughFunds
+import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
@@ -40,7 +39,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   it must "fail to create a new transaction when insufficient balance" in new Fixture {
     val req = WalletActor.CreateTransaction(20.BTC, someAddress)
     instance ! req
-    val WalletActor.TransactionCreationFailure(`req`, error: IllegalArgumentException) =
+    val WalletActor.TransactionCreationFailure(`req`, error: NotEnoughFunds) =
       expectMsgType[WalletActor.TransactionCreationFailure]
   }
 
