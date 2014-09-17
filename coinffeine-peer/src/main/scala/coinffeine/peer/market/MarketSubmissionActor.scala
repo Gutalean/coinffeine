@@ -44,7 +44,10 @@ private class MarketSubmissionActor[C <: FiatCurrency](
   }
 
   private def forwardOrders(orders: SubmittingOrders): Unit = {
-    context.actorOf(PeerPositionsSubmitter.props(market, orders, gateway, protocolConstants))
+    context.actorOf(
+      PeerPositionsSubmitter.props(market, orders, gateway, protocolConstants),
+      s"forward${orders.hashCode()}"
+    )
     context.setReceiveTimeout(protocolConstants.orderResubmitInterval)
   }
 }

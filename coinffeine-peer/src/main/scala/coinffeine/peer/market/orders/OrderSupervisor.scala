@@ -16,7 +16,7 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
                               submissionSupervisorProps: Props)
   extends Actor with ActorLogging {
 
-  private val submission = context.actorOf(submissionSupervisorProps)
+  private val submission = context.actorOf(submissionSupervisorProps, "submission")
   private var orders = Map.empty[OrderId, ActorRef]
 
   override def receive: Receive = {

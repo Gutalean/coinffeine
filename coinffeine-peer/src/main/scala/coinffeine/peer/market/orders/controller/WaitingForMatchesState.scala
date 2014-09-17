@@ -1,8 +1,8 @@
 package coinffeine.peer.market.orders.controller
 
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.{Exchange, Role}
-import coinffeine.model.market.{InMarketOrder, OfflineOrder}
+import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends State[C] {
@@ -26,22 +26,40 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends St
   }
 
   override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch) = {
-    val exchange = Exchange.notStarted(
-      id = orderMatch.exchangeId,
-      Role.fromOrderType(ctx.order.orderType),
-      counterpartId = orderMatch.counterpart,
-      ctx.calculator.exchangeAmountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]],
-      parameters = Exchange.Parameters(orderMatch.lockTime, ctx.network),
-      ctx.funds.get
-    )
-    ctx.startExchange(exchange)
-    ctx.keepOffMarket()
-    ctx.transitionTo(new ExchangingState(exchange.id))
-    MatchAccepted(exchange)
+    if (hasInvalidPrice(ctx.order, orderMatch)) MatchRejected("Invalid price")
+    else if (hasInvalidAmount(ctx.order.amounts.pending, orderMatch)) MatchRejected("Invalid amount")
+    else {
+      val exchange = Exchange.notStarted(
+        id = orderMatch.exchangeId,
+        Role.fromOrderType(ctx.order.orderType),
+        counterpartId = orderMatch.counterpart,
+        ctx.calculator.exchangeAmountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]],
+        parameters = Exchange.Parameters(orderMatch.lockTime, ctx.network),
+        ctx.funds.get
+      )
+      ctx.startExchange(exchange)
+      ctx.keepOffMarket()
+      ctx.transitionTo(new ExchangingState(exchange.id))
+      MatchAccepted(exchange)
+    }
   }
 
   override def cancel(ctx: Context, reason: String): Unit = {
     ctx.keepOffMarket()
     ctx.transitionTo(new FinalState(FinalState.OrderCancellation(reason)))
   }
+
+  private def hasInvalidPrice(order: Order[C], orderMatch: OrderMatch): Boolean =
+    if (orderMatch.fiatAmount.currency != order.price.currency) true
+    else {
+      val fiatAmount = orderMatch.fiatAmount.asInstanceOf[CurrencyAmount[C]]
+      val matchPrice = Price.whenExchanging(orderMatch.bitcoinAmount, fiatAmount)
+      order.orderType match {
+        case Bid => order.price.underbids(matchPrice)
+        case Ask => matchPrice.underbids(order.price)
+      }
+    }
+
+  private def hasInvalidAmount(pendingAmount: BitcoinAmount, orderMatch: OrderMatch): Boolean =
+    pendingAmount.value < orderMatch.bitcoinAmount.value
 }

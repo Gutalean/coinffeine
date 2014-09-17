@@ -12,16 +12,16 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
-import coinffeine.peer.amounts.AmountsCalculatorStub
+import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange {
 
-  val initialOrder = Order(Bid, 1.BTC, Price(500.EUR))
+  val initialOrder = Order(Bid, 10.BTC, Price(1.EUR))
   val blockedFunds = Exchange.BlockedFunds(Some(BlockedFundsId(1)), BlockedCoinsId(1))
   val orderMatch = OrderMatch(
-    initialOrder.id, ExchangeId.random(), 1.BTC, 500.EUR, 80L, PeerId("counterpart"))
+    initialOrder.id, ExchangeId.random(), 10.BTC, 10.EUR, 80L, PeerId("counterpart"))
 
   "A mutable order" should "start new exchanges" in new Fixture {
     funds.blockFunds(blockedFunds)
@@ -29,7 +29,7 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
     val MatchAccepted(newExchange) = order.acceptOrderMatch(orderMatch)
     order.view.exchanges should have size 1
     newExchange.blockedFunds shouldBe blockedFunds
-    newExchange.amounts shouldBe amounts
+    newExchange.amounts shouldBe amountsCalculator.exchangeAmountsFor(orderMatch)
     newExchange.role shouldBe BuyerRole
   }
 
@@ -129,8 +129,30 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
     order.acceptOrderMatch(orderMatch) shouldBe MatchRejected("Order already finished")
   }
 
-  trait Fixture {
-    val amountsCalculator = new AmountsCalculatorStub(amounts)
+  it should "support partial matching" in new Fixture {
+    val firstHalfMatch, secondHalfMatch = orderMatch.copy(
+      exchangeId = ExchangeId.random(),
+      bitcoinAmount = orderMatch.bitcoinAmount / 2,
+      fiatAmount = orderMatch.fiatAmount / 2
+    )
+    funds.blockFunds(blockedFunds)
+    funds.makeAvailable()
+    publisher.amountToPublish shouldBe initialOrder.amount
+
+    publisher.expectSuccessfulPublication()
+    order.acceptOrderMatch(firstHalfMatch)
+    order.completeExchange(complete(order.view.exchanges.values.last))
+    verify(listener).onStatusChanged(InProgressOrder, OfflineOrder)
+    publisher.amountToPublish shouldBe (initialOrder.amount / 2)
+
+    publisher.expectSuccessfulPublication()
+    order.acceptOrderMatch(secondHalfMatch)
+    order.completeExchange(complete(order.view.exchanges.values.last))
+    verify(listener).onStatusChanged(InProgressOrder, CompletedOrder)
+    publisher should not be 'inMarket
+  }
+
+  trait Fixture extends DefaultAmountsComponent {
     val listener = mock[OrderController.Listener[Euro.type]]
     val publisher = new MockPublication[Euro.type]
     val funds = new FakeOrderFunds
@@ -140,7 +162,9 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
 
     def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {
       val completedState = Exchange.Successful[Euro.type](
-        participants.buyer, participants.seller, MockExchangeProtocol.DummyDeposits)(amounts)
+        participants.buyer,
+        participants.seller,
+        MockExchangeProtocol.DummyDeposits)(exchange.amounts)
       exchange.copy(state = completedState)
     }
   }

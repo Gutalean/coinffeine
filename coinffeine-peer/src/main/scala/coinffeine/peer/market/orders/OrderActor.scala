@@ -46,7 +46,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   private val fundsBlocking =
     new DelegatedOrderFunds(delegates.orderFundsActor, requiredFunds._1, requiredFunds._2)
   private val publisher = new DelegatedPublication(
-    OrderBookEntry(initialOrder), collaborators.submissionSupervisor)
+    initialOrder.id, initialOrder.orderType, initialOrder.price, collaborators.submissionSupervisor)
   private val order = controllerFactory(publisher, fundsBlocking)
 
   override def preStart(): Unit = {
