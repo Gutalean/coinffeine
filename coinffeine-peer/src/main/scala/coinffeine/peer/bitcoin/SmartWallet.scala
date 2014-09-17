@@ -53,6 +53,12 @@ class SmartWallet(val delegate: Wallet) {
   def value(tx: MutableTransaction): BitcoinAmount =
     Currency.Bitcoin.fromSatoshi(tx.getValue(delegate))
 
+  def valueSentFromMe(tx: MutableTransaction): BitcoinAmount =
+    Currency.Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
+
+  def valueSentToMe(tx: MutableTransaction): BitcoinAmount =
+    Currency.Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
+
   def createKeyPair(): KeyPair = synchronized {
     val keyPair = new KeyPair()
     delegate.addKey(keyPair)
@@ -91,6 +97,11 @@ class SmartWallet(val delegate: Wallet) {
     blockedOutputs.cancelUsage(releasedOutputs.toSet)
   }
 
+  def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
+                          amount: BitcoinAmount,
+                          fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction =
+    blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
+
   private def update(): Unit = synchronized {
     blockedOutputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
     listeners.foreach { case (l, e) => e.execute(new Runnable {
@@ -107,11 +118,6 @@ class SmartWallet(val delegate: Wallet) {
     blockFunds(tx)
     tx
   }
-
-  private def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
-                          amount: BitcoinAmount,
-                          fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction =
-    blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
 
   private def blockMultisignFunds(
       inputs: Traversable[MutableTransactionOutput],

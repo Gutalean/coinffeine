@@ -21,8 +21,8 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
         val currentSellerChannel = sellerChannels(step - 1)
         val tx = currentBuyerChannel.closingTransaction(currentSellerChannel.signCurrentTransaction)
         sendToBlockChain(tx.get)
-        (balance(buyerWallet) + balance(sellerWallet)) should be (10.002.BTC)
-        balance(buyerWallet) should be (1.BTC * step + 0.002.BTC)
+        (buyerWallet.balance + sellerWallet.balance) should be (10.002.BTC)
+        buyerWallet.balance should be (1.BTC * step + 0.002.BTC)
       }
   }
 
@@ -32,7 +32,7 @@ class DefaultMicroPaymentChannelTest extends ExchangeTest {
       val lastSellerChannel = sellerChannels.last
       val tx = lastBuyerChannel.closingTransaction(lastSellerChannel.signCurrentTransaction)
       sendToBlockChain(tx.get)
-      balance(buyerWallet) should be (12.002.BTC)
-      balance(sellerWallet) should be (1.BTC)
+      buyerWallet.balance should be (12.002.BTC)
+      sellerWallet.balance should be (1.BTC)
     }
 }

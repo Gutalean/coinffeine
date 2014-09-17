@@ -6,14 +6,13 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.exchange._
+import coinffeine.peer.bitcoin.SmartWallet
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
 
-  def balance(wallet: Wallet): BitcoinAmount = Bitcoin.fromSatoshi(wallet.getBalance)
-
-  def valueSent(tx: ImmutableTransaction, wallet: Wallet): BitcoinAmount =
-    Bitcoin.fromSatoshi(tx.get.getValueSentToMe(wallet))
+  def valueSent(tx: ImmutableTransaction, wallet: SmartWallet): BitcoinAmount =
+    Bitcoin.fromSatoshi(tx.get.getValueSentToMe(wallet.delegate))
 
   /** Fixture with just a fresh protocol object */
   trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
@@ -22,7 +21,8 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
-    val buyerWallet = createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer)
+    val buyerWallet = new SmartWallet(
+      createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer))
     val buyerDeposit = ImmutableTransaction {
       val depositAmounts = amounts.deposits.buyer
       buyerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
@@ -32,7 +32,8 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
-    val sellerWallet = createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller)
+    val sellerWallet = new SmartWallet(
+      createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller))
     val sellerDeposit = ImmutableTransaction {
       val depositAmounts = amounts.deposits.seller
       sellerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
