@@ -24,19 +24,15 @@ class MutablePropertyTest extends UnitTest with FutureMatchers {
   it should "invoke its handlers when set" in {
     val prop = new MutableProperty(0)
     val newValue = Promise[Int]()
-    prop.onChange {
-      case (_, newVal) => newValue.success(newVal)
-    }
+    prop.onNewValue(newValue.success(_))
     prop.set(1234)
     newValue.future.futureValue should be (1234)
   }
 
   it should "not invoke its handlers when set is not changing its value" in {
     val prop = new MutableProperty(0)
-    var newValue = Promise[Int]()
-    prop.onChange {
-      case (_, newVal) => newValue.success(newVal)
-    }
+    val newValue = Promise[Int]()
+    prop.onNewValue(newValue.success(_))
     prop.set(0)
     after(100.millis) {
       newValue should not be ('completed)
@@ -45,36 +41,13 @@ class MutablePropertyTest extends UnitTest with FutureMatchers {
 
   it should "honour handler cancellation" in {
     val prop = new MutableProperty(0)
-    var newValue = Promise[Int]()
-    val handler = prop.onChange {
-      case (_, newVal) => newValue.success(newVal)
-    }
+    val newValue = Promise[Int]()
+    val handler = prop.onNewValue(newValue.success(_))
     handler.cancel()
     prop.set(1234)
     after(100.millis) {
       newValue should not be ('completed)
     }
-  }
-
-  it should "honour when-handler" in {
-    val prop = new MutableProperty(0)
-    val cond = prop.when {
-      case 100 => "success!"
-    }
-    cond should not be ('completed)
-    prop.set(10)
-    cond should not be ('completed)
-    prop.set(100)
-    cond.futureValue should be ("success!")
-  }
-
-  it should "honour when-handler if current value matches" in {
-    val prop = new MutableProperty(0)
-    val cond = prop.when {
-      case 0 => "success!"
-    }
-    cond should be ('completed)
-    cond.value.get.get should be ("success!")
   }
 
   private def after(time: FiniteDuration)(body: => Unit): Unit = {

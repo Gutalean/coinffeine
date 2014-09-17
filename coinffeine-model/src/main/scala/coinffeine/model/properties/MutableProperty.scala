@@ -1,17 +1,25 @@
 package coinffeine.model.properties
 
 import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
+
+import org.slf4j.LoggerFactory
 
 class MutableProperty[A](initialValue: A) extends Property[A] {
+
+  private val log = MutableProperty.Log
 
   private case class Listener(handler: OnChangeHandler,
                               executor: ExecutionContext) extends Property.Cancellable {
     def apply(oldValue: A, newValue: A): Unit = {
-      if (handler.isDefinedAt(oldValue, newValue)) {
-        executor.execute(new Runnable {
-          override def run() = handler(oldValue, newValue)
-        })
-      }
+      executor.execute(new Runnable {
+        override def run() = try {
+          handler(oldValue, newValue)
+        } catch  {
+          case NonFatal(e) => log.warn(
+            "Fail to execute handler for mutable property: unexpected exception thrown", e)
+        }
+      })
     }
 
     override def cancel() = {
@@ -42,4 +50,9 @@ class MutableProperty[A](initialValue: A) extends Property[A] {
       listeners.foreach(_(oldValue, newValue))
     }
   }
+}
+
+object MutableProperty {
+
+  private val Log = LoggerFactory.getLogger(classOf[MutableProperty[_]])
 }
