@@ -37,11 +37,11 @@ class DepositValidatorTest extends ExchangeTest with Inside {
   }
 
   trait Fixture extends BuyerHandshake with SellerHandshake {
-    sendMoneyToWallet(sellerWallet, 10.BTC)
+    sendMoneyToWallet(sellerWallet.delegate, 10.BTC)
     val invalidFundsCommitment = new MutableTransaction(parameters.network)
-    invalidFundsCommitment.addInput(sellerWallet.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.getKeys.head)
-    invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet)
+    invalidFundsCommitment.addInput(sellerWallet.delegate.calculateAllSpendCandidates(true).head)
+    invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.delegate.getKeys.head)
+    invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet.delegate)
     val validator = new DepositValidator(amounts, buyerHandshakingExchange.requiredSignatures)
   }
 }

@@ -2,16 +2,41 @@ package coinffeine.gui.control
 
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import scalafx.Includes._
+import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.event.ActionEvent
-import scalafx.scene.control.TextField
+import scalafx.geometry.Insets
+import scalafx.scene.control.{Label, TextField}
 import scalafx.scene.input.KeyEvent
+import scalafx.scene.layout.StackPane
 
-@deprecated("consider using CurrencyTextField instead")
-class DecimalNumberTextField(initialValue: BigDecimal) extends TextField {
+import org.controlsfx.control.textfield.CustomTextField
 
-  require(initialValue >= 0, "Initial value cannot be negative")
+import coinffeine.model.currency.{Currency, CurrencyAmount}
 
-  text = initialValue.toString
+class CurrencyTextField[C <: Currency](
+    initialValue: CurrencyAmount[C],
+    delegate: CustomTextField = new CustomTextField) extends TextField(delegate) {
+
+  require(!initialValue.isNegative, "Initial value cannot be negative")
+
+  private val _currencyValue = ObjectProperty[CurrencyAmount[C]](this, "currencyValue", initialValue)
+
+  private val currency = initialValue.currency
+
+  private val currencySymbol = new StackPane() {
+    styleClass = Seq("currency-symbol")
+    content = new Label(currency.toString)
+    margin = Insets(5, 0, 5, 0)
+    padding = Insets(0, 5, 0, 5)
+  }
+
+  val currencyValue: ReadOnlyObjectProperty[CurrencyAmount[C]] = _currencyValue
+
+  /* Initialize the text property to the initial value. */
+  text = initialValue.value.toString()
+
+  /* Set the widget on left that shows the expected currency. */
+  delegate.setLeft(currencySymbol)
 
   /*
    * The filter event is needed regardless we have a listener that checks the input. Once the
@@ -41,9 +66,14 @@ class DecimalNumberTextField(initialValue: BigDecimal) extends TextField {
     override def changed(observable: ObservableValue[_ <: String],
                          oldValue: String,
                          newValue: String): Unit = {
-      if (!ignore && !isValidInput(newValue)) {
-        ignoringSelfChanges {
-          text = oldValue
+      if (!ignore) {
+        if (isValidInput(newValue)) {
+          _currencyValue.value = new CurrencyAmount(BigDecimal(newValue), currency)
+        }
+        else {
+          ignoringSelfChanges {
+            text = oldValue
+          }
         }
       }
     }
@@ -61,8 +91,8 @@ class DecimalNumberTextField(initialValue: BigDecimal) extends TextField {
    * loses the focus. When that happens, the text is normalised.
    */
   focused.addListener { (observable: ObservableValue[_ <: java.lang.Boolean],
-                       oldValue: java.lang.Boolean,
-                       newValue: java.lang.Boolean) =>
+                         oldValue: java.lang.Boolean,
+                         newValue: java.lang.Boolean) =>
     text = normalise(text.value)
   }
 
@@ -78,7 +108,7 @@ class DecimalNumberTextField(initialValue: BigDecimal) extends TextField {
   }
 
   private def normalise(input: String): String =
-    BigDecimal(if (input.isEmpty) "0" else input).toString
+    BigDecimal(if (input.isEmpty) "0" else input).toString()
 
   private val DecimalRegex = "\\d*\\.?\\d*".r
   private val NumberRegex = "\\d".r

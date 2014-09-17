@@ -21,7 +21,28 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
     }.toSet
   }
 
-  "A blocked outputs object" should "block funds until exhausting spendable outputs" in {
+  "A blocked outputs object" should "report spendable funds" in {
+    val instance = instanceWithOutputs(5)
+    instance.spendable should be (5.BTC)
+    instance.block(2.BTC)
+    instance.spendable should be (5.BTC)
+  }
+
+  it should "report available funds" in {
+    val instance = instanceWithOutputs(5)
+    instance.available should be (5.BTC)
+    instance.block(2.BTC)
+    instance.available should be (3.BTC)
+  }
+
+  it should "report blocked funds" in {
+    val instance = instanceWithOutputs(5)
+    instance.blocked should be (0.BTC)
+    instance.block(2.BTC)
+    instance.blocked should be (2.BTC)
+  }
+
+  it should "block funds until exhausting spendable outputs" in {
     val instance = instanceWithOutputs(5)
     instance.block(2.5.BTC) should not be 'empty
     instance.block(2.BTC) should not be 'empty

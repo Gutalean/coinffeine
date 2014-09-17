@@ -2,16 +2,18 @@ package coinffeine.peer
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
+import com.google.bitcoin.params.TestNet3Params
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, Address}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
@@ -43,12 +45,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
-  it must "delegate wallet balance requests" in new StartedFixture {
-    peer ! RetrieveWalletBalance
-    wallet.expectMsg(RetrieveWalletBalance)
-    wallet.sender() should be (self)
-  }
-
   it must "stop delegates on stop" in new StartedFixture {
     peer ! ServiceActor.Stop
     paymentProcessor.expectMsg(ServiceActor.Stop)
@@ -56,7 +52,34 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     gateway.expectMsg(ServiceActor.Stop)
   }
 
+  it must "process wallet funds withdraw" in new StartedFixture with WithdrawParams {
+    requester.send(peer, withdrawRequest)
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxSuccess)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxSuccess }
+    requester.expectMsg(withdrawSuccess)
+  }
+
+  it must "fail process wallet funds on tx creation errors" in new StartedFixture with WithdrawParams {
+    requester.send(peer, withdrawRequest)
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxFailure)
+    bitcoinPeer.expectNoMsg()
+    val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
+      requester.expectMsgType[WalletFundsWithdrawFailure]
+  }
+
+  it must "fail process wallet funds on tx publishing errors" in new StartedFixture with WithdrawParams {
+    requester.send(peer, withdrawRequest)
+    wallet.expectMsg(createTxRequest)
+    wallet.reply(createTxSuccess)
+    bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxFailure }
+    val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
+      requester.expectMsgType[WalletFundsWithdrawFailure]
+  }
+
   trait Fixture {
+    val requester = TestProbe()
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
     val brokerId = PeerId("broker")
@@ -77,6 +100,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
       delegate.expectForward(message, self)
     }
 
+    def shouldForwardMessage(message: Any, delegate: TestProbe): Unit = {
+      peer ! message
+      delegate.expectMsg(message)
+      delegate.sender() should be (self)
+    }
+
     def shouldCreateActors(actors: MockSupervisedActor*): Unit = {
       actors.foreach(_.expectCreation())
     }
@@ -93,7 +122,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
-    peer ! ServiceActor.Start({})
+    requester.send(peer, ServiceActor.Start({}))
 
     // Then it must request the payment processor to start
     shouldRequestStart(paymentProcessor, {})
@@ -113,6 +142,22 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     orders.expectCreation()
 
     // And finally indicate it succeed to start
-    expectMsg(ServiceActor.Started)
+    requester.expectMsg(ServiceActor.Started)
+  }
+
+  trait WithdrawParams {
+    val network = new TestNet3Params
+    val amount = 1.BTC
+    val someError = new Error
+    val someAddress = new Address(null, "mrmrQ9wrxjfdUGaa9KaUsTfQFqTVKr57B8")
+    val tx = ImmutableTransaction(new MutableTransaction(network))
+    val createTxRequest = WalletActor.CreateTransaction(amount, someAddress)
+    val publishTxRequest = BitcoinPeerActor.PublishTransaction(tx)
+    val withdrawRequest = WithdrawWalletFunds(amount, someAddress)
+    val createTxSuccess = WalletActor.TransactionCreated(createTxRequest, tx)
+    val createTxFailure = WalletActor.TransactionCreationFailure(createTxRequest, someError)
+    val publishTxSuccess = BitcoinPeerActor.TransactionPublished(tx, tx)
+    val publishTxFailure = BitcoinPeerActor.TransactionNotPublished(tx, someError)
+    val withdrawSuccess = WalletFundsWithdrawn(amount, someAddress, tx)
   }
 }

@@ -1,17 +1,18 @@
 package coinffeine.peer
 
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
-import akka.actor._
+import akka.actor.{Address => _, _}
 import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
-import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.amounts.AmountsComponent
-import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
@@ -79,8 +80,18 @@ import coinffeine.peer.CoinffeinePeerActor._
   private val handleMessages: Receive = {
     case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
       orderSupervisorRef forward message
-    case message @ RetrieveWalletBalance =>
-      walletRef forward message
+    case message @ WithdrawWalletFunds(amount, to) =>
+      implicit val txBroadcastTimeout = new Timeout(WithdrawFundsTxBroadcastTimeout)
+      (for {
+        txCreated <- AskPattern(walletRef, WalletActor.CreateTransaction(amount, to))
+          .withImmediateReply[WalletActor.TransactionCreated]
+        txPublished <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.PublishTransaction(txCreated.tx))
+          .withReply[BitcoinPeerActor.TransactionPublished]()
+      } yield txPublished.broadcastTx)
+        .map(tx => WalletFundsWithdrawn(amount, to, tx))
+        .recover { case NonFatal(ex) => WalletFundsWithdrawFailure(amount, to, ex) }
+        .pipeTo(sender())
+
     case message @ RetrieveBalance(_) =>
       paymentProcessorRef forward message
 
@@ -95,6 +106,7 @@ import coinffeine.peer.CoinffeinePeerActor._
 object CoinffeinePeerActor {
 
   val ServiceStartStopTimeout = 10.seconds
+  val WithdrawFundsTxBroadcastTimeout = 30.seconds
 
   /** Open a new order.
     *
@@ -123,12 +135,18 @@ object CoinffeinePeerActor {
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
 
-  /** Ask for the current wallet balance */
-  case object RetrieveWalletBalance
+  /** A request to withdraw funds from Bitcoin wallet. */
+  case class WithdrawWalletFunds(amount: BitcoinAmount, to: Address)
 
-  /** Response for [[RetrieveWalletBalance]] */
-  case class WalletBalance(amount: BitcoinAmount)
+  /** A response reporting a successful withdraw of wallet funds. */
+  case class WalletFundsWithdrawn(amount: BitcoinAmount,
+                                  to: Address,
+                                  tx: ImmutableTransaction)
 
+  /** A response reporting a failure while withdrawing wallet funds. */
+  case class WalletFundsWithdrawFailure(amount: BitcoinAmount,
+                                        to: Address,
+                                        failure: Throwable)
 
   case class OrderSupervisorCollaborators(gateway: ActorRef,
                                           paymentProcessor: ActorRef,

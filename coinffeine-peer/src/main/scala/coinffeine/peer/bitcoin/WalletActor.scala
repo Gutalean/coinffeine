@@ -1,31 +1,23 @@
 package coinffeine.peer.bitcoin
 
-import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
 
-import akka.actor._
-import com.google.bitcoin.core._
+import akka.actor.{Address => _, _}
 
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Balance, BitcoinAmount}
-import coinffeine.peer.CoinffeinePeerActor.{RetrieveWalletBalance, WalletBalance}
 import coinffeine.peer.event.EventPublisher
 
-private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
+private class WalletActor(properties: MutableWalletProperties, wallet: SmartWallet)
     extends Actor with ActorLogging with EventPublisher {
 
   import WalletActor._
 
-  private var lastBalanceReported: Option[BitcoinAmount] = None
-  private val blockedOutputs = new BlockedOutputs()
   private var listeners = Set.empty[ActorRef]
 
   override def preStart(): Unit = {
     subscribeToWalletChanges()
     updateBalance()
-    updateSpendCandidates()
     updateWalletPrimaryKeys()
   }
 
@@ -33,43 +25,36 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 
     case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
-        val inputs = blockedOutputs.use(coinsId, amount + transactionFee)
-        val tx = ImmutableTransaction(
-          wallet.blockMultisignFunds(inputs, signatures, amount, transactionFee)
-        )
+        val tx = wallet.createMultisignTransaction(coinsId, amount, transactionFee, signatures)
         sender ! WalletActor.DepositCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
       }
 
-    case WalletActor.ReleaseDeposit(tx) =>
-      wallet.releaseFunds(tx.get)
-      val releasedOutputs = for {
-        input <- tx.get.getInputs.asScala
-        parentTx <- Option(wallet.getTransaction(input.getOutpoint.getHash))
-        output <- Option(parentTx.getOutput(input.getOutpoint.getIndex.toInt))
-      } yield output
-      blockedOutputs.cancelUsage(releasedOutputs.toSet)
+    case req @ WalletActor.CreateTransaction(amount, to) =>
+      try {
+        val tx = wallet.createTransaction(amount, to)
+        sender ! WalletActor.TransactionCreated(req, tx)
+      } catch {
+        case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
+      }
 
-    case RetrieveWalletBalance =>
-      sender() ! WalletBalance(wallet.balance())
+    case WalletActor.ReleaseDeposit(tx) =>
+      wallet.releaseTransaction(tx)
 
     case CreateKeyPair =>
-      val keyPair = new KeyPair()
-      wallet.addKey(keyPair)
-      sender() ! KeyPairCreated(keyPair)
+      sender() ! KeyPairCreated(wallet.createKeyPair())
 
     case InternalWalletChanged =>
       updateBalance()
-      updateSpendCandidates()
       notifyListeners()
 
     case BlockBitcoins(amount) =>
-      sender() ! blockedOutputs.block(amount)
+      sender() ! wallet.blockFunds(amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
     case UnblockBitcoins(id) =>
-      blockedOutputs.unblock(id)
+      wallet.unblockFunds(id)
 
     case SubscribeToWalletChanges =>
       context.watch(sender())
@@ -84,32 +69,17 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
   }
 
   private def updateBalance(): Unit = {
-    properties.balance.set(Some(Balance(wallet.balance())))
-  }
-
-  private def updateSpendCandidates(): Unit = {
-    blockedOutputs.setSpendCandidates(wallet.calculateAllSpendCandidates(true).asScala.toSet)
+    properties.balance.set(Some(Balance(wallet.balance)))
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
-    val network = wallet.getNetworkParameters
-    properties.primaryAddress.set(wallet.getKeys.headOption.map(_.toAddress(network)))
+    properties.primaryAddress.set(wallet.addresses.headOption)
   }
 
   private def subscribeToWalletChanges(): Unit = {
-    wallet.addEventListener(new AbstractWalletEventListener {
-      override def onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction): Unit = {
-        // Don't notify confidence changes for already confirmed transactions to reduce load
-        if (tx.getConfidence.getConfidenceType != TransactionConfidence.ConfidenceType.BUILDING ||
-          tx.getConfidence.getDepthInBlocks == 1) {
-          onChange()
-        }
-      }
-
-      override def onChange(): Unit = {
-        self ! InternalWalletChanged
-      }
-    })
+    wallet.addListener(new SmartWallet.Listener {
+      override def onChange() = self ! InternalWalletChanged
+    })(context.dispatcher)
   }
 
   private def notifyListeners(): Unit = {
@@ -118,10 +88,19 @@ private class WalletActor(properties: MutableWalletProperties, wallet: Wallet)
 }
 
 object WalletActor {
-  private[bitcoin] def props(properties: MutableWalletProperties, wallet: Wallet) =
+  private[bitcoin] def props(properties: MutableWalletProperties, wallet: SmartWallet) =
     Props(new WalletActor(properties, wallet))
 
   private case object InternalWalletChanged
+
+  /** A request message to create a new transaction. */
+  case class CreateTransaction(amount: BitcoinAmount, to: Address)
+
+  /** A successful response to a transaction creation request. */
+  case class TransactionCreated(req: CreateTransaction, tx: ImmutableTransaction)
+
+  /** A failure response to a transaction creation request. */
+  case class TransactionCreationFailure(req: CreateTransaction, failure: Throwable)
 
   /** Subscribe to wallet changes. The sender will receive [[WalletChanged]] after sending this
     * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].

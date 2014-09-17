@@ -49,12 +49,12 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
     val peerGroup = new PeerGroup(network)
     val blockchainActor, walletActor = new MockSupervisedActor()
     val eventChannelProbe = EventChannelProbe()
-    val wallet = new Wallet(network)
+    val wallet = new SmartWallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
     val properties = new MutableBitcoinProperties
 
-    blockchain.addWallet(wallet)
-    peerGroup.addWallet(wallet)
+    blockchain.addWallet(wallet.delegate)
+    peerGroup.addWallet(wallet.delegate)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
       peerGroup, blockchainActor.props, (_, _) => walletActor.props, wallet,
