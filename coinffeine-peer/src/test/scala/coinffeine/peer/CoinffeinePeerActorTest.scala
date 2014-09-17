@@ -63,11 +63,11 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val withdrawRequest = WithdrawWalletFunds(amount, to)
     val withdrawResponse = WalletFundsWithdrawn(amount, to, tx)
 
-    peer ! withdrawRequest
+    requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
     wallet.reply(createTxResponse)
     bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
-    expectMsg(withdrawResponse)
+    requester.expectMsg(withdrawResponse)
   }
 
   it must "fail process wallet funds on tx creation errors" in new StartedFixture {
@@ -79,11 +79,12 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val createTxResponse = WalletActor.TransactionCreationFailure(createTxRequest, error)
     val withdrawRequest = WithdrawWalletFunds(amount, to)
 
-    peer ! withdrawRequest
+    requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
     wallet.reply(createTxResponse)
     bitcoinPeer.expectNoMsg()
-    val WalletFundsWithdrawFailure(`amount`, `to`, _) = expectMsgType[WalletFundsWithdrawFailure]
+    val WalletFundsWithdrawFailure(`amount`, `to`, _) =
+      requester.expectMsgType[WalletFundsWithdrawFailure]
   }
 
   it must "fail process wallet funds on tx publishing errors" in new StartedFixture {
@@ -97,14 +98,16 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val publishTxResponse = BitcoinPeerActor.TransactionNotPublished(tx, error)
     val withdrawRequest = WithdrawWalletFunds(amount, to)
 
-    peer ! withdrawRequest
+    requester.send(peer, withdrawRequest)
     wallet.expectMsg(createTxRequest)
     wallet.reply(createTxResponse)
     bitcoinPeer.expectAskWithReply { case `publishTxRequest` => publishTxResponse }
-    val WalletFundsWithdrawFailure(`amount`, `to`, _) = expectMsgType[WalletFundsWithdrawFailure]
+    val WalletFundsWithdrawFailure(`amount`, `to`, _) =
+      requester.expectMsgType[WalletFundsWithdrawFailure]
   }
 
   trait Fixture {
+    val requester = TestProbe()
     val network = new TestNet3Params
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
@@ -148,7 +151,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
-    peer ! ServiceActor.Start({})
+    requester.send(peer, ServiceActor.Start({}))
 
     // Then it must request the payment processor to start
     shouldRequestStart(paymentProcessor, {})
@@ -168,6 +171,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     orders.expectCreation()
 
     // And finally indicate it succeed to start
-    expectMsg(ServiceActor.Started)
+    requester.expectMsg(ServiceActor.Started)
   }
 }
