@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{AnyStateExchange, ExchangeId}
+import coinffeine.model.exchange.{AnyStateExchange, Exchange, ExchangeId}
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
   * the Coinffeine market.
@@ -24,6 +24,25 @@ case class Order[C <: FiatCurrency](
     amount: BitcoinAmount,
     price: Price[C],
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
+
+  def amounts: Order.Amounts = {
+    def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
+      exchanges.map(_.amounts.netBitcoinExchanged).foldLeft(Bitcoin.Zero)(_ + _)
+
+    val exchangeGroups = exchanges.values.groupBy(_.state match {
+      case _: Exchange.Successful[_] => 'exchanged
+      case _: Exchange.Exchanging[_] => 'exchanging
+      case _ => 'other
+    }).mapValues(totalSum)
+
+    val exchanged = exchangeGroups.getOrElse('exchanged, Bitcoin.Zero)
+    val exchanging = exchangeGroups.getOrElse('exchanging, Bitcoin.Zero)
+    Order.Amounts(
+      exchanged = exchanged,
+      exchanging = exchanging,
+      pending = amount - exchanged - exchanging
+    )
+  }
 
   /** Create a new copy of this order with the given status. */
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
@@ -60,10 +79,10 @@ case class Order[C <: FiatCurrency](
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: AnyStateExchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)
-
 }
 
 object Order {
+  case class Amounts(exchanged: BitcoinAmount, exchanging: BitcoinAmount, pending: BitcoinAmount)
 
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
