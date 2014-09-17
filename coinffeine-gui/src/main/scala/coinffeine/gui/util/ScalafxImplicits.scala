@@ -44,7 +44,7 @@ object ScalafxImplicits {
     private var listeners: Map[InvalidationListener, Property.Cancellable] = Map.empty
 
     override def addListener(listener: InvalidationListener): Unit = {
-      val cancellation = property.onNewValue { case _ => listener.invalidated(this) }
+      val cancellation = property.onNewValue(_ => listener.invalidated(this))
       listeners += listener -> cancellation
     }
 
@@ -74,7 +74,7 @@ object ScalafxImplicits {
     }
 
     def bindObservableList[B](list: ObservableList[B])(f: A => Seq[B]): Unit = {
-      property.onNewValue { case newValue =>
+      property.onNewValue { newValue =>
         val contents = f(newValue)
         list.setAll(contents: _*)
       }

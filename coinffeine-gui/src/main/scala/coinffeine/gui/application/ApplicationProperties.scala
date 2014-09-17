@@ -36,22 +36,22 @@ class ApplicationProperties(app: CoinffeineApp) {
       ConnectionStatus(
         ConnectionStatus.Coinffeine(0, None),
         ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading)))
-    app.bitcoinNetwork.activePeers.onChange { case (_, newValue) =>
+    app.bitcoinNetwork.activePeers.onNewValue { newValue =>
       val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(
         bitcoin = bitcoinStatus.copy(activePeers = newValue))
     }
-    app.bitcoinNetwork.blockchainStatus.onChange { case (_, newValue) =>
+    app.bitcoinNetwork.blockchainStatus.onNewValue { newValue =>
       val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(
         bitcoin = bitcoinStatus.copy(blockchainStatus = newValue))
     }
-    app.network.activePeers.onChange { case (_, newValue) =>
+    app.network.activePeers.onNewValue { newValue =>
       val coinffeineStatus = status.value.coinffeine
       status.value = status.value.copy(
         coinffeine = coinffeineStatus.copy(activePeers = newValue))
     }
-    app.network.brokerId.onChange { case (_, newValue) =>
+    app.network.brokerId.onNewValue { newValue =>
       val coinffeineStatus = status.value.coinffeine
       status.value = status.value.copy(
         coinffeine = coinffeineStatus.copy(brokerId = newValue))
@@ -83,7 +83,7 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private def bindTo[A](prop: Property[A], name: String): ReadOnlyObjectProperty[A] = {
     val result = new ObjectProperty[A](this, name, prop.get)
-    prop.onChange { case (_, newValue) => result.value = newValue }
+    prop.onNewValue { newValue => result.value = newValue }
     result
   }
 
