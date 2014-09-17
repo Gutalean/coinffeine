@@ -2,11 +2,13 @@ package coinffeine.peer.market.orders.controller
 
 import org.scalatest.Assertions
 
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.peer.market.orders.controller.OrderPublication.Listener
 
 class MockPublication[C <: FiatCurrency] extends OrderPublication[C] with Assertions {
   private var listeners = Seq.empty[OrderPublication.Listener]
+  private var _amountToPublish: BitcoinAmount = Bitcoin.Zero
   private var _inMarket = false
   private var pendingPublication = false
 
@@ -15,11 +17,13 @@ class MockPublication[C <: FiatCurrency] extends OrderPublication[C] with Assert
   }
 
   override def isInMarket: Boolean = _inMarket
+  def amountToPublish: BitcoinAmount = _amountToPublish
 
-  override def keepPublishing(): Unit = {
-    if (!_inMarket) {
+  override def keepPublishing(pendingAmount: BitcoinAmount): Unit = {
+    if (!_inMarket || _amountToPublish != pendingAmount) {
       pendingPublication = true
     }
+    _amountToPublish = pendingAmount
   }
 
   def expectSuccessfulPublication(): Unit = {

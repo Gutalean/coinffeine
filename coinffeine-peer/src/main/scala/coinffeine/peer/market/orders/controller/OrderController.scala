@@ -44,7 +44,7 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
     }
 
     override def keepInMarket(): Unit = {
-      publisher.keepPublishing()
+      publisher.keepPublishing(order.amounts.pending)
     }
 
     override def keepOffMarket(): Unit = {
