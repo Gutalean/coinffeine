@@ -189,7 +189,7 @@ object CoinffeinePeerActor {
       import orderSupervisorCollaborators._
       val collaborators = OrderActor.Collaborators(
         wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer)
-      OrderActor.props(exchangeActorProps, network, exchangeAmountsCalculator, order, collaborators)
+      OrderActor.props(exchangeActorProps, network, amountsCalculator, order, collaborators)
     }
   }
 }

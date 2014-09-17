@@ -83,6 +83,6 @@ object DefaultCoinffeineApp {
 
     override lazy val app = new DefaultCoinffeineApp(
       name = accountId, bitcoinProperties, coinffeineNetworkProperties,
-      accountId, peerProps, exchangeAmountsCalculator)
+      accountId, peerProps, amountsCalculator)
   }
 }
