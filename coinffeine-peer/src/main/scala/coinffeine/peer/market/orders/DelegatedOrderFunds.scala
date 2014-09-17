@@ -17,6 +17,8 @@ class DelegatedOrderFunds(orderFundsProps: Props,
                           requiredBitcoin: BitcoinAmount)
                          (implicit context: ActorContext) extends OrderFunds {
 
+  private implicit val self = context.self
+
   private sealed trait FundsAvailability {
     def areBlocked: Boolean
     def areAvailable: Boolean
