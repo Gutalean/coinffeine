@@ -25,22 +25,13 @@ trait Property[A] {
     * @param handler    The handler to be invoked when the value of the property changes
     * @param executor   The executor used to invoke the handler
     */
-  def onChange(handler: OnChangeHandler)
-              (implicit executor: ExecutionContext): Property.Cancellable
+  def onChange(handler: OnChangeHandler)(implicit executor: ExecutionContext): Cancellable
 
   /** Set a on-change handler which will be invoked when a new value is set.
     *
     * @param handler    The handler to be invoked when the value of the property is set.
     * @param executor   The executor used to invoke the handler
     */
-  def onNewValue(handler: OnNewValueHandler)
-                (implicit executor: ExecutionContext): Property.Cancellable =
+  def onNewValue(handler: OnNewValueHandler)(implicit executor: ExecutionContext): Cancellable =
     onChange((_, newValue) => handler(newValue))
-}
-
-object Property {
-
-  trait Cancellable {
-    def cancel(): Unit
-  }
 }
