@@ -18,11 +18,13 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
   }
 
   override def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {
-    if (exchange.state.isSuccess) {
-      ctx.transitionTo(new FinalState(FinalState.OrderCompletion))
-    } else {
+    if (!exchange.state.isSuccess) {
       throw new NotImplementedError(s"Don't know what to do with $exchange")
     }
+    ctx.transitionTo(
+      if (ctx.order.amounts.pending.isPositive) new WaitingForMatchesState()
+      else new FinalState(FinalState.OrderCompletion)
+    )
   }
 
   override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch) =
