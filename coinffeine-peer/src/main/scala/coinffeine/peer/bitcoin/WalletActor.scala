@@ -1,5 +1,6 @@
 package coinffeine.peer.bitcoin
 
+import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
 import akka.actor.{Address => _, _}
@@ -19,6 +20,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
     subscribeToWalletChanges()
     updateBalance()
     updateWalletPrimaryKeys()
+    updateTransactions()
   }
 
   override val receive: Receive = {
@@ -47,6 +49,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
 
     case InternalWalletChanged =>
       updateBalance()
+      updateTransactions()
       notifyListeners()
 
     case BlockBitcoins(amount) =>
@@ -66,6 +69,11 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
 
     case Terminated(listener) =>
       listeners -= listener
+  }
+
+  private def updateTransactions(): Unit = {
+    val transations = wallet.delegate.getTransactionsByTime
+    properties.transactions.set(transations.map(ImmutableTransaction(_)))
   }
 
   private def updateBalance(): Unit = {
