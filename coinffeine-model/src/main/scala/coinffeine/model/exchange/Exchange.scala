@@ -106,8 +106,7 @@ object Exchange {
     val currency: C = grossFiatExchanged.currency
 
     /** Net amount of bitcoins to be exchanged */
-    val netBitcoinExchanged: BitcoinAmount =
-      finalStep.depositSplit.buyer - deposits.buyer.input
+    val netBitcoinExchanged: BitcoinAmount = finalStep.depositSplit.buyer - deposits.buyer.input
     require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
 
     /** Net amount of fiat to be exchanged */

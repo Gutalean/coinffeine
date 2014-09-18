@@ -7,6 +7,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 trait AmountsCalculator {
 
+  /** Compute amounts governing an exchange from the raw bitcoin and fiat exchanged */
   def exchangeAmountsFor[C <: FiatCurrency](
       bitcoinAmount: BitcoinAmount,
       fiatAmount: CurrencyAmount[C]): Exchange.Amounts[C]

@@ -1,5 +1,6 @@
 package coinffeine.model.currency
 
+import scala.math.BigDecimal.RoundingMode
 import scala.util.Try
 
 /** An finite amount of currency C.
@@ -24,6 +25,10 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
     copy(value = value - other.value)
   def * (mult: BigDecimal): CurrencyAmount[C] = copy(value = value * mult)
   def / (divisor: BigDecimal): CurrencyAmount[C] = copy(value = value / divisor)
+  def /%(divisor: CurrencyAmount[C]): (Int, CurrencyAmount[C]) = {
+    val (division, remainder) = value /% divisor.value
+    (division.toIntExact, copy(remainder))
+  }
   def unary_- : CurrencyAmount[C] = copy(value = -value)
 
   def min(that: CurrencyAmount[C]): CurrencyAmount[C] =
@@ -51,4 +56,7 @@ object CurrencyAmount {
     val smallestUnit = Seq.fill(currency.precision)(10).foldLeft(BigDecimal(1))(_ / _)
     CurrencyAmount(smallestUnit, currency)
   }
+
+  def closestAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
+    CurrencyAmount(value.setScale(currency.precision, RoundingMode.HALF_EVEN), currency)
 }

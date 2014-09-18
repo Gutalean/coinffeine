@@ -13,7 +13,7 @@ import coinffeine.model.exchange.{AnyStateExchange, Exchange, ExchangeId}
   *
   * @param orderType  The type of order (bid or ask)
   * @param status     The current status of the order
-  * @param amount     The amount of bitcoins to bid or ask
+  * @param amount     The gross amount of bitcoins to bid or ask
   * @param price      The price per bitcoin
   * @param exchanges  The exchanges that have been initiated to complete this order
   */
@@ -27,7 +27,7 @@ case class Order[C <: FiatCurrency](
 
   def amounts: Order.Amounts = {
     def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
-      exchanges.map(_.amounts.netBitcoinExchanged).foldLeft(Bitcoin.Zero)(_ + _)
+      exchanges.map(_.amounts.grossBitcoinExchanged).foldLeft(Bitcoin.Zero)(_ + _)
 
     val exchangeGroups = exchanges.values.groupBy(_.state match {
       case _: Exchange.Successful[_] => 'exchanged
