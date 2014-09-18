@@ -5,9 +5,10 @@ import scala.concurrent.duration.FiniteDuration
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{MutableBitcoinProperties, Address, KeyPair}
-import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
+import coinffeine.model.currency
+import coinffeine.model.currency.{FiatCurrency, BitcoinBalance, BitcoinAmount}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.properties.Property
+import coinffeine.model.properties.{PropertyMap, Property}
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
 import coinffeine.model.event.CoinffeineAppEvent
@@ -34,6 +35,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
   override def paymentProcessor: CoinffeinePaymentProcessor = new CoinffeinePaymentProcessor {
     override def accountId = "fake-account-id"
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
+    override val balance = null
   }
 
   override def utils = ???
