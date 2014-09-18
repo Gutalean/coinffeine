@@ -8,6 +8,7 @@ import akka.actor.{ActorRef, Props}
 import org.mockito.BDDMockito.given
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.scalatest.concurrent.{PatienceConfiguration, Eventually}
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
@@ -19,7 +20,7 @@ import coinffeine.model.event.{EventChannelProbe, FiatBalanceChangeEvent}
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
-class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
+class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar with Eventually {
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized()
@@ -40,6 +41,16 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
     expectBalanceNotification(nextAmount)
+  }
+
+  it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
+    givenPaymentProcessorIsInitialized(balances = Seq(amount))
+    val nextAmount = amount * 2
+    given(client.currentBalances()).willReturn(Future.successful(Seq(nextAmount)))
+    processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
+    expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
+
+    expectBalanceUpdate(nextAmount)
   }
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
@@ -126,6 +137,9 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       Future.successful(Seq(140.EUR)),
       Future.failed(new Exception("doesn't work"))
     )
+    expectBalanceUpdate(120.EUR, timeout = 2.seconds)
+    expectBalanceUpdate(140.EUR, timeout = 2.seconds)
+    expectBalanceUpdate(140.EUR, hasExpired = true, timeout = 2.seconds)
     expectBalanceNotification(120.EUR)
     expectBalanceNotification(140.EUR)
     expectBalanceNotification(140.EUR, hasExpired = true)
@@ -167,6 +181,14 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
     def expectBalanceNotification(balance: FiatAmount, hasExpired: Boolean = false): Unit = {
       eventChannelProbe.expectMsg(FiatBalanceChangeEvent(Balance(balance, hasExpired)))
+    }
+
+    def expectBalanceUpdate(balance: FiatAmount,
+                            hasExpired: Boolean = false,
+                            timeout: FiniteDuration = 200.millis): Unit = {
+      eventually(PatienceConfiguration.Timeout(timeout)) {
+        properties.balance(balance.currency) should be (Balance(balance, hasExpired))
+      }
     }
   }
 

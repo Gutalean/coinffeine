@@ -27,8 +27,6 @@ class OkPayProcessorActor(
   import OkPayProcessorActor._
 
   private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
-  private var currentBalances: Map[c forSome { type c <: FiatCurrency },
-                                   Balance[c] forSome { type c <: FiatCurrency} ] = Map.empty
 
   private var timer: Cancellable = _
 
@@ -131,15 +129,15 @@ class OkPayProcessorActor(
 
   private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
-    for (balance <- currentBalances.values) {
+    for (balance <- properties.balance.values) {
       updateBalance(balance.copy(hasExpired = true))
     }
   }
 
   private def updateBalance[C <: FiatCurrency](balance: Balance[C]): Unit = {
-    if (currentBalances.get(balance.amount.currency) != Some(balance)) {
+    if (properties.balance.get(balance.amount.currency) != Some(balance)) {
       publishEvent(FiatBalanceChangeEvent(balance))
-      currentBalances += balance.amount.currency -> balance
+      properties.balance.set(balance.amount.currency, balance)
     }
   }
 

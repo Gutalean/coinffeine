@@ -11,6 +11,8 @@ class MutablePropertyMap[K, V] extends PropertyMap[K, V] {
     map.get(key)
   }
 
+  override def values: Iterable[V] = synchronized { map.values }
+
   override def onChange(handler: OnEntryChangeHandler)(implicit executor: ExecutionContext) = {
     listeners.add(handler)
   }
