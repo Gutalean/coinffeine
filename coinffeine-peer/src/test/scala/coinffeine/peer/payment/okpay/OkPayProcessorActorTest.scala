@@ -17,7 +17,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{Balance, FiatAmount, FiatCurrency}
 import coinffeine.model.event.{EventChannelProbe, FiatBalanceChangeEvent}
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
-import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
 
@@ -46,7 +46,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     given(client.currentBalances()).willReturn(Future.failed(cause))
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
     processor = system.actorOf(Props(
-      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+      new OkPayProcessorActor(clientParams, properties)))
     processor ! ServiceActor.Start({})
     expectMsg(ServiceActor.Started)
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
@@ -149,12 +149,14 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val client = mock[OkPayClient]
     val eventChannelProbe = EventChannelProbe()
     var processor: ActorRef = _
+    val properties = new MutablePaymentProcessorProperties
+    val clientParams = OkPayProcessorActor.ClientParams(senderAccount, client, pollingInterval)
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
 
       processor = system.actorOf(Props(
-        new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+        new OkPayProcessorActor(clientParams, properties)))
       processor ! ServiceActor.Start({})
       expectMsg(ServiceActor.Started)
 

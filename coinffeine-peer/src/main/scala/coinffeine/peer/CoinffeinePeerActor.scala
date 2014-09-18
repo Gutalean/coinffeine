@@ -17,6 +17,7 @@ import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
 import coinffeine.peer.market.orders.{OrderSupervisor, OrderActor}
+import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -28,8 +29,7 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
   * the peer actor and the message gateway and supervise them.
   */
 class CoinffeinePeerActor(
-    listenPort: Int,
-    brokerAddress: BrokerAddress,
+    networkParams: CoinffeinePeerActor.NetworkParams,
     props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[Unit] {
   import context.dispatcher
 
@@ -49,7 +49,8 @@ import coinffeine.peer.CoinffeinePeerActor._
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
-      _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(listenPort, brokerAddress))
+      _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(
+        networkParams.listenPort, networkParams.brokerAddress))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
     } yield walletActorRef).pipeTo(self)
@@ -159,12 +160,15 @@ object CoinffeinePeerActor {
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
+  case class NetworkParams(listenPort: Int, brokerAddress: BrokerAddress)
+
   trait Component { this: MessageGateway.Component
     with BitcoinPeerActor.Component
     with ExchangeActor.Component
     with ConfigComponent
     with NetworkComponent
     with ProtocolConstants.Component
+    with MutablePaymentProcessorProperties.Component
     with AmountsComponent =>
 
     lazy val peerProps: Props = {
@@ -179,9 +183,11 @@ object CoinffeinePeerActor {
           SubmissionSupervisor.props(collaborators.gateway, protocolConstants)
         ),
         bitcoinPeerProps,
-        OkPayProcessorActor.props(configProvider.okPaySettings)
+        OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
-      Props(new CoinffeinePeerActor(ownPort, BrokerAddress(brokerHostname, brokerPort), props))
+      Props(new CoinffeinePeerActor(
+        NetworkParams(ownPort, BrokerAddress(brokerHostname, brokerPort)),
+        props))
     }
 
     private def orderActorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators)

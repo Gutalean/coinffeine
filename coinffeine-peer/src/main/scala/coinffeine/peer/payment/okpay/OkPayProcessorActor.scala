@@ -19,9 +19,8 @@ import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
 class OkPayProcessorActor(
-    accountId: AccountId,
-    client: OkPayClient,
-    pollingInterval: FiniteDuration)
+    clientParams: OkPayProcessorActor.ClientParams,
+    properties: MutablePaymentProcessorProperties)
   extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
 
   import context.dispatcher
@@ -36,8 +35,8 @@ class OkPayProcessorActor(
   override def starting(args: Unit) = {
     pollBalances()
     timer = context.system.scheduler.schedule(
-      initialDelay = pollingInterval,
-      interval = pollingInterval,
+      initialDelay = clientParams.pollingInterval,
+      interval = clientParams.pollingInterval,
       receiver = self,
       message = PollBalances
     )
@@ -51,7 +50,7 @@ class OkPayProcessorActor(
 
   private def started: Receive = {
     case PaymentProcessorActor.RetrieveAccountId =>
-      sender ! RetrievedAccountId(accountId)
+      sender ! RetrievedAccountId(clientParams.accountId)
     case pay: Pay[_] =>
       sendPayment(sender(), pay)
     case FindPayment(paymentId) =>
@@ -71,7 +70,7 @@ class OkPayProcessorActor(
   private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
     (for {
       _ <- useFunds(pay)
-      payment <- client.sendPayment(pay.to, pay.amount, pay.comment)
+      payment <- clientParams.client.sendPayment(pay.to, pay.amount, pay.comment)
     } yield payment).onComplete {
       case Success(payment) =>
         requester ! Paid(payment)
@@ -93,7 +92,7 @@ class OkPayProcessorActor(
   }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
-    client.findPayment(paymentId).onComplete {
+    clientParams.client.findPayment(paymentId).onComplete {
       case Success(Some(payment)) => requester ! PaymentFound(payment)
       case Success(None) => requester ! PaymentNotFound(paymentId)
       case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
@@ -101,7 +100,7 @@ class OkPayProcessorActor(
   }
 
   private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-    val balances = client.currentBalances()
+    val balances = clientParams.client.currentBalances()
     balances.onSuccess { case b =>
       self ! UpdateBalances(b)
     }
@@ -145,7 +144,7 @@ class OkPayProcessorActor(
   }
 
   private def pollBalances(): Unit = {
-    client.currentBalances().map(UpdateBalances.apply).recover {
+    clientParams.client.currentBalances().map(UpdateBalances.apply).recover {
       case NonFatal(cause) => BalanceUpdateFailed(cause)
     }.pipeTo(self)
   }
@@ -164,12 +163,18 @@ object OkPayProcessorActor {
   /** Self-message to report balance polling failures */
   private case class BalanceUpdateFailed(cause: Throwable)
 
-  def props(settings: OkPaySettings) = {
+  case class ClientParams(accountId: AccountId,
+                          client: OkPayClient,
+                          pollingInterval: FiniteDuration)
+
+  def props(settings: OkPaySettings, properties: MutablePaymentProcessorProperties) = {
     val client = new OkPayWebServiceClient(
       account = settings.userAccount,
       seedToken = settings.seedToken,
       baseAddressOverride = Some(settings.serverEndpoint)
     )
-    Props(new OkPayProcessorActor(settings.userAccount, client, settings.pollingInterval))
+    Props(new OkPayProcessorActor(
+      ClientParams(settings.userAccount, client, settings.pollingInterval),
+      properties))
   }
 }

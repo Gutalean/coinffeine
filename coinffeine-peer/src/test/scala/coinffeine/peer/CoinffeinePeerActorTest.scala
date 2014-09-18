@@ -87,7 +87,8 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val eventChannel = EventChannelProbe()
 
     val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
-    val peer = system.actorOf(Props(new CoinffeinePeerActor(localPort, brokerAddress,
+    val peer = system.actorOf(Props(new CoinffeinePeerActor(
+      CoinffeinePeerActor.NetworkParams(localPort, brokerAddress),
       PropsCatalogue(
         gateway = gateway.props,
         marketInfo = _ => marketInfo.props,
