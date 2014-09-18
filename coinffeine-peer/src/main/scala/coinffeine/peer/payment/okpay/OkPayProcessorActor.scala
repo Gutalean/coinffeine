@@ -10,7 +10,6 @@ import akka.pattern._
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.currency.{Balance, CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.event.FiatBalanceChangeEvent
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.event.EventPublisher
@@ -136,7 +135,6 @@ class OkPayProcessorActor(
 
   private def updateBalance[C <: FiatCurrency](balance: Balance[C]): Unit = {
     if (properties.balance.get(balance.amount.currency) != Some(balance)) {
-      publishEvent(FiatBalanceChangeEvent(balance))
       properties.balance.set(balance.amount.currency, balance)
     }
   }
