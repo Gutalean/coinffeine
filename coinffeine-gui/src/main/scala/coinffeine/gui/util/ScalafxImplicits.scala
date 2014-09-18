@@ -1,12 +1,12 @@
 package coinffeine.gui.util
 
 import java.util.concurrent.Callable
-import javafx.beans.{InvalidationListener, Observable}
 import javafx.beans.binding._
 import javafx.beans.value.{ChangeListener, ObservableValue}
-import javafx.collections.{MapChangeListener, ObservableMap, ObservableList, FXCollections}
+import javafx.beans.{InvalidationListener, Observable}
+import javafx.collections.ObservableList
 
-import coinffeine.model.properties.{PropertyMap, Cancellable, Property}
+import coinffeine.model.properties.{Cancellable, Property, PropertyMap}
 
 object ScalafxImplicits {
 
@@ -78,6 +78,25 @@ object ScalafxImplicits {
       }
       list.setAll(f(property.get): _*) // ensure last values are set
     }
+  }
+
+  implicit class PropertyMapPimp[K, V](property: PropertyMap[K, V]) extends Observable {
+
+    private val listeners = new CancellableListeners[InvalidationListener]
+
+    override def addListener(listener: InvalidationListener) = {
+      listeners.add(listener, property.onNewValue((_, _) => listener.invalidated(this)))
+    }
+
+    override def removeListener(listener: InvalidationListener) = {
+      listeners.cancel(listener)
+    }
+
+    def mapEntry[B](key: K)(f: V => B): ObjectBinding[Option[B]] = Bindings.createObjectBinding(
+      new Callable[Option[B]] {
+        override def call() = property.get(key).map(f)
+      },
+      this)
   }
 
   private class CancellableListeners[L] {
