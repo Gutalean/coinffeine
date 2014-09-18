@@ -169,8 +169,10 @@ object Exchange {
                          counterpart: Exchange.PeerInfo): Exchange[C, Handshaking[C]] =
       exchange.copy(state = Handshaking(user, counterpart)(exchange.currency))
 
-    def cancel(cause: CancellationCause, user: Exchange.PeerInfo): Exchange[C, Failed[C]] =
-      exchange.copy(state = Failed(Cancellation(cause), user, exchange.state.progress, transaction = None))
+    def cancel(cause: CancellationCause,
+               user: Option[Exchange.PeerInfo] = None): Exchange[C, Failed[C]] =
+      exchange.copy(state = Failed(Cancellation(cause), exchange.state.progress, user,
+        transaction = None))
 
     def abort(cause: AbortionCause,
               user: Exchange.PeerInfo,
@@ -259,19 +261,18 @@ object Exchange {
     extends AnyVal {
 
     def broadcast(transaction: ImmutableTransaction): Exchange[C, Failed[C]] =
-      exchange.copy(state = Failed(Abortion(exchange.state.cause), exchange.state.user,
-        exchange.progress, Some(transaction)))
+      exchange.copy(state = Failed(Abortion(exchange.state.cause), exchange.progress,
+        Some(exchange.state.user), Some(transaction)))
 
     def failedToBroadcast: Exchange[C, Failed[C]] = exchange.copy(state = Failed(
       Abortion(exchange.state.cause),
-      exchange.state.user,
       exchange.state.progress,
+      Some(exchange.state.user),
       transaction = None
     ))
   }
 
   trait Completed[C <: FiatCurrency] extends State[C] {
-    def user: Exchange.PeerInfo
     def isSuccess: Boolean
     override val isCompleted = true
   }
@@ -284,6 +285,7 @@ object Exchange {
 
   sealed trait CancellationCause
   case object UserCancellation extends CancellationCause
+  case class CannotStartHandshake(cause: Throwable) extends CancellationCause
 
   sealed trait FailureCause
   case class Cancellation(cause: CancellationCause) extends FailureCause
@@ -296,8 +298,8 @@ object Exchange {
   case class HandshakeFailed(cause: Throwable) extends FailureCause with CancellationCause
 
   case class Failed[C <: FiatCurrency](cause: FailureCause,
-                                       user: Exchange.PeerInfo,
                                        progress: Progress[C],
+                                       user: Option[Exchange.PeerInfo],
                                        transaction: Option[ImmutableTransaction])
     extends Completed[C] {
     override val isSuccess = false
@@ -306,7 +308,7 @@ object Exchange {
     def apply[C <: FiatCurrency](cause: FailureCause,
                                  previousState: StartedHandshake[C],
                                  transaction: Option[ImmutableTransaction]): Failed[C] =
-      Failed(cause, previousState.user, previousState.progress, transaction)
+      Failed(cause, previousState.progress, Some(previousState.user), transaction)
   }
 
   case class Successful[C <: FiatCurrency](user: Exchange.PeerInfo,

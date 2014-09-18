@@ -53,7 +53,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       }
 
     case HandshakeFailure(cause, None) =>
-      finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), exchange.user)))
+      finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), Some(exchange.user))))
 
     case HandshakeFailure(cause, Some(refundTx)) =>
       startAbortion(
