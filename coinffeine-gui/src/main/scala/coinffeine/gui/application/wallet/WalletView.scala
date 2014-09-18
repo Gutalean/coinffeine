@@ -70,7 +70,7 @@ class WalletView(app: CoinffeineApp) extends ApplicationView {
     minHeight = 190
     maxHeight = 190
 
-    app.wallet.primaryAddress.bindObservableList(content) {
+    app.wallet.primaryAddress.bindToList(content) {
       case Some(addr) => Seq(qrCode(addr))
       case None => Seq(noQrCode)
     }
