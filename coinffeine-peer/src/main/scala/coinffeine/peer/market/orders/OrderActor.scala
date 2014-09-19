@@ -1,15 +1,18 @@
 package coinffeine.peer.market.orders
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.util.control.NonFatal
+import scala.util.{Try, Failure, Success}
 
 import akka.actor._
+import akka.pattern._
 import com.google.bitcoin.core.NetworkParameters
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency._
 import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
+import coinffeine.model.exchange.Exchange.CannotStartHandshake
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.BrokerId
@@ -19,7 +22,6 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
-import coinffeine.peer.market.SubmissionSupervisor.KeepSubmitting
 import coinffeine.peer.market.orders.controller._
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -36,6 +38,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
 
   import OrderActor._
   import context.dispatcher
+
+  private case class SpawnExchange(exchange: NonStartedExchange[C], user: Try[Exchange.PeerInfo])
 
   private val orderId = initialOrder.id
   private val requiredFunds: (CurrencyAmount[C], BitcoinAmount) = {
@@ -63,13 +67,21 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       log.debug("Order actor requested to retrieve status for {}", orderId)
       sender() ! order.view
 
-    case ReceiveMessage(orderMatch: OrderMatch, _) =>
+    case ReceiveMessage(message: OrderMatch[_], _) if message.currency == initialOrder.price.currency =>
+      val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.acceptOrderMatch(orderMatch) match {
         case MatchAccepted(newExchange) => startExchange(newExchange)
         case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange)
       }
+
+    case SpawnExchange(exchange, Success(userInfo)) =>
+       spawnExchange(exchange, userInfo)
+
+    case SpawnExchange(exchange, Failure(cause)) =>
+      log.error(cause, "Cannot start exchange {} for {} order", exchange.id, orderId)
+      order.completeExchange(exchange.cancel(CannotStartHandshake(cause)))
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
@@ -88,8 +100,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
-      case orderMatch: OrderMatch if orderMatch.orderId == orderId &&
-        orderMatch.fiatAmount.currency == order.view.price.currency =>
+      case orderMatch: OrderMatch[_] if orderMatch.orderId == orderId &&
+        orderMatch.currency == order.view.price.currency =>
     }
   }
 
@@ -110,7 +122,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
     })
   }
 
-  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch): Unit = {
+  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[C]): Unit = {
     log.info("Rejecting match for {} against counterpart {}: {}",
       orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
@@ -120,17 +132,14 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   private def startExchange(newExchange: NonStartedExchange[C]): Unit = {
     log.info("Accepting match for {} against counterpart {} identified as {}",
       orderId, newExchange.counterpartId, newExchange.id)
-    val userInfoFuture = for {
+    (for {
       keyPair <- createFreshKeyPair()
       paymentProcessorId <- retrievePaymentProcessorId()
-    } yield Exchange.PeerInfo(paymentProcessorId, keyPair)
-    userInfoFuture.onComplete {
-      case Success(userInfo) => spawnExchange(newExchange, userInfo)
-      case Failure(cause) =>
-        log.error(cause, "Cannot start exchange {} for {} order", newExchange.id, orderId)
-        // TODO: mark exchange/order as failed
-        collaborators.submissionSupervisor ! KeepSubmitting(OrderBookEntry(order.view))
-    }
+    } yield Exchange.PeerInfo(paymentProcessorId, keyPair))
+      .map(Success.apply)
+      .recover { case NonFatal(ex) => Failure(ex) }
+      .map(SpawnExchange(newExchange, _))
+      .pipeTo(self)
   }
 
   private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {

@@ -1,6 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Exchange, Role}
 import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -25,15 +25,15 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends St
     ctx.updateOrderStatus(OfflineOrder)
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch) = {
+  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) = {
     if (hasInvalidPrice(ctx.order, orderMatch)) MatchRejected("Invalid price")
-    else if (hasInvalidAmount(ctx.order.amounts.pending, orderMatch)) MatchRejected("Invalid amount")
+    else if (hasInvalidAmount(ctx.order, orderMatch)) MatchRejected("Invalid amount")
     else {
       val exchange = Exchange.notStarted(
         id = orderMatch.exchangeId,
         Role.fromOrderType(ctx.order.orderType),
         counterpartId = orderMatch.counterpart,
-        ctx.calculator.exchangeAmountsFor(orderMatch).asInstanceOf[Exchange.Amounts[C]],
+        ctx.calculator.exchangeAmountsFor(orderMatch),
         parameters = Exchange.Parameters(orderMatch.lockTime, ctx.network),
         ctx.funds.get
       )
@@ -49,17 +49,18 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends St
     ctx.transitionTo(new FinalState(FinalState.OrderCancellation(reason)))
   }
 
-  private def hasInvalidPrice(order: Order[C], orderMatch: OrderMatch): Boolean =
-    if (orderMatch.fiatAmount.currency != order.price.currency) true
-    else {
-      val fiatAmount = orderMatch.fiatAmount.asInstanceOf[CurrencyAmount[C]]
-      val matchPrice = Price.whenExchanging(orderMatch.bitcoinAmount, fiatAmount)
-      order.orderType match {
-        case Bid => order.price.underbids(matchPrice)
-        case Ask => matchPrice.underbids(order.price)
-      }
+  private def hasInvalidPrice(order: Order[C], orderMatch: OrderMatch[C]): Boolean = {
+    val role = Role.fromOrderType(order.orderType)
+    val matchPrice = Price.whenExchanging(
+      role.select(orderMatch.bitcoinAmount), role.select(orderMatch.fiatAmount))
+    order.orderType match {
+      case Bid => order.price.underbids(matchPrice)
+      case Ask => matchPrice.underbids(order.price)
     }
+  }
 
-  private def hasInvalidAmount(pendingAmount: BitcoinAmount, orderMatch: OrderMatch): Boolean =
-    pendingAmount.value < orderMatch.bitcoinAmount.value
+  private def hasInvalidAmount(order: Order[C], orderMatch: OrderMatch[C]): Boolean = {
+    val role = Role.fromOrderType(order.orderType)
+    order.amounts.pending.value < role.select(orderMatch.bitcoinAmount).value
+  }
 }

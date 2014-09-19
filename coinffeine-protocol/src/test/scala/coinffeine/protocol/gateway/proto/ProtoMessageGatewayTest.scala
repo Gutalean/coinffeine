@@ -22,7 +22,7 @@ class ProtoMessageGatewayTest
   with ProtoServerAssertions {
 
   val subscribeToOrderMatches = MessageGateway.Subscribe {
-    case ReceiveMessage(_: OrderMatch, _) =>
+    case ReceiveMessage(_: OrderMatch[_], _) =>
   }
 
   "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
@@ -87,7 +87,7 @@ class ProtoMessageGatewayTest
   it must "subscribe to broker messages" in new FreshBrokerAndPeer {
     val probe = TestProbe()
     probe.send(peerGateway, Subscribe.fromBroker {
-      case _: OrderMatch =>
+      case _: OrderMatch[_] =>
     })
     val message = randomOrderMatch()
     brokerGateway ! ForwardMessage(message, peerId)
@@ -150,7 +150,7 @@ class ProtoMessageGatewayTest
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
     peerGateway ! ForwardMessage(randomOrderMatch(), BrokerId)
-    private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch]]
+    private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch[_]]]
     val peerId = msg.sender
   }
 }

@@ -2,9 +2,9 @@ package coinffeine.protocol.serialization
 
 import scala.util.Random
 
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.currency.Currency.{Bitcoin, Euro}
+import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage
@@ -23,19 +23,15 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
     (message, protocolSerialization.toProtobuf(message))
   }
 
-  def randomOrderMatch(): OrderMatch = OrderMatch(
+  def randomOrderMatch() = OrderMatch(
     orderId = OrderId.random(),
     exchangeId = ExchangeId.random(),
-    bitcoinAmount = randomSatoshi() BTC,
-    fiatAmount = randomEuros() EUR,
+    bitcoinAmount = Both.fill(randomSatoshi()),
+    fiatAmount = Both.fill(randomEuros()),
     lockTime = 42L,
     counterpart = PeerId("bob")
   )
 
-  private def randomSatoshi() =
-    Math.round(Random.nextDouble() * Bitcoin.OneBtcInSatoshi.doubleValue()) /
-      Bitcoin.OneBtcInSatoshi.doubleValue()
-
-  private def randomEuros() =
-    Math.round(Random.nextDouble() * 100) / 100
+  private def randomSatoshi() = CurrencyAmount.closestAmount(Random.nextDouble(), Bitcoin)
+  private def randomEuros() = CurrencyAmount.closestAmount(Random.nextDouble(), Euro)
 }

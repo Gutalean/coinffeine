@@ -23,6 +23,6 @@ object OrderBookEntry {
                                price: Price[C]): OrderBookEntry[C] =
     OrderBookEntry(OrderId.random(), orderType, amount, price)
 
-  def apply[C <: FiatCurrency](order: Order[C]): OrderBookEntry[C] =
+  def fromOrder[C <: FiatCurrency](order: Order[C]): OrderBookEntry[C] =
     OrderBookEntry(order.id, order.orderType, order.amount, order.price)
 }

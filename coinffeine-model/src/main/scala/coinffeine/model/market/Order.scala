@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{AnyStateExchange, Exchange, ExchangeId}
+import coinffeine.model.exchange._
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
   * the Coinffeine market.
@@ -13,7 +13,7 @@ import coinffeine.model.exchange.{AnyStateExchange, Exchange, ExchangeId}
   *
   * @param orderType  The type of order (bid or ask)
   * @param status     The current status of the order
-  * @param amount     The amount of bitcoins to bid or ask
+  * @param amount     The gross amount of bitcoins to bid or ask
   * @param price      The price per bitcoin
   * @param exchanges  The exchanges that have been initiated to complete this order
   */
@@ -26,21 +26,22 @@ case class Order[C <: FiatCurrency](
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
 
   def amounts: Order.Amounts = {
+    val role = Role.fromOrderType(orderType)
+
     def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
-      exchanges.map(_.amounts.netBitcoinExchanged).foldLeft(Bitcoin.Zero)(_ + _)
+      exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin))
+        .foldLeft(Bitcoin.Zero)(_ + _)
 
     val exchangeGroups = exchanges.values.groupBy(_.state match {
       case _: Exchange.Successful[_] => 'exchanged
       case _: Exchange.Exchanging[_] => 'exchanging
       case _ => 'other
-    }).mapValues(totalSum)
+    }).mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
 
-    val exchanged = exchangeGroups.getOrElse('exchanged, Bitcoin.Zero)
-    val exchanging = exchangeGroups.getOrElse('exchanging, Bitcoin.Zero)
     Order.Amounts(
-      exchanged = exchanged,
-      exchanging = exchanging,
-      pending = amount - exchanged - exchanging
+      exchanged = exchangeGroups('exchanged),
+      exchanging = exchangeGroups('exchanging),
+      pending = amount - exchangeGroups('exchanged) - exchangeGroups('exchanging)
     )
   }
 

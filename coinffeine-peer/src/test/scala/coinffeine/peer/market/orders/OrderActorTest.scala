@@ -34,8 +34,8 @@ class OrderActorTest extends AkkaSpec
 
   val idleTime = 500.millis
   val order = Order(Bid, 5.BTC, Price(500.EUR))
-  val orderMatch = OrderMatch(order.id, exchangeId, order.amount, order.price.of(order.amount),
-    lockTime = 400000L, exchange.counterpartId)
+  val orderMatch = OrderMatch(order.id, exchangeId, Both.fill(order.amount),
+    Both.fill(order.price.of(order.amount)), lockTime = 400000L, exchange.counterpartId)
 
   "An order actor" should "keep order info" in new Fixture {
     actor ! OrderActor.RetrieveStatus
@@ -73,12 +73,11 @@ class OrderActorTest extends AkkaSpec
     givenStalledOrder()
     givenFundsBecomeAvailable()
     eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
-    submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
+    submissionProbe.expectMsg(KeepSubmitting(entry))
   }
 
   it should "submit to the broker and receive submission status" in new Fixture {
     givenOfflineOrder()
-    val entry = OrderBookEntry(order)
     submissionProbe.send(actor, InMarket(entry))
     eventChannelProbe.expectMsgPF() {
       case OrderStatusChangedEvent(orderId, _, InMarketOrder) if orderId == order.id =>
@@ -113,7 +112,7 @@ class OrderActorTest extends AkkaSpec
     givenStalledOrder()
     givenFundsBecomeAvailable()
     eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
-    submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
+    submissionProbe.expectMsg(KeepSubmitting(entry))
   }
 
   it should "stop submitting to the broker & report new status once matching is received" in
@@ -174,6 +173,7 @@ class OrderActorTest extends AkkaSpec
     val fundsActor, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
     val eventChannelProbe = EventChannelProbe()
+    val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
@@ -209,7 +209,7 @@ class OrderActorTest extends AkkaSpec
       inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
         case OrderStatusChangedEvent(order.`id`, StalledOrder(_), OfflineOrder) =>
       }
-      submissionProbe.expectMsg(KeepSubmitting(OrderBookEntry(order)))
+      submissionProbe.expectMsg(KeepSubmitting(entry))
     }
 
     def givenStalledOrder(): Unit = {
@@ -223,7 +223,7 @@ class OrderActorTest extends AkkaSpec
 
     def givenInMarketOrder(): Unit = {
       givenOfflineOrder()
-      submissionProbe.send(actor, InMarket(OrderBookEntry(order)))
+      submissionProbe.send(actor, InMarket(entry))
       eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, InMarketOrder))
     }
 
