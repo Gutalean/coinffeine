@@ -11,5 +11,5 @@ class WalletProperties(wallet: CoinffeineWallet) extends PropertyBindings {
   val balance: ReadOnlyObjectProperty[Option[BitcoinBalance]] =
     createBounded(wallet.balance, "WalletBalance")
 
-  val transactions = new TransactionPropertiesBuffer(wallet)
+  val transactions = new WalletActivityProperties(wallet)
 }

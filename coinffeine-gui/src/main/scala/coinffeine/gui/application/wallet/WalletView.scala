@@ -11,9 +11,10 @@ import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
 import com.google.bitcoin.core.Sha256Hash
+import org.joda.time.DateTime
 
 import coinffeine.gui.application.ApplicationView
-import coinffeine.gui.application.properties.{WalletProperties, TransactionProperties}
+import coinffeine.gui.application.properties.{WalletProperties, WalletActivityEntryProperties}
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.Address
@@ -120,17 +121,21 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     content = Seq(leftDetailsPane, rightDetailsPane)
   }
 
-  private val transactionsTable = new TableView[TransactionProperties](properties.transactions) {
+  private val transactionsTable = new TableView[WalletActivityEntryProperties](properties.transactions) {
     placeholder = new Label("No transactions found")
     hgrow = Priority.ALWAYS
     columns ++= Seq(
-      new TableColumn[TransactionProperties, Date] {
+      new TableColumn[WalletActivityEntryProperties, DateTime] {
         text = "Time"
         cellValueFactory = { _.value.time }
       },
-      new TableColumn[TransactionProperties, Sha256Hash] {
+      new TableColumn[WalletActivityEntryProperties, Sha256Hash] {
         text = "Hash"
         cellValueFactory = { _.value.hash }
+      },
+      new TableColumn[WalletActivityEntryProperties, BitcoinAmount] {
+        text = "Amount"
+        cellValueFactory = { _.value.amount }
       }
     )
   }

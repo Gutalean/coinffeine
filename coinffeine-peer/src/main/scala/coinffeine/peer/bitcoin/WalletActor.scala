@@ -20,7 +20,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
     subscribeToWalletChanges()
     updateBalance()
     updateWalletPrimaryKeys()
-    updateTransactions()
+    updateActivity()
   }
 
   override val receive: Receive = {
@@ -49,7 +49,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
 
     case InternalWalletChanged =>
       updateBalance()
-      updateTransactions()
+      updateActivity()
       notifyListeners()
 
     case BlockBitcoins(amount) =>
@@ -71,9 +71,9 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
       listeners -= listener
   }
 
-  private def updateTransactions(): Unit = {
+  private def updateActivity(): Unit = {
     val transations = wallet.delegate.getTransactionsByTime
-    properties.transactions.set(transations.map(ImmutableTransaction(_)))
+    properties.activity.set(WalletActivity(wallet.delegate, transations: _*))
   }
 
   private def updateBalance(): Unit = {

@@ -6,7 +6,7 @@ import coinffeine.model.properties.{MutableProperty, Property}
 trait WalletProperties {
   val balance: Property[Option[BitcoinBalance]]
   val primaryAddress: Property[Option[Address]]
-  val transactions: Property[Seq[ImmutableTransaction]]
+  val activity: Property[WalletActivity]
 }
 
 class MutableWalletProperties extends WalletProperties {
@@ -17,6 +17,6 @@ class MutableWalletProperties extends WalletProperties {
   override val primaryAddress: MutableProperty[Option[Address]] =
     new MutableProperty(None)
 
-  override val transactions: MutableProperty[Seq[ImmutableTransaction]] =
-    new MutableProperty(Seq.empty)
+  override val activity: MutableProperty[WalletActivity] =
+    new MutableProperty(WalletActivity())
 }
