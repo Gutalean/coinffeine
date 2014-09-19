@@ -3,19 +3,17 @@ package coinffeine.gui.application
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.gui.application.properties.OrderProperties
+import coinffeine.gui.application.properties.{WalletProperties, PropertyBindings, OrderProperties}
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.gui.util.FxEventHandler
-import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.bitcoin.BlockchainStatus
+import coinffeine.model.bitcoin.{BlockchainStatus, ImmutableTransaction}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.{Balance, BitcoinBalance, Currency}
 import coinffeine.model.event._
 import coinffeine.model.market.OrderId
-import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
-class ApplicationProperties(app: CoinffeineApp) {
+class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
 
   type FiatBalance = Balance[Euro.type]
 
@@ -23,11 +21,10 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   val ordersProperty = ObservableBuffer[OrderProperties]()
 
-  val walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] =
-    bindTo(app.wallet.balance, "WalletBalance")
+  val wallet = new WalletProperties(app.wallet)
 
   val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] =
-    bindToMapEntry(app.paymentProcessor.balance, "balance", Currency.Euro) {
+    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Currency.Euro) {
       _.asInstanceOf[FiatBalance]
     }
 
@@ -80,19 +77,6 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private def withOrder(orderId: OrderId)(f: OrderProperties => Unit): Unit =
     ordersProperty.find(_.idProperty.value == orderId).foreach(f)
-
-  private def bindTo[A](prop: Property[A], name: String): ReadOnlyObjectProperty[A] = {
-    val result = new ObjectProperty[A](this, name, prop.get)
-    result.bind(prop.map(identity[A]))
-    result
-  }
-
-  private def bindToMapEntry[K, A, B](prop: PropertyMap[K, A], name: String, key: K)
-                                     (f: A => B): ReadOnlyObjectProperty[Option[B]] = {
-    val result = new ObjectProperty[Option[B]](this, name, prop.get(key).map(f))
-    result.bind(prop.mapEntry(key)(f))
-    result
-  }
 
   app.observe(eventHandler)
 }

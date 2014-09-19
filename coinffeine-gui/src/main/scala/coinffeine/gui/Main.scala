@@ -33,9 +33,12 @@ object Main extends JFXApp
   stage = new PrimaryStage {
     title = "Coinffeine"
     scene = new ApplicationScene(
-      views = Seq(new MainView, new WalletView(app), new OperationsView(app, properties)),
+      views = Seq(
+        new MainView,
+        new WalletView(app, properties.wallet),
+        new OperationsView(app, properties)),
       toolbarWidgets = Seq(
-        new WalletBalanceWidget(Bitcoin, properties.walletBalanceProperty),
+        new WalletBalanceWidget(Bitcoin, properties.wallet.balance),
         new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
       ),
       statusBarWidgets = Seq(

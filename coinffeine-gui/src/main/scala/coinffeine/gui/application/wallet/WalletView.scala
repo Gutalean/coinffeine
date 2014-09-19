@@ -1,20 +1,27 @@
 package coinffeine.gui.application.wallet
 
+import java.util.Date
 import scalafx.Includes._
 import scalafx.geometry.{HPos, Insets, Pos}
 import scalafx.scene.Node
-import scalafx.scene.control.{Button, Label}
+import scalafx.scene.control.{TableColumn, TableView, Button, Label}
+import scalafx.scene.control.TableColumn._
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
+import com.google.bitcoin.core.Sha256Hash
+import org.joda.time.DateTime
+
 import coinffeine.gui.application.ApplicationView
+import coinffeine.gui.application.properties.{WalletProperties, WalletActivityEntryProperties}
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.Address
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.peer.api.CoinffeineApp
 
-class WalletView(app: CoinffeineApp) extends ApplicationView {
+class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
 
@@ -114,7 +121,30 @@ class WalletView(app: CoinffeineApp) extends ApplicationView {
     content = Seq(leftDetailsPane, rightDetailsPane)
   }
 
-  private val transactionsPane = new HBox(spacing = 5) {
+  private val transactionsTable = new TableView[WalletActivityEntryProperties](properties.transactions) {
+    placeholder = new Label("No transactions found")
+    hgrow = Priority.ALWAYS
+    columns ++= Seq(
+      new TableColumn[WalletActivityEntryProperties, DateTime] {
+        text = "Time"
+        cellValueFactory = { _.value.time }
+      },
+      new TableColumn[WalletActivityEntryProperties, Sha256Hash] {
+        text = "Hash"
+        cellValueFactory = { _.value.hash }
+      },
+      new TableColumn[WalletActivityEntryProperties, BitcoinAmount] {
+        text = "Amount"
+        cellValueFactory = { _.value.amount }
+      }
+    )
+  }
+
+  private val transactionsPane = new VBox(spacing = 10) {
+    padding = Insets(10)
+    content = Seq(
+      new Label("Wallet transactions") { styleClass = Seq("title") },
+      transactionsTable)
   }
 
   override val centerPane = new VBox(spacing = 10) {

@@ -16,6 +16,7 @@ private[impl] class DefaultCoinffeineWallet(
 
   override val balance = properties.balance
   override val primaryAddress = properties.primaryAddress
+  override val activity = properties.activity
 
   override def transfer(amount: BitcoinAmount, address: Address): Future[Hash] = {
     val request = CoinffeinePeerActor.WithdrawWalletFunds(amount, address)

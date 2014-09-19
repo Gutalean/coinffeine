@@ -8,6 +8,7 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.core.{NetworkParameters, TransactionConfidence, Transaction, AbstractWalletEventListener}
 import com.google.bitcoin.store.WalletProtobufSerializer
 import com.google.bitcoin.wallet.WalletTransaction
+import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.Implicits._
