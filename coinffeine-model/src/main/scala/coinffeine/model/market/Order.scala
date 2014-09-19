@@ -25,9 +25,9 @@ case class Order[C <: FiatCurrency](
     price: Price[C],
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
 
-  def amounts: Order.Amounts = {
-    val role = Role.fromOrderType(orderType)
+  val role = Role.fromOrderType(orderType)
 
+  def amounts: Order.Amounts = {
     def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
       exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin))
         .foldLeft(Bitcoin.Zero)(_ + _)
@@ -60,7 +60,7 @@ case class Order[C <: FiatCurrency](
     * @return The amount of bitcoins that have been transferred
     */
   def bitcoinsTransferred: BitcoinAmount =
-    totalSum(Bitcoin.Zero)(e => e.progress.bitcoinsTransferred)
+    totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
 
   /** Retrieve the total amount of fiat money transferred.
     *

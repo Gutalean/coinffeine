@@ -21,7 +21,8 @@ case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
   val currency: C = amounts.netFiatExchanged.currency
 
   val progress: Exchange.Progress[C] = state.progress
-  require(progress.bitcoinsTransferred <= amounts.netBitcoinExchanged,
+  require(progress.bitcoinsTransferred.buyer <= amounts.exchangedBitcoin.buyer &&
+    progress.bitcoinsTransferred.seller <= amounts.exchangedBitcoin.seller,
     "invalid running exchange instantiation: " +
       s"progress $progress is inconsistent with amounts $amounts")
 }
@@ -136,18 +137,20 @@ object Exchange {
 
   type Deposits = Both[ImmutableTransaction]
 
-  case class Progress[C <: FiatCurrency](bitcoinsTransferred: BitcoinAmount,
+  case class Progress[C <: FiatCurrency](bitcoinsTransferred: Both[BitcoinAmount],
                                          fiatTransferred: CurrencyAmount[C]) {
 
     def +(other: Progress[C]) = Progress(
-      bitcoinsTransferred = bitcoinsTransferred + other.bitcoinsTransferred,
+      bitcoinsTransferred =
+        bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r },
       fiatTransferred = fiatTransferred + other.fiatTransferred
     )
 
     override def toString = s"progressed $bitcoinsTransferred by $fiatTransferred"
   }
 
-  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Bitcoin.Zero, CurrencyAmount.zero(c))
+  def noProgress[C <: FiatCurrency](c: C) =
+    Exchange.Progress(Both.fill(Bitcoin.Zero), CurrencyAmount.zero(c))
 
   def notStarted[C <: FiatCurrency](id: ExchangeId,
                                     role: Role,
@@ -240,9 +243,9 @@ object Exchange {
     def noBroadcast: Exchange[C, Failed[C]] =
       exchange.copy(state = Failed(NoBroadcast, exchange.state, transaction = None))
 
-    def increaseProgress(btcAmount: BitcoinAmount,
+    def increaseProgress(btcAmounts: Both[BitcoinAmount],
                          fiatAmount: CurrencyAmount[C]): Exchange[C, Exchanging[C]] = {
-      val progress = exchange.state.progress + Exchange.Progress(btcAmount, fiatAmount)
+      val progress = exchange.state.progress + Exchange.Progress(btcAmounts, fiatAmount)
       exchange.copy(state = exchange.state.copy(progress = progress))
     }
   }
@@ -320,7 +323,7 @@ object Exchange {
                                            counterpart: Exchange.PeerInfo,
                                            deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends Completed[C] with StartedExchange[C] {
-    override val progress = Progress(amounts.netBitcoinExchanged, amounts.netFiatExchanged)
+    override val progress = Progress(amounts.exchangedBitcoin, amounts.netFiatExchanged)
     override val isSuccess = true
   }
 

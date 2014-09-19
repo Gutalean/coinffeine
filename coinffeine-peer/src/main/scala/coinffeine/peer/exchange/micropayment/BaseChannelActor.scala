@@ -4,7 +4,7 @@ import akka.actor.Actor
 
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.RunningExchange
+import coinffeine.model.exchange.{Both, RunningExchange}
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.util.MessageForwarding
 
@@ -16,8 +16,8 @@ private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
 
   protected def reportProgress(signatures: Int, payments: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
-      btcAmount =
-        if (signatures == 0) Bitcoin.Zero
+      btcAmounts =
+        if (signatures == 0) Both.fill(Bitcoin.Zero)
         else exchange.amounts.steps(signatures - 1).progress.bitcoinsTransferred,
       fiatAmount =
         if (payments == 0) CurrencyAmount.zero(exchange.currency)

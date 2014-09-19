@@ -62,7 +62,7 @@ private[amounts] class DefaultAmountsCalculator(
     val intermediateSteps: Seq[IntermediateStepAmounts[C]] = {
       val stepProgress = for {
         (bitcoin, fiat) <- cumulative(bitcoinBreakdown).zip(cumulative(fiatBreakdown.map(s => s._1 + s._2)))
-      } yield Exchange.Progress(bitcoin + txFee * HappyPathTransactions, fiat)
+      } yield Exchange.Progress(Both(buyer = bitcoin, seller = bitcoin + txFee * HappyPathTransactions), fiat)
       (for {
         ((fiat, fiatFee), split, progress) <- (fiatBreakdown, depositSplits, stepProgress).zipped
       } yield Exchange.IntermediateStepAmounts[C](split, fiat, fiatFee, progress)).toSeq
@@ -86,7 +86,7 @@ private[amounts] class DefaultAmountsCalculator(
         buyer = netBitcoinAmount + escrowAmounts.buyer + txFee,
         seller = escrowAmounts.seller
       ),
-      progress = Progress(grossBitcoinAmount, grossFiatAmount)
+      progress = Progress(Both(buyer = netBitcoinAmount, seller = grossBitcoinAmount), grossFiatAmount)
     )
 
     val refunds = deposits.map(_.input - maxBitcoinStepSize)

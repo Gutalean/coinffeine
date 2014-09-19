@@ -25,7 +25,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
     val exchange = createExchangeInProgress(0.5)
     val order = Order(OrderId.random(), Bid, 10.BTC, Price(10.EUR))
       .withExchange(exchange)
-      .withExchange(exchange.increaseProgress(1.BTC, 1.EUR))
+      .withExchange(exchange.increaseProgress(Both.fill(1.BTC), 1.EUR))
     order.progress shouldBe 0.6
   }
 
@@ -57,10 +57,16 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
 
   private def createSuccessfulExchange() = createExchangeInProgress(1.0).complete
 
-  private def createExchangeInProgress(completion: Double) = createRandomExchange()
-    .startHandshaking(participants.buyer, participants.seller)
-    .startExchanging(dummyDeposits)
-    .increaseProgress(btcAmount = 10.BTC * completion, fiatAmount = 10.EUR * completion)
+  private def createExchangeInProgress(completion: Double) = {
+    val amount = 10.BTC * completion
+    createRandomExchange()
+      .startHandshaking(participants.buyer, participants.seller)
+      .startExchanging(dummyDeposits)
+      .increaseProgress(
+        btcAmounts = Both(buyer = amount, seller = amount + 0.0003.BTC),
+        fiatAmount = 10.EUR * completion
+      )
+  }
 
   private def createRandomExchange(): NonStartedExchange[Euro.type] = {
     buyerExchange.copy(id = ExchangeId.random())

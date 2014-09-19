@@ -102,7 +102,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     val amounts = instance.exchangeAmountsFor(1.BTC, 90.EUR)
     val consecutiveProgress = pairsOf(amounts.intermediateSteps.map(_.progress))
     consecutiveProgress.foreach { case (prevProgress, nextProgress) =>
-      prevProgress.bitcoinsTransferred.value should be < nextProgress.bitcoinsTransferred.value
+      prevProgress.bitcoinsTransferred.buyer.value should be < nextProgress.bitcoinsTransferred.buyer.value
+      prevProgress.bitcoinsTransferred.seller.value should be < nextProgress.bitcoinsTransferred.seller.value
       prevProgress.fiatTransferred.value should be < nextProgress.fiatTransferred.value
     }
     amounts.intermediateSteps.last.progress shouldBe amounts.finalStep.progress
