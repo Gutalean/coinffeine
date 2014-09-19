@@ -67,7 +67,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
       log.debug("Order actor requested to retrieve status for {}", orderId)
       sender() ! order.view
 
-    case ReceiveMessage(orderMatch: OrderMatch, _) =>
+    case ReceiveMessage(message: OrderMatch[_], _) if message.currency == initialOrder.price.currency =>
+      val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.acceptOrderMatch(orderMatch) match {
         case MatchAccepted(newExchange) => startExchange(newExchange)
         case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
@@ -99,8 +100,8 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
-      case orderMatch: OrderMatch if orderMatch.orderId == orderId &&
-        orderMatch.fiatAmount.currency == order.view.price.currency =>
+      case orderMatch: OrderMatch[_] if orderMatch.orderId == orderId &&
+        orderMatch.currency == order.view.price.currency =>
     }
   }
 
@@ -121,7 +122,7 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
     })
   }
 
-  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch): Unit = {
+  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[C]): Unit = {
     log.info("Rejecting match for {} against counterpart {}: {}",
       orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)

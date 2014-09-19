@@ -34,8 +34,8 @@ class OrderActorTest extends AkkaSpec
 
   val idleTime = 500.millis
   val order = Order(Bid, 5.BTC, Price(500.EUR))
-  val orderMatch = OrderMatch(order.id, exchangeId, order.amount, order.price.of(order.amount),
-    lockTime = 400000L, exchange.counterpartId)
+  val orderMatch = OrderMatch(order.id, exchangeId, Both.fill(order.amount),
+    Both.fill(order.price.of(order.amount)), lockTime = 400000L, exchange.counterpartId)
 
   "An order actor" should "keep order info" in new Fixture {
     actor ! OrderActor.RetrieveStatus

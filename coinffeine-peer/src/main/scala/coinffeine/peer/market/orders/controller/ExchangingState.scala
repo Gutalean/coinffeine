@@ -27,7 +27,7 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     )
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch) =
+  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) =
     if (exchangeInProgress == orderMatch.exchangeId)
       MatchAlreadyAccepted(ctx.order.exchanges(exchangeInProgress))
     else MatchRejected("Exchange already in progress")

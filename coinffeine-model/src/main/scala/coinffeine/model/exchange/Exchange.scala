@@ -123,6 +123,12 @@ object Exchange {
     val fiatRequired = Both(buyer = grossFiatExchanged, seller = CurrencyAmount.zero(currency))
 
     val breakdown = Exchange.StepBreakdown(intermediateSteps.length)
+
+    def exchangedBitcoin: Both[BitcoinAmount] =
+      Both(buyer = netBitcoinExchanged, seller = grossBitcoinExchanged)
+
+    def exchangedFiat: Both[CurrencyAmount[C]] =
+      Both(buyer = grossFiatExchanged, seller = netFiatExchanged)
   }
 
   /** Funds reserved for the order this exchange belongs to */

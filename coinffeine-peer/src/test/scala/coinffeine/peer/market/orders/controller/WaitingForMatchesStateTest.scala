@@ -9,9 +9,10 @@ import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Exchange, ExchangeId, SampleExchange}
+import coinffeine.model.exchange._
 import coinffeine.model.market.{Bid, Order, Price}
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol.DummyDeposits
@@ -58,8 +59,15 @@ class WaitingForMatchesStateTest extends UnitTest
     val funds = new FakeOrderFunds
     given(context.funds).willReturn(funds)
 
-    def orderMatch(amount: BitcoinAmount, price: Euro.Amount) = OrderMatch(
-      order.id, ExchangeId.random(), amount, price * amount.value, 20, PeerId("counterpart"))
+    def orderMatch(amount: BitcoinAmount, price: Euro.Amount) = {
+      val fiatSpent = price * amount.value
+      OrderMatch(
+        order.id, ExchangeId.random(),
+        Both(buyer = amount, seller = amount + 0.0003.BTC),
+        Both(buyer = fiatSpent, seller = OkPayPaymentProcessor.amountMinusFee(fiatSpent)),
+        20, PeerId("counterpart")
+      )
+    }
 
     def givenAvailableFunds(): Unit = {
       funds.blockFunds(Exchange.BlockedFunds(Some(BlockedFundsId(1)), BlockedCoinsId(2)))

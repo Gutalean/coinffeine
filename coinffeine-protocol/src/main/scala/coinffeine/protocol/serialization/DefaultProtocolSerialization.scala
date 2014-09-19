@@ -39,8 +39,8 @@ private[serialization] class DefaultProtocolSerialization(
         builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
       case m: CommitmentNotificationAck =>
         builder.setCommitmentNotificationAck(ProtoMapping.toProtobuf(m))
-      case m: OrderMatch =>
-        builder.setOrderMatch(ProtoMapping.toProtobuf(m))
+      case m @ OrderMatch(_, _, _, _, _, _) =>
+        builder.setOrderMatch(orderMatchMapping.toProtobuf(m))
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
       case m @ Quote(_, _, _) =>

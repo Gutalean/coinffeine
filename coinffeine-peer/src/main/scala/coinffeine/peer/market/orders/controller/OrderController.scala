@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import org.slf4j.LoggerFactory
-
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -100,7 +98,7 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
     listeners :+= listener
   }
 
-  def acceptOrderMatch(orderMatch: OrderMatch): MatchResult[C] =
+  def acceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
     context.state.acceptOrderMatch(context, orderMatch)
   def cancel(reason: String): Unit = { context.state.cancel(context, reason) }
   def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
@@ -108,8 +106,6 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
 }
 
 private[orders] object OrderController {
-  private val Log = LoggerFactory.getLogger(classOf[OrderController[_]])
-
   trait Listener[C <: FiatCurrency] {
     def onProgress(oldProgress: Double, newProgress: Double): Unit
     def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit

@@ -12,6 +12,6 @@ private[controller] trait State[C <: FiatCurrency] {
   def becomeInMarket(ctx: Context): Unit = {}
   def becomeOffline(ctx: Context): Unit = {}
   def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {}
-  def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch): MatchResult[C]
+  def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): MatchResult[C]
   def cancel(ctx: Context, reason: String): Unit
 }

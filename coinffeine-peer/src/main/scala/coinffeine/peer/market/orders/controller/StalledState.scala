@@ -14,7 +14,7 @@ private[controller] case class StalledState[C <: FiatCurrency]() extends State[C
     ctx.transitionTo(new WaitingForMatchesState)
   }
 
-  override def acceptOrderMatch(ctx: Context, ignored: OrderMatch) =
+  override def acceptOrderMatch(ctx: Context, ignored: OrderMatch[C]) =
     MatchRejected(stallReason(ctx))
 
   override def cancel(ctx: Context, reason: String): Unit = {

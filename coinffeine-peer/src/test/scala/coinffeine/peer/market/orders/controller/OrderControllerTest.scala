@@ -11,6 +11,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
@@ -21,7 +22,13 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
   val initialOrder = Order(Bid, 10.BTC, Price(1.EUR))
   val blockedFunds = Exchange.BlockedFunds(Some(BlockedFundsId(1)), BlockedCoinsId(1))
   val orderMatch = OrderMatch(
-    initialOrder.id, ExchangeId.random(), 10.BTC, 10.EUR, 80L, PeerId("counterpart"))
+    orderId = initialOrder.id,
+    exchangeId = ExchangeId.random(),
+    bitcoinAmount = Both(buyer = 10.BTC, seller = 10.0003.BTC),
+    fiatAmount = Both(buyer = 10.EUR, seller = OkPayPaymentProcessor.amountMinusFee(10.EUR)),
+    lockTime = 80L,
+    counterpart = PeerId("counterpart")
+  )
 
   "A mutable order" should "start new exchanges" in new Fixture {
     funds.blockFunds(blockedFunds)
@@ -112,7 +119,7 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
     funds.blockFunds(blockedFunds)
     funds.makeAvailable()
     order.acceptOrderMatch(orderMatch)
-    val otherOrderMatch = orderMatch.copy(exchangeId = ExchangeId("other"))
+    val otherOrderMatch = orderMatch.copy[Euro.type](exchangeId = ExchangeId("other"))
     order.acceptOrderMatch(otherOrderMatch) shouldBe
       MatchRejected("Exchange already in progress")
   }
@@ -132,8 +139,8 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
   it should "support partial matching" in new Fixture {
     val firstHalfMatch, secondHalfMatch = orderMatch.copy(
       exchangeId = ExchangeId.random(),
-      bitcoinAmount = orderMatch.bitcoinAmount / 2,
-      fiatAmount = orderMatch.fiatAmount / 2
+      bitcoinAmount = Both(buyer = 5.BTC, seller = 5.0003.BTC),
+      fiatAmount = Both(buyer = 5.EUR, seller = OkPayPaymentProcessor.amountMinusFee(5.EUR))
     )
     funds.blockFunds(blockedFunds)
     funds.makeAvailable()

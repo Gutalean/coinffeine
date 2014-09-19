@@ -196,25 +196,38 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       .build()
   }
 
-  implicit val orderMatchMapping = new ProtoMapping[OrderMatch, msg.OrderMatch] {
+  implicit val orderMatchMapping = new ProtoMapping[OrderMatch[_ <: FiatCurrency], msg.OrderMatch] {
 
-    override def fromProtobuf(orderMatch: msg.OrderMatch): OrderMatch = OrderMatch(
-      orderId = OrderId(orderMatch.getOrderId),
-      exchangeId = ExchangeId(orderMatch.getExchangeId),
-      bitcoinAmount = Bitcoin(ProtoMapping.fromProtobuf(orderMatch.getBitcoinAmount)),
-      fiatAmount = ProtoMapping.fromProtobuf(orderMatch.getFiatAmount),
-      lockTime = orderMatch.getLockTime,
-      counterpart = PeerId(orderMatch.getCounterpart)
-    )
+    override def fromProtobuf(orderMatch: msg.OrderMatch) = {
+      val currency = FiatCurrency(orderMatch.getCurrency)
+      OrderMatch(
+        orderId = OrderId(orderMatch.getOrderId),
+        exchangeId = ExchangeId(orderMatch.getExchangeId),
+        bitcoinAmount = Both(
+          buyer = Bitcoin(ProtoMapping.fromProtobuf(orderMatch.getBuyerBitcoinAmount)),
+          seller = Bitcoin(ProtoMapping.fromProtobuf(orderMatch.getSellerBitcoinAmount))
+        ),
+        fiatAmount = Both(
+          buyer = CurrencyAmount(ProtoMapping.fromProtobuf(orderMatch.getBuyerFiatAmount), currency),
+          seller = CurrencyAmount(ProtoMapping.fromProtobuf(orderMatch.getSellerFiatAmount), currency)
+        ),
+        lockTime = orderMatch.getLockTime,
+        counterpart = PeerId(orderMatch.getCounterpart)
+      )
+    }
 
-    override def toProtobuf(orderMatch: OrderMatch): msg.OrderMatch = msg.OrderMatch.newBuilder
-      .setOrderId(orderMatch.orderId.value)
-      .setExchangeId(orderMatch.exchangeId.value)
-      .setBitcoinAmount(ProtoMapping.toProtobuf(orderMatch.bitcoinAmount.value))
-      .setFiatAmount(fiatAmountMapping.toProtobuf(orderMatch.fiatAmount))
-      .setLockTime(orderMatch.lockTime)
-      .setCounterpart(orderMatch.counterpart.value)
-      .build
+    override def toProtobuf(orderMatch: OrderMatch[_ <: FiatCurrency]): msg.OrderMatch =
+      msg.OrderMatch.newBuilder
+        .setOrderId(orderMatch.orderId.value)
+        .setExchangeId(orderMatch.exchangeId.value)
+        .setCurrency(orderMatch.currency.javaCurrency.getCurrencyCode)
+        .setBuyerBitcoinAmount(ProtoMapping.toProtobuf(orderMatch.bitcoinAmount.buyer.value))
+        .setSellerBitcoinAmount(ProtoMapping.toProtobuf(orderMatch.bitcoinAmount.seller.value))
+        .setBuyerFiatAmount(ProtoMapping.toProtobuf(orderMatch.fiatAmount.buyer.value))
+        .setSellerFiatAmount(ProtoMapping.toProtobuf(orderMatch.fiatAmount.seller.value))
+        .setLockTime(orderMatch.lockTime)
+        .setCounterpart(orderMatch.counterpart.value)
+        .build
   }
 
   implicit val quoteMapping = new ProtoMapping[Quote[_ <: FiatCurrency], msg.Quote] {

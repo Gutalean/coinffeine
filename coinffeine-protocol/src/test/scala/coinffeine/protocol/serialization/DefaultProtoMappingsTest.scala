@@ -144,20 +144,25 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val orderMatch = OrderMatch(
     orderId = sampleOrderId,
     exchangeId = sampleExchangeId,
-    bitcoinAmount = 0.1 BTC,
-    fiatAmount = 10000 EUR,
+    bitcoinAmount = Both(buyer = 0.1.BTC, seller = 0.1003.BTC),
+    fiatAmount = Both(buyer = 10050.EUR, seller = 10000.EUR),
     lockTime = 310000L,
     counterpart = PeerId("buyer")
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setOrderId(sampleOrderId.value)
     .setExchangeId(sampleExchangeId.value)
-    .setBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1)))
-    .setFiatAmount(ProtoMapping.toProtobuf[FiatAmount, msg.FiatAmount](10000 EUR))
+    .setCurrency("EUR")
+    .setBuyerBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1)))
+    .setSellerBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1003)))
+    .setBuyerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10050)))
+    .setSellerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10000)))
     .setLockTime(310000L)
     .setCounterpart("buyer")
     .build
-  "Order match" must behave like thereIsAMappingBetween(orderMatch, orderMatchMessage)
+  "Order match" must behave like
+    thereIsAMappingBetween[OrderMatch[_ <: FiatCurrency], msg.OrderMatch](
+      orderMatch, orderMatchMessage)
 
   val emptyQuoteMessage = msg.Quote.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
