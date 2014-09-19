@@ -21,6 +21,12 @@ trait PropertyMap[K, V] {
 
   def get(key: K): Option[V]
 
+  def content: Set[(K, V)]
+
+  def keys: Iterable[K] = content.map(_._1)
+
+  def values: Iterable[V] = content.map(_._2)
+
   /** Set a on-change handler which will be invoked when a property entry changes.
     *
     * @param handler    The handler to be invoked when some entry is changed

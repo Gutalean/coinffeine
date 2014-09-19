@@ -6,12 +6,13 @@ import scalafx.collections.ObservableBuffer
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.gui.util.FxEventHandler
+import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.currency.{BitcoinBalance, Balance}
-import coinffeine.model.currency.Currency.{Bitcoin, Euro}
+import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.{Balance, BitcoinBalance, Currency}
 import coinffeine.model.event._
 import coinffeine.model.market.OrderId
-import coinffeine.model.properties.Property
+import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) {
@@ -24,12 +25,14 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   val walletBalanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]] =
     bindTo(app.wallet.balance, "WalletBalance")
-  def fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = _fiatBalanceProperty
+
+  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] =
+    bindToMapEntry(app.paymentProcessor.balance, "balance", Currency.Euro) {
+      _.asInstanceOf[FiatBalance]
+    }
+
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus
-
-  private val _fiatBalanceProperty =
-    new ObjectProperty[Option[FiatBalance]](this, "fiatBalance", None)
 
   private val _connectionStatus = {
     val status = new ObjectProperty(this, "connectionStatus",
@@ -70,9 +73,6 @@ class ApplicationProperties(app: CoinffeineApp) {
 
     case OrderProgressedEvent(order, _, newProgress) =>
       withOrder(order) { o => o.updateProgress(newProgress) }
-
-    case FiatBalanceChangeEvent(newBalance) if newBalance.amount.currency == Euro =>
-      _fiatBalanceProperty.set(Some(newBalance.asInstanceOf[Balance[Euro.type]]))
   }
 
   private def orderExist(orderId: OrderId): Boolean =
@@ -83,7 +83,14 @@ class ApplicationProperties(app: CoinffeineApp) {
 
   private def bindTo[A](prop: Property[A], name: String): ReadOnlyObjectProperty[A] = {
     val result = new ObjectProperty[A](this, name, prop.get)
-    prop.onNewValue { newValue => result.value = newValue }
+    result.bind(prop.map(identity[A]))
+    result
+  }
+
+  private def bindToMapEntry[K, A, B](prop: PropertyMap[K, A], name: String, key: K)
+                                     (f: A => B): ReadOnlyObjectProperty[Option[B]] = {
+    val result = new ObjectProperty[Option[B]](this, name, prop.get(key).map(f))
+    result.bind(prop.mapEntry(key)(f))
     result
   }
 

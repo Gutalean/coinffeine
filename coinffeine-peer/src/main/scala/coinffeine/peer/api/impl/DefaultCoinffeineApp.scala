@@ -17,19 +17,12 @@ import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.event.EventObserverActor
+import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 
-/** Implements the coinffeine application API as an actor system.
-  *
-  * @constructor
-  * @param name       Name used for the actor system (useful for making sense of actor refs)
-  * @param bitcoinProperties The bitcoin properties of the app
-  * @param accountId  Payment processor account to use
-  * @param peerProps  Props to start the main actor
-  */
+/** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
-                           bitcoinProperties: BitcoinProperties,
-                           networkProperties: CoinffeineNetworkProperties,
+                           properties: DefaultCoinffeineApp.Properties,
                            accountId: PaymentProcessor.AccountId,
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator) extends CoinffeineApp {
@@ -37,15 +30,16 @@ class DefaultCoinffeineApp(name: String,
   private val system = ActorSystem(name)
   private val peerRef = system.actorOf(peerProps, "peer")
 
-  override val network = new DefaultCoinffeineNetwork(networkProperties, peerRef)
+  override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
 
-  override val bitcoinNetwork = new DefaultBitcoinNetwork(bitcoinProperties.network)
+  override val bitcoinNetwork = new DefaultBitcoinNetwork(properties.bitcoin.network)
 
-  override lazy val wallet = new DefaultCoinffeineWallet(bitcoinProperties.wallet, peerRef)
+  override lazy val wallet = new DefaultCoinffeineWallet(properties.bitcoin.wallet, peerRef)
 
   override val marketStats = new DefaultMarketStats(peerRef)
 
-  override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(accountId, peerRef)
+  override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(
+    accountId, peerRef, properties.paymentProcessor)
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator)
 
@@ -75,14 +69,20 @@ class DefaultCoinffeineApp(name: String,
 object DefaultCoinffeineApp {
   private val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineApp])
 
+  case class Properties(bitcoin: BitcoinProperties,
+                        network: CoinffeineNetworkProperties,
+                        paymentProcessor: PaymentProcessorProperties)
+
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent
       with DefaultAmountsComponent with DefaultCoinffeinePropertiesComponent =>
 
     private lazy val accountId = configProvider.okPaySettings.userAccount
 
+    private val properties = Properties(
+      bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties)
+
     override lazy val app = new DefaultCoinffeineApp(
-      name = accountId, bitcoinProperties, coinffeineNetworkProperties,
-      accountId, peerProps, amountsCalculator)
+      name = accountId, properties, accountId, peerProps, amountsCalculator)
   }
 }

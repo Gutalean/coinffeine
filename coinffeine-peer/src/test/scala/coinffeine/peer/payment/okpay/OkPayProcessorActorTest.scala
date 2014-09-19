@@ -8,6 +8,7 @@ import akka.actor.{ActorRef, Props}
 import org.mockito.BDDMockito.given
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.scalatest.concurrent.{PatienceConfiguration, Eventually}
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
@@ -15,11 +16,11 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{Balance, FiatAmount, FiatCurrency}
-import coinffeine.model.event.{EventChannelProbe, FiatBalanceChangeEvent}
+import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
-import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
-class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
+class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar with Eventually {
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized()
@@ -33,20 +34,21 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     expectMsg(PaymentProcessorActor.BalanceRetrieved(amount, UsDollar.Zero))
   }
 
-  it must "produce an event when asked to get the current balance" in new WithOkPayProcessor {
+  it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     val nextAmount = amount * 2
     given(client.currentBalances()).willReturn(Future.successful(Seq(nextAmount)))
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
     expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
-    expectBalanceNotification(nextAmount)
+
+    expectBalanceUpdate(nextAmount)
   }
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     given(client.currentBalances()).willReturn(Future.failed(cause))
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
     processor = system.actorOf(Props(
-      new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+      new OkPayProcessorActor(clientParams, properties)))
     processor ! ServiceActor.Start({})
     expectMsg(ServiceActor.Started)
     processor ! PaymentProcessorActor.RetrieveBalance(UsDollar)
@@ -126,9 +128,9 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
       Future.successful(Seq(140.EUR)),
       Future.failed(new Exception("doesn't work"))
     )
-    expectBalanceNotification(120.EUR)
-    expectBalanceNotification(140.EUR)
-    expectBalanceNotification(140.EUR, hasExpired = true)
+    expectBalanceUpdate(120.EUR, timeout = 2.seconds)
+    expectBalanceUpdate(140.EUR, timeout = 2.seconds)
+    expectBalanceUpdate(140.EUR, hasExpired = true, timeout = 2.seconds)
   }
 
   private trait WithOkPayProcessor {
@@ -149,22 +151,24 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar {
     val client = mock[OkPayClient]
     val eventChannelProbe = EventChannelProbe()
     var processor: ActorRef = _
+    val properties = new MutablePaymentProcessorProperties
+    val clientParams = OkPayProcessorActor.ClientParams(senderAccount, client, pollingInterval)
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
 
       processor = system.actorOf(Props(
-        new OkPayProcessorActor(senderAccount, client, pollingInterval)))
+        new OkPayProcessorActor(clientParams, properties)))
       processor ! ServiceActor.Start({})
       expectMsg(ServiceActor.Started)
-
-      for (i <- 1 to balances.size) {
-        eventChannelProbe.expectMsgClass(classOf[FiatBalanceChangeEvent])
-      }
     }
 
-    def expectBalanceNotification(balance: FiatAmount, hasExpired: Boolean = false): Unit = {
-      eventChannelProbe.expectMsg(FiatBalanceChangeEvent(Balance(balance, hasExpired)))
+    def expectBalanceUpdate(balance: FiatAmount,
+                            hasExpired: Boolean = false,
+                            timeout: FiniteDuration = 200.millis): Unit = {
+      eventually(PatienceConfiguration.Timeout(timeout)) {
+        properties.balance(balance.currency) should be (Balance(balance, hasExpired))
+      }
     }
   }
 

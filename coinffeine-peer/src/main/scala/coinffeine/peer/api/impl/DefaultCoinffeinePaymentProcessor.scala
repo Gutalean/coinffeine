@@ -7,15 +7,20 @@ import akka.pattern._
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.{Balance, FiatCurrency, CurrencyAmount}
 import coinffeine.model.payment.PaymentProcessor.AccountId
+import coinffeine.model.properties.PropertyMap
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorActor._
+import coinffeine.peer.payment.PaymentProcessorProperties
 
-private[impl] class DefaultCoinffeinePaymentProcessor(override val accountId: AccountId,
-                                                      override val peer: ActorRef)
-  extends CoinffeinePaymentProcessor with PeerActorWrapper {
+private[impl] class DefaultCoinffeinePaymentProcessor(
+    override val accountId: AccountId,
+    override val peer: ActorRef,
+    properties: PaymentProcessorProperties) extends CoinffeinePaymentProcessor with PeerActorWrapper {
   import DefaultCoinffeinePaymentProcessor._
+
+  override val balance = properties.balance
 
   override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] =
     await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse].map {

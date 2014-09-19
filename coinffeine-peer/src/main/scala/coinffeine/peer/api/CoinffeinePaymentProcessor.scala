@@ -3,9 +3,10 @@ package coinffeine.peer.api
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.CurrencyAmount
 import coinffeine.model.payment.PaymentProcessor
+import coinffeine.peer.payment.PaymentProcessorProperties
 
 /** Represents how the app interact with a payment processor */
-trait CoinffeinePaymentProcessor {
+trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
 
   def accountId: PaymentProcessor.AccountId
 
