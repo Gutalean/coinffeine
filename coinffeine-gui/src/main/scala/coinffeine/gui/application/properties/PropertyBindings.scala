@@ -14,7 +14,7 @@ trait PropertyBindings {
   }
 
   def createBoundedToMapEntry[K, A, B](prop: PropertyMap[K, A], name: String, key: K)
-                                              (f: A => B): ReadOnlyObjectProperty[Option[B]] = {
+                                      (f: A => B): ReadOnlyObjectProperty[Option[B]] = {
     val result = new ObjectProperty[Option[B]](this, name, prop.get(key).map(f))
     result.bind(prop.mapEntry(key)(f))
     result

@@ -131,10 +131,6 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
       new TableColumn[TransactionProperties, Sha256Hash] {
         text = "Hash"
         cellValueFactory = { _.value.hash }
-      },
-      new TableColumn[TransactionProperties, BitcoinAmount] {
-        text = "Amount"
-        cellValueFactory = { _.value.amount }
       }
     )
   }
