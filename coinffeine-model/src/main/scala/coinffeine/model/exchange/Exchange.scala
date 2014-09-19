@@ -20,7 +20,7 @@ case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
 
   val currency: C = amounts.netFiatExchanged.currency
 
-  val progress: Exchange.Progress[C] = state.progress
+  val progress: Exchange.Progress = state.progress
   require(progress.bitcoinsTransferred.buyer <= amounts.exchangedBitcoin.buyer &&
     progress.bitcoinsTransferred.seller <= amounts.exchangedBitcoin.seller,
     "invalid running exchange instantiation: " +
@@ -46,7 +46,7 @@ object Exchange {
 
   trait StepAmounts[C <: FiatCurrency] {
     val depositSplit: Both[BitcoinAmount]
-    val progress: Progress[C]
+    val progress: Progress
   }
 
   /** Amounts involved on one exchange step.
@@ -59,7 +59,7 @@ object Exchange {
       override val depositSplit: Both[BitcoinAmount],
       fiatAmount: CurrencyAmount[C],
       fiatFee: CurrencyAmount[C],
-      override val progress: Progress[C]) extends StepAmounts[C] {
+      override val progress: Progress) extends StepAmounts[C] {
     require(!depositSplit.forall(_.isNegative),
       s"deposit split amounts must be non-negative ($depositSplit given)")
     require(fiatAmount.isPositive, s"fiat amount must be positive ($fiatAmount given)")
@@ -67,7 +67,7 @@ object Exchange {
 
   case class FinalStepAmounts[C <: FiatCurrency](
       override val depositSplit: Both[BitcoinAmount],
-      override val progress: Progress[C]) extends StepAmounts[C]
+      override val progress: Progress) extends StepAmounts[C]
 
   /** Characterizes the amounts to be deposited by a part. The difference between input and
     * output is the fee.
@@ -137,20 +137,12 @@ object Exchange {
 
   type Deposits = Both[ImmutableTransaction]
 
-  case class Progress[C <: FiatCurrency](bitcoinsTransferred: Both[BitcoinAmount],
-                                         fiatTransferred: CurrencyAmount[C]) {
-
-    def +(other: Progress[C]) = Progress(
-      bitcoinsTransferred =
-        bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r },
-      fiatTransferred = fiatTransferred + other.fiatTransferred
-    )
-
-    override def toString = s"progressed $bitcoinsTransferred by $fiatTransferred"
+  case class Progress(bitcoinsTransferred: Both[BitcoinAmount]) {
+    def +(other: Progress) =
+      Progress(bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r })
   }
 
-  def noProgress[C <: FiatCurrency](c: C) =
-    Exchange.Progress(Both.fill(Bitcoin.Zero), CurrencyAmount.zero(c))
+  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.Zero))
 
   def notStarted[C <: FiatCurrency](id: ExchangeId,
                                     role: Role,
@@ -161,7 +153,7 @@ object Exchange {
     id, role, counterpartId, amounts, parameters, blockedFunds, NotStarted()(amounts.currency))
 
   sealed trait State[C <: FiatCurrency] {
-    val progress: Exchange.Progress[C]
+    val progress: Exchange.Progress
     val isCompleted: Boolean
   }
 
@@ -211,7 +203,7 @@ object Exchange {
       user: Exchange.PeerInfo,
       counterpart: Exchange.PeerInfo,
       deposits: Exchange.Deposits,
-      progress: Exchange.Progress[C]) extends State[C] with StartedExchange[C] {
+      progress: Exchange.Progress) extends State[C] with StartedExchange[C] {
     override val isCompleted = false
   }
 
@@ -220,7 +212,7 @@ object Exchange {
                                  previousState: Handshaking[C],
                                  deposits: Exchange.Deposits): Exchanging[C] =
       Exchanging(previousState.user, previousState.counterpart, deposits,
-        Exchange.noProgress[C](currency))
+        Exchange.noProgress(currency))
   }
 
   implicit class ExchangingTransitions[C <: FiatCurrency](val exchange: Exchange[C, Exchanging[C]])
@@ -243,9 +235,8 @@ object Exchange {
     def noBroadcast: Exchange[C, Failed[C]] =
       exchange.copy(state = Failed(NoBroadcast, exchange.state, transaction = None))
 
-    def increaseProgress(btcAmounts: Both[BitcoinAmount],
-                         fiatAmount: CurrencyAmount[C]): Exchange[C, Exchanging[C]] = {
-      val progress = exchange.state.progress + Exchange.Progress(btcAmounts, fiatAmount)
+    def increaseProgress(increase: Both[BitcoinAmount]): Exchange[C, Exchanging[C]] = {
+      val progress = exchange.state.progress + Exchange.Progress(increase)
       exchange.copy(state = exchange.state.copy(progress = progress))
     }
   }
@@ -306,7 +297,7 @@ object Exchange {
   case class HandshakeFailed(cause: Throwable) extends FailureCause with CancellationCause
 
   case class Failed[C <: FiatCurrency](cause: FailureCause,
-                                       progress: Progress[C],
+                                       progress: Progress,
                                        user: Option[Exchange.PeerInfo],
                                        transaction: Option[ImmutableTransaction])
     extends Completed[C] {
@@ -323,7 +314,7 @@ object Exchange {
                                            counterpart: Exchange.PeerInfo,
                                            deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends Completed[C] with StartedExchange[C] {
-    override val progress = Progress(amounts.exchangedBitcoin, amounts.netFiatExchanged)
+    override val progress = Progress(amounts.exchangedBitcoin)
     override val isSuccess = true
   }
 

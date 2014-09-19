@@ -104,7 +104,6 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     consecutiveProgress.foreach { case (prevProgress, nextProgress) =>
       prevProgress.bitcoinsTransferred.buyer.value should be < nextProgress.bitcoinsTransferred.buyer.value
       prevProgress.bitcoinsTransferred.seller.value should be < nextProgress.bitcoinsTransferred.seller.value
-      prevProgress.fiatTransferred.value should be < nextProgress.fiatTransferred.value
     }
     amounts.intermediateSteps.last.progress shouldBe amounts.finalStep.progress
   }

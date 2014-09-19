@@ -62,13 +62,6 @@ case class Order[C <: FiatCurrency](
   def bitcoinsTransferred: BitcoinAmount =
     totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
 
-  /** Retrieve the total amount of fiat money transferred.
-    *
-    * @return The amount of fiat money that has been transferred.
-    */
-  def fiatTransferred: FiatAmount =
-    totalSum(CurrencyAmount.zero(price.currency))(e => e.progress.fiatTransferred)
-
   /** Retrieve the progress of this order.
     *
     * The progress is measured with a double value in range [0.0, 1.0].
