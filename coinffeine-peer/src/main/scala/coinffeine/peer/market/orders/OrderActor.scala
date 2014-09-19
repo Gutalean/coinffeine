@@ -42,13 +42,12 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   private case class SpawnExchange(exchange: NonStartedExchange[C], user: Try[Exchange.PeerInfo])
 
   private val orderId = initialOrder.id
-  private val requiredFunds: (CurrencyAmount[C], BitcoinAmount) = {
+  private val requiredFunds: RequiredFunds[C] = {
     val amounts = amountsCalculator.exchangeAmountsFor(initialOrder)
     val role = Role.fromOrderType(initialOrder.orderType)
-    (role.select(amounts.fiatRequired), role.select(amounts.bitcoinRequired))
+    RequiredFunds(role.select(amounts.bitcoinRequired), role.select(amounts.fiatRequired))
   }
-  private val fundsBlocking =
-    new DelegatedOrderFunds(delegates.orderFundsActor, requiredFunds._1, requiredFunds._2)
+  private val fundsBlocking = new DelegatedOrderFunds(delegates.orderFundsActor, requiredFunds)
   private val publisher = new DelegatedPublication(
     initialOrder.id, initialOrder.orderType, initialOrder.price, collaborators.submissionSupervisor)
   private val order = controllerFactory(publisher, fundsBlocking)
