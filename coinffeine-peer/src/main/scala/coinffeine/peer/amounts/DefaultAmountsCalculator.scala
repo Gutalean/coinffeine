@@ -16,7 +16,8 @@ private[amounts] class DefaultAmountsCalculator(
   override def exchangeAmountsFor[C <: FiatCurrency](grossBitcoinAmount: BitcoinAmount,
                                                      grossFiatAmount: CurrencyAmount[C]) = {
     type FiatAmount = CurrencyAmount[C]
-    require(grossBitcoinAmount.isPositive && grossFiatAmount.isPositive)
+    require(grossBitcoinAmount.isPositive && grossFiatAmount.isPositive,
+     s"Gross amounts must be positive ($grossBitcoinAmount, $grossFiatAmount given)")
 
     val txFee = bitcoinFeeCalculator.defaultTransactionFee
     val netBitcoinAmount = grossBitcoinAmount - txFee * 3
@@ -30,26 +31,22 @@ private[amounts] class DefaultAmountsCalculator(
       val (completeSteps, remainder) = grossFiatAmount /% bestFiatStepSizeWithFee
       val completedSteps =
         Seq.fill(completeSteps)(bestFiatStepSize -> paymentProcessor.calculateFee(bestFiatStepSize))
-      val lastStep = if (remainder.isPositive) {
-        val lastStepSize = paymentProcessor.amountMinusFee(remainder)
-        require(lastStepSize.isPositive)
-        Some(lastStepSize -> (remainder - lastStepSize))
-      } else None
+      val lastStep = for {
+        lastStepSize <- when(remainder.isPositive) { paymentProcessor.amountMinusFee(remainder) }
+        lastFee <- when(lastStepSize.isPositive) { remainder - lastStepSize }
+      } yield (lastStepSize, lastFee)
       completedSteps ++ lastStep
     }
     val netFiatAmount = fiatBreakdown.foldLeft(CurrencyAmount.zero(grossFiatAmount.currency))(_ + _._1)
+    require(netFiatAmount.isPositive, "No net fiat amount to exchange")
 
     /** Bitcoin amount exchanged per step. It mirrors the fiat amounts with a rounding error of at
       * most one satoshi. */
-    val bitcoinBreakdown: Seq[BitcoinAmount] = {
-      val exactBitcoinStep = bestFiatStepSize.value * netBitcoinAmount.value / netFiatAmount.value
-      val initialSteps = Seq.tabulate[BitcoinAmount](fiatBreakdown.size - 1) { index =>
-        roundToTheSatoshi((index + 1) * exactBitcoinStep) -
-          roundToTheSatoshi(index * exactBitcoinStep)
-      }
-      val lastStep = netBitcoinAmount - initialSteps.fold(Bitcoin.Zero)(_ + _)
-      initialSteps :+ lastStep
-    }
+    val bitcoinBreakdown: Seq[BitcoinAmount] = ProportionalAllocation
+      .allocate(
+        amount = netBitcoinAmount.toIndivisibleUnits,
+        weights = fiatBreakdown.map(_._1.toIndivisibleUnits).toVector)
+      .map(satoshis => CurrencyAmount.fromIndivisibleUnits(satoshis, Bitcoin))
 
     val maxBitcoinStepSize: BitcoinAmount = bitcoinBreakdown.reduce(_ max _)
 
@@ -100,6 +97,9 @@ private[amounts] class DefaultAmountsCalculator(
 
   private def cumulative[D <: Currency](amounts: Seq[CurrencyAmount[D]]): Seq[CurrencyAmount[D]] =
     amounts.tail.scan(amounts.head)(_ + _)
+
+  private def when[T](condition: Boolean)(block: => T): Option[T] =
+    if (condition) Some(block) else None
 }
 
 private object DefaultAmountsCalculator {
