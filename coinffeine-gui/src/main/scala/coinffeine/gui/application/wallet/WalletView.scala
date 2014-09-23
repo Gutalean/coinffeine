@@ -27,6 +27,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   private val balanceDetailsPane = new GridPane() {
     hgap = 10
+    vgap = 10
     columnConstraints = Seq(
       new ColumnConstraints() { halignment = HPos.RIGHT },
       new ColumnConstraints() { halignment = HPos.LEFT }
@@ -39,13 +40,21 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
       }
     }, 1, 0)
 
-    add(new Label("Blocked funds: "), 0, 1)
+    add(new Label("Funds in use: "), 0, 1)
     add(new Label() {
       text <== app.wallet.balance.map {
         case Some(balance) => balance.blocked.toString
         case None => "unknown"
       }
     }, 1, 1)
+
+    add(new Label("Minimum output: "), 0, 2)
+    add(new Label() {
+      text <== app.wallet.balance.map {
+        case Some(balance) => balance.minOutput.map(_.toString).getOrElse("None")
+        case None => "unknown"
+      }
+    }, 1, 2)
   }
 
   private val leftDetailsPane = new VBox(spacing = 5) {

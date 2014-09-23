@@ -79,6 +79,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
   private def updateBalance(): Unit = {
     properties.balance.set(Some(BitcoinBalance(
       amount = wallet.balance,
+      minOutput = wallet.minOutput,
       blocked = wallet.blockedFunds
     )))
   }

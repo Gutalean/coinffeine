@@ -17,7 +17,7 @@ class WalletBalanceWidgetTest
     extends GuiTest[WalletBalanceWidget[Bitcoin.type, BitcoinBalance]] with Eventually {
 
   val balanceProperty = new ObjectProperty[Option[BitcoinBalance]](
-    this, "balance", Some(BitcoinBalance(0.BTC)))
+    this, "balance", Some(BitcoinBalance.singleOutput(0.BTC)))
   override def createRootNode() = new WalletBalanceWidget(Bitcoin, balanceProperty)
 
   "A wallet balance widget" should "start with the provided value" in new Fixture {
@@ -27,7 +27,7 @@ class WalletBalanceWidgetTest
 
   it should "reflect changes on the balance property" in new Fixture {
     Platform.runLater {
-      balanceProperty.set(Some(BitcoinBalance(0.85.BTC)))
+      balanceProperty.set(Some(BitcoinBalance.singleOutput(0.85.BTC)))
     }
     eventually {
       find[Label]("#BTC-balance").getText should be (formatNumber(0.85))
@@ -37,7 +37,7 @@ class WalletBalanceWidgetTest
 
   it should "show up to 8 decimal positions" in new Fixture {
     Platform.runLater {
-      balanceProperty.set(Some(BitcoinBalance(0.12345678.BTC)))
+      balanceProperty.set(Some(BitcoinBalance.singleOutput(0.12345678.BTC)))
     }
     eventually {
       find[Label]("#BTC-balance").getText should be (formatNumber(0.12345678))
@@ -56,7 +56,7 @@ class WalletBalanceWidgetTest
 
   it should "represent expired balances" in new Fixture {
     Platform.runLater {
-      balanceProperty.set(Some(BitcoinBalance(10.BTC, hasExpired = true)))
+      balanceProperty.set(Some(BitcoinBalance.singleOutput(10.BTC).copy(hasExpired = true)))
     }
     eventually {
       find[Label]("#BTC-balance").getText should be (formatNumber(10))

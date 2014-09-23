@@ -66,6 +66,8 @@ class SmartWallet(val delegate: Wallet) {
     keyPair
   }
 
+  def minOutput: Option[BitcoinAmount] = synchronized { blockedOutputs.minOutput }
+
   def blockFunds(amount: BitcoinAmount): Option[BlockedCoinsId] = synchronized {
     try {
       blockedOutputs.block(amount)

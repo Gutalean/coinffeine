@@ -36,6 +36,12 @@ private[bitcoin] class BlockedOutputs {
   private var spendableOutputs = Set.empty[MutableTransactionOutput]
   private var blockedFunds = Map.empty[BlockedCoinsId, BlockedFunds]
 
+  def minOutput: Option[BitcoinAmount] = spendableAndNotBlocked
+    .toSeq
+    .map(output => Bitcoin.fromSatoshi(output.getValue))
+    .sortBy(_.value)
+    .headOption
+
   def blocked: BitcoinAmount = blockedOutputs.foldLeft(0.BTC)((acum, output) =>
     acum + Bitcoin.fromSatoshi(output.getValue)
   )
@@ -73,7 +79,6 @@ private[bitcoin] class BlockedOutputs {
   }
 
   private def collectFunds(amount: BitcoinAmount): Option[Outputs] = {
-    val spendableAndNotBlocked = spendableOutputs diff blockedOutputs
     collectFundsGreedily(amount, spendableAndNotBlocked.toSeq)
   }
 
@@ -92,6 +97,8 @@ private[bitcoin] class BlockedOutputs {
         )
     }
   }
+
+  private def spendableAndNotBlocked = spendableOutputs diff blockedOutputs
 
   private def blockedOutputs: Outputs = blockedFunds.values.flatMap(_.reservedOutputs).toSet
 
