@@ -9,8 +9,8 @@ import scalafx.scene.layout.HBox
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency.{Balance, Currency}
 
-class WalletBalanceWidget[C <: Currency](
-    currency: C, balanceProperty: ReadOnlyObjectProperty[Option[Balance[C]]]) extends HBox {
+class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
+    currency: C, balanceProperty: ReadOnlyObjectProperty[Option[B]]) extends HBox {
   val symbol = currency.toString
   id = "balance-widget"
   prefHeight = 26
@@ -42,7 +42,7 @@ class WalletBalanceWidget[C <: Currency](
     }
   }
 
-  private def formatBalance(balanceOpt: Option[Balance[C]]): String =
+  private def formatBalance(balanceOpt: Option[B]): String =
     balanceOpt.fold("-.--") { balance =>
       WalletBalanceWidget.BalanceFormat.format(balance.amount.value)
     }

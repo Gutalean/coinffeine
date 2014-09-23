@@ -6,16 +6,16 @@ import scalafx.collections.ObservableBuffer
 import coinffeine.gui.application.properties.{WalletProperties, PropertyBindings, OrderProperties}
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.gui.util.FxEventHandler
-import coinffeine.model.bitcoin.{BlockchainStatus, ImmutableTransaction}
+import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{Balance, BitcoinBalance, Currency}
+import coinffeine.model.currency.{FiatBalance, Currency}
 import coinffeine.model.event._
 import coinffeine.model.market.OrderId
 import coinffeine.peer.api.{CoinffeineApp, EventHandler}
 
 class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
 
-  type FiatBalance = Balance[Euro.type]
+  type EuroBalance = FiatBalance[Euro.type]
 
   import coinffeine.gui.util.FxExecutor.asContext
 
@@ -23,9 +23,9 @@ class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
 
   val wallet = new WalletProperties(app.wallet)
 
-  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] =
+  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[EuroBalance]] =
     createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Currency.Euro) {
-      _.asInstanceOf[FiatBalance]
+      _.asInstanceOf[EuroBalance]
     }
 
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =

@@ -9,7 +9,7 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
 import coinffeine.model.event.EventChannelProbe
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
@@ -24,7 +24,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "update the balance upon start" in new Fixture {
     eventually {
-      properties.balance.get should be (Some(Balance(initialFunds)))
+      properties.balance.get should be (Some(BitcoinBalance(initialFunds)))
     }
   }
 
@@ -81,7 +81,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "update balance property when changed" in new Fixture {
     sendMoneyToWallet(wallet.delegate, 1.BTC)
-    val expectedBalance = Balance(initialFunds + 1.BTC)
+    val expectedBalance = BitcoinBalance(initialFunds + 1.BTC)
     eventually {
       properties.balance.get should be (Some(expectedBalance))
     }

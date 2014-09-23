@@ -6,7 +6,7 @@ import scala.util.control.NonFatal
 import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
 import coinffeine.peer.event.EventPublisher
 
 private class WalletActor(properties: MutableWalletProperties, wallet: SmartWallet)
@@ -77,7 +77,7 @@ private class WalletActor(properties: MutableWalletProperties, wallet: SmartWall
   }
 
   private def updateBalance(): Unit = {
-    properties.balance.set(Some(Balance(wallet.balance)))
+    properties.balance.set(Some(BitcoinBalance(wallet.balance)))
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
