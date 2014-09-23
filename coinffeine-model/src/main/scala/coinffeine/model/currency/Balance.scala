@@ -15,16 +15,6 @@ case class BitcoinBalance(
   hasExpired: Boolean = false) extends Balance[Bitcoin.type] {
 
   val amount = estimated
-
-  def plus(amount: BitcoinAmount) = copy(
-    estimated = estimated + amount,
-    available = estimated + amount,
-    minOutput = plusOutput(amount))
-
-  private def plusOutput(output: BitcoinAmount): Some[BitcoinAmount] = minOutput match {
-    case Some(prev) => Some(prev.min(output))
-    case None => Some(output)
-  }
 }
 
 object BitcoinBalance {

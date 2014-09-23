@@ -81,7 +81,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "update balance property when changed" in new Fixture {
     sendMoneyToWallet(wallet.delegate, 1.BTC)
-    val expectedBalance = initialBalance.plus(1.BTC)
+    val expectedBalance = balancePlusOutputAmount(initialBalance, 1.BTC)
     eventually {
       properties.balance.get should be (Some(expectedBalance))
     }
@@ -112,5 +112,10 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
       instance ! WalletActor.BlockBitcoins(amount)
       expectMsgClass(classOf[WalletActor.BlockedBitcoins]).id
     }
+
+    def balancePlusOutputAmount(balance: BitcoinBalance, amount: BitcoinAmount) = balance.copy(
+      estimated = balance.estimated + amount,
+      available = balance.estimated + amount,
+      minOutput = Some(balance.minOutput.fold(amount) { _ min amount }))
   }
 }
