@@ -70,7 +70,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
     eventually {
-      wallet.balance should be(initialBalance.amount)
+      wallet.estimatedBalance should be(initialBalance.amount)
     }
   }
 

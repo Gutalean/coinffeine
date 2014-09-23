@@ -1,6 +1,5 @@
 package coinffeine.gui.application.wallet
 
-import java.util.Date
 import scalafx.Includes._
 import scalafx.geometry.{HPos, Insets, Pos}
 import scalafx.scene.Node
@@ -18,7 +17,7 @@ import coinffeine.gui.application.properties.{WalletProperties, WalletActivityEn
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.Address
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
 import coinffeine.peer.api.CoinffeineApp
 
 class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
@@ -32,29 +31,23 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
       new ColumnConstraints() { halignment = HPos.RIGHT },
       new ColumnConstraints() { halignment = HPos.LEFT }
     )
-    add(new Label("Total balance: "), 0, 0)
-    add(new Label() {
-      text <== app.wallet.balance.map {
-        case Some(balance) => balance.amount.toString
-        case None => "unknown"
-      }
-    }, 1, 0)
 
-    add(new Label("Funds in use: "), 0, 1)
-    add(new Label() {
-      text <== app.wallet.balance.map {
-        case Some(balance) => balance.blocked.toString
-        case None => "unknown"
-      }
-    }, 1, 1)
+    val lines: Seq[(String, BitcoinBalance => String)] = Seq(
+      "Active balance:" -> (_.estimated.toString),
+      "Available balance:" -> (_.available.toString),
+      "Funds in use:" -> (_.blocked.toString),
+      "Minimum output:" -> (_.minOutput.map(_.toString).getOrElse("None"))
+    )
 
-    add(new Label("Minimum output: "), 0, 2)
-    add(new Label() {
-      text <== app.wallet.balance.map {
-        case Some(balance) => balance.minOutput.map(_.toString).getOrElse("None")
-        case None => "unknown"
-      }
-    }, 1, 2)
+    lines.zipWithIndex.foreach { case ((title, valueExtractor), index) =>
+      add(new Label(title), 0, index)
+      add(new Label() {
+        text <== app.wallet.balance.map {
+          case Some(balance) => valueExtractor(balance)
+          case None => "unknown"
+        }
+      }, 1, index)
+    }
   }
 
   private val leftDetailsPane = new VBox(spacing = 5) {

@@ -40,7 +40,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     val funds = givenBlockedFunds(1.BTC)
     val tx = wallet.createMultisignTransaction(funds, 1.BTC, 0.1.BTC, Seq(keyPair, otherKeyPair))
     wallet.releaseTransaction(tx)
-    wallet.balance should be(initialFunds)
+    wallet.estimatedBalance should be(initialFunds)
   }
 
   trait Fixture {

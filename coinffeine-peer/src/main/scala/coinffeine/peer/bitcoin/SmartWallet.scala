@@ -5,6 +5,7 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.bitcoin.core.Transaction.SigHash
+import com.google.bitcoin.core.Wallet.BalanceType
 import com.google.bitcoin.core.{NetworkParameters, TransactionConfidence, Transaction, AbstractWalletEventListener}
 import com.google.bitcoin.store.WalletProtobufSerializer
 import com.google.bitcoin.wallet.WalletTransaction
@@ -49,7 +50,13 @@ class SmartWallet(val delegate: Wallet) {
     delegate.getKeys.map(_.toAddress(network))
   }
 
-  def balance: BitcoinAmount = synchronized { Currency.Bitcoin.fromSatoshi(delegate.getBalance) }
+  def estimatedBalance: BitcoinAmount = synchronized {
+    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
+  }
+
+  def availableBalance: BitcoinAmount = synchronized {
+    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
+  }
 
   def value(tx: MutableTransaction): BitcoinAmount =
     Currency.Bitcoin.fromSatoshi(tx.getValue(delegate))
