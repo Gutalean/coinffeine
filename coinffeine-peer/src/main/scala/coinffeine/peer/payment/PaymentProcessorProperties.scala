@@ -4,11 +4,11 @@ import coinffeine.model.currency._
 import coinffeine.model.properties.{MutablePropertyMap, PropertyMap}
 
 trait PaymentProcessorProperties {
-  val balance: PropertyMap[FiatCurrency, Balance[_ <: FiatCurrency]]
+  val balance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]]
 }
 
 class MutablePaymentProcessorProperties extends PaymentProcessorProperties {
-  override val balance = new MutablePropertyMap[FiatCurrency, Balance[_ <: FiatCurrency]]
+  override val balance = new MutablePropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]]
 }
 
 object MutablePaymentProcessorProperties {

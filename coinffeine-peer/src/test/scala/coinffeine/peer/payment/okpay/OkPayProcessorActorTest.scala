@@ -15,7 +15,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Balance, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatBalance, BitcoinBalance, FiatAmount, FiatCurrency}
 import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
@@ -167,7 +167,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
                             hasExpired: Boolean = false,
                             timeout: FiniteDuration = 200.millis): Unit = {
       eventually(PatienceConfiguration.Timeout(timeout)) {
-        properties.balance(balance.currency) should be (Balance(balance, hasExpired))
+        properties.balance(balance.currency) should be (FiatBalance(balance, hasExpired))
       }
     }
   }

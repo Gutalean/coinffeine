@@ -9,7 +9,7 @@ import akka.actor._
 import akka.pattern._
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
-import coinffeine.model.currency.{Balance, CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.event.EventPublisher
@@ -121,7 +121,7 @@ class OkPayProcessorActor(
 
   private def updateBalances(balances: Seq[FiatAmount]): Unit = {
     for (amount <- balances) {
-      updateBalance(Balance(amount, hasExpired = false))
+      updateBalance(FiatBalance(amount, hasExpired = false))
     }
     blockingFunds ! BalancesUpdate(balances)
   }
@@ -133,7 +133,7 @@ class OkPayProcessorActor(
     }
   }
 
-  private def updateBalance[C <: FiatCurrency](balance: Balance[C]): Unit = {
+  private def updateBalance[C <: FiatCurrency](balance: FiatBalance[C]): Unit = {
     if (properties.balance.get(balance.amount.currency) != Some(balance)) {
       properties.balance.set(balance.amount.currency, balance)
     }

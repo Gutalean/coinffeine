@@ -9,7 +9,7 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Balance, BitcoinAmount}
+import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
 import coinffeine.model.event.EventChannelProbe
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
@@ -24,7 +24,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "update the balance upon start" in new Fixture {
     eventually {
-      properties.balance.get should be (Some(Balance(initialFunds)))
+      properties.balance.get should be (Some(initialBalance))
     }
   }
 
@@ -70,7 +70,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
     eventually {
-      wallet.balance should be(initialFunds)
+      wallet.estimatedBalance should be(initialBalance.amount)
     }
   }
 
@@ -81,7 +81,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "update balance property when changed" in new Fixture {
     sendMoneyToWallet(wallet.delegate, 1.BTC)
-    val expectedBalance = Balance(initialFunds + 1.BTC)
+    val expectedBalance = balancePlusOutputAmount(initialBalance, 1.BTC)
     eventually {
       properties.balance.get should be (Some(expectedBalance))
     }
@@ -101,8 +101,8 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
-    val initialFunds = 10.BTC
-    val wallet = new SmartWallet(createWallet(keyPair, initialFunds))
+    val initialBalance = BitcoinBalance.singleOutput(10.BTC)
+    val wallet = new SmartWallet(createWallet(keyPair, initialBalance.amount))
     val eventChannelProbe = EventChannelProbe()
     val properties = new MutableWalletProperties
     val instance = system.actorOf(WalletActor.props(properties, wallet))
@@ -112,5 +112,10 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
       instance ! WalletActor.BlockBitcoins(amount)
       expectMsgClass(classOf[WalletActor.BlockedBitcoins]).id
     }
+
+    def balancePlusOutputAmount(balance: BitcoinBalance, amount: BitcoinAmount) = balance.copy(
+      estimated = balance.estimated + amount,
+      available = balance.estimated + amount,
+      minOutput = Some(balance.minOutput.fold(amount) { _ min amount }))
   }
 }

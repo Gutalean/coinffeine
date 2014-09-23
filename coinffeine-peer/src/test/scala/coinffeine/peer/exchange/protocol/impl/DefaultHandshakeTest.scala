@@ -44,7 +44,7 @@ class DefaultHandshakeTest extends ExchangeTest {
       sendToBlockChain(buyerHandshake.myDeposit.get)
       mineUntilLockTime(parameters.lockTime)
       sendToBlockChain(signedBuyerRefund)
-      buyerWallet.balance should be (1.BTC)
+      buyerWallet.estimatedBalance should be (1.BTC)
     }
 
   "A handshake" should "reject signing counterpart deposit with a different lock time" in
