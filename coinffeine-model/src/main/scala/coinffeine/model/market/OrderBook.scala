@@ -41,16 +41,16 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     * @param position  Position to add
     * @return          New order book
     */
-  def addPosition(position: Position[_ <: OrderType, C]): OrderBook[C] =
+  def addPosition(position: BidOrAskPosition[C]): OrderBook[C] =
     position.fold(bid = addBidPosition, ask = addAskPosition)
 
-  def addPositions(positions: Seq[Position[_ <: OrderType, C]]): OrderBook[C] =
+  def addPositions(positions: Seq[BidOrAskPosition[C]]): OrderBook[C] =
     positions.foldLeft(this)(_.addPosition(_))
 
-  def addBidPosition(position: Position[Bid.type, C]): OrderBook[C] =
+  def addBidPosition(position: BidPosition[C]): OrderBook[C] =
     copy(bids = bids.enqueuePosition(position))
 
-  def addAskPosition(position: Position[Ask.type, C]): OrderBook[C] =
+  def addAskPosition(position: AskPosition[C]): OrderBook[C] =
     copy(asks = asks.enqueuePosition(position))
 
   def cancelPosition(positionId: PositionId): OrderBook[C] =
@@ -81,8 +81,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     bids.anonymizedEntries ++ asks.anonymizedEntries
 
   @tailrec
-  private def crosses(bids: Stream[Position[Bid.type, C]],
-                      asks: Stream[Position[Ask.type, C]],
+  private def crosses(bids: Stream[BidPosition[C]],
+                      asks: Stream[AskPosition[C]],
                       accum: Seq[Cross[C]]): Seq[Cross[C]] = {
     (bids.headOption, asks.headOption) match {
       case (None, _) | (_, None) => accum
@@ -94,8 +94,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     }
   }
 
-  private def crossAmount(bid: Position[Bid.type, C],
-                          ask: Position[Ask.type, C],
+  private def crossAmount(bid: BidPosition[C],
+                          ask: AskPosition[C],
                           amount: BitcoinAmount): Cross[C] =
     Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
 
@@ -125,8 +125,8 @@ object OrderBook {
                                       price: Price[C],
                                       positions: Both[PositionId])
 
-  def apply[C <: FiatCurrency](position: Position[_ <: OrderType, C],
-                               otherPositions: Position[_ <: OrderType, C]*): OrderBook[C] =
+  def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
+                               otherPositions: BidOrAskPosition[C]*): OrderBook[C] =
     empty(position.price.currency).addPositions(position +: otherPositions)
 
   def empty[C <: FiatCurrency](currency: C): OrderBook[C] = OrderBook(
