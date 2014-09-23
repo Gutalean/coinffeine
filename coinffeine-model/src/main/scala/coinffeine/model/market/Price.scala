@@ -18,6 +18,8 @@ case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
 
   def averageWith(otherPrice: Price[C]): Price[C] = copy(value = (value + otherPrice.value) / 2)
 
+  def scaleBy(factor: BigDecimal): Price[C] = copy(value = value * factor)
+
   /** Price of a given bitcoin amount. The result is rounded to the precision of the currency. */
   def of(amount: BitcoinAmount): CurrencyAmount[C] = {
     require(amount.isPositive, s"Cannot price a non-positive amount ($amount given)")
