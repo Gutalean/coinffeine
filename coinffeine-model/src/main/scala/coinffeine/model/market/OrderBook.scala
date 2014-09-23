@@ -18,13 +18,10 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     bids.userPositions(userId) ++ asks.userPositions(userId)
 
   /** Tells if a transaction is possible with current orders. */
-  def isCrossed: Boolean = spread match {
-    case (Some(bidPrice), Some(askPrice)) if bidPrice.outbidsOrMatches(askPrice) => true
-    case _ => false
-  }
+  def isCrossed: Boolean = spread.isCrossed
 
   /** Get current spread (interval between the highest bet price to the lowest bid price */
-  def spread: Spread[C] = highestBid -> lowestAsk
+  def spread: Spread[C] = Spread(highestBid, lowestAsk)
 
   private def highestBid: Option[Price[C]] = bids.bestPrice
 
@@ -127,8 +124,6 @@ object OrderBook {
   case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
                                       price: Price[C],
                                       positions: Both[PositionId])
-
-  type Spread[C <: FiatCurrency] = (Option[Price[C]], Option[Price[C]])
 
   def apply[C <: FiatCurrency](position: Position[_ <: OrderType, C],
                                otherPositions: Position[_ <: OrderType, C]*): OrderBook[C] =
