@@ -2,6 +2,8 @@ package coinffeine.model.market
 
 import scala.annotation.tailrec
 
+import org.slf4j.LoggerFactory
+
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{ExchangeId, Both}
 import coinffeine.model.market.OrderBook.Cross
@@ -71,6 +73,43 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     asks = asks.decreaseAmount(positionId, amount)
   )
 
+  def updateUserPositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
+    val previousPositionIds = userPositions(userId).map(_.id).toSet
+    val newPositionIds = entries.map(entryId => PositionId(userId, entryId.id))
+    val positionsToRemove = previousPositionIds -- newPositionIds
+    addOrUpdatePositions(entries, userId).cancelPositions(positionsToRemove.toSeq)
+  }
+
+  private def addOrUpdatePositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
+    entries.foldLeft(this) { (book, entry) =>
+      val positionId = PositionId(userId, entry.id)
+
+      def bookWithPosition = book.addPosition(
+        Position(entry.orderType, entry.amount, entry.price, positionId))
+
+      def updatePosition(currentPosition: BidOrAskPosition[C]) = {
+        logInvalidPositionChanges(entry, currentPosition)
+        if (currentPosition.amount <= entry.amount) book
+        else book.decreaseAmount(currentPosition.id, currentPosition.amount - entry.amount)
+      }
+
+      book.get(positionId).fold(bookWithPosition)(updatePosition)
+    }
+  }
+
+  private def logInvalidPositionChanges(newEntry: OrderBookEntry[C],
+                                        currentPosition: BidOrAskPosition[C]): Unit = {
+    val invalidChanges = Seq(
+      if (newEntry.orderType != currentPosition.orderType) Some("different order type") else None,
+      if (newEntry.price != currentPosition.price) Some("different price") else None,
+      if (newEntry.amount > currentPosition.amount) Some("amount increased") else None
+    ).flatten
+    if (invalidChanges.nonEmpty) {
+      Log.warn("{} is an invalid update for {}: {}", newEntry, currentPosition,
+        invalidChanges.mkString(", "))
+    }
+  }
+
   def crosses: Seq[Cross[C]] = crosses(
     bids.positionsNotInHandshake.toStream,
     asks.positionsNotInHandshake.toStream,
@@ -120,6 +159,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 }
 
 object OrderBook {
+  private val Log = LoggerFactory.getLogger(classOf[OrderBook[_]])
 
   case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
                                       price: Price[C],

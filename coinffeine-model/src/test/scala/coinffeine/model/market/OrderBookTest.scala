@@ -1,5 +1,7 @@
 package coinffeine.model.market
 
+import org.scalatest.OptionValues
+
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.{FiatCurrency, BitcoinAmount}
 import coinffeine.model.currency.Currency.Euro
@@ -7,7 +9,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{ExchangeId, Both}
 import coinffeine.model.network.PeerId
 
-class OrderBookTest extends UnitTest {
+class OrderBookTest extends UnitTest with OptionValues {
   def bid(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
     Position.bid(btc.BTC, Price(eur, Euro), PositionId(PeerId(by), OrderId(orderId)))
 
@@ -28,7 +30,6 @@ class OrderBookTest extends UnitTest {
     }
     intermediateBook
   }
-
 
   val buyer = PeerId("buyer")
   val seller = PeerId("seller")
@@ -87,6 +88,67 @@ class OrderBookTest extends UnitTest {
       ask(btc = 2, eur = 25, by = "seller")
     ))
     book.cancelPosition(PositionId(PeerId("unknown"), OrderId("1"))) should be (book)
+  }
+
+  it should "add new positions when updating user positions as a whole" in {
+    val userId = PeerId("user")
+    val emptyBook = OrderBook.empty(Euro)
+    val book = emptyBook.updateUserPositions(Seq(
+      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
+      OrderBookEntry(OrderId("2"), Bid, 2.BTC, Price(200.EUR))
+    ), userId)
+    book.userPositions(userId).toSet shouldBe Set(
+      Position(Bid, 1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
+      Position(Bid, 2.BTC, Price(200.EUR), PositionId(userId, OrderId("2")))
+    )
+  }
+
+  it should "remove missing positions when updating user positions as a whole" in {
+    val userId = PeerId("user")
+    val entries = Seq(
+      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
+      OrderBookEntry(OrderId("2"), Bid, 1.BTC, Price(200.EUR)),
+      OrderBookEntry(OrderId("3"), Bid, 0.5.BTC, Price(230.EUR))
+    )
+    val positions = Seq(
+      Position(Bid, 1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
+      Position(Bid, 1.BTC, Price(200.EUR), PositionId(userId, OrderId("2"))),
+      Position(Bid, 0.5.BTC, Price(230.EUR), PositionId(userId, OrderId("3")))
+    )
+    val initialBook = OrderBook.empty(Euro).updateUserPositions(entries, userId)
+    initialBook.userPositions(userId).toSet shouldBe positions.toSet
+    val finalBook = initialBook.updateUserPositions(entries.tail, userId)
+    finalBook.userPositions(userId).toSet shouldBe positions.tail.toSet
+  }
+
+  it should "update modified position amounts when updating user positions as a whole" in {
+    val userId = PeerId("user")
+    val originalEntries = Seq(
+      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
+      OrderBookEntry(OrderId("2"), Bid, 1.BTC, Price(200.EUR))
+    )
+    val modifiedEntries = Seq(
+      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
+      OrderBookEntry(OrderId("2"), Bid, 0.5.BTC, Price(200.EUR))
+    )
+    OrderBook.empty(Euro)
+      .updateUserPositions(originalEntries, userId)
+      .updateUserPositions(modifiedEntries, userId)
+      .get(PositionId(userId, OrderId("2"))).value.amount shouldBe 0.5.BTC
+  }
+
+  it should "ignore position changes other than decreasing the amount when updating user positions" in {
+    val entry = OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR))
+    shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount * 2))
+    shouldIgnorePositionChange(entry, entry.copy(orderType = Ask))
+    shouldIgnorePositionChange(entry, entry.copy(price = entry.price.scaleBy(2)))
+  }
+
+  private def shouldIgnorePositionChange(originalEntry: OrderBookEntry[Euro.type],
+                                         modifiedEntry: OrderBookEntry[Euro.type]): Unit = {
+    val userId = PeerId("user")
+    val originalBook = OrderBook.empty(Euro).updateUserPositions(Seq(originalEntry), userId)
+    originalBook.updateUserPositions(Seq(modifiedEntry), userId) shouldBe originalBook
   }
 
   it should "decrease the amount of a position" in {
