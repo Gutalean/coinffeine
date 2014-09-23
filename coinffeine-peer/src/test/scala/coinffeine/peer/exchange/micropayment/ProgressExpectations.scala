@@ -14,14 +14,6 @@ trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
 
   def expectProgress(signatures: Int, payments: Int): Unit = {
     val progress = listener.expectMsgType[ExchangeUpdate].exchange.progress
-    progress.fiatTransferred.currency should be (exchange.currency)
-    val fiat = progress.fiatTransferred.asInstanceOf[CurrencyAmount[C]]
-
-    withClue("Wrong number of payments") {
-      val actualPayments = stepOf(fiat,
-        exchange.amounts.intermediateSteps.map(_.progress.fiatTransferred))
-      actualPayments shouldBe payments
-    }
     withClue("Wrong number of signatures") {
       val actualSignatures = stepOf(progress.bitcoinsTransferred,
         exchange.amounts.intermediateSteps.map(_.progress.bitcoinsTransferred))

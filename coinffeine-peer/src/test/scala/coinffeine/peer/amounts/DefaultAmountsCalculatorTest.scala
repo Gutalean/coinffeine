@@ -1,5 +1,7 @@
 package coinffeine.peer.amounts
 
+import org.scalatest.prop.PropertyChecks
+
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
@@ -8,9 +10,9 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.payment.PaymentProcessor
 
-class DefaultAmountsCalculatorTest extends UnitTest {
+class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
-  "The funds calculator" must "reject non positive bitcoin amounts" in new Fixture {
+  "The exchange amounts computation" must "reject non positive bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
       instance.exchangeAmountsFor(0.BTC, 1.EUR)
     }
@@ -60,7 +62,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
   }
 
-  it must "reject fiat amounts that cannot be payed" in new Fixture {
+  it must "reject non-positive net fiat amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
       instance.exchangeAmountsFor(1.BTC, paymentProcessor.amountPlusFee(0.01.EUR) - 0.01.EUR)
     }
@@ -94,7 +96,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
 
   it must "have steps summing up to the total fiat amount" in new Fixture {
     forAnyAmounts { (_, fiatAmount, amounts) =>
-      amounts.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).reduce(_ + _) shouldBe fiatAmount
+      val spentAmount = amounts.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).reduce(_ + _)
+      (fiatAmount - spentAmount).value should be <= paymentProcessor.calculateFee(0.01.EUR).value
     }
   }
 
@@ -102,8 +105,8 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     val amounts = instance.exchangeAmountsFor(1.BTC, 90.EUR)
     val consecutiveProgress = pairsOf(amounts.intermediateSteps.map(_.progress))
     consecutiveProgress.foreach { case (prevProgress, nextProgress) =>
-      prevProgress.bitcoinsTransferred.value should be < nextProgress.bitcoinsTransferred.value
-      prevProgress.fiatTransferred.value should be < nextProgress.fiatTransferred.value
+      prevProgress.bitcoinsTransferred.buyer.value should be < nextProgress.bitcoinsTransferred.buyer.value
+      prevProgress.bitcoinsTransferred.seller.value should be < nextProgress.bitcoinsTransferred.seller.value
     }
     amounts.intermediateSteps.last.progress shouldBe amounts.finalStep.progress
   }
@@ -134,7 +137,7 @@ class DefaultAmountsCalculatorTest extends UnitTest {
 
   it must "have all but last steps of the same fiat size" in new Fixture {
     forAnyAmounts { amounts =>
-      amounts.intermediateSteps.init.map(_.fiatAmount).toSet should have size 1
+      amounts.intermediateSteps.init.map(_.fiatAmount).toSet should (have size 0 or have size 1)
     }
   }
 
@@ -143,19 +146,13 @@ class DefaultAmountsCalculatorTest extends UnitTest {
       val exchangedAmounts =
         txFee +: amounts.intermediateSteps.init.map(_.depositSplit.buyer)
       val stepIncrements = pairsOf(exchangedAmounts).map { case (prev, next) => (next - prev).value }
-      stepIncrements.max should equal (stepIncrements.min +- Bitcoin.fromSatoshi(1).value)
+      if (stepIncrements.nonEmpty) {
+        stepIncrements.max should equal(stepIncrements.min +- Bitcoin.fromSatoshi(1).value)
+      }
     }
   }
 
-  it must "add fiat fees to each step and to the required fiat amount" in new Fixture {
-    forAnyAmounts { (bitcoinAmount, price, amounts) =>
-      val fee = Euro(processorFee)
-      amounts.intermediateSteps.map(_.fiatFee).toSet shouldBe Set(fee)
-      amounts.fiatRequired.buyer - amounts.netFiatExchanged shouldBe (fee * amounts.intermediateSteps.size)
-    }
-  }
-
-  it must "charge bitcoin transaction fees to the seller" in new Fixture(txFee = 0.001.BTC) {
+  it must "charge bitcoin transaction fees to the seller" in new Fixture {
     forAnyAmounts { (bitcoinAmount, _, amounts) =>
       import amounts._
       finalStep.depositSplit.buyer - bitcoinRequired.buyer shouldBe netBitcoinExchanged
@@ -163,11 +160,12 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
   }
 
-  val exampleCases = Seq(
+  val exampleCases = Table(("bitcoinAmount", "fiatAmount"),
     1.BTC -> 500.EUR,
     2.BTC -> 6000.EUR,
     0.3.BTC -> 370.2.EUR,
-    100.BTC -> 12.05.EUR
+    100.BTC -> 12.05.EUR,
+    1.BTC -> 10.03.EUR
   )
 
   abstract class Fixture(val processorFee: BigDecimal = 0.02,
@@ -185,9 +183,9 @@ class DefaultAmountsCalculatorTest extends UnitTest {
     }
 
     def forAnyAmounts(test: (BitcoinAmount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
-      for ((bitcoin, amount) <- exampleCases) {
-        withClue(s"exchanging $bitcoin for $amount: ") {
-          test(bitcoin, amount, instance.exchangeAmountsFor(bitcoin, amount))
+      forAll (exampleCases) { (bitcoin, fiat) =>
+        withClue(s"exchanging $bitcoin for $fiat: ") {
+          test(bitcoin, fiat, instance.exchangeAmountsFor(bitcoin, fiat))
         }
       }
     }

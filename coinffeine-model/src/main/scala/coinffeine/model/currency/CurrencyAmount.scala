@@ -39,6 +39,11 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
   val isPositive = value > 0
   val isNegative = value < 0
 
+  /** Convert this amount to an integer number of the minimum indivisible units. This means
+    * cents for Euro/Dollar and Satoshis for Bitcoin. */
+  def toIndivisibleUnits: BigInt =
+    (value / CurrencyAmount.smallestAmount(currency).value).toBigInt()
+
   override def tryCompareTo[B >: CurrencyAmount[C] <% PartiallyOrdered[B]](that: B): Option[Int] =
     Try {
       val thatAmount = that.asInstanceOf[CurrencyAmount[_ <: FiatCurrency]]
@@ -56,6 +61,9 @@ object CurrencyAmount {
     val smallestUnit = Seq.fill(currency.precision)(10).foldLeft(BigDecimal(1))(_ / _)
     CurrencyAmount(smallestUnit, currency)
   }
+
+  def fromIndivisibleUnits[C <: Currency](units: BigInt, currency: C): CurrencyAmount[C] =
+    smallestAmount(currency) * BigDecimal(units)
 
   def closestAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
     CurrencyAmount(value.setScale(currency.precision, RoundingMode.HALF_EVEN), currency)

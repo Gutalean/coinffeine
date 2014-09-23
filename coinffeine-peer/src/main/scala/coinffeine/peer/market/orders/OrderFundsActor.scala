@@ -3,8 +3,9 @@ package coinffeine.peer.market.orders
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.BlockedFunds
+import coinffeine.model.market.RequiredFunds
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -16,12 +17,12 @@ private class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef)
   import OrderFundsActor._
 
   override def receive: Receive = {
-    case init: BlockFunds =>
-      new InitializedBehavior(init, sender()).start()
+    case BlockFunds(funds) =>
+      new InitializedBehavior(funds, sender()).start()
   }
 
-  private class InitializedBehavior(init: BlockFunds, listener: ActorRef) {
-    import init._
+  private class InitializedBehavior(requiredFunds: RequiredFunds[_ <: FiatCurrency],
+                                    listener: ActorRef) {
 
     private sealed trait FiatFunds {
       def available: Boolean
@@ -46,12 +47,12 @@ private class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef)
     private var lastNotification: Option[Any] = None
 
     def start(): Unit = {
-      if (fiatAmount.isPositive) {
-        paymentProcessor ! PaymentProcessorActor.BlockFunds(fiatAmount)
+      if (requiredFunds.fiat.isPositive) {
+        paymentProcessor ! PaymentProcessorActor.BlockFunds(requiredFunds.fiat)
       } else {
         fiatFunds = UnneededFiatFunds
       }
-      wallet ! WalletActor.BlockBitcoins(bitcoinAmount)
+      wallet ! WalletActor.BlockBitcoins(requiredFunds.bitcoin)
       context.become(managingFunds andThen (_ => notifyListener()))
     }
 
@@ -66,7 +67,7 @@ private class OrderFundsActor(wallet: ActorRef, paymentProcessor: ActorRef)
         wallet ! WalletActor.SubscribeToWalletChanges
 
       case WalletActor.WalletChanged =>
-        wallet ! (if (btcFunds.isEmpty) WalletActor.BlockBitcoins(bitcoinAmount)
+        wallet ! (if (btcFunds.isEmpty) WalletActor.BlockBitcoins(requiredFunds.bitcoin)
                   else WalletActor.UnsubscribeToWalletChanges)
 
       case PaymentProcessorActor.AvailableFunds(id) =>
@@ -106,7 +107,7 @@ object OrderFundsActor {
     Props(new OrderFundsActor(wallet, paymentProcessor))
 
   /** Sent to the [[OrderFundsActor]] to initialize it. */
-  case class BlockFunds(fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount)
+  case class BlockFunds(funds: RequiredFunds[_ <: FiatCurrency])
 
   /** Whoever sent the [[BlockFunds]] message will receive this message when funds became
     * available. */

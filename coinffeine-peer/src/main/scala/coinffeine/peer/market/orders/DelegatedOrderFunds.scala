@@ -2,9 +2,10 @@ package coinffeine.peer.market.orders
 
 import akka.actor._
 
-import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.exchange.Exchange.BlockedFunds
+import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.market.orders.controller.OrderFunds
 
 /** Manages order funds by delegating on an OrderFundsActor.
@@ -12,9 +13,7 @@ import coinffeine.peer.market.orders.controller.OrderFunds
   * To do so, this class should be instantiated within an [[Actor]] and including
   * [[DelegatedOrderFunds#managingFundsAvailability]] in its receive behavior.
   */
-class DelegatedOrderFunds(orderFundsProps: Props,
-                          requiredFiat: FiatAmount,
-                          requiredBitcoin: BitcoinAmount)
+class DelegatedOrderFunds(orderFundsProps: Props, requiredFunds: RequiredFunds[_ <: FiatCurrency])
                          (implicit context: ActorContext) extends OrderFunds {
 
   private implicit val self = context.self
@@ -87,7 +86,7 @@ class DelegatedOrderFunds(orderFundsProps: Props,
 
   private def spawnDelegate(): ActorRef = {
     val ref = context.actorOf(orderFundsProps, "funds")
-    ref ! OrderFundsActor.BlockFunds(requiredFiat, requiredBitcoin)
+    ref ! OrderFundsActor.BlockFunds(requiredFunds)
     ref
   }
 }

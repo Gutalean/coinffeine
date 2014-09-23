@@ -38,12 +38,12 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
         depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
         fiatAmount = 1.EUR,
         fiatFee = 0.05.EUR,
-        progress = Progress(1.BTC * step, 1.EUR * step)
+        progress = Progress(Both(buyer = 1.BTC * step, seller = 1.BTC * step + 0.006.BTC))
       )
     },
     finalStep = Exchange.FinalStepAmounts(
       depositSplit = Both(buyer = 12.002.BTC, seller = 1.BTC),
-      progress = Progress(10.BTC, 10.EUR)
+      progress = Progress(Both(buyer = 10.BTC, seller = 10.006.BTC))
     )
   )
 

@@ -8,6 +8,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatAmount}
+import coinffeine.model.market.RequiredFunds
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.bitcoin.WalletActor.BlockedBitcoins
@@ -31,7 +32,7 @@ class OrderFundsActorTest extends AkkaSpec {
   }
 
   it should "keep requesting bitcoin funds until succeeding" in new Fixture {
-    actor ! BlockFunds(100.EUR, 1.BTC)
+    actor ! BlockFunds(RequiredFunds(1.BTC, 100.EUR))
     givenFiatBlockingOf(100.EUR)
     givenFiatBecomeAvailable()
 
@@ -93,7 +94,7 @@ class OrderFundsActorTest extends AkkaSpec {
     }
 
     def givenRequestedFunds(fiatAmount: FiatAmount, bitcoinAmount: BitcoinAmount): Unit = {
-      actor ! BlockFunds(fiatAmount, bitcoinAmount)
+      actor ! BlockFunds(RequiredFunds(bitcoinAmount, fiatAmount))
       if (fiatAmount.isPositive) {
         givenFiatBlockingOf(fiatAmount)
       } else {

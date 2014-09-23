@@ -42,6 +42,7 @@ object Build extends sbt.Build {
       "org.scalafx" %% "scalafx" % "8.0.0-R4",
       "org.controlsfx" % "controlsfx" % "8.0.6"
     )
+    lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.11.3"
     lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.7"
     lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
     lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
