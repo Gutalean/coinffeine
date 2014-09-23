@@ -38,6 +38,14 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
         case None => "unknown"
       }
     }, 1, 0)
+
+    add(new Label("Blocked funds: "), 0, 1)
+    add(new Label() {
+      text <== app.wallet.balance.map {
+        case Some(balance) => balance.blocked.toString
+        case None => "unknown"
+      }
+    }, 1, 1)
   }
 
   private val leftDetailsPane = new VBox(spacing = 5) {

@@ -9,6 +9,7 @@ trait Balance[C <: Currency] {
 
 case class BitcoinBalance(
   amount: BitcoinAmount,
+  blocked: BitcoinAmount = Bitcoin.Zero,
   hasExpired: Boolean = false) extends Balance[Bitcoin.type]
 
 case class FiatBalance[C <: FiatCurrency](

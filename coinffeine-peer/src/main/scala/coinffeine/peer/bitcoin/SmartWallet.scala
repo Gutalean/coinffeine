@@ -79,6 +79,10 @@ class SmartWallet(val delegate: Wallet) {
     blockedOutputs.unblock(coinsId)
   }
 
+  def blockedFunds: BitcoinAmount = synchronized {
+    blockedOutputs.blocked
+  }
+
   def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = synchronized {
     if (amount < blockedOutputs.spendable) ImmutableTransaction(blockFunds(to, amount))
     else throw new NotEnoughFunds(
