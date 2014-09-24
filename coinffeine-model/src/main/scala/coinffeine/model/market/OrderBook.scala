@@ -2,6 +2,8 @@ package coinffeine.model.market
 
 import scala.annotation.tailrec
 
+import org.slf4j.LoggerFactory
+
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{ExchangeId, Both}
 import coinffeine.model.market.OrderBook.Cross
@@ -41,16 +43,16 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     * @param position  Position to add
     * @return          New order book
     */
-  def addPosition(position: Position[_ <: OrderType, C]): OrderBook[C] =
+  def addPosition(position: BidOrAskPosition[C]): OrderBook[C] =
     position.fold(bid = addBidPosition, ask = addAskPosition)
 
-  def addPositions(positions: Seq[Position[_ <: OrderType, C]]): OrderBook[C] =
+  def addPositions(positions: Seq[BidOrAskPosition[C]]): OrderBook[C] =
     positions.foldLeft(this)(_.addPosition(_))
 
-  def addBidPosition(position: Position[Bid.type, C]): OrderBook[C] =
+  def addBidPosition(position: BidPosition[C]): OrderBook[C] =
     copy(bids = bids.enqueuePosition(position))
 
-  def addAskPosition(position: Position[Ask.type, C]): OrderBook[C] =
+  def addAskPosition(position: AskPosition[C]): OrderBook[C] =
     copy(asks = asks.enqueuePosition(position))
 
   def cancelPosition(positionId: PositionId): OrderBook[C] =
@@ -71,6 +73,43 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     asks = asks.decreaseAmount(positionId, amount)
   )
 
+  def updateUserPositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
+    val previousPositionIds = userPositions(userId).map(_.id).toSet
+    val newPositionIds = entries.map(entryId => PositionId(userId, entryId.id))
+    val positionsToRemove = previousPositionIds -- newPositionIds
+    addOrUpdatePositions(entries, userId).cancelPositions(positionsToRemove.toSeq)
+  }
+
+  private def addOrUpdatePositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
+    entries.foldLeft(this) { (book, entry) =>
+      val positionId = PositionId(userId, entry.id)
+
+      def bookWithPosition = book.addPosition(
+        Position(entry.orderType, entry.amount, entry.price, positionId))
+
+      def updatePosition(currentPosition: BidOrAskPosition[C]) = {
+        logInvalidPositionChanges(entry, currentPosition)
+        if (currentPosition.amount <= entry.amount) book
+        else book.decreaseAmount(currentPosition.id, currentPosition.amount - entry.amount)
+      }
+
+      book.get(positionId).fold(bookWithPosition)(updatePosition)
+    }
+  }
+
+  private def logInvalidPositionChanges(newEntry: OrderBookEntry[C],
+                                        currentPosition: BidOrAskPosition[C]): Unit = {
+    val invalidChanges = Seq(
+      if (newEntry.orderType != currentPosition.orderType) Some("different order type") else None,
+      if (newEntry.price != currentPosition.price) Some("different price") else None,
+      if (newEntry.amount > currentPosition.amount) Some("amount increased") else None
+    ).flatten
+    if (invalidChanges.nonEmpty) {
+      Log.warn("{} is an invalid update for {}: {}", newEntry, currentPosition,
+        invalidChanges.mkString(", "))
+    }
+  }
+
   def crosses: Seq[Cross[C]] = crosses(
     bids.positionsNotInHandshake.toStream,
     asks.positionsNotInHandshake.toStream,
@@ -81,8 +120,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     bids.anonymizedEntries ++ asks.anonymizedEntries
 
   @tailrec
-  private def crosses(bids: Stream[Position[Bid.type, C]],
-                      asks: Stream[Position[Ask.type, C]],
+  private def crosses(bids: Stream[BidPosition[C]],
+                      asks: Stream[AskPosition[C]],
                       accum: Seq[Cross[C]]): Seq[Cross[C]] = {
     (bids.headOption, asks.headOption) match {
       case (None, _) | (_, None) => accum
@@ -94,8 +133,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     }
   }
 
-  private def crossAmount(bid: Position[Bid.type, C],
-                          ask: Position[Ask.type, C],
+  private def crossAmount(bid: BidPosition[C],
+                          ask: AskPosition[C],
                           amount: BitcoinAmount): Cross[C] =
     Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
 
@@ -120,13 +159,14 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 }
 
 object OrderBook {
+  private val Log = LoggerFactory.getLogger(classOf[OrderBook[_]])
 
   case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
                                       price: Price[C],
                                       positions: Both[PositionId])
 
-  def apply[C <: FiatCurrency](position: Position[_ <: OrderType, C],
-                               otherPositions: Position[_ <: OrderType, C]*): OrderBook[C] =
+  def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
+                               otherPositions: BidOrAskPosition[C]*): OrderBook[C] =
     empty(position.price.currency).addPositions(position +: otherPositions)
 
   def empty[C <: FiatCurrency](currency: C): OrderBook[C] = OrderBook(

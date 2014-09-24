@@ -23,10 +23,10 @@ case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
     * @tparam R        Return type
     * @return          Transformed input
     */
-  def fold[R](bid: Position[Bid.type, C] => R, ask: Position[Ask.type, C] => R): R =
+  def fold[R](bid: BidPosition[C] => R, ask: AskPosition[C] => R): R =
     orderType match {
-      case _: Bid.type => bid(this.asInstanceOf[Position[Bid.type, C]])
-      case _: Ask.type => ask(this.asInstanceOf[Position[Ask.type, C]])
+      case _: Bid.type => bid(this.asInstanceOf[BidPosition[C]])
+      case _: Ask.type => ask(this.asInstanceOf[AskPosition[C]])
     }
 
   def toOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id.orderId, orderType, amount, price)
@@ -37,13 +37,11 @@ object Position {
   def bid[C <: FiatCurrency](
       amount: BitcoinAmount,
       price: Price[C],
-      requester: PositionId): Position[Bid.type, C] =
-    Position(Bid, amount, price, requester)
+      requester: PositionId): BidPosition[C] = Position(Bid, amount, price, requester)
 
   def ask[C <: FiatCurrency](
       amount: BitcoinAmount,
       price: Price[C],
-      requester: PositionId): Position[Ask.type, C] =
-    Position(Ask, amount, price, requester)
+      requester: PositionId): AskPosition[C] = Position(Ask, amount, price, requester)
 }
 
