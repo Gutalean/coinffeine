@@ -1,11 +1,8 @@
 package coinffeine.model.market
 
-import scala.annotation.tailrec
-
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
@@ -18,9 +15,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   def userPositions(userId: PeerId): Seq[Position[_, C]] =
     bids.userPositions(userId) ++ asks.userPositions(userId)
 
-  /** Tells if a transaction is possible with current orders. */
-  def isCrossed: Boolean = spread.isCrossed
-
   /** Get current spread (interval between the highest bet price to the lowest bid price */
   def spread: Spread[C] = Spread(highestBid, lowestAsk)
 
@@ -28,14 +22,11 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   private def lowestAsk: Option[Price[C]] = asks.bestPrice
 
-  def startHandshake(cross: Cross[C]): OrderBook[C] = {
-    require(crosses.contains(cross))
-    copy(
-      bids = bids.startHandshake(cross.positions.buyer),
-      asks = asks.startHandshake(cross.positions.seller),
-      handshakes = handshakes + cross
-    )
-  }
+  def startHandshake(cross: Cross[C]): OrderBook[C] = copy(
+    bids = bids.startHandshake(cross.positions.buyer),
+    asks = asks.startHandshake(cross.positions.seller),
+    handshakes = handshakes + cross
+  )
 
   /** Add a new position
     *
@@ -109,35 +100,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     }
   }
 
-  def crosses: Seq[Cross[C]] = crosses(
-    bids.positionsNotInHandshake.toStream,
-    asks.positionsNotInHandshake.toStream,
-    accum = Seq.empty
-  )
-
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
-
-  @tailrec
-  private def crosses(bids: Stream[BidPosition[C]],
-                      asks: Stream[AskPosition[C]],
-                      accum: Seq[Cross[C]]): Seq[Cross[C]] = {
-    (bids.headOption, asks.headOption) match {
-      case (None, _) | (_, None) => accum
-
-      case (Some(bid), Some(ask)) if bid.price.underbids(ask.price) => accum
-
-      case (Some(bid), Some(ask)) =>
-        crosses(bids.tail, asks.tail, accum :+ crossAmount(bid, ask, bid.amount min ask.amount))
-    }
-  }
-
-  private def crossAmount(bid: BidPosition[C],
-                          ask: AskPosition[C],
-                          amount: BitcoinAmount): Cross[C] = {
-    val averagePrice = bid.price.averageWith(ask.price)
-    Cross(Both.fill(amount), Both.fill(averagePrice.of(amount)), Both(bid.id, ask.id))
-  }
 
   def completeHandshake(cross: Cross[C]): OrderBook[C] = {
     require(handshakes.contains(cross))
