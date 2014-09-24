@@ -68,11 +68,9 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       }
       /* It seems to be a bug in Bitcoinj that causes the newBlocks list to be in an arbitrary
        * order although the Javadoc of BlockChainListener says it follows a top-first order.
-       * Thus, we have to calculate the highest block from the list to determine that's the
-       * new blockchain head.
+       * Thus, we have to sort the blocks from the list to determine the correct order.
        */
-      val newChainHead = newBlocks.maxBy(_.getHeight)
-      notifyNewBestBlock(newChainHead)
+      newBlocks.sortBy(_.getHeight).foreach(notifyNewBestBlock)
     }
 
     override def isTransactionRelevant(tx: Transaction): Boolean = observations.contains(tx.getHash)
