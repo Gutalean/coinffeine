@@ -3,7 +3,6 @@ package coinffeine.model.market
 import scala.collection.immutable.{SortedMap, TreeMap}
 
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 
 /** Data structure that holds orders sorted by price and, within a given price, keep
@@ -41,14 +40,14 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
 
   def cancelPositions(peerId: PeerId): OrderMap[T, C] = mapQueues(_.removeByPeerId(peerId))
 
-  def startHandshake(exchangeId: ExchangeId, positionId: PositionId): OrderMap[T, C] =
-    mapQueues(_.startHandshake(exchangeId, positionId))
+  def startHandshake(positionId: PositionId): OrderMap[T, C] =
+    mapQueues(_.startHandshake(positionId))
 
-  def completeHandshake(exchangeId: ExchangeId, amount: BitcoinAmount): OrderMap[T, C] =
-    mapQueues(_.completeHandshake(exchangeId, amount))
+  def completeHandshake(positionId: PositionId, amount: BitcoinAmount): OrderMap[T, C] =
+    mapQueues(_.completeHandshake(positionId, amount))
 
-  def cancelHandshake(exchangeId: ExchangeId): OrderMap[T, C] =
-    mapQueues(_.cancelHandshake(exchangeId))
+  def clearHandshake(positionId: PositionId): OrderMap[T, C] =
+    mapQueues(_.clearHandshake(positionId))
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] = for {
     queue <- tree.values.toSeq

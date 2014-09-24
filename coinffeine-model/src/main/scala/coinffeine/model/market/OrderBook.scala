@@ -5,14 +5,14 @@ import scala.annotation.tailrec
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{ExchangeId, Both}
+import coinffeine.model.exchange.Both
 import coinffeine.model.market.OrderBook.Cross
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
                                         asks: AskMap[C],
-                                        handshakes: Map[ExchangeId, Cross[C]]) {
+                                        handshakes: Set[Cross[C]]) {
   import coinffeine.model.market.OrderBook._
   require(bids.currency == asks.currency)
 
@@ -29,12 +29,12 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   private def lowestAsk: Option[Price[C]] = asks.bestPrice
 
-  def startHandshake(exchangeId: ExchangeId, cross: Cross[C]): OrderBook[C] = {
+  def startHandshake(cross: Cross[C]): OrderBook[C] = {
     require(crosses.contains(cross))
     copy(
-      bids = bids.startHandshake(exchangeId, cross.positions.buyer),
-      asks = asks.startHandshake(exchangeId, cross.positions.seller),
-      handshakes = handshakes + (exchangeId -> cross)
+      bids = bids.startHandshake(cross.positions.buyer),
+      asks = asks.startHandshake(cross.positions.seller),
+      handshakes = handshakes + cross
     )
   }
 
@@ -138,22 +138,21 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
                           amount: BitcoinAmount): Cross[C] =
     Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
 
-  def completeHandshake(exchangeId: ExchangeId): OrderBook[C] = {
-    val cross = handshakes.getOrElse(exchangeId,
-      throw new IllegalArgumentException(s"Unknown exchange $exchangeId"))
+  def completeHandshake(cross: Cross[C]): OrderBook[C] = {
+    require(handshakes.contains(cross))
     copy(
-      bids = bids.completeHandshake(exchangeId, cross.amount),
-      asks = asks.completeHandshake(exchangeId, cross.amount),
-      handshakes = handshakes - exchangeId
+      bids = bids.completeHandshake(cross.positions.buyer, cross.amount),
+      asks = asks.completeHandshake(cross.positions.seller, cross.amount),
+      handshakes = handshakes - cross
     )
   }
 
-  def cancelHandshake(exchangeId: ExchangeId): OrderBook[C] = {
-    require(handshakes.contains(exchangeId))
+  def clearHandshake(cross: Cross[C]): OrderBook[C] = {
+    require(handshakes.contains(cross))
     copy(
-      bids = bids.cancelHandshake(exchangeId),
-      asks = asks.cancelHandshake(exchangeId),
-      handshakes = handshakes - exchangeId
+      bids = bids.clearHandshake(cross.positions.buyer),
+      asks = asks.clearHandshake(cross.positions.seller),
+      handshakes = handshakes - cross
     )
   }
 }
@@ -172,6 +171,6 @@ object OrderBook {
   def empty[C <: FiatCurrency](currency: C): OrderBook[C] = OrderBook(
     bids = OrderMap.empty(Bid, currency),
     asks = OrderMap.empty(Ask, currency),
-    handshakes = Map.empty[ExchangeId, Cross[C]]
+    handshakes = Set.empty[Cross[C]]
   )
 }
