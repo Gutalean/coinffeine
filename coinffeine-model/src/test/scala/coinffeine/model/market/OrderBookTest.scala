@@ -3,7 +3,7 @@ package coinffeine.model.market
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.{FiatCurrency, BitcoinAmount}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Both
@@ -18,31 +18,20 @@ class OrderBookTest extends UnitTest with OptionValues {
 
   def cross(bid: Position[Bid.type, Euro.type],
             ask: Position[Ask.type, Euro.type],
-            amount: BitcoinAmount) =
-    OrderBook.Cross(amount, bid.price.averageWith(ask.price), Both(buyer = bid.id, seller = ask.id))
-
-  def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] =
-    book.crosses.foldLeft(book) { (book, cross) =>
-      book.startHandshake(cross).completeHandshake(cross)
-    }
+            amount: BitcoinAmount) = {
+    val averagePrice = bid.price.averageWith(ask.price)
+    Cross(
+      Both.fill(amount),
+      Both.fill(averagePrice.of(amount)),
+      Both(buyer = bid.id, seller = ask.id)
+    )
+  }
 
   val buyer = PeerId("buyer")
   val seller = PeerId("seller")
   val participants = Both(buyer, seller)
 
-  "An order book" should "detect a cross when a bid price is greater than an ask one" in {
-    OrderBook.empty(Euro) should not be 'crossed
-    OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer"),
-      ask(btc = 2, eur = 25, by = "seller")
-    ) should not be 'crossed
-    OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer"),
-      ask(btc = 2, eur = 15, by = "seller")
-    ) should be ('crossed)
-  }
-
-  it should "quote a spread" in {
+  "An order book" should "quote a spread" in {
     OrderBook.empty(Euro).spread shouldBe Spread.empty
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
@@ -58,18 +47,6 @@ class OrderBookTest extends UnitTest with OptionValues {
     )
     val updatedBook = book.addPosition(bid(btc = 3, eur = 120, by = "user2", orderId = "2"))
     updatedBook.userPositions(PeerId("user2")).size should be (2)
-  }
-
-  it should "cancel positions by requester" in {
-    val book = OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer"),
-      bid(btc = 1, eur = 22, by = "buyer", orderId = "2"),
-      ask(btc = 2, eur = 25, by = "seller")
-    )
-    book.cancelAllPositions(buyer) should be (OrderBook(
-      ask(btc = 2, eur = 25, by = "seller")
-    ))
-    book.cancelAllPositions(PeerId("unknown")) should be (book)
   }
 
   it should "cancel individual orders" in {
@@ -160,84 +137,17 @@ class OrderBookTest extends UnitTest with OptionValues {
       OrderBook(unchangedOrder))
   }
 
-  it should "not consider positions for matching once they are handshaking" in {
-    val book = OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer1"),
-      bid(btc = 1, eur = 20, by = "buyer2"),
-      ask(btc = 2, eur = 20, by = "seller")
-    )
-    book.startHandshake(book.crosses.head) should not be 'crossed
-  }
+  it should "mark and clear positions as handshaking" in {
+    val bidPosition = bid(btc = 1, eur = 20, by = "buyer")
+    val askPosition = ask(btc = 1, eur = 20, by = "seller")
+    val cross = Cross(Both.fill(1.BTC), Both.fill(20.EUR), Both(bidPosition.id, askPosition.id))
 
-  it should "be cleared with no changes when there is no cross" in {
-    val book = OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer"),
-      ask(btc = 2, eur = 25, by = "seller")
-    )
-    clearAllCrosses(book) should be (book)
-  }
+    var book = OrderBook(bidPosition, askPosition).startHandshake(cross)
+    book.get(bidPosition.id).value shouldBe 'inHandshake
+    book.get(askPosition.id).value shouldBe 'inHandshake
 
-  it should "be cleared with a cross when two orders match perfectly" in {
-    val crossedBid = bid(btc = 2, eur = 25, by = "buyer")
-    val crossedAsk = ask(btc = 2, eur = 25, by = "seller")
-
-    val book = OrderBook(crossedBid, bid(btc = 1, eur = 20, by = "other buyer"), crossedAsk)
-
-    book.crosses should be (Seq(cross(crossedBid, crossedAsk, 2.BTC)))
-    clearAllCrosses(book) should be(OrderBook(
-      bid(btc = 1, eur = 20, by = "other buyer")
-    ))
-  }
-
-  it should "use the midpoint price" in {
-    val buyerOrder = bid(btc = 1, eur = 20, by = "buyer")
-    val sellerOrder = ask(btc = 1, eur = 10, by = "seller")
-    val book = OrderBook(buyerOrder, sellerOrder)
-    book.crosses should be (Seq(cross(buyerOrder, sellerOrder, 1.BTC)))
-  }
-
-  it should "clear orders partially" in {
-    val book = OrderBook(
-      bid(btc = 2, eur = 25, by = "buyer"),
-      ask(btc = 1, eur = 25, by = "seller")
-    )
-    book.crosses.map(_.amount) should be (Seq(1.BTC))
-    val clearedBook = OrderBook(bid(btc = 1, eur = 25, by = "buyer"))
-    clearAllCrosses(book) should be (clearedBook)
-  }
-
-  it should "cancel handshakes" in {
-    var book = OrderBook(
-      bid(btc = 1, eur = 100, by = "buyer"),
-      ask(btc = 1, eur = 100, by = "seller")
-    )
-    val originalCross = book.crosses.head
-
-    book = book.startHandshake(originalCross)
-    book should not be 'crossed
-
-    book.clearHandshake(originalCross).crosses should be (Seq(originalCross))
-  }
-
-  it should "clear multiple orders against one if necessary" in {
-    val buyerOrder = bid(btc = 5, eur = 25, by = "buyer")
-    val sellerOrder1 = ask(btc = 2, eur = 15, by = "seller1")
-    val sellerOrder2 = ask(btc = 2, eur = 20, by = "seller2")
-    val sellerOrder3 = ask(btc = 2, eur = 25, by = "seller3")
-
-    var book = OrderBook(buyerOrder, sellerOrder1, sellerOrder2, sellerOrder3)
-    book.crosses should be (Seq(cross(buyerOrder, sellerOrder1, 2.BTC)))
-
-    val cross1 = book.crosses.head
-    book = book.startHandshake(cross1).completeHandshake(cross1)
-    book.crosses should be (Seq(cross(buyerOrder, sellerOrder2, 2.BTC)))
-
-    val cross2 = book.crosses.head
-    book = book.startHandshake(cross2).completeHandshake(cross2)
-    book.crosses should be (Seq(cross(buyerOrder, sellerOrder3, 1.BTC)))
-
-    val cross3 = book.crosses.head
-    book = book.startHandshake(cross3).completeHandshake(cross3)
-    book should be(OrderBook(ask(btc = 1, eur = 25, by = "seller3")))
+    book = book.clearHandshake(cross)
+    book.get(bidPosition.id).value should not be 'inHandshake
+    book.get(askPosition.id).value should not be 'inHandshake
   }
 }

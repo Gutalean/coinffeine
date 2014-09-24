@@ -1,12 +1,8 @@
 package coinffeine.model.market
 
-import scala.annotation.tailrec
-
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
-import coinffeine.model.market.OrderBook.Cross
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
@@ -19,9 +15,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   def userPositions(userId: PeerId): Seq[Position[_, C]] =
     bids.userPositions(userId) ++ asks.userPositions(userId)
 
-  /** Tells if a transaction is possible with current orders. */
-  def isCrossed: Boolean = spread.isCrossed
-
   /** Get current spread (interval between the highest bet price to the lowest bid price */
   def spread: Spread[C] = Spread(highestBid, lowestAsk)
 
@@ -29,14 +22,11 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   private def lowestAsk: Option[Price[C]] = asks.bestPrice
 
-  def startHandshake(cross: Cross[C]): OrderBook[C] = {
-    require(crosses.contains(cross))
-    copy(
-      bids = bids.startHandshake(cross.positions.buyer),
-      asks = asks.startHandshake(cross.positions.seller),
-      handshakes = handshakes + cross
-    )
-  }
+  def startHandshake(cross: Cross[C]): OrderBook[C] = copy(
+    bids = bids.startHandshake(cross.positions.buyer),
+    asks = asks.startHandshake(cross.positions.seller),
+    handshakes = handshakes + cross
+  )
 
   /** Add a new position
     *
@@ -60,10 +50,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   def cancelPositions(positionIds: Seq[PositionId]): OrderBook[C] =
     positionIds.foldLeft(this)(_.cancelPosition(_))
-
-  /** Cancel al orders of a given client */
-  def cancelAllPositions(requester: PeerId): OrderBook[C] =
-    copy(bids = bids.cancelPositions(requester), asks = asks.cancelPositions(requester))
 
   def get(positionId: PositionId): Option[Position[_ <: OrderType, C]] =
     bids.get(positionId) orElse asks.get(positionId)
@@ -110,42 +96,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     }
   }
 
-  def crosses: Seq[Cross[C]] = crosses(
-    bids.positionsNotInHandshake.toStream,
-    asks.positionsNotInHandshake.toStream,
-    accum = Seq.empty
-  )
-
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
-
-  @tailrec
-  private def crosses(bids: Stream[BidPosition[C]],
-                      asks: Stream[AskPosition[C]],
-                      accum: Seq[Cross[C]]): Seq[Cross[C]] = {
-    (bids.headOption, asks.headOption) match {
-      case (None, _) | (_, None) => accum
-
-      case (Some(bid), Some(ask)) if bid.price.underbids(ask.price) => accum
-
-      case (Some(bid), Some(ask)) =>
-        crosses(bids.tail, asks.tail, accum :+ crossAmount(bid, ask, bid.amount min ask.amount))
-    }
-  }
-
-  private def crossAmount(bid: BidPosition[C],
-                          ask: AskPosition[C],
-                          amount: BitcoinAmount): Cross[C] =
-    Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
-
-  def completeHandshake(cross: Cross[C]): OrderBook[C] = {
-    require(handshakes.contains(cross))
-    copy(
-      bids = bids.completeHandshake(cross.positions.buyer, cross.amount),
-      asks = asks.completeHandshake(cross.positions.seller, cross.amount),
-      handshakes = handshakes - cross
-    )
-  }
 
   def clearHandshake(cross: Cross[C]): OrderBook[C] = {
     require(handshakes.contains(cross))
@@ -159,10 +111,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
 object OrderBook {
   private val Log = LoggerFactory.getLogger(classOf[OrderBook[_]])
-
-  case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
-                                      price: Price[C],
-                                      positions: Both[PositionId])
 
   def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
                                otherPositions: BidOrAskPosition[C]*): OrderBook[C] =
