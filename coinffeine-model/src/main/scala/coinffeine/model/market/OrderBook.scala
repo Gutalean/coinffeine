@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
-import coinffeine.model.market.OrderBook.Cross
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
@@ -135,14 +134,16 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   private def crossAmount(bid: BidPosition[C],
                           ask: AskPosition[C],
-                          amount: BitcoinAmount): Cross[C] =
-    Cross(amount, bid.price.averageWith(ask.price), Both(bid.id, ask.id))
+                          amount: BitcoinAmount): Cross[C] = {
+    val averagePrice = bid.price.averageWith(ask.price)
+    Cross(Both.fill(amount), Both.fill(averagePrice.of(amount)), Both(bid.id, ask.id))
+  }
 
   def completeHandshake(cross: Cross[C]): OrderBook[C] = {
     require(handshakes.contains(cross))
     copy(
-      bids = bids.completeHandshake(cross.positions.buyer, cross.amount),
-      asks = asks.completeHandshake(cross.positions.seller, cross.amount),
+      bids = bids.completeHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
+      asks = asks.completeHandshake(cross.positions.seller, cross.bitcoinAmounts.seller),
       handshakes = handshakes - cross
     )
   }
@@ -159,10 +160,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
 object OrderBook {
   private val Log = LoggerFactory.getLogger(classOf[OrderBook[_]])
-
-  case class Cross[C <: FiatCurrency](amount: BitcoinAmount,
-                                      price: Price[C],
-                                      positions: Both[PositionId])
 
   def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
                                otherPositions: BidOrAskPosition[C]*): OrderBook[C] =

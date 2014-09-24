@@ -18,8 +18,14 @@ class OrderBookTest extends UnitTest with OptionValues {
 
   def cross(bid: Position[Bid.type, Euro.type],
             ask: Position[Ask.type, Euro.type],
-            amount: BitcoinAmount) =
-    OrderBook.Cross(amount, bid.price.averageWith(ask.price), Both(buyer = bid.id, seller = ask.id))
+            amount: BitcoinAmount) = {
+    val averagePrice = bid.price.averageWith(ask.price)
+    Cross(
+      Both.fill(amount),
+      Both.fill(averagePrice.of(amount)),
+      Both(buyer = bid.id, seller = ask.id)
+    )
+  }
 
   def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] =
     book.crosses.foldLeft(book) { (book, cross) =>
@@ -201,7 +207,7 @@ class OrderBookTest extends UnitTest with OptionValues {
       bid(btc = 2, eur = 25, by = "buyer"),
       ask(btc = 1, eur = 25, by = "seller")
     )
-    book.crosses.map(_.amount) should be (Seq(1.BTC))
+    book.crosses.map(_.bitcoinAmounts) should be (Seq(Both.fill(1.BTC)))
     val clearedBook = OrderBook(bid(btc = 1, eur = 25, by = "buyer"))
     clearAllCrosses(book) should be (clearedBook)
   }
