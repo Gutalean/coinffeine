@@ -49,18 +49,6 @@ class OrderBookTest extends UnitTest with OptionValues {
     updatedBook.userPositions(PeerId("user2")).size should be (2)
   }
 
-  it should "cancel positions by requester" in {
-    val book = OrderBook(
-      bid(btc = 1, eur = 20, by = "buyer"),
-      bid(btc = 1, eur = 22, by = "buyer", orderId = "2"),
-      ask(btc = 2, eur = 25, by = "seller")
-    )
-    book.cancelAllPositions(buyer) should be (OrderBook(
-      ask(btc = 2, eur = 25, by = "seller")
-    ))
-    book.cancelAllPositions(PeerId("unknown")) should be (book)
-  }
-
   it should "cancel individual orders" in {
     val book = OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),

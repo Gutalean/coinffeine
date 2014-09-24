@@ -51,10 +51,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   def cancelPositions(positionIds: Seq[PositionId]): OrderBook[C] =
     positionIds.foldLeft(this)(_.cancelPosition(_))
 
-  /** Cancel al orders of a given client */
-  def cancelAllPositions(requester: PeerId): OrderBook[C] =
-    copy(bids = bids.cancelPositions(requester), asks = asks.cancelPositions(requester))
-
   def get(positionId: PositionId): Option[Position[_ <: OrderType, C]] =
     bids.get(positionId) orElse asks.get(positionId)
 
@@ -102,15 +98,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
-
-  def completeHandshake(cross: Cross[C]): OrderBook[C] = {
-    require(handshakes.contains(cross))
-    copy(
-      bids = bids.completeHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
-      asks = asks.completeHandshake(cross.positions.seller, cross.bitcoinAmounts.seller),
-      handshakes = handshakes - cross
-    )
-  }
 
   def clearHandshake(cross: Cross[C]): OrderBook[C] = {
     require(handshakes.contains(cross))

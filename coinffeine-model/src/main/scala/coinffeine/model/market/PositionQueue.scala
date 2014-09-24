@@ -28,13 +28,6 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
       case otherPosition => otherPosition
     })
 
-  def completeHandshake(positionId: PositionId, amount: BitcoinAmount): PositionQueue[T, C] =
-    copy(positions.collect {
-      case position if position.id == positionId && position.amount > amount =>
-        position.decreaseAmount(amount).copy(inHandshake = false)
-      case otherPositions if otherPositions.id != positionId => otherPositions
-    })
-
   def clearHandshake(positionId: PositionId): PositionQueue[T, C] = copy(positions.collect {
     case position if position.id == positionId => position.clearHandshake
     case otherPositions => otherPositions

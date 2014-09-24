@@ -43,9 +43,6 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
   def startHandshake(positionId: PositionId): OrderMap[T, C] =
     mapQueues(_.startHandshake(positionId))
 
-  def completeHandshake(positionId: PositionId, amount: BitcoinAmount): OrderMap[T, C] =
-    mapQueues(_.completeHandshake(positionId, amount))
-
   def clearHandshake(positionId: PositionId): OrderMap[T, C] =
     mapQueues(_.clearHandshake(positionId))
 
