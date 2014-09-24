@@ -1,20 +1,21 @@
 package coinffeine.model.market
 
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.ExchangeId
 
 /** Bidding or asking position taken by a requester */
 case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
                                                        amount: BitcoinAmount,
                                                        price: Price[C],
                                                        id: PositionId,
-                                                       handshake: Option[ExchangeId] = None) {
-  val inHandshake: Boolean = handshake.isDefined
+                                                       inHandshake: Boolean = false) {
 
   def decreaseAmount(decrease: BitcoinAmount): Position[T, C] = {
     require(decrease < amount)
     copy(amount = amount - decrease)
   }
+
+  def clearHandshake: Position[T, C] = copy(inHandshake = false)
+  def startHandshake: Position[T, C] = copy(inHandshake = true)
 
   /** Folds any Position type into a value of type T.
     *

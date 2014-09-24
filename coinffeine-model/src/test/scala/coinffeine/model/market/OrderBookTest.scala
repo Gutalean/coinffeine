@@ -6,7 +6,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.{FiatCurrency, BitcoinAmount}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{ExchangeId, Both}
+import coinffeine.model.exchange.Both
 import coinffeine.model.network.PeerId
 
 class OrderBookTest extends UnitTest with OptionValues {
@@ -21,15 +21,10 @@ class OrderBookTest extends UnitTest with OptionValues {
             amount: BitcoinAmount) =
     OrderBook.Cross(amount, bid.price.averageWith(ask.price), Both(buyer = bid.id, seller = ask.id))
 
-  def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] = {
-    var intermediateBook = book
-    for ((cross, index) <- book.crosses.zipWithIndex) {
-      val exchangeId = ExchangeId(index.toString)
-      intermediateBook = intermediateBook.startHandshake(exchangeId, cross)
-        .completeHandshake(exchangeId)
+  def clearAllCrosses[C <: FiatCurrency](book: OrderBook[C]): OrderBook[C] =
+    book.crosses.foldLeft(book) { (book, cross) =>
+      book.startHandshake(cross).completeHandshake(cross)
     }
-    intermediateBook
-  }
 
   val buyer = PeerId("buyer")
   val seller = PeerId("seller")
@@ -171,8 +166,7 @@ class OrderBookTest extends UnitTest with OptionValues {
       bid(btc = 1, eur = 20, by = "buyer2"),
       ask(btc = 2, eur = 20, by = "seller")
     )
-    val cross = book.crosses.head
-    book.startHandshake(ExchangeId.random(), cross) should not be 'crossed
+    book.startHandshake(book.crosses.head) should not be 'crossed
   }
 
   it should "be cleared with no changes when there is no cross" in {
@@ -219,11 +213,10 @@ class OrderBookTest extends UnitTest with OptionValues {
     )
     val originalCross = book.crosses.head
 
-    val exchangeId = ExchangeId("cancellable")
-    book = book.startHandshake(exchangeId, originalCross)
+    book = book.startHandshake(originalCross)
     book should not be 'crossed
 
-    book.cancelHandshake(exchangeId).crosses should be (Seq(originalCross))
+    book.clearHandshake(originalCross).crosses should be (Seq(originalCross))
   }
 
   it should "clear multiple orders against one if necessary" in {
@@ -235,16 +228,16 @@ class OrderBookTest extends UnitTest with OptionValues {
     var book = OrderBook(buyerOrder, sellerOrder1, sellerOrder2, sellerOrder3)
     book.crosses should be (Seq(cross(buyerOrder, sellerOrder1, 2.BTC)))
 
-    book = book.startHandshake(ExchangeId("1"), book.crosses.head)
-      .completeHandshake(ExchangeId("1"))
+    val cross1 = book.crosses.head
+    book = book.startHandshake(cross1).completeHandshake(cross1)
     book.crosses should be (Seq(cross(buyerOrder, sellerOrder2, 2.BTC)))
 
-    book = book.startHandshake(ExchangeId("2"), book.crosses.head)
-      .completeHandshake(ExchangeId("2"))
+    val cross2 = book.crosses.head
+    book = book.startHandshake(cross2).completeHandshake(cross2)
     book.crosses should be (Seq(cross(buyerOrder, sellerOrder3, 1.BTC)))
 
-    book = book.startHandshake(ExchangeId("3"), book.crosses.head)
-      .completeHandshake(ExchangeId("3"))
+    val cross3 = book.crosses.head
+    book = book.startHandshake(cross3).completeHandshake(cross3)
     book should be(OrderBook(ask(btc = 1, eur = 25, by = "seller3")))
   }
 }

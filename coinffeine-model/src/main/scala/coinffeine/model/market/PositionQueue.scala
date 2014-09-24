@@ -2,7 +2,6 @@ package coinffeine.model.market
 
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 
 private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
@@ -23,21 +22,21 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
   def removeByPeerId(peerId: PeerId): PositionQueue[T, C] =
     copy(positions.filterNot(_.id.peerId == peerId))
 
-  def startHandshake(exchangeId: ExchangeId, positionId: PositionId): PositionQueue[T, C] =
+  def startHandshake(positionId: PositionId): PositionQueue[T, C] =
     copy(positions.collect {
-      case position if position.id == positionId => position.copy(handshake = Some(exchangeId))
+      case position if position.id == positionId => position.startHandshake
       case otherPosition => otherPosition
     })
 
-  def completeHandshake(exchangeId: ExchangeId, amount: BitcoinAmount): PositionQueue[T, C] =
+  def completeHandshake(positionId: PositionId, amount: BitcoinAmount): PositionQueue[T, C] =
     copy(positions.collect {
-      case position if position.handshake == Some(exchangeId) && position.amount > amount =>
-        position.decreaseAmount(amount).copy(handshake = None)
-      case otherPositions if otherPositions.handshake != Some(exchangeId) => otherPositions
+      case position if position.id == positionId && position.amount > amount =>
+        position.decreaseAmount(amount).copy(inHandshake = false)
+      case otherPositions if otherPositions.id != positionId => otherPositions
     })
 
-  def cancelHandshake(exchangeId: ExchangeId): PositionQueue[T, C] = copy(positions.collect {
-    case position if position.handshake == Some(exchangeId) => position.copy(handshake = None)
+  def clearHandshake(positionId: PositionId): PositionQueue[T, C] = copy(positions.collect {
+    case position if position.id == positionId => position.clearHandshake
     case otherPositions => otherPositions
   })
 
