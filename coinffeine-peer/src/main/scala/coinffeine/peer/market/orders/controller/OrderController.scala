@@ -54,7 +54,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 
     override def updateOrderStatus(newStatus: OrderStatus): Unit = {
       val prevStatus = _order.status
-      _order = _order.withStatus(newStatus)
+      updateOrder(_.withStatus(newStatus))
       listeners.foreach(_.onStatusChanged(prevStatus, newStatus))
       if (newStatus.isFinal) {
         listeners.foreach(_.onFinish(newStatus))
@@ -63,7 +63,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 
     def updateExchange(exchange: AnyStateExchange[C]): Unit = {
       val prevProgress = _order.progress
-      _order = _order.withExchange(exchange)
+      updateOrder(_.withExchange(exchange))
       val newProgress = _order.progress
       listeners.foreach(_.onProgress(prevProgress, newProgress))
     }
