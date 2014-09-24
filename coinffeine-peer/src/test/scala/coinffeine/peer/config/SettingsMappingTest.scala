@@ -34,7 +34,7 @@ class SettingsMappingTest extends UnitTest {
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) should be (50)
-    cfg.getString("coinffeine.bitcoin.walletFile") should be ("/tmp/user.wallet")
+    cfg.getString("coinffeine.bitcoin.walletFile") should be (new File("/tmp/user.wallet").getPath)
   }
 
   "Message Gateway settings mapping" should "map from config" in {
