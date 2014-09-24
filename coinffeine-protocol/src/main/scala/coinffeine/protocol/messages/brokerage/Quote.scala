@@ -1,27 +1,27 @@
 package coinffeine.protocol.messages.brokerage
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.market.{OrderBook, Price}
+import coinffeine.model.market.{Price, Spread}
 import coinffeine.protocol.messages.PublicMessage
 
 case class Quote[C <: FiatCurrency](
     market: Market[C],
-    spread: OrderBook.Spread[C] = (None, None),
+    spread: Spread[C] = Spread.empty[C],
     lastPrice: Option[Price[C]] = None) extends PublicMessage {
-  override def toString = "Quote(spread = (%s, %s), last = %s)".format(
-    spread._1.getOrElse("--"),
-    spread._2.getOrElse("--"),
-    lastPrice.getOrElse("--")
-  )
+
+  override def toString = {
+    val formattedLastPrice = lastPrice.fold("--")(p => s"${p.value} ${p.currency}")
+    s"Quote(spread = $spread, last = $formattedLastPrice)"
+  }
 }
 
 object Quote {
-  def empty[C <: FiatCurrency](market: Market[C]): Quote[C] = Quote(market)
+  def empty[C <: FiatCurrency](market: Market[C]) = Quote[C](market)
 
   /** Utility constructor for the case of having all prices defined */
   def apply[C <: FiatCurrency](spread: (Price[C], Price[C]), lastPrice: Price[C]): Quote[C] = Quote(
     market = Market(lastPrice.currency),
-    spread = Some(spread._1) -> Some(spread._2),
+    spread = Spread(spread._1, spread._2),
     lastPrice = Some(lastPrice)
   )
 

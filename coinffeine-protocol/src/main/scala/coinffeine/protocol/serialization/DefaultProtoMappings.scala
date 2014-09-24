@@ -246,11 +246,11 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
       def toPrice(amountOpt: Option[DecimalNumber]) = {
         amountOpt.map { amount => Price(ProtoMapping.fromProtobuf(amount), market.currency)}
       }
-      Quote(market, spread = (toPrice(bidOption), toPrice(askOption)), toPrice(lastPriceOption))
+      Quote(market, Spread(toPrice(bidOption), toPrice(askOption)), toPrice(lastPriceOption))
     }
 
     override def toProtobuf(quote: Quote[_ <: FiatCurrency]): msg.Quote = {
-      val Quote(market, (bidOption, askOption), lastPriceOption) = quote
+      val Quote(market, Spread(bidOption, askOption), lastPriceOption) = quote
       val builder = msg.Quote.newBuilder.setMarket(marketMapping.toProtobuf(market))
       bidOption.foreach(bid => builder.setHighestBid(ProtoMapping.toProtobuf(bid.value)))
       askOption.foreach(ask => builder.setLowestAsk(ProtoMapping.toProtobuf(ask.value)))

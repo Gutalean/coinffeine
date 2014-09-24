@@ -47,11 +47,11 @@ class OrderBookTest extends UnitTest {
   }
 
   it should "quote a spread" in {
-    OrderBook.empty(Euro).spread should be ((None, None))
+    OrderBook.empty(Euro).spread shouldBe Spread.empty
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
-    ).spread shouldBe (Some(Price(20 EUR)), Some(Price(25 EUR)))
+    ).spread shouldBe Spread(Price(20 EUR), Price(25 EUR))
   }
 
   it should "keep previous unresolved orders when inserting a new one" in {
