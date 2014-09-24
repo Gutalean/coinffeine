@@ -15,8 +15,8 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
 
   import BlockchainActor._
 
-  private var observations: Map[Sha256Hash, Observation] = Map.empty
-  private var heightNotifications: Set[HeightNotification] = Set.empty
+  private var confirmationSubscriptions: Map[Sha256Hash, ConfirmationSubscription] = Map.empty
+  private var heightSubscriptions: Set[HeightSubscription] = Set.empty
   private val wallet = new Wallet(network)
 
   override def preStart(): Unit = {
@@ -33,19 +33,19 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
 
     case req @ WatchTransactionConfirmation(txHash, confirmations) =>
-      observations += txHash -> Observation(txHash, sender(), confirmations)
+      confirmationSubscriptions += txHash -> ConfirmationSubscription(txHash, sender(), confirmations)
 
     case RetrieveTransaction(txHash) =>
-      transactionFor(txHash) match {
-        case Some(tx) => sender ! TransactionFound(txHash, ImmutableTransaction(tx))
-        case None => sender ! TransactionNotFound(txHash)
-      }
+      sender ! (transactionFor(txHash) match {
+        case Some(tx) => TransactionFound(txHash, ImmutableTransaction(tx))
+        case None => TransactionNotFound(txHash)
+      })
 
     case RetrieveBlockchainHeight =>
       sender() ! BlockchainHeightReached(blockchain.getBestChainHeight)
 
     case WatchBlockchainHeight(height) =>
-      heightNotifications += HeightNotification(height, sender())
+      heightSubscriptions += HeightSubscription(height, sender())
   }
 
   private object Listener extends AbstractBlockChainListener {
@@ -58,34 +58,34 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
 
     override def reorganize(splitPoint: StoredBlock, oldBlocks: util.List[StoredBlock],
                             newBlocks: util.List[StoredBlock]): Unit = {
-      val seenTxs = observations.values.filter(_.foundInBlock.isDefined)
-      val rejectedObservations = seenTxs.filterNot(tx =>
+      val seenTxs = confirmationSubscriptions.values.filter(_.foundInBlock.isDefined)
+      val rejectedTransactions = seenTxs.filterNot(tx =>
         newBlocks.toSeq.exists(block => block.getHeader.getHash == tx.foundInBlock.get.hash))
-      rejectedObservations.foreach { obs =>
-        log.info("tx {} is lost in blockchain reorganization; reporting to the observer", obs.txHash)
-        obs.requester ! TransactionRejected(obs.txHash)
-        observations -= obs.txHash
+      rejectedTransactions.foreach { subscription =>
+        log.info("tx {} is lost in blockchain reorganization; reporting to the observer",
+          subscription.txHash)
+        subscription.requester ! TransactionRejected(subscription.txHash)
+        confirmationSubscriptions -= subscription.txHash
       }
       /* It seems to be a bug in Bitcoinj that causes the newBlocks list to be in an arbitrary
        * order although the Javadoc of BlockChainListener says it follows a top-first order.
-       * Thus, we have to calculate the highest block from the list to determine that's the
-       * new blockchain head.
+       * Thus, we have to sort the blocks from the list to determine the correct order.
        */
-      val newChainHead = newBlocks.maxBy(_.getHeight)
-      notifyNewBestBlock(newChainHead)
+      newBlocks.sortBy(_.getHeight).foreach(notifyNewBestBlock)
     }
 
-    override def isTransactionRelevant(tx: Transaction): Boolean = observations.contains(tx.getHash)
+    override def isTransactionRelevant(tx: Transaction): Boolean =
+      confirmationSubscriptions.contains(tx.getHash)
 
     override def receiveFromBlock(tx: Transaction, block: StoredBlock,
                                   blockType: NewBlockType, relativityOffset: Int): Unit = {
       val txHash = tx.getHash
       val txHeight= block.getHeight
-      observations.get(txHash) match {
-        case Some(obs) =>
+      confirmationSubscriptions.get(txHash) match {
+        case Some(subscription) =>
           log.info("tx {} found in block {}: waiting for {} confirmations",
-            txHash, txHeight, obs.requiredConfirmations)
-          observations += txHash -> obs.copy(
+            txHash, txHeight, subscription.requiredConfirmations)
+          confirmationSubscriptions += txHash -> subscription.copy(
             foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
         case None =>
           log.warning("tx {} received but not relevant (not being observed)", txHash)
@@ -94,11 +94,12 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
 
     override def notifyTransactionIsInBlock(
         txHash: Sha256Hash, block: StoredBlock,
-        blockType: NewBlockType, relativityOffset: Int): Boolean = observations.contains(txHash)
+        blockType: NewBlockType, relativityOffset: Int): Boolean =
+      confirmationSubscriptions.contains(txHash)
 
     private def notifyConfirmedTransactions(currentHeight: Int): Unit = {
-      observations.foreach {
-        case (txHash, Observation(_, req, reqConf, Some(foundInBlock))) =>
+      confirmationSubscriptions.foreach {
+        case (txHash, ConfirmationSubscription(_, req, reqConf, Some(foundInBlock))) =>
           val confirmations = (currentHeight - foundInBlock.height) + 1
           if (confirmations >= reqConf) {
             log.info(
@@ -106,7 +107,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
                 |reporting to the observer""".stripMargin,
               currentHeight, txHash, confirmations, reqConf)
             req ! TransactionConfirmed(txHash, confirmations)
-            observations -= txHash
+            confirmationSubscriptions -= txHash
           } else {
             log.info(
               """after new chain head {}, tx {} have {} confirmations out of {} required:
@@ -118,10 +119,10 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
     }
 
     private def notifyHeight(currentHeight: Int): Unit = {
-      heightNotifications.foreach { case notification@HeightNotification(height, req) =>
+      heightSubscriptions.foreach { case subscription @ HeightSubscription(height, req) =>
         if (currentHeight >= height) {
           req ! BlockchainHeightReached(currentHeight)
-          heightNotifications -= notification
+          heightSubscriptions -= subscription
         }
       }
     }
@@ -199,10 +200,18 @@ object BlockchainActor {
 
   private case class BlockIdentity(hash: Sha256Hash, height: Int)
 
-  private case class Observation(txHash: Sha256Hash,
-                                 requester: ActorRef,
-                                 requiredConfirmations: Int,
-                                 foundInBlock: Option[BlockIdentity] = None)
+  /** Subscription to the confirmation of a given transaction.
+    *
+    * @param txHash                 Hash of the transaction to observe
+    * @param requester              Who to notify
+    * @param requiredConfirmations  How deep the transaction should be
+    * @param foundInBlock           Block in which the transaction is included on the blockchain
+    *                               (if ever)
+    */
+  private case class ConfirmationSubscription(txHash: Sha256Hash,
+                                              requester: ActorRef,
+                                              requiredConfirmations: Int,
+                                              foundInBlock: Option[BlockIdentity] = None)
 
-  private case class HeightNotification(height: Long, requester: ActorRef)
+  private case class HeightSubscription(height: Long, requester: ActorRef)
 }

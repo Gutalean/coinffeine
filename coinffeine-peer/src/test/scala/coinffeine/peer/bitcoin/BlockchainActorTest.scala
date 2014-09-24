@@ -5,7 +5,6 @@ import akka.testkit.TestProbe
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.Implicits._
