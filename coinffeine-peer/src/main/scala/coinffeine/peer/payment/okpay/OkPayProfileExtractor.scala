@@ -37,10 +37,12 @@ class OkPayProfileExtractor(username: String, password: String) {
       .setValueAttribute(password)
     val dashboardPage = loginForm.getInputByName("ctl00$MainContent$btnLogin")
       .asInstanceOf[HtmlInput].click().asInstanceOf[HtmlPage]
-    dashboardPage.asText()
     Option(dashboardPage.getFirstByXPath("//div[@id='activity']")).getOrElse {
-      throw new LoginException(s"Login failed, the page returned was not the Dashboard: " +
-        s"${dashboardPage.asText}")
+      val errorText = Option(dashboardPage.getFirstByXPath[HtmlDivision]("//div[@class='strong-error-block']"))
+        .map(_.asText)
+        .getOrElse(dashboardPage.asText)
+      throw new LoginException("Login failed, the page returned was not the Dashboard: " +
+        s"$errorText")
     }
   }
 
