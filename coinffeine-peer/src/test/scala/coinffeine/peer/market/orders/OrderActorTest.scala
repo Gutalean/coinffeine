@@ -14,7 +14,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.event._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.bitcoin.WalletActor
@@ -175,10 +175,11 @@ class OrderActorTest extends AkkaSpec
     val eventChannelProbe = EventChannelProbe()
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)
+    val properties = new MutableCoinffeineNetworkProperties
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
       calculatorStub,
-      (publisher, funds) => new OrderController(calculatorStub, network, order, publisher, funds),
+      (publisher, funds) => new OrderController(calculatorStub, network, order, properties, publisher, funds),
       new Delegates[Euro.type] {
         override def exchangeActor(exchange: ExchangeToStart[Euro.type], resultListener: ActorRef) =
           Fixture.this.exchangeActor.props

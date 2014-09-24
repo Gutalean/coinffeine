@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.market.orders.controller.OrderFunds.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -15,11 +16,13 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
   * @param network            Which network the order is running on
   * @param initialOrder       Order to run
   */
-private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: AmountsCalculator,
-                                                         network: Network,
-                                                         initialOrder: Order[C],
-                                                         publisher: OrderPublication[C],
-                                                         funds: OrderFunds) {
+private[orders] class OrderController[C <: FiatCurrency](
+    amountsCalculator: AmountsCalculator,
+    network: Network,
+    initialOrder: Order[C],
+    coinffeineProperties: MutableCoinffeineNetworkProperties,
+    publisher: OrderPublication[C],
+    funds: OrderFunds) {
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
       override val network: Network,
@@ -68,6 +71,11 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
     def completeExchange(exchange: CompletedExchange[C]): Unit = {
       updateExchange(exchange)
       context.state.exchangeCompleted(context, exchange)
+    }
+
+    private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
+      _order = mutator(_order)
+      coinffeineProperties.orders.set(_order.id, _order)
     }
   }
 

@@ -15,7 +15,7 @@ import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, Or
 import coinffeine.model.exchange.Exchange.CannotStartHandshake
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.BrokerId
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
@@ -181,6 +181,7 @@ object OrderActor {
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
                                order: Order[C],
+                               coinffeineProperties: MutableCoinffeineNetworkProperties,
                                collaborators: Collaborators): Props = {
     val delegates = new Delegates[C] {
       override def exchangeActor(exchange: ExchangeToStart[C], resultListener: ActorRef) = {
@@ -194,7 +195,8 @@ object OrderActor {
     Props(new OrderActor[C](
       order,
       amountsCalculator,
-      (publisher, funds) => new OrderController(amountsCalculator, network, order, publisher, funds),
+      (publisher, funds) => new OrderController(
+        amountsCalculator, network, order, coinffeineProperties, publisher, funds),
       delegates,
       collaborators
     ))

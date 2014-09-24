@@ -10,7 +10,7 @@ import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.amounts.DefaultAmountsComponent
@@ -163,8 +163,9 @@ class OrderControllerTest extends UnitTest with MockitoSugar with SampleExchange
     val listener = mock[OrderController.Listener[Euro.type]]
     val publisher = new MockPublication[Euro.type]
     val funds = new FakeOrderFunds
+    val properties = new MutableCoinffeineNetworkProperties
     val order = new OrderController[Euro.type](
-      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, publisher, funds)
+      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, properties, publisher, funds)
     order.addListener(listener)
 
     def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {

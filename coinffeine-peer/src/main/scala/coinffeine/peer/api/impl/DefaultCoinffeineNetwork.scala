@@ -11,7 +11,7 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
-import coinffeine.model.properties.Property
+import coinffeine.model.properties.{PropertyMap, Property}
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, RetrieveOpenOrders, RetrievedOpenOrders}
 import coinffeine.peer.api.CoinffeineNetwork
@@ -23,8 +23,7 @@ private[impl] class DefaultCoinffeineNetwork(
 
   override val activePeers: Property[Int] = properties.activePeers
   override val brokerId: Property[Option[PeerId]] = properties.brokerId
-
-  override def orders = await((peer ? RetrieveOpenOrders).mapTo[RetrievedOpenOrders]).orders.toSet
+  override val orders: PropertyMap[OrderId, AnyOrder] = properties.orders
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
     peer ! OpenOrder(order)
