@@ -40,6 +40,7 @@ class OrderActor[C <: FiatCurrency](
   private case class SpawnExchange(exchange: NonStartedExchange[C], user: Try[Exchange.PeerInfo])
 
   private val orderId = initialOrder.id
+  private val currency = initialOrder.price.currency
   private val requiredFunds: RequiredFunds[C] = {
     val amounts = amountsCalculator.exchangeAmountsFor(initialOrder)
     val role = Role.fromOrderType(initialOrder.orderType)
@@ -63,7 +64,7 @@ class OrderActor[C <: FiatCurrency](
       log.debug("Order actor requested to retrieve status for {}", orderId)
       sender() ! order.view
 
-    case ReceiveMessage(message: OrderMatch[_], _) if message.currency == initialOrder.price.currency =>
+    case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.acceptOrderMatch(orderMatch) match {
         case MatchAccepted(newExchange) => startExchange(newExchange)
@@ -83,15 +84,15 @@ class OrderActor[C <: FiatCurrency](
       log.info("Cancelling order {}", orderId)
       order.cancel(reason)
 
-    case ExchangeActor.ExchangeUpdate(exchange: AnyStateExchange[C]) =>
+    case ExchangeActor.ExchangeUpdate(exchange) if exchange.currency == currency =>
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
-      order.updateExchange(exchange)
+      order.updateExchange(exchange.asInstanceOf[AnyStateExchange[C]])
 
-    case ExchangeActor.ExchangeSuccess(exchange: SuccessfulExchange[C]) =>
-      order.completeExchange(exchange)
+    case ExchangeActor.ExchangeSuccess(exchange) if exchange.currency == currency =>
+      order.completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])
 
-    case ExchangeActor.ExchangeFailure(exchange: FailedExchange[C]) =>
-      order.completeExchange(exchange)
+    case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
+      order.completeExchange(exchange.asInstanceOf[FailedExchange[C]])
   }
 
   private def subscribeToOrderMatches(): Unit = {
