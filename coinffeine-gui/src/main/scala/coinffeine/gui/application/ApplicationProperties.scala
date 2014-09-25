@@ -3,7 +3,7 @@ package coinffeine.gui.application
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.gui.application.properties.{WalletProperties, PropertyBindings, OrderProperties}
+import coinffeine.gui.application.properties.{PeerOrders, WalletProperties, PropertyBindings, OrderProperties}
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.bitcoin.BlockchainStatus
@@ -19,7 +19,7 @@ class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
 
   import coinffeine.gui.util.FxExecutor.asContext
 
-  val ordersProperty = ObservableBuffer[OrderProperties]()
+  val ordersProperty = new PeerOrders(app.network)
 
   val wallet = new WalletProperties(app.wallet)
 
@@ -58,25 +58,4 @@ class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
     }
     status
   }
-
-  private val eventHandler: EventHandler = FxEventHandler {
-
-    case OrderSubmittedEvent(order) =>
-      require(!orderExist(order.id), s"Duplicated OrderId: ${order.id}")
-      ordersProperty.add(new OrderProperties(order))
-
-    case OrderStatusChangedEvent(order, prevStatus, newStatus) if prevStatus != newStatus =>
-      withOrder(order) { o => o.updateStatus(newStatus) }
-
-    case OrderProgressedEvent(order, _, newProgress) =>
-      withOrder(order) { o => o.updateProgress(newProgress) }
-  }
-
-  private def orderExist(orderId: OrderId): Boolean =
-    ordersProperty.exists(_.idProperty.value == orderId)
-
-  private def withOrder(orderId: OrderId)(f: OrderProperties => Unit): Unit =
-    ordersProperty.find(_.idProperty.value == orderId).foreach(f)
-
-  app.observe(eventHandler)
 }
