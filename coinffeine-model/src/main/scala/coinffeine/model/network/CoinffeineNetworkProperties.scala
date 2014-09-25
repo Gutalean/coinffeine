@@ -1,7 +1,7 @@
 package coinffeine.model.network
 
-import coinffeine.model.exchange.AnyStateExchange
-import coinffeine.model.market.{AnyCurrencyOrder, Order, OrderId}
+import coinffeine.model.exchange.{AnyExchange}
+import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
 import coinffeine.model.properties.{MutablePropertyMap, PropertyMap, MutableProperty, Property}
 
 trait CoinffeineNetworkProperties {
@@ -10,8 +10,8 @@ trait CoinffeineNetworkProperties {
   val orders: PropertyMap[OrderId, AnyCurrencyOrder]
 
   def isConnected: Boolean = activePeers.get > 0 && brokerId.get.isDefined
-  def exchanges: Set[AnyStateExchange[_]] = orders.values.toSet[AnyCurrencyOrder].flatMap(
-    order => order.exchanges.values.toSet[AnyStateExchange[_]])
+  def exchanges: Set[AnyExchange] = orders.values.toSet[AnyCurrencyOrder].flatMap(
+    order => order.exchanges.values.toSet[AnyExchange])
 }
 
 class MutableCoinffeineNetworkProperties extends CoinffeineNetworkProperties {

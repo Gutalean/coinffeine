@@ -104,7 +104,8 @@ class OrderActor[C <: FiatCurrency](
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
       override def onProgress(prevProgress: Double, newProgress: Double): Unit = {
-        log.debug("Order {} progressed from {}% to {}%", orderId, 100*prevProgress, 100*newProgress)
+        log.debug("Order {} progressed from {}% to {}%",
+          orderId, (100 * prevProgress).formatted("%5.2f"), (100 * newProgress).formatted("%5.2f"))
       }
 
       override def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit = {
