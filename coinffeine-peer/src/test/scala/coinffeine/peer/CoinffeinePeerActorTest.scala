@@ -9,7 +9,6 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, Address}
 import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
@@ -84,7 +83,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val brokerAddress = BrokerAddress("host", 8888)
     val brokerId = PeerId("broker")
     val wallet = TestProbe()
-    val eventChannel = EventChannelProbe()
 
     val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
     val peer = system.actorOf(Props(new CoinffeinePeerActor(

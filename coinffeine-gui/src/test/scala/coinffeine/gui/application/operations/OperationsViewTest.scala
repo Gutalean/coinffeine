@@ -12,7 +12,6 @@ import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event.{OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.market._
 import coinffeine.peer.api.impl.MockCoinffeineApp
 
@@ -31,7 +30,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
   it must "show an order once submitted" in new Fixture {
     val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
-    app.produceEvent(OrderSubmittedEvent(sampleOrder))
+    app.network.orders.set(sampleOrder.id, sampleOrder)
     eventually {
       find(sampleOrder.id) should be ('defined)
     }
@@ -96,23 +95,21 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   trait OrderIsPresentFixture extends Fixture {
     val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
 
-    app.produceEvent(OrderSubmittedEvent(sampleOrder))
+    app.network.orders.set(sampleOrder.id, sampleOrder)
     eventually {
       find(sampleOrder.id) should be ('defined)
     }
 
     def cancelOrder(): Unit = {
-      val prevStatus = sampleOrder.status
       val newStatus = CancelledOrder("no reason")
-      app.produceEvent(OrderStatusChangedEvent(sampleOrder.id, prevStatus, newStatus))
+      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
     }
   }
 
   trait UpdatingOrderFixture extends OrderIsPresentFixture {
 
     def assertOnStatusChange(newStatus: OrderStatus): Unit = {
-      val prevStatus = sampleOrder.status
-      app.produceEvent(OrderStatusChangedEvent(sampleOrder.id, prevStatus, newStatus))
+      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
       eventually {
         find(sampleOrder.id).get.statusProperty.get should be (newStatus)
       }

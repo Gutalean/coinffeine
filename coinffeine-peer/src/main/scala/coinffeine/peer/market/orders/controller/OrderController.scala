@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.market.orders.controller.OrderFunds.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -15,11 +16,13 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
   * @param network            Which network the order is running on
   * @param initialOrder       Order to run
   */
-private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: AmountsCalculator,
-                                                         network: Network,
-                                                         initialOrder: Order[C],
-                                                         publisher: OrderPublication[C],
-                                                         funds: OrderFunds) {
+private[orders] class OrderController[C <: FiatCurrency](
+    amountsCalculator: AmountsCalculator,
+    network: Network,
+    initialOrder: Order[C],
+    coinffeineProperties: MutableCoinffeineNetworkProperties,
+    publisher: OrderPublication[C],
+    funds: OrderFunds) {
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
       override val network: Network,
@@ -51,7 +54,7 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
 
     override def updateOrderStatus(newStatus: OrderStatus): Unit = {
       val prevStatus = _order.status
-      _order = _order.withStatus(newStatus)
+      updateOrder(_.withStatus(newStatus))
       listeners.foreach(_.onStatusChanged(prevStatus, newStatus))
       if (newStatus.isFinal) {
         listeners.foreach(_.onFinish(newStatus))
@@ -60,7 +63,7 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
 
     def updateExchange(exchange: AnyStateExchange[C]): Unit = {
       val prevProgress = _order.progress
-      _order = _order.withExchange(exchange)
+      updateOrder(_.withExchange(exchange))
       val newProgress = _order.progress
       listeners.foreach(_.onProgress(prevProgress, newProgress))
     }
@@ -68,6 +71,11 @@ private[orders] class OrderController[C <: FiatCurrency](amountsCalculator: Amou
     def completeExchange(exchange: CompletedExchange[C]): Unit = {
       updateExchange(exchange)
       context.state.exchangeCompleted(context, exchange)
+    }
+
+    private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
+      _order = mutator(_order)
+      coinffeineProperties.orders.set(_order.id, _order)
     }
   }
 

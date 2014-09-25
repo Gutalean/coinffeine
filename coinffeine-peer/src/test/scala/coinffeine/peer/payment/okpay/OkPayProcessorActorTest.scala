@@ -17,7 +17,6 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency.{FiatBalance, BitcoinBalance, FiatAmount, FiatCurrency}
-import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
@@ -153,7 +152,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     )
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
-    val eventChannelProbe = EventChannelProbe()
     var processor: ActorRef = _
     val properties = new MutablePaymentProcessorProperties
     val clientParams = OkPayProcessorActor.ClientParams(senderAccount, client, pollingInterval)

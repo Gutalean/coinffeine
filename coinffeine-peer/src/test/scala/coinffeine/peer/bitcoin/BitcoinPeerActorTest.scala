@@ -12,7 +12,6 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.MutableBitcoinProperties
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.event.EventChannelProbe
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
 
@@ -48,7 +47,6 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
     def connectionRetryInterval = 1.minute
     val peerGroup = new PeerGroup(network)
     val blockchainActor, walletActor = new MockSupervisedActor()
-    val eventChannelProbe = EventChannelProbe()
     val wallet = new SmartWallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
     val properties = new MutableBitcoinProperties

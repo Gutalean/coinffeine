@@ -11,6 +11,7 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
 import coinffeine.peer.config.ConfigComponent
@@ -169,6 +170,7 @@ object CoinffeinePeerActor {
     with NetworkComponent
     with ProtocolConstants.Component
     with MutablePaymentProcessorProperties.Component
+    with MutableCoinffeineNetworkProperties.Component
     with AmountsComponent =>
 
     lazy val peerProps: Props = {
@@ -195,7 +197,9 @@ object CoinffeinePeerActor {
       import orderSupervisorCollaborators._
       val collaborators = OrderActor.Collaborators(
         wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer)
-      OrderActor.props(exchangeActorProps, network, amountsCalculator, order, collaborators)
+      OrderActor.props(
+        exchangeActorProps, network, amountsCalculator,
+        order, coinffeineNetworkProperties, collaborators)
     }
   }
 }

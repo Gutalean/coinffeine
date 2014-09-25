@@ -13,8 +13,6 @@ trait CoinffeineApp {
   def marketStats: MarketStats
   def utils: CoinffeineUtils
 
-  def observe(handler: EventHandler): Unit
-
   def start(timeout: FiniteDuration): Future[Unit]
   def stop(timeout: FiniteDuration): Future[Unit]
 

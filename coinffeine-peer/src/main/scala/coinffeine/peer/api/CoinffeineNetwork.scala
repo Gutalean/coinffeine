@@ -9,10 +9,6 @@ import coinffeine.model.properties.Property
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork extends CoinffeineNetworkProperties {
 
-  def orders: Set[Order[c] forSome { type c <: FiatCurrency }]
-
-  def exchanges: Set[AnyExchange] = orders.flatMap[AnyExchange, Set[AnyExchange]](_.exchanges.values)
-
   /** Submit an order to buy bitcoins.
     *
     * @param amount  Amount to buy

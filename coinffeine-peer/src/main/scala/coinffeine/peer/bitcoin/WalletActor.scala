@@ -7,10 +7,10 @@ import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
-import coinffeine.peer.event.EventPublisher
 
-private class WalletActor(properties: MutableWalletProperties, wallet: SmartWallet)
-    extends Actor with ActorLogging with EventPublisher {
+private class WalletActor(
+    properties: MutableWalletProperties,
+    wallet: SmartWallet) extends Actor with ActorLogging {
 
   import WalletActor._
 
