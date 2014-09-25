@@ -1,17 +1,13 @@
 package coinffeine.gui.application
 
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.collections.ObservableBuffer
 
-import coinffeine.gui.application.properties.{PeerOrders, WalletProperties, PropertyBindings, OrderProperties}
+import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, WalletProperties}
 import coinffeine.gui.control.ConnectionStatus
-import coinffeine.gui.util.FxEventHandler
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{FiatBalance, Currency}
-import coinffeine.model.event._
-import coinffeine.model.market.OrderId
-import coinffeine.peer.api.{CoinffeineApp, EventHandler}
+import coinffeine.model.currency.{Currency, FiatBalance}
+import coinffeine.peer.api.CoinffeineApp
 
 class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
 

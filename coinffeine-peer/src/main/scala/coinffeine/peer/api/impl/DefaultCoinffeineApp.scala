@@ -9,14 +9,12 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
-import coinffeine.model.event.CoinffeineAppEvent
 import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.event.EventObserverActor
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 
@@ -42,11 +40,6 @@ class DefaultCoinffeineApp(name: String,
     accountId, peerRef, properties.paymentProcessor)
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator)
-
-  override def observe(handler: EventHandler): Unit = {
-    val observer = system.actorOf(EventObserverActor.props(handler))
-    system.eventStream.subscribe(observer, classOf[CoinffeineAppEvent])
-  }
 
   override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher

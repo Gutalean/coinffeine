@@ -9,7 +9,6 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.event.EventChannelProbe
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
@@ -143,7 +142,6 @@ class ProtoMessageGatewayTest
   }
 
   trait FreshBrokerAndPeer extends Fixture {
-    val eventChannelProbe = EventChannelProbe()
     val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
     val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)

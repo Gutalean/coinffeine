@@ -13,7 +13,6 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency.Currency.Euro
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.event._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}

@@ -10,8 +10,9 @@ import scalafx.scene.image.Image
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.wallet.WalletView
-import coinffeine.gui.application.{ApplicationProperties, ApplicationScene, NotificationManager}
+import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
+import coinffeine.gui.notification.NotificationManager
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair, Wallet}
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
