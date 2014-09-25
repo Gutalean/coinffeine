@@ -35,6 +35,8 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
     if (this.value <= that.value) this else that
   def max(that: CurrencyAmount[C]): CurrencyAmount[C] =
     if (this.value >= that.value) this else that
+  def averageWith(that: CurrencyAmount[C]): CurrencyAmount[C] =
+    CurrencyAmount.closestAmount((this.value + that.value) / 2, currency)
 
   val isPositive = value > 0
   val isNegative = value < 0
