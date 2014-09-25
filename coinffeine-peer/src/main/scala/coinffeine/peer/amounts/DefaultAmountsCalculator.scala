@@ -11,8 +11,6 @@ private[amounts] class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
-  import DefaultAmountsCalculator._
-
   override def exchangeAmountsFor[C <: FiatCurrency](grossBitcoinAmount: BitcoinAmount,
                                                      grossFiatAmount: CurrencyAmount[C]) = {
     type FiatAmount = CurrencyAmount[C]
@@ -20,7 +18,7 @@ private[amounts] class DefaultAmountsCalculator(
      s"Gross amounts must be positive ($grossBitcoinAmount, $grossFiatAmount given)")
 
     val txFee = bitcoinFeeCalculator.defaultTransactionFee
-    val netBitcoinAmount = grossBitcoinAmount - txFee * 3
+    val netBitcoinAmount = grossBitcoinAmount - txFee * HappyPathTransactions
     require(netBitcoinAmount.isPositive, "No net bitcoin amount to exchange")
 
     val netFiatAmount = stepwiseCalculator.maximumPaymentWithGrossAmount(grossFiatAmount)
@@ -55,8 +53,8 @@ private[amounts] class DefaultAmountsCalculator(
     }.toSeq
 
     val escrowAmounts = Both(
-      buyer = maxBitcoinStepSize * EscrowSteps.buyer,
-      seller = maxBitcoinStepSize * EscrowSteps.seller
+      buyer = maxBitcoinStepSize * DefaultAmountsCalculator.EscrowSteps.buyer,
+      seller = maxBitcoinStepSize * DefaultAmountsCalculator.EscrowSteps.seller
     )
 
     val deposits = Both(
@@ -94,6 +92,4 @@ private[amounts] class DefaultAmountsCalculator(
 private object DefaultAmountsCalculator {
   /** Amount of escrow deposits in terms of the amount exchanged on every step */
   private val EscrowSteps = Both(buyer = 2, seller = 1)
-
-  private val HappyPathTransactions = 3
 }

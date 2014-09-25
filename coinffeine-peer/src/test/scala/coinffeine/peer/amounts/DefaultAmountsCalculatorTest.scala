@@ -40,7 +40,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   it must "reject non positive net bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(txFee * 3, 100.EUR)
+      instance.exchangeAmountsFor(txFee * HappyPathTransactions, 100.EUR)
     }
   }
 
@@ -91,7 +91,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     forAnyAmounts { amounts =>
       val splitAmount = amounts.finalStep.depositSplit.toSeq.reduce(_ + _)
       val depositAmount = amounts.deposits.map(_.input).toSeq.reduce(_ + _)
-      splitAmount shouldBe (depositAmount - txFee * 3)
+      splitAmount shouldBe (depositAmount - txFee * HappyPathTransactions)
     }
   }
 
