@@ -4,6 +4,7 @@ import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
+import coinffeine.model.bitcoin.test.FixedBitcoinFee
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
@@ -213,10 +214,6 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount(fee, amount.currency)
     override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(stepSize, currency)
-  }
-
-  class FixedBitcoinFee(fee: BitcoinAmount) extends BitcoinFeeCalculator {
-    override val defaultTransactionFee: BitcoinAmount = fee
   }
 
   private def pairsOf[A](elems: Iterable[A]): Seq[(A, A)] = elems.iterator.sliding(2, 1)
