@@ -4,6 +4,7 @@ import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
+import coinffeine.model.bitcoin.test.FixedBitcoinFee
 import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
@@ -39,7 +40,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   it must "reject non positive net bitcoin amounts" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(txFee * 3, 100.EUR)
+      instance.exchangeAmountsFor(txFee * HappyPathTransactions, 100.EUR)
     }
   }
 
@@ -90,7 +91,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     forAnyAmounts { amounts =>
       val splitAmount = amounts.finalStep.depositSplit.toSeq.reduce(_ + _)
       val depositAmount = amounts.deposits.map(_.input).toSeq.reduce(_ + _)
-      splitAmount shouldBe (depositAmount - txFee * 3)
+      splitAmount shouldBe (depositAmount - txFee * HappyPathTransactions)
     }
   }
 
@@ -174,7 +175,8 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     val paymentProcessor: PaymentProcessor = new FixedFeeProcessor(processorFee, processorStepSize)
     val stepSize = paymentProcessor.bestStepSize(Euro)
     val bitcoinFeeCalculator: BitcoinFeeCalculator = new FixedBitcoinFee(txFee)
-    val instance = new DefaultAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
+    val instance = new DefaultAmountsCalculator(
+      new DefaultStepwisePaymentCalculator(paymentProcessor), bitcoinFeeCalculator)
 
     type Euros = Euro.type
 
@@ -199,7 +201,10 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       }.reduce(_ max _)
 
       val satoshi = CurrencyAmount.smallestAmount(Bitcoin)
-      actualStepSize.value shouldEqual expectedStepSize.value +- satoshi.value
+      val oneCentInBitcoin = CurrencyAmount.closestAmount(price * 0.01, Bitcoin)
+      val expectedRoundingError = satoshi + oneCentInBitcoin
+
+      actualStepSize.value shouldEqual expectedStepSize.value +- expectedRoundingError.value
 
       actualStepSize
     }
@@ -209,10 +214,6 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
       CurrencyAmount(fee, amount.currency)
     override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(stepSize, currency)
-  }
-
-  class FixedBitcoinFee(fee: BitcoinAmount) extends BitcoinFeeCalculator {
-    override val defaultTransactionFee: BitcoinAmount = fee
   }
 
   private def pairsOf[A](elems: Iterable[A]): Seq[(A, A)] = elems.iterator.sliding(2, 1)
