@@ -12,7 +12,6 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
@@ -20,7 +19,7 @@ import coinffeine.peer.payment.okpay.BlockingFundsActor._
 class OkPayProcessorActor(
     clientParams: OkPayProcessorActor.ClientParams,
     properties: MutablePaymentProcessorProperties)
-  extends Actor with ActorLogging with ServiceActor[Unit] with EventPublisher {
+  extends Actor with ActorLogging with ServiceActor[Unit] {
 
   import context.dispatcher
   import OkPayProcessorActor._

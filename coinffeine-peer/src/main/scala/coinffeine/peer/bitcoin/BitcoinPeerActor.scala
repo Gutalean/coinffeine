@@ -11,14 +11,13 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFut
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.event.EventPublisher
 
 class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
                        blockchainProps: Props,
                        walletProps: (MutableWalletProperties, SmartWallet) => Props,
                        wallet: SmartWallet, blockchain: AbstractBlockChain,
                        network: NetworkParameters, connectionRetryInterval: FiniteDuration)
-  extends Actor with ServiceActor[Unit] with ActorLogging with EventPublisher {
+  extends Actor with ServiceActor[Unit] with ActorLogging {
 
   import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
