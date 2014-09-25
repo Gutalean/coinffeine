@@ -5,6 +5,8 @@ import scala.concurrent.duration._
 import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
 import org.scalatest.Inside
+import org.scalatest.concurrent.Eventually
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -30,7 +32,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActorTest extends AkkaSpec
-  with SampleExchange with BuyerPerspective with CoinffeineUnitTestNetwork.Component with Inside {
+    with SampleExchange with BuyerPerspective with CoinffeineUnitTestNetwork.Component
+    with Inside  with Eventually {
 
   val idleTime = 500.millis
   val order = Order(Bid, 5.BTC, Price(500.EUR))
@@ -49,7 +52,6 @@ class OrderActorTest extends AkkaSpec
   it should "keep in stalled status when there are not enough funds when buying" in new Fixture {
     givenInitializedOrder()
     givenFundsBecomeUnavailable()
-    eventChannelProbe.expectNoMsg(idleTime)
     submissionProbe.expectNoMsg(idleTime)
   }
 
@@ -57,9 +59,7 @@ class OrderActorTest extends AkkaSpec
     givenOfflineOrder()
     givenFundsBecomeUnavailable()
     submissionProbe.expectMsgType[StopSubmitting]
-    inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
-      case OrderStatusChangedEvent(order.id, OfflineOrder, StalledOrder(_)) =>
-    }
+    expectProperty { _.status should beStalled }
   }
 
   it should "reject order matches when stalled" in new Fixture {
@@ -72,16 +72,14 @@ class OrderActorTest extends AkkaSpec
   it should "move to offline when receive available funds" in new Fixture {
     givenStalledOrder()
     givenFundsBecomeAvailable()
-    eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
+    expectProperty { _.status shouldBe OfflineOrder }
     submissionProbe.expectMsg(KeepSubmitting(entry))
   }
 
   it should "submit to the broker and receive submission status" in new Fixture {
     givenOfflineOrder()
     submissionProbe.send(actor, InMarket(entry))
-    eventChannelProbe.expectMsgPF() {
-      case OrderStatusChangedEvent(orderId, _, InMarketOrder) if orderId == order.id =>
-    }
+    expectProperty { _.status shouldBe InMarketOrder }
   }
 
   it should "keep submitting to the broker until been cancelled" in new Fixture {
@@ -90,9 +88,7 @@ class OrderActorTest extends AkkaSpec
     val reason = "some reason"
     actor ! OrderActor.CancelOrder(reason)
     submissionProbe.expectMsg(StopSubmitting(order.id))
-    eventChannelProbe.expectMsgPF() {
-      case OrderStatusChangedEvent(orderId, _, CancelledOrder(`reason`)) if orderId == order.id =>
-    }
+    expectProperty { _.status should beCancelled }
   }
 
   it should "reject order matches after being cancelled" in new Fixture {
@@ -111,7 +107,7 @@ class OrderActorTest extends AkkaSpec
   it should "move from stalled to offline when available funds message is received" in new Fixture {
     givenStalledOrder()
     givenFundsBecomeAvailable()
-    eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus shouldBe OfflineOrder
+    expectProperty { _.status shouldBe OfflineOrder }
     submissionProbe.expectMsg(KeepSubmitting(entry))
   }
 
@@ -123,15 +119,10 @@ class OrderActorTest extends AkkaSpec
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
-      eventChannelProbe.expectMsgAllOf(
-        OrderStatusChangedEvent(order.id, InMarketOrder, InProgressOrder),
-        OrderProgressedEvent(order.id, 0.0, 0.0)
-      )
+      expectProperty { _.status shouldBe InProgressOrder }
+      expectProperty { _.progress shouldBe 0.0 }
       exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
-      eventChannelProbe.fishForMessage() {
-        case OrderStatusChangedEvent(orderId, _, CompletedOrder) if orderId == order.id => true
-        case _ => false
-      }
+      expectProperty { _.status shouldBe CompletedOrder }
     }
 
   it should "spawn an exchange upon matching" in new Fixture {
@@ -172,7 +163,6 @@ class OrderActorTest extends AkkaSpec
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val fundsActor, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
-    val eventChannelProbe = EventChannelProbe()
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)
     val properties = new MutableCoinffeineNetworkProperties
@@ -190,7 +180,7 @@ class OrderActorTest extends AkkaSpec
     )))
 
     def givenInitializedOrder(): Unit = {
-      eventChannelProbe.expectMsgType[OrderSubmittedEvent]
+      eventually { properties.orders.get(order.id) shouldBe 'defined }
       fundsActor.expectCreation()
       fundsActor.expectMsgType[OrderFundsActor.BlockFunds]
     }
@@ -207,9 +197,7 @@ class OrderActorTest extends AkkaSpec
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
       givenFundsBecomeAvailable()
-      inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent]) {
-        case OrderStatusChangedEvent(order.`id`, StalledOrder(_), OfflineOrder) =>
-      }
+      expectProperty { _.status shouldBe OfflineOrder }
       submissionProbe.expectMsg(KeepSubmitting(entry))
     }
 
@@ -217,15 +205,13 @@ class OrderActorTest extends AkkaSpec
       givenOfflineOrder()
       givenFundsBecomeUnavailable()
       submissionProbe.expectMsgType[StopSubmitting]
-      inside (eventChannelProbe.expectMsgType[OrderStatusChangedEvent].newStatus) {
-        case StalledOrder(_) =>
-      }
+      expectProperty { _.status should beStalled }
     }
 
     def givenInMarketOrder(): Unit = {
       givenOfflineOrder()
       submissionProbe.send(actor, InMarket(entry))
-      eventChannelProbe.expectMsg(OrderStatusChangedEvent(order.id, OfflineOrder, InMarketOrder))
+      expectProperty { _.status shouldBe InMarketOrder }
     }
 
     def givenAFreshKeyIsGenerated(): KeyPair = {
@@ -259,5 +245,27 @@ class OrderActorTest extends AkkaSpec
       gatewayProbe.expectForwardingToBroker(
         ExchangeRejection(otherExchangeId, errorMessage))
     }
+
+    def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
+      eventually {
+        f(properties.orders(order.id))
+      }
+    }
+  }
+
+  val beStalled = new Matcher[OrderStatus] {
+    override def apply(left: OrderStatus) = MatchResult(
+      left.isInstanceOf[StalledOrder],
+      s"$left is not stalled",
+      s"$left is stalled"
+    )
+  }
+
+  val beCancelled = new Matcher[OrderStatus] {
+    override def apply(left: OrderStatus) = MatchResult(
+      left.isInstanceOf[CancelledOrder],
+      s"$left is not cancelled",
+      s"$left is cancelled"
+    )
   }
 }

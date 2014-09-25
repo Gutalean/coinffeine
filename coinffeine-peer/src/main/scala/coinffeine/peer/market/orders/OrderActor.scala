@@ -11,7 +11,6 @@ import com.google.bitcoin.core.NetworkParameters
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency._
-import coinffeine.model.event.{OrderProgressedEvent, OrderStatusChangedEvent, OrderSubmittedEvent}
 import coinffeine.model.exchange.Exchange.CannotStartHandshake
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -19,7 +18,6 @@ import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.event.EventPublisher
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
 import coinffeine.peer.market.orders.controller._
@@ -29,12 +27,12 @@ import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessag
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
-class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
-                                    amountsCalculator: AmountsCalculator,
-                                    controllerFactory: (OrderPublication[C], OrderFunds) => OrderController[C],
-                                    delegates: OrderActor.Delegates[C],
-                                    collaborators: OrderActor.Collaborators)
-  extends Actor with ActorLogging with EventPublisher {
+class OrderActor[C <: FiatCurrency](
+    initialOrder: Order[C],
+    amountsCalculator: AmountsCalculator,
+    controllerFactory: (OrderPublication[C], OrderFunds) => OrderController[C],
+    delegates: OrderActor.Delegates[C],
+    collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
 
   import OrderActor._
   import context.dispatcher
@@ -56,7 +54,6 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
     log.info("Order actor initialized for {}", orderId)
     subscribeToOrderMatches()
     subscribeToOrderChanges()
-    publishEvent(OrderSubmittedEvent(order.view))
   }
 
   override def receive = publisher.receiveSubmissionEvents orElse
@@ -107,12 +104,11 @@ class OrderActor[C <: FiatCurrency](initialOrder: Order[C],
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
       override def onProgress(prevProgress: Double, newProgress: Double): Unit = {
-        publishEvent(OrderProgressedEvent(orderId, prevProgress, newProgress))
+        log.debug("Order {} progressed from {}% to {}%", orderId, 100*prevProgress, 100*newProgress)
       }
 
       override def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit = {
         log.info("Order {} status changed from {} to {}", orderId, oldStatus, newStatus)
-        publishEvent(OrderStatusChangedEvent(orderId, oldStatus, newStatus))
       }
 
       override def onFinish(finalStatus: OrderStatus): Unit = {
