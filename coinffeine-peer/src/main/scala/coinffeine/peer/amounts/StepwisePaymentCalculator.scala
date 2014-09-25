@@ -14,8 +14,14 @@ trait StepwisePaymentCalculator {
   /** Break into steps with their corresponding fees a net amount to be payed. */
   def breakIntoSteps[C <: FiatCurrency](
       netAmount: CurrencyAmount[C]): Seq[StepwisePaymentCalculator.Payment[C]]
+
+  /** Gross amount required to pay in stepwise fashion a given net amount. */
+  def requiredAmountToPay[C <: FiatCurrency](netAmount: CurrencyAmount[C]): CurrencyAmount[C] =
+    breakIntoSteps(netAmount).map(_.grossAmount).reduce(_ + _)
 }
 
 object StepwisePaymentCalculator {
-  case class Payment[C <: FiatCurrency](netAmount: CurrencyAmount[C], fee: CurrencyAmount[C])
+  case class Payment[C <: FiatCurrency](netAmount: CurrencyAmount[C], fee: CurrencyAmount[C]) {
+    def grossAmount: CurrencyAmount[C] = netAmount + fee
+  }
 }

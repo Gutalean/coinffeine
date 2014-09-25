@@ -1,12 +1,16 @@
 package coinffeine.peer.amounts
 
+import org.scalacheck.Gen
+import org.scalatest.prop.PropertyChecks
+
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.CurrencyAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
-class DefaultStepwisePaymentCalculatorTest extends UnitTest {
+class DefaultStepwisePaymentCalculatorTest extends UnitTest with PropertyChecks {
 
   val step = OkPayPaymentProcessor.bestStepSize(Euro)
   val stepFee = OkPayPaymentProcessor.calculateFee(step)
@@ -56,5 +60,16 @@ class DefaultStepwisePaymentCalculatorTest extends UnitTest {
     breakdown.init.toSet shouldBe Set(Payment(step, stepFee))
     breakdown.init should have size 6
     breakdown.last shouldBe Payment(step / 2, stepFee)
+  }
+
+  "Maximum net payment and required gross amount" should "be consistent" in {
+    forAll (Gen.posNum[Int]) { cents =>
+      val grossAmount = CurrencyAmount.fromIndivisibleUnits(cents, Euro)
+      val maxNetPayment = instance.maximumPaymentWithGrossAmount(grossAmount)
+      if (maxNetPayment.isPositive) {
+        val requiredGrossAmount = instance.requiredAmountToPay(maxNetPayment)
+        requiredGrossAmount.value should be <= grossAmount.value
+      }
+    }
   }
 }
