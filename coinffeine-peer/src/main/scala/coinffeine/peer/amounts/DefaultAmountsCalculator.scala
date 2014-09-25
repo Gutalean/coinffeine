@@ -5,10 +5,10 @@ import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
-import coinffeine.model.payment.PaymentProcessor
+import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 private[amounts] class DefaultAmountsCalculator(
-    paymentProcessor: PaymentProcessor,
+    stepwiseCalculator: StepwisePaymentCalculator,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
   import DefaultAmountsCalculator._
@@ -23,29 +23,18 @@ private[amounts] class DefaultAmountsCalculator(
     val netBitcoinAmount = grossBitcoinAmount - txFee * 3
     require(netBitcoinAmount.isPositive, "No net bitcoin amount to exchange")
 
-    val bestFiatStepSize = paymentProcessor.bestStepSize(grossFiatAmount.currency)
+    val netFiatAmount = stepwiseCalculator.maximumPaymentWithGrossAmount(grossFiatAmount)
+    require(netFiatAmount.isPositive, "No net fiat amount to exchange")
 
     /** Fiat amount exchanged per step and its fee: best amount except for the last step  */
-    val fiatBreakdown: Seq[(FiatAmount, FiatAmount)] = {
-      val bestFiatStepSizeWithFee = paymentProcessor.amountPlusFee(bestFiatStepSize)
-      val (completeSteps, remainder) = grossFiatAmount /% bestFiatStepSizeWithFee
-      val completedSteps =
-        Seq.fill(completeSteps)(bestFiatStepSize -> paymentProcessor.calculateFee(bestFiatStepSize))
-      val lastStep = for {
-        lastStepSize <- when(remainder.isPositive) { paymentProcessor.amountMinusFee(remainder) }
-        lastFee <- when(lastStepSize.isPositive) { remainder - lastStepSize }
-      } yield (lastStepSize, lastFee)
-      completedSteps ++ lastStep
-    }
-    val netFiatAmount = fiatBreakdown.foldLeft(CurrencyAmount.zero(grossFiatAmount.currency))(_ + _._1)
-    require(netFiatAmount.isPositive, "No net fiat amount to exchange")
+    val fiatBreakdown: Seq[Payment[C]] = stepwiseCalculator.breakIntoSteps(netFiatAmount)
 
     /** Bitcoin amount exchanged per step. It mirrors the fiat amounts with a rounding error of at
       * most one satoshi. */
     val bitcoinBreakdown: Seq[BitcoinAmount] = ProportionalAllocation
       .allocate(
         amount = netBitcoinAmount.toIndivisibleUnits,
-        weights = fiatBreakdown.map(_._1.toIndivisibleUnits).toVector)
+        weights = fiatBreakdown.map(_.netAmount.toIndivisibleUnits).toVector)
       .map(satoshis => CurrencyAmount.fromIndivisibleUnits(satoshis, Bitcoin))
 
     val maxBitcoinStepSize: BitcoinAmount = bitcoinBreakdown.reduce(_ max _)
@@ -60,10 +49,10 @@ private[amounts] class DefaultAmountsCalculator(
       val stepProgress = cumulative(bitcoinBreakdown).map { case bitcoin =>
         Exchange.Progress(Both(buyer = bitcoin, seller = bitcoin + txFee * HappyPathTransactions))
       }
-      (for {
-        ((fiat, fiatFee), split, progress) <- (fiatBreakdown, depositSplits, stepProgress).zipped
-      } yield Exchange.IntermediateStepAmounts[C](split, fiat, fiatFee, progress)).toSeq
-    }
+      for {
+        (payment, split, progress) <- (fiatBreakdown, depositSplits, stepProgress).zipped
+      } yield Exchange.IntermediateStepAmounts[C](split, payment.netAmount, payment.fee, progress)
+    }.toSeq
 
     val escrowAmounts = Both(
       buyer = maxBitcoinStepSize * EscrowSteps.buyer,

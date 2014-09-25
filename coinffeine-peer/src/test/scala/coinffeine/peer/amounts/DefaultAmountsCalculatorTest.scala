@@ -174,7 +174,8 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     val paymentProcessor: PaymentProcessor = new FixedFeeProcessor(processorFee, processorStepSize)
     val stepSize = paymentProcessor.bestStepSize(Euro)
     val bitcoinFeeCalculator: BitcoinFeeCalculator = new FixedBitcoinFee(txFee)
-    val instance = new DefaultAmountsCalculator(paymentProcessor, bitcoinFeeCalculator)
+    val instance = new DefaultAmountsCalculator(
+      new DefaultStepwisePaymentCalculator(paymentProcessor), bitcoinFeeCalculator)
 
     type Euros = Euro.type
 
@@ -199,7 +200,10 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       }.reduce(_ max _)
 
       val satoshi = CurrencyAmount.smallestAmount(Bitcoin)
-      actualStepSize.value shouldEqual expectedStepSize.value +- satoshi.value
+      val oneCentInBitcoin = CurrencyAmount.closestAmount(price * 0.01, Bitcoin)
+      val expectedRoundingError = satoshi + oneCentInBitcoin
+
+      actualStepSize.value shouldEqual expectedStepSize.value +- expectedRoundingError.value
 
       actualStepSize
     }
