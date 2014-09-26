@@ -80,7 +80,7 @@ import coinffeine.peer.CoinffeinePeerActor._
   }
 
   private val handleMessages: Receive = {
-    case message @ (OpenOrder(_) | CancelOrder(_, _) | RetrieveOpenOrders) =>
+    case message @ (OpenOrder(_) | CancelOrder(_, _)) =>
       orderSupervisorRef forward message
     case message @ WithdrawWalletFunds(amount, to) =>
       implicit val txBroadcastTimeout = new Timeout(WithdrawFundsTxBroadcastTimeout)
@@ -127,12 +127,6 @@ object CoinffeinePeerActor {
     * @param reason A user friendly description of why the order is cancelled
     */
   case class CancelOrder(order: OrderId, reason: String)
-
-  /** Ask for own orders opened in any market. */
-  case object RetrieveOpenOrders
-
-  /** Reply to [[RetrieveOpenOrders]] message. */
-  case class RetrievedOpenOrders(orders: Seq[Order[_ <: FiatCurrency]])
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest

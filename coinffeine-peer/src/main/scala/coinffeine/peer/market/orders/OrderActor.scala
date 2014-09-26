@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
@@ -14,13 +14,14 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.CannotStartHandshake
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId}
+import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
 import coinffeine.peer.market.orders.controller._
+import coinffeine.peer.market.orders.funds.{DelegatedFundsBlocker, FundsBlockingActor}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
@@ -30,26 +31,21 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
     amountsCalculator: AmountsCalculator,
-    controllerFactory: (OrderPublication[C], OrderFunds) => OrderController[C],
+    controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
     delegates: OrderActor.Delegates[C],
     collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
 
-  import OrderActor._
   import context.dispatcher
+  import OrderActor._
 
   private case class SpawnExchange(exchange: NonStartedExchange[C], user: Try[Exchange.PeerInfo])
 
   private val orderId = initialOrder.id
   private val currency = initialOrder.price.currency
-  private val requiredFunds: RequiredFunds[C] = {
-    val amounts = amountsCalculator.exchangeAmountsFor(initialOrder)
-    val role = Role.fromOrderType(initialOrder.orderType)
-    RequiredFunds(role.select(amounts.bitcoinRequired), role.select(amounts.fiatRequired))
-  }
-  private val fundsBlocking = new DelegatedOrderFunds(delegates.orderFundsActor, requiredFunds)
+  private val fundsBlocker = delegates.delegatedFundsBlocking()
   private val publisher = new DelegatedPublication(
     initialOrder.id, initialOrder.orderType, initialOrder.price, collaborators.submissionSupervisor)
-  private val order = controllerFactory(publisher, fundsBlocking)
+  private val order = controllerFactory(publisher, fundsBlocker)
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -57,24 +53,13 @@ class OrderActor[C <: FiatCurrency](
     subscribeToOrderChanges()
   }
 
-  override def receive = publisher.receiveSubmissionEvents orElse
-    fundsBlocking.managingFundsAvailability orElse {
-
-    case RetrieveStatus =>
-      log.debug("Order actor requested to retrieve status for {}", orderId)
-      sender() ! order.view
+  override def receive = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
-      val orderMatch = message.asInstanceOf[OrderMatch[C]]
-      order.acceptOrderMatch(orderMatch) match {
-        case MatchAccepted(newExchange) => startExchange(newExchange)
-        case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
-        case MatchAlreadyAccepted(oldExchange) =>
-          log.debug("Received order match for the already accepted exchange {}", oldExchange)
-      }
+      order.acceptOrderMatch(message.asInstanceOf[OrderMatch[C]])
 
     case SpawnExchange(exchange, Success(userInfo)) =>
-       spawnExchange(exchange, userInfo)
+      spawnExchange(exchange, userInfo)
 
     case SpawnExchange(exchange, Failure(cause)) =>
       log.error(cause, "Cannot start exchange {} for {} order", exchange.id, orderId)
@@ -98,7 +83,7 @@ class OrderActor[C <: FiatCurrency](
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
       case orderMatch: OrderMatch[_] if orderMatch.orderId == orderId &&
-        orderMatch.currency == order.view.price.currency =>
+        orderMatch.currency == currency =>
     }
   }
 
@@ -113,8 +98,14 @@ class OrderActor[C <: FiatCurrency](
         log.info("Order {} status changed from {} to {}", orderId, oldStatus, newStatus)
       }
 
-      override def onFinish(finalStatus: OrderStatus): Unit = {
-        fundsBlocking.release()
+      override def onOrderMatchResolution(orderMatch: OrderMatch[C],
+                                          result: MatchResult[C]): Unit = {
+        result match {
+          case MatchAccepted(newExchange) => startExchange(newExchange)
+          case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
+          case MatchAlreadyAccepted(oldExchange) =>
+            log.debug("Received order match for the already accepted exchange {}", oldExchange)
+        }
       }
     })
   }
@@ -140,8 +131,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {
-    val props = delegates.exchangeActor(
-      ExchangeActor.ExchangeToStart(exchange, user), resultListener = self)
+    val props = delegates.exchangeActor(ExchangeActor.ExchangeToStart(exchange, user))
     context.actorOf(props, exchange.id.value)
   }
 
@@ -165,15 +155,17 @@ object OrderActor {
                            gateway: ActorRef,
                            bitcoinPeer: ActorRef)
 
+  trait OrderFundsBlocker extends FundsBlocker {
+    def blockingFunds: Actor.Receive
+  }
+
   trait Delegates[C <: FiatCurrency] {
-    def exchangeActor(exchange: ExchangeActor.ExchangeToStart[C], resultListener: ActorRef): Props
-    def orderFundsActor: Props
+    def exchangeActor(exchange: ExchangeActor.ExchangeToStart[C])
+                     (implicit context: ActorContext): Props
+    def delegatedFundsBlocking()(implicit context: ActorContext): OrderFundsBlocker
   }
 
   case class CancelOrder(reason: String)
-
-  /** Ask for order status. To be replied with an [[Order]]. */
-  case object RetrieveStatus
 
   def props[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
                                network: NetworkParameters,
@@ -181,14 +173,15 @@ object OrderActor {
                                order: Order[C],
                                coinffeineProperties: MutableCoinffeineNetworkProperties,
                                collaborators: Collaborators): Props = {
+    import collaborators._
     val delegates = new Delegates[C] {
-      override def exchangeActor(exchange: ExchangeToStart[C], resultListener: ActorRef) = {
-        import collaborators._
+      override def exchangeActor(exchange: ExchangeToStart[C])(implicit context: ActorContext) = {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
-          wallet, paymentProcessor, gateway, bitcoinPeer, resultListener))
+          wallet, paymentProcessor, gateway, bitcoinPeer, context.self))
       }
-      override def orderFundsActor = OrderFundsActor.props(
-        collaborators.wallet, collaborators.paymentProcessor)
+      override def delegatedFundsBlocking()(implicit context: ActorContext) =
+        new DelegatedFundsBlocker(requiredFunds =>
+          FundsBlockingActor.props(wallet, paymentProcessor, requiredFunds, context.self))
     }
     Props(new OrderActor[C](
       order,

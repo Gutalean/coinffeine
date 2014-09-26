@@ -1,11 +1,6 @@
 package coinffeine.peer.market.orders
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
 import akka.actor._
-import akka.pattern._
-import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Order, OrderId}
@@ -28,13 +23,6 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
     case CancelOrder(orderId, reason) =>
       orders.get(orderId).foreach(_ ! OrderActor.CancelOrder(reason))
       orders = orders.filterNot(_._1 == orderId)
-
-    case RetrieveOpenOrders =>
-      import context.dispatcher
-      implicit val timeout = Timeout(1.second)
-      Future.sequence(orders.values.toSeq.map { ref =>
-        (ref ? OrderActor.RetrieveStatus).mapTo[Order[FiatCurrency]]
-      }).map(RetrievedOpenOrders.apply).pipeTo(sender())
   }
 }
 
