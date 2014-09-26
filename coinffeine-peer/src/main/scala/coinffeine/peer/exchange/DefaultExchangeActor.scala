@@ -8,12 +8,14 @@ import coinffeine.model.exchange.Exchange.{HandshakeFailed, HandshakeWithCommitm
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorRef, RetrieveBlockchainActor, TransactionPublished}
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
+import coinffeine.peer.payment.PaymentProcessorActor
 
 class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
@@ -29,6 +31,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
   override def preStart(): Unit = {
     log.info("Starting exchange {}", exchange.info.id)
     collaborators.bitcoinPeer ! RetrieveBlockchainActor
+  }
+
+  override def postStop(): Unit = {
+    log.info("Unblocking funds just in case")
+    collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.info.blockedFunds.bitcoin)
+    exchange.info.blockedFunds.fiat.foreach { id =>
+      collaborators.paymentProcessor ! PaymentProcessorActor.UnblockFunds(id)
+    }
   }
 
   val receive: Receive = {

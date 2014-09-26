@@ -16,6 +16,7 @@ import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
@@ -216,4 +217,10 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       listener.expectMsgClass(classOf[Terminated])
       system.stop(actor)
     }
+
+  it should "unblock funds on termination" in new Fixture {
+    startExchange()
+    system.stop(actor)
+    walletActor.expectMsg(WalletActor.UnblockBitcoins(exchange.blockedFunds.bitcoin))
+  }
 }
