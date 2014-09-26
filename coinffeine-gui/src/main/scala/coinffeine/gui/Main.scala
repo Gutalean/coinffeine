@@ -11,7 +11,8 @@ import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
-import coinffeine.gui.control.{ConnectionStatusWidget, WalletBalanceWidget}
+import coinffeine.gui.control.ConnectionStatusWidget
+import coinffeine.gui.control.wallet.{FiatBalanceWidget, BitcoinBalanceWidget, WalletBalanceWidget}
 import coinffeine.gui.notification.NotificationManager
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair, Wallet}
@@ -39,8 +40,8 @@ object Main extends JFXApp
         new WalletView(app, properties.wallet),
         new OperationsView(app, properties)),
       toolbarWidgets = Seq(
-        new WalletBalanceWidget(Bitcoin, properties.wallet.balance),
-        new WalletBalanceWidget(Euro, properties.fiatBalanceProperty)
+        new BitcoinBalanceWidget(properties.wallet.balance),
+        new FiatBalanceWidget(properties.fiatBalanceProperty)
       ),
       statusBarWidgets = Seq(
         new ConnectionStatusWidget(properties.connectionStatusProperty)
