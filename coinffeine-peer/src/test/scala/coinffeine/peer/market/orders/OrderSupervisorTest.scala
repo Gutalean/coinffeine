@@ -18,7 +18,6 @@ class OrderSupervisorTest extends AkkaSpec {
     }
 
     override def receive: Receive = {
-      case OrderActor.RetrieveStatus => sender() ! order
       case other => listener ! other
     }
   }
@@ -43,14 +42,6 @@ class OrderSupervisorTest extends AkkaSpec {
     val reason = "foo"
     actor ! CancelOrder(order1.id, reason)
     orderActorProbe.expectMsg(OrderActor.CancelOrder(reason))
-  }
-
-  it should "collect all orders in a RetrievedOpenOrders message" in new Fixture {
-    givenOrderSupervisorIsInitialized()
-    givenOpenOrder(order1)
-    givenOpenOrder(order2)
-    actor ! RetrieveOpenOrders
-    expectMsg(RetrievedOpenOrders(Seq(order1, order2)))
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {

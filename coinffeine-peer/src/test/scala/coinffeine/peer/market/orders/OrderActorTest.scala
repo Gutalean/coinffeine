@@ -47,12 +47,7 @@ class OrderActorTest extends AkkaSpec
     exchange.counterpartId
   )
 
-  "An order actor" should "keep order info" in new Fixture {
-    actor ! OrderActor.RetrieveStatus
-    expectMsgType[Order[_]]
-  }
-
-  it should "block FIAT funds plus fees when initialized" in new Fixture {
+  "An order actor" should "block FIAT funds plus fees when initialized" in new Fixture {
     givenInitializedOrder()
   }
 

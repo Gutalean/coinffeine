@@ -55,10 +55,6 @@ class OrderActor[C <: FiatCurrency](
 
   override def receive = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
 
-    case RetrieveStatus =>
-      log.debug("Order actor requested to retrieve status for {}", orderId)
-      sender() ! order.view
-
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       order.acceptOrderMatch(message.asInstanceOf[OrderMatch[C]])
 
@@ -87,7 +83,7 @@ class OrderActor[C <: FiatCurrency](
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
       case orderMatch: OrderMatch[_] if orderMatch.orderId == orderId &&
-        orderMatch.currency == order.view.price.currency =>
+        orderMatch.currency == currency =>
     }
   }
 
@@ -170,9 +166,6 @@ object OrderActor {
   }
 
   case class CancelOrder(reason: String)
-
-  /** Ask for order status. To be replied with an [[Order]]. */
-  case object RetrieveStatus
 
   def props[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
                                network: NetworkParameters,
