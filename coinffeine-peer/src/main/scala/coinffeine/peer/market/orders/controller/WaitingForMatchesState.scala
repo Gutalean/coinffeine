@@ -1,20 +1,22 @@
 package coinffeine.peer.market.orders.controller
 
+import scala.util.{Failure, Success, Try}
+
+import org.slf4j.LoggerFactory
+
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Exchange.{Amounts, BlockedFunds}
 import coinffeine.model.exchange.{Exchange, Role}
 import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends State[C] {
+private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends State[C] {
+
+  private var matchWaitingForFunds: Option[OrderMatch[C]] = None
 
   override def enter(ctx: Context): Unit = {
     ctx.updateOrderStatus(OfflineOrder)
     ctx.keepInMarket()
-  }
-
-  override def fundsBecomeUnavailable(ctx: Context): Unit = {
-    ctx.keepOffMarket()
-    ctx.transitionTo(new StalledState)
   }
 
   override def becomeInMarket(ctx: Context): Unit = {
@@ -25,23 +27,64 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends St
     ctx.updateOrderStatus(OfflineOrder)
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) = {
-    if (hasInvalidPrice(ctx.order, orderMatch)) MatchRejected("Invalid price")
-    else if (hasInvalidAmount(ctx.order, orderMatch)) MatchRejected("Invalid amount")
-    else {
-      val exchange = Exchange.notStarted(
-        id = orderMatch.exchangeId,
-        Role.fromOrderType(ctx.order.orderType),
-        counterpartId = orderMatch.counterpart,
-        ctx.calculator.exchangeAmountsFor(orderMatch),
-        parameters = Exchange.Parameters(orderMatch.lockTime, ctx.network),
-        ctx.funds.get
-      )
-      ctx.startExchange(exchange)
-      ctx.keepOffMarket()
-      ctx.transitionTo(new ExchangingState(exchange.id))
-      MatchAccepted(exchange)
+  override def fundsRequestResult(ctx: Context, blockedFunds: Try[BlockedFunds]): Unit = {
+    (matchWaitingForFunds, blockedFunds) match {
+      case (Some(orderMatch), Success(funds)) => startExchange(ctx, orderMatch, funds)
+
+      case (Some(orderMatch), Failure(cause)) =>
+        WaitingForMatchesState.Log.error(s"Cannot block funds for $orderMatch", cause)
+        ctx.resolveOrderMatch(orderMatch, MatchRejected("Cannot block funds"))
+
+      case _ => WaitingForMatchesState.Log.warn("Unexpected blocked funds result {}", blockedFunds)
     }
+    matchWaitingForFunds = None
+  }
+
+  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {
+    if (matchWaitingForFunds.nonEmpty) {
+      ctx.resolveOrderMatch(orderMatch, MatchRejected("Accepting other match"))
+      return
+    }
+    if (hasInvalidAmount(ctx.order, orderMatch)) {
+      ctx.resolveOrderMatch(orderMatch, MatchRejected("Invalid amount"))
+      return
+    }
+    if (hasInvalidPrice(ctx.order, orderMatch)) {
+      ctx.resolveOrderMatch(orderMatch, MatchRejected("Invalid price"))
+      return
+    }
+    val amounts = ctx.calculator.exchangeAmountsFor(orderMatch)
+    if (hasConsistentAmounts(orderMatch, amounts)) {
+      ctx.resolveOrderMatch(orderMatch, MatchRejected("Match with inconsistent amounts"))
+      return
+    }
+    val requiredFunds = RequiredFunds(
+      ctx.order.role.select(amounts.bitcoinRequired),
+      ctx.order.role.select(amounts.fiatRequired)
+    )
+    matchWaitingForFunds = Some(orderMatch)
+    ctx.blockFunds(requiredFunds)
+  }
+
+  private def hasConsistentAmounts(orderMatch: OrderMatch[C], amounts: Amounts[C]): Boolean = {
+    orderMatch.bitcoinAmount.buyer != amounts.netBitcoinExchanged ||
+      orderMatch.fiatAmount.seller != amounts.netFiatExchanged
+  }
+
+  private def startExchange(ctx: Context,
+                            orderMatch: OrderMatch[C],
+                            blockedFunds: BlockedFunds): Unit = {
+    val exchange = Exchange.notStarted(
+      id = orderMatch.exchangeId,
+      Role.fromOrderType(ctx.order.orderType),
+      counterpartId = orderMatch.counterpart,
+      ctx.calculator.exchangeAmountsFor(orderMatch),
+      Exchange.Parameters(orderMatch.lockTime, ctx.network),
+      blockedFunds
+    )
+    ctx.resolveOrderMatch(orderMatch, MatchAccepted(exchange))
+    ctx.keepOffMarket()
+    ctx.transitionTo(new ExchangingState(exchange.id))
   }
 
   override def cancel(ctx: Context, reason: String): Unit = {
@@ -63,4 +106,8 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency]() extends St
     val role = Role.fromOrderType(order.orderType)
     order.amounts.pending.value < role.select(orderMatch.bitcoinAmount).value
   }
+}
+
+object WaitingForMatchesState {
+  private val Log = LoggerFactory.getLogger(classOf[WaitingForMatchesState[_]])
 }

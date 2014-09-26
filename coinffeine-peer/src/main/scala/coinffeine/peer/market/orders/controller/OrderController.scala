@@ -1,12 +1,15 @@
 package coinffeine.peer.market.orders.controller
 
+import scala.util.Try
+
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.market.orders.controller.OrderFunds.Listener
+import coinffeine.peer.market.orders.controller.FundsBlocker.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 /** Runs and order deciding when to accept/reject order matches and notifying order changes.
@@ -22,11 +25,11 @@ private[orders] class OrderController[C <: FiatCurrency](
     initialOrder: Order[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
     publisher: OrderPublication[C],
-    funds: OrderFunds) {
+    fundsBlocker: FundsBlocker) {
+
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
       override val network: Network,
-      override val funds: OrderFunds,
       var _order: Order[C]) extends StateContext[C] {
 
     var state: State[C] = _
@@ -39,10 +42,20 @@ private[orders] class OrderController[C <: FiatCurrency](
       newState.enter(context)
     }
 
-    override def startExchange(newExchange: NonStartedExchange[C]): Unit = {
-      updateExchange(newExchange)
-      // TODO: actually start an exchange actor
+    override def resolveOrderMatch(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit = {
+      result match {
+        case MatchAccepted(exchange) => updateExchange(exchange)
+        case _ =>
+      }
+      listeners.foreach(_.onOrderMatchResolution(orderMatch, result))
     }
+
+    override def blockFunds(funds: RequiredFunds[C]): Unit =
+      fundsBlocker.blockFunds(funds, new Listener {
+        override def onComplete(maybeFunds: Try[BlockedFunds]): Unit = {
+          state.fundsRequestResult(context, maybeFunds)
+        }
+      })
 
     override def keepInMarket(): Unit = {
       publisher.keepPublishing(order.amounts.pending)
@@ -56,9 +69,6 @@ private[orders] class OrderController[C <: FiatCurrency](
       val prevStatus = _order.status
       updateOrder(_.withStatus(newStatus))
       listeners.foreach(_.onStatusChanged(prevStatus, newStatus))
-      if (newStatus.isFinal) {
-        listeners.foreach(_.onFinish(newStatus))
-      }
     }
 
     def updateExchange(exchange: AnyStateExchange[C]): Unit = {
@@ -80,7 +90,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   private var listeners = Seq.empty[OrderController.Listener[C]]
-  private val context = new OrderControllerContext(amountsCalculator, network, funds, initialOrder)
+  private val context = new OrderControllerContext(amountsCalculator, network, initialOrder)
   publisher.addListener(new OrderPublication.Listener {
     override def inMarket(): Unit = {
       context.state.becomeInMarket(context)
@@ -89,15 +99,7 @@ private[orders] class OrderController[C <: FiatCurrency](
       context.state.becomeOffline(context)
     }
   })
-  funds.addListener(new Listener {
-    override def onFundsUnavailable(funds: OrderFunds): Unit = {
-      context.state.fundsBecomeUnavailable(context)
-    }
-    override def onFundsAvailable(funds: OrderFunds): Unit = {
-      context.state.fundsBecomeAvailable(context)
-    }
-  })
-  context.transitionTo(new StalledState)
+  context.transitionTo(new WaitingForMatchesState[C])
 
   /** Immutable snapshot of the order */
   def view: Order[C] = context._order
@@ -106,8 +108,9 @@ private[orders] class OrderController[C <: FiatCurrency](
     listeners :+= listener
   }
 
-  def acceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
+  def acceptOrderMatch(orderMatch: OrderMatch[C]): Unit = {
     context.state.acceptOrderMatch(context, orderMatch)
+  }
   def cancel(reason: String): Unit = { context.state.cancel(context, reason) }
   def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
   def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
@@ -115,8 +118,8 @@ private[orders] class OrderController[C <: FiatCurrency](
 
 private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
+    def onOrderMatchResolution(orderMatch: OrderMatch[C], result: MatchResult[C])
     def onProgress(oldProgress: Double, newProgress: Double): Unit
     def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit
-    def onFinish(finalStatus: OrderStatus): Unit
   }
 }

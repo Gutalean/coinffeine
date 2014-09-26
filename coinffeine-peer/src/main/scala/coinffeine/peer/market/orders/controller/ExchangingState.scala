@@ -12,11 +12,6 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     ctx.updateOrderStatus(InProgressOrder)
   }
 
-  override def fundsBecomeUnavailable(ctx: Context): Unit = {
-    // TODO: case not yet implemented
-    throw new UnsupportedOperationException("Case not yet considered")
-  }
-
   override def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {
     if (!exchange.state.isSuccess) {
       throw new NotImplementedError(s"Don't know what to do with $exchange")
@@ -27,10 +22,12 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     )
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) =
-    if (exchangeInProgress == orderMatch.exchangeId)
-      MatchAlreadyAccepted(ctx.order.exchanges(exchangeInProgress))
-    else MatchRejected("Exchange already in progress")
+  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {
+    val resolution = if (exchangeInProgress == orderMatch.exchangeId)
+      MatchAlreadyAccepted[C](ctx.order.exchanges(exchangeInProgress))
+    else MatchRejected[C]("Exchange already in progress")
+    ctx.resolveOrderMatch(orderMatch, resolution)
+  }
 
   override def cancel(ctx: Context, reason: String): Unit = {
     // TODO: is this what we wanna do?

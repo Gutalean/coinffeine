@@ -8,19 +8,6 @@ sealed trait OrderStatus {
   override def toString: String = name
 }
 
-/** The order is stalled.
-  *
-  * This status indicates that the corresponding order has been stalled since it is waiting for
-  * funds.
-  *
-  * @param reason The reason why the order was stalled
-  */
-case class StalledOrder(reason: String) extends OrderStatus {
-  override val name = s"stalled ($reason)"
-  override val isCancellable = true
-  override def isFinal = false
-}
-
 /** The order is offline.
   *
   * This status indicates that the corresponding order has been loaded in the system (either just
