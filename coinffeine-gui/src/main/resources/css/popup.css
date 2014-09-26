@@ -1,0 +1,15 @@
+/* This file defines the styles for the content of popup elements. */
+
+.popup-balance-summary {
+    -fx-hgap: 5px;
+    -fx-vgap: 5px;
+}
+
+.popup-title {
+    -fx-font-weight: bold;
+}
+
+#bitcoin-balance-popup {
+    -fx-spacing: 5px;
+    -fx-padding: 10px;
+}

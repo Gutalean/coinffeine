@@ -9,6 +9,7 @@ import scalafx.beans.property.ObjectProperty
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
+import coinffeine.gui.control.wallet.WalletBalanceWidget
 import coinffeine.model.currency.BitcoinBalance
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
@@ -18,7 +19,8 @@ class WalletBalanceWidgetTest
 
   val balanceProperty = new ObjectProperty[Option[BitcoinBalance]](
     this, "balance", Some(BitcoinBalance.singleOutput(0.BTC)))
-  override def createRootNode() = new WalletBalanceWidget(Bitcoin, balanceProperty)
+  override def createRootNode() =
+    new WalletBalanceWidget(Bitcoin, balanceProperty) with NoPopUpContent
 
   "A wallet balance widget" should "start with the provided value" in new Fixture {
     find[Label]("#BTC-balance").getText should be (formatNumber(0.0))
