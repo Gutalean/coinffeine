@@ -29,12 +29,12 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
         currentBalance(sender(), currency)
     }
 
-
-    private def findPayment(requester: ActorRef, paymentId: String): Unit =
+    private def findPayment(requester: ActorRef, paymentId: String): Unit = {
       payments.find(_.id == paymentId) match {
         case Some(payment) => requester ! PaymentProcessorActor.PaymentFound(payment)
         case None => requester ! PaymentProcessorActor.PaymentNotFound(paymentId)
       }
+    }
 
     private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
       val deltas: List[CurrencyAmount[C]] = paymentsForCurrency(currency).collect {
