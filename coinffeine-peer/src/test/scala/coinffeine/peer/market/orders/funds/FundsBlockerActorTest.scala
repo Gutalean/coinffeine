@@ -22,9 +22,9 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
   "The order funds actor" should "notify when funds become blocked" in new Fixture {
     expectFiatFundsAreRequested()
     expectBitcoinFundsAreRequested()
+    givenBitcoinFundsAreBlocked()
     givenFiatFundsAreCreated()
     givenFiatFundsBecomeAvailable()
-    givenBitcoinFundsAreBlocked()
     expectSuccessfulBlocking()
   }
 
@@ -34,16 +34,6 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     givenBitcoinFundsAreBlocked()
     expectSuccessfulBlocking()
   }
-
-  it should "keep listening fiat availability while waiting for wallet response" in
-    new Fixture {
-      expectFundsAreRequested()
-      givenFiatFundsAreCreated()
-      givenFiatFundsBecomeUnavailable()
-      givenFiatFundsBecomeAvailable()
-      givenBitcoinFundsAreBlocked()
-      expectSuccessfulBlocking()
-    }
 
   it should "fail if fiat funds are not available at the end" in new Fixture {
     expectFundsAreRequested()
@@ -75,7 +65,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
   abstract class Fixture(requiredFiat: Euro.Amount = 100.EUR,
                          requiredBitcoin: BitcoinAmount = 1.BTC) {
     val walletProbe, paymentProcessor = TestProbe()
-    val actor = system.actorOf(FundsBlockingActor.props(walletProbe.ref, paymentProcessor.ref,
+    val actor = system.actorOf(FundsBlockerActor.props(walletProbe.ref, paymentProcessor.ref,
       RequiredFunds(requiredBitcoin, requiredFiat), listener = self))
     val fiatFunds = BlockedFundsId(1)
     val btcFunds = BlockedCoinsId(1)
@@ -133,12 +123,12 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     def expectSuccessfulBlocking(): Unit = {
       val funds = Exchange.BlockedFunds(
         if (requiredFiat.isPositive) Some(fiatFunds) else None, btcFunds)
-      expectMsg(FundsBlockingActor.BlockingResult(Success(funds)))
+      expectMsg(FundsBlockerActor.BlockingResult(Success(funds)))
     }
 
     def expectFailedBlocking(message: String): Unit = {
-      inside(expectMsgType[FundsBlockingActor.BlockingResult]) {
-        case FundsBlockingActor.BlockingResult(Failure(cause)) =>
+      inside(expectMsgType[FundsBlockerActor.BlockingResult]) {
+        case FundsBlockerActor.BlockingResult(Failure(cause)) =>
           cause.getMessage should include (message)
       }
     }

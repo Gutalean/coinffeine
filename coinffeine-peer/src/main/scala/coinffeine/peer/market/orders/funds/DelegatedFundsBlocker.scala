@@ -7,7 +7,7 @@ import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.market.orders.OrderActor
 import coinffeine.peer.market.orders.controller.FundsBlocker
 
-/** Manages order funds by delegating on an [[FundsBlockingActor]].
+/** Manages order funds by delegating on an [[FundsBlockerActor]].
   *
   * To do so, this class should be instantiated within an [[Actor]] and including
   * [[DelegatedFundsBlocker#blockingFunds]] in its receive behavior.
@@ -28,7 +28,7 @@ class DelegatedFundsBlocker(
   }
 
   val blockingFunds: Actor.Receive = {
-    case FundsBlockingActor.BlockingResult(result) =>
+    case FundsBlockerActor.BlockingResult(result) =>
       tasks.find(_.ref == context.sender()).foreach { task =>
         task.listener.onComplete(result)
         tasks -= task

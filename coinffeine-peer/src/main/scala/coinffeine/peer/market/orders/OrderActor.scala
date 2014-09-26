@@ -21,7 +21,7 @@ import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
 import coinffeine.peer.market.orders.controller._
-import coinffeine.peer.market.orders.funds.{DelegatedFundsBlocker, FundsBlockingActor}
+import coinffeine.peer.market.orders.funds.{DelegatedFundsBlocker, FundsBlockerActor}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
@@ -181,7 +181,7 @@ object OrderActor {
       }
       override def delegatedFundsBlocking()(implicit context: ActorContext) =
         new DelegatedFundsBlocker(requiredFunds =>
-          FundsBlockingActor.props(wallet, paymentProcessor, requiredFunds, context.self))
+          FundsBlockerActor.props(wallet, paymentProcessor, requiredFunds, context.self))
     }
     Props(new OrderActor[C](
       order,
