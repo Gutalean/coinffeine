@@ -35,17 +35,17 @@ trait Currency {
 
 object Currency {
 
-  object UsDollar extends FiatCurrency {
+  case object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
     override val precision = 2
   }
 
-  object Euro extends FiatCurrency {
+  case object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
     override val precision = 2
   }
 
-  object Bitcoin extends Currency{
+  case object Bitcoin extends Currency{
     val OneBtcInSatoshi = BigDecimal(100000000)
     override val precision = 8
     override val toString = "BTC"

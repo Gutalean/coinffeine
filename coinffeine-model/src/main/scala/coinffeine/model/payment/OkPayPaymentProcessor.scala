@@ -7,7 +7,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 
 object OkPayPaymentProcessor extends PaymentProcessor {
 
-  val SupportedCurrencies = Set(Euro, UsDollar)
+  val SupportedCurrencies: Set[FiatCurrency] = Set(Euro, UsDollar)
   val MinFee = BigDecimal(0.01)
   val MaxFee = BigDecimal(2.99)
 

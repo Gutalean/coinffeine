@@ -1,5 +1,7 @@
 package coinffeine.model.currency
 
+import java.io._
+
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
@@ -20,6 +22,16 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
   "A currency amount" should "be converted to indivisible units and back into a currency amount" in {
     forAll (sampleAmounts) { amount =>
       CurrencyAmount.fromIndivisibleUnits(amount.toIndivisibleUnits, amount.currency) shouldBe amount
+    }
+  }
+
+  it should "be serializable" in {
+    forAll (sampleAmounts) { amount =>
+      val stream = new ByteArrayOutputStream()
+      val writer = new ObjectOutputStream(stream)
+      writer.writeObject(amount)
+      val reader = new ObjectInputStream(new ByteArrayInputStream(stream.toByteArray))
+      reader.readObject() shouldBe amount
     }
   }
 }
