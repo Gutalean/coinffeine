@@ -1,6 +1,7 @@
 package coinffeine.model.market
 
 import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 
@@ -29,8 +30,7 @@ case class Order[C <: FiatCurrency](
 
   def amounts: Order.Amounts = {
     def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
-      exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin))
-        .foldLeft(Bitcoin.Zero)(_ + _)
+      exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
 
     val exchangeGroups = exchanges.values.groupBy(_.state match {
       case _: Exchange.Successful[_] => 'exchanged

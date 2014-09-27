@@ -96,12 +96,11 @@ object TransactionProcessor {
                        signature: TransactionSignature,
                        signerKey: KeyPair,
                        requiredSignatures: Seq[PublicKey]): Boolean = {
-    val input = transaction.getInput(index)
     val script = ScriptBuilder.createMultiSigOutputScript(requiredSignatures.size, requiredSignatures)
     val hash = transaction.hashForSignature(index, script, SigHash.ALL, false)
     signerKey.verify(hash, signature)
   }
 
   def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).reduce(_ + _)
+    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
 }

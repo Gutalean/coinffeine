@@ -42,7 +42,7 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
 
   def isEmpty: Boolean = positions.isEmpty
 
-  def sum: BitcoinAmount = positions.map(_.amount).foldLeft(0.BTC)(_ + _)
+  def sum: BitcoinAmount = positions.map(_.amount).sum
 }
 
 private[market] object PositionQueue {

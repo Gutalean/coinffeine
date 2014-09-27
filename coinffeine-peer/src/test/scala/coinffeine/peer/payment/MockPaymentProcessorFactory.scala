@@ -45,8 +45,9 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       val initial = initialBalances.collectFirst {
         case a if a.currency == currency => a.asInstanceOf[CurrencyAmount[C]]
       }.getOrElse(CurrencyAmount.zero(currency))
-      val balance = deltas.foldLeft(initial)(_ + _)
-      requester ! PaymentProcessorActor.BalanceRetrieved(balance, CurrencyAmount.zero(currency))
+      implicit val num = initial.numeric
+      val balance = initial + deltas.sum
+      requester ! PaymentProcessorActor.BalanceRetrieved(balance, num.fromInt(0))
     }
 
     private def paymentsForCurrency[C <: FiatCurrency](currency: C): List[Payment[C]] =
