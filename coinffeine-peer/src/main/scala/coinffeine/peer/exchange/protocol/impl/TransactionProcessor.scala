@@ -74,7 +74,7 @@ object TransactionProcessor {
     lockTime.foreach(tx.setLockTime)
     for (input <- inputs) { tx.addInput(input).setSequenceNumber(0) }
     for ((pubKey, amount) <- outputs) {
-      tx.addOutput(amount.asSatoshi, pubKey)
+      tx.addOutput(amount.asSatoshi, pubKey.toAddress(network))
     }
     tx
   }
