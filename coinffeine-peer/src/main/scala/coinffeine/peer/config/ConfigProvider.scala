@@ -1,8 +1,9 @@
 package coinffeine.peer.config
 
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{ConfigValueFactory, ConfigFactory, Config}
 
 import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
@@ -22,7 +23,10 @@ trait ConfigProvider extends SettingsProvider {
   def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit
 
   /** Retrieve the reference configuration obtained from the app bundle. */
-  def referenceConfig: Config = ConfigFactory.load()
+  def referenceConfig: Config = ConfigFactory.load().withValue(
+    "coinffeine.bitcoin.walletFile",
+    ConfigValueFactory.fromAnyRef(
+      LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toAbsolutePath.toString))
 
   /** Retrieve the whole configuration, including reference and user config. */
   def config: Config = userConfig.withFallback(referenceConfig)
