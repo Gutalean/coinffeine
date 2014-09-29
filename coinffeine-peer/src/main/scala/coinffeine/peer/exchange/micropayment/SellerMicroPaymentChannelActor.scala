@@ -18,7 +18,7 @@ import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.exchange._
 
-/** This actor implements the seller's's side of the exchange. You can find more information about
+/** This actor implements the seller's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
 private class SellerMicroPaymentChannelActor[C <: FiatCurrency](

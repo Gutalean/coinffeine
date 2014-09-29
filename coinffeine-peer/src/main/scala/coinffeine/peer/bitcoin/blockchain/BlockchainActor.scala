@@ -43,6 +43,9 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
 
     case WatchBlockchainHeight(height) =>
       notifier.watchHeight(height, new HeightListener(sender()))
+
+    case WatchOutput(output) =>
+      notifier.watchOutput(output, new OutputListener(sender()))
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
@@ -63,6 +66,12 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   private class HeightListener(requester: ActorRef) extends BlockchainNotifier.HeightListener {
     override def heightReached(currentHeight: Long): Unit = {
       requester ! BlockchainHeightReached(currentHeight)
+    }
+  }
+
+  private class OutputListener(requester: ActorRef) extends BlockchainNotifier.OutputListener {
+    override def outputSpent(output: TransactionOutPoint, tx: ImmutableTransaction): Unit = {
+      requester ! OutputSpent(output, tx)
     }
   }
 }
@@ -115,6 +124,12 @@ object BlockchainActor {
     * height.
     */
   case class BlockchainHeightReached(height: Long)
+
+  /** Listen for an output to be notified with an [[OutputSpent]] whenever the output get spent. */
+  case class WatchOutput(output: TransactionOutPoint)
+
+  /** An output was spent by the given transaction */
+  case class OutputSpent(output: TransactionOutPoint, tx: ImmutableTransaction)
 
   /** A message sent to the blockchain actor to retrieve a transaction from its hash.
     *

@@ -7,7 +7,7 @@ import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
 import com.google.bitcoin.core._
 import org.slf4j.LoggerFactory
 
-import coinffeine.model.bitcoin.Hash
+import coinffeine.model.bitcoin.{ImmutableTransaction, Hash}
 
 private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener {
   import BlockchainNotifier._
@@ -32,6 +32,8 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
 
   private var confirmationSubscriptions: Map[Sha256Hash, ConfirmationSubscription] = Map.empty
   private var heightSubscriptions: Set[HeightSubscription] = Set.empty
+  private var outputSubscriptions: Map[TransactionOutPoint, Set[OutputListener]] =
+    Map.empty.withDefaultValue(Set.empty)
 
   def watchTransactionConfirmation(tx: Hash,
                                    confirmations: Int,
@@ -41,6 +43,11 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
 
   def watchHeight(height: Long, listener: HeightListener): Unit = {
     heightSubscriptions += HeightSubscription(height, listener)
+  }
+
+  def watchOutput(output: TransactionOutPoint, listener: OutputListener): Unit = {
+    val updatedListeners = outputSubscriptions(output) + listener
+    outputSubscriptions += output -> updatedListeners
   }
 
   override def notifyNewBestBlock(block: StoredBlock): Unit = {
@@ -69,20 +76,34 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
   }
 
   override def isTransactionRelevant(tx: Transaction): Boolean =
-    confirmationSubscriptions.contains(tx.getHash)
+    confirmationSubscriptions.contains(tx.getHash) || isSpendingWatchedOutputs(tx)
+
+  private def isSpendingWatchedOutputs(tx: Transaction): Boolean = {
+    val spentOutputs = tx.getInputs.map(_.getOutpoint).toSet
+    outputSubscriptions.keySet.intersect(spentOutputs).nonEmpty
+  }
 
   override def receiveFromBlock(tx: Transaction, block: StoredBlock,
                                 blockType: NewBlockType, relativityOffset: Int): Unit = {
-    val txHash = tx.getHash
-    val txHeight= block.getHeight
-    confirmationSubscriptions.get(txHash) match {
-      case Some(subscription) =>
-        Log.info("tx {} found in block {}: waiting for {} confirmations",
-          Seq(txHash, txHeight, subscription.requiredConfirmations))
-        confirmationSubscriptions += txHash -> subscription.copy(
-          foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
-      case None =>
-        Log.warn("tx {} received but not relevant (not being observed)", txHash)
+    updateConfirmationSubscriptions(tx.getHash, block)
+    notifySpentOutputs(tx)
+  }
+
+  private def updateConfirmationSubscriptions(tx: Hash, block: StoredBlock): Unit = {
+    confirmationSubscriptions.get(tx).foreach { subscription =>
+      Log.info("tx {} found in block {}: waiting for {} confirmations",
+        Seq(tx, block.getHeight, subscription.requiredConfirmations))
+      confirmationSubscriptions += tx -> subscription.copy(
+        foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
+    }
+  }
+
+  private def notifySpentOutputs(tx: Transaction): Unit = {
+    for (input <- tx.getInputs) {
+      outputSubscriptions(input.getOutpoint).foreach { subscription =>
+        subscription.outputSpent(input.getOutpoint, ImmutableTransaction(tx))
+      }
+      outputSubscriptions -= input.getOutpoint
     }
   }
 
@@ -131,5 +152,9 @@ private[blockchain] object BlockchainNotifier {
 
   trait HeightListener {
     def heightReached(currentHeight: Long): Unit
+  }
+
+  trait OutputListener {
+    def outputSpent(output: TransactionOutPoint, tx: ImmutableTransaction): Unit
   }
 }
