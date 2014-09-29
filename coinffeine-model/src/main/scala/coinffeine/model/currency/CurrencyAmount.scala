@@ -54,6 +54,9 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
   override def toString = value.toString() + " " + currency.toString
+
+  def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
+    currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
 }
 
 object CurrencyAmount {

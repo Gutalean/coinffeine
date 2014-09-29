@@ -6,6 +6,10 @@ object Implicits {
 
   import scala.language.implicitConversions
 
+  implicit val bitcoinIsNumeric = Bitcoin.numeric
+  implicit val euroIsNumeric = Euro.numeric
+  implicit val usDollarIsNumeric = UsDollar.numeric
+
   implicit class BitcoinSatoshiConverter(btc: BitcoinAmount) {
     def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
   }

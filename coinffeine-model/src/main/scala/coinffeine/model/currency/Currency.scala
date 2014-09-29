@@ -6,7 +6,11 @@ import java.util.{Currency => JavaCurrency}
 /** Representation of a currency. */
 trait Currency {
 
+  /** Shorthand for the type of amounts of money of this currency */
   type Amount = CurrencyAmount[this.type]
+
+  lazy val numeric: Integral[Amount] with Ordering[Amount] =
+    new IntegralCurrencyAmount[this.type](this)
 
   /** Minimum amount that can be expressed on this currency in terms of decimal positions allowed */
   val precision: Int
@@ -35,17 +39,17 @@ trait Currency {
 
 object Currency {
 
-  object UsDollar extends FiatCurrency {
+  case object UsDollar extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("USD")
     override val precision = 2
   }
 
-  object Euro extends FiatCurrency {
+  case object Euro extends FiatCurrency {
     val javaCurrency = JavaCurrency.getInstance("EUR")
     override val precision = 2
   }
 
-  object Bitcoin extends Currency{
+  case object Bitcoin extends Currency{
     val OneBtcInSatoshi = BigDecimal(100000000)
     override val precision = 8
     override val toString = "BTC"

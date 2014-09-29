@@ -28,8 +28,7 @@ private[bitcoin] class BlockedOutputs {
     }
 
     def reservedAmount: BitcoinAmount = reservedOutputs.toSeq
-      .map(o => Bitcoin.fromSatoshi(o.getValue))
-      .foldLeft(Bitcoin.Zero)(_ + _)
+      .map(o => Bitcoin.fromSatoshi(o.getValue)).sum
   }
 
   private var nextId = 1

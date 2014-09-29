@@ -81,7 +81,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       val amountToSplit = amounts.netBitcoinExchanged + txFee
       amounts.intermediateSteps.foreach { step =>
         withClue(s"at step $step") {
-          step.depositSplit.toSeq.reduce(_ + _) shouldBe amountToSplit
+          step.depositSplit.toSeq.sum shouldBe amountToSplit
         }
       }
     }
@@ -89,15 +89,15 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   it must "have last step splitting the deposited amount" in new Fixture {
     forAnyAmounts { amounts =>
-      val splitAmount = amounts.finalStep.depositSplit.toSeq.reduce(_ + _)
-      val depositAmount = amounts.deposits.map(_.input).toSeq.reduce(_ + _)
+      val splitAmount = amounts.finalStep.depositSplit.toSeq.sum
+      val depositAmount = amounts.deposits.map(_.input).toSeq.sum
       splitAmount shouldBe (depositAmount - txFee * HappyPathTransactions)
     }
   }
 
   it must "have steps summing up to the total fiat amount" in new Fixture {
     forAnyAmounts { (_, fiatAmount, amounts) =>
-      val spentAmount = amounts.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).reduce(_ + _)
+      val spentAmount = amounts.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).sum
       (fiatAmount - spentAmount).value should be <= paymentProcessor.calculateFee(0.01.EUR).value
     }
   }

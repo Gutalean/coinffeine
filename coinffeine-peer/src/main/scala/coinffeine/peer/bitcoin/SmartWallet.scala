@@ -1,25 +1,24 @@
 package coinffeine.peer.bitcoin
 
-import java.io.{FileInputStream, File}
+import java.io.{File, FileInputStream}
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.core.Wallet.BalanceType
-import com.google.bitcoin.core.{NetworkParameters, TransactionConfidence, Transaction, AbstractWalletEventListener}
+import com.google.bitcoin.core.{AbstractWalletEventListener, NetworkParameters, Transaction, TransactionConfidence}
 import com.google.bitcoin.store.WalletProtobufSerializer
 import com.google.bitcoin.wallet.WalletTransaction
-import org.joda.time.DateTime
 
-import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency._
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 class SmartWallet(val delegate: Wallet) {
 
-  import SmartWallet._
+  import coinffeine.peer.bitcoin.SmartWallet._
 
   def this(network: NetworkParameters) = this(new Wallet(network))
 
@@ -199,8 +198,7 @@ class SmartWallet(val delegate: Wallet) {
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
   private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue))
-      .foldLeft(Bitcoin.Zero)(_ + _)
+    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
     val wtxs = delegate.getWalletTransactions

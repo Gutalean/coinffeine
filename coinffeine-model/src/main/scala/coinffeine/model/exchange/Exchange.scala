@@ -4,7 +4,7 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.{CurrencyAmount, BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
 import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
@@ -104,6 +104,8 @@ object Exchange {
     require(grossFiatExchanged.isPositive, s"Cannot exchange a gross amount of $grossFiatExchanged")
     require(intermediateSteps.nonEmpty, "There should be at least one step")
 
+    private implicit val num = grossFiatExchanged.numeric
+
     val currency: C = grossFiatExchanged.currency
 
     /** Net amount of bitcoins to be exchanged */
@@ -111,8 +113,7 @@ object Exchange {
     require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
 
     /** Net amount of fiat to be exchanged */
-    val netFiatExchanged: CurrencyAmount[C] =
-      intermediateSteps.foldLeft(CurrencyAmount.zero(currency))(_ + _.fiatAmount)
+    val netFiatExchanged: CurrencyAmount[C] = intermediateSteps.map(_.fiatAmount).sum
     require(netFiatExchanged <= grossFiatExchanged)
     require(netFiatExchanged.isPositive, s"Cannot exchange a net amount of $netFiatExchanged")
 

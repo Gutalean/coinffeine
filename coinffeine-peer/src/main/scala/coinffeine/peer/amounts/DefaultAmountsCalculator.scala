@@ -2,6 +2,7 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
@@ -35,7 +36,7 @@ private[amounts] class DefaultAmountsCalculator(
         weights = fiatBreakdown.map(_.netAmount.toIndivisibleUnits).toVector)
       .map(satoshis => CurrencyAmount.fromIndivisibleUnits(satoshis, Bitcoin))
 
-    val maxBitcoinStepSize: BitcoinAmount = bitcoinBreakdown.reduce(_ max _)
+    val maxBitcoinStepSize: BitcoinAmount = bitcoinBreakdown.max
 
     /** How the amount to exchange is split per step */
     val depositSplits: Seq[Both[BitcoinAmount]] = {
@@ -79,14 +80,8 @@ private[amounts] class DefaultAmountsCalculator(
       grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
   }
 
-  private def roundToTheSatoshi(value: BigDecimal): BitcoinAmount =
-    CurrencyAmount.closestAmount(value, Bitcoin)
-
   private def cumulative[D <: Currency](amounts: Seq[CurrencyAmount[D]]): Seq[CurrencyAmount[D]] =
     amounts.tail.scan(amounts.head)(_ + _)
-
-  private def when[T](condition: Boolean)(block: => T): Option[T] =
-    if (condition) Some(block) else None
 }
 
 private object DefaultAmountsCalculator {
