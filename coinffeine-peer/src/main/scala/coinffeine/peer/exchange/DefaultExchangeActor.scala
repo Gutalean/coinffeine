@@ -58,8 +58,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
         spawnBroadcaster(refundTx)
         startMicropaymentChannel(commitments, handshakingExchange)
       } else {
-        startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx),
-          refundTx)
+        startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx))
       }
 
     case HandshakeFailure(cause, None) =>
@@ -67,7 +66,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case HandshakeFailure(cause, Some(refundTx)) =>
       startAbortion(
-        exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx), refundTx)
+        exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx))
   }
 
   private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
@@ -110,16 +109,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
   }
 
-  private def startAbortion(abortingExchange: AbortingExchange[C],
-                            refundTx: ImmutableTransaction): Unit = {
-    spawnBroadcaster(refundTx)
+  private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
+    spawnBroadcaster(abortingExchange.state.refundTx)
     txBroadcaster ! FinishExchange
-    context.become(aborting(abortingExchange, refundTx))
+    context.become(aborting(abortingExchange))
   }
 
-  private def aborting(abortingExchange: AbortingExchange[C],
-                       refundTx: ImmutableTransaction): Receive = {
-    case ExchangeFinished(TransactionPublished(`refundTx`, broadcastTx)) =>
+  private def aborting(abortingExchange: AbortingExchange[C]): Receive = {
+    case ExchangeFinished(TransactionPublished(abortingExchange.state.`refundTx`, broadcastTx)) =>
       finishWith(ExchangeFailure(abortingExchange.broadcast(broadcastTx)))
 
     case ExchangeFinished(TransactionPublished(finalTx, _)) =>
