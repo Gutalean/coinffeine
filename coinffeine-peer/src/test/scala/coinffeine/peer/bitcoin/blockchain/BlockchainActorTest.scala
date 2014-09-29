@@ -1,13 +1,16 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.blockchain
 
 import akka.actor.Props
 import akka.testkit.TestProbe
+import com.google.bitcoin.core.TransactionOutPoint
+import com.google.bitcoin.core.Wallet.SendRequest
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.Implicits._
+import coinffeine.peer.bitcoin.{MockTransactionBroadcaster, SmartWallet}
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     with BitcoinjTest with MockitoSugar {
@@ -111,6 +114,20 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
   it must "retrieve the blockchain height" in new Fixture {
     requester.send(instance, BlockchainActor.RetrieveBlockchainHeight)
     requester.expectMsg(BlockchainActor.BlockchainHeightReached(chain.getBestChainHeight))
+  }
+
+  it must "notify output is spent" in new Fixture {
+    val receivingKey = new KeyPair
+    val receivingWallet = new SmartWallet(createWallet(receivingKey))
+    val txToWatch = wallet.delegate.createSend(receivingKey.toAddress(network), 0.1.BTC.asSatoshi)
+    sendToBlockChain(txToWatch)
+    val output = new TransactionOutPoint(network, 0, txToWatch.getHash)
+    requester.send(instance, BlockchainActor.WatchOutput(output))
+    requester.expectNoMsg()
+    val spendTx = ImmutableTransaction(receivingWallet.delegate.sendCoinsOffline(
+      SendRequest.to(new KeyPair().toAddress(network), 0.05.BTC.asSatoshi)))
+    sendToBlockChain(spendTx.get)
+    requester.expectMsg(BlockchainActor.OutputSpent(output, spendTx))
   }
 
   trait Fixture {

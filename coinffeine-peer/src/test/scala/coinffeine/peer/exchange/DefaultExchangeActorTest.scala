@@ -15,7 +15,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.{Both, Exchange}
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
-import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
@@ -98,11 +98,11 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def shouldWatchForTheTransactions(): Unit = {
       blockchain.expectMsgAllOf(
-        WatchPublicKey(counterpart.bitcoinKey),
-        WatchPublicKey(user.bitcoinKey))
+        BlockchainActor.WatchPublicKey(counterpart.bitcoinKey),
+        BlockchainActor.WatchPublicKey(user.bitcoinKey))
       blockchain.expectMsgAllOf(
-        RetrieveTransaction(deposits.buyer),
-        RetrieveTransaction(deposits.seller)
+        BlockchainActor.RetrieveTransaction(deposits.buyer),
+        BlockchainActor.RetrieveTransaction(deposits.seller)
       )
     }
   }

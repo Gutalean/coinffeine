@@ -13,9 +13,10 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
-import coinffeine.peer.bitcoin.{BlockchainActor, WalletActor}
+import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
 import coinffeine.peer.exchange.protocol._

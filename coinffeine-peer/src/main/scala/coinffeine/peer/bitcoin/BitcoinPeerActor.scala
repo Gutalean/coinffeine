@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFut
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,

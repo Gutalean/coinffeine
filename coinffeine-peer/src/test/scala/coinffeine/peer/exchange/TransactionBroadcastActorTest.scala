@@ -9,7 +9,7 @@ import com.google.bitcoin.script.ScriptBuilder
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
-import coinffeine.peer.bitcoin.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
 import coinffeine.peer.exchange.TransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 import coinffeine.peer.exchange.test.CoinffeineClientTest

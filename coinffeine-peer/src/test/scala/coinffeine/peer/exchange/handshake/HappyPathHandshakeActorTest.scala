@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.messages.handshake._
