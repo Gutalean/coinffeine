@@ -9,7 +9,7 @@ class PeerOrders(coinffeineNetwork: CoinffeineNetwork) extends ObservableBuffer[
   import coinffeine.gui.util.FxExecutor.asContext
 
   coinffeineNetwork.orders.onNewValue { (id, order) =>
-    find(_.idProperty.value == id) match {
+    find(_.orderIdProperty.value == id) match {
       case Some(orderProp) => orderProp.update(order)
       case None => this += new OrderProperties(order)
     }
