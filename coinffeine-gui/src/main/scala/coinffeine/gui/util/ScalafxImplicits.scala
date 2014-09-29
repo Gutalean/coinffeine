@@ -6,6 +6,9 @@ import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.beans.{InvalidationListener, Observable}
 import javafx.collections.ObservableList
 
+import scalafx.beans.property._
+import scalafx.collections.ObservableBuffer
+
 import coinffeine.model.properties.{Cancellable, Property, PropertyMap}
 
 object ScalafxImplicits {
@@ -21,6 +24,12 @@ object ScalafxImplicits {
       */
     def map[S](f: T => S): ObjectBinding[S] = Bindings.createObjectBinding(
       new Callable[S] {
+        override def call() = f(observableValue.getValue)
+      },
+      observableValue)
+
+    def mapToString(f: T => String): StringBinding = Bindings.createStringBinding(
+      new Callable[String] {
         override def call() = f(observableValue.getValue)
       },
       observableValue)
@@ -97,6 +106,27 @@ object ScalafxImplicits {
         override def call() = property.get(key).map(f)
       },
       this)
+  }
+
+  implicit class ObservableBufferPimp[A](buffer: ObservableBuffer[A]) {
+    def bindToList[B](other: ObservableList[B])(f: A => B): Unit = {
+      buffer.onChange { other.setAll(buffer.map(f)): Unit }
+    }
+  }
+
+  implicit class ObjectBindingPimp[A](binding: ObjectBinding[A]) {
+    def toProperty: ObjectProperty[A] = new ObjectProperty[A] { this <== binding }
+    def toReadOnlyProperty: ReadOnlyObjectProperty[A] = toProperty
+  }
+
+  implicit class BooleanBindingPimp(binding: BooleanBinding) {
+    def toProperty: BooleanProperty = new BooleanProperty { this <== binding }
+    def toReadOnlyProperty: ReadOnlyBooleanProperty = toProperty
+  }
+
+  implicit class StringBindingPimp(binding: StringBinding) {
+    def toProperty: StringProperty = new StringProperty { this <== binding }
+    def toReadOnlyProperty: ReadOnlyStringProperty = toProperty
   }
 
   private class CancellableListeners[L] {
