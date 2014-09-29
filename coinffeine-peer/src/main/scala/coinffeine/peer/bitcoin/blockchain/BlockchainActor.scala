@@ -17,7 +17,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   private val notifier = new BlockchainNotifier
 
   override def preStart(): Unit = {
-    blockchain.addListener(notifier, context.dispatcher)
+    blockchain.addListener(notifier)
     blockchain.addWallet(wallet)
   }
 
