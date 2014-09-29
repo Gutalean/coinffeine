@@ -3,8 +3,7 @@ package coinffeine.peer.exchange.handshake
 import scala.concurrent.duration._
 
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BlockchainActor
-import coinffeine.peer.bitcoin.BlockchainActor.TransactionRejected
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 
 class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
@@ -29,7 +28,8 @@ class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
       case _: BlockchainActor.WatchTransactionConfirmation => true
       case _ => false
     }
-    blockchain.reply(TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
+    blockchain.reply(
+      BlockchainActor.TransactionRejected(handshake.counterpartCommitmentTransaction.getHash))
 
     listener.expectMsgClass(classOf[HandshakeFailure]).cause.toString should include (
       s"transaction ${handshake.counterpartCommitmentTransaction.getHash} (counterpart) was rejected")

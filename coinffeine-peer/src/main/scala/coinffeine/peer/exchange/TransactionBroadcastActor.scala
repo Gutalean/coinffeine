@@ -9,7 +9,7 @@ import akka.util.Timeout
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
-import coinffeine.peer.bitcoin.BlockchainActor._
+import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.TransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
@@ -81,8 +81,8 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
     private def autoNotifyBlockchainHeightWith(height: Long, msg: Any): Unit = {
       import context.dispatcher
       implicit val timeout = Timeout(1.day)
-      (blockchain ? WatchBlockchainHeight(height))
-        .mapTo[BlockchainHeightReached]
+      (blockchain ? BlockchainActor.WatchBlockchainHeight(height))
+        .mapTo[BlockchainActor.BlockchainHeightReached]
         .onSuccess { case _ =>
         self ! msg
       }
