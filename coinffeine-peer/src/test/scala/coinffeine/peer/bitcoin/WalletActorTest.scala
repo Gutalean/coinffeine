@@ -7,9 +7,8 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance, BitcoinAmount}
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
@@ -32,7 +31,6 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     instance ! req
     val WalletActor.TransactionCreated(`req`, tx) = expectMsgType[WalletActor.TransactionCreated]
     Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate)) should be (-1.BTC)
-
   }
 
   it must "fail to create a new transaction when insufficient balance" in new Fixture {

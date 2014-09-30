@@ -7,7 +7,7 @@ import akka.testkit.TestProbe
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Euro
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess

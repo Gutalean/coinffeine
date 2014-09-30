@@ -10,8 +10,7 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
 import coinffeine.gui.control.wallet.WalletBalanceWidget
-import coinffeine.model.currency.BitcoinBalance
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.model.currency.Implicits._
 
 class WalletBalanceWidgetTest

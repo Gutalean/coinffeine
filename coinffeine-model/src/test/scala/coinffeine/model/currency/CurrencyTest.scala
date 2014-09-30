@@ -4,8 +4,6 @@ import java.util.{Currency => JavaCurrency}
 
 import org.scalatest.{FlatSpec, ShouldMatchers}
 
-import coinffeine.model.currency.Currency.{Bitcoin, Euro, UsDollar}
-
 class CurrencyTest extends FlatSpec with ShouldMatchers {
 
   "US Dollar" must behave like validFiatCurrency(UsDollar, "USD")

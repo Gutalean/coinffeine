@@ -6,8 +6,7 @@ import akka.actor.ActorRef
 import akka.pattern._
 import org.slf4j.LoggerFactory
 
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.{Euro, CurrencyAmount}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorActor._

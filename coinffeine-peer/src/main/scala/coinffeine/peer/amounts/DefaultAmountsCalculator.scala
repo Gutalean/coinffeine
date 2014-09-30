@@ -1,7 +1,6 @@
 package coinffeine.peer.amounts
 
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._

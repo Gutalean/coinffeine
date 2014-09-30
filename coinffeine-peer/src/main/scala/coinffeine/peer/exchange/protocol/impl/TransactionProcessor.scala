@@ -7,7 +7,7 @@ import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, Currency}
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
@@ -41,8 +41,8 @@ object TransactionProcessor {
   def collectFunds(userWallet: Wallet, amount: BitcoinAmount): Set[MutableTransactionOutput] = {
     val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
     val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
-      accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+      .scanLeft(Bitcoin.Zero)((accum, output) =>
+      accum + Bitcoin.fromSatoshi(output.getValue))
       .takeWhile(_ < amount)
       .length
     inputFundCandidates.take(necessaryInputCount).toSet
@@ -102,5 +102,5 @@ object TransactionProcessor {
   }
 
   def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
+    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue)).sum
 }

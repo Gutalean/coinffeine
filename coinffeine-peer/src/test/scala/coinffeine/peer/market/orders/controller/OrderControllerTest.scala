@@ -11,7 +11,7 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 import coinffeine.model.market._

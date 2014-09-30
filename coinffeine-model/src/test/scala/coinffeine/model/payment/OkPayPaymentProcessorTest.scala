@@ -3,9 +3,8 @@ package coinffeine.model.payment
 import java.util.Currency
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Currency.{Euro, UsDollar}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, Euro, FiatCurrency, UsDollar}
 
 class OkPayPaymentProcessorTest extends UnitTest {
 

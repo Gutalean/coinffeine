@@ -1,7 +1,5 @@
 package coinffeine.model.currency
 
-import coinffeine.model.currency.Currency._
-
 object Implicits {
 
   import scala.language.implicitConversions

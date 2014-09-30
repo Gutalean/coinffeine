@@ -6,8 +6,7 @@ import akka.actor.{Actor, ActorRef}
 import com.google.bitcoin.core.TransactionOutPoint
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 

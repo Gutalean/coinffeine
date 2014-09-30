@@ -5,8 +5,7 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, WalletProperties}
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{Currency, FiatBalance}
+import coinffeine.model.currency.{Euro, FiatBalance}
 import coinffeine.peer.api.CoinffeineApp
 
 class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
@@ -20,7 +19,7 @@ class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
   val wallet = new WalletProperties(app.wallet)
 
   val fiatBalanceProperty: ReadOnlyObjectProperty[Option[EuroBalance]] =
-    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Currency.Euro) {
+    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Euro) {
       _.asInstanceOf[EuroBalance]
     }
 

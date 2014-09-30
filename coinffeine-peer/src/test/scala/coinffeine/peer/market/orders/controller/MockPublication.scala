@@ -2,8 +2,7 @@ package coinffeine.peer.market.orders.controller
 
 import org.scalatest.Assertions
 
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount, FiatCurrency}
 import coinffeine.peer.market.orders.controller.OrderPublication.Listener
 
 class MockPublication[C <: FiatCurrency] extends OrderPublication[C] with Assertions {

@@ -2,8 +2,7 @@ package coinffeine.model.payment
 
 import scala.math.BigDecimal.RoundingMode
 
-import coinffeine.model.currency.Currency.{UsDollar, Euro}
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 
 object OkPayPaymentProcessor extends PaymentProcessor {
 

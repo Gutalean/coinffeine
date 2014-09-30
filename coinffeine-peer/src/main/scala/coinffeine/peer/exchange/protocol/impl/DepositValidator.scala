@@ -3,8 +3,7 @@ package coinffeine.peer.exchange.protocol.impl
 import scala.util.Try
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.{Both, Exchange}
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],

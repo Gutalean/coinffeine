@@ -3,8 +3,7 @@ package coinffeine.model.market
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.{BitcoinAmount, Euro}
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange.Both
 import coinffeine.model.network.PeerId

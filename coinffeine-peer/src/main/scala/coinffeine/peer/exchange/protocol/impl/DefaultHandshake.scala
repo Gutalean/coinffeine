@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
-import coinffeine.model.currency.{BitcoinAmount, Currency, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.HandshakingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
@@ -61,7 +61,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
       if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
     }
     def validateAmount(tx: MutableTransaction): Boolean = {
-      val amount = Currency.Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
+      val amount = Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
       amount == expectedAmount
     }
     // TODO: Is this enough to ensure we can sign?

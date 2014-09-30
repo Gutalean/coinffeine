@@ -1,7 +1,6 @@
 package coinffeine.peer.api
 
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.{CurrencyAmount, Euro}
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorProperties
 

@@ -4,7 +4,7 @@ import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Euro
 import coinffeine.model.currency.CurrencyAmount
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.payment.OkPayPaymentProcessor

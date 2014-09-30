@@ -1,7 +1,7 @@
 package coinffeine.protocol.messages.brokerage
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.market.{Price, Spread}
 

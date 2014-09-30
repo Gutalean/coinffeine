@@ -1,8 +1,5 @@
 package coinffeine.model.currency
 
-import java.math.BigInteger
-import java.util.{Currency => JavaCurrency}
-
 /** Representation of a currency. */
 trait Currency {
 
@@ -36,28 +33,3 @@ trait Currency {
 
   lazy val Zero: Amount = apply(0)
 }
-
-object Currency {
-
-  case object UsDollar extends FiatCurrency {
-    val javaCurrency = JavaCurrency.getInstance("USD")
-    override val precision = 2
-  }
-
-  case object Euro extends FiatCurrency {
-    val javaCurrency = JavaCurrency.getInstance("EUR")
-    override val precision = 2
-  }
-
-  case object Bitcoin extends Currency{
-    val OneBtcInSatoshi = BigDecimal(100000000)
-    override val precision = 8
-    override val toString = "BTC"
-
-    def fromSatoshi(amount: BigInteger): Bitcoin.Amount =
-      Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
-    def fromSatoshi(amount: BigInt): Bitcoin.Amount = Bitcoin(BigDecimal(amount) / OneBtcInSatoshi)
-    def fromSatoshi(amount: Long): Bitcoin.Amount = fromSatoshi(BigInt(amount))
-  }
-}
-

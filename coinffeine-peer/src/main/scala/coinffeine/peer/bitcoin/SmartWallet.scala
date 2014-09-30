@@ -12,7 +12,6 @@ import com.google.bitcoin.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 
@@ -50,21 +49,21 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def estimatedBalance: BitcoinAmount = synchronized {
-    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
+    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
   }
 
   def availableBalance: BitcoinAmount = synchronized {
-    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
+    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
   }
 
   def value(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValue(delegate))
+    Bitcoin.fromSatoshi(tx.getValue(delegate))
 
   def valueSentFromMe(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
+    Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
 
   def valueSentToMe(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
+    Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
 
   def createKeyPair(): KeyPair = synchronized {
     val keyPair = new KeyPair()
@@ -186,8 +185,8 @@ class SmartWallet(val delegate: Wallet) {
   private def collectFunds(amount: BitcoinAmount): Set[MutableTransactionOutput] = {
     val inputFundCandidates = delegate.calculateAllSpendCandidates(true)
     val necessaryInputCount =
-      inputFundCandidates.view.scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
-        accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+      inputFundCandidates.view.scanLeft(Bitcoin.Zero)((accum, output) =>
+        accum + Bitcoin.fromSatoshi(output.getValue))
         .takeWhile(_ < amount)
         .length
     inputFundCandidates.take(necessaryInputCount).toSet
@@ -198,7 +197,7 @@ class SmartWallet(val delegate: Wallet) {
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
   private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
+    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue)).sum
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
     val wtxs = delegate.getWalletTransactions

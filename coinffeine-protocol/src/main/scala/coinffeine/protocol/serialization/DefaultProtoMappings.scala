@@ -5,7 +5,6 @@ import scala.collection.JavaConverters._
 import com.google.protobuf.ByteString
 
 import coinffeine.model.bitcoin.Hash
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market._

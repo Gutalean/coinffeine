@@ -3,8 +3,7 @@ package coinffeine.model.exchange
 import scala.util.Try
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor

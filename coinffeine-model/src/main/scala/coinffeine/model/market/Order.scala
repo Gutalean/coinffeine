@@ -1,6 +1,5 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange._

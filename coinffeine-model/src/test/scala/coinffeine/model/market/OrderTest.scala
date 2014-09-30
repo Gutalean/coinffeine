@@ -3,7 +3,7 @@ package coinffeine.model.market
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
-import coinffeine.model.currency.Currency.Euro
+import coinffeine.model.currency.Euro
 import coinffeine.model.currency.Implicits._
 import coinffeine.model.exchange._
 

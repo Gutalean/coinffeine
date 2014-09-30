@@ -1,17 +1,12 @@
 package coinffeine.model.bitcoin
 
-import java.io.{FileInputStream, File}
 import java.math.BigInteger
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
-import com.google.bitcoin.store.WalletProtobufSerializer
-import com.google.bitcoin.wallet.WalletTransaction
 
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, Currency}
 
 object Implicits {
 
@@ -35,7 +30,7 @@ object Implicits {
       )
     }
 
-    def outputAmount: BitcoinAmount = Currency.Bitcoin.fromSatoshi(
+    def outputAmount: BitcoinAmount = Bitcoin.fromSatoshi(
       tx.getOutputs.foldLeft(BigInteger.ZERO)((a, b) => a.add(b.getValue)))
   }
 

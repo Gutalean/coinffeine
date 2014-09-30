@@ -9,14 +9,14 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.Currency.UsDollar
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency.UsDollar
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
+import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._

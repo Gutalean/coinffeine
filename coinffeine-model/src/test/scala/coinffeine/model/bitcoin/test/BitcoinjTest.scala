@@ -13,8 +13,7 @@ import com.google.bitcoin.utils.BriefLogFormatter
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 import coinffeine.model.currency.Implicits._
 
 private object BitcoinjTest {

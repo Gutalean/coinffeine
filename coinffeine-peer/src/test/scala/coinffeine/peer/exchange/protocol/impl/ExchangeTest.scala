@@ -1,10 +1,8 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
-import coinffeine.model.bitcoin.{ImmutableTransaction, Wallet}
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.SmartWallet
 

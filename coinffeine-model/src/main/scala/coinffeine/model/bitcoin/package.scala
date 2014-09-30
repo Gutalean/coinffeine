@@ -4,8 +4,7 @@ import java.math.BigInteger
 
 import com.google.bitcoin.{core, crypto}
 
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 
 package object bitcoin {
 

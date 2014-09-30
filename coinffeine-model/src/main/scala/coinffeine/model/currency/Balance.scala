@@ -1,7 +1,5 @@
 package coinffeine.model.currency
 
-import coinffeine.model.currency.Currency.Bitcoin
-
 trait Balance[C <: Currency] {
   def amount: CurrencyAmount[C]
   def hasExpired: Boolean

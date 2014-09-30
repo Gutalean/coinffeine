@@ -12,11 +12,10 @@ import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.ConnectionStatusWidget
-import coinffeine.gui.control.wallet.{FiatBalanceWidget, BitcoinBalanceWidget, WalletBalanceWidget}
+import coinffeine.gui.control.wallet.{BitcoinBalanceWidget, FiatBalanceWidget}
 import coinffeine.gui.notification.NotificationManager
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair, Wallet}
-import coinffeine.model.currency.Currency.{Bitcoin, Euro}
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 import coinffeine.peer.config.user.LocalAppDataDir
 
