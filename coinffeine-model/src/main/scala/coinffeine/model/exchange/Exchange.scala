@@ -158,6 +158,7 @@ object Exchange {
   }
 
   case class NotStarted[C <: FiatCurrency]()(val currency: C) extends State[C] {
+    override val toString = "not started"
     override val progress = Exchange.noProgress(currency)
     override val isCompleted = false
   }
@@ -182,6 +183,7 @@ object Exchange {
 
   case class Handshaking[C <: FiatCurrency](user: Exchange.PeerInfo, counterpart: Exchange.PeerInfo)
                                            (val currency: C) extends State[C] with StartedHandshake[C] {
+    override val toString = "handshaking"
     override val progress = Exchange.noProgress(currency)
     override val isCompleted = false
   }
@@ -204,6 +206,7 @@ object Exchange {
       counterpart: Exchange.PeerInfo,
       deposits: Exchange.Deposits,
       progress: Exchange.Progress) extends State[C] with StartedExchange[C] {
+    override val toString = "exchanging"
     override val isCompleted = false
   }
 
@@ -245,6 +248,7 @@ object Exchange {
       cause: AbortionCause,
       user: Exchange.PeerInfo,
       refundTx: ImmutableTransaction)(currency: C) extends State[C] {
+    override val toString = s"aborting ($cause)"
     override val progress = Exchange.noProgress(currency)
     override val isCompleted = false
   }
@@ -277,30 +281,62 @@ object Exchange {
   }
 
   sealed trait AbortionCause
-  case class HandshakeWithCommitmentFailed(cause: Throwable) extends AbortionCause
+
+  case class HandshakeWithCommitmentFailed(cause: Throwable) extends AbortionCause {
+    override val toString = "aborted by failed handshake commitment"
+  }
+
   case class InvalidCommitments(validation: Both[Try[Unit]]) extends AbortionCause {
     require(validation.toSeq.count(_.isFailure) > 0)
+    override val toString = "aborted by invalid commitments"
   }
 
   sealed trait CancellationCause
-  case object UserCancellation extends CancellationCause
-  case class CannotStartHandshake(cause: Throwable) extends CancellationCause
+
+  case object UserCancellation extends CancellationCause {
+    override val toString = "cancelled by user"
+  }
+
+  case class CannotStartHandshake(cause: Throwable) extends CancellationCause {
+    override val toString = "cancelled by handshake start issues"
+  }
 
   sealed trait FailureCause
-  case class Cancellation(cause: CancellationCause) extends FailureCause
-  case class Abortion(cause: AbortionCause) extends FailureCause
-  case object PanicBlockReached extends FailureCause
-  case class StepFailed(step: Int, cause: Throwable) extends FailureCause
-  case object UnexpectedBroadcast extends FailureCause
-  case object NoBroadcast extends FailureCause
 
-  case class HandshakeFailed(cause: Throwable) extends FailureCause with CancellationCause
+  case class Cancellation(cause: CancellationCause) extends FailureCause {
+    override val toString = cause.toString
+  }
+
+  case class Abortion(cause: AbortionCause) extends FailureCause {
+    override val toString = cause.toString
+  }
+
+  case object PanicBlockReached extends FailureCause {
+    override val toString = "panic blocked reached"
+  }
+
+  case class StepFailed(step: Int, cause: Throwable) extends FailureCause {
+    override val toString = s"step $step failed"
+  }
+
+  case object UnexpectedBroadcast extends FailureCause {
+    override val toString = "unexpected transaction broadcast"
+  }
+
+  case object NoBroadcast extends FailureCause {
+    override val toString = "missing transaction broadcast"
+  }
+
+  case class HandshakeFailed(cause: Throwable) extends FailureCause with CancellationCause {
+    override val toString = "handshake failed"
+  }
 
   case class Failed[C <: FiatCurrency](cause: FailureCause,
                                        progress: Progress,
                                        user: Option[Exchange.PeerInfo],
                                        transaction: Option[ImmutableTransaction])
     extends Completed[C] {
+    override val toString = s"failed ($cause)"
     override val isSuccess = false
   }
   object Failed {
@@ -314,6 +350,7 @@ object Exchange {
                                            counterpart: Exchange.PeerInfo,
                                            deposits: Exchange.Deposits)(amounts: Exchange.Amounts[C])
     extends Completed[C] with StartedExchange[C] {
+    override val toString = "successful"
     override val progress = Progress(amounts.exchangedBitcoin)
     override val isSuccess = true
   }
