@@ -1,7 +1,7 @@
 package coinffeine.model.bitcoin
 
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 class ImmutableTransactionTest extends BitcoinjTest {
 

@@ -1,7 +1,6 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
 private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](

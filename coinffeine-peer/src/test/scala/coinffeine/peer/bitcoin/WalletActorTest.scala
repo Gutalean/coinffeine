@@ -7,8 +7,7 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
+import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 

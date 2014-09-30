@@ -11,7 +11,7 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
 import coinffeine.gui.application.properties.OrderProperties
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.impl.MockCoinffeineApp
 

@@ -1,6 +1,6 @@
 package coinffeine.model.bitcoin
 
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 /** Computes fees based on the size of the transactions. */
 object TransactionSizeFeeCalculator extends BitcoinFeeCalculator {

@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.protocol.impl
 import com.google.bitcoin.core.VerificationException
 
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.peer.exchange.protocol.Handshake.InvalidRefundTransaction
 
 class DefaultHandshakeTest extends ExchangeTest {

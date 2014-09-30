@@ -14,7 +14,6 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}

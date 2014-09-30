@@ -5,8 +5,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{WalletActivity, Address, KeyPair}
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
+import coinffeine.model.currency._
 import coinffeine.model.properties.Property
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._

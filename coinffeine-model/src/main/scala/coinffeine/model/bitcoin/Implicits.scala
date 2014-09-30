@@ -5,8 +5,7 @@ import scala.collection.JavaConversions._
 
 import com.google.bitcoin.script.ScriptBuilder
 
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 object Implicits {
 

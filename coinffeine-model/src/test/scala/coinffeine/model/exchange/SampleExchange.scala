@@ -2,7 +2,7 @@ package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor

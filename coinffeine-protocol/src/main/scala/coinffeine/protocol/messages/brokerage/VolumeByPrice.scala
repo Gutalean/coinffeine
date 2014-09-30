@@ -1,7 +1,6 @@
 package coinffeine.protocol.messages.brokerage
 
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 
 case class VolumeByPrice[C <: FiatCurrency](entries: Seq[(CurrencyAmount[C], Bitcoin.Amount)]) {
 

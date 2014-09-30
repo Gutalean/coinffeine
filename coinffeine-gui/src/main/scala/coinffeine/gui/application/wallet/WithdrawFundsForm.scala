@@ -15,8 +15,7 @@ import com.google.bitcoin.core.Address
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.WalletProperties
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 class WithdrawFundsForm(props: WalletProperties) {
 

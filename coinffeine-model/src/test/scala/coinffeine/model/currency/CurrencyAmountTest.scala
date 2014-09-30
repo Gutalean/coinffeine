@@ -5,7 +5,6 @@ import java.io._
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Implicits._
 
 class CurrencyAmountTest extends UnitTest with PropertyChecks {
 

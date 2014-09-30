@@ -8,8 +8,7 @@ import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, Euro}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.RequiredFunds
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId

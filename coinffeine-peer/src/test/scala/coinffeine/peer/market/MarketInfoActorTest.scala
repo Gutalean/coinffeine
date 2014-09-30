@@ -5,8 +5,7 @@ import scala.concurrent.duration._
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Euro, UsDollar}
+import coinffeine.model.currency._
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage._
 

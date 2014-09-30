@@ -4,8 +4,7 @@ import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants

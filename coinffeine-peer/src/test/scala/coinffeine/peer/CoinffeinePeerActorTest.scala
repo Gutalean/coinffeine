@@ -7,8 +7,7 @@ import com.google.bitcoin.params.TestNet3Params
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Euro, UsDollar}
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._

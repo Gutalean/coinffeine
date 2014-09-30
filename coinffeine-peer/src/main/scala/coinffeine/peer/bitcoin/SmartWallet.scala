@@ -12,7 +12,6 @@ import com.google.bitcoin.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 
 class SmartWallet(val delegate: Wallet) {

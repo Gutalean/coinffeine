@@ -4,7 +4,6 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.{KeyPair, BlockedCoinsId}
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
-import coinffeine.model.currency.Implicits._
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 
 class SmartWalletTest extends UnitTest with BitcoinjTest {

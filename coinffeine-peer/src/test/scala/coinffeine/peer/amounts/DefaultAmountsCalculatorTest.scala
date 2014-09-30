@@ -5,7 +5,6 @@ import org.scalatest.prop.PropertyChecks
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.bitcoin.test.FixedBitcoinFee
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.payment.PaymentProcessor

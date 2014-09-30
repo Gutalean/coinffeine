@@ -10,8 +10,7 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Bitcoin, Euro}
+import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId

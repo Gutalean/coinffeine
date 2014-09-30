@@ -6,8 +6,7 @@ import akka.testkit.TestProbe
 import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{Euro, FiatCurrency, UsDollar}
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants

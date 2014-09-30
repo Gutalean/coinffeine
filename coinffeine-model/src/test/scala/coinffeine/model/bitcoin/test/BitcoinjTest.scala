@@ -13,8 +13,7 @@ import com.google.bitcoin.utils.BriefLogFormatter
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 
 private object BitcoinjTest {
   /** Bitcoinj uses global state such as the TX fees than cannot be changed in isolation so we
