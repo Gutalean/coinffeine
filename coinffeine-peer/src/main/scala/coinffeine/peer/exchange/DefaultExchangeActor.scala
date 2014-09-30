@@ -91,6 +91,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
       txBroadcaster ! PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
+    case DepositSpent(broadcastTx, CompletedChannel) =>
+      log.info("Finishing exchange '{}' successfully", exchange.info.id)
+      finishWith(ExchangeSuccess(runningExchange.complete))
+
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.info.id, step)
       txBroadcaster ! PublishBestTransaction
