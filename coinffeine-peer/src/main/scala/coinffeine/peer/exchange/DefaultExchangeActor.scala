@@ -61,10 +61,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
         startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx))
       }
 
-    case HandshakeFailure(cause, None) =>
+    case HandshakeFailure(cause) =>
       finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), Some(exchange.user))))
 
-    case HandshakeFailure(cause, Some(refundTx)) =>
+    case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
       startAbortion(
         exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx))
   }
