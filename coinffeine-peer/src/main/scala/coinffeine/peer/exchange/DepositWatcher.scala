@@ -8,15 +8,15 @@ import com.google.bitcoin.core.TransactionOutPoint
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.RunningExchange
+import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 
 /** Actor that monitors a multisig deposit to inform about its destination */
-class DepositWatcher(exchange: RunningExchange[_ <: FiatCurrency],
+class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                     myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
-  private val myDeposit = exchange.role.select(exchange.state.deposits)
   private val network = myDeposit.get.getParams
   private val userAddress = exchange.state.user.bitcoinKey.toAddress(network)
 

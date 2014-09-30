@@ -12,11 +12,10 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, SampleExchange}
+import coinffeine.model.exchange.SampleExchange
 import coinffeine.peer.bitcoin.SmartWallet
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.protocol.impl.TransactionProcessor
 
 class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange {
@@ -58,12 +57,11 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
     )
     val output = new TransactionOutPoint(network, 0, myDeposit.get.getHash)
     sendToBlockChain(myDeposit.get)
-    val exchange = sellerHandshakingExchange.startExchanging(
-      Both(buyer = MockExchangeProtocol.DummyDeposit, seller = myDeposit))
+    val exchange = sellerHandshakingExchange
     val myRefund = spendDeposit(exchange.amounts.refunds.seller)
     val blockchain = TestProbe()
     val watcher = system.actorOf(Props(
-      new DepositWatcher(exchange, myRefund, Collaborators(blockchain.ref, listener = self))))
+      new DepositWatcher(exchange, myDeposit, myRefund, Collaborators(blockchain.ref, listener = self))))
 
     def spendDeposit(getBackAmount: BitcoinAmount) = {
       val tx = TransactionProcessor.createUnsignedTransaction(
