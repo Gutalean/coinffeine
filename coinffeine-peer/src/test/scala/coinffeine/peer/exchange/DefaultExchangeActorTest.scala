@@ -17,6 +17,8 @@ import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.exchange.DepositWatcher._
+import coinffeine.peer.exchange.ExchangeActor.Collaborators
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess}
@@ -82,10 +84,11 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
     }
 
-    def givenTransactionIsCorrectlyBroadcast(): Unit = {
+    def givenTransactionIsCorrectlyBroadcast(destination: DepositDestination = CompletedChannel): Unit = {
       transactionBroadcastActor.expectAskWithReply {
         case PublishBestTransaction => SuccessfulBroadcast(TransactionPublished(dummyTx, dummyTx))
       }
+      depositWatcherActor.probe.send(actor, DepositWatcher.DepositSpent(dummyTx, destination))
     }
 
     def givenMicropaymentChannelCreation(): Unit = {
@@ -144,7 +147,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     new Fixture {
       startExchange()
       givenHandshakeSuccessWithInvalidCounterpartCommitment()
-      givenTransactionIsCorrectlyBroadcast()
+      givenTransactionIsCorrectlyBroadcast(DepositRefund)
       inside (listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
         case Exchange.Abortion(Exchange.InvalidCommitments(Both(Failure(_), Success(_)))) =>
       }
@@ -160,7 +163,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     givenMicropaymentChannelCreation()
     micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
-    givenTransactionIsCorrectlyBroadcast()
+    givenTransactionIsCorrectlyBroadcast(ChannelAtStep(1))
 
     listener.expectMsgType[ExchangeFailure]
     listener.expectMsgClass(classOf[Terminated])
@@ -191,8 +194,11 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
         newTx
       }
       transactionBroadcastActor.expectAskWithReply {
-        case PublishBestTransaction => SuccessfulBroadcast(TransactionPublished(unexpectedTx, unexpectedTx))
+        case PublishBestTransaction =>
+          SuccessfulBroadcast(TransactionPublished(unexpectedTx, unexpectedTx))
       }
+      depositWatcherActor.probe.send(actor,
+        DepositWatcher.DepositSpent(unexpectedTx, UnexpectedDestination))
       inside(listener.expectMsgType[ExchangeFailure].exchange.state) {
         case Exchange.Failed(Exchange.UnexpectedBroadcast, _, _, Some(`unexpectedTx`)) =>
       }
@@ -213,6 +219,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       transactionBroadcastActor.expectNoMsg()
       transactionBroadcastActor.probe
         .send(actor, SuccessfulBroadcast(TransactionPublished(midWayTx, midWayTx)))
+      depositWatcherActor.probe.send(actor, DepositWatcher.DepositSpent(midWayTx, DepositRefund))
       val failedState = listener.expectMsgType[ExchangeFailure].exchange.state
       failedState.cause shouldBe Exchange.PanicBlockReached
       failedState.transaction.value shouldBe midWayTx

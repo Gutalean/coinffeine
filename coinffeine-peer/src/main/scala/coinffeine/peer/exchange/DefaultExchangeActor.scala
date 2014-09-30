@@ -7,8 +7,8 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.{HandshakeFailed, HandshakeWithCommitmentFailed, InvalidCommitments}
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BitcoinPeerActor.TransactionPublished
 import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
@@ -99,7 +99,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case update: ExchangeUpdate =>
       collaborators.listener ! update
 
-    case SuccessfulBroadcast(TransactionPublished(_, broadcastTx)) =>
+    case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
   }
 
@@ -109,12 +109,13 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def aborting(abortingExchange: AbortingExchange[C]): Receive = {
-    case SuccessfulBroadcast(TransactionPublished(abortingExchange.state.`refundTx`, broadcastTx)) =>
-      finishWith(ExchangeFailure(abortingExchange.broadcast(broadcastTx)))
+    case DepositSpent(tx, DepositRefund | ChannelAtStep(_)) =>
+      finishWith(ExchangeFailure(abortingExchange.broadcast(tx)))
 
-    case SuccessfulBroadcast(TransactionPublished(finalTx, _)) =>
-      log.error("Cannot broadcast the refund transaction, broadcast {} instead", finalTx)
-      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
+    case DepositSpent(tx, _) =>
+      log.error("When aborting {} and unexpected transaction was broadcast: {}",
+        abortingExchange.id, tx)
+      finishWith(ExchangeFailure(abortingExchange.broadcast(tx)))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
@@ -124,8 +125,13 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def failingAtStep(runningExchange: RunningExchange[C],
                             step: Int,
                             stepFailure: Throwable): Receive = {
-    case SuccessfulBroadcast(TransactionPublished(_, broadcastTx)) =>
-      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(broadcastTx))))
+    case DepositSpent(tx, destination) =>
+      val expectedDestination = ChannelAtStep(step)
+      if (destination != expectedDestination) {
+        log.warning("Expected broadcast of {} but got {} for exchange {} (tx = {})",
+          expectedDestination, destination, exchange.info.id, tx)
+      }
+      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(tx))))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast any recovery transaction")
@@ -135,13 +141,13 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
                                          expectedLastTx: Option[ImmutableTransaction]): Receive = {
 
-    case SuccessfulBroadcast(TransactionPublished(originalTx, broadcastTx))
-        if expectedLastTx.fold(false)(_ != originalTx) =>
-      log.error("{} was broadcast for exchange {} while {} was expected", broadcastTx,
-        exchange.info.id, expectedLastTx.get)
-      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
+    case DepositSpent(_, CompletedChannel) =>
+      finishWith(ExchangeSuccess(runningExchange.complete))
 
-    case SuccessfulBroadcast(_) => finishWith(ExchangeSuccess(runningExchange.complete))
+    case DepositSpent(broadcastTx, destination) =>
+      log.error("{} ({}) was unexpectedly broadcast for exchange {}", broadcastTx,
+        destination, exchange.info.id)
+      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "The finishing transaction could not be broadcast")
