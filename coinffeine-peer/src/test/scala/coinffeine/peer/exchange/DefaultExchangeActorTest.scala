@@ -88,7 +88,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
     def givenTransactionIsCorrectlyBroadcast(): Unit = {
       transactionBroadcastActor.expectAskWithReply {
-        case FinishExchange => ExchangeFinished(TransactionPublished(dummyTx, dummyTx))
+        case PublishBestTransaction => SuccessfulBroadcast(TransactionPublished(dummyTx, dummyTx))
       }
     }
 
@@ -177,7 +177,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     givenMicropaymentChannelSuccess()
     val broadcastError = new Error("failed to broadcast")
     transactionBroadcastActor.expectAskWithReply {
-      case FinishExchange => ExchangeFinishFailure(broadcastError)
+      case PublishBestTransaction => FailedBroadcast(broadcastError)
     }
     listener.expectMsgType[ExchangeFailure].exchange.state.cause shouldBe Exchange.NoBroadcast
     listener.expectMsgClass(classOf[Terminated])
@@ -195,7 +195,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
         newTx
       }
       transactionBroadcastActor.expectAskWithReply {
-        case FinishExchange => ExchangeFinished(TransactionPublished(unexpectedTx, unexpectedTx))
+        case PublishBestTransaction => SuccessfulBroadcast(TransactionPublished(unexpectedTx, unexpectedTx))
       }
       inside(listener.expectMsgType[ExchangeFailure].exchange.state) {
         case Exchange.Failed(Exchange.UnexpectedBroadcast, _, _, Some(`unexpectedTx`)) =>
@@ -216,7 +216,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       }
       transactionBroadcastActor.expectNoMsg()
       transactionBroadcastActor.probe
-        .send(actor, ExchangeFinished(TransactionPublished(midWayTx, midWayTx)))
+        .send(actor, SuccessfulBroadcast(TransactionPublished(midWayTx, midWayTx)))
       val failedState = listener.expectMsgType[ExchangeFailure].exchange.state
       failedState.cause shouldBe Exchange.PanicBlockReached
       failedState.transaction.value shouldBe midWayTx

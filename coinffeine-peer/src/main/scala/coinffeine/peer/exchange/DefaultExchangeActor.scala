@@ -103,35 +103,35 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.info.id)
-      txBroadcaster ! FinishExchange
+      txBroadcaster ! PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.info.id, step)
-      txBroadcaster ! FinishExchange
+      txBroadcaster ! PublishBestTransaction
       context.become(failingAtStep(runningExchange, step, cause))
 
     case update: ExchangeUpdate =>
       collaborators.listener ! update
 
-    case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
+    case SuccessfulBroadcast(TransactionPublished(_, broadcastTx)) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
   }
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
-    txBroadcaster ! FinishExchange
+    txBroadcaster ! PublishBestTransaction
     context.become(aborting(abortingExchange))
   }
 
   private def aborting(abortingExchange: AbortingExchange[C]): Receive = {
-    case ExchangeFinished(TransactionPublished(abortingExchange.state.`refundTx`, broadcastTx)) =>
+    case SuccessfulBroadcast(TransactionPublished(abortingExchange.state.`refundTx`, broadcastTx)) =>
       finishWith(ExchangeFailure(abortingExchange.broadcast(broadcastTx)))
 
-    case ExchangeFinished(TransactionPublished(finalTx, _)) =>
+    case SuccessfulBroadcast(TransactionPublished(finalTx, _)) =>
       log.error("Cannot broadcast the refund transaction, broadcast {} instead", finalTx)
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
 
-    case ExchangeFinishFailure(cause) =>
+    case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
   }
@@ -139,10 +139,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def failingAtStep(runningExchange: RunningExchange[C],
                             step: Int,
                             stepFailure: Throwable): Receive = {
-    case ExchangeFinished(TransactionPublished(_, broadcastTx)) =>
+    case SuccessfulBroadcast(TransactionPublished(_, broadcastTx)) =>
       finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(broadcastTx))))
 
-    case ExchangeFinishFailure(cause) =>
+    case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast any recovery transaction")
       finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, transaction = None)))
   }
@@ -150,15 +150,15 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
                                          expectedLastTx: Option[ImmutableTransaction]): Receive = {
 
-    case ExchangeFinished(TransactionPublished(originalTx, broadcastTx))
+    case SuccessfulBroadcast(TransactionPublished(originalTx, broadcastTx))
         if expectedLastTx.fold(false)(_ != originalTx) =>
       log.error("{} was broadcast for exchange {} while {} was expected", broadcastTx,
         exchange.info.id, expectedLastTx.get)
       finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
 
-    case ExchangeFinished(_) => finishWith(ExchangeSuccess(runningExchange.complete))
+    case SuccessfulBroadcast(_) => finishWith(ExchangeSuccess(runningExchange.complete))
 
-    case ExchangeFinishFailure(cause) =>
+    case FailedBroadcast(cause) =>
       log.error(cause, "The finishing transaction could not be broadcast")
       finishWith(ExchangeFailure(runningExchange.noBroadcast))
   }

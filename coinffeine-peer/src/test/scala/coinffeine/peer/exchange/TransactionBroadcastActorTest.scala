@@ -32,51 +32,53 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   private val protocolConstants = ProtocolConstants()
   private val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
 
-  "An exchange transaction broadcast actor" should "broadcast the refund transaction if it " +
-    "becomes valid" in new Fixture {
+  "An exchange transaction broadcast actor" should
+    "broadcast the refund transaction if it becomes valid" in new Fixture {
       instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
       givenSuccessfulBlockchainRetrieval()
       givenPanicNotification()
       val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
       blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
       val result = givenSuccessfulBroadcast(refundTx)
-      expectMsg(ExchangeFinished(result))
+      expectMsg(SuccessfulBroadcast(result))
       system.stop(instance)
     }
 
-  it should "broadcast the refund transaction if it receives a finish exchange signal" in new Fixture {
-    instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-    givenSuccessfulBlockchainRetrieval()
-    expectPanicNotificationRequest()
-    instance ! FinishExchange
-    val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
-    blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
-    val result = givenSuccessfulBroadcast(refundTx)
-    expectMsg(ExchangeFinished(result))
-    system.stop(instance)
-  }
+  it should "broadcast the refund transaction if it receives a finish exchange signal" in
+    new Fixture {
+      instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
+      givenSuccessfulBlockchainRetrieval()
+      expectPanicNotificationRequest()
+      instance ! PublishBestTransaction
+      val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
+      blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
+      val result = givenSuccessfulBroadcast(refundTx)
+      expectMsg(SuccessfulBroadcast(result))
+      system.stop(instance)
+    }
 
-  it should "broadcast the last offer when the refund transaction becomes valid" in new Fixture {
-    instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-    givenSuccessfulBlockchainRetrieval()
-    givenLastOffer(someLastOffer)
-    givenPanicNotification()
+  it should "broadcast the last offer when the refund transaction is about to become valid" in
+    new Fixture {
+      instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
+      givenSuccessfulBlockchainRetrieval()
+      givenLastOffer(someLastOffer)
+      givenPanicNotification()
 
-    val result = givenSuccessfulBroadcast(someLastOffer)
-    expectMsg(ExchangeFinished(result))
-    system.stop(instance)
-  }
+      val result = givenSuccessfulBroadcast(someLastOffer)
+      expectMsg(SuccessfulBroadcast(result))
+      system.stop(instance)
+    }
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
     instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
     givenSuccessfulBlockchainRetrieval()
     expectPanicNotificationRequest()
-    instance ! FinishExchange
+    instance ! PublishBestTransaction
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
     blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
 
     val result = givenSuccessfulBroadcast(refundTx)
-    expectMsg(ExchangeFinished(result))
+    expectMsg(SuccessfulBroadcast(result))
     system.stop(instance)
   }
 
