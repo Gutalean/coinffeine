@@ -19,7 +19,6 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
-import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.protocol.{MicroPaymentChannel, MockExchangeProtocol}
@@ -51,8 +50,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       ExchangeToStart(exchange, user),
       new DefaultExchangeActor.Delegates {
         val transactionBroadcaster = transactionBroadcastActor.props
-        def handshake(exchange: ExchangeToStart[_ <: FiatCurrency],
-                      collaborators: HandshakeActor.Collaborators) = handshakeActor.props
+        def handshake(listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) = micropaymentChannelActor.props
         def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
@@ -66,8 +64,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     listener.watch(actor)
 
     def startExchange(): Unit = {
-      peers.expectMsg(RetrieveBlockchainActor)
-      peers.reply(BlockchainActorRef(blockchain.ref))
       transactionBroadcastActor.expectCreation()
     }
 

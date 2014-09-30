@@ -7,7 +7,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.{HandshakeFailed, HandshakeWithCommitmentFailed, InvalidCommitments}
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.BitcoinPeerActor.{BlockchainActorRef, RetrieveBlockchainActor, TransactionPublished}
+import coinffeine.peer.bitcoin.BitcoinPeerActor.TransactionPublished
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
@@ -23,14 +23,12 @@ class DefaultExchangeActor[C <: FiatCurrency](
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
 
-  private var blockchain: ActorRef = _
   private val txBroadcaster =
     context.actorOf(delegates.transactionBroadcaster, TransactionBroadcastActorName)
-  private var handshakeActor: ActorRef = _
 
   override def preStart(): Unit = {
     log.info("Starting exchange {}", exchange.info.id)
-    collaborators.bitcoinPeer ! RetrieveBlockchainActor
+    context.actorOf(delegates.handshake(self), HandshakeActorName)
   }
 
   override def postStop(): Unit = {
@@ -41,12 +39,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
   }
 
-  val receive: Receive = {
-    case BlockchainActorRef(blockchainRef) =>
-      blockchain = blockchainRef
-      startHandshake()
-      context.become(inHandshake)
-  }
+  val receive: Receive = inHandshake
 
   private def inHandshake: Receive = {
     case HandshakeSuccess(rawExchange, commitments, refundTx)
@@ -90,13 +83,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     val resultListeners = Set(self, txBroadcaster)
     context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName)
     context.become(inMicropaymentChannel(runningExchange))
-  }
-
-  private def startHandshake(): Unit = {
-    val handshakeCollaborators = HandshakeActor.Collaborators(
-      collaborators.gateway, blockchain, collaborators.wallet, listener = self)
-    handshakeActor = context.actorOf(
-      delegates.handshake(exchange, handshakeCollaborators), HandshakeActorName)
   }
 
   private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
@@ -172,8 +158,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 object DefaultExchangeActor {
 
   trait Delegates {
-    def handshake(exchange: ExchangeActor.ExchangeToStart[_ <: FiatCurrency],
-                  collaborators: HandshakeActor.Collaborators): Props
+    def handshake(listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster: Props
@@ -187,13 +172,15 @@ object DefaultExchangeActor {
 
     override lazy val exchangeActorProps = (exchange: ExchangeToStart[_ <: FiatCurrency],
                                             collaborators: ExchangeActor.Collaborators) => {
+      import collaborators._
+
       val delegates = new Delegates {
         val transactionBroadcaster = TransactionBroadcastActor.props(protocolConstants)
 
-        def handshake(exchange: ExchangeToStart[_ <: FiatCurrency],
-                      collaborators: HandshakeActor.Collaborators) =
-          HandshakeActor.props(exchange, collaborators,
-            HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants))
+        def handshake(listener: ActorRef) = HandshakeActor.props(exchange,
+          HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
+          HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)
+        )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]): Props = {
@@ -201,8 +188,8 @@ object DefaultExchangeActor {
             case BuyerRole => BuyerMicroPaymentChannelActor.props _
             case SellerRole => SellerMicroPaymentChannelActor.props _
           }
-          propsFactory(channel, protocolConstants, MicroPaymentChannelActor.Collaborators(
-            collaborators.gateway, collaborators.paymentProcessor, resultListeners))
+          propsFactory(channel, protocolConstants,
+            MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners))
         }
 
         def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
