@@ -34,8 +34,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   "An exchange transaction broadcast actor" should
     "broadcast the refund transaction if it becomes valid" in new Fixture {
-      instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-      givenSuccessfulBlockchainRetrieval()
+      instance ! StartBroadcastHandling(refundTx, Set(self))
       givenPanicNotification()
       val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
       blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
@@ -46,8 +45,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   it should "broadcast the refund transaction if it receives a finish exchange signal" in
     new Fixture {
-      instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-      givenSuccessfulBlockchainRetrieval()
+      instance ! StartBroadcastHandling(refundTx, Set(self))
       expectPanicNotificationRequest()
       instance ! PublishBestTransaction
       val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
@@ -59,8 +57,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
 
   it should "broadcast the last offer when the refund transaction is about to become valid" in
     new Fixture {
-      instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-      givenSuccessfulBlockchainRetrieval()
+      instance ! StartBroadcastHandling(refundTx, Set(self))
       givenLastOffer(someLastOffer)
       givenPanicNotification()
 
@@ -70,8 +67,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
     }
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
-    instance ! StartBroadcastHandling(refundTx, peerActor.ref, Set(self))
-    givenSuccessfulBlockchainRetrieval()
+    instance ! StartBroadcastHandling(refundTx, Set(self))
     expectPanicNotificationRequest()
     instance ! PublishBestTransaction
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
@@ -83,14 +79,9 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   }
 
   trait Fixture {
-    val peerActor = TestProbe()
-    val blockchain = TestProbe()
-    val instance: ActorRef = system.actorOf(Props(new TransactionBroadcastActor(protocolConstants)))
-
-    def givenSuccessfulBlockchainRetrieval(): Unit = {
-      peerActor.expectMsg(RetrieveBlockchainActor)
-      peerActor.reply(BlockchainActorRef(blockchain.ref))
-    }
+    val peerActor, blockchain = TestProbe()
+    val instance: ActorRef = system.actorOf(Props(
+      new TransactionBroadcastActor(peerActor.ref, blockchain.ref, protocolConstants)))
 
     def expectPanicNotificationRequest(): Unit = {
       blockchain.expectMsg(WatchBlockchainHeight(panicBlock))

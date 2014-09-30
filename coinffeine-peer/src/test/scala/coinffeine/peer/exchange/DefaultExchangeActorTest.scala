@@ -71,7 +71,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeActor.expectCreation()
       handshakeActor.probe.send(actor,
         HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
+      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
     }
 
     def givenHandshakeSuccessWithInvalidCounterpartCommitment(): Unit = {
@@ -79,7 +79,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       val invalidCommitment = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
       val handshakeSuccess = HandshakeSuccess(handshakingExchange, invalidCommitment,dummyTx)
       handshakeActor.probe.send(actor,handshakeSuccess)
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, peers.ref, Set(actor)))
+      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
     }
 
     def givenTransactionIsCorrectlyBroadcast(): Unit = {

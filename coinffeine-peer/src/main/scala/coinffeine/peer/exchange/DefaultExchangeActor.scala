@@ -66,8 +66,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
-    txBroadcaster ! StartBroadcastHandling(refundTx, collaborators.bitcoinPeer,
-      resultListeners = Set(self))
+    txBroadcaster ! StartBroadcastHandling(refundTx, resultListeners = Set(self))
   }
 
   private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
@@ -175,7 +174,8 @@ object DefaultExchangeActor {
       import collaborators._
 
       val delegates = new Delegates {
-        val transactionBroadcaster = TransactionBroadcastActor.props(protocolConstants)
+        val transactionBroadcaster =
+          TransactionBroadcastActor.props(bitcoinPeer, blockchain, protocolConstants)
 
         def handshake(listener: ActorRef) = HandshakeActor.props(exchange,
           HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),

@@ -13,20 +13,14 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.TransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
-class TransactionBroadcastActor(constants: ProtocolConstants)
+class TransactionBroadcastActor(bitcoinPeerActor: ActorRef,
+                                blockchain: ActorRef,
+                                constants: ProtocolConstants)
   extends Actor with ActorLogging with Stash {
 
   override val receive: Receive = {
     case msg: StartBroadcastHandling =>
-      msg.bitcoinPeerActor ! RetrieveBlockchainActor
-      context.become(waitForBlockchain(msg))
-  }
-
-  private def waitForBlockchain(init: StartBroadcastHandling): Receive = {
-    case BlockchainActorRef(blockchain: ActorRef) =>
-      unstashAll()
-      new InitializedBroadcastActor(init, blockchain).start()
-    case _ => stash()
+      new InitializedBroadcastActor(msg, blockchain).start()
   }
 
   private class InitializedBroadcastActor(init: StartBroadcastHandling, blockchain: ActorRef) {
@@ -95,14 +89,14 @@ class TransactionBroadcastActor(constants: ProtocolConstants)
   */
 object TransactionBroadcastActor {
 
-  def props(constants: ProtocolConstants) = Props(new TransactionBroadcastActor(constants))
+  def props(bitcoinPeerActor: ActorRef, blockchain: ActorRef, constants: ProtocolConstants) =
+    Props(new TransactionBroadcastActor(bitcoinPeerActor, blockchain, constants))
 
   /** A request to the actor to start the necessary broadcast handling. It sets the refund
     * transaction to be used. This transaction will be broadcast as soon as its timelock expires if
     * there are no better alternatives (like broadcasting the successful exchange transaction)
     */
-  case class StartBroadcastHandling(
-    refund: ImmutableTransaction, bitcoinPeerActor: ActorRef, resultListeners: Set[ActorRef])
+  case class StartBroadcastHandling(refund: ImmutableTransaction, resultListeners: Set[ActorRef])
 
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction
