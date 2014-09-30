@@ -8,15 +8,15 @@ import com.google.bitcoin.core.TransactionOutPoint
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.RunningExchange
+import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 
 /** Actor that monitors a multisig deposit to inform about its destination */
-class DepositWatcher(exchange: RunningExchange[_ <: FiatCurrency],
+class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                     myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
-  private val myDeposit = exchange.role.select(exchange.state.deposits)
   private val network = myDeposit.get.getParams
   private val userAddress = exchange.state.user.bitcoinKey.toAddress(network)
 
@@ -32,10 +32,12 @@ class DepositWatcher(exchange: RunningExchange[_ <: FiatCurrency],
 
     case BlockchainActor.OutputSpent(_, spendTx) =>
       val actualAmount = amountForMe(spendTx.get)
-      val expectedAmount = exchange.role.select(exchange.amounts.finalStep.depositSplit)
-      val depositUse = if (actualAmount < expectedAmount)
-        DepositWatcher.WrongDepositUse(expectedAmount - actualAmount)
-      else DepositWatcher.ChannelCompletion
+      val depositUse = stepWithAmount(actualAmount) match {
+        case None => DepositWatcher.UnexpectedDestination
+        case Some(finalStep) if finalStep == exchange.amounts.steps.size =>
+          DepositWatcher.CompletedChannel
+        case Some(intermediateStep) => DepositWatcher.ChannelAtStep(intermediateStep)
+      }
       collaborators.listener ! DepositWatcher.DepositSpent(spendTx, depositUse)
   }
 
@@ -50,6 +52,11 @@ class DepositWatcher(exchange: RunningExchange[_ <: FiatCurrency],
     val script = output.getScriptPubKey
     script.isSentToAddress && script.getToAddress(network) == userAddress
   }
+
+  private def stepWithAmount(amount: BitcoinAmount): Option[Int] =
+    exchange.amounts.steps.zipWithIndex.reverse.collectFirst {
+      case (step, index) if exchange.role.select(step.depositSplit) == amount => index + 1
+    }
 }
 
 object DepositWatcher {
@@ -57,8 +64,9 @@ object DepositWatcher {
 
   sealed trait DepositDestination
   case object DepositRefund extends DepositDestination
-  case object ChannelCompletion extends DepositDestination
-  case class WrongDepositUse(amountLost: BitcoinAmount) extends DepositDestination
+  case object CompletedChannel extends DepositDestination
+  case class ChannelAtStep(step: Int) extends DepositDestination
+  case object UnexpectedDestination extends DepositDestination
 
   case class DepositSpent(tx: ImmutableTransaction, use: DepositDestination)
 }

@@ -121,7 +121,7 @@ class OrderActorTest extends AkkaSpec
   trait Fixture {
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val exchangeActor = new MockSupervisedActor()
-    val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, walletProbe = TestProbe()
+    val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
     val blockedFunds = Exchange.BlockedFunds(Some(PaymentProcessor.BlockedFundsId(1)), BlockedCoinsId(2))
     val fundsBlocking = new FakeOrderFundsBlocker
     val entry = OrderBookEntry.fromOrder(order)
@@ -140,7 +140,7 @@ class OrderActorTest extends AkkaSpec
         override def delegatedFundsBlocking()(implicit context: ActorContext) = fundsBlocking
       },
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
-        submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref)
+        submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref)
     )))
 
     def givenInitializedOrder(): Unit = {

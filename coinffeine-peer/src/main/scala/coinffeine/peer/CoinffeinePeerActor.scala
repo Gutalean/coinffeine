@@ -54,13 +54,17 @@ import coinffeine.peer.CoinffeinePeerActor._
         networkParams.listenPort, networkParams.brokerAddress))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
-    } yield walletActorRef).pipeTo(self)
+      blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
+        .withReply[BitcoinPeerActor.BlockchainActorRef]
+    } yield (walletActorRef, blockchainActorRef)
+      ).pipeTo(self)
 
     handle {
-      case BitcoinPeerActor.WalletActorRef(retrievedWalletRef) =>
+      case (BitcoinPeerActor.WalletActorRef(retrievedWalletRef),
+            BitcoinPeerActor.BlockchainActorRef(retrievedBlockchainRef)) =>
         walletRef = retrievedWalletRef
         val collaborators = OrderSupervisorCollaborators(
-          gatewayRef, paymentProcessorRef, bitcoinPeerRef, walletRef)
+          gatewayRef, paymentProcessorRef, bitcoinPeerRef, retrievedBlockchainRef, walletRef)
         orderSupervisorRef = context.actorOf(props.orderSupervisor(collaborators), "orders")
         becomeStarted(handleMessages)
         log.info("Coinffeine peer actor successfully started!")
@@ -147,6 +151,7 @@ object CoinffeinePeerActor {
   case class OrderSupervisorCollaborators(gateway: ActorRef,
                                           paymentProcessor: ActorRef,
                                           bitcoinPeer: ActorRef,
+                                          blockchain: ActorRef,
                                           wallet: ActorRef)
 
   case class PropsCatalogue(gateway: Props,
@@ -190,7 +195,7 @@ object CoinffeinePeerActor {
                                (order: Order[_ <: FiatCurrency], submissionSupervisor: ActorRef) = {
       import orderSupervisorCollaborators._
       val collaborators = OrderActor.Collaborators(
-        wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer)
+        wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer, blockchain)
       OrderActor.props(
         exchangeActorProps, network, amountsCalculator,
         order, coinffeineNetworkProperties, collaborators)

@@ -2,7 +2,6 @@ package coinffeine.peer.exchange
 
 import akka.actor.{ActorRef, Props}
 
-import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 
@@ -18,6 +17,7 @@ object ExchangeActor {
                            paymentProcessor: ActorRef,
                            gateway: ActorRef,
                            bitcoinPeer: ActorRef,
+                           blockchain: ActorRef,
                            listener: ActorRef)
 
   case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],

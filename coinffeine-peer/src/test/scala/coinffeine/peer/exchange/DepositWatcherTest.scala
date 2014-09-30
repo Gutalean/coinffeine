@@ -12,11 +12,10 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, SampleExchange}
+import coinffeine.model.exchange.SampleExchange
 import coinffeine.peer.bitcoin.SmartWallet
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.protocol.impl.TransactionProcessor
 
 class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange {
@@ -29,17 +28,22 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   }
 
   it should "notify successful channel publication" in new Fixture {
-    blockchain.expectMsg(BlockchainActor.WatchOutput(output))
     val happyPathTx = spendDeposit(exchange.amounts.finalStep.depositSplit.seller)
-    blockchain.reply(BlockchainActor.OutputSpent(output, happyPathTx))
-    expectMsg(DepositWatcher.DepositSpent(happyPathTx, ChannelCompletion))
+    givenOutputIsSpentWith(happyPathTx)
+    expectMsg(DepositWatcher.DepositSpent(happyPathTx, CompletedChannel))
   }
 
-  it should "notify other uses of the deposit and how much bitcoin was lost" in new Fixture {
-    blockchain.expectMsg(BlockchainActor.WatchOutput(output))
-    val interruptedChannelTx = spendDeposit(exchange.amounts.finalStep.depositSplit.seller - 1.BTC)
-    blockchain.reply(BlockchainActor.OutputSpent(output, interruptedChannelTx))
-    expectMsg(DepositWatcher.DepositSpent(interruptedChannelTx, WrongDepositUse(1.BTC)))
+  it should "notify channel publication during an intermediate step" in new Fixture {
+    val thirdStepChannelTx = spendDeposit(exchange.amounts.intermediateSteps(2).depositSplit.seller)
+    givenOutputIsSpentWith(thirdStepChannelTx)
+    expectMsg(DepositWatcher.DepositSpent(thirdStepChannelTx, ChannelAtStep(3)))
+  }
+
+  it should "notify unexpected deposit destinations" in new Fixture {
+    private val unexpectedAmount = 0.31416.BTC
+    val interruptedChannelTx = spendDeposit(unexpectedAmount)
+    givenOutputIsSpentWith(interruptedChannelTx)
+    expectMsg(DepositWatcher.DepositSpent(interruptedChannelTx, UnexpectedDestination))
   }
 
   trait Fixture {
@@ -53,12 +57,11 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
     )
     val output = new TransactionOutPoint(network, 0, myDeposit.get.getHash)
     sendToBlockChain(myDeposit.get)
-    val exchange = sellerHandshakingExchange.startExchanging(
-      Both(buyer = MockExchangeProtocol.DummyDeposit, seller = myDeposit))
+    val exchange = sellerHandshakingExchange
     val myRefund = spendDeposit(exchange.amounts.refunds.seller)
     val blockchain = TestProbe()
     val watcher = system.actorOf(Props(
-      new DepositWatcher(exchange, myRefund, Collaborators(blockchain.ref, listener = self))))
+      new DepositWatcher(exchange, myDeposit, myRefund, Collaborators(blockchain.ref, listener = self))))
 
     def spendDeposit(getBackAmount: BitcoinAmount) = {
       val tx = TransactionProcessor.createUnsignedTransaction(
@@ -74,6 +77,11 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
       )
       TransactionProcessor.setMultipleSignatures(tx, 0, signatures: _*)
       ImmutableTransaction(tx)
+    }
+
+    def givenOutputIsSpentWith(spendTx: ImmutableTransaction): Unit = {
+      blockchain.expectMsg(BlockchainActor.WatchOutput(output))
+      blockchain.reply(BlockchainActor.OutputSpent(output, spendTx))
     }
   }
 }
