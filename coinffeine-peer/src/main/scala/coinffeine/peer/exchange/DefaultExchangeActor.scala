@@ -52,10 +52,11 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case HandshakeSuccess(rawExchange, commitments, refundTx)
       if rawExchange.currency == exchange.info.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
+      spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
+      spawnBroadcaster(refundTx)
       val validationResult = exchangeProtocol.validateDeposits(
-        commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
+          commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
       if (validationResult.forall(_.isSuccess)) {
-        spawnBroadcaster(refundTx)
         startMicropaymentChannel(commitments, handshakingExchange)
       } else {
         startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx))
@@ -65,6 +66,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
       finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), Some(exchange.user))))
 
     case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
+      spawnDepositWatcher(rawExchange, deposit, refundTx)
+      spawnBroadcaster(refundTx)
       startAbortion(
         exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx))
   }
@@ -72,6 +75,12 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
     txBroadcaster ! StartBroadcastHandling(refundTx, collaborators.bitcoinPeer,
       resultListeners = Set(self))
+  }
+
+  private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                                  deposit: ImmutableTransaction,
+                                  refundTx: ImmutableTransaction): Unit = {
+    context.actorOf(delegates.depositWatcher(exchange, deposit, refundTx), "depositWatcher")
   }
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
@@ -110,7 +119,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
-    spawnBroadcaster(abortingExchange.state.refundTx)
     txBroadcaster ! FinishExchange
     context.become(aborting(abortingExchange))
   }
@@ -169,6 +177,9 @@ object DefaultExchangeActor {
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster: Props
+    def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                       deposit: ImmutableTransaction,
+                       refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
   }
 
   trait Component extends ExchangeActor.Component {
@@ -193,6 +204,12 @@ object DefaultExchangeActor {
           propsFactory(channel, protocolConstants, MicroPaymentChannelActor.Collaborators(
             collaborators.gateway, collaborators.paymentProcessor, resultListeners))
         }
+
+        def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                           deposit: ImmutableTransaction,
+                           refundTx: ImmutableTransaction)(implicit context: ActorContext) =
+          Props(new DepositWatcher(exchange, deposit, refundTx,
+            DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
       Props(new DefaultExchangeActor(exchangeProtocol, exchange, delegates, collaborators))

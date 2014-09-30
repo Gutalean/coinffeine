@@ -3,7 +3,7 @@ package coinffeine.peer.exchange
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-import akka.actor.{ActorRef, Props, Terminated}
+import akka.actor._
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import org.scalatest.concurrent.Eventually
@@ -13,7 +13,7 @@ import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.Implicits._
-import coinffeine.model.exchange.{Both, Exchange}
+import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.WalletActor
@@ -44,7 +44,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   trait Fixture {
     val listener, blockchain, peers, walletActor = TestProbe()
-    val handshakeActor, micropaymentChannelActor, transactionBroadcastActor = new MockSupervisedActor()
+    val handshakeActor, micropaymentChannelActor, transactionBroadcastActor, depositWatcherActor =
+      new MockSupervisedActor()
     val actor = system.actorOf(Props(new DefaultExchangeActor(
       new MockExchangeProtocol,
       ExchangeToStart(exchange, user),
@@ -54,8 +55,13 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
                       collaborators: HandshakeActor.Collaborators) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) = micropaymentChannelActor.props
+        def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+                           deposit: ImmutableTransaction,
+                           refundTx: ImmutableTransaction)(implicit context: ActorContext): Props =
+          depositWatcherActor.props
       },
-      Collaborators(walletActor.ref, dummyPaymentProcessor, gateway.ref, peers.ref, listener.ref)
+      Collaborators(walletActor.ref, dummyPaymentProcessor, gateway.ref, peers.ref, blockchain.ref,
+        listener.ref)
     )))
     listener.watch(actor)
 
@@ -132,7 +138,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     startExchange()
     val error = new Error("Handshake error")
     handshakeActor.expectCreation()
-    handshakeActor.probe.send(actor, HandshakeFailure(error, refundTx = None))
+    handshakeActor.probe.send(actor, HandshakeFailure(error))
     listener.expectMsgType[ExchangeFailure]
     listener.expectTerminated(actor)
     system.stop(actor)

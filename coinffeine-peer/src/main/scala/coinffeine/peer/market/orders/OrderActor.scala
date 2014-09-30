@@ -153,7 +153,8 @@ object OrderActor {
                            paymentProcessor: ActorRef,
                            submissionSupervisor: ActorRef,
                            gateway: ActorRef,
-                           bitcoinPeer: ActorRef)
+                           bitcoinPeer: ActorRef,
+                           blockchain: ActorRef)
 
   trait OrderFundsBlocker extends FundsBlocker {
     def blockingFunds: Actor.Receive
@@ -177,7 +178,7 @@ object OrderActor {
     val delegates = new Delegates[C] {
       override def exchangeActor(exchange: ExchangeToStart[C])(implicit context: ActorContext) = {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
-          wallet, paymentProcessor, gateway, bitcoinPeer, context.self))
+          wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }
       override def delegatedFundsBlocking()(implicit context: ActorContext) =
         new DelegatedFundsBlocker(requiredFunds =>
