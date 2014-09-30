@@ -15,9 +15,9 @@ object Implicits {
   class UnitImplicits(val i: BigDecimal) extends AnyVal {
     def BTC: Bitcoin.Amount = Bitcoin(i)
 
-    def EUR: CurrencyAmount[Euro.type] = Euro(i)
+    def EUR: Euro.Amount = Euro(i)
 
-    def USD: CurrencyAmount[UsDollar.type] = UsDollar(i)
+    def USD: UsDollar.Amount = UsDollar(i)
   }
 
   implicit def pimpMyDouble(i: Double) = new UnitImplicits(i)

@@ -26,8 +26,8 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
         balance @ CurrencyAmount(_, Euro),
         blockedFunds @ CurrencyAmount(_, Euro)) =>
         Some(CoinffeinePaymentProcessor.Balance(
-          balance.asInstanceOf[CurrencyAmount[Euro.type]],
-          blockedFunds.asInstanceOf[CurrencyAmount[Euro.type]]
+          balance.asInstanceOf[Euro.Amount],
+          blockedFunds.asInstanceOf[Euro.Amount]
         ))
       case nonEurBalance @ BalanceRetrieved(_, _) =>
         Log.error("Balance not in euro: {}", nonEurBalance)

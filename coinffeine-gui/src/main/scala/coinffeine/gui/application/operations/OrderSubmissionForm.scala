@@ -37,7 +37,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
   }
 
-  private def limitAmount: Try[CurrencyAmount[Euro.type]] = Try {
+  private def limitAmount: Try[Euro.Amount] = Try {
     Euro(BigDecimal(limitTextField.text.getValueSafe))
   }
 
