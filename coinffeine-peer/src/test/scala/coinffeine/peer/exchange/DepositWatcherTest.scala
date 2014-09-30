@@ -29,17 +29,22 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   }
 
   it should "notify successful channel publication" in new Fixture {
-    blockchain.expectMsg(BlockchainActor.WatchOutput(output))
     val happyPathTx = spendDeposit(exchange.amounts.finalStep.depositSplit.seller)
-    blockchain.reply(BlockchainActor.OutputSpent(output, happyPathTx))
-    expectMsg(DepositWatcher.DepositSpent(happyPathTx, ChannelCompletion))
+    givenOutputIsSpentWith(happyPathTx)
+    expectMsg(DepositWatcher.DepositSpent(happyPathTx, CompletedChannel))
   }
 
-  it should "notify other uses of the deposit and how much bitcoin was lost" in new Fixture {
-    blockchain.expectMsg(BlockchainActor.WatchOutput(output))
-    val interruptedChannelTx = spendDeposit(exchange.amounts.finalStep.depositSplit.seller - 1.BTC)
-    blockchain.reply(BlockchainActor.OutputSpent(output, interruptedChannelTx))
-    expectMsg(DepositWatcher.DepositSpent(interruptedChannelTx, WrongDepositUse(1.BTC)))
+  it should "notify channel publication during an intermediate step" in new Fixture {
+    val thirdStepChannelTx = spendDeposit(exchange.amounts.intermediateSteps(2).depositSplit.seller)
+    givenOutputIsSpentWith(thirdStepChannelTx)
+    expectMsg(DepositWatcher.DepositSpent(thirdStepChannelTx, ChannelAtStep(3)))
+  }
+
+  it should "notify unexpected deposit destinations" in new Fixture {
+    private val unexpectedAmount = 0.31416.BTC
+    val interruptedChannelTx = spendDeposit(unexpectedAmount)
+    givenOutputIsSpentWith(interruptedChannelTx)
+    expectMsg(DepositWatcher.DepositSpent(interruptedChannelTx, UnexpectedDestination))
   }
 
   trait Fixture {
@@ -74,6 +79,11 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
       )
       TransactionProcessor.setMultipleSignatures(tx, 0, signatures: _*)
       ImmutableTransaction(tx)
+    }
+
+    def givenOutputIsSpentWith(spendTx: ImmutableTransaction): Unit = {
+      blockchain.expectMsg(BlockchainActor.WatchOutput(output))
+      blockchain.reply(BlockchainActor.OutputSpent(output, spendTx))
     }
   }
 }
