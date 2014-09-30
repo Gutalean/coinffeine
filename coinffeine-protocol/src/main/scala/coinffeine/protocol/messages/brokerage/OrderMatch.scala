@@ -19,7 +19,7 @@ import coinffeine.protocol.messages.PublicMessage
 case class OrderMatch[C <: FiatCurrency](
     orderId: OrderId,
     exchangeId: ExchangeId,
-    bitcoinAmount: Both[BitcoinAmount],
+    bitcoinAmount: Both[Bitcoin.Amount],
     fiatAmount: Both[CurrencyAmount[C]],
     lockTime: Long,
     counterpart: PeerId

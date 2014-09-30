@@ -33,7 +33,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     prefWidth = 100
   }
 
-  private def bitcoinAmount: Try[BitcoinAmount] = Try {
+  private def bitcoinAmount: Try[Bitcoin.Amount] = Try {
     Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
   }
 

@@ -6,10 +6,10 @@ trait Balance[C <: Currency] {
 }
 
 case class BitcoinBalance(
-  estimated: BitcoinAmount,
-  available: BitcoinAmount,
-  minOutput: Option[BitcoinAmount],
-  blocked: BitcoinAmount = Bitcoin.Zero,
+  estimated: Bitcoin.Amount,
+  available: Bitcoin.Amount,
+  minOutput: Option[Bitcoin.Amount],
+  blocked: Bitcoin.Amount = Bitcoin.Zero,
   hasExpired: Boolean = false) extends Balance[Bitcoin.type] {
 
   val amount = estimated
@@ -17,7 +17,7 @@ case class BitcoinBalance(
 
 object BitcoinBalance {
 
-  def singleOutput(amount: BitcoinAmount) = BitcoinBalance(
+  def singleOutput(amount: Bitcoin.Amount) = BitcoinBalance(
     estimated = amount,
     available = amount,
     minOutput = Some(amount))

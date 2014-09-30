@@ -2,14 +2,14 @@ package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
-import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.SmartWallet
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {
 
-  def valueSent(tx: ImmutableTransaction, wallet: SmartWallet): BitcoinAmount =
+  def valueSent(tx: ImmutableTransaction, wallet: SmartWallet): Bitcoin.Amount =
     Bitcoin.fromSatoshi(tx.get.getValueSentToMe(wallet.delegate))
 
   /** Fixture with just a fresh protocol object */

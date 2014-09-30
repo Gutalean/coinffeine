@@ -49,6 +49,6 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     val someAddress = new KeyPair().toAddress(network)
     val wallet = new SmartWallet(createWallet(keyPair, initialFunds))
 
-    def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = wallet.blockFunds(amount).get
+    def givenBlockedFunds(amount: Bitcoin.Amount): BlockedCoinsId = wallet.blockFunds(amount).get
   }
 }

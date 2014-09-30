@@ -54,7 +54,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   def get(positionId: PositionId): Option[Position[_ <: OrderType, C]] =
     bids.get(positionId) orElse asks.get(positionId)
 
-  def decreaseAmount(positionId: PositionId, amount: BitcoinAmount): OrderBook[C] = copy(
+  def decreaseAmount(positionId: PositionId, amount: Bitcoin.Amount): OrderBook[C] = copy(
     bids = bids.decreaseAmount(positionId, amount),
     asks = asks.decreaseAmount(positionId, amount)
   )

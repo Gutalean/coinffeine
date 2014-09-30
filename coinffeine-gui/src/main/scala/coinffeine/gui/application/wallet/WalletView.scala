@@ -3,8 +3,8 @@ package coinffeine.gui.application.wallet
 import scalafx.Includes._
 import scalafx.geometry.{HPos, Insets, Pos}
 import scalafx.scene.Node
-import scalafx.scene.control.{TableColumn, TableView, Button, Label}
 import scalafx.scene.control.TableColumn._
+import scalafx.scene.control.{Button, Label, TableColumn, TableView}
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
@@ -13,11 +13,11 @@ import com.google.bitcoin.core.Sha256Hash
 import org.joda.time.DateTime
 
 import coinffeine.gui.application.ApplicationView
-import coinffeine.gui.application.properties.{WalletProperties, WalletActivityEntryProperties}
+import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.Address
-import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.peer.api.CoinffeineApp
 
 class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
@@ -143,7 +143,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
         text = "Hash"
         cellValueFactory = { _.value.hash }
       },
-      new TableColumn[WalletActivityEntryProperties, BitcoinAmount] {
+      new TableColumn[WalletActivityEntryProperties, Bitcoin.Amount] {
         text = "Amount"
         cellValueFactory = { _.value.amount }
       }

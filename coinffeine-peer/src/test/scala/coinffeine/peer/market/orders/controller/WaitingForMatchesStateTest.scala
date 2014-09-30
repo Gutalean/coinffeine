@@ -10,8 +10,8 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.{BitcoinAmount, Euro}
 import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -100,7 +100,7 @@ class WaitingForMatchesStateTest extends UnitTest
     given(context.calculator).willReturn(amountsCalculator)
     val funds = new FakeFundsBlocker
 
-    def orderMatch(amount: BitcoinAmount, price: Euro.Amount) = {
+    def orderMatch(amount: Bitcoin.Amount, price: Euro.Amount) = {
       val fiatSpent = price * amount.value
       OrderMatch(
         order.id, ExchangeId.random(),

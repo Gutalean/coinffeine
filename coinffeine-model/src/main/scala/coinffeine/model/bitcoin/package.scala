@@ -4,7 +4,7 @@ import java.math.BigInteger
 
 import com.google.bitcoin.{core, crypto}
 
-import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
+import coinffeine.model.currency.Bitcoin
 
 package object bitcoin {
 
@@ -17,9 +17,9 @@ package object bitcoin {
   type MutableTransactionOutput = core.TransactionOutput
   type MutableTransaction = core.Transaction
   object MutableTransaction {
-    val ReferenceDefaultMinTxFee: BitcoinAmount =
+    val ReferenceDefaultMinTxFee: Bitcoin.Amount =
       Bitcoin.fromSatoshi(core.Transaction.REFERENCE_DEFAULT_MIN_TX_FEE)
-    val MinimumNonDustAmount: BitcoinAmount =
+    val MinimumNonDustAmount: Bitcoin.Amount =
       Bitcoin.fromSatoshi(core.Transaction.MIN_NONDUST_OUTPUT)
   }
 

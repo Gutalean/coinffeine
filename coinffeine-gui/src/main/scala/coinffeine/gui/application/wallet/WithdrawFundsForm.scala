@@ -15,7 +15,7 @@ import com.google.bitcoin.core.Address
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.WalletProperties
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 
 class WithdrawFundsForm(props: WalletProperties) {
@@ -24,7 +24,7 @@ class WithdrawFundsForm(props: WalletProperties) {
 
   require(props.balance.get.isDefined, "cannot run withdraw funds form when balance is not defined")
 
-  private val amount = new ObjectProperty[BitcoinAmount](this, "amount", 0.BTC)
+  private val amount = new ObjectProperty[Bitcoin.Amount](this, "amount", 0.BTC)
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
 
@@ -93,7 +93,7 @@ class WithdrawFundsForm(props: WalletProperties) {
   private def isValidAddress(address: String): Boolean =
     address.length >= 26 && address.length <= 34
 
-  private def isValidAmount(amount: BitcoinAmount): Boolean =
+  private def isValidAmount(amount: Bitcoin.Amount): Boolean =
     amount.isPositive && amount <= props.balance.get.get.amount
 
   private val stage = new Stage(style = StageStyle.UTILITY) {
@@ -126,5 +126,5 @@ object WithdrawFundsForm {
 
   case object Cancel extends Result
 
-  case class Withdraw(amount: BitcoinAmount, to: Address) extends Result
+  case class Withdraw(amount: Bitcoin.Amount, to: Address) extends Result
 }

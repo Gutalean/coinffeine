@@ -11,7 +11,7 @@ private[amounts] class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
-  override def exchangeAmountsFor[C <: FiatCurrency](grossBitcoinAmount: BitcoinAmount,
+  override def exchangeAmountsFor[C <: FiatCurrency](grossBitcoinAmount: Bitcoin.Amount,
                                                      grossFiatAmount: CurrencyAmount[C]) = {
     type FiatAmount = CurrencyAmount[C]
     require(grossBitcoinAmount.isPositive && grossFiatAmount.isPositive,
@@ -29,16 +29,16 @@ private[amounts] class DefaultAmountsCalculator(
 
     /** Bitcoin amount exchanged per step. It mirrors the fiat amounts with a rounding error of at
       * most one satoshi. */
-    val bitcoinBreakdown: Seq[BitcoinAmount] = ProportionalAllocation
+    val bitcoinBreakdown: Seq[Bitcoin.Amount] = ProportionalAllocation
       .allocate(
         amount = netBitcoinAmount.toIndivisibleUnits,
         weights = fiatBreakdown.map(_.netAmount.toIndivisibleUnits).toVector)
       .map(satoshis => CurrencyAmount.fromIndivisibleUnits(satoshis, Bitcoin))
 
-    val maxBitcoinStepSize: BitcoinAmount = bitcoinBreakdown.max
+    val maxBitcoinStepSize: Bitcoin.Amount = bitcoinBreakdown.max
 
     /** How the amount to exchange is split per step */
-    val depositSplits: Seq[Both[BitcoinAmount]] = {
+    val depositSplits: Seq[Both[Bitcoin.Amount]] = {
       cumulative(bitcoinBreakdown).map(boughtAmount =>
         Both(boughtAmount + txFee, netBitcoinAmount - boughtAmount))
     }

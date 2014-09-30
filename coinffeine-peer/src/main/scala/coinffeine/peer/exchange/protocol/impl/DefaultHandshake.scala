@@ -45,7 +45,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   }
 
   private def signRefundTransaction(tx: MutableTransaction,
-                                    expectedAmount: BitcoinAmount): TransactionSignature = {
+                                    expectedAmount: Bitcoin.Amount): TransactionSignature = {
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
     TransactionProcessor.signMultiSignedOutput(
       multiSignedDeposit = tx,
@@ -56,7 +56,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   }
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,
-                                           expectedAmount: BitcoinAmount) = {
+                                           expectedAmount: Bitcoin.Amount) = {
     def requireProperty(cond: MutableTransaction => Boolean, cause: String): Unit = {
       if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
     }

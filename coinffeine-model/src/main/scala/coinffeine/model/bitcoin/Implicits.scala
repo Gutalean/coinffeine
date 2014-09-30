@@ -5,15 +5,15 @@ import scala.collection.JavaConversions._
 
 import com.google.bitcoin.script.ScriptBuilder
 
-import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 
 object Implicits {
 
   implicit class PimpMyMutableTransaction(val tx: MutableTransaction) extends AnyVal {
 
-    def addChangeOutput(inputAmount: BitcoinAmount,
-                        spentAmount: BitcoinAmount,
+    def addChangeOutput(inputAmount: Bitcoin.Amount,
+                        spentAmount: Bitcoin.Amount,
                         changeAddress: Address): Unit = {
       val changeAmount = inputAmount - spentAmount
       require(!changeAmount.isNegative)
@@ -22,7 +22,7 @@ object Implicits {
       }
     }
 
-    def addMultisignOutput(amount: BitcoinAmount, requiredSignatures: Seq[PublicKey]): Unit = {
+    def addMultisignOutput(amount: Bitcoin.Amount, requiredSignatures: Seq[PublicKey]): Unit = {
       require(requiredSignatures.size > 1, "should have at least two signatures")
       tx.addOutput(
         amount.asSatoshi,
@@ -30,7 +30,7 @@ object Implicits {
       )
     }
 
-    def outputAmount: BitcoinAmount = Bitcoin.fromSatoshi(
+    def outputAmount: Bitcoin.Amount = Bitcoin.fromSatoshi(
       tx.getOutputs.foldLeft(BigInteger.ZERO)((a, b) => a.add(b.getValue)))
   }
 

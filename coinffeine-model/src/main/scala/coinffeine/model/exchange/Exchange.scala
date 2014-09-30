@@ -44,7 +44,7 @@ object Exchange {
   }
 
   trait StepAmounts[C <: FiatCurrency] {
-    val depositSplit: Both[BitcoinAmount]
+    val depositSplit: Both[Bitcoin.Amount]
     val progress: Progress
   }
 
@@ -55,7 +55,7 @@ object Exchange {
     * @param fiatFee        Fiat fees to be payed on this step
     */
   case class IntermediateStepAmounts[C <: FiatCurrency](
-      override val depositSplit: Both[BitcoinAmount],
+      override val depositSplit: Both[Bitcoin.Amount],
       fiatAmount: CurrencyAmount[C],
       fiatFee: CurrencyAmount[C],
       override val progress: Progress) extends StepAmounts[C] {
@@ -65,18 +65,18 @@ object Exchange {
   }
 
   case class FinalStepAmounts[C <: FiatCurrency](
-      override val depositSplit: Both[BitcoinAmount],
+      override val depositSplit: Both[Bitcoin.Amount],
       override val progress: Progress) extends StepAmounts[C]
 
   /** Characterizes the amounts to be deposited by a part. The difference between input and
     * output is the fee.
     */
-  case class DepositAmounts(input: BitcoinAmount, output: BitcoinAmount) {
+  case class DepositAmounts(input: Bitcoin.Amount, output: Bitcoin.Amount) {
     require(input.isPositive, "Cannot spent a negative or zero amount")
     require(output.isPositive, "Should not deposit non-positive amount")
     require(input >= output, "Deposits should have a greater or equal input versus output")
 
-    def fee: BitcoinAmount = input - output
+    def fee: Bitcoin.Amount = input - output
   }
 
   /** Amounts of money involved on an exchange.
@@ -92,10 +92,10 @@ object Exchange {
     * @param finalStep              Final step amounts
     * @tparam C                     Fiat currency exchanged
     */
-  case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: BitcoinAmount,
+  case class Amounts[C <: FiatCurrency](grossBitcoinExchanged: Bitcoin.Amount,
                                         grossFiatExchanged: CurrencyAmount[C],
                                         deposits: Both[DepositAmounts],
-                                        refunds: Both[BitcoinAmount],
+                                        refunds: Both[Bitcoin.Amount],
                                         intermediateSteps: Seq[IntermediateStepAmounts[C]],
                                         finalStep: FinalStepAmounts[C]) {
     require(grossBitcoinExchanged.isPositive,
@@ -108,7 +108,7 @@ object Exchange {
     val currency: C = grossFiatExchanged.currency
 
     /** Net amount of bitcoins to be exchanged */
-    val netBitcoinExchanged: BitcoinAmount = finalStep.depositSplit.buyer - deposits.buyer.input
+    val netBitcoinExchanged: Bitcoin.Amount = finalStep.depositSplit.buyer - deposits.buyer.input
     require(netBitcoinExchanged.isPositive, s"Cannot exchange a net amount of $netBitcoinExchanged")
 
     /** Net amount of fiat to be exchanged */
@@ -125,7 +125,7 @@ object Exchange {
 
     val breakdown = Exchange.StepBreakdown(intermediateSteps.length)
 
-    def exchangedBitcoin: Both[BitcoinAmount] =
+    def exchangedBitcoin: Both[Bitcoin.Amount] =
       Both(buyer = netBitcoinExchanged, seller = grossBitcoinExchanged)
 
     def exchangedFiat: Both[CurrencyAmount[C]] =
@@ -137,7 +137,7 @@ object Exchange {
 
   type Deposits = Both[ImmutableTransaction]
 
-  case class Progress(bitcoinsTransferred: Both[BitcoinAmount]) {
+  case class Progress(bitcoinsTransferred: Both[Bitcoin.Amount]) {
     def +(other: Progress) =
       Progress(bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r })
   }
@@ -235,7 +235,7 @@ object Exchange {
     def noBroadcast: Exchange[C, Failed[C]] =
       exchange.copy(state = Failed(NoBroadcast, exchange.state, transaction = None))
 
-    def increaseProgress(increase: Both[BitcoinAmount]): Exchange[C, Exchanging[C]] = {
+    def increaseProgress(increase: Both[Bitcoin.Amount]): Exchange[C, Exchanging[C]] = {
       val progress = exchange.state.progress + Exchange.Progress(increase)
       exchange.copy(state = exchange.state.copy(progress = progress))
     }

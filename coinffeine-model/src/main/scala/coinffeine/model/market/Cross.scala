@@ -10,7 +10,7 @@ import coinffeine.model.exchange.Both
   * @param positions       Bidding and asking positions
   * @tparam C              Currency exchanged by bitcoin
   */
-case class Cross[C <: FiatCurrency](bitcoinAmounts: Both[BitcoinAmount],
+case class Cross[C <: FiatCurrency](bitcoinAmounts: Both[Bitcoin.Amount],
                                     fiatAmounts: Both[CurrencyAmount[C]],
                                     positions: Both[PositionId])
 

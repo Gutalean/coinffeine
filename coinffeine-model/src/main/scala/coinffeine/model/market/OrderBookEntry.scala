@@ -1,10 +1,10 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 
 /** Request for an interchange. */
 case class OrderBookEntry[C <: FiatCurrency](
-    id: OrderId, orderType: OrderType, amount: BitcoinAmount, price: Price[C]) {
+    id: OrderId, orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) {
   require(amount.isPositive, "Amount ordered must be strictly positive")
 }
 
@@ -19,7 +19,7 @@ object OrderBookEntry {
 
   /** Creates an entry with a random identifier */
   def apply[C <: FiatCurrency](orderType: OrderType,
-                               amount: BitcoinAmount,
+                               amount: Bitcoin.Amount,
                                price: Price[C]): OrderBookEntry[C] =
     OrderBookEntry(OrderId.random(), orderType, amount, price)
 

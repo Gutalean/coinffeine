@@ -6,7 +6,7 @@ import akka.actor.{Actor, ActorRef}
 import com.google.bitcoin.core.TransactionOutPoint
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
-import coinffeine.model.currency.{Bitcoin, BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 
@@ -40,7 +40,7 @@ class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
       collaborators.listener ! DepositWatcher.DepositSpent(spendTx, depositUse)
   }
 
-  private def amountForMe(tx: MutableTransaction): BitcoinAmount = {
+  private def amountForMe(tx: MutableTransaction): Bitcoin.Amount = {
     val userOutputs =
       for (output <- tx.getOutputs.asScala if sentToUserKey(output))
       yield Bitcoin.fromSatoshi(output.getValue)
@@ -52,7 +52,7 @@ class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
     script.isSentToAddress && script.getToAddress(network) == userAddress
   }
 
-  private def stepWithAmount(amount: BitcoinAmount): Option[Int] =
+  private def stepWithAmount(amount: Bitcoin.Amount): Option[Int] =
     exchange.amounts.steps.zipWithIndex.reverse.collectFirst {
       case (step, index) if exchange.role.select(step.depositSplit) == amount => index + 1
     }

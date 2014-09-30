@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import akka.actor.{Actor, ActorContext, ActorRef}
 
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market._
 import coinffeine.peer.market.SubmissionSupervisor._
 import coinffeine.peer.market.orders.controller.OrderPublication
@@ -19,7 +19,7 @@ private[orders] class DelegatedPublication[C <: FiatCurrency](
 
   override def isInMarket = _inMarket
 
-  override def keepPublishing(pendingAmount: BitcoinAmount): Unit = {
+  override def keepPublishing(pendingAmount: Bitcoin.Amount): Unit = {
     entry = OrderBookEntry(id, orderType, pendingAmount, price)
     submissionActor ! KeepSubmitting(entry)
   }

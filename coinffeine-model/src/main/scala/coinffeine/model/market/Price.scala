@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import scala.math.BigDecimal.RoundingMode
 
-import coinffeine.model.currency.{BitcoinAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
 
 /** Bitcoin price with respect to a given fiat currency.
   *
@@ -21,7 +21,7 @@ case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
   def scaleBy(factor: BigDecimal): Price[C] = copy(value = value * factor)
 
   /** Price of a given bitcoin amount. The result is rounded to the precision of the currency. */
-  def of(amount: BitcoinAmount): CurrencyAmount[C] = {
+  def of(amount: Bitcoin.Amount): CurrencyAmount[C] = {
     require(amount.isPositive, s"Cannot price a non-positive amount ($amount given)")
     val exactAmount = value * amount.value
     val roundedAmount = exactAmount.setScale(currency.precision, RoundingMode.HALF_EVEN)
@@ -36,7 +36,7 @@ object Price {
   def apply[C <: FiatCurrency](price: CurrencyAmount[C]): Price[C] =
     Price(price.value, price.currency)
 
-  def whenExchanging[C <: FiatCurrency](bitcoinAmount: BitcoinAmount,
+  def whenExchanging[C <: FiatCurrency](bitcoinAmount: Bitcoin.Amount,
                                         fiatAmount: CurrencyAmount[C]): Price[C] =
     Price(fiatAmount.value / bitcoinAmount.value, fiatAmount.currency)
 }

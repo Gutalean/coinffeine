@@ -13,7 +13,7 @@ import com.google.bitcoin.utils.BriefLogFormatter
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.currency.Implicits._
 
 private object BitcoinjTest {
@@ -54,14 +54,14 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  def createWallet(key: KeyPair, amount: BitcoinAmount): Wallet = {
+  def createWallet(key: KeyPair, amount: Bitcoin.Amount): Wallet = {
     val wallet = createWallet(key)
     sendMoneyToWallet(wallet, amount)
     wallet
   }
 
   /** Mine bitcoins into a wallet until having a minimum amount. */
-  def sendMoneyToWallet(wallet: Wallet, amount: BitcoinAmount): Unit = {
+  def sendMoneyToWallet(wallet: Wallet, amount: Bitcoin.Amount): Unit = {
     val miner = new KeyPair
     val minerWallet = createWallet(miner)
     while (

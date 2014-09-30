@@ -11,7 +11,7 @@ object WalletActivity {
 
   case class Entry(time: DateTime,
                    tx: ImmutableTransaction,
-                   amount: BitcoinAmount)
+                   amount: Bitcoin.Amount)
 
   def apply(wallet: Wallet, transactions: Transaction*): WalletActivity = WalletActivity(
     transactions.map{ tx =>
