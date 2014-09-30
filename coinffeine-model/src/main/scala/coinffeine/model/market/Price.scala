@@ -29,7 +29,9 @@ case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
     else CurrencyAmount.smallestAmount(currency)
   }
 
-  override def toString = s"$value $currency/BTC"
+  override def toString = s"$normalisedValue $currency/BTC"
+
+  private def normalisedValue = value.setScale(currency.precision, RoundingMode.UP)
 }
 
 object Price {

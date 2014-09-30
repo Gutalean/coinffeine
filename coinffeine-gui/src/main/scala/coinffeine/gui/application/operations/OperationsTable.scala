@@ -12,6 +12,7 @@ import org.controlsfx.control.MasterDetailPane
 import coinffeine.gui.application.properties.{OperationProperties, PeerOrders}
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency._
+import coinffeine.model.market.AnyPrice
 
 class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
 
@@ -50,6 +51,12 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
         setText("Amount")
         setCellValueFactory(listen[OperationProperties, Bitcoin.Amount] { props =>
           props.amountProperty
+        })
+      },
+      new TreeTableColumn[OperationProperties, AnyPrice] {
+        setText("Price")
+        setCellValueFactory(listen[OperationProperties, AnyPrice] { props =>
+          props.priceProperty
         })
       },
       new TreeTableColumn[OperationProperties, String] {
