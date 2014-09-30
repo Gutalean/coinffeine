@@ -1,12 +1,12 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Bitcoin
 
 private[impl] case class UnsignedRefundTransaction(
     deposit: ImmutableTransaction,
     outputKey: PublicKey,
-    outputAmount: BitcoinAmount,
+    outputAmount: Bitcoin.Amount,
     lockTime: Long,
     network: Network)
   extends ImmutableTransaction(

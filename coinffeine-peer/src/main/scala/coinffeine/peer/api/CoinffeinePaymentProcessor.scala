@@ -1,7 +1,6 @@
 package coinffeine.peer.api
 
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.Euro
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorProperties
 
@@ -16,9 +15,7 @@ trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
 
 object CoinffeinePaymentProcessor {
 
-  case class Balance(
-      totalFunds: CurrencyAmount[Euro.type],
-      blockedFunds: CurrencyAmount[Euro.type]) {
+  case class Balance(totalFunds: Euro.Amount, blockedFunds: Euro.Amount) {
     val availableFunds = totalFunds - blockedFunds
   }
 }

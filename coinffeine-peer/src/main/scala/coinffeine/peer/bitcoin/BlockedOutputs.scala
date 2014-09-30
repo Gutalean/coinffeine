@@ -3,9 +3,7 @@ package coinffeine.peer.bitcoin
 import scala.annotation.tailrec
 
 import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransactionOutput}
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency._
 
 private[bitcoin] class BlockedOutputs {
   import coinffeine.peer.bitcoin.BlockedOutputs._
@@ -13,7 +11,7 @@ private[bitcoin] class BlockedOutputs {
 
   private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
                              var usedOutputs: Outputs = Set.empty) {
-    def use(amount: BitcoinAmount): Outputs = {
+    def use(amount: Bitcoin.Amount): Outputs = {
       val outputsToUse = collectFundsGreedily(amount, reservedOutputs.toSeq)
         .getOrElse(throw NotEnoughFunds(amount, reservedAmount))
       reservedOutputs --= outputsToUse
@@ -27,7 +25,7 @@ private[bitcoin] class BlockedOutputs {
       usedOutputs --= revertedOutputs
     }
 
-    def reservedAmount: BitcoinAmount = reservedOutputs.toSeq
+    def reservedAmount: Bitcoin.Amount = reservedOutputs.toSeq
       .map(o => Bitcoin.fromSatoshi(o.getValue)).sum
   }
 
@@ -35,19 +33,19 @@ private[bitcoin] class BlockedOutputs {
   private var spendableOutputs = Set.empty[MutableTransactionOutput]
   private var blockedFunds = Map.empty[BlockedCoinsId, BlockedFunds]
 
-  def minOutput: Option[BitcoinAmount] = spendableAndNotBlocked
+  def minOutput: Option[Bitcoin.Amount] = spendableAndNotBlocked
     .toSeq
     .map(output => Bitcoin.fromSatoshi(output.getValue))
     .sortBy(_.value)
     .headOption
 
-  def blocked: BitcoinAmount = blockedOutputs.foldLeft(0.BTC)((acum, output) =>
+  def blocked: Bitcoin.Amount = blockedOutputs.foldLeft(0.BTC)((acum, output) =>
     acum + Bitcoin.fromSatoshi(output.getValue)
   )
 
-  def available: BitcoinAmount = spendable - blocked
+  def available: Bitcoin.Amount = spendable - blocked
 
-  def spendable: BitcoinAmount = spendableOutputs.foldLeft(0.BTC)((acum, output) =>
+  def spendable: Bitcoin.Amount = spendableOutputs.foldLeft(0.BTC)((acum, output) =>
     acum + Bitcoin.fromSatoshi(output.getValue)
   )
 
@@ -55,7 +53,7 @@ private[bitcoin] class BlockedOutputs {
     spendableOutputs = spendCandidates
   }
 
-  def block(amount: BitcoinAmount): Option[BlockedCoinsId] = {
+  def block(amount: Bitcoin.Amount): Option[BlockedCoinsId] = {
     collectFunds(amount).map { funds =>
       val coinsId = generateNextCoinsId()
       blockedFunds += coinsId -> new BlockedFunds(funds)
@@ -68,7 +66,7 @@ private[bitcoin] class BlockedOutputs {
   }
 
   @throws[BlockedOutputs.BlockingFundsException]
-  def use(id: BlockedCoinsId, amount: BitcoinAmount): Outputs = {
+  def use(id: BlockedCoinsId, amount: Bitcoin.Amount): Outputs = {
     val funds = blockedFunds.getOrElse(id, throw UnknownCoinsId(id))
     funds.use(amount)
   }
@@ -77,12 +75,12 @@ private[bitcoin] class BlockedOutputs {
     blockedFunds.values.foreach(_.cancelUsage(outputs))
   }
 
-  private def collectFunds(amount: BitcoinAmount): Option[Outputs] = {
+  private def collectFunds(amount: Bitcoin.Amount): Option[Outputs] = {
     collectFundsGreedily(amount, spendableAndNotBlocked.toSeq)
   }
 
   @tailrec
-  private def collectFundsGreedily(remainingAmount: BitcoinAmount,
+  private def collectFundsGreedily(remainingAmount: Bitcoin.Amount,
                                    candidates: Seq[MutableTransactionOutput],
                                    alreadyCollected: Outputs = Set.empty): Option[Outputs] = {
     if (!remainingAmount.isPositive) Some(alreadyCollected)
@@ -113,7 +111,7 @@ object BlockedOutputs {
     extends Exception(message, cause)
   case class UnknownCoinsId(unknownId: BlockedCoinsId)
     extends BlockingFundsException(s"Unknown coins id $unknownId")
-  case class NotEnoughFunds(requested: BitcoinAmount, available: BitcoinAmount)
+  case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
     extends BlockingFundsException(
       s"Not enough funds blocked: $requested requested, $available available")
 }

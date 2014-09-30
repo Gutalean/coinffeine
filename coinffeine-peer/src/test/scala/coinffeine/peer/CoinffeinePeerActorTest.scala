@@ -6,13 +6,12 @@ import com.google.bitcoin.params.TestNet3Params
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, Address}
-import coinffeine.model.currency.Currency.{Euro, UsDollar}
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
+import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway

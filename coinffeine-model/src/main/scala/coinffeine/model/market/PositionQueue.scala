@@ -1,7 +1,6 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
 private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
@@ -33,7 +32,7 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
     case otherPositions => otherPositions
   })
 
-  def decreaseAmount(id: PositionId, amount: BitcoinAmount): PositionQueue[T, C] =
+  def decreaseAmount(id: PositionId, amount: Bitcoin.Amount): PositionQueue[T, C] =
     copy(positions.collect {
       case position @ Position(_, _, _, `id`, _) if position.amount > amount =>
         position.decreaseAmount(amount)
@@ -42,7 +41,7 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
 
   def isEmpty: Boolean = positions.isEmpty
 
-  def sum: BitcoinAmount = positions.map(_.amount).sum
+  def sum: Bitcoin.Amount = positions.map(_.amount).sum
 }
 
 private[market] object PositionQueue {

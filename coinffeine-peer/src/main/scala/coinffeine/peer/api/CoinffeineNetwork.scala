@@ -1,10 +1,8 @@
 package coinffeine.peer.api
 
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
-import coinffeine.model.exchange.AnyExchange
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market._
-import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
-import coinffeine.model.properties.Property
+import coinffeine.model.network.CoinffeineNetworkProperties
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork extends CoinffeineNetworkProperties {
@@ -15,7 +13,7 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
     * @param price   Price in fiat
     * @return        A new exchange if submitted successfully
     */
-  def submitBuyOrder[C <: FiatCurrency](amount: BitcoinAmount, price: Price[C]): Order[C] =
+  def submitBuyOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): Order[C] =
     submitOrder(Order(Bid, amount, price))
 
   /** Submit an order to sell bitcoins.
@@ -24,7 +22,7 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
     * @param price   Price in fiat
     * @return        A new exchange if submitted successfully
     */
-  def submitSellOrder[C <: FiatCurrency](amount: BitcoinAmount, price: Price[C]): Order[C] =
+  def submitSellOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): Order[C] =
     submitOrder(Order(Ask, amount, price))
 
   /** Submit an order. */

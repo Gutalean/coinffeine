@@ -6,7 +6,7 @@ import com.google.bitcoin.core.Sha256Hash
 import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin.WalletActivity
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Bitcoin
 
 class WalletActivityEntryProperties(entry: WalletActivity.Entry) {
 
@@ -16,7 +16,7 @@ class WalletActivityEntryProperties(entry: WalletActivity.Entry) {
 
   val time: ReadOnlyObjectProperty[DateTime] = _time
   val hash: ReadOnlyObjectProperty[Sha256Hash] = _hash
-  val amount: ReadOnlyObjectProperty[BitcoinAmount] = _amount
+  val amount: ReadOnlyObjectProperty[Bitcoin.Amount] = _amount
 
   def update(entry: WalletActivity.Entry): Unit = {
     _time.value = entry.time

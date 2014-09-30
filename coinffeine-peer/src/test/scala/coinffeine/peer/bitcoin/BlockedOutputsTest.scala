@@ -2,8 +2,8 @@ package coinffeine.peer.bitcoin
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransaction, MutableTransactionOutput, PublicKey}
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.BlockedOutputs.{BlockingFundsException, UnknownCoinsId}
 
 class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {

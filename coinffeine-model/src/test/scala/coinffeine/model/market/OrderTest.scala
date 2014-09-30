@@ -3,8 +3,7 @@ package coinffeine.model.market
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange._
 
 class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetwork.Component {

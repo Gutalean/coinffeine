@@ -12,8 +12,6 @@ import com.google.bitcoin.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 
 class SmartWallet(val delegate: Wallet) {
@@ -49,22 +47,22 @@ class SmartWallet(val delegate: Wallet) {
     delegate.getKeys.map(_.toAddress(network))
   }
 
-  def estimatedBalance: BitcoinAmount = synchronized {
-    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
+  def estimatedBalance: Bitcoin.Amount = synchronized {
+    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
   }
 
-  def availableBalance: BitcoinAmount = synchronized {
-    Currency.Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
+  def availableBalance: Bitcoin.Amount = synchronized {
+    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
   }
 
-  def value(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValue(delegate))
+  def value(tx: MutableTransaction): Bitcoin.Amount =
+    Bitcoin.fromSatoshi(tx.getValue(delegate))
 
-  def valueSentFromMe(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
+  def valueSentFromMe(tx: MutableTransaction): Bitcoin.Amount =
+    Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
 
-  def valueSentToMe(tx: MutableTransaction): BitcoinAmount =
-    Currency.Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
+  def valueSentToMe(tx: MutableTransaction): Bitcoin.Amount =
+    Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
 
   def createKeyPair(): KeyPair = synchronized {
     val keyPair = new KeyPair()
@@ -72,9 +70,9 @@ class SmartWallet(val delegate: Wallet) {
     keyPair
   }
 
-  def minOutput: Option[BitcoinAmount] = synchronized { blockedOutputs.minOutput }
+  def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }
 
-  def blockFunds(amount: BitcoinAmount): Option[BlockedCoinsId] = synchronized {
+  def blockFunds(amount: Bitcoin.Amount): Option[BlockedCoinsId] = synchronized {
     try {
       blockedOutputs.block(amount)
     } catch {
@@ -87,19 +85,19 @@ class SmartWallet(val delegate: Wallet) {
     blockedOutputs.unblock(coinsId)
   }
 
-  def blockedFunds: BitcoinAmount = synchronized {
+  def blockedFunds: Bitcoin.Amount = synchronized {
     blockedOutputs.blocked
   }
 
-  def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = synchronized {
+  def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = synchronized {
     if (amount < blockedOutputs.spendable) ImmutableTransaction(blockFunds(to, amount))
     else throw new NotEnoughFunds(
       s"cannot create a transaction of $amount: not enough funds in wallet")
   }
 
   def createMultisignTransaction(coinsId: BlockedCoinsId,
-                                 amount: BitcoinAmount,
-                                 fee: BitcoinAmount,
+                                 amount: Bitcoin.Amount,
+                                 fee: Bitcoin.Amount,
                                  signatures: Seq[KeyPair]): ImmutableTransaction = synchronized {
     try {
       val inputs = blockedOutputs.use(coinsId, amount + fee)
@@ -121,8 +119,8 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
-                          amount: BitcoinAmount,
-                          fee: BitcoinAmount = Bitcoin.Zero): MutableTransaction = synchronized {
+                          amount: Bitcoin.Amount,
+                          fee: Bitcoin.Amount = Bitcoin.Zero): MutableTransaction = synchronized {
     try {
       blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
     } catch {
@@ -142,7 +140,7 @@ class SmartWallet(val delegate: Wallet) {
     delegate.commitTx(tx)
   }
 
-  private def blockFunds(to: Address, amount: BitcoinAmount): MutableTransaction = {
+  private def blockFunds(to: Address, amount: Bitcoin.Amount): MutableTransaction = {
     val tx = delegate.createSend(to, amount.asSatoshi)
     blockFunds(tx)
     tx
@@ -151,8 +149,8 @@ class SmartWallet(val delegate: Wallet) {
   private def blockMultisignFunds(
       inputs: Traversable[MutableTransactionOutput],
       requiredSignatures: Seq[PublicKey],
-      amount: BitcoinAmount,
-      fee: BitcoinAmount): MutableTransaction = {
+      amount: Bitcoin.Amount,
+      fee: Bitcoin.Amount): MutableTransaction = {
     require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
     require(!fee.isNegative, s"Fee should be non-negative ($fee given)")
     val totalInputFunds = valueOf(inputs)
@@ -183,11 +181,11 @@ class SmartWallet(val delegate: Wallet) {
     moveToPool(walletTx, WalletTransaction.Pool.DEAD)
   }
 
-  private def collectFunds(amount: BitcoinAmount): Set[MutableTransactionOutput] = {
+  private def collectFunds(amount: Bitcoin.Amount): Set[MutableTransactionOutput] = {
     val inputFundCandidates = delegate.calculateAllSpendCandidates(true)
     val necessaryInputCount =
-      inputFundCandidates.view.scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
-        accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+      inputFundCandidates.view.scanLeft(Bitcoin.Zero)((accum, output) =>
+        accum + Bitcoin.fromSatoshi(output.getValue))
         .takeWhile(_ < amount)
         .length
     inputFundCandidates.take(necessaryInputCount).toSet
@@ -197,8 +195,8 @@ class SmartWallet(val delegate: Wallet) {
 
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
-  private def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
+  private def valueOf(outputs: Traversable[MutableTransactionOutput]): Bitcoin.Amount =
+    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue)).sum
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
     val wtxs = delegate.getWalletTransactions

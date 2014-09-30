@@ -6,8 +6,7 @@ import akka.actor.ActorRef
 import akka.pattern._
 import org.slf4j.LoggerFactory
 
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.{Euro, CurrencyAmount}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorActor._
@@ -27,8 +26,8 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
         balance @ CurrencyAmount(_, Euro),
         blockedFunds @ CurrencyAmount(_, Euro)) =>
         Some(CoinffeinePaymentProcessor.Balance(
-          balance.asInstanceOf[CurrencyAmount[Euro.type]],
-          blockedFunds.asInstanceOf[CurrencyAmount[Euro.type]]
+          balance.asInstanceOf[Euro.Amount],
+          blockedFunds.asInstanceOf[Euro.Amount]
         ))
       case nonEurBalance @ BalanceRetrieved(_, _) =>
         Log.error("Balance not in euro: {}", nonEurBalance)

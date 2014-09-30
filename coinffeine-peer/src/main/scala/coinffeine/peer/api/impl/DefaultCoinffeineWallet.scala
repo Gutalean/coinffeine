@@ -7,7 +7,7 @@ import akka.actor.ActorRef
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.{WalletProperties, Address, Hash, KeyPair}
-import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.Bitcoin
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api.CoinffeineWallet
 
@@ -18,7 +18,7 @@ private[impl] class DefaultCoinffeineWallet(
   override val primaryAddress = properties.primaryAddress
   override val activity = properties.activity
 
-  override def transfer(amount: BitcoinAmount, address: Address): Future[Hash] = {
+  override def transfer(amount: Bitcoin.Amount, address: Address): Future[Hash] = {
     val request = CoinffeinePeerActor.WithdrawWalletFunds(amount, address)
     AskPattern(peer, request)
       .withImmediateReply[CoinffeinePeerActor.WalletFundsWithdrawn]

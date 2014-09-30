@@ -6,14 +6,13 @@ import com.google.bitcoin.core.Transaction.SigHash
 import com.google.bitcoin.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{BitcoinAmount, Currency}
+import coinffeine.model.currency._
 
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
 
   def createMultiSignedDeposit(unspentOutputs: Seq[(MutableTransactionOutput, KeyPair)],
-                               amountToCommit: BitcoinAmount,
+                               amountToCommit: Bitcoin.Amount,
                                changeAddress: Address,
                                requiredSignatures: Seq[PublicKey],
                                network: Network): MutableTransaction = {
@@ -38,18 +37,18 @@ object TransactionProcessor {
     tx
   }
 
-  def collectFunds(userWallet: Wallet, amount: BitcoinAmount): Set[MutableTransactionOutput] = {
+  def collectFunds(userWallet: Wallet, amount: Bitcoin.Amount): Set[MutableTransactionOutput] = {
     val inputFundCandidates = userWallet.calculateAllSpendCandidates(true)
     val necessaryInputCount = inputFundCandidates.view
-      .scanLeft(Currency.Bitcoin.Zero)((accum, output) =>
-      accum + Currency.Bitcoin.fromSatoshi(output.getValue))
+      .scanLeft(Bitcoin.Zero)((accum, output) =>
+      accum + Bitcoin.fromSatoshi(output.getValue))
       .takeWhile(_ < amount)
       .length
     inputFundCandidates.take(necessaryInputCount).toSet
   }
 
-  private def addChangeOutput(tx: MutableTransaction, inputAmount: BitcoinAmount,
-                              spentAmount: BitcoinAmount, changeAddress: Address): Unit = {
+  private def addChangeOutput(tx: MutableTransaction, inputAmount: Bitcoin.Amount,
+                              spentAmount: Bitcoin.Amount, changeAddress: Address): Unit = {
     val changeAmount = inputAmount - spentAmount
     require(!changeAmount.isNegative)
     if (changeAmount.isPositive) {
@@ -57,7 +56,7 @@ object TransactionProcessor {
     }
   }
 
-  private def addMultisignOutput(tx: MutableTransaction, amount: BitcoinAmount,
+  private def addMultisignOutput(tx: MutableTransaction, amount: Bitcoin.Amount,
                                  requiredSignatures: Seq[PublicKey]): Unit = {
     require(requiredSignatures.size > 1, "should have at least two signatures")
     tx.addOutput(
@@ -67,7 +66,7 @@ object TransactionProcessor {
   }
 
   def createUnsignedTransaction(inputs: Seq[MutableTransactionOutput],
-                                outputs: Seq[(PublicKey, BitcoinAmount)],
+                                outputs: Seq[(PublicKey, Bitcoin.Amount)],
                                 network: Network,
                                 lockTime: Option[Long] = None): MutableTransaction = {
     val tx = new MutableTransaction(network)
@@ -101,6 +100,6 @@ object TransactionProcessor {
     signerKey.verify(hash, signature)
   }
 
-  def valueOf(outputs: Traversable[MutableTransactionOutput]): BitcoinAmount =
-    outputs.map(funds => Currency.Bitcoin.fromSatoshi(funds.getValue)).sum
+  def valueOf(outputs: Traversable[MutableTransactionOutput]): Bitcoin.Amount =
+    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue)).sum
 }

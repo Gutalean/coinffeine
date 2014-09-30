@@ -1,7 +1,5 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 
@@ -22,14 +20,14 @@ case class Order[C <: FiatCurrency](
     id: OrderId,
     orderType: OrderType,
     status: OrderStatus,
-    amount: BitcoinAmount,
+    amount: Bitcoin.Amount,
     price: Price[C],
     exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
 
   val role = Role.fromOrderType(orderType)
 
   def amounts: Order.Amounts = {
-    def totalSum(exchanges: Iterable[AnyStateExchange[C]]): BitcoinAmount =
+    def totalSum(exchanges: Iterable[AnyStateExchange[C]]): Bitcoin.Amount =
       exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
 
     val exchangeGroups = exchanges.values.groupBy(_.state match {
@@ -59,7 +57,7 @@ case class Order[C <: FiatCurrency](
     *
     * @return The amount of bitcoins that have been transferred
     */
-  def bitcoinsTransferred: BitcoinAmount =
+  def bitcoinsTransferred: Bitcoin.Amount =
     totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
 
   /** Retrieve the progress of this order.
@@ -76,16 +74,16 @@ case class Order[C <: FiatCurrency](
 }
 
 object Order {
-  case class Amounts(exchanged: BitcoinAmount, exchanging: BitcoinAmount, pending: BitcoinAmount)
+  case class Amounts(exchanged: Bitcoin.Amount, exchanging: Bitcoin.Amount, pending: Bitcoin.Amount)
 
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
-                               amount: BitcoinAmount,
+                               amount: Bitcoin.Amount,
                                price: Price[C]): Order[C] =
     Order(id, orderType, status = OfflineOrder, amount, price, exchanges = Map.empty)
 
   def apply[C <: FiatCurrency](orderType: OrderType,
-                               amount: BitcoinAmount,
+                               amount: Bitcoin.Amount,
                                price: Price[C]): Order[C] =
     Order(OrderId.random(), orderType, amount, price)
 }

@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
@@ -136,15 +136,15 @@ object CoinffeinePeerActor {
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
 
   /** A request to withdraw funds from Bitcoin wallet. */
-  case class WithdrawWalletFunds(amount: BitcoinAmount, to: Address)
+  case class WithdrawWalletFunds(amount: Bitcoin.Amount, to: Address)
 
   /** A response reporting a successful withdraw of wallet funds. */
-  case class WalletFundsWithdrawn(amount: BitcoinAmount,
+  case class WalletFundsWithdrawn(amount: Bitcoin.Amount,
                                   to: Address,
                                   tx: ImmutableTransaction)
 
   /** A response reporting a failure while withdrawing wallet funds. */
-  case class WalletFundsWithdrawFailure(amount: BitcoinAmount,
+  case class WalletFundsWithdrawFailure(amount: Bitcoin.Amount,
                                         to: Address,
                                         failure: Throwable)
 

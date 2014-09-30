@@ -13,8 +13,7 @@ import scalafx.stage.{Modality, Stage, Window}
 import org.controlsfx.dialog.{Dialog, Dialogs}
 
 import coinffeine.gui.control.DecimalNumberTextField
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.{BitcoinAmount, Currency, CurrencyAmount}
+import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -34,12 +33,12 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     prefWidth = 100
   }
 
-  private def bitcoinAmount: Try[BitcoinAmount] = Try {
-    Currency.Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
+  private def bitcoinAmount: Try[Bitcoin.Amount] = Try {
+    Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
   }
 
-  private def limitAmount: Try[CurrencyAmount[Euro.type]] = Try {
-    Currency.Euro(BigDecimal(limitTextField.text.getValueSafe))
+  private def limitAmount: Try[Euro.Amount] = Try {
+    Euro(BigDecimal(limitTextField.text.getValueSafe))
   }
 
   private val amountIsValid = new BooleanProperty(this, "AmountIsValid", false)
@@ -176,15 +175,15 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     closeForm()
   }
 
-  private def checkPrerequisites(order: Order[Currency.Euro.type]): Boolean =
+  private def checkPrerequisites(order: Order[Euro.type]): Boolean =
     checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
 
-  private def checkEnoughFiatFunds(order: Order[Currency.Euro.type]): Boolean = checkFunds(
+  private def checkEnoughFiatFunds(order: Order[Euro.type]): Boolean = checkFunds(
     required = amountsCalculator.exchangeAmountsFor(order).fiatRequired(order.orderType),
     available = app.paymentProcessor.currentBalance().map(_.availableFunds)
   )
 
-  private def checkEnoughBitcoinFunds(order: Order[Currency.Euro.type]): Boolean = checkFunds(
+  private def checkEnoughBitcoinFunds(order: Order[Euro.type]): Boolean = checkFunds(
     required = amountsCalculator.exchangeAmountsFor(order).bitcoinRequired(order.orderType),
     available = app.wallet.balance.get.map(_.amount)
   )

@@ -6,7 +6,7 @@ import scala.util.control.NonFatal
 import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinBalance, BitcoinAmount}
+import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
 
 private class WalletActor(
     properties: MutableWalletProperties,
@@ -107,7 +107,7 @@ object WalletActor {
   private case object InternalWalletChanged
 
   /** A request message to create a new transaction. */
-  case class CreateTransaction(amount: BitcoinAmount, to: Address)
+  case class CreateTransaction(amount: Bitcoin.Amount, to: Address)
 
   /** A successful response to a transaction creation request. */
   case class TransactionCreated(req: CreateTransaction, tx: ImmutableTransaction)
@@ -123,7 +123,7 @@ object WalletActor {
   case object WalletChanged
 
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
-  case class BlockBitcoins(amount: BitcoinAmount)
+  case class BlockBitcoins(amount: Bitcoin.Amount)
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
@@ -155,8 +155,8 @@ object WalletActor {
     */
   case class CreateDeposit(coinsId: BlockedCoinsId,
                            requiredSignatures: Seq[KeyPair],
-                           amount: BitcoinAmount,
-                           transactionFee: BitcoinAmount)
+                           amount: Bitcoin.Amount,
+                           transactionFee: Bitcoin.Amount)
 
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * a successful funds blocking.

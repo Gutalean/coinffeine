@@ -1,8 +1,6 @@
 package coinffeine.model.currency
 
-import coinffeine.model.currency.Currency._
-
-object Implicits {
+trait Implicits {
 
   import scala.language.implicitConversions
 
@@ -10,21 +8,19 @@ object Implicits {
   implicit val euroIsNumeric = Euro.numeric
   implicit val usDollarIsNumeric = UsDollar.numeric
 
-  implicit class BitcoinSatoshiConverter(btc: BitcoinAmount) {
+  implicit class BitcoinSatoshiConverter(btc: Bitcoin.Amount) {
     def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
   }
 
-  class UnitImplicits(val i: BigDecimal) extends AnyVal {
-    def BTC: BitcoinAmount = Bitcoin(i)
+  implicit def pimpMyDouble(i: Double) = new Implicits.Units(i)
+  implicit def pimpMyDecimal(i: BigDecimal) = new Implicits.Units(i)
+  implicit def pimpMyInt(i: Int) = new Implicits.Units(i)
+}
 
-    def EUR: CurrencyAmount[Euro.type] = Euro(i)
-
-    def USD: CurrencyAmount[UsDollar.type] = UsDollar(i)
+object Implicits {
+  class Units(val i: BigDecimal) extends AnyVal {
+    def BTC: Bitcoin.Amount = Bitcoin(i)
+    def EUR: Euro.Amount = Euro(i)
+    def USD: UsDollar.Amount = UsDollar(i)
   }
-
-  implicit def pimpMyDouble(i: Double) = new UnitImplicits(i)
-
-  implicit def pimpMyDecimal(i: BigDecimal) = new UnitImplicits(i)
-
-  implicit def pimpMyInt(i: Int) = new UnitImplicits(BigDecimal(i))
 }

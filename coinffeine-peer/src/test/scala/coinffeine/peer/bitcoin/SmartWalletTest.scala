@@ -3,9 +3,7 @@ package coinffeine.peer.bitcoin
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.{KeyPair, BlockedCoinsId}
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.currency.Currency.Bitcoin
 import coinffeine.model.currency._
-import coinffeine.model.currency.Implicits._
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 
 class SmartWalletTest extends UnitTest with BitcoinjTest {
@@ -50,6 +48,6 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     val someAddress = new KeyPair().toAddress(network)
     val wallet = new SmartWallet(createWallet(keyPair, initialFunds))
 
-    def givenBlockedFunds(amount: BitcoinAmount): BlockedCoinsId = wallet.blockFunds(amount).get
+    def givenBlockedFunds(amount: Bitcoin.Amount): BlockedCoinsId = wallet.blockFunds(amount).get
   }
 }

@@ -6,8 +6,8 @@ import scalafx.scene.layout.Pane
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.market.{Order, Bid, OrderBookEntry}
+import coinffeine.model.currency._
+import coinffeine.model.market.{Bid, Order}
 import coinffeine.peer.api.impl.MockCoinffeineApp
 
 class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {

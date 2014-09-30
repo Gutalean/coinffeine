@@ -5,8 +5,7 @@ import scala.collection.JavaConverters._
 import com.google.bitcoin.core.Transaction.SigHash
 
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.currency.Currency
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange.SampleExchange
 
 class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
@@ -34,7 +33,7 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
     val transaction = TransactionProcessor.createMultiSignedDeposit(
         funds, commitmentAmount, buyerWallet.getChangeAddress, requiredSignatures, network
     )
-    Currency.Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
+    Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
   }
 
   it should "commit the correct amount when the input matches the amount needed" in {
@@ -46,7 +45,7 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
     val transaction = TransactionProcessor.createMultiSignedDeposit(
       funds, commitmentAmount, buyerWallet.getChangeAddress, requiredSignatures, network
     )
-    Currency.Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
+    Bitcoin.fromSatoshi(transaction.getValue(buyerWallet)) should be (-commitmentAmount)
   }
 
   it should "produce a TX ready for broadcast and insertion into the blockchain" in {
@@ -80,7 +79,7 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
       TransactionProcessor.signMultiSignedOutput(tx, index = 0, sellerKey, requiredSignatures)
     )
     sendToBlockChain(tx)
-    Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (2.BTC)
+    Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (2.BTC)
   }
 
 
@@ -94,7 +93,7 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
     )
     transaction.signInputs(SigHash.ALL, buyerWallet)
     sendToBlockChain(transaction)
-    Currency.Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (0.2.BTC)
-    Currency.Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (0.8.BTC)
+    Bitcoin.fromSatoshi(buyerWallet.getBalance) should be (0.2.BTC)
+    Bitcoin.fromSatoshi(sellerWallet.getBalance) should be (0.8.BTC)
   }
 }

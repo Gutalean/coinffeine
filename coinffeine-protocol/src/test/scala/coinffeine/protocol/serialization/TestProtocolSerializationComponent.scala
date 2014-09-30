@@ -2,8 +2,7 @@ package coinffeine.protocol.serialization
 
 import scala.util.Random
 
-import coinffeine.model.currency.Currency.{Bitcoin, Euro}
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId

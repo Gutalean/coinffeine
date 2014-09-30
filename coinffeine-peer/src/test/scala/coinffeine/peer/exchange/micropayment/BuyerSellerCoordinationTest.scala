@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.testkit.TestProbe
 
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate

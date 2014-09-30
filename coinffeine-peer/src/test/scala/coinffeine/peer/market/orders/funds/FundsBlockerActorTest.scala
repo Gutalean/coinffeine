@@ -8,9 +8,7 @@ import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.BlockedCoinsId
-import coinffeine.model.currency.BitcoinAmount
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.market.RequiredFunds
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
@@ -63,7 +61,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
   abstract class Fixture(requiredFiat: Euro.Amount = 100.EUR,
-                         requiredBitcoin: BitcoinAmount = 1.BTC) {
+                         requiredBitcoin: Bitcoin.Amount = 1.BTC) {
     val walletProbe, paymentProcessor = TestProbe()
     val actor = system.actorOf(FundsBlockerActor.props(walletProbe.ref, paymentProcessor.ref,
       RequiredFunds(requiredBitcoin, requiredFiat), listener = self))

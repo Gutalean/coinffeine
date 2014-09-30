@@ -6,8 +6,7 @@ import akka.testkit.TestProbe
 import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin.TransactionSignature
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants

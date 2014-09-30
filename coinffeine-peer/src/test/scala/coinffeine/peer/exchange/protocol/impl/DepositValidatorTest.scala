@@ -6,7 +6,7 @@ import com.google.bitcoin.core.Transaction.SigHash
 import org.scalatest.Inside
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
 
 class DepositValidatorTest extends ExchangeTest with Inside {

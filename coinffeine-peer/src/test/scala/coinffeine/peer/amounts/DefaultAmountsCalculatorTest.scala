@@ -5,8 +5,6 @@ import org.scalatest.prop.PropertyChecks
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.bitcoin.test.FixedBitcoinFee
-import coinffeine.model.currency.Currency.{Bitcoin, Euro}
-import coinffeine.model.currency.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.payment.PaymentProcessor
@@ -171,7 +169,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   abstract class Fixture(val processorFee: BigDecimal = 0.02,
                          processorStepSize: BigDecimal = 10,
-                         val txFee: BitcoinAmount = 0.002.BTC) {
+                         val txFee: Bitcoin.Amount = 0.002.BTC) {
     val paymentProcessor: PaymentProcessor = new FixedFeeProcessor(processorFee, processorStepSize)
     val stepSize = paymentProcessor.bestStepSize(Euro)
     val bitcoinFeeCalculator: BitcoinFeeCalculator = new FixedBitcoinFee(txFee)
@@ -184,7 +182,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       forAnyAmounts((_, _, amounts) => test(amounts))
     }
 
-    def forAnyAmounts(test: (BitcoinAmount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
+    def forAnyAmounts(test: (Bitcoin.Amount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
       forAll (exampleCases) { (bitcoin, fiat) =>
         withClue(s"exchanging $bitcoin for $fiat: ") {
           test(bitcoin, fiat, instance.exchangeAmountsFor(bitcoin, fiat))
@@ -192,7 +190,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       }
     }
 
-    protected def bitcoinStepSize(amounts: Amounts[Euros]): BitcoinAmount = {
+    protected def bitcoinStepSize(amounts: Amounts[Euros]): Bitcoin.Amount = {
       val price = amounts.netBitcoinExchanged.value / amounts.netFiatExchanged.value
       val expectedStepSize = CurrencyAmount.closestAmount(stepSize.value * price, Bitcoin)
       val buyerAmounts = txFee +: amounts.intermediateSteps.map(_.depositSplit.buyer)

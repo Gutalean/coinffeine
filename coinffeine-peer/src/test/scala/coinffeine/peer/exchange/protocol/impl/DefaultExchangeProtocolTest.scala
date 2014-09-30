@@ -1,9 +1,7 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.SmartWallet
 
 class DefaultExchangeProtocolTest extends ExchangeTest {
@@ -11,14 +9,16 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
   "An exchange protocol" should
     "start a handshake with a deposit of the right amount for the buyer" in new BuyerHandshake {
       val deposit = buyerHandshake.myDeposit.get
-      Bitcoin.fromSatoshi(deposit.getValue(buyerWallet.delegate)) shouldBe (-amounts.bitcoinRequired.buyer)
+      Bitcoin.fromSatoshi(deposit.getValue(buyerWallet.delegate)) shouldBe
+        (-amounts.bitcoinRequired.buyer)
       sendToBlockChain(deposit)
     }
 
   it should "start a handshake with a deposit of the right amount for the seller" in
     new SellerHandshake {
       val deposit = sellerHandshake.myDeposit.get
-      Bitcoin.fromSatoshi(deposit.getValue(sellerWallet.delegate)) shouldBe (-amounts.bitcoinRequired.seller)
+      Bitcoin.fromSatoshi(deposit.getValue(sellerWallet.delegate)) shouldBe
+        (-amounts.bitcoinRequired.seller)
       sendToBlockChain(deposit)
     }
 

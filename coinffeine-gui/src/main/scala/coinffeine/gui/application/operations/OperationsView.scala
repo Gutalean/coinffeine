@@ -14,7 +14,7 @@ import org.controlsfx.dialog.Dialogs
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
@@ -39,7 +39,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         cellValueFactory = { _.value.orderTypeProperty }
         prefWidth = 80
       },
-      new TableColumn[OrderProperties, BitcoinAmount] {
+      new TableColumn[OrderProperties, Bitcoin.Amount] {
         text = "Amount"
         cellValueFactory = { _.value.amountProperty}
         prefWidth = 100

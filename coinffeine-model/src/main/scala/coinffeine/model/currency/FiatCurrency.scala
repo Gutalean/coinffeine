@@ -7,8 +7,8 @@ object FiatCurrency {
   def apply(currencyCode: String): FiatCurrency = apply(JavaCurrency.getInstance(currencyCode))
 
   def apply(javaCurrency: JavaCurrency): FiatCurrency = javaCurrency match {
-    case Currency.UsDollar.javaCurrency => Currency.UsDollar
-    case Currency.Euro.javaCurrency => Currency.Euro
+    case UsDollar.javaCurrency => UsDollar
+    case Euro.javaCurrency => Euro
     case _ => throw new IllegalArgumentException(
       s"cannot convert $javaCurrency into a known Coinffeine fiat currency")
   }

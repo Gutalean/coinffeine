@@ -3,12 +3,11 @@ package coinffeine.gui.control.wallet
 import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.geometry.HPos
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{VBox, ColumnConstraints, GridPane, HBox}
+import scalafx.scene.layout.{ColumnConstraints, GridPane, VBox}
 
 import coinffeine.gui.control.PopUpContent
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.currency.BitcoinBalance
-import coinffeine.model.currency.Currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 
 class BitcoinBalanceWidget(balanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]])
   extends WalletBalanceWidget(Bitcoin, balanceProperty) with PopUpContent {

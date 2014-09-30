@@ -2,7 +2,7 @@ package coinffeine.model.market
 
 import scala.collection.immutable.{SortedMap, TreeMap}
 
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.network.PeerId
 
 /** Data structure that holds orders sorted by price and, within a given price, keep
@@ -30,7 +30,7 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
 
   def bestPrice: Option[Price[C]] = positionsNotInHandshake.headOption.map(_.price)
 
-  def decreaseAmount(id: PositionId, amount: BitcoinAmount): OrderMap[T, C] =
+  def decreaseAmount(id: PositionId, amount: Bitcoin.Amount): OrderMap[T, C] =
     get(id).fold(this) { position =>
       updateQueue(position.price, queue => queue.decreaseAmount(id, amount))
     }

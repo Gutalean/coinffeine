@@ -2,8 +2,7 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.actor.Actor
 
-import coinffeine.model.currency.Currency.Bitcoin
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.{Both, RunningExchange}
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.util.MessageForwarding

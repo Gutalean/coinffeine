@@ -1,15 +1,15 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.{BitcoinAmount, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 
 /** Bidding or asking position taken by a requester */
 case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
-                                                       amount: BitcoinAmount,
+                                                       amount: Bitcoin.Amount,
                                                        price: Price[C],
                                                        id: PositionId,
                                                        inHandshake: Boolean = false) {
 
-  def decreaseAmount(decrease: BitcoinAmount): Position[T, C] = {
+  def decreaseAmount(decrease: Bitcoin.Amount): Position[T, C] = {
     require(decrease < amount)
     copy(amount = amount - decrease)
   }
@@ -36,12 +36,12 @@ case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
 object Position {
 
   def bid[C <: FiatCurrency](
-      amount: BitcoinAmount,
+      amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId): BidPosition[C] = Position(Bid, amount, price, requester)
 
   def ask[C <: FiatCurrency](
-      amount: BitcoinAmount,
+      amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId): AskPosition[C] = Position(Ask, amount, price, requester)
 }

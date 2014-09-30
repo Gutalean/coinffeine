@@ -1,8 +1,7 @@
 package coinffeine.model.market
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
 class PositionQueueTest extends UnitTest {

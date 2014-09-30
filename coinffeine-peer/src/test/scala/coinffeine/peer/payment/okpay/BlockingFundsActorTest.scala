@@ -4,9 +4,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.Currency.Euro
-import coinffeine.model.currency.FiatAmount
-import coinffeine.model.currency.Implicits._
+import coinffeine.model.currency._
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.payment.PaymentProcessorActor

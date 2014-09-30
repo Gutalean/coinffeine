@@ -9,14 +9,12 @@ import akka.testkit.TestProbe
 import org.mockito.BDDMockito.given
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.scalatest.concurrent.{PatienceConfiguration, Eventually}
+import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency.Currency.UsDollar
-import coinffeine.model.currency.Implicits._
-import coinffeine.model.currency.{FiatBalance, BitcoinBalance, FiatAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
