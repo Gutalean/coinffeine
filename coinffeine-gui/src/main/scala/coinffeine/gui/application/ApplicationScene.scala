@@ -25,6 +25,7 @@ class ApplicationScene(views: Seq[ApplicationView],
   require(views.nonEmpty, "At least one view is required")
 
   stylesheets.add("/css/main.css")
+  stylesheets.add("/css/operations.css")
   stylesheets.add("/css/popup.css")
 
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)

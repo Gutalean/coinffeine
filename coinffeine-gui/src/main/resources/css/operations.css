@@ -1,0 +1,16 @@
+/* This file defines the styles for the operations view. */
+
+#operation-details {
+    -fx-hgap: 5px;
+    -fx-vgap: 10px;
+    -fx-padding: 10px;
+    -fx-height: 200px;
+}
+
+.field-name {
+    -fx-label-padding: 0 0 0 10px;
+}
+
+.field-value {
+    -fx-font-weight: bold;
+}

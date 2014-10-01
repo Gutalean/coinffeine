@@ -1,10 +1,9 @@
 package coinffeine.gui.application.operations
 
-import javafx.beans.binding.{Bindings, BooleanBinding}
+import javafx.beans.binding.Bindings
 import scalafx.Includes._
 import scalafx.event.ActionEvent
 import scalafx.geometry.Insets
-import scalafx.scene.control.TableColumn._
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -20,66 +19,13 @@ import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
 
-  private val orderTable = new TableView[OrderProperties](props.ordersProperty) {
-    id = "ordersTable"
-    placeholder = new Label("No orders found")
-    columns ++= List(
-      new TableColumn[OrderProperties, String] {
-        text = "ID"
-        cellValueFactory = { _.value.idProperty.delegate.map(_.value) }
-        prefWidth = 150
-      },
-      new TableColumn[OrderProperties, String] {
-        text = "Status"
-        cellValueFactory = { _.value.statusProperty.delegate.map(_.name.capitalize) }
-        prefWidth = 80
-      },
-      new TableColumn[OrderProperties, OrderType] {
-        text = "Type"
-        cellValueFactory = { _.value.orderTypeProperty }
-        prefWidth = 80
-      },
-      new TableColumn[OrderProperties, Bitcoin.Amount] {
-        text = "Amount"
-        cellValueFactory = { _.value.amountProperty}
-        prefWidth = 100
-      },
-      new TableColumn[OrderProperties, Price[_ <: FiatCurrency]] {
-        text = "Price"
-        cellValueFactory = { _.value.priceProperty }
-        prefWidth = 100
-      },
-      new TableColumn[OrderProperties, String] {
-        text = "Progress"
-        cellValueFactory = { _.value.progressProperty.delegate.map { p =>
-          val percentage = (p.doubleValue() * 100.0).toInt
-          s"$percentage%"
-        }}
-        prefWidth = 80
-      }
-    )
-  }
+  private val operationsTable = new OperationsTable(props.ordersProperty)
 
-  private val orderSelectionProperty = orderTable.selectionModel.value.selectedItemProperty()
+  private val operationSelectionProperty =
+    operationsTable.selected.map(Option(_).map(_.getValue)).toReadOnlyProperty
 
-  private val orderCancellableBinding = new BooleanBinding {
-    bind(orderSelectionProperty)
-
-    private var selectedOrder: Option[OrderProperties] = None
-
-    override def computeValue() = {
-      computeSelection()
-      Option(orderSelectionProperty.get()).exists {
-        selOrder => selOrder.statusProperty.value.isCancellable
-      }
-    }
-
-    private def computeSelection(): Unit = {
-      selectedOrder.foreach(order => unbind(order.statusProperty))
-      selectedOrder = Option(orderSelectionProperty.get())
-      selectedOrder.foreach(order => bind(order.statusProperty))
-    }
-  }
+  private val cancellableOperationProperty =
+    operationSelectionProperty.delegate.mapToBool(_.exists(_.isCancellable.value)).toReadOnlyProperty
 
   private val newOrderButton = new Button {
     id = "newOrderBtn"
@@ -90,33 +36,47 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     }
   }
 
-  private val cancelOrderButton = new Button {
+  private val cancelButton = new Button {
     id = "cancelOrderBtn"
-    text = "Cancel order"
-    disable <== Bindings.not(orderCancellableBinding)
+    text = "Cancel"
+    disable <== Bindings.not(cancellableOperationProperty)
     handleEvent(ActionEvent.ACTION) { () =>
       val confirm = Dialogs.create()
         .title("Order cancellation")
-        .message("You are about to cancel the selected order. Are you sure?")
+        .message("You are about to cancel the selected operation. Are you sure?")
         .actions(Actions.YES, Actions.NO)
         .showConfirm()
       if (confirm == Actions.YES) {
-        app.network.cancelOrder(orderSelectionProperty.getValue.idProperty.value,
-          "Cancelled by the user")
+        operationSelectionProperty.value.foreach {
+          case order: OrderProperties =>
+            app.network.cancelOrder(order.orderIdProperty.value, "Cancelled by the user")
+        }
       }
+    }
+  }
+
+  private val toggleDetailsButton = new Button {
+    id = "toggleDetailsButton"
+    text <== operationsTable.showDetails.delegate.mapToString { shown =>
+      if (shown) "Hide details" else "Show details"
+    }
+    disable <== operationSelectionProperty.delegate.mapToBool(!_.isDefined)
+    onAction = { action: Any =>
+      operationsTable.showDetails.value = !operationsTable.showDetails.value
     }
   }
 
   override def name: String = "Operations"
 
   private val buttonsPane: Pane = new HBox {
-    content = Seq(newOrderButton, cancelOrderButton)
+    content = Seq(newOrderButton, cancelButton, toggleDetailsButton)
     spacing = 10
   }
 
   override def centerPane: Pane = new VBox {
     margin = Insets(20)
+    vgrow = Priority.Always
     spacing = 10
-    content = Seq(buttonsPane, orderTable)
+    content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
   }
 }

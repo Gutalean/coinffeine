@@ -39,7 +39,7 @@ object Build extends sbt.Build {
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
     lazy val reflections = "org.reflections" % "reflections" % "0.9.9-RC1"
     lazy val scalafx = Seq(
-      "org.scalafx" %% "scalafx" % "8.0.0-R4",
+      "org.scalafx" %% "scalafx" % "8.0.20-R6",
       "org.controlsfx" % "controlsfx" % "8.0.6"
     )
     lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.11.3"
