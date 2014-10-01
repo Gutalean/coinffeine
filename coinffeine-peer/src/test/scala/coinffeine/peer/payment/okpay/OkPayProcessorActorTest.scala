@@ -16,6 +16,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
+import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
@@ -153,7 +154,11 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     val client = mock[OkPayClient]
     var processor: ActorRef = _
     val properties = new MutablePaymentProcessorProperties
-    val processorProps = Props(new OkPayProcessorActor(() => client, pollingInterval, properties))
+    private val clientFactory = new ClientFactory {
+      override def build(): OkPayClient = client
+      override def shutdown(): Unit = {}
+    }
+    val processorProps = Props(new OkPayProcessorActor(clientFactory, pollingInterval, properties))
     val requester = TestProbe()
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
