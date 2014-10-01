@@ -33,6 +33,17 @@ class ServiceActorTest extends AkkaSpec {
     expectMsgPF() { case ServiceActor.StartFailure(_) => }
   }
 
+  it should "fail to start when passed arguments of the wrong type" in  {
+    val probe = TestProbe()
+    val service = sampleService(probe)
+
+    service ! ServiceActor.Start(List(1, 2, 3))
+    expectMsgPF() {
+      case ServiceActor.StartFailure(cause: IllegalArgumentException) =>
+        cause.getMessage should include ("Invalid start argument List(1, 2, 3)")
+    }
+  }
+
   it should "fail to start on start cancel" in {
     val probe = TestProbe()
     val service = sampleService(probe)
