@@ -74,24 +74,35 @@ class SettingsMappingTest extends UnitTest {
       "coinffeine.okpay.pollingInterval" -> "50s"
     )
     val settings = SettingsMapping.fromConfig[OkPaySettings](conf)
-    settings.userAccount should be ("id")
-    settings.seedToken should be ("token")
-    settings.serverEndpoint should be (new URI("http://example.com/death-star"))
-    settings.pollingInterval should be (50.seconds)
+    settings.userAccount shouldBe Some("id")
+    settings.seedToken shouldBe Some("token")
+    settings.serverEndpoint shouldBe new URI("http://example.com/death-star")
+    settings.pollingInterval shouldBe 50.seconds
+
+    val settings2 = SettingsMapping.fromConfig[OkPaySettings](makeConfig(
+      "coinffeine.okpay.endpoint" -> "http://example.com/death-star",
+      "coinffeine.okpay.pollingInterval" -> "50s"
+    ))
+    settings2.userAccount shouldBe 'empty
+    settings2.seedToken shouldBe 'empty
   }
 
   it should "map to config" in {
     val settings = OkPaySettings(
-      userAccount = "skywalker",
-      seedToken = "lightsaber",
+      userAccount = Some("skywalker"),
+      seedToken = Some("lightsaber"),
       serverEndpoint = new URI("http://example.com/x-wing"),
       pollingInterval = 15.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getString("coinffeine.okpay.id") should be ("skywalker")
-    cfg.getString("coinffeine.okpay.token") should be ("lightsaber")
-    cfg.getString("coinffeine.okpay.endpoint") should be ("http://example.com/x-wing")
-    cfg.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS) should be (15)
+    cfg.getString("coinffeine.okpay.id") shouldBe "skywalker"
+    cfg.getString("coinffeine.okpay.token") shouldBe "lightsaber"
+    cfg.getString("coinffeine.okpay.endpoint") shouldBe "http://example.com/x-wing"
+    cfg.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS) shouldBe 15
+
+    val cfg2 = SettingsMapping.toConfig(settings.copy(userAccount = None, seedToken = None))
+    cfg2.getString("coinffeine.okpay.id") shouldBe 'empty
+    cfg2.getString("coinffeine.okpay.token") shouldBe 'empty
   }
 
   private def makeConfig(items: (String, Any)*): Config = items.foldLeft(ConfigFactory.empty()) {

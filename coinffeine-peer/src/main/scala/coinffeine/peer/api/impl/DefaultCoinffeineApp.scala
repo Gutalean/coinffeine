@@ -2,6 +2,7 @@ package coinffeine.peer.api.impl
 
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Random
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
 import coinffeine.model.network.CoinffeineNetworkProperties
-import coinffeine.model.payment.PaymentProcessor
+import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
 import coinffeine.peer.api._
@@ -21,7 +22,7 @@ import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
                            properties: DefaultCoinffeineApp.Properties,
-                           accountId: PaymentProcessor.AccountId,
+                           lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator) extends CoinffeineApp {
 
@@ -37,7 +38,7 @@ class DefaultCoinffeineApp(name: String,
   override val marketStats = new DefaultMarketStats(peerRef)
 
   override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(
-    accountId, peerRef, properties.paymentProcessor)
+    lookupAccountId, peerRef, properties.paymentProcessor)
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator)
 
@@ -70,12 +71,15 @@ object DefaultCoinffeineApp {
     this: CoinffeinePeerActor.Component with ConfigComponent
       with DefaultAmountsComponent with DefaultCoinffeinePropertiesComponent =>
 
-    private lazy val accountId = configProvider.okPaySettings.userAccount
+    private def accountId() = configProvider.okPaySettings.userAccount
 
     private val properties = Properties(
       bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties)
 
     override lazy val app = new DefaultCoinffeineApp(
-      name = accountId, properties, accountId, peerProps, amountsCalculator)
+      name = chooseName(), properties, accountId, peerProps, amountsCalculator)
+
+    /** Choose a name use for naming the actor systems and logging */
+    private def chooseName() = accountId().getOrElse("app-" + Random.nextInt(1000))
   }
 }

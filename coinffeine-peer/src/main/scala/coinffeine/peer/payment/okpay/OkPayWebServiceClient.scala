@@ -1,46 +1,44 @@
 package coinffeine.peer.payment.okpay
 
-import java.net.URI
 import scala.concurrent.Future
-import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync, Soap11Fault}
+import scalaxb.Soap11Fault
 
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
+import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.OkPayClient.{PaidBySender, PaidByReceiver, FeePolicy}
+import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidByReceiver, PaidBySender}
 import coinffeine.peer.payment.okpay.generated._
 
 /** SOAP client of OKPay service.
   *
   * @constructor
+  * @param service              Web service to use
   * @param accountId            Account, also known as wallet ID in OKPay terms
   * @param tokenGenerator       Generator of valid request tokens
-  * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
   */
-class OkPayWebServiceClient(override val accountId: String,
-                            tokenGenerator: TokenGenerator,
-                            baseAddressOverride: Option[URI]) extends OkPayClient
-  with BasicHttpBinding_I_OkPayAPIBindings
-  with Soap11ClientsAsync
-  with DispatchHttpClientsAsync {
+class OkPayWebServiceClient(
+    service: OkPayWebService.Service,
+    override val accountId: String,
+    tokenGenerator: TokenGenerator) extends OkPayClient {
+
+  import OkPayWebServiceClient._
 
   /** Alternative web service client constructor
     *
-    * @param account              Account, also known as wallet ID in OKPay terms
+    * @param service              Web service to use
+    * @param accountId            Account, also known as wallet ID in OKPay terms
     * @param seedToken            Token used to generate request tokens
-    * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
     */
-  def this(account: String, seedToken: String, baseAddressOverride: Option[URI] = None) =
-    this(account, new TokenGenerator(seedToken), baseAddressOverride)
+  def this(service: OkPayWebService.Service, accountId: String, seedToken: String) =
+    this(service, accountId, new TokenGenerator(seedToken))
 
-  import coinffeine.peer.payment.okpay.OkPayWebServiceClient._
-
-  override val baseAddress: URI = baseAddressOverride.getOrElse(super.baseAddress)
+  override implicit protected val executionContext =
+    scala.concurrent.ExecutionContext.Implicits.global
 
   override def sendPayment[C <: FiatCurrency](
       to: AccountId, amount: CurrencyAmount[C], comment: String, feePolicy: FeePolicy): Future[Payment[C]] =

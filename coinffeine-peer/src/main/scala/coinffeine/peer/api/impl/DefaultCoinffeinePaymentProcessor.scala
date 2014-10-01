@@ -13,10 +13,12 @@ import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment.PaymentProcessorProperties
 
 private[impl] class DefaultCoinffeinePaymentProcessor(
-    override val accountId: AccountId,
+    lookupAccountId: () => Option[AccountId],
     override val peer: ActorRef,
     properties: PaymentProcessorProperties) extends CoinffeinePaymentProcessor with PeerActorWrapper {
   import DefaultCoinffeinePaymentProcessor._
+
+  override val accountId: Option[AccountId] = lookupAccountId()
 
   override val balance = properties.balance
 
