@@ -69,6 +69,6 @@ class ApplicationScene(views: Seq[ApplicationView],
 }
 
 object ApplicationScene {
-  val DefaultWidth = 600
-  val DefaultHeight = 400
+  val DefaultWidth = 1024
+  val DefaultHeight = 600
 }
