@@ -16,6 +16,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
+import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar with Eventually {

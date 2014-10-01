@@ -15,6 +15,7 @@ import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
+import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
 class OkPayProcessorActor(
     clientFactory: () => OkPayClient,

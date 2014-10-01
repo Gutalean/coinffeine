@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.peer.payment.okpay.ws
 
 import java.net.URI
 import scalaxb.{DispatchHttpClientsAsync, Soap11ClientsAsync}

@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.peer.payment.okpay.ws
 
 import scala.concurrent.Future
 import scalaxb.Soap11Fault
@@ -13,6 +13,7 @@ import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidByReceiver, PaidBySender}
 import coinffeine.peer.payment.okpay.generated._
+import coinffeine.peer.payment.okpay.{OkPayClient, TokenGenerator}
 
 /** SOAP client of OKPay service.
   *
@@ -26,7 +27,7 @@ class OkPayWebServiceClient(
     override val accountId: String,
     tokenGenerator: TokenGenerator) extends OkPayClient {
 
-  import OkPayWebServiceClient._
+  import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient._
 
   /** Alternative web service client constructor
     *
