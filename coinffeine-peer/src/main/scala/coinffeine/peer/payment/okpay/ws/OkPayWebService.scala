@@ -7,8 +7,6 @@ import coinffeine.peer.payment.okpay.generated.BasicHttpBinding_I_OkPayAPIBindin
 
 /** SOAP client of the OKPay service
   *
-  * FIXME: make this closeable
-  *
   * @constructor
   * @param baseAddressOverride  Replace the endpoint specified at the WSDL when present
   */
@@ -18,8 +16,13 @@ class OkPayWebService(baseAddressOverride: Option[URI])
   with DispatchHttpClientsAsync {
 
   override val baseAddress: URI = baseAddressOverride.getOrElse(super.baseAddress)
+  def shutdown(): Unit = {
+    OkPayWebService.Log.info("Shutting down OKPay WS client...")
+    httpClient.http.shutdown()
+  }
 }
 
 object OkPayWebService {
   type Service = coinffeine.peer.payment.okpay.generated.I_OkPayAPI
+  private val Log = LoggerFactory.getLogger(classOf[OkPayWebService])
 }

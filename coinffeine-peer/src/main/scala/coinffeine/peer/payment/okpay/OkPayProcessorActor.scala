@@ -2,7 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success}
 
 import akka.actor._
@@ -15,11 +15,9 @@ import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
-import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
-import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
 class OkPayProcessorActor(
-    clientFactory: () => OkPayClient,
+    clientFactory: OkPayProcessorActor.ClientFactory,
     pollingInterval: FiniteDuration,
     properties: MutablePaymentProcessorProperties)
   extends Actor with ActorLogging with ServiceActor[Unit] {
@@ -44,12 +42,13 @@ class OkPayProcessorActor(
 
   override def stopping() = {
     Option(timer).foreach(_.cancel())
+    clientFactory.shutdown()
     becomeStopped()
   }
 
   private def started: Receive = {
     case PaymentProcessorActor.RetrieveAccountId =>
-      sender ! RetrievedAccountId(clientFactory().accountId)
+      sender ! RetrievedAccountId(clientFactory.build().accountId)
     case pay: Pay[_] =>
       sendPayment(sender(), pay)
     case FindPayment(paymentId) =>
@@ -69,7 +68,7 @@ class OkPayProcessorActor(
   private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
     (for {
       _ <- useFunds(pay)
-      payment <- clientFactory().sendPayment(pay.to, pay.amount, pay.comment)
+      payment <- clientFactory.build().sendPayment(pay.to, pay.amount, pay.comment)
     } yield payment).onComplete {
       case Success(payment) =>
         requester ! Paid(payment)
@@ -91,7 +90,7 @@ class OkPayProcessorActor(
   }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
-    clientFactory().findPayment(paymentId).onComplete {
+    clientFactory.build().findPayment(paymentId).onComplete {
       case Success(Some(payment)) => requester ! PaymentFound(payment)
       case Success(None) => requester ! PaymentNotFound(paymentId)
       case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
@@ -99,7 +98,7 @@ class OkPayProcessorActor(
   }
 
   private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-    val balances = clientFactory().currentBalances()
+    val balances = clientFactory.build().currentBalances()
     balances.onSuccess { case b =>
       self ! UpdateBalances(b)
     }
@@ -142,7 +141,7 @@ class OkPayProcessorActor(
   }
 
   private def pollBalances(): Unit = {
-    clientFactory().currentBalances().map(UpdateBalances.apply).recover {
+    clientFactory.build().currentBalances().map(UpdateBalances.apply).recover {
       case NonFatal(cause) => BalanceUpdateFailed(cause)
     }.pipeTo(self)
   }
@@ -151,6 +150,11 @@ class OkPayProcessorActor(
 object OkPayProcessorActor {
 
   val Id = "OKPAY"
+
+  trait ClientFactory {
+    def build(): OkPayClient
+    def shutdown(): Unit
+  }
 
   /** Self-message sent to trigger OKPay API polling. */
   private case object PollBalances
@@ -162,31 +166,7 @@ object OkPayProcessorActor {
   private case class BalanceUpdateFailed(cause: Throwable)
 
   def props(lookupSettings: () => OkPaySettings, properties: MutablePaymentProcessorProperties) = {
-
-    val settings = lookupSettings()
-    val okPay = new OkPayWebService(Some(settings.serverEndpoint))
-
-    object NotConfiguredClient extends OkPayClient {
-      private val error = new IllegalStateException(
-        "OKPay's user id and/or seed token are not configured") with NoStackTrace
-      override lazy val accountId: AccountId = throw error
-      override def findPayment(paymentId: PaymentId) = Future.failed(error)
-      override def currentBalances() = Future.failed(error)
-      override def sendPayment[C <: FiatCurrency](
-          to: AccountId, amount: CurrencyAmount[C], comment: String, feePolicy: FeePolicy) =
-        Future.failed(error)
-      override protected def executionContext = throw error
-    }
-
-    def clientFactory(): OkPayClient = {
-      val settings = lookupSettings()
-      (for {
-        accountId <- settings.userAccount
-        seedToken <- settings.seedToken
-      } yield new OkPayWebServiceClient(okPay.service, accountId, seedToken))
-        .getOrElse(NotConfiguredClient)
-    }
-
-    Props(new OkPayProcessorActor(clientFactory, settings.pollingInterval, properties))
+    val clientFactory = new OkPayClientFactory(lookupSettings)
+    Props(new OkPayProcessorActor(clientFactory, lookupSettings().pollingInterval, properties))
   }
 }
