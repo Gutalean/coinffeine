@@ -55,15 +55,27 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     }
   }
 
+  private val toggleDetailsButton = new Button {
+    id = "toggleDetailsButton"
+    text <== operationsTable.showDetails.delegate.mapToString { shown =>
+      if (shown) "Hide details" else "Show details"
+    }
+    disable <== operationSelectionProperty.delegate.mapToBool(!_.isDefined)
+    onAction = { action: Any =>
+      operationsTable.showDetails.value = !operationsTable.showDetails.value
+    }
+  }
+
   override def name: String = "Operations"
 
   private val buttonsPane: Pane = new HBox {
-    content = Seq(newOrderButton, cancelButton)
+    content = Seq(newOrderButton, cancelButton, toggleDetailsButton)
     spacing = 10
   }
 
   override def centerPane: Pane = new VBox {
     margin = Insets(20)
+    vgrow = Priority.Always
     spacing = 10
     content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
   }

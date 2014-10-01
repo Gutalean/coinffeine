@@ -15,30 +15,39 @@ object ScalafxImplicits {
 
   import FxExecutor.asContext
 
-  implicit class ObservableValuePimp[T](val observableValue: ObservableValue[T]) extends AnyVal {
+  implicit class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends AnyVal {
 
     /** Maps an observable value into a new one.
       *
       * Note: you should either bind the returned value or call {{{dispose()}}} to avoid leaking
       * memory.
       */
-    def map[S](f: T => S): ObjectBinding[S] = Bindings.createObjectBinding(
+    def map[S](f: A => S): ObjectBinding[S] = Bindings.createObjectBinding(
       new Callable[S] {
         override def call() = f(observableValue.getValue)
       },
       observableValue)
 
-    def mapToString(f: T => String): StringBinding = Bindings.createStringBinding(
+    def mapToString(f: A => String): StringBinding = Bindings.createStringBinding(
       new Callable[String] {
         override def call() = f(observableValue.getValue)
       },
       observableValue)
 
-    def mapToBool(f: T => Boolean): BooleanBinding = Bindings.createBooleanBinding(
+    def mapToBool(f: A => Boolean): BooleanBinding = Bindings.createBooleanBinding(
       new Callable[java.lang.Boolean] {
         override def call() = f(observableValue.getValue)
       },
       observableValue)
+
+    def bindToList[B](list: ObservableList[B])(f: A => Seq[B]): Unit = {
+      observableValue.addListener(new ChangeListener[A] {
+        override def changed(observable: ObservableValue[_ <: A], oldValue: A, newValue: A) = {
+          list.setAll(f(newValue): _*)
+        }
+      })
+      list.setAll(f(observableValue.getValue): _*) // ensure last values are set
+    }
   }
 
   implicit class PropertyPimp[A](property: Property[A]) extends ObservableValue[A] {
