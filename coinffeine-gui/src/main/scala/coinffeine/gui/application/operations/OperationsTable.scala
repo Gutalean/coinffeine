@@ -31,8 +31,8 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       val item = new TreeItem[OperationProperties](order)
 
       item.graphic = order.orderTypeProperty.value match {
-        case Bid => new ImageView ("graphics/operations/bid.gif")
-        case Ask => new ImageView ("graphics/operations/ask.gif")
+        case Bid => new ImageView { id = "operations-bid-icon" }
+        case Ask => new ImageView { id = "operations-ask-icon" }
       }
 
       order.exchanges.bindToList(item.children) { exchange =>
@@ -116,7 +116,7 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
   }
 
   private def orderDetailsContent(order: AnyCurrencyOrder): Seq[Node] = Seq(new GridPane() {
-    id = "operation-details"
+    id = "operations-details-pane"
     columnConstraints = fieldColumnConstraints(2)
     add(fieldName("Order ID"), 0, 0)
     add(fieldValue(order.id.value), 1, 0)
@@ -132,7 +132,7 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
 
   private def exchangeDetailsContent(exchange: AnyExchange): Seq[Node] =
     Seq(new GridPane() {
-      id = "operation-details"
+      id = "operations-details-pane"
       columnConstraints = fieldColumnConstraints(3)
       add(fieldName("Exchange ID"), 0, 0)
       add(fieldValue(exchange.id.value), 1, 0, 3, 1)
