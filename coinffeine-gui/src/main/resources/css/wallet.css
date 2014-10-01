@@ -1,0 +1,55 @@
+/* This file defines the styles for the wallet view. */
+
+#wallet-balance-details {
+    -fx-hgap: 10px;
+    -fx-vgap: 10px;
+}
+
+#wallet-noqr-label {
+    -fx-text-alignment: center;
+    -fx-min-height: 170;
+    -fx-min-width: 170;
+}
+
+#wallet-qr-label {
+    -fx-text-alignment: center;
+    -fx-margin: 0 0 10px 0;
+}
+
+#wallet-qr-pane {
+    -fx-border-color: lightgray;
+    -fx-border-radius: 5;
+    -fx-background-color: white;
+    -fx-background-radius: 5;
+    -fx-font-size: 8;
+    -fx-padding: 5px;
+    -fx-alignment: top-right;
+}
+
+#wallet-details-pane  {
+    -fx-spacing: 5px;
+}
+
+#wallet-left-pane  {
+    -fx-padding: 20px;
+    -fx-spacing: 5px;
+}
+
+#wallet-right-pane  {
+    -fx-padding: 10px;
+    -fx-alignment: top-center;
+    -fx-spacing: 5px;
+}
+
+#wallet-right-pane Button {
+    -fx-max-width: 999999;
+}
+
+#wallet-transactions-pane {
+    -fx-padding: 10px;
+    -fx-spacing: 10px;
+}
+
+#wallet-center-pane {
+    -fx-spacing: 10px;
+}

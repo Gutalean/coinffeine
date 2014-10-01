@@ -27,6 +27,7 @@ class ApplicationScene(views: Seq[ApplicationView],
   stylesheets.add("/css/main.css")
   stylesheets.add("/css/operations.css")
   stylesheets.add("/css/popup.css")
+  stylesheets.add("/css/wallet.css")
 
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)
 

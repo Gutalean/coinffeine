@@ -25,8 +25,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   override val name = "Wallet"
 
   private val balanceDetailsPane = new GridPane() {
-    hgap = 10
-    vgap = 10
+    id = "wallet-balance-details"
     columnConstraints = Seq(
       new ColumnConstraints() { halignment = HPos.RIGHT },
       new ColumnConstraints() { halignment = HPos.LEFT }
@@ -50,9 +49,9 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     }
   }
 
-  private val leftDetailsPane = new VBox(spacing = 5) {
+  private val leftDetailsPane = new VBox() {
+    id = "wallet-left-pane"
     hgrow = Priority.ALWAYS
-    margin = Insets(20)
     content = Seq(
       new Label("Wallet funds") {
         styleClass = Seq("title")
@@ -64,29 +63,19 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 170)
 
   private val noQrCode: Node = new Label("No public address available") {
-    alignment = Pos.CENTER
-    minHeight = 170
-    minWidth = 170
+    id = "wallet-noqr-label"
   }
   private def qrCode(address: Address): Node = new VBox() {
     content = Seq(
       new ImageView(qrCodeImage(address)),
       new Label(address.toString) {
-        alignment = Pos.TOP_CENTER
-        margin = Insets(0, 0, 10, 0)
+        id = "wallet-qr-label"
       }
     )
   }
 
   private val qrCodePane = new StackPane() {
-    id = "qr-pane"
-    padding = Insets(5)
-    alignment = Pos.TOP_RIGHT
-    minWidth = 180
-    maxWidth = 180
-    minHeight = 190
-    maxHeight = 190
-
+    id = "wallet-qr-pane"
     app.wallet.primaryAddress.bindToList(content) {
       case Some(addr) => Seq(qrCode(addr))
       case None => Seq(noQrCode)
@@ -94,8 +83,6 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   }
 
   private val copyToClipboardButton = new Button("Copy address to clipboard") {
-    maxWidth = Double.MaxValue
-
     disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined)
     onAction = { action: Any =>
       val content = new ClipboardContent()
@@ -110,7 +97,6 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
         case Some(balance) if balance.amount.isPositive => false
         case _ => true
       }
-    maxWidth = Double.MaxValue
     onAction = { action: Any =>
       val form = new WithdrawFundsForm(app.wallet)
       form.show() match {
@@ -121,17 +107,18 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     }
   }
 
-  private val rightDetailsPane = new VBox(spacing = 5) {
-    padding = Insets(10)
-    alignment = Pos.TOP_CENTER
+  private val rightDetailsPane = new VBox() {
+    id = "wallet-right-pane"
     content = Seq(qrCodePane, copyToClipboardButton, withdrawFundsButton)
   }
 
-  private val detailsPane = new HBox(spacing = 5) {
+  private val detailsPane = new HBox() {
+    id = "wallet-details-pane"
     content = Seq(leftDetailsPane, rightDetailsPane)
   }
 
   private val transactionsTable = new TableView[WalletActivityEntryProperties](properties.transactions) {
+    id = "wallet-transactions-table"
     placeholder = new Label("No transactions found")
     hgrow = Priority.ALWAYS
     columns ++= Seq(
@@ -150,14 +137,15 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     )
   }
 
-  private val transactionsPane = new VBox(spacing = 10) {
-    padding = Insets(10)
+  private val transactionsPane = new VBox() {
+    id = "wallet-transactions-pane"
     content = Seq(
       new Label("Wallet transactions") { styleClass = Seq("title") },
       transactionsTable)
   }
 
-  override val centerPane = new VBox(spacing = 10) {
+  override val centerPane = new VBox() {
+    id = "wallet-center-pane"
     content = Seq(detailsPane, transactionsPane)
   }
 }
