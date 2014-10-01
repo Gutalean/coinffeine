@@ -3,7 +3,7 @@ package coinffeine.common.akka
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
 import akka.util.Timeout
 
 /** An actor that can behave like a service.
@@ -27,11 +27,16 @@ trait ServiceActor[Args] { this: Actor =>
   override final def receive = receiveStart
 
   private def receiveStart: Receive = {
-    case Start(args: Args) =>
+    case Start(args) =>
       try {
         requester = sender()
-        become(starting(args))
-      } catch { case NonFatal(e) => sender ! StartFailure(e) }
+        become(starting(args.asInstanceOf[Args]))
+      } catch {
+        case ex: ClassCastException =>
+          sender ! StartFailure(new IllegalArgumentException(s"Invalid start argument $args", ex))
+        case NonFatal(ex) =>
+          sender ! StartFailure(ex)
+      }
     case Stop =>
       sender ! StopFailure(new IllegalStateException("cannot stop a non-started service"))
   }
