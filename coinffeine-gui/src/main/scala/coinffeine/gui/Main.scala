@@ -67,8 +67,10 @@ object Main extends JFXApp
 
     setupConfig.okPayWalletAccess.foreach { access =>
       val okPaySettings = configProvider.okPaySettings
-      configProvider.saveUserSettings(
-        okPaySettings.copy(userAccount = access.walletId, seedToken = access.seedToken))
+      configProvider.saveUserSettings(okPaySettings.copy(
+        userAccount = Some(access.walletId),
+        seedToken = Some(access.seedToken)
+      ))
     }
   }
 

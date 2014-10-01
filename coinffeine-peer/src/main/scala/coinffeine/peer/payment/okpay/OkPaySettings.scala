@@ -4,8 +4,8 @@ import java.net.URI
 import scala.concurrent.duration._
 
 case class OkPaySettings(
-  userAccount: String,
-  seedToken: String,
+  userAccount: Option[String],
+  seedToken: Option[String],
   serverEndpoint: URI,
   pollingInterval: FiniteDuration
 )

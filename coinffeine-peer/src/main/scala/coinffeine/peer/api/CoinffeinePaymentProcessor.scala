@@ -7,7 +7,7 @@ import coinffeine.peer.payment.PaymentProcessorProperties
 /** Represents how the app interact with a payment processor */
 trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
 
-  def accountId: PaymentProcessor.AccountId
+  def accountId: Option[PaymentProcessor.AccountId]
 
   /** Get the current balance if possible */
   def currentBalance(): Option[CoinffeinePaymentProcessor.Balance]

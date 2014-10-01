@@ -73,8 +73,8 @@ object SettingsMapping {
   implicit val okPay = new SettingsMapping[OkPaySettings] {
 
     override def fromConfig(config: Config) = OkPaySettings(
-      userAccount = config.getString("coinffeine.okpay.id"),
-      seedToken = config.getString("coinffeine.okpay.token"),
+      userAccount = getOptionalString(config, "coinffeine.okpay.id"),
+      seedToken = getOptionalString(config, "coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
       pollingInterval =
         config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS).seconds
@@ -82,12 +82,19 @@ object SettingsMapping {
 
     /** Write settings to given config. */
     override def toConfig(settings: OkPaySettings, config: Config) = config
-      .withValue("coinffeine.okpay.id", configValue(settings.userAccount))
-      .withValue("coinffeine.okpay.token", configValue(settings.seedToken))
+      .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
+      .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
       .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
       .withValue("coinffeine.okpay.pollingInterval",
         configValue(s"${settings.pollingInterval.toSeconds}s"))
-  }
+
+    private def getOptionalString(config: Config, key: String): Option[String] = try {
+      val value = config.getString(key).trim
+      if (value.isEmpty) None else Some(value)
+    } catch {
+      case ex: ConfigException.Missing => None
+    }
+}
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
 }

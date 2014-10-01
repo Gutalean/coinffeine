@@ -16,11 +16,13 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
+import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar with Eventually {
 
   "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
+    given(client.accountId).willReturn(senderAccount)
     givenPaymentProcessorIsInitialized()
     requester.send(processor, PaymentProcessorActor.RetrieveAccountId)
     requester.expectMsg(PaymentProcessorActor.RetrievedAccountId(senderAccount))
@@ -45,8 +47,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     given(client.currentBalances()).willReturn(Future.failed(cause))
     given(client.currentBalance(UsDollar)).willReturn(Future.failed(cause))
-    processor = system.actorOf(Props(
-      new OkPayProcessorActor(clientParams, properties)))
+    processor = system.actorOf(processorProps)
     requester.send(processor, ServiceActor.Start({}))
     requester.expectMsg(ServiceActor.Started)
     requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
@@ -152,14 +153,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     val client = mock[OkPayClient]
     var processor: ActorRef = _
     val properties = new MutablePaymentProcessorProperties
-    val clientParams = OkPayProcessorActor.ClientParams(senderAccount, client, pollingInterval)
+    val processorProps = Props(new OkPayProcessorActor(() => client, pollingInterval, properties))
     val requester = TestProbe()
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
-
-      processor = system.actorOf(Props(
-        new OkPayProcessorActor(clientParams, properties)))
+      processor = system.actorOf(processorProps)
       requester.send(processor, ServiceActor.Start({}))
       requester.expectMsg(ServiceActor.Started)
     }

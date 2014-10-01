@@ -31,14 +31,11 @@ trait ConfigProvider extends SettingsProvider {
   /** Retrieve the whole configuration, including reference and user config. */
   def config: Config = userConfig.withFallback(referenceConfig)
 
-  override lazy val bitcoinSettings =
-    SettingsMapping.fromConfig[BitcoinSettings](config)
+  override def bitcoinSettings() = SettingsMapping.fromConfig[BitcoinSettings](config)
 
-  override lazy val messageGatewaySettings =
-    SettingsMapping.fromConfig[MessageGatewaySettings](config)
+  override def messageGatewaySettings() = SettingsMapping.fromConfig[MessageGatewaySettings](config)
 
-  override lazy val okPaySettings =
-    SettingsMapping.fromConfig[OkPaySettings](config)
+  override def okPaySettings() = SettingsMapping.fromConfig[OkPaySettings](config)
 
   /** Save the given settings as part of user config using this provider.
     *
