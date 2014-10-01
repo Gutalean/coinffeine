@@ -7,13 +7,13 @@ import coinffeine.protocol.MessageGatewaySettings
 trait SettingsProvider {
 
   /** Retrieve the settings of the Bitcoin network. */
-  def bitcoinSettings: BitcoinSettings
+  def bitcoinSettings(): BitcoinSettings
 
   /** Retrieve the message gateway settings. */
-  def messageGatewaySettings: MessageGatewaySettings
+  def messageGatewaySettings(): MessageGatewaySettings
 
   /** Retrieve the OKPay settings. */
-  def okPaySettings: OkPaySettings
+  def okPaySettings(): OkPaySettings
 
   /** Save the given user settings. */
   def saveUserSettings[A : SettingsMapping](settings: A): Unit

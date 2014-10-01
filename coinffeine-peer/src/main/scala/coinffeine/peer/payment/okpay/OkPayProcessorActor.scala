@@ -2,7 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
+import scala.util.control.{NoStackTrace, NonFatal}
 import scala.util.{Failure, Success}
 
 import akka.actor._
@@ -15,6 +15,7 @@ import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.BlockingFundsActor._
+import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
 class OkPayProcessorActor(
@@ -160,16 +161,30 @@ object OkPayProcessorActor {
   /** Self-message to report balance polling failures */
   private case class BalanceUpdateFailed(cause: Throwable)
 
-  def props(settings: OkPaySettings, properties: MutablePaymentProcessorProperties) = {
+  def props(lookupSettings: () => OkPaySettings, properties: MutablePaymentProcessorProperties) = {
 
+    val settings = lookupSettings()
     val okPay = new OkPayWebService(Some(settings.serverEndpoint))
 
+    object NotConfiguredClient extends OkPayClient {
+      private val error = new IllegalStateException(
+        "OKPay's user id and/or seed token are not configured") with NoStackTrace
+      override lazy val accountId: AccountId = throw error
+      override def findPayment(paymentId: PaymentId) = Future.failed(error)
+      override def currentBalances() = Future.failed(error)
+      override def sendPayment[C <: FiatCurrency](
+          to: AccountId, amount: CurrencyAmount[C], comment: String, feePolicy: FeePolicy) =
+        Future.failed(error)
+      override protected def executionContext = throw error
+    }
+
     def clientFactory(): OkPayClient = {
-      val accountId = settings.userAccount.getOrElse(
-        throw new IllegalArgumentException("OKPay user account is not configured"))
-      val seedToken = settings.seedToken.getOrElse(
-        throw new IllegalArgumentException("OKPay token is not configured"))
-      new OkPayWebServiceClient(okPay.service, accountId, seedToken)
+      val settings = lookupSettings()
+      (for {
+        accountId <- settings.userAccount
+        seedToken <- settings.seedToken
+      } yield new OkPayWebServiceClient(okPay.service, accountId, seedToken))
+        .getOrElse(NotConfiguredClient)
     }
 
     Props(new OkPayProcessorActor(clientFactory, settings.pollingInterval, properties))
