@@ -103,6 +103,7 @@ class WithdrawFundsForm(props: WalletProperties) {
     minHeight = 225
     maxHeight = 225
     scene = new Scene(content) {
+      stylesheets.add("/css/controls.css")
       stylesheets.add("/css/main.css")
     }
     centerOnScreen()

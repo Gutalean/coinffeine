@@ -24,6 +24,7 @@ class ApplicationScene(views: Seq[ApplicationView],
 
   require(views.nonEmpty, "At least one view is required")
 
+  stylesheets.add("/css/controls.css")
   stylesheets.add("/css/main.css")
   stylesheets.add("/css/operations.css")
   stylesheets.add("/css/popup.css")

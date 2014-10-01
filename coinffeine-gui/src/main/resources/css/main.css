@@ -42,13 +42,3 @@
     -fx-font-weight: bold;
 }
 
-.currency-symbol {
-    -fx-background-color: #51350C;
-    -fx-background-radius: 2;
-    -fx-font-size: 10;
-}
-
-.currency-symbol Label {
-    -fx-text-fill: white;
-}
-

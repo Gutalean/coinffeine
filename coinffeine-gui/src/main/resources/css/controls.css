@@ -1,0 +1,12 @@
+/* This file defines the styles for custom controls. */
+
+.CurrencyTextField-symbol {
+    -fx-padding: 0 5px 0 5px;
+    -fx-background-color: #51350C;
+    -fx-background-radius: 2;
+    -fx-font-size: 10;
+}
+
+.CurrencyTextField-symbol Label {
+    -fx-text-fill: white;
+}

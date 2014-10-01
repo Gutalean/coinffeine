@@ -141,6 +141,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   def show(parentWindow: Window): Unit = {
     val formScene = new Scene(width = 550, height = 300) {
       root = OrderSubmissionForm.this.root
+      stylesheets.add("/css/controls.css")
       stylesheets.add("/css/main.css")
     }
     stage = Some(new Stage {
