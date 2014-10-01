@@ -12,7 +12,7 @@ import scalafx.stage.{Modality, Stage, Window}
 
 import org.controlsfx.dialog.{Dialog, Dialogs}
 
-import coinffeine.gui.control.DecimalNumberTextField
+import coinffeine.gui.control.CurrencyTextField
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
@@ -27,11 +27,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     prefWidth = 90
   }
 
-  private val amountTextField = new DecimalNumberTextField(0.0) {
-    id = "amount"
-    alignment = Pos.CENTER_RIGHT
-    prefWidth = 100
-  }
+  private val amountTextField = new CurrencyTextField(0.BTC) { id = "amount" }
 
   private def bitcoinAmount: Try[Bitcoin.Amount] = Try {
     Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
@@ -66,11 +62,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
     toggleGroup = priceRadioButtonGroup
   }
 
-  private val limitTextField = new DecimalNumberTextField(0.0) {
-    id = "limit"
-    alignment = Pos.CENTER_RIGHT
-    prefWidth = 100
-  }
+  private val limitTextField = new CurrencyTextField(0.EUR) { id = "limit" }
 
   private val limitOrderSelectedProperty = limitOrderRadioButton.selected
 
@@ -85,8 +77,8 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   val root = new StackPane {
     content = new VBox {
       alignment = Pos.CENTER
-      prefWidth = 500
-      minWidth = 500
+      prefWidth = 600
+      minWidth = 600
       prefHeight = 300
       minHeight = 300
       padding = Insets(50)
@@ -99,7 +91,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
             new Label("I want to"),
             operationChoiceBox,
             amountTextField,
-            new Label("BTCs using"),
+            new Label(" using "),
             paymentProcessorChoiceBox
           )
         },
@@ -115,7 +107,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
                   alignment = Pos.CENTER_LEFT
                   margin = Insets(0, 0, 0, 30)
                   disable <== limitOrderSelectedProperty.not()
-                  content = Seq(new Label("Limit"), limitTextField, new Label("€"))
+                  content = Seq(new Label("Limit"), limitTextField)
                 }
               )
             },
@@ -149,6 +141,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   def show(parentWindow: Window): Unit = {
     val formScene = new Scene(width = 550, height = 300) {
       root = OrderSubmissionForm.this.root
+      stylesheets.add("/css/main.css")
     }
     stage = Some(new Stage {
       title = "Submit new order"
