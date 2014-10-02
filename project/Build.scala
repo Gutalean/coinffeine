@@ -11,7 +11,7 @@ object Build extends sbt.Build {
 
   object Versions {
     val akka = "2.3.4"
-    val dispatch = "0.11.1"
+    val dispatch = "0.11.2"
   }
 
   object Dependencies {
