@@ -31,7 +31,7 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
     new BooleanProperty(this, "isCancellable", false)
 
   override val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
-    new ObjectProperty(this, "amount", exchange.amounts.grossBitcoinExchanged)
+    new ObjectProperty(this, "amount", exchange.role.select(exchange.amounts.exchangedBitcoin))
 
   override val statusProperty =
     exchangeStateProperty.delegate.mapToString(_.toString.capitalize).toReadOnlyProperty
@@ -58,8 +58,8 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
   }
 
   private def progressOf(exchange: AnyExchange): Double = {
-    val done = exchange.progress.bitcoinsTransferred.buyer.value
-    val total = exchange.amounts.grossBitcoinExchanged.value
+    val done = exchange.role.select(exchange.progress.bitcoinsTransferred).value
+    val total = exchange.role.select(exchange.amounts.exchangedBitcoin).value
     (done / total).toDouble
   }
 }
