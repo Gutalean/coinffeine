@@ -39,6 +39,7 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       peerGroup.stopAndWait()
       log.info("Peer group stopped")
     }
+    blockchain.getBlockStore.close()
     becomeStopped()
   }
 
