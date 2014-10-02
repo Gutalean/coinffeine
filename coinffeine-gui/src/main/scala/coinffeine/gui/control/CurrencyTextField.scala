@@ -1,6 +1,7 @@
 package coinffeine.gui.control
 
 import javafx.beans.value.{ChangeListener, ObservableValue}
+import scala.util.Try
 import scalafx.Includes._
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.event.ActionEvent
@@ -68,9 +69,9 @@ class CurrencyTextField[C <: Currency](
                          newValue: String): Unit = {
       if (!ignore) {
         if (isValidInput(newValue)) {
-          _currencyValue.value = new CurrencyAmount(BigDecimal(newValue), currency)
-        }
-        else {
+          _currencyValue.value = Try(new CurrencyAmount(BigDecimal(newValue), currency))
+            .getOrElse(CurrencyAmount.zero(currency))
+        } else {
           ignoringSelfChanges {
             text = oldValue
           }
