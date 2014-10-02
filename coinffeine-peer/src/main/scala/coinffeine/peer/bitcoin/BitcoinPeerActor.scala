@@ -39,6 +39,7 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       peerGroup.stopAndWait()
       log.info("Peer group stopped")
     }
+    blockchain.getBlockStore.close()
     becomeStopped()
   }
 
@@ -245,8 +246,6 @@ object BitcoinPeerActor {
       with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
-      val connectionRetryInterval =
-        configProvider.bitcoinSettings.connectionRetryInterval
       Props(new BitcoinPeerActor(
         bitcoinProperties,
         peerGroup,
@@ -255,7 +254,7 @@ object BitcoinPeerActor {
         wallet,
         blockchain,
         network,
-        connectionRetryInterval
+        configProvider.bitcoinSettings().connectionRetryInterval
       ))
     }
   }
