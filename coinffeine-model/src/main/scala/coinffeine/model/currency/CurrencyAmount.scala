@@ -57,7 +57,7 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
     if (value.scale == currency.precision) this
     else copy(value = value.setScale(currency.precision, RoundingMode.UNNECESSARY))
 
-  override def toString = "%s %s".format(canonical.value, currency)
+  override def toString = "%s %s".format(canonical.value.underlying().toPlainString, currency)
 
   def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
     currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
