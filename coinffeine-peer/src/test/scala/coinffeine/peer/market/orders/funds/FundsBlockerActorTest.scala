@@ -40,7 +40,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     givenBitcoinFundsAreBlocked()
     expectBitcoinFundsUnblocking()
     expectFiatFundsUnblocking()
-    expectFailedBlocking(s"100 EUR blocked in $fiatFunds but not available")
+    expectFailedBlocking(s"100.00 EUR blocked in $fiatFunds but not available")
   }
 
   it should "fail if bitcoin funds cannot be blocked" in new Fixture {
@@ -49,7 +49,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     givenFiatFundsBecomeAvailable()
     givenBitcoinFundsFailToBeBlocked()
     expectFiatFundsUnblocking()
-    expectFailedBlocking(s"Cannot block 1 BTC")
+    expectFailedBlocking("Cannot block " + 1.BTC)
   }
 
   it should "not try to unblock fiat when it was not requested to begin with" in
@@ -57,7 +57,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
       expectFundsAreRequested()
       givenBitcoinFundsFailToBeBlocked()
       expectNoRequestToPaymentProcessor()
-      expectFailedBlocking(s"Cannot block 1 BTC")
+      expectFailedBlocking("Cannot block " + 1.BTC)
     }
 
   abstract class Fixture(requiredFiat: Euro.Amount = 100.EUR,

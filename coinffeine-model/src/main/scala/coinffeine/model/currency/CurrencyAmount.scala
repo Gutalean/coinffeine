@@ -16,8 +16,7 @@ import scala.util.Try
 case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
   extends PartiallyOrdered[CurrencyAmount[C]] {
 
-  require(currency.isValidAmount(value),
-    "Tried to create a currency amount which is invalid for that currency: " + this.toString)
+  require(currency.isValidAmount(value), s"Invalid amount for $currency: $value")
 
   def +(other: CurrencyAmount[C]): CurrencyAmount[C] =
     copy(value = value + other.value)
@@ -53,7 +52,12 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
       thatAmount
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
-  override def toString = value.toString() + " " + currency.toString
+  /** Return a canonical version of the amount with scale set to currency precision */
+  def canonical: CurrencyAmount[C] =
+    if (value.scale == currency.precision) this
+    else copy(value = value.setScale(currency.precision, RoundingMode.UNNECESSARY))
+
+  override def toString = "%s %s".format(canonical.value, currency)
 
   def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
     currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
