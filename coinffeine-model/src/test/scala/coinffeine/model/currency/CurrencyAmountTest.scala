@@ -9,6 +9,7 @@ import coinffeine.common.test.UnitTest
 class CurrencyAmountTest extends UnitTest with PropertyChecks {
 
   val sampleAmounts = Table[CurrencyAmount[_ <: Currency]]("currency amount",
+    Euro.Zero,
     Euro(0.01),
     Euro(10.00),
     UsDollar(1234.56),
@@ -43,6 +44,13 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
   it should "be numeric for currencies handled generically" in {
     forAll(sampleAmounts) { amount =>
       genericHandling(amount)
+    }
+  }
+
+  it should "use the whole precision when converted to string" in {
+    forAll(sampleAmounts) { amount =>
+      val valueRepresentation = amount.toString.split(" ")(0)
+      valueRepresentation.reverse.takeWhile(_.isDigit) should have size amount.currency.precision
     }
   }
 
