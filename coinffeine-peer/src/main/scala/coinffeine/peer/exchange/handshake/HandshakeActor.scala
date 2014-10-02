@@ -13,12 +13,12 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
-import coinffeine.peer.bitcoin.WalletActor.{DepositCreated, DepositCreationError}
-import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
+import coinffeine.peer.exchange.ExchangeActor.{ExchangeToStart, ExchangeUpdate}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
@@ -70,6 +70,7 @@ private class HandshakeActor[C <: FiatCurrency](
       case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
         val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
         val handshakingExchange = exchange.info.startHandshaking(exchange.user, counterpart)
+        collaborators.listener ! ExchangeUpdate(handshakingExchange)
         createDeposit(handshakingExchange)
           .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
           .pipeTo(self)

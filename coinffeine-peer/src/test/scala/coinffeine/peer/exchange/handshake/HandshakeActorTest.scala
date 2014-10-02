@@ -7,7 +7,7 @@ import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor
-import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
+import coinffeine.peer.exchange.ExchangeActor.{ExchangeUpdate, ExchangeToStart}
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
@@ -36,6 +36,7 @@ abstract class HandshakeActorTest(systemName: String)
     val peerHandshake =
       PeerHandshake(exchange.id, counterpart.bitcoinKey.publicKey, counterpart.paymentProcessorAccount)
     gateway.relayMessage(peerHandshake, counterpartId)
+    listener.expectMsgType[ExchangeUpdate]
   }
 
   def givenValidRefundSignatureResponse() = {
