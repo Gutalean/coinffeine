@@ -39,9 +39,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
     }
   }
 
-  val receive: Receive = inHandshake
+  override val receive: Receive = inHandshake
 
-  private def inHandshake: Receive = {
+  private def inHandshake: Receive = propagatingNotifications orElse {
     case HandshakeSuccess(rawExchange, commitments, refundTx)
       if rawExchange.currency == exchange.info.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
@@ -84,7 +84,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
     context.become(inMicropaymentChannel(runningExchange))
   }
 
-  private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
+  private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive =
+    propagatingNotifications orElse {
 
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.info.id)
@@ -99,9 +100,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.info.id, step)
       txBroadcaster ! PublishBestTransaction
       context.become(failingAtStep(runningExchange, step, cause))
-
-    case update: ExchangeUpdate =>
-      collaborators.listener ! update
 
     case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
@@ -124,6 +122,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
+  }
+
+  private def propagatingNotifications: Receive = {
+    case update: ExchangeUpdate => collaborators.listener ! update
   }
 
   private def failingAtStep(runningExchange: RunningExchange[C],
