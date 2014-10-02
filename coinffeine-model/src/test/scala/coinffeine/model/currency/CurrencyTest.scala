@@ -12,7 +12,6 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
   "Euro" must behave like validFiatCurrency(Euro, "EUR")
   it must behave like validCurrencyWithCents(Euro)
 
-
   "Bitcoin" must behave like validCurrency(Bitcoin)
 
   it must "detect invalid amounts" in {

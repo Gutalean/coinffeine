@@ -91,8 +91,8 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
 
   private def updateConfirmationSubscriptions(tx: Hash, block: StoredBlock): Unit = {
     confirmationSubscriptions.get(tx).foreach { subscription =>
-      Log.info("tx {} found in block {}: waiting for {} confirmations",
-        Seq(tx, block.getHeight, subscription.requiredConfirmations))
+      Log.info(s"tx $tx found in block ${block.getHeight}: " +
+        s"waiting for ${subscription.requiredConfirmations} confirmations")
       confirmationSubscriptions += tx -> subscription.copy(
         foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
     }
@@ -115,18 +115,15 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
     confirmationSubscriptions.foreach {
       case (txHash, ConfirmationSubscription(_, listener, reqConf, Some(foundInBlock))) =>
         val confirmations = (currentHeight - foundInBlock.height) + 1
+        val event =
+          s"""after new chain head $currentHeight, tx $txHash have $confirmations
+             |confirmations out of $reqConf required""".stripMargin
         if (confirmations >= reqConf) {
-          Log.info(
-            """after new chain head {}, tx {} have {} confirmations out of {} required:
-              |reporting to the observer""".stripMargin,
-            Seq(currentHeight, txHash, confirmations, reqConf))
+          Log.info(s"{}: reporting to the observer", event)
           confirmationSubscriptions -= txHash
           listener.confirmed(txHash, confirmations)
         } else {
-          Log.info(
-            """after new chain head {}, tx {} have {} confirmations out of {} required:
-              |still waiting for more blocks""".stripMargin,
-            Seq(currentHeight, txHash, confirmations, reqConf))
+          Log.info("{}: still waiting for more blocks", event)
         }
       case _ =>
     }
