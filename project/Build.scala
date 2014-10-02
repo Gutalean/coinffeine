@@ -35,7 +35,7 @@ object Build extends sbt.Build {
     lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.1.2"
     lazy val logbackCore = "ch.qos.logback" % "logback-core" % "1.1.2"
     lazy val mockito = "org.mockito" % "mockito-all" % "1.9.5"
-    lazy val netty = "io.netty" % "netty-all" % "4.0.19.Final"
+    lazy val netty = "io.netty" % "netty" % "3.9.2.Final"
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
     lazy val reflections = "org.reflections" % "reflections" % "0.9.9-RC1"
     lazy val scalafx = Seq(
