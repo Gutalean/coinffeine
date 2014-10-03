@@ -53,3 +53,31 @@
 #wallet-center-pane {
     -fx-spacing: 10px;
 }
+
+#wallet-withdraw-root-pane {
+    -fx-min-width: 400px;
+    -fx-max-width: 400px;
+    -fx-min-height: 225px;
+    -fx-max-height: 225px;
+    -fx-padding: 20px;
+    -fx-spacing: 25px;
+}
+
+#wallet-withdraw-root-pane HBox {
+    -fx-spacing: 5px;
+}
+
+#wallet-withdraw-root-pane VBox {
+    -fx-spacing: 5px;
+}
+
+#wallet-withdraw-root-pane TilePane {
+    -fx-alignment: center;
+    -fx-orientation: horizontal;
+    -fx-hgap: 20px;
+}
+
+#wallet-withdraw-address-field {
+    -fx-min-width: 300px;
+}
+

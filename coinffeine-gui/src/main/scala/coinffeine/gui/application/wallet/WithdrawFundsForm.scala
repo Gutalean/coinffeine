@@ -27,13 +27,13 @@ class WithdrawFundsForm(props: WalletProperties) {
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
 
-  private val content = new VBox(spacing = 25) {
-    padding = Insets(20)
+  private val content = new VBox() {
+    id = "wallet-withdraw-root-pane"
     content = Seq(
-      new VBox(spacing = 5) {
+      new VBox() {
         content = Seq(
           new Label("Select the amount to withdraw"),
-          new HBox(spacing = 5) {
+          new HBox() {
             val currencyField = new CurrencyTextField(0.BTC) {
               amount <== currencyValue
             }
@@ -54,12 +54,12 @@ class WithdrawFundsForm(props: WalletProperties) {
             )
           })
       },
-      new VBox(spacing = 5) {
+      new VBox() {
         content = Seq(
           new Label("Select the destination address"),
           new TextField() {
+            id = "wallet-withdraw-address-field"
             promptText = "Insert the destination Bitcoin address"
-            minWidth = 300
             address <== text.delegate.map { addr =>
               try { Some(new Address(null, addr)) }
               catch { case NonFatal(_) => None }
@@ -67,9 +67,6 @@ class WithdrawFundsForm(props: WalletProperties) {
           })
       },
       new TilePane() {
-        alignment = Pos.CENTER
-        orientation = Orientation.HORIZONTAL
-        hgap = 20
         content = Seq(
           new Button("Cancel") {
             maxWidth = Double.MaxValue
@@ -89,22 +86,16 @@ class WithdrawFundsForm(props: WalletProperties) {
     )
   }
 
-  private def isValidAddress(address: String): Boolean =
-    address.length >= 26 && address.length <= 34
-
   private def isValidAmount(amount: Bitcoin.Amount): Boolean =
     amount.isPositive && amount <= props.balance.get.get.amount
 
   private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "Withdraw funds"
     initModality(Modality.APPLICATION_MODAL)
-    minWidth = 350
-    maxWidth = 350
-    minHeight = 225
-    maxHeight = 225
     scene = new Scene(content) {
       stylesheets.add("/css/controls.css")
       stylesheets.add("/css/main.css")
+      stylesheets.add("/css/wallet.css")
     }
     centerOnScreen()
   }
