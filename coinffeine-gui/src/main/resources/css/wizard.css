@@ -27,6 +27,11 @@
   -fx-fill: #aaa;
 }
 
+#wizard-root-pane {
+    -fx-pref-width: 540px;
+    -fx-pref-height: 320px;
+}
+
 .wizard-base-pane {
     -fx-padding: 10px 50px 10px 50px;
     -fx-spacing: 5px;

@@ -9,17 +9,17 @@ import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
 import scalafx.scene.text.Font
 import scalafx.stage.{Stage, StageStyle}
 
+import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+
 /** Step-by-step wizard that accumulates information of type Data.
   *
   * @param steps        Sequence of wizard steps
   * @param initialData  Initial value for the wizard
   * @param wizardTitle  Wizard title
-  * @param width        Window width
-  * @param height       Window height
   * @tparam Data        Type of the wizard result
   */
-class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: String,
-                   width: Double = 540, height: Double = 320) extends Stage(StageStyle.UTILITY) {
+class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: String)
+    extends Stage(StageStyle.UTILITY) {
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
   private val stepNumber = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
@@ -36,7 +36,6 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
     val title = new Label("Initial setup") { font = Font(18) }
     new AnchorPane {
       prefHeight = 50
-      prefWidth = Wizard.this.width
       content = Seq(title, progress)
       AnchorPane.setTopAnchor(title, 15)
       AnchorPane.setLeftAnchor(title, 22)
@@ -64,7 +63,6 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
     }
     new AnchorPane {
       prefHeight = 44
-      prefWidth = Wizard.this.width
       content = buttonBox
       AnchorPane.setTopAnchor(buttonBox, 5)
       AnchorPane.setRightAnchor(buttonBox, 15)
@@ -72,6 +70,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
   }
 
   private val rootWizardPane: BorderPane = new BorderPane {
+    id = "wizard-root-pane"
     top = wizardHeader
     center = steps.head
     bottom = wizardFooter
@@ -79,9 +78,8 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
 
   title = Wizard.this.wizardTitle
   resizable = false
-  scene = new Scene(Wizard.this.width, Wizard.this.height) {
+  scene = new CoinffeineScene(Stylesheets.Wizard) {
     root = rootWizardPane
-    stylesheets.add("/css/wizard.css")
   }
 
   private def initializeSteps(): Unit = {

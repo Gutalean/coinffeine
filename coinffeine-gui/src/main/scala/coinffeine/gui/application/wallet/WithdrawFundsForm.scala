@@ -13,6 +13,7 @@ import scalafx.stage.{Modality, Stage, StageStyle}
 import com.google.bitcoin.core.Address
 
 import coinffeine.gui.control.CurrencyTextField
+import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.WalletProperties
 import coinffeine.model.currency._
@@ -92,10 +93,8 @@ class WithdrawFundsForm(props: WalletProperties) {
   private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "Withdraw funds"
     initModality(Modality.APPLICATION_MODAL)
-    scene = new Scene(content) {
-      stylesheets.add("/css/controls.css")
-      stylesheets.add("/css/main.css")
-      stylesheets.add("/css/wallet.css")
+    scene = new CoinffeineScene(Stylesheets.Wallet) {
+      root = WithdrawFundsForm.this.content
     }
     centerOnScreen()
   }

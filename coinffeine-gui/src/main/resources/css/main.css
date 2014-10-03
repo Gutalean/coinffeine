@@ -1,3 +1,8 @@
+#main-root-pane {
+    -fx-pref-width: 1024;
+    -fx-pref-height: 600;
+}
+
 #tool-bar Separator {
     -fx-padding: 0 10;
 }

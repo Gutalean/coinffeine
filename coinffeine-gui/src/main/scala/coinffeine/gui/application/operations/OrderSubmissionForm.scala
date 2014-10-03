@@ -13,6 +13,7 @@ import scalafx.stage.{Modality, Stage, Window}
 import org.controlsfx.dialog.{Dialog, Dialogs}
 
 import coinffeine.gui.control.CurrencyTextField
+import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
@@ -130,11 +131,8 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   private var stage: Option[Stage] = None
 
   def show(parentWindow: Window): Unit = {
-    val formScene = new Scene() {
+    val formScene = new CoinffeineScene(Stylesheets.Operations) {
       root = OrderSubmissionForm.this.root
-      stylesheets.add("/css/controls.css")
-      stylesheets.add("/css/main.css")
-      stylesheets.add("/css/operations.css")
     }
     stage = Some(new Stage {
       title = "Submit new order"
