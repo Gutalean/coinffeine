@@ -14,12 +14,12 @@ import coinffeine.gui.wizard.StepPane
 
 private[setup] class TopUpStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
 
-  content = new VBox(spacing = 5) {
-    padding = Insets(10, 50, 10, 50)
+  content = new VBox() {
+    styleClass += "wizard-base-pane"
     content = Seq(
       new Label("Add bitcoins to your Coinffeine wallet") { styleClass = Seq("stepTitle") },
       new HBox {
-        alignment = Pos.BASELINE_LEFT
+        id = "wizard-topup-disclaimer-pane"
         content = Seq(
           new Label("You need a small amount of bitcoins to buy bitcoins."),
           new Hyperlink("Know why") {
@@ -27,11 +27,11 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
           }
         )
       },
-      new HBox(spacing = 10) {
-        alignment = Pos.CENTER
+      new HBox() {
+        id = "wizard-topup-walletinfo-pane"
         content = Seq(
-          new VBox(spacing = 5) {
-            alignment = Pos.CENTER
+          new VBox() {
+            id = "wizard-topup-address-pane"
             hgrow = Priority.ALWAYS
             content = Seq(
               new Label("Your wallet address"),
@@ -39,7 +39,6 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
                 id = "address"
                 text = address
                 editable = false
-                font = Font(12)
               }
             )
           },

@@ -28,32 +28,32 @@ class PasswordStepPaneTest extends GuiTest[PasswordStepPane]  {
   }
 
   it should "warn the user about weak passwords" in new Fixture {
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     click("#passwordField").`type`("weak")
-    find[Label]("#passwordWarningLabel").getText should include ("weak")
+    find[Label]("#wizard-password-warn-label").getText should include ("weak")
     instance.canContinue.value should be (false)
   }
 
   it should "not warn the user about when password is strong" in new Fixture {
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     click("#passwordField").`type`("ThisIsASuperStrongPassw0rd")
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     instance.canContinue.value should be (false)
   }
 
   it should "warn the user about mismatching passwords" in new Fixture {
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     click("#passwordField").`type`("CorrectPassword")
     click("#repeatPasswordField").`type`("TypoPassword")
-    find[Label]("#passwordWarningLabel").getText should include ("don't match")
+    find[Label]("#wizard-password-warn-label").getText should include ("don't match")
     instance.canContinue.value should be (false)
   }
 
   it should "let the user continue is passwords are OK" in new Fixture {
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     click("#passwordField").`type`("CorrectPassword")
     click("#repeatPasswordField").`type`("CorrectPassword")
-    find[Label]("#passwordWarningLabel").getText should be ('empty)
+    find[Label]("#wizard-password-warn-label").getText should be ('empty)
     instance.canContinue.value should be (true)
   }
 }

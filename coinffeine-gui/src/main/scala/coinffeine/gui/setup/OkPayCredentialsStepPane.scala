@@ -20,9 +20,7 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
 
   content = {
     val grid = new GridPane {
-      padding = Insets(20, 10, 0, 10)
-      hgap = 5
-      vgap = 5
+      id = "wizard-okpay-inputs-pane"
       columnConstraints = Seq(new ColumnConstraints {
         prefWidth = 100
         fillWidth = false
@@ -44,7 +42,7 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
     }
 
     new VBox(spacing = 5) {
-      padding = Insets(10, 50, 10, 50)
+      styleClass += "wizard-base-pane"
       content = Seq(
         new Label("Configure your OKPay account") { styleClass = Seq("stepTitle") },
         new Label("Your credentials are stored locally and never will be shared"),

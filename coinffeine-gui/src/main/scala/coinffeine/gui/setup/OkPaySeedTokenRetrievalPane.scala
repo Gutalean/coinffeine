@@ -22,8 +22,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   val progressHint = new Label()
   val retrievalProgress = new ProgressBar() { maxWidth = Double.MaxValue }
   val errorLine = new GridPane() {
-    margin = Insets(30, 0, 0, 0)
-    alignment = Pos.CENTER_LEFT
+    id = "wizard-okpaytoken-errorline-pane"
     columnConstraints = Seq(
       new ColumnConstraints() { halignment = HPos.LEFT },
       new ColumnConstraints() { halignment = HPos.RIGHT }
@@ -79,8 +78,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   }
 
   content = new VBox(spacing = 5) {
-    padding = Insets(10, 50, 10, 50)
-    alignment = Pos.CENTER
+    id = "wizard-okpaytoken-base-pane"
     content = Seq(
       progressHint,
       retrievalProgress,
