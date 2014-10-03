@@ -42,3 +42,12 @@
     -fx-font-weight: bold;
 }
 
+.indented {
+    -fx-padding: 0 0 0 30px;
+}
+
+.button-hpane {
+    -fx-spacing: 50px;
+    -fx-alignment: center;
+}
+

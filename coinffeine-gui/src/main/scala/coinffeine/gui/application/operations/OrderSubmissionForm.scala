@@ -75,18 +75,12 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   }
 
   val root = new StackPane {
+    id = "operations-submit-root-pane"
     content = new VBox {
-      alignment = Pos.CENTER
-      prefWidth = 600
-      minWidth = 600
-      prefHeight = 300
-      minHeight = 300
-      padding = Insets(50)
-      spacing = 20
+      id = "operations-submit-content-pane"
       content = Seq(
         new HBox {
-          alignment = Pos.CENTER_LEFT
-          spacing = 10
+          styleClass += "operations-submit-declaration-pane"
           content = Seq(
             new Label("I want to"),
             operationChoiceBox,
@@ -103,9 +97,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
               content = Seq(
                 limitOrderRadioButton,
                 new HBox {
-                  spacing = 10
-                  alignment = Pos.CENTER_LEFT
-                  margin = Insets(0, 0, 0, 30)
+                  styleClass += ("operations-submit-declaration-pane", "indented")
                   disable <== limitOrderSelectedProperty.not()
                   content = Seq(new Label("Limit"), limitTextField)
                 }
@@ -115,8 +107,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
           )
         },
         new HBox {
-          spacing = 50
-          alignment = Pos.CENTER
+          styleClass += "button-hpane"
           content = Seq(
             new Button {
               id = "cancel"
@@ -139,10 +130,11 @@ class OrderSubmissionForm(app: CoinffeineApp) {
   private var stage: Option[Stage] = None
 
   def show(parentWindow: Window): Unit = {
-    val formScene = new Scene(width = 550, height = 300) {
+    val formScene = new Scene() {
       root = OrderSubmissionForm.this.root
       stylesheets.add("/css/controls.css")
       stylesheets.add("/css/main.css")
+      stylesheets.add("/css/operations.css")
     }
     stage = Some(new Stage {
       title = "Submit new order"
