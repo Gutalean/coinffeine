@@ -1,3 +1,8 @@
+#main-root-pane {
+    -fx-pref-width: 1024;
+    -fx-pref-height: 600;
+}
+
 #tool-bar Separator {
     -fx-padding: 0 10;
 }
@@ -37,26 +42,17 @@
     -fx-background-insets: 0, 1 0 0 0, 2 0 0 0;
 }
 
-#qr-pane {
-    -fx-border-color: lightgray;
-    -fx-border-radius: 5;
-    -fx-background-color: white;
-    -fx-background-radius: 5;
-    -fx-font-size: 8;
-}
-
 .title {
     -fx-font-size: 15;
     -fx-font-weight: bold;
 }
 
-.currency-symbol {
-    -fx-background-color: #51350C;
-    -fx-background-radius: 2;
-    -fx-font-size: 10;
+.indented {
+    -fx-padding: 0 0 0 30px;
 }
 
-.currency-symbol Label {
-    -fx-text-fill: white;
+.button-hpane {
+    -fx-spacing: 50px;
+    -fx-alignment: center;
 }
 

@@ -22,8 +22,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   val progressHint = new Label()
   val retrievalProgress = new ProgressBar() { maxWidth = Double.MaxValue }
   val errorLine = new GridPane() {
-    margin = Insets(30, 0, 0, 0)
-    alignment = Pos.CENTER_LEFT
+    id = "wizard-okpaytoken-errorline-pane"
     columnConstraints = Seq(
       new ColumnConstraints() { halignment = HPos.LEFT },
       new ColumnConstraints() { halignment = HPos.RIGHT }
@@ -31,7 +30,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
     visible <== retrievalError.isNotNull
 
     add(new Label("Please go back and double check your credentials.") {
-      styleClass.add("errorLabel")
+      styleClass.add("wizard-error-label")
       hgrow = Priority.ALWAYS
     }, 0, 0)
     add(new Button("Details") {
@@ -46,13 +45,13 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   def initFields(): Unit = {
     progressHint.text = "Obtaining a token for your OKPay account (this may take a while)..."
     retrievalProgress.progress = -1.0f
-    retrievalProgress.styleClass.removeAll("errorProgressBar")
+    retrievalProgress.styleClass.removeAll("wizard-error-progressbar")
     retrievalError.value = null
   }
 
   def reportError(error: Throwable): Unit = {
     progressHint.text = "Something went wrong while retrieving the token."
-    retrievalProgress.styleClass.add("errorProgressBar")
+    retrievalProgress.styleClass.add("wizard-error-progressbar")
     retrievalProgress.progress = 1.0f
     retrievalError.value = error
   }
@@ -79,8 +78,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   }
 
   content = new VBox(spacing = 5) {
-    padding = Insets(10, 50, 10, 50)
-    alignment = Pos.CENTER
+    id = "wizard-okpaytoken-base-pane"
     content = Seq(
       progressHint,
       retrievalProgress,

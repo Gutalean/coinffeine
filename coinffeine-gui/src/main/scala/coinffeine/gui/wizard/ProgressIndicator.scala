@@ -11,6 +11,8 @@ import scalafx.scene.shape.Circle
 /** A pane with a dot per step. The dot matching with the current step has a different color. */
 private[wizard] class ProgressIndicator(steps: Int, currentStep: IntegerProperty) {
 
+  import ProgressIndicator._
+
   val pane = new HBox(spacing = 5) {
     content = for (index <- 1 to steps) yield stepIndicator(index)
   }
@@ -26,13 +28,15 @@ private[wizard] class ProgressIndicator(steps: Int, currentStep: IntegerProperty
   }
 
   private def setStepStyle(index: Int, styles: ObservableList[String]): Unit = {
-    styles.removeAll("stepIndexActive", "stepIndexInactive")
-    styles.add(if (currentStep.value == index) "stepIndexActive" else "stepIndexInactive")
+    styles.removeAll(ActiveStyleClass, InactiveStyleClass)
+    styles.add(if (currentStep.value == index) ActiveStyleClass else InactiveStyleClass)
   }
 }
 
 private[wizard] object ProgressIndicator {
   private val SelectedColor = Color.RED
   private val UnselectedColor = Color.web("#afc9e1")
+  private val ActiveStyleClass = "wizard-progress-indicator-active"
+  private val InactiveStyleClass = "wizard-progress-indicator-inactive"
 }
 

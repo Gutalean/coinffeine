@@ -43,17 +43,15 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
     handleEvent(Event.ANY) { () => handlePasswordChange() }
   }
   private val passwordWarningLabel = new Label() {
-    id = "passwordWarningLabel"
-    styleClass.add("errorLabel")
+    id = "wizard-password-warn-label"
+    styleClass.add("wizard-error-label")
     textAlignment = TextAlignment.CENTER
     alignment = Pos.TOP_CENTER
-    prefHeight = 35
     disable <== noPasswordProperty
   }
 
   private val passwordPane = new GridPane {
-    hgap = 5
-    vgap = 5
+    id = "wizard-password-credentials-pane"
     columnConstraints = Seq(
       new ColumnConstraints {
         minWidth = 130
@@ -61,7 +59,6 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
       },
       new ColumnConstraints { hgrow = Priority.ALWAYS }
     )
-    padding = Insets(0, 0, 0, 20)
     add(new Label("Password") { disable <== noPasswordProperty }, 0, 0)
     add(passwordField, 1, 0)
     add(new Label("Repeat password") { disable <== noPasswordProperty }, 0, 1)
@@ -69,16 +66,16 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
     add(passwordWarningLabel, 0, 2, 2, 1)
   }
 
-  content = new VBox(spacing = 5) {
-    padding = Insets(10, 50, 10, 50)
+  content = new VBox() {
+    styleClass += "wizard-base-pane"
     content = Seq(
-      new Label("Choose a password") { styleClass.add("stepTitle") },
+      new Label("Choose a password") { styleClass.add("wizard-step-title") },
       new Label("You can use a password to protect the information that " +
          "Coinffeine saves in your computer.") {
         wrapText = true
       },
       new VBox() {
-        padding = Insets(5, 10, 0, 10)
+        id = "wizard-password-inputs-pane"
         content = Seq(usePasswordButton, passwordPane, noPasswordButton)
       }
     )

@@ -9,7 +9,7 @@ import scalafx.scene.{Node, Parent, Scene}
 
 import org.controlsfx.control.SegmentedButton
 
-import coinffeine.gui.application.ApplicationScene._
+import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 
 /** Main scene of the application.
   *
@@ -20,13 +20,9 @@ import coinffeine.gui.application.ApplicationScene._
 class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
                        statusBarWidgets: Seq[Node])
-  extends Scene(width = DefaultWidth, height = DefaultHeight) {
+    extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Wallet) {
 
   require(views.nonEmpty, "At least one view is required")
-
-  stylesheets.add("/css/main.css")
-  stylesheets.add("/css/operations.css")
-  stylesheets.add("/css/popup.css")
 
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)
 
@@ -56,6 +52,7 @@ class ApplicationScene(views: Seq[ApplicationView],
 
   root = {
     val mainPane = new BorderPane {
+      id = "main-root-pane"
       top = toolbarPane
       bottom = statusBarPane
     }
@@ -67,9 +64,4 @@ class ApplicationScene(views: Seq[ApplicationView],
 
   private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =
     widgets.flatMap(w => Seq(new Separator, w)).drop(1)
-}
-
-object ApplicationScene {
-  val DefaultWidth = 1024
-  val DefaultHeight = 600
 }

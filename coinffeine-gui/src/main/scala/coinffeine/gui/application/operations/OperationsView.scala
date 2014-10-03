@@ -69,14 +69,13 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
   override def name: String = "Operations"
 
   private val buttonsPane: Pane = new HBox {
+    id = "operations-buttons-pane"
     content = Seq(newOrderButton, cancelButton, toggleDetailsButton)
-    spacing = 10
   }
 
   override def centerPane: Pane = new VBox {
-    margin = Insets(20)
+    id = "operations-center-pane"
     vgrow = Priority.Always
-    spacing = 10
     content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
   }
 }

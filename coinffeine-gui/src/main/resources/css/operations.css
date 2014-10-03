@@ -1,16 +1,55 @@
 /* This file defines the styles for the operations view. */
 
-#operation-details {
+#operations-center-pane {
+    -fx-padding: 20px;
+    -fx-spacing: 10px;
+}
+
+#operations-buttons-pane {
+    -fx-spacing: 10px;
+}
+
+#operations-bid-icon {
+    -fx-image: url('../graphics/operations/bid.gif');
+}
+
+#operations-ask-icon {
+    -fx-image: url('../graphics/operations/ask.gif');
+}
+
+#operations-details-pane {
     -fx-hgap: 5px;
     -fx-vgap: 10px;
     -fx-padding: 10px;
     -fx-height: 200px;
 }
 
-.field-name {
+#operations-details-pane .field-name {
     -fx-label-padding: 0 0 0 10px;
 }
 
-.field-value {
+#operations-details-pane .field-value {
     -fx-font-weight: bold;
+}
+
+#operations-submit-root-pane {
+    -fx-min-width: 550px;
+    -fx-max-width: 550px;
+    -fx-min-height: 250px;
+    -fx-max-height: 250px;
+}
+
+#operations-submit-content-pane {
+    -fx-alignment: center;
+    -fx-pref-width: 600px;
+    -fx-min-width: 600px;
+    -fx-pref-height: 300px;
+    -fx-pref-height: 300px;
+    -fx-padding: 50px;
+    -fx-spacing: 20px;
+}
+
+.operations-submit-declaration-pane {
+    -fx-alignment: center-left;
+    -fx-spacing: 10px;
 }
