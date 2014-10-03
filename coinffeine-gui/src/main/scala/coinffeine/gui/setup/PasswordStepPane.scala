@@ -44,7 +44,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   }
   private val passwordWarningLabel = new Label() {
     id = "wizard-password-warn-label"
-    styleClass.add("errorLabel")
+    styleClass.add("wizard-error-label")
     textAlignment = TextAlignment.CENTER
     alignment = Pos.TOP_CENTER
     disable <== noPasswordProperty
@@ -69,7 +69,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   content = new VBox() {
     styleClass += "wizard-base-pane"
     content = Seq(
-      new Label("Choose a password") { styleClass.add("stepTitle") },
+      new Label("Choose a password") { styleClass.add("wizard-step-title") },
       new Label("You can use a password to protect the information that " +
          "Coinffeine saves in your computer.") {
         wrapText = true

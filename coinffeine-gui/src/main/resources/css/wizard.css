@@ -1,30 +1,47 @@
-.stepTitle {
+/* This file defines the styles for the setup wizard. */
+
+.wizard-step-title {
   -fx-font-size: 16;
 }
 
-.errorProgressBar {
+.wizard-error-progressbar {
   -fx-accent: red;
 }
 
-.errorLabel {
+.wizard-error-label {
   -fx-text-fill: #da4100;
 }
 
-.stepIndexActive Label {
+.wizard-progress-indicator-active Label {
   -fx-text-fill: #ffffff;
 }
 
-.stepIndexInactive Label {
+.wizard-progress-indicator-inactive Label {
   -fx-text-fill: #ccc;
 }
 
-.stepIndexActive Circle {
+.wizard-progress-indicator-active Circle {
   -fx-fill: #51350C;
   -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.6) , 5, 0.0 , 0 , 1 );
 }
 
-.stepIndexInactive Circle {
+.wizard-progress-indicator-inactive Circle {
   -fx-fill: #aaa;
+}
+
+.wizard-progress-indicator Label {
+}
+
+#wizard-header-pane {
+    -fx-pref-height: 50px;
+}
+
+#wizard-header-pane > Label {
+    -fx-font-size: 18;
+}
+
+#wizard-footer-pane {
+    -fx-pref-height: 44px;
 }
 
 #wizard-root-pane {

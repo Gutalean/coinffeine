@@ -30,7 +30,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
     visible <== retrievalError.isNotNull
 
     add(new Label("Please go back and double check your credentials.") {
-      styleClass.add("errorLabel")
+      styleClass.add("wizard-error-label")
       hgrow = Priority.ALWAYS
     }, 0, 0)
     add(new Button("Details") {
@@ -45,13 +45,13 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   def initFields(): Unit = {
     progressHint.text = "Obtaining a token for your OKPay account (this may take a while)..."
     retrievalProgress.progress = -1.0f
-    retrievalProgress.styleClass.removeAll("errorProgressBar")
+    retrievalProgress.styleClass.removeAll("wizard-error-progressbar")
     retrievalError.value = null
   }
 
   def reportError(error: Throwable): Unit = {
     progressHint.text = "Something went wrong while retrieving the token."
-    retrievalProgress.styleClass.add("errorProgressBar")
+    retrievalProgress.styleClass.add("wizard-error-progressbar")
     retrievalProgress.progress = 1.0f
     retrievalError.value = error
   }

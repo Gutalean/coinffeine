@@ -33,9 +33,9 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
 
   private val wizardHeader = {
     val progress = new ProgressIndicator(stepNumber, currentStep).pane
-    val title = new Label("Initial setup") { font = Font(18) }
+    val title = new Label("Initial setup")
     new AnchorPane {
-      prefHeight = 50
+      id = "wizard-header-pane"
       content = Seq(title, progress)
       AnchorPane.setTopAnchor(title, 15)
       AnchorPane.setLeftAnchor(title, 22)
@@ -62,7 +62,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
       content = Seq(backButton, nextButton)
     }
     new AnchorPane {
-      prefHeight = 44
+      id = "wizard-footer-pane"
       content = buttonBox
       AnchorPane.setTopAnchor(buttonBox, 5)
       AnchorPane.setRightAnchor(buttonBox, 15)

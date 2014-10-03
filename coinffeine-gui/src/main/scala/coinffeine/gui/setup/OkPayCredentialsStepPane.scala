@@ -44,7 +44,7 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
     new VBox(spacing = 5) {
       styleClass += "wizard-base-pane"
       content = Seq(
-        new Label("Configure your OKPay account") { styleClass = Seq("stepTitle") },
+        new Label("Configure your OKPay account") { styleClass = Seq("wizard-step-title") },
         new Label("Your credentials are stored locally and never will be shared"),
         grid
       )

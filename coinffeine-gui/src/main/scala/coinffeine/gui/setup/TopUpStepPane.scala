@@ -17,7 +17,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
   content = new VBox() {
     styleClass += "wizard-base-pane"
     content = Seq(
-      new Label("Add bitcoins to your Coinffeine wallet") { styleClass = Seq("stepTitle") },
+      new Label("Add bitcoins to your Coinffeine wallet") { styleClass = Seq("wizard-step-title") },
       new HBox {
         id = "wizard-topup-disclaimer-pane"
         content = Seq(
