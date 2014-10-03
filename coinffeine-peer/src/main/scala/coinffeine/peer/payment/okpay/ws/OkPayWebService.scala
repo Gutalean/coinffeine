@@ -23,17 +23,19 @@ class OkPayWebService(baseAddressOverride: Option[URI])
   override lazy val httpClient = new AsyncHttpClient
 
   class AsyncHttpClient extends HttpClient {
-    val http = new Http(DaemonHttpClientFactory.build())
+    private val daemonHttpClient = new DaemonHttpClient()
+    val http = new Http(daemonHttpClient.client)
 
     override def request(in: String, address: URI, headers: Map[String, String]): Future[String] = {
       val req = url(address.toString).setBodyEncoding("UTF-8") <:< headers << in
       http(req > as.String)
     }
-  }
 
-  def shutdown(): Unit = {
-    OkPayWebService.Log.info("Shutting down OKPay WS client...")
-    httpClient.http.shutdown()
+    def shutdown(): Unit = {
+      OkPayWebService.Log.info("Shutting down OKPay WS client...")
+      http.shutdown()
+      daemonHttpClient.shutdown()
+    }
   }
 }
 
