@@ -57,7 +57,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   private def createSuccessfulExchange() = createExchangeInProgress(1.0).complete
 
   private def createExchangeInProgress(completion: Double) = {
-    val amount = 10.BTC * completion
+    val amount = Bitcoin.closestAmount(10 * completion)
     createRandomExchange()
       .startHandshaking(participants.buyer, participants.seller)
       .startExchanging(dummyDeposits)

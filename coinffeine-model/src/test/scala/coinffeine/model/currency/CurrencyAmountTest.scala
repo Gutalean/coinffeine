@@ -19,9 +19,9 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
     Bitcoin.fromSatoshi(1)
   )
 
-  "A currency amount" should "be converted to indivisible units and back into a currency amount" in {
+  "A currency amount" should "be converted to a big integer and back into a currency amount" in {
     forAll (sampleAmounts) { amount =>
-      CurrencyAmount.fromIndivisibleUnits(amount.toIndivisibleUnits, amount.currency) shouldBe amount
+      CurrencyAmount.exactAmount(amount.value, amount.currency) shouldBe amount
     }
   }
 
@@ -37,7 +37,7 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
 
   it should "be numeric for statically known currencies" in {
     10.BTC - 20.BTC should be <= Bitcoin.Zero
-    1.USD + UsDollar.numeric.fromInt(2) shouldBe 3.USD
+    1.USD + UsDollar.numeric.fromInt(150) shouldBe 2.5.USD
     Seq(1.EUR, 2.EUR, 3.EUR).sum shouldBe 6.EUR
   }
 

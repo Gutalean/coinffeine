@@ -15,47 +15,47 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
   "Bitcoin" must behave like validCurrency(Bitcoin)
 
   it must "detect invalid amounts" in {
-    Bitcoin.amount(0.0000001)
-    Bitcoin.fromSatoshi(BigInt(1).underlying())
-    Bitcoin.amount(0)
-    Bitcoin.amount(-100)
-    an [IllegalArgumentException] should be thrownBy { Bitcoin.amount(3.1415926535) }
+    Bitcoin.exactAmount(0.0000001)
+    Bitcoin(1)
+    Bitcoin.exactAmount(0)
+    Bitcoin.exactAmount(-100)
+    an [ArithmeticException] should be thrownBy { Bitcoin.exactAmount(3.1415926535) }
   }
 
   private def validCurrency(currency: Currency): Unit =  {
 
     it must "represent amounts in its own currency" in {
-      currency.amount(7).currency should be(currency)
+      currency(7).currency should be(currency)
     }
 
     it must "compare amounts of its own currency" in {
-      currency.amount(7).tryCompareTo(currency.amount(10)).get should be < 0
-      currency.amount(7.5).tryCompareTo(currency.amount(7)).get should be > 0
-      currency.amount(2).tryCompareTo(currency.amount(2)).get should be (0)
+      currency(7).tryCompareTo(currency(10)).get should be < 0
+      currency(7.5).tryCompareTo(currency(7)).get should be > 0
+      currency(2).tryCompareTo(currency(2)).get should be (0)
       object FakeCurrency extends Currency {
         override val precision = 2
       }
-      currency.amount(3).tryCompareTo(FakeCurrency.amount(4)) should be (None)
+      currency(3).tryCompareTo(FakeCurrency(4)) shouldBe 'empty
     }
 
     it must "add amounts of its own currency" in {
-      currency.amount(2) + currency.amount(3) should be (currency.amount(5))
+      currency(2) + currency(3) shouldBe currency(5)
     }
 
     it must "subtract amounts of its own currency" in {
-      currency.amount(2) - currency.amount(3) should be (currency.amount(-1))
+      currency(2) - currency(3) shouldBe currency(-1)
     }
 
     it must "multiply amounts of its own currency" in {
-      currency.amount(2) * BigDecimal(4) should be (currency.amount(8))
+      currency(2) * 4 shouldBe currency(8)
     }
 
     it must "divide amounts of its own currency" in {
-      currency.amount(2) / BigDecimal(4) should be (currency.amount(0.5))
+      currency(10) /% currency(3) shouldBe (3, currency(1))
     }
 
     it must "invert amounts of its own currency" in {
-      -currency.amount(2) should be (currency.amount(-2))
+      -currency(2) shouldBe currency(-2)
     }
   }
 
@@ -70,10 +70,10 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
 
   private def validCurrencyWithCents(currency: FiatCurrency): Unit = {
     it must "detect invalid amounts" in {
-      currency.amount(0.01)
-      currency.amount(0)
-      currency.amount(-3.14)
-      a [IllegalArgumentException] should be thrownBy { currency.amount(0.009) }
+      currency(0.01)
+      currency(0)
+      currency(-3.14)
+      a [ArithmeticException] should be thrownBy { currency(0.009) }
     }
   }
 }

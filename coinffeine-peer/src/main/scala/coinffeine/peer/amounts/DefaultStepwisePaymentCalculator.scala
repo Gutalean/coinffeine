@@ -25,7 +25,7 @@ private[amounts] class DefaultStepwisePaymentCalculator(processor: PaymentProces
     val step = processor.bestStepSize(netAmount.currency)
     val (completeSteps, netRemainder) = netAmount /% step
     val remainderStep = if (netRemainder.isPositive) Some(pay(netRemainder)) else None
-    Seq.fill(completeSteps)(pay(step)) ++ remainderStep
+    Seq.fill(completeSteps.toInt)(pay(step)) ++ remainderStep
   }
 
   private def pay[C <: FiatCurrency](netAmount: CurrencyAmount[C]) =

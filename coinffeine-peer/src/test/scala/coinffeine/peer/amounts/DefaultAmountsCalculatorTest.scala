@@ -209,9 +209,12 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
   }
 
   class FixedFeeProcessor(fee: BigDecimal, stepSize: BigDecimal) extends PaymentProcessor {
+
     override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
-      CurrencyAmount(fee, amount.currency)
-    override def bestStepSize[C <: FiatCurrency](currency: C) = CurrencyAmount(stepSize, currency)
+      CurrencyAmount.exactAmount(fee, amount.currency)
+
+    override def bestStepSize[C <: FiatCurrency](currency: C) =
+      CurrencyAmount.exactAmount(stepSize, currency)
   }
 
   private def pairsOf[A](elems: Iterable[A]): Seq[(A, A)] = elems.iterator.sliding(2, 1)
