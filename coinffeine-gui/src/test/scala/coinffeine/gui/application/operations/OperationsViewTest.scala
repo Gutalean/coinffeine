@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations
 
 import javafx.collections.ObservableList
-import javafx.scene.control.{Button, TableRow, TableView}
+import javafx.scene.control._
 import javafx.scene.{Node, Parent}
 import scala.collection.JavaConversions._
 import scalafx.scene.layout.Pane
@@ -10,7 +10,7 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
-import coinffeine.gui.application.properties.OrderProperties
+import coinffeine.gui.application.properties.OperationProperties
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.impl.MockCoinffeineApp
@@ -25,7 +25,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   "The operations view" must "show no orders when no orders was found" in new Fixture {
-    ordersTable.itemsProperty().get() should be ('empty)
+    ordersTable.getRoot.getChildren should be ('empty)
   }
 
   it must "show an order once submitted" in new Fixture {
@@ -48,23 +48,23 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
   it must "disable cancel button when a non-cancellable order is selected" in new OrderIsPresentFixture {
     cancelOrder()
-    eventually { click(ordersTableRow(0)) }
+    eventually { click(ordersTableRow(3)) }
     cancelButton should be ('disabled)
   }
 
   it must "disable cancel button when already selected order is cancelled" in new OrderIsPresentFixture {
-    eventually { click(ordersTableRow(0)) }
+    eventually { click(ordersTableRow(4)) }
     cancelOrder()
     eventually { cancelButton should be ('disabled) }
   }
 
   private def cancelButton = find[Button]("#cancelOrderBtn")
-  private def ordersTable = find[TableView[OrderProperties]]("#ordersTable")
-  private def shownOrders = ordersTable.itemsProperty().get()
+  private def ordersTable = findAll("#operations-table").last.asInstanceOf[TreeTableView[OperationProperties]]
+  private def shownOrders = ordersTable.getRoot.getChildren.map(_.getValue)
 
-  private def ordersTableRow(rowIndex: Int): TableRow[OrderProperties] = {
+  private def ordersTableRow(rowIndex: Int): TreeTableRow[OperationProperties] = {
 
-    type RowType = TableRow[OrderProperties]
+    type RowType = TreeTableRow[OperationProperties]
 
     def toRowTypeSeq(lst: ObservableList[Node]): Seq[RowType] = {
       var result: Seq[RowType] = Seq.empty
@@ -89,8 +89,8 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     findTableRowChildren(ordersTable)(rowIndex)
   }
 
-  private def find(orderId: OrderId): Option[OrderProperties] =
-    shownOrders.find(_.idProperty.value == orderId)
+  private def find(orderId: OrderId): Option[OperationProperties] =
+    shownOrders.find(_.idProperty.value == orderId.value)
 
   trait OrderIsPresentFixture extends Fixture {
     val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
@@ -111,7 +111,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     def assertOnStatusChange(newStatus: OrderStatus): Unit = {
       app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
       eventually {
-        find(sampleOrder.id).get.statusProperty.get should be (newStatus)
+        find(sampleOrder.id).get.statusProperty.get should be (newStatus.name.capitalize)
       }
     }
   }
