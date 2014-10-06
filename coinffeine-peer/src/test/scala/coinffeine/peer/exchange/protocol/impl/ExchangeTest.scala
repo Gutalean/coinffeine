@@ -10,7 +10,7 @@ import coinffeine.peer.bitcoin.SmartWallet
 trait ExchangeTest extends BitcoinjTest {
 
   def valueSent(tx: ImmutableTransaction, wallet: SmartWallet): Bitcoin.Amount =
-    Bitcoin.fromSatoshi(tx.get.getValueSentToMe(wallet.delegate))
+    tx.get.getValueSentToMe(wallet.delegate)
 
   /** Fixture with just a fresh protocol object */
   trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
@@ -46,8 +46,9 @@ trait ExchangeTest extends BitcoinjTest {
       seller = sellerHandshake.myDeposit
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
-    require(protocol.validateDeposits(commitments, amounts, Both.fromSeq(requiredSignatures))
-      .forall(_.isSuccess))
+    private val validation = protocol.validateDeposits(
+      commitments, amounts, Both.fromSeq(requiredSignatures), parameters.network)
+    require(validation.forall(_.isSuccess))
     val buyerRunningExchange = buyerHandshakingExchange.startExchanging(commitments)
     val sellerRunningExchange = sellerHandshakingExchange.startExchanging(commitments)
     val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)

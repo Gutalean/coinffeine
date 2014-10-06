@@ -3,8 +3,8 @@ package coinffeine.peer.bitcoin
 import scala.concurrent.duration._
 
 import akka.actor.Props
-import com.google.bitcoin.core.{Wallet, FullPrunedBlockChain, PeerGroup}
-import com.google.bitcoin.store.MemoryFullPrunedBlockStore
+import org.bitcoinj.core.{FullPrunedBlockChain, PeerGroup}
+import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 

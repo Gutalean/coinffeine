@@ -3,8 +3,8 @@ package coinffeine.peer.bitcoin.blockchain
 import java.util
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.AbstractBlockChain.NewBlockType
-import com.google.bitcoin.core._
+import org.bitcoinj.core.AbstractBlockChain.NewBlockType
+import org.bitcoinj.core._
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, Hash}
@@ -37,27 +37,27 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
 
   def watchTransactionConfirmation(tx: Hash,
                                    confirmations: Int,
-                                   listener: ConfirmationListener): Unit = {
+                                   listener: ConfirmationListener): Unit = synchronized {
     confirmationSubscriptions += tx -> ConfirmationSubscription(tx, listener, confirmations)
   }
 
-  def watchHeight(height: Long, listener: HeightListener): Unit = {
+  def watchHeight(height: Long, listener: HeightListener): Unit = synchronized {
     heightSubscriptions += HeightSubscription(height, listener)
   }
 
-  def watchOutput(output: TransactionOutPoint, listener: OutputListener): Unit = {
+  def watchOutput(output: TransactionOutPoint, listener: OutputListener): Unit = synchronized {
     val updatedListeners = outputSubscriptions(output) + listener
     outputSubscriptions += output -> updatedListeners
   }
 
-  override def notifyNewBestBlock(block: StoredBlock): Unit = {
+  override def notifyNewBestBlock(block: StoredBlock): Unit = synchronized {
     val currentHeight = block.getHeight
     notifyConfirmedTransactions(currentHeight)
     notifyHeight(currentHeight)
   }
 
   override def reorganize(splitPoint: StoredBlock, oldBlocks: util.List[StoredBlock],
-                          newBlocks: util.List[StoredBlock]): Unit = {
+                          newBlocks: util.List[StoredBlock]): Unit = synchronized {
     val seenTxs = confirmationSubscriptions.values.filter(_.foundInBlock.isDefined)
     val rejectedTransactions = seenTxs.filterNot(tx =>
       newBlocks.toSeq.exists(block => block.getHeader.getHash == tx.foundInBlock.get.hash))
@@ -75,16 +75,17 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
     newBlocks.sortBy(_.getHeight).foreach(notifyNewBestBlock)
   }
 
-  override def isTransactionRelevant(tx: Transaction): Boolean =
+  override def isTransactionRelevant(tx: Transaction): Boolean = synchronized {
     confirmationSubscriptions.contains(tx.getHash) || isSpendingWatchedOutputs(tx)
+  }
 
-  private def isSpendingWatchedOutputs(tx: Transaction): Boolean = {
+  private def isSpendingWatchedOutputs(tx: Transaction): Boolean = synchronized {
     val spentOutputs = tx.getInputs.map(_.getOutpoint).toSet
     outputSubscriptions.keySet.intersect(spentOutputs).nonEmpty
   }
 
   override def receiveFromBlock(tx: Transaction, block: StoredBlock,
-                                blockType: NewBlockType, relativityOffset: Int): Unit = {
+                                blockType: NewBlockType, relativityOffset: Int): Unit = synchronized {
     updateConfirmationSubscriptions(tx.getHash, block)
     notifySpentOutputs(tx)
   }

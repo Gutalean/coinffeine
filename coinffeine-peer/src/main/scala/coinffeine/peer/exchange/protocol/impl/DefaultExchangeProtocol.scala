@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, PublicKey}
+import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._
@@ -16,7 +16,8 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   private def requireValidDeposit[C <: FiatCurrency](exchange: HandshakingExchange[C],
                                                      deposit: ImmutableTransaction): Unit = {
-    val validator = new DepositValidator(exchange.amounts, exchange.participants.map(_.bitcoinKey))
+    val validator = new DepositValidator(
+      exchange.amounts, exchange.participants.map(_.bitcoinKey), exchange.parameters.network)
     val validation = exchange.role match {
       case BuyerRole => validator.requireValidBuyerFunds _
       case SellerRole => validator.requireValidSellerFunds _
@@ -29,8 +30,9 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
-                                requiredSignatures: Both[PublicKey]) =
-    new DepositValidator(amounts, requiredSignatures).validate(transactions)
+                                requiredSignatures: Both[PublicKey],
+                                network: Network) =
+    new DepositValidator(amounts, requiredSignatures, network).validate(transactions)
 }
 
 object DefaultExchangeProtocol {

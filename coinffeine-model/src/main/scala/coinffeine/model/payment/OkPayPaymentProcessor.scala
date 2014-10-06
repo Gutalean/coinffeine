@@ -20,11 +20,11 @@ object OkPayPaymentProcessor extends PaymentProcessor {
 
   override def bestStepSize[C <: FiatCurrency](currency: C): CurrencyAmount[C] = {
     requireSupported(currency)
-    CurrencyAmount(2, currency)
+    CurrencyAmount.exactAmount(2, currency)
   }
 
   private def roundUp[C <: FiatCurrency](amount: BigDecimal, currency: C): CurrencyAmount[C] =
-    CurrencyAmount(amount.setScale(currency.precision, RoundingMode.UP), currency)
+    CurrencyAmount.exactAmount(amount.setScale(currency.precision, RoundingMode.UP), currency)
 
   private def requireSupported(currency: FiatCurrency): Unit = {
     require(SupportedCurrencies.contains(currency),

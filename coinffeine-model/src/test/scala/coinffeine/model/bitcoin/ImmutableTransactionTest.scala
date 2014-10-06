@@ -7,14 +7,14 @@ class ImmutableTransactionTest extends BitcoinjTest {
 
   "Immutable transaction" must "produce the same transaction it was created with" in {
     val wallet = createWallet(new KeyPair(), 1.BTC)
-    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC.asSatoshi)
+    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     tx.get should be (origTx)
   }
 
   it must "not be affected by changes in the original transaction" in {
     val wallet = createWallet(new KeyPair(), 1.BTC)
-    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC.asSatoshi)
+    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     origTx.setLockTime(1000)
     tx.get should not be origTx
@@ -22,7 +22,7 @@ class ImmutableTransactionTest extends BitcoinjTest {
 
   it must "produce independent copies" in {
     val wallet = createWallet(new KeyPair(), 1.BTC)
-    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC.asSatoshi)
+    val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     val copy1 = tx.get
     val copy2 = tx.get
@@ -42,7 +42,7 @@ class ImmutableTransactionTest extends BitcoinjTest {
     val immutableTx1 = new ImmutableTransaction(origTx)
     val immutableTx2 = new ImmutableTransaction(origTx)
     val immutableTx3 = new ImmutableTransaction(
-      wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC.asSatoshi))
+      wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC))
 
     immutableTx1 should equal (immutableTx1)
     immutableTx1 should equal (immutableTx2)

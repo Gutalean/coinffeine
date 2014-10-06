@@ -2,8 +2,8 @@ package coinffeine.model.bitcoin
 
 import java.net.InetAddress
 
-import com.google.bitcoin.core.PeerAddress
-import com.google.bitcoin.params.TestNet3Params
+import org.bitcoinj.core.PeerAddress
+import org.bitcoinj.params.TestNet3Params
 
 trait IntegrationTestNetworkComponent extends NetworkComponent {
 

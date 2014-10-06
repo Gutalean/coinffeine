@@ -207,8 +207,10 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
           seller = Bitcoin(ProtoMapping.fromProtobuf(orderMatch.getSellerBitcoinAmount))
         ),
         fiatAmount = Both(
-          buyer = CurrencyAmount(ProtoMapping.fromProtobuf(orderMatch.getBuyerFiatAmount), currency),
-          seller = CurrencyAmount(ProtoMapping.fromProtobuf(orderMatch.getSellerFiatAmount), currency)
+          buyer = CurrencyAmount.exactAmount(
+            ProtoMapping.fromProtobuf(orderMatch.getBuyerFiatAmount), currency),
+          seller = CurrencyAmount.exactAmount(
+            ProtoMapping.fromProtobuf(orderMatch.getSellerFiatAmount), currency)
         ),
         lockTime = orderMatch.getLockTime,
         counterpart = PeerId(orderMatch.getCounterpart)

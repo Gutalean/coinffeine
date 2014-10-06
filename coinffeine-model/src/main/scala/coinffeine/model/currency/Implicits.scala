@@ -1,8 +1,10 @@
 package coinffeine.model.currency
 
-trait Implicits {
+import scala.language.implicitConversions
 
-  import scala.language.implicitConversions
+import org.bitcoinj.core.Coin
+
+trait Implicits {
 
   implicit val bitcoinIsNumeric = Bitcoin.numeric
   implicit val euroIsNumeric = Euro.numeric
@@ -15,6 +17,10 @@ trait Implicits {
   implicit def pimpMyDouble(i: Double) = new Implicits.Units(i)
   implicit def pimpMyDecimal(i: BigDecimal) = new Implicits.Units(i)
   implicit def pimpMyInt(i: Int) = new Implicits.Units(i)
+
+  implicit def convertToBitcoinjCoin(amount: Bitcoin.Amount): Coin = Coin.valueOf(amount.units)
+  implicit def convertToBitcoinAmount(amount: Coin): Bitcoin.Amount =
+    CurrencyAmount(amount.value, Bitcoin)
 }
 
 object Implicits {

@@ -4,18 +4,14 @@ import java.lang.Boolean
 import scala.util.control.NonFatal
 import scalafx.Includes._
 import scalafx.beans.property.{BooleanProperty, ObjectProperty}
-import scalafx.geometry.{Insets, Orientation, Pos}
-import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.layout._
 import scalafx.stage.{Modality, Stage, StageStyle}
 
-import com.google.bitcoin.core.Address
-
 import coinffeine.gui.control.CurrencyTextField
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.bitcoin.WalletProperties
+import coinffeine.model.bitcoin.{Address, WalletProperties}
 import coinffeine.model.currency._
 
 class WithdrawFundsForm(props: WalletProperties) {

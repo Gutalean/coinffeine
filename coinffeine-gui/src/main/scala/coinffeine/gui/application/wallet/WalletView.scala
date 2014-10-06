@@ -1,7 +1,7 @@
 package coinffeine.gui.application.wallet
 
 import scalafx.Includes._
-import scalafx.geometry.{HPos, Insets, Pos}
+import scalafx.geometry.HPos
 import scalafx.scene.Node
 import scalafx.scene.control.TableColumn._
 import scalafx.scene.control.{Button, Label, TableColumn, TableView}
@@ -9,14 +9,13 @@ import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
-import com.google.bitcoin.core.Sha256Hash
 import org.joda.time.DateTime
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.bitcoin.Address
+import coinffeine.model.bitcoin.{Address, Hash}
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.peer.api.CoinffeineApp
 
@@ -126,7 +125,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
         text = "Time"
         cellValueFactory = { _.value.time }
       },
-      new TableColumn[WalletActivityEntryProperties, Sha256Hash] {
+      new TableColumn[WalletActivityEntryProperties, Hash] {
         text = "Hash"
         cellValueFactory = { _.value.hash }
       },

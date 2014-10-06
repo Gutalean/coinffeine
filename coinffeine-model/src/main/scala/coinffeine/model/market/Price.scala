@@ -23,10 +23,8 @@ case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
   /** Price of a given bitcoin amount. The result is rounded to the precision of the currency. */
   def of(amount: Bitcoin.Amount): CurrencyAmount[C] = {
     require(amount.isPositive, s"Cannot price a non-positive amount ($amount given)")
-    val exactAmount = value * amount.value
-    val roundedAmount = exactAmount.setScale(currency.precision, RoundingMode.HALF_EVEN)
-    if (roundedAmount.signum > 0) CurrencyAmount(roundedAmount, currency)
-    else CurrencyAmount.smallestAmount(currency)
+    val closestAmount = CurrencyAmount.closestAmount(value * amount.value, currency)
+    closestAmount max CurrencyAmount.smallestAmount(currency)
   }
 
   override def toString = s"$normalisedValue $currency/BTC"

@@ -2,16 +2,18 @@ package coinffeine.peer.bitcoin
 
 import scala.util.control.NonFatal
 
-import com.google.bitcoin.core.{Transaction, TransactionBroadcaster}
 import com.google.common.util.concurrent.{ListenableFuture, SettableFuture}
+import org.bitcoinj.core.TransactionBroadcaster
+
+import coinffeine.model.bitcoin.MutableTransaction
 
 class MockTransactionBroadcaster extends TransactionBroadcaster {
 
-  private var onBroadcast: Transaction => Transaction = recallTransaction
-  private var _lastBroadcast: Option[Transaction] = None
+  private var onBroadcast: MutableTransaction => MutableTransaction = recallTransaction
+  private var _lastBroadcast: Option[MutableTransaction] = None
 
-  override def broadcastTransaction(tx: Transaction): ListenableFuture[Transaction] = {
-    val result = SettableFuture.create[Transaction]()
+  override def broadcastTransaction(tx: MutableTransaction): ListenableFuture[MutableTransaction] = {
+    val result = SettableFuture.create[MutableTransaction]()
     try {
       result.set(onBroadcast(tx))
     } catch {
@@ -20,7 +22,7 @@ class MockTransactionBroadcaster extends TransactionBroadcaster {
     result
   }
 
-  def lastBroadcast: Option[Transaction] = _lastBroadcast
+  def lastBroadcast: Option[MutableTransaction] = _lastBroadcast
 
   def givenSuccessOnTransactionBroadcast(): Unit = {
     onBroadcast = recallTransaction
@@ -30,12 +32,12 @@ class MockTransactionBroadcaster extends TransactionBroadcaster {
     onBroadcast = throwError(error)
   }
 
-  private def recallTransaction(tx: Transaction): Transaction = {
+  private def recallTransaction(tx: MutableTransaction): MutableTransaction = {
     _lastBroadcast = Some(tx)
     tx
   }
 
-  private def throwError(error: Throwable)(tx: Transaction): Transaction = {
+  private def throwError(error: Throwable)(tx: MutableTransaction): MutableTransaction = {
     throw error
   }
 }

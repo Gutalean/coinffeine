@@ -2,7 +2,6 @@ package coinffeine.protocol.serialization
 
 import java.math.BigInteger
 
-import com.google.bitcoin.params.UnitTestParams
 import com.google.protobuf.{ByteString, Message}
 
 import coinffeine.common.test.UnitTest
@@ -31,15 +30,15 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
                                              (implicit mapping: ProtoMapping[T, M]): Unit = {
 
     it should "convert the case class into the protobuf message" in {
-      ProtoMapping.toProtobuf(obj) should be (msg)
+      ProtoMapping.toProtobuf(obj) shouldBe msg
     }
 
     it should "convert to protobuf message to the case class" in {
-      ProtoMapping.fromProtobuf(msg) should be (obj)
+      ProtoMapping.fromProtobuf(msg) shouldBe obj
     }
 
     it should "convert to protobuf and back again" in {
-      ProtoMapping.fromProtobuf(ProtoMapping.toProtobuf(obj)) should be (obj)
+      ProtoMapping.fromProtobuf(ProtoMapping.toProtobuf(obj)) shouldBe obj
     }
   }
 
@@ -194,7 +193,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
 
   "Peer handshake" must behave like thereIsAMappingBetween(peerHandshake, peerHandshakeMessage)
 
-  val refundTx = ImmutableTransaction(new MutableTransaction(UnitTestParams.get()))
+  val refundTx = ImmutableTransaction(new MutableTransaction(network))
   val refundSignatureRequest = RefundSignatureRequest(sampleExchangeId, refundTx)
   val refundSignatureRequestMessage = msg.RefundSignatureRequest.newBuilder()
     .setExchangeId(sampleExchangeId.value)

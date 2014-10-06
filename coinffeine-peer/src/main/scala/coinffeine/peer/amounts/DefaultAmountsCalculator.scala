@@ -30,9 +30,9 @@ private[amounts] class DefaultAmountsCalculator(
       * most one satoshi. */
     val bitcoinBreakdown: Seq[Bitcoin.Amount] = ProportionalAllocation
       .allocate(
-        amount = netBitcoinAmount.toIndivisibleUnits,
-        weights = fiatBreakdown.map(_.netAmount.toIndivisibleUnits).toVector)
-      .map(satoshis => CurrencyAmount.fromIndivisibleUnits(satoshis, Bitcoin))
+        amount = netBitcoinAmount.units,
+        weights = fiatBreakdown.map(_.netAmount.units).toVector)
+      .map(satoshis => CurrencyAmount(satoshis, Bitcoin))
 
     val maxBitcoinStepSize: Bitcoin.Amount = bitcoinBreakdown.max
 

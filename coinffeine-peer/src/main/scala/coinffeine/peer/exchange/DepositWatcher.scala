@@ -3,7 +3,7 @@ package coinffeine.peer.exchange
 import scala.collection.JavaConverters._
 
 import akka.actor.{Actor, ActorRef}
-import com.google.bitcoin.core.TransactionOutPoint
+import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
@@ -40,12 +40,9 @@ class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
       collaborators.listener ! DepositWatcher.DepositSpent(spendTx, depositUse)
   }
 
-  private def amountForMe(tx: MutableTransaction): Bitcoin.Amount = {
-    val userOutputs =
-      for (output <- tx.getOutputs.asScala if sentToUserKey(output))
-      yield Bitcoin.fromSatoshi(output.getValue)
-    userOutputs.foldLeft(Bitcoin.Zero)(_ + _)
-  }
+  private def amountForMe(tx: MutableTransaction): Bitcoin.Amount =
+    (for (output <- tx.getOutputs.asScala if sentToUserKey(output))
+      yield Bitcoin.fromSatoshi(output.getValue.value)).sum
 
   private def sentToUserKey(output: MutableTransactionOutput): Boolean = {
     val script = output.getScriptPubKey

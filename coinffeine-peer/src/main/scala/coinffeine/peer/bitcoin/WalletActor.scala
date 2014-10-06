@@ -45,7 +45,7 @@ private class WalletActor(
       wallet.releaseTransaction(tx)
 
     case CreateKeyPair =>
-      sender() ! KeyPairCreated(wallet.createKeyPair())
+      sender() ! KeyPairCreated(wallet.freshKeyPair())
 
     case InternalWalletChanged =>
       updateBalance()
@@ -72,8 +72,8 @@ private class WalletActor(
   }
 
   private def updateActivity(): Unit = {
-    val transations = wallet.delegate.getTransactionsByTime
-    properties.activity.set(WalletActivity(wallet.delegate, transations: _*))
+    val transactions = wallet.delegate.getTransactionsByTime
+    properties.activity.set(WalletActivity(wallet.delegate, transactions: _*))
   }
 
   private def updateBalance(): Unit = {
@@ -86,7 +86,7 @@ private class WalletActor(
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
-    properties.primaryAddress.set(wallet.addresses.headOption)
+    properties.primaryAddress.set(Some(wallet.currentReceiveAddress))
   }
 
   private def subscribeToWalletChanges(): Unit = {

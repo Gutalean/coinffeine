@@ -15,13 +15,13 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   "The wallet actor" must "update wallet primary address upon start" in new Fixture {
     eventually {
-      properties.primaryAddress.get should be (Some(keyPair.toAddress(network)))
+      properties.primaryAddress.get shouldBe Some(wallet.currentReceiveAddress)
     }
   }
 
   it must "update the balance upon start" in new Fixture {
     eventually {
-      properties.balance.get should be (Some(initialBalance))
+      properties.balance.get shouldBe Some(initialBalance)
     }
   }
 
@@ -29,7 +29,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val req = WalletActor.CreateTransaction(1.BTC, someAddress)
     instance ! req
     val WalletActor.TransactionCreated(`req`, tx) = expectMsgType[WalletActor.TransactionCreated]
-    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate)) should be (-1.BTC)
+    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.BTC)
   }
 
   it must "fail to create a new transaction when insufficient balance" in new Fixture {
@@ -45,8 +45,8 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     instance ! request
     expectMsgPF() {
       case WalletActor.DepositCreated(`request`, tx) =>
-        wallet.value(tx.get) should be (-1.1.BTC)
-        Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue) should be (1.BTC)
+        wallet.value(tx.get) shouldBe (-1.1.BTC)
+        Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue.value) shouldBe 1.BTC
     }
   }
 
@@ -66,7 +66,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
     eventually {
-      wallet.estimatedBalance should be(initialBalance.amount)
+      wallet.estimatedBalance shouldBe initialBalance.amount
     }
   }
 
@@ -79,18 +79,19 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     sendMoneyToWallet(wallet.delegate, 1.BTC)
     val expectedBalance = balancePlusOutputAmount(initialBalance, 1.BTC)
     eventually {
-      properties.balance.get should be (Some(expectedBalance))
+      properties.balance.get shouldBe Some(expectedBalance)
     }
   }
 
   it must "notify on wallet changes until being unsubscribed" in new Fixture {
     instance ! SubscribeToWalletChanges
+    expectMsg(WalletChanged)
     expectNoMsg(100.millis)
-    wallet.delegate.addKey(new KeyPair)
+    wallet.delegate.importKey(new KeyPair)
     expectMsg(WalletChanged)
     instance ! UnsubscribeToWalletChanges
     expectNoMsg(100.millis)
-    wallet.delegate.addKey(new KeyPair)
+    wallet.delegate.importKey(new KeyPair)
     expectNoMsg(100.millis)
   }
 

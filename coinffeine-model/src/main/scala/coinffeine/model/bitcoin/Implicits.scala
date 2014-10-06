@@ -1,9 +1,9 @@
 package coinffeine.model.bitcoin
 
-import java.math.BigInteger
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.script.ScriptBuilder
+import org.bitcoinj.core.Coin
+import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.currency._
 
@@ -17,25 +17,24 @@ object Implicits {
       val changeAmount = inputAmount - spentAmount
       require(!changeAmount.isNegative)
       if (changeAmount.isPositive) {
-        tx.addOutput((inputAmount - spentAmount).asSatoshi, changeAddress)
+        tx.addOutput(inputAmount - spentAmount, changeAddress)
       }
     }
 
     def addMultisignOutput(amount: Bitcoin.Amount, requiredSignatures: Seq[PublicKey]): Unit = {
       require(requiredSignatures.size > 1, "should have at least two signatures")
       tx.addOutput(
-        amount.asSatoshi,
+        amount,
         ScriptBuilder.createMultiSigOutputScript(requiredSignatures.size, requiredSignatures)
       )
     }
 
-    def outputAmount: Bitcoin.Amount = Bitcoin.fromSatoshi(
-      tx.getOutputs.foldLeft(BigInteger.ZERO)((a, b) => a.add(b.getValue)))
+    def outputAmount: Bitcoin.Amount = tx.getOutputs.foldLeft(Coin.ZERO)((a, b) => a.add(b.getValue))
   }
 
   implicit class PimpMyKeyPair(val keyPair: KeyPair) extends AnyVal {
 
     /** Copies just the public key */
-    def publicKey: PublicKey = new PublicKey(null, keyPair.getPubKey)
+    def publicKey: PublicKey = PublicKey(keyPair.getPubKey)
   }
 }

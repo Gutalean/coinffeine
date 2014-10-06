@@ -11,34 +11,38 @@ import scala.util.Try
   *   def myFunction[C <: Currency](amount: CurrencyAmount[C]): Unit { ... }
   * }}}
   *
+  * @param units     Number of indivisible units on this currency amount
+  * @param currency  Currency this amount is of
   * @tparam C The type of currency this amount is represented in
   */
-case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
+case class CurrencyAmount[C <: Currency](units: Long, currency: C)
   extends PartiallyOrdered[CurrencyAmount[C]] {
 
   require(currency.isValidAmount(value), s"Invalid amount for $currency: $value")
 
-  def +(other: CurrencyAmount[C]): CurrencyAmount[C] =
-    copy(value = value + other.value)
-  def -(other: CurrencyAmount[C]): CurrencyAmount[C] =
-    copy(value = value - other.value)
-  def * (mult: BigDecimal): CurrencyAmount[C] = copy(value = value * mult)
-  def / (divisor: BigDecimal): CurrencyAmount[C] = copy(value = value / divisor)
-  def /%(divisor: CurrencyAmount[C]): (Int, CurrencyAmount[C]) = {
-    val (division, remainder) = value /% divisor.value
-    (division.toIntExact, copy(remainder))
+  lazy val value: BigDecimal = BigDecimal(units) / currency.UnitsInOne
+
+  def +(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units + other.units)
+  def -(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units - other.units)
+  def *(mult: Long): CurrencyAmount[C] = copy(units = units * mult)
+  def *(mult: BigDecimal): CurrencyAmount[C] = CurrencyAmount.exactAmount(value * mult, currency)
+  def /(divisor: Long): CurrencyAmount[C] = {
+    require(units % divisor == 0, "Division with remainder")
+    copy(units = units / divisor)
   }
-  def unary_- : CurrencyAmount[C] = copy(value = -value)
+  def /%(other: CurrencyAmount[C]): (Long, CurrencyAmount[C]) =
+    (units / other.units, copy(units % other.units))
+  def unary_- : CurrencyAmount[C] = copy(units = -units)
 
   def min(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    if (this.value <= that.value) this else that
+    if (this.units <= that.units) this else that
   def max(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    if (this.value >= that.value) this else that
+    if (this.units >= that.units) this else that
   def averageWith(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    CurrencyAmount.closestAmount((this.value + that.value) / 2, currency)
+    CurrencyAmount((this.units + that.units) / 2, currency)
 
-  val isPositive = value > 0
-  val isNegative = value < 0
+  val isPositive = units > 0
+  val isNegative = units < 0
 
   /** Convert this amount to an integer number of the minimum indivisible units. This means
     * cents for Euro/Dollar and Satoshis for Bitcoin. */
@@ -52,12 +56,8 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
       thatAmount
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
-  /** Return a canonical version of the amount with scale set to currency precision */
-  def canonical: CurrencyAmount[C] =
-    if (value.scale == currency.precision) this
-    else copy(value = value.setScale(currency.precision, RoundingMode.UNNECESSARY))
-
-  override def toString = "%s %s".format(canonical.value.underlying().toPlainString, currency)
+  override def toString = s"%d.%0${currency.precision}d %s".format(
+    units / currency.UnitsInOne, units % currency.UnitsInOne, currency)
 
   def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
     currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
@@ -66,14 +66,22 @@ case class CurrencyAmount[C <: Currency](value: BigDecimal, currency: C)
 object CurrencyAmount {
   def zero[C <: Currency](currency: C): CurrencyAmount[C] = CurrencyAmount(0, currency)
 
-  def smallestAmount[C <: Currency](currency: C) = {
-    val smallestUnit = Seq.fill(currency.precision)(10).foldLeft(BigDecimal(1))(_ / _)
-    CurrencyAmount(smallestUnit, currency)
-  }
+  def smallestAmount[C <: Currency](currency: C) = CurrencyAmount(1, currency)
 
-  def fromIndivisibleUnits[C <: Currency](units: BigInt, currency: C): CurrencyAmount[C] =
-    smallestAmount(currency) * BigDecimal(units)
+  def fromIndivisibleUnits[C <: Currency](units: Long, currency: C): CurrencyAmount[C] =
+    CurrencyAmount(units, currency)
 
   def closestAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
-    CurrencyAmount(value.setScale(currency.precision, RoundingMode.HALF_EVEN), currency)
+    toAmount(value, currency, RoundingMode.HALF_EVEN)
+
+  @throws[ArithmeticException]("when the amount exceeds currency precision")
+  def exactAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
+    toAmount(value, currency, RoundingMode.UNNECESSARY)
+
+  private def toAmount[C <: Currency](value: BigDecimal,
+                                      currency: C,
+                                      roundingMode: RoundingMode.Value): CurrencyAmount[C] = {
+    val units = value.setScale(currency.precision, roundingMode) * currency.UnitsInOne
+    CurrencyAmount(units.toLong, currency)
+  }
 }

@@ -26,7 +26,7 @@ private[bitcoin] class BlockedOutputs {
     }
 
     def reservedAmount: Bitcoin.Amount = reservedOutputs.toSeq
-      .map(o => Bitcoin.fromSatoshi(o.getValue)).sum
+      .map(o => Bitcoin(o.getValue.value)).sum
   }
 
   private var nextId = 1
@@ -35,19 +35,15 @@ private[bitcoin] class BlockedOutputs {
 
   def minOutput: Option[Bitcoin.Amount] = spendableAndNotBlocked
     .toSeq
-    .map(output => Bitcoin.fromSatoshi(output.getValue))
+    .map(output => Bitcoin.fromSatoshi(output.getValue.value))
     .sortBy(_.value)
     .headOption
 
-  def blocked: Bitcoin.Amount = blockedOutputs.foldLeft(0.BTC)((acum, output) =>
-    acum + Bitcoin.fromSatoshi(output.getValue)
-  )
+  def blocked: Bitcoin.Amount = sumOutputs(blockedOutputs)
 
   def available: Bitcoin.Amount = spendable - blocked
 
-  def spendable: Bitcoin.Amount = spendableOutputs.foldLeft(0.BTC)((acum, output) =>
-    acum + Bitcoin.fromSatoshi(output.getValue)
-  )
+  def spendable: Bitcoin.Amount = sumOutputs(spendableOutputs)
 
   def setSpendCandidates(spendCandidates: Outputs): Unit = {
     spendableOutputs = spendCandidates
@@ -88,7 +84,7 @@ private[bitcoin] class BlockedOutputs {
       case Seq() => None
       case Seq(candidate, remainingCandidates @ _*) =>
         collectFundsGreedily(
-          remainingAmount - Bitcoin.fromSatoshi(candidate.getValue),
+          remainingAmount - candidate.getValue,
           remainingCandidates,
           alreadyCollected + candidate
         )
@@ -104,6 +100,9 @@ private[bitcoin] class BlockedOutputs {
     nextId += 1
     coinsId
   }
+
+  private def sumOutputs(outputs: Outputs): Bitcoin.Amount =
+    outputs.foldLeft(Bitcoin.Zero)(_ + _.getValue)
 }
 
 object BlockedOutputs {

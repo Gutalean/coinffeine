@@ -1,15 +1,13 @@
 package coinffeine.model.bitcoin.test
 
 import java.io.File
-import java.math.BigInteger
 import java.util.concurrent.locks.{Lock, ReentrantLock}
 import scala.annotation.tailrec
-import scala.collection.JavaConversions._
 import scala.util.Try
 
-import com.google.bitcoin.core.{FullPrunedBlockChain, StoredBlock}
-import com.google.bitcoin.store.H2FullPrunedBlockStore
-import com.google.bitcoin.utils.BriefLogFormatter
+import org.bitcoinj.core.{FullPrunedBlockChain, StoredBlock}
+import org.bitcoinj.store.H2FullPrunedBlockStore
+import org.bitcoinj.utils.BriefLogFormatter
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
@@ -34,9 +32,9 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   def chainHead(): StoredBlock = chain.getChainHead
 
   def withFees[A](body: => A) = {
-    Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee.asSatoshi
+    Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     val result = Try(body)
-    Wallet.defaultFeePerKb = BigInteger.ZERO
+    Wallet.defaultFeePerKb = Bitcoin.Zero
     result.get
   }
 
@@ -48,7 +46,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
   def createWallet(key: KeyPair): Wallet = {
     val wallet = createWallet()
-    wallet.addKey(key)
+    wallet.importKey(key)
     wallet
   }
 
@@ -64,11 +62,10 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
     val miner = new KeyPair
     val minerWallet = createWallet(miner)
     while (
-      Bitcoin.fromSatoshi(minerWallet.getBalance) < amount) {
+      minerWallet.getBalance < amount) {
       mineBlock(miner)
     }
-    sendToBlockChain(minerWallet.createSend(
-      wallet.getKeys.head.toAddress(network), amount.asSatoshi))
+    sendToBlockChain(minerWallet.createSend(wallet.freshReceiveAddress(), amount))
   }
 
   /** Mine a block and send the coinbase reward to the passed key. */
@@ -98,8 +95,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
         throw new IllegalStateException(
           "after several attempts, cannot send the given transactions to the blockchain")
       }
-      val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(
-        miner.getPubKey, 50.BTC.asSatoshi)
+      val newBlock = lastBlock.getHeader.createNextBlockWithCoinbase(miner.getPubKey, 50.BTC)
       txs.foreach(newBlock.addTransaction)
       newBlock.solve()
       if (!chain.add(newBlock)) {
@@ -133,7 +129,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   private def startBitcoinj(): Unit = {
     BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()
-    Wallet.defaultFeePerKb = BigInteger.ZERO
+    Wallet.defaultFeePerKb = Bitcoin.Zero
     createH2BlockStore()
     chain = new FullPrunedBlockChain(network, blockStore)
   }
@@ -150,7 +146,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
     try {
       blockStore.close()
       destroyH2BlockStore()
-      Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee.asSatoshi
+      Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     } finally {
       BitcoinjTest.ExecutionLock.unlock()
     }

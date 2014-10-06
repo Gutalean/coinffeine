@@ -1,8 +1,8 @@
 package coinffeine.peer.bitcoin
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.{KeyPair, BlockedCoinsId}
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 
@@ -10,12 +10,11 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
 
   "Smart wallet" must "create a new transaction" in new Fixture {
     val tx = wallet.createTransaction(1.BTC, someAddress)
-    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate)) should be (-1.BTC)
-
+    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.BTC)
   }
 
   it must "fail to create a new transaction when insufficient balance" in new Fixture {
-    an[NotEnoughFunds] should be thrownBy {
+    an[NotEnoughFunds] shouldBe thrownBy {
       wallet.createTransaction(20.BTC, someAddress)
     }
   }
@@ -23,13 +22,13 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
   it must "create a multisign transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
     val tx = wallet.createMultisignTransaction(funds, 1.BTC, 0.1.BTC, Seq(keyPair, otherKeyPair))
-    wallet.value(tx.get) should be (-1.1.BTC)
-    Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue) should be (1.BTC)
+    wallet.value(tx.get) shouldBe (-1.1.BTC)
+    Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue.value) shouldBe 1.BTC
   }
 
   it must "fail to create a deposit when there is no enough amount" in new Fixture {
     val funds = givenBlockedFunds(1.BTC)
-    a[NotEnoughFunds] should be thrownBy {
+    a[NotEnoughFunds] shouldBe thrownBy {
       wallet.createMultisignTransaction(funds, 10000.BTC, 0.BTC, Seq(keyPair, otherKeyPair))
     }
   }
@@ -38,7 +37,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     val funds = givenBlockedFunds(1.BTC)
     val tx = wallet.createMultisignTransaction(funds, 1.BTC, 0.1.BTC, Seq(keyPair, otherKeyPair))
     wallet.releaseTransaction(tx)
-    wallet.estimatedBalance should be(initialFunds)
+    wallet.estimatedBalance shouldBe initialFunds
   }
 
   trait Fixture {

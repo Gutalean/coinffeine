@@ -19,7 +19,8 @@ class MockExchangeProtocol extends ExchangeProtocol {
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
-                                requiredSignatures: Both[PublicKey]): Both[Try[Unit]] =
+                                requiredSignatures: Both[PublicKey],
+                                network: Network): Both[Try[Unit]] =
     transactions.map {
       case MockExchangeProtocol.InvalidDeposit =>
         Failure(new IllegalArgumentException("Invalid buyer deposit"))

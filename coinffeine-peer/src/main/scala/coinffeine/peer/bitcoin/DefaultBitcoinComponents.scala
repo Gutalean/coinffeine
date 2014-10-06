@@ -1,9 +1,10 @@
 package coinffeine.peer.bitcoin
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
-import com.google.bitcoin.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
-import com.google.bitcoin.store.MemoryFullPrunedBlockStore
+import org.bitcoinj.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
+import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin._
@@ -25,18 +26,28 @@ trait DefaultBitcoinComponents
   }
 
   override lazy val wallet = {
-    val wallet = new SmartWallet(network)
-    val walletFile = configProvider.bitcoinSettings.walletFile
-    if (walletFile.exists()) {
-      DefaultBitcoinComponents.Log.info("Loading wallet from {}", walletFile)
-      wallet.loadFromFile(walletFile)
-    } else {
-      DefaultBitcoinComponents.Log.warn("{} doesn't exists, starting with an empty wallet", walletFile)
-    }
+    val walletFile = configProvider.bitcoinSettings().walletFile
+    val wallet =
+      if (walletFile.exists()) loadFromFile(walletFile)
+      else emptyWalletAt(walletFile)
+    setupWallet(wallet, walletFile)
+    wallet
+  }
+
+  private def loadFromFile(walletFile: File): SmartWallet = {
+    DefaultBitcoinComponents.Log.info("Loading wallet from {}", walletFile)
+    SmartWallet.loadFromFile(walletFile)
+  }
+
+  private def emptyWalletAt(walletFile: File): SmartWallet = {
+    DefaultBitcoinComponents.Log.warn("{} doesn't exists, starting with an empty wallet", walletFile)
+    new SmartWallet(network)
+  }
+
+  private def setupWallet(wallet: SmartWallet, walletFile: File): Unit = {
     blockchain.addWallet(wallet.delegate)
     peerGroup.addWallet(wallet.delegate)
     wallet.delegate.autosaveToFile(walletFile, 250, TimeUnit.MILLISECONDS, null)
-    wallet
   }
 }
 

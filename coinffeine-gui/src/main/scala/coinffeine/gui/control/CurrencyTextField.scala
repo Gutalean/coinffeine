@@ -70,7 +70,7 @@ class CurrencyTextField[C <: Currency](
                          newValue: String): Unit = {
       if (!ignore) {
         if (isValidInput(newValue)) {
-          _currencyValue.value = Try(new CurrencyAmount(BigDecimal(newValue), currency))
+          _currencyValue.value = Try(CurrencyAmount.exactAmount(BigDecimal(newValue), currency))
             .getOrElse(CurrencyAmount.zero(currency))
         } else {
           ignoringSelfChanges {

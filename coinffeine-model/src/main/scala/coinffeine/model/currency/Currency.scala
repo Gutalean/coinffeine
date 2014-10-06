@@ -12,24 +12,20 @@ trait Currency {
   /** Minimum amount that can be expressed on this currency in terms of decimal positions allowed */
   val precision: Int
 
-  /** An amount of currency.
-    *
-    * Please note this is a path-dependent type. It cannot be used as Currency.Amount but as UsDollar.Amount,
-    * Euros.Amount, etc. If you want to use currency value in a polymorphic way, please use CurrencyAmount.
-    *
-    * @param value The value represented by this amount.
-    */
-  def amount(value: BigDecimal): Amount = CurrencyAmount(value, this)
+  def closestAmount(value: BigDecimal): Amount =
+    CurrencyAmount.closestAmount[this.type](value, this)
+  def exactAmount(value: BigDecimal): Amount =
+    CurrencyAmount.exactAmount[this.type](value, this)
 
-  def isValidAmount(value: BigDecimal): Boolean =
-    (value * BigDecimal(10).pow(precision)).isWhole()
+  def isValidAmount(value: BigDecimal): Boolean = (value * UnitsInOne).isWhole()
 
-  def apply(value: BigDecimal): Amount = amount(value)
-  def apply(value: Int): Amount = amount(value)
-  def apply(value: Double): Amount = amount(value)
-  def apply(value: java.math.BigDecimal): Amount = amount(BigDecimal(value))
+  def apply(value: BigDecimal): Amount = exactAmount(value)
+  def apply(value: Int): Amount = exactAmount(value)
+  def apply(value: Double): Amount = exactAmount(value)
+  def apply(value: java.math.BigDecimal): Amount = exactAmount(BigDecimal(value))
 
   def toString: String
 
   lazy val Zero: Amount = apply(0)
+  lazy val UnitsInOne: Long = Seq.fill(precision)(10).product
 }
