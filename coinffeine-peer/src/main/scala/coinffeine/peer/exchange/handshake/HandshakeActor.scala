@@ -176,6 +176,12 @@ private class HandshakeActor[C <: FiatCurrency](
         finishWith(HandshakeFailureWithCommitment(
           handshake.exchange, cause, handshake.myDeposit, refundTx))
 
+      case CommitmentNotification(_, bothCommitments) =>
+        log.info("Handshake {}: commitment notification was received again; " +
+          "seems like last ack was missed, retransmitting it to the broker",
+          exchange.info.id)
+        collaborators.gateway ! ForwardMessage(CommitmentNotificationAck(exchange.info.id), BrokerId)
+
       case result: HandshakeSuccess => finishWith(result)
 
       case Status.Failure(cause) => finishWith(HandshakeFailureWithCommitment(
