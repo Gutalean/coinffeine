@@ -1,5 +1,7 @@
 package coinffeine.gui.util
 
+import scala.collection.JavaConversions._
+
 import java.util.concurrent.Callable
 import javafx.beans.binding._
 import javafx.beans.value.{ChangeListener, ObservableValue}
@@ -119,7 +121,21 @@ object ScalafxImplicits {
 
   implicit class ObservableBufferPimp[A](buffer: ObservableBuffer[A]) {
     def bindToList[B](other: ObservableList[B])(f: A => B): Unit = {
-      buffer.onChange { other.setAll(buffer.map(f)): Unit }
+      other.clear()
+      buffer.onChange { (_, changes) =>
+        changes.foreach {
+          case ObservableBuffer.Add(pos, elems: Traversable[A]) =>
+            other.addAll(pos, elems.map(f).toSeq)
+          case ObservableBuffer.Remove(pos, elems: Traversable[A]) =>
+            other.remove(pos, pos + elems.size)
+          case ObservableBuffer.Reorder(start, end, perm) =>
+            for (i <- start to end) {
+              val tmp = other.get(i)
+              other.set(i, other.get(perm(i)))
+              other.set(perm(i), tmp)
+            }
+        }
+      }
     }
   }
 
