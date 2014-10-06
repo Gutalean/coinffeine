@@ -23,6 +23,8 @@ import coinffeine.model.market._
 
 class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
 
+  setId("operations-master-detail-pane")
+
   private val table = {
     val root = new TreeItem[OperationProperties]()
     root.setExpanded(true)
@@ -43,6 +45,7 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
     }
 
     val table = new TreeTableView[OperationProperties](root)
+    table.setId("operations-table")
     table.setShowRoot(false)
 
     table.getColumns.addAll(

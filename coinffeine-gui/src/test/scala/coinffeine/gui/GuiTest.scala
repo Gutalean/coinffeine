@@ -1,6 +1,5 @@
 package coinffeine.gui
 
-import javafx.scene
 import javafx.scene.{Node => jfxNode}
 import scala.concurrent.duration.FiniteDuration
 import scalafx.scene.{Node, Parent}
@@ -15,12 +14,15 @@ abstract class GuiTest[TestObject <: Parent] extends UnitTest { self =>
   var instance: TestObject = _
 
   trait Fixture extends testfx.GuiTest {
-    override def getRootNode: scene.Parent = self.getRootNode
+    override def getRootNode = self.getRootNode
     setupStage()
   }
 
-  def getRootNode: javafx.scene.Parent = {
+  def getRootNode: Parent = {
     instance = createRootNode()
+    // Move the layout to avoid it to be drawn on OSX menu bar or dock
+    instance.layoutX = 50
+    instance.layoutY = 50
     instance
   }
 
