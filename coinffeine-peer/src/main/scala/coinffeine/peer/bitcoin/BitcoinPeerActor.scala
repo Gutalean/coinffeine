@@ -5,7 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
-import com.google.bitcoin.core._
+import org.bitcoinj.core._
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}

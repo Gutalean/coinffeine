@@ -6,8 +6,7 @@ import coinffeine.model.bitcoin._
 
 private[serialization] class TransactionSerialization(network: Network) {
 
-  def deserializePublicKey(byteString: ByteString): PublicKey =
-    new PublicKey(TransactionSerialization.NoPrivateKey, byteString.toByteArray)
+  def deserializePublicKey(byteString: ByteString): PublicKey = PublicKey(byteString.toByteArray)
 
   def deserializeSignature(byteString: ByteString): TransactionSignature =
     TransactionSignature.decode(byteString.toByteArray, TransactionSerialization.RequireCanonical)
@@ -26,6 +25,4 @@ private[serialization] class TransactionSerialization(network: Network) {
 private object TransactionSerialization {
   /** Reject deserialization of non-canonical signatures */
   private val RequireCanonical = true
-
-  private val NoPrivateKey = null
 }

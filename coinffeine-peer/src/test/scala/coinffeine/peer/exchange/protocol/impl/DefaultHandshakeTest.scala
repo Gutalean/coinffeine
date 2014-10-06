@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import com.google.bitcoin.core.VerificationException
+import org.bitcoinj.core.VerificationException
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency._

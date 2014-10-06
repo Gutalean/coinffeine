@@ -2,7 +2,7 @@ package coinffeine.peer
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
-import com.google.bitcoin.params.TestNet3Params
+import org.bitcoinj.params.TestNet3Params
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}

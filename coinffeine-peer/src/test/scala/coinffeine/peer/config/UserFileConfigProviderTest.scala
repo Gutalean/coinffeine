@@ -38,32 +38,32 @@ class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
     val cfg = ConfigFactory.empty()
       .withValue(sampleRefConfigItem.getKey, sampleRefConfigItem.getValue)
     provider.saveUserConfig(cfg)
-    provider.userConfig.hasPath(sampleRefConfigItem.getKey) should be (false)
+    provider.userConfig.hasPath(sampleRefConfigItem.getKey) shouldBe false
   }
 
   it should "not drop user config item while saving when its modified" in {
     val replacedValue = ConfigValueFactory.fromAnyRef("__this is another value__")
     val cfg = ConfigFactory.empty().withValue(sampleRefConfigItem.getKey, replacedValue)
     provider.saveUserConfig(cfg)
-    provider.userConfig.hasPath(sampleRefConfigItem.getKey) should be (true)
-    provider.userConfig.getValue(sampleRefConfigItem.getKey) should be (replacedValue)
+    provider.userConfig.hasPath(sampleRefConfigItem.getKey) shouldBe true
+    provider.userConfig.getValue(sampleRefConfigItem.getKey) shouldBe replacedValue
   }
 
   it should "not drop user config item while saving when not instructed to drop" in {
     val cfg = ConfigFactory.empty()
       .withValue(sampleRefConfigItem.getKey, sampleRefConfigItem.getValue)
     provider.saveUserConfig(cfg, dropReferenceValues = false)
-    provider.userConfig.hasPath(sampleRefConfigItem.getKey) should be (true)
-    provider.userConfig.getValue(sampleRefConfigItem.getKey) should be (sampleRefConfigItem.getValue)
+    provider.userConfig.hasPath(sampleRefConfigItem.getKey) shouldBe true
+    provider.userConfig.getValue(sampleRefConfigItem.getKey) shouldBe sampleRefConfigItem.getValue
   }
 
   it should "save user settings" in {
     val settings = FoobarSettings("Mr. Potato", 123456)
     provider.saveUserSettings(settings)
 
-    provider.userConfig.getString("foobar.potato") should be ("Mr. Potato")
-    provider.userConfig.getInt(sampleRefConfigItem.getKey) should be (123456)
-    provider.userConfig.hasPath(otherSampleRefConfigItem.getKey) should be (false)
+    provider.userConfig.getString("foobar.potato") shouldBe "Mr. Potato"
+    provider.userConfig.getInt(sampleRefConfigItem.getKey) shouldBe 123456
+    provider.userConfig.hasPath(otherSampleRefConfigItem.getKey) shouldBe false
   }
 
   case class FoobarSettings(potato: String, length: Int)

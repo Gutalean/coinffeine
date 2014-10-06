@@ -2,7 +2,7 @@ package coinffeine.model.currency
 
 import java.math.BigInteger
 
-case object Bitcoin extends Currency{
+case object Bitcoin extends Currency {
   val OneBtcInSatoshi = BigDecimal(100000000)
   override val precision = 8
   override val toString = "BTC"

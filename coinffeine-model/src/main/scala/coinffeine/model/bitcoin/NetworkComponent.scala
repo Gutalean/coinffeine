@@ -1,6 +1,6 @@
 package coinffeine.model.bitcoin
 
-import com.google.bitcoin.core.PeerAddress
+import org.bitcoinj.core.PeerAddress
 
 trait NetworkComponent {
   def network: Network

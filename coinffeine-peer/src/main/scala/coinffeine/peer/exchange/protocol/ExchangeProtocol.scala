@@ -21,7 +21,8 @@ trait ExchangeProtocol {
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
                        amounts: Exchange.Amounts[_ <: FiatCurrency],
-                       requiredSignatures: Both[PublicKey]): Both[Try[Unit]]
+                       requiredSignatures: Both[PublicKey],
+                       network: Network): Both[Try[Unit]]
 
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.

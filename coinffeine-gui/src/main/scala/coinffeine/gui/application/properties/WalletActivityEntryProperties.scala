@@ -2,10 +2,9 @@ package coinffeine.gui.application.properties
 
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
-import com.google.bitcoin.core.Sha256Hash
 import org.joda.time.DateTime
 
-import coinffeine.model.bitcoin.WalletActivity
+import coinffeine.model.bitcoin.{Hash, WalletActivity}
 import coinffeine.model.currency.Bitcoin
 
 class WalletActivityEntryProperties(entry: WalletActivity.Entry) {
@@ -15,7 +14,7 @@ class WalletActivityEntryProperties(entry: WalletActivity.Entry) {
   private val _amount = new ObjectProperty(this, "hash", entry.amount)
 
   val time: ReadOnlyObjectProperty[DateTime] = _time
-  val hash: ReadOnlyObjectProperty[Sha256Hash] = _hash
+  val hash: ReadOnlyObjectProperty[Hash] = _hash
   val amount: ReadOnlyObjectProperty[Bitcoin.Amount] = _amount
 
   def update(entry: WalletActivity.Entry): Unit = {
@@ -24,5 +23,5 @@ class WalletActivityEntryProperties(entry: WalletActivity.Entry) {
     _amount.value = entry.amount
   }
 
-  def hasHash(h: Sha256Hash): Boolean = hash.value == h
+  def hasHash(h: Hash): Boolean = hash.value == h
 }

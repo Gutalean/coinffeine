@@ -2,11 +2,10 @@ package coinffeine.peer.exchange
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
-import com.google.bitcoin.core.TransactionInput
-import com.google.bitcoin.crypto.TransactionSignature
-import com.google.bitcoin.script.ScriptBuilder
+import org.bitcoinj.core.TransactionInput
+import org.bitcoinj.script.ScriptBuilder
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
+import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
@@ -23,7 +22,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
     val input = new TransactionInput(
       network,
       null, // parent transaction
-      ScriptBuilder.createInputScript(TransactionSignature.dummy()).getProgram)
+      ScriptBuilder.createInputScript(TransactionSignature.dummy).getProgram)
     input.setSequenceNumber(0)
     tx.addInput(input)
     tx

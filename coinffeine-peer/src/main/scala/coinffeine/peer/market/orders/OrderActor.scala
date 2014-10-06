@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
-import com.google.bitcoin.core.NetworkParameters
+import org.bitcoinj.core.NetworkParameters
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin.KeyPair

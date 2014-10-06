@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.protocol.impl
 
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.core.Transaction.SigHash
+import org.bitcoinj.core.Wallet.SendRequest
 import org.scalatest.Inside
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
@@ -40,8 +40,9 @@ class DepositValidatorTest extends ExchangeTest with Inside {
     sendMoneyToWallet(sellerWallet.delegate, 10.BTC)
     val invalidFundsCommitment = new MutableTransaction(parameters.network)
     invalidFundsCommitment.addInput(sellerWallet.delegate.calculateAllSpendCandidates(true).head)
-    invalidFundsCommitment.addOutput(5.BTC.asSatoshi, sellerWallet.delegate.getKeys.head)
-    invalidFundsCommitment.signInputs(SigHash.ALL, sellerWallet.delegate)
-    val validator = new DepositValidator(amounts, buyerHandshakingExchange.requiredSignatures)
+    invalidFundsCommitment.addOutput(5.BTC, sellerWallet.freshKeyPair())
+    sellerWallet.delegate.signTransaction(SendRequest.forTx(invalidFundsCommitment))
+    val validator = new DepositValidator(
+      amounts, buyerHandshakingExchange.requiredSignatures, parameters.network)
   }
 }

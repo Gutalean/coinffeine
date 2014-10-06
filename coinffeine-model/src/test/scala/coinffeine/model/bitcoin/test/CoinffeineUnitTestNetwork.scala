@@ -1,6 +1,6 @@
 package coinffeine.model.bitcoin.test
 
-import com.google.bitcoin.params.UnitTestParams
+import org.bitcoinj.params.UnitTestParams
 
 import coinffeine.model.bitcoin.NetworkComponent
 

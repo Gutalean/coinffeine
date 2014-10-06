@@ -48,7 +48,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
       spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
       spawnBroadcaster(refundTx)
       val validationResult = exchangeProtocol.validateDeposits(
-          commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures)
+        commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures,
+        handshakingExchange.parameters.network)
       if (validationResult.forall(_.isSuccess)) {
         startMicropaymentChannel(commitments, handshakingExchange)
       } else {

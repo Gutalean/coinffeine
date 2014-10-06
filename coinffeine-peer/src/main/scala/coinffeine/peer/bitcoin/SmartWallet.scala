@@ -4,11 +4,9 @@ import java.io.{File, FileInputStream}
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
-import com.google.bitcoin.core.Transaction.SigHash
-import com.google.bitcoin.core.Wallet.BalanceType
-import com.google.bitcoin.core.{AbstractWalletEventListener, NetworkParameters, Transaction, TransactionConfidence}
-import com.google.bitcoin.store.WalletProtobufSerializer
-import com.google.bitcoin.wallet.WalletTransaction
+import org.bitcoinj.core.{TransactionConfidence, AbstractWalletEventListener}
+import org.bitcoinj.core.Wallet.{SendRequest, BalanceType}
+import org.bitcoinj.wallet.{KeyChain, WalletTransaction}
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
@@ -18,7 +16,7 @@ class SmartWallet(val delegate: Wallet) {
 
   import coinffeine.peer.bitcoin.SmartWallet._
 
-  def this(network: NetworkParameters) = this(new Wallet(network))
+  def this(network: Network) = this(new Wallet(network))
 
   private val blockedOutputs = {
     val outputs = new BlockedOutputs
@@ -32,42 +30,26 @@ class SmartWallet(val delegate: Wallet) {
     listeners += listener -> executor
   }
 
-  def loadFromFile(file: File): Unit = {
-    val stream = new FileInputStream(file)
-    try {
-      new WalletProtobufSerializer()
-        .readWallet(WalletProtobufSerializer.parseToProto(stream), delegate)
-    } finally {
-      stream.close()
-    }
-  }
-
-  def addresses: Seq[Address] = synchronized {
-    val network = delegate.getNetworkParameters
-    delegate.getKeys.map(_.toAddress(network))
+  def currentReceiveAddress: Address = synchronized {
+    delegate.currentReceiveAddress()
   }
 
   def estimatedBalance: Bitcoin.Amount = synchronized {
-    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.ESTIMATED))
+    delegate.getBalance(BalanceType.ESTIMATED)
   }
 
   def availableBalance: Bitcoin.Amount = synchronized {
-    Bitcoin.fromSatoshi(delegate.getBalance(BalanceType.AVAILABLE))
+    delegate.getBalance(BalanceType.AVAILABLE)
   }
 
-  def value(tx: MutableTransaction): Bitcoin.Amount =
-    Bitcoin.fromSatoshi(tx.getValue(delegate))
+  def value(tx: MutableTransaction): Bitcoin.Amount = tx.getValue(delegate)
 
-  def valueSentFromMe(tx: MutableTransaction): Bitcoin.Amount =
-    Bitcoin.fromSatoshi(tx.getValueSentFromMe(delegate))
+  def valueSentFromMe(tx: MutableTransaction): Bitcoin.Amount = tx.getValueSentFromMe(delegate)
 
-  def valueSentToMe(tx: MutableTransaction): Bitcoin.Amount =
-    Bitcoin.fromSatoshi(tx.getValueSentToMe(delegate))
+  def valueSentToMe(tx: MutableTransaction): Bitcoin.Amount = tx.getValueSentToMe(delegate)
 
-  def createKeyPair(): KeyPair = synchronized {
-    val keyPair = new KeyPair()
-    delegate.addKey(keyPair)
-    keyPair
+  def freshKeyPair(): KeyPair = synchronized {
+    delegate.freshKey(KeyChain.KeyPurpose.RECEIVE_FUNDS)
   }
 
   def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }
@@ -141,7 +123,7 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   private def blockFunds(to: Address, amount: Bitcoin.Amount): MutableTransaction = {
-    val tx = delegate.createSend(to, amount.asSatoshi)
+    val tx = delegate.createSend(to, amount)
     blockFunds(tx)
     tx
   }
@@ -161,7 +143,8 @@ class SmartWallet(val delegate: Wallet) {
     inputs.foreach(tx.addInput)
     tx.addMultisignOutput(amount, requiredSignatures)
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
-    tx.signInputs(SigHash.ALL, delegate)
+
+    delegate.signTransaction(SendRequest.forTx(tx))
     blockFunds(tx)
     tx
   }
@@ -184,8 +167,7 @@ class SmartWallet(val delegate: Wallet) {
   private def collectFunds(amount: Bitcoin.Amount): Set[MutableTransactionOutput] = {
     val inputFundCandidates = delegate.calculateAllSpendCandidates(true)
     val necessaryInputCount =
-      inputFundCandidates.view.scanLeft(Bitcoin.Zero)((accum, output) =>
-        accum + Bitcoin.fromSatoshi(output.getValue))
+      inputFundCandidates.view.scanLeft(Bitcoin.Zero)(_ + _.getValue)
         .takeWhile(_ < amount)
         .length
     inputFundCandidates.take(necessaryInputCount).toSet
@@ -196,7 +178,7 @@ class SmartWallet(val delegate: Wallet) {
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
   private def valueOf(outputs: Traversable[MutableTransactionOutput]): Bitcoin.Amount =
-    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue)).sum
+    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue.value)).sum
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
     val wtxs = delegate.getWalletTransactions
@@ -211,7 +193,7 @@ class SmartWallet(val delegate: Wallet) {
 
   delegate.addEventListener(new AbstractWalletEventListener {
 
-    override def onTransactionConfidenceChanged(wallet: Wallet, tx: Transaction): Unit = {
+    override def onTransactionConfidenceChanged(wallet: Wallet, tx: MutableTransaction): Unit = {
       // Don't notify confidence changes for already confirmed transactions to reduce load
       if (tx.getConfidence.getConfidenceType != TransactionConfidence.ConfidenceType.BUILDING ||
         tx.getConfidence.getDepthInBlocks == 1) {
@@ -230,6 +212,17 @@ object SmartWallet {
   trait Listener {
     def onChange(): Unit
   }
+
+  def loadFromFile(file: File): SmartWallet = {
+    val stream = new FileInputStream(file)
+    val delegate = try {
+      Wallet.loadFromFileStream(stream)
+    } finally {
+      stream.close()
+    }
+    new SmartWallet(delegate)
+  }
+
 
   case class NotEnoughFunds(message: String, cause: Throwable = null)
     extends RuntimeException(message, cause)

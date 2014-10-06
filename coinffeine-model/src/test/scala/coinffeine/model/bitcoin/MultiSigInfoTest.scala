@@ -2,9 +2,10 @@ package coinffeine.model.bitcoin
 
 import scala.collection.JavaConversions._
 
-import com.google.bitcoin.script.ScriptBuilder
+import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.bitcoin.test.{CoinffeineUnitTestNetwork => Network}
 
 class MultiSigInfoTest extends UnitTest {
 
@@ -13,19 +14,19 @@ class MultiSigInfoTest extends UnitTest {
     val requiredKeys = 7
     val script = ScriptBuilder.createMultiSigOutputScript(requiredKeys, keys)
     val multiSigInfo = MultiSigInfo.fromScript(script).get
-    multiSigInfo.possibleKeys.size should be (keys.size)
-    multiSigInfo.requiredKeyCount should be (requiredKeys)
-    multiSigInfo.possibleKeys should be (keys)
+    multiSigInfo.possibleKeys should have size keys.size
+    multiSigInfo.requiredKeyCount shouldBe requiredKeys
+    multiSigInfo.possibleKeys.map(_.toAddress(Network)) shouldBe keys.map(_.toAddress(Network))
   }
 
   it should "fail on non-multisig scripts" in {
     val script = ScriptBuilder.createOutputScript(new PublicKey())
-    MultiSigInfo.fromScript(script) should be ('empty)
+    MultiSigInfo.fromScript(script) shouldBe 'empty
   }
 
   it should "fail on input multisig scripts" in {
     val script = ScriptBuilder.createMultiSigInputScript(List(
       new TransactionSignature(BigInt(0).underlying(), BigInt(0).underlying())))
-    MultiSigInfo.fromScript(script) should be ('empty)
+    MultiSigInfo.fromScript(script) shouldBe 'empty
   }
 }

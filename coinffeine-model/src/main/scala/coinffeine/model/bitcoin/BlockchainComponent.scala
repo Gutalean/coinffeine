@@ -1,6 +1,6 @@
 package coinffeine.model.bitcoin
 
-import com.google.bitcoin.core.AbstractBlockChain
+import org.bitcoinj.core.AbstractBlockChain
 
 trait BlockchainComponent {
 

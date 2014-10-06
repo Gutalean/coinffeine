@@ -17,7 +17,7 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
   private def buildOutputs(numberOfOneBtcOutputs: Int): Set[MutableTransactionOutput] = {
     val tx = new MutableTransaction(network)
     Seq.fill(numberOfOneBtcOutputs) {
-      new MutableTransactionOutput(network, tx, 1.BTC.asSatoshi, new PublicKey())
+      new MutableTransactionOutput(network, tx, 1.BTC, new PublicKey())
     }.toSet
   }
 

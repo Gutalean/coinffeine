@@ -3,8 +3,6 @@ package coinffeine.peer.api.impl
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import com.google.bitcoin.params.TestNet3Params
-
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{MutableNetworkProperties, WalletActivity, Address, KeyPair}
 import coinffeine.model.currency._

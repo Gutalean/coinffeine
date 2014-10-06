@@ -3,12 +3,12 @@ package coinffeine.peer.bitcoin
 import java.util.concurrent.ThreadPoolExecutor
 import scala.util.control.NonFatal
 
-import com.google.bitcoin.core.FullPrunedBlockChain
+import org.bitcoinj.core.FullPrunedBlockChain
 import org.slf4j.LoggerFactory
 
 private[bitcoin] object FullPrunedBlockChainUtils {
 
-  /** Ugly hack to stop the thread pool at [[com.google.bitcoin.core.FullPrunedBlockChain]] that
+  /** Ugly hack to stop the thread pool at [[org.bitcoinj.core.FullPrunedBlockChain]] that
     * otherwise will prevent our application from closing.
     */
   def shutdown(blockchain: FullPrunedBlockChain): Unit = try {

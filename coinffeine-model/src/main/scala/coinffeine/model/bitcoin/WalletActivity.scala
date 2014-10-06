@@ -1,6 +1,5 @@
 package coinffeine.model.bitcoin
 
-import com.google.bitcoin.core.Transaction
 import org.joda.time.DateTime
 
 import coinffeine.model.currency._
@@ -13,12 +12,12 @@ object WalletActivity {
                    tx: ImmutableTransaction,
                    amount: Bitcoin.Amount)
 
-  def apply(wallet: Wallet, transactions: Transaction*): WalletActivity = WalletActivity(
+  def apply(wallet: Wallet, transactions: MutableTransaction*): WalletActivity = WalletActivity(
     transactions.map{ tx =>
       Entry(
         time = new DateTime(tx.getUpdateTime),
         tx = ImmutableTransaction(tx),
-        amount = Bitcoin.fromSatoshi(tx.getValue(wallet))
+        amount = tx.getValue(wallet)
       )
     }
   )

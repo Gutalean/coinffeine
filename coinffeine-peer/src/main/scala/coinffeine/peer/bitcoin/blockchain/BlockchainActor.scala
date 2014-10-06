@@ -3,8 +3,8 @@ package coinffeine.peer.bitcoin.blockchain
 import scala.collection.JavaConversions._
 
 import akka.actor._
-import com.google.bitcoin.core._
-import com.google.bitcoin.script.ScriptBuilder
+import org.bitcoinj.core._
+import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
 
@@ -24,7 +24,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   override val receive: Receive = {
 
     case WatchPublicKey(key) =>
-      wallet.addKey(key)
+      wallet.importKey(key)
 
     case WatchMultisigKeys(keys) =>
       wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
@@ -89,12 +89,27 @@ object BlockchainActor {
   /** A message sent to the blockchain actor requesting to watch for transactions on the given
     * public key.
     */
-  case class WatchPublicKey(publicKey: PublicKey)
+  case class WatchPublicKey(publicKey: PublicKey) {
+
+    /** We should override equals as [[PublicKey]] is taking key creation time in consideration */
+    override def equals(obj: scala.Any): Boolean = obj match {
+      case WatchPublicKey(otherPublicKey) => PublicKey.areEqual(publicKey, otherPublicKey)
+      case _ => false
+    }
+  }
 
   /** A message sent to the blockchain actor requesting to watch for transactions multisigned
     * for this combination of keys.
     */
-  case class WatchMultisigKeys(keys: Seq[PublicKey])
+  case class WatchMultisigKeys(keys: Seq[PublicKey]) {
+
+    /** We should override equals as [[PublicKey]] is taking key creation time in consideration */
+    override def equals(obj: scala.Any): Boolean = obj match {
+      case WatchMultisigKeys(otherKeys) =>
+        keys.zip(otherKeys).forall((PublicKey.areEqual _).tupled)
+      case _ => false
+    }
+  }
 
   /** A message sent to the blockchain actor requesting to watch for confirmation of the
     * given block.

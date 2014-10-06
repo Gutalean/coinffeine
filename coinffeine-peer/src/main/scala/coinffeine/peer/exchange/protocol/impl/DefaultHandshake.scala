@@ -61,7 +61,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
       if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
     }
     def validateAmount(tx: MutableTransaction): Boolean = {
-      val amount = Bitcoin.fromSatoshi(tx.getOutput(0).getValue)
+      val amount: Bitcoin.Amount = tx.getOutput(0).getValue
       amount == expectedAmount
     }
     // TODO: Is this enough to ensure we can sign?
