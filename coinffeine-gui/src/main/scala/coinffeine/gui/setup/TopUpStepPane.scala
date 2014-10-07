@@ -3,11 +3,9 @@ package coinffeine.gui.setup
 import java.net.URI
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
-import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.control.{Hyperlink, Label, TextField}
 import scalafx.scene.image.ImageView
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
-import scalafx.scene.text.Font
 
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.wizard.StepPane
@@ -23,7 +21,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
         content = Seq(
           new Label("You need a small amount of bitcoins to buy bitcoins."),
           new Hyperlink("Know why") {
-            handleEvent(ActionEvent.ACTION) { () => openFAQ() }
+            handleEvent(ActionEvent.Action) { () => openFAQ() }
           }
         )
       },
@@ -32,7 +30,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
         content = Seq(
           new VBox() {
             id = "wizard-topup-address-pane"
-            hgrow = Priority.ALWAYS
+            hgrow = Priority.Always
             content = Seq(
               new Label("Your wallet address"),
               new TextField {

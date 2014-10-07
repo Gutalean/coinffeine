@@ -5,7 +5,7 @@ import scala.util.{Failure, Success}
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.event.EventIncludes._
-import scalafx.geometry.{HPos, Pos, Insets}
+import scalafx.geometry.HPos
 import scalafx.scene.control.{Button, Label, ProgressBar}
 import scalafx.scene.layout._
 
@@ -24,14 +24,14 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
   val errorLine = new GridPane() {
     id = "wizard-okpaytoken-errorline-pane"
     columnConstraints = Seq(
-      new ColumnConstraints() { halignment = HPos.LEFT },
-      new ColumnConstraints() { halignment = HPos.RIGHT }
+      new ColumnConstraints() { halignment = HPos.Left },
+      new ColumnConstraints() { halignment = HPos.Right }
     )
     visible <== retrievalError.isNotNull
 
     add(new Label("Please go back and double check your credentials.") {
       styleClass.add("wizard-error-label")
-      hgrow = Priority.ALWAYS
+      hgrow = Priority.Always
     }, 0, 0)
     add(new Button("Details") {
       onAction = { (_: ActionEvent) =>

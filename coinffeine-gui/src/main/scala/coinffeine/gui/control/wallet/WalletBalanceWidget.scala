@@ -4,7 +4,6 @@ import java.text.DecimalFormat
 import scalafx.Includes._
 import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.geometry.Pos
-import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout.HBox
@@ -30,19 +29,19 @@ abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
 
   id = "balance-widget"
   prefHeight = 26
-  alignment = Pos.CENTER
+  alignment = Pos.Center
   content = Seq(
     new Label(symbol) {
       prefWidth = 34
       prefHeight = 24
       styleClass = Seq("currency-label", s"$symbol-label")
-      alignment = Pos.CENTER
+      alignment = Pos.Center
     },
     new Label(formatBalance(balanceProperty.value)) {
       prefWidth = 100
       id = s"$symbol-balance"
       styleClass = Seq("balance")
-      alignment = Pos.CENTER_RIGHT
+      alignment = Pos.CenterRight
       text <== balanceProperty.delegate.map(formatBalance)
     }
   )

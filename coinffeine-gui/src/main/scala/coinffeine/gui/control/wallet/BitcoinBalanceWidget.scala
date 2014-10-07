@@ -20,8 +20,8 @@ class BitcoinBalanceWidget(balanceProperty: ReadOnlyObjectProperty[Option[Bitcoi
         new GridPane() {
           styleClass = Seq("popup-balance-summary")
           columnConstraints = Seq(
-            new ColumnConstraints() { halignment = HPos.RIGHT },
-            new ColumnConstraints() { halignment = HPos.LEFT }
+            new ColumnConstraints() { halignment = HPos.Right },
+            new ColumnConstraints() { halignment = HPos.Left }
           )
           val lines: Seq[(String, BitcoinBalance => String)] = Seq(
             "Active:" -> (_.estimated.toString),

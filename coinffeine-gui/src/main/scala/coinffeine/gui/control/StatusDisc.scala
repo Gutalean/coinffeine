@@ -21,7 +21,7 @@ object StatusDisc {
   )
 
   private def gradient(fromColor: String, toColor: String) =
-    LinearGradient(0, 0, 1, 1, true, CycleMethod.NO_CYCLE,
+    LinearGradient(0, 0, 1, 1, true, CycleMethod.NoCycle,
       Stop(0, Color.valueOf(fromColor)),
       Stop(1, Color.valueOf(toColor))
     )

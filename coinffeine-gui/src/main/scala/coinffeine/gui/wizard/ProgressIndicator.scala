@@ -34,7 +34,7 @@ private[wizard] class ProgressIndicator(steps: Int, currentStep: IntegerProperty
 }
 
 private[wizard] object ProgressIndicator {
-  private val SelectedColor = Color.RED
+  private val SelectedColor = Color.Red
   private val UnselectedColor = Color.web("#afc9e1")
   private val ActiveStyleClass = "wizard-progress-indicator-active"
   private val InactiveStyleClass = "wizard-progress-indicator-inactive"

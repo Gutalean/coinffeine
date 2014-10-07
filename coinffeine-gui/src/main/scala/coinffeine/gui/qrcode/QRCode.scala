@@ -26,7 +26,7 @@ object QRCode {
     val format = PixelFormat.getByteRgbInstance
     for (y <- 0 to (bitMatrix.getHeight - 1);
          x <- 0 to (bitMatrix.getWidth - 1)) {
-      writer.setColor(x, y, if (bitMatrix.get(x, y)) Color.BLACK else Color.WHITE)
+      writer.setColor(x, y, if (bitMatrix.get(x, y)) Color.Black else Color.White)
     }
     image
   }

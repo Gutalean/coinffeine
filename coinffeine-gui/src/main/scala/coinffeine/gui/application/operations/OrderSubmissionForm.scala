@@ -4,8 +4,6 @@ import scala.util.Try
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.event.{ActionEvent, Event}
-import scalafx.geometry.{Insets, Pos}
-import scalafx.scene.Scene
 import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
@@ -113,7 +111,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
             new Button {
               id = "cancel"
               text = "Cancel"
-              handleEvent(ActionEvent.ACTION) { () =>
+              handleEvent(ActionEvent.Action) { () =>
                 closeForm()
               }
             },
@@ -121,7 +119,7 @@ class OrderSubmissionForm(app: CoinffeineApp) {
               id = "submit"
               text = "Submit"
               disable <== amountIsValid.not() or limitIsValid.not()
-              handleEvent(ActionEvent.ACTION) { () => submit() }
+              handleEvent(ActionEvent.Action) { () => submit() }
             })
         }
       )

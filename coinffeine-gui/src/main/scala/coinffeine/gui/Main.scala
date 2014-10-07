@@ -63,10 +63,10 @@ object Main extends JFXApp
     val setupConfig = new SetupWizard(address.toString).run()
 
     configProvider.saveUserSettings(
-      configProvider.bitcoinSettings.copy(walletFile = createWallet(keys)))
+      configProvider.bitcoinSettings().copy(walletFile = createWallet(keys)))
 
     setupConfig.okPayWalletAccess.foreach { access =>
-      val okPaySettings = configProvider.okPaySettings
+      val okPaySettings = configProvider.okPaySettings()
       configProvider.saveUserSettings(okPaySettings.copy(
         userAccount = Some(access.walletId),
         seedToken = Some(access.seedToken)
@@ -76,7 +76,7 @@ object Main extends JFXApp
 
   private def createWallet(keys: KeyPair): File = {
     val wallet = new Wallet(network)
-    wallet.addKey(keys)
+    wallet.importKey(keys)
     val walletFile = LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toFile
     wallet.saveToFile(walletFile)
     walletFile
