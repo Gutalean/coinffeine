@@ -5,8 +5,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import com.google.common.util.concurrent._
 import org.bitcoinj.core._
-import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
@@ -16,11 +16,12 @@ import coinffeine.peer.config.ConfigComponent
 class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
                        blockchainProps: Props,
                        walletProps: (MutableWalletProperties, SmartWallet) => Props,
+                       delegates: BitcoinPeerActor.Delegates,
                        wallet: SmartWallet, blockchain: AbstractBlockChain,
                        network: NetworkParameters, connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging {
 
-  import coinffeine.peer.bitcoin.BitcoinPeerActor._
+  import BitcoinPeerActor._
 
   private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
   private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
@@ -65,11 +66,8 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
 
   private def connected: Receive = {
     case PublishTransaction(tx) =>
-      log.info(s"Publishing transaction $tx to the Bitcoin network")
-      Futures.addCallback(
-        peerGroup.broadcastTransaction(tx.get),
-        new TxBroadcastCallback(tx, sender()),
-        context.dispatcher)
+      val name = s"broadcast-${tx.get.getHash}-${System.currentTimeMillis()}"
+      context.actorOf(delegates.transactionPublisher(tx, sender()), name)
   }
 
   private def commonHandling: Receive = {
@@ -102,32 +100,12 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       updateConnectionStatus(BlockchainStatus.NotDownloading)
   }
 
-  private def updateConnectionStatus(activePeers: Int,
-                                     blockchainStatus: BlockchainStatus): Unit = {
-    updateConnectionStatus(activePeers)
-    updateConnectionStatus(blockchainStatus)
-  }
-
   private def updateConnectionStatus(activePeers: Int): Unit = {
     properties.network.activePeers.set(activePeers)
   }
 
   private def updateConnectionStatus(blockchainStatus: BlockchainStatus): Unit = {
     properties.network.blockchainStatus.set(blockchainStatus)
-  }
-
-  private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
-      extends FutureCallback[MutableTransaction] {
-
-    override def onSuccess(result: MutableTransaction): Unit = {
-      log.info(s"Transaction $originalTx successfully broadcast to the Bitcoin network")
-      respondTo ! TransactionPublished(originalTx, ImmutableTransaction(result))
-    }
-
-    override def onFailure(error: Throwable): Unit = {
-      log.error(error, s"Transaction $originalTx failed to be broadcast to the Bitcoin network")
-      respondTo ! TransactionNotPublished(originalTx, error)
-    }
   }
 
   private def startConnecting(): Unit = {
@@ -241,21 +219,30 @@ object BitcoinPeerActor {
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
+  trait Delegates {
+    def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
+  }
+
   trait Component {
 
     this: PeerGroupComponent with NetworkComponent with BlockchainComponent
       with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
+      val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
         bitcoinProperties,
         peerGroup,
         BlockchainActor.props(blockchain, network),
         WalletActor.props,
+        new Delegates {
+          override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+            Props(new TransactionPublisher(tx, peerGroup, listener, settings.connectionRetryInterval))
+        },
         wallet,
         blockchain,
         network,
-        configProvider.bitcoinSettings().connectionRetryInterval
+        settings.connectionRetryInterval
       ))
     }
   }

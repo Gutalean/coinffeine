@@ -2,7 +2,7 @@ package coinffeine.peer.bitcoin
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import org.bitcoinj.core.{FullPrunedBlockChain, PeerGroup}
 import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.scalatest.concurrent.Eventually
@@ -10,8 +10,9 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.MutableBitcoinProperties
+import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, MutableBitcoinProperties}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.peer.bitcoin.BitcoinPeerActor.Delegates
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
 
@@ -43,6 +44,17 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
     }
   }
 
+  it should "delegate transaction publication" in new Fixture {
+    actor ! ServiceActor.Start {}
+    expectMsg(ServiceActor.Started)
+    eventually {
+      peerGroup shouldBe 'running
+    }
+    val dummyTx = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
+    actor ! BitcoinPeerActor.PublishTransaction(dummyTx)
+    transactionPublisher.expectCreation()
+  }
+
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     def connectionRetryInterval = 1.minute
     val peerGroup = new PeerGroup(network)
@@ -50,12 +62,18 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
     val wallet = new SmartWallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
     val properties = new MutableBitcoinProperties
+    val transactionPublisher = new MockSupervisedActor()
 
     blockchain.addWallet(wallet.delegate)
     peerGroup.addWallet(wallet.delegate)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
-      peerGroup, blockchainActor.props, (_, _) => walletActor.props, wallet,
+      peerGroup, blockchainActor.props, (_, _) => walletActor.props,
+      new Delegates {
+        override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props = 
+          Fixture.this.transactionPublisher.props
+      },
+      wallet,
       blockchain, network, connectionRetryInterval)))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
