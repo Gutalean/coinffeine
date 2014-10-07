@@ -10,7 +10,7 @@ import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction, MutableBitcoinProperties}
+import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.peer.bitcoin.BitcoinPeerActor.Delegates
 
@@ -58,23 +58,23 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     def connectionRetryInterval = 1.minute
     val peerGroup = new PeerGroup(network)
-    val blockchainActor, walletActor = new MockSupervisedActor()
+    val blockchainActor, walletActor, transactionPublisher = new MockSupervisedActor()
     val wallet = new SmartWallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
-    val properties = new MutableBitcoinProperties
-    val transactionPublisher = new MockSupervisedActor()
+    val properties = new MutableNetworkProperties
 
     blockchain.addWallet(wallet.delegate)
     peerGroup.addWallet(wallet.delegate)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
-      peerGroup, blockchainActor.props, (_, _) => walletActor.props,
+      peerGroup,
       new Delegates {
         override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props = 
           Fixture.this.transactionPublisher.props
+        override val walletActor = Fixture.this.walletActor.props
+        override val blockchainActor = Fixture.this.blockchainActor.props
       },
-      wallet,
-      blockchain, network, connectionRetryInterval)))
+      blockchain, connectionRetryInterval)))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
   }

@@ -13,18 +13,17 @@ import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
-                       blockchainProps: Props,
-                       walletProps: (MutableWalletProperties, SmartWallet) => Props,
+class BitcoinPeerActor(properties: MutableNetworkProperties,
+                       peerGroup: PeerGroup,
                        delegates: BitcoinPeerActor.Delegates,
-                       wallet: SmartWallet, blockchain: AbstractBlockChain,
-                       network: NetworkParameters, connectionRetryInterval: FiniteDuration)
+                       blockchain: AbstractBlockChain,
+                       connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging {
 
   import BitcoinPeerActor._
 
-  private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-  private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
+  private val blockchainRef = context.actorOf(delegates.blockchainActor, "blockchain")
+  private val walletRef = context.actorOf(delegates.walletActor, "wallet")
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
@@ -87,7 +86,7 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       ))
 
     case DownloadProgress(remainingBlocks) =>
-      properties.network.blockchainStatus.get match {
+      properties.blockchainStatus.get match {
         case BlockchainStatus.Downloading(totalBlocks, previouslyRemainingBlocks)
           if remainingBlocks <= previouslyRemainingBlocks =>
           updateConnectionStatus(BlockchainStatus.Downloading(totalBlocks, remainingBlocks))
@@ -101,11 +100,11 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
   }
 
   private def updateConnectionStatus(activePeers: Int): Unit = {
-    properties.network.activePeers.set(activePeers)
+    properties.activePeers.set(activePeers)
   }
 
   private def updateConnectionStatus(blockchainStatus: BlockchainStatus): Unit = {
-    properties.network.blockchainStatus.set(blockchainStatus)
+    properties.blockchainStatus.set(blockchainStatus)
   }
 
   private def startConnecting(): Unit = {
@@ -221,6 +220,8 @@ object BitcoinPeerActor {
 
   trait Delegates {
     def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
+    val walletActor: Props
+    val blockchainActor: Props
   }
 
   trait Component {
@@ -231,17 +232,15 @@ object BitcoinPeerActor {
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
-        bitcoinProperties,
+        bitcoinProperties.network,
         peerGroup,
-        BlockchainActor.props(blockchain, network),
-        WalletActor.props,
         new Delegates {
           override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.connectionRetryInterval))
+          override val walletActor = WalletActor.props(bitcoinProperties.wallet, wallet)
+          override val blockchainActor = BlockchainActor.props(blockchain, network)
         },
-        wallet,
         blockchain,
-        network,
         settings.connectionRetryInterval
       ))
     }
