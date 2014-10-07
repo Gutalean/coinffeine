@@ -10,7 +10,7 @@ class ImmutableTransaction(private val bytes: Array[Byte], private val network: 
 
   def this(tx: MutableTransaction) = this(tx.bitcoinSerialize(), tx.getParams)
 
-  override def toString: String = get.toString
+  override def toString: String = s"ImmutableTransaction(${get.toString})"
 
   def get: MutableTransaction = new MutableTransaction(network, bytes)
 
