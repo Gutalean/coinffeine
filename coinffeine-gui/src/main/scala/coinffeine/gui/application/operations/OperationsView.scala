@@ -3,7 +3,6 @@ package coinffeine.gui.application.operations
 import javafx.beans.binding.Bindings
 import scalafx.Includes._
 import scalafx.event.ActionEvent
-import scalafx.geometry.Insets
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -13,8 +12,6 @@ import org.controlsfx.dialog.Dialogs
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.util.ScalafxImplicits._
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
@@ -30,7 +27,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
   private val newOrderButton = new Button {
     id = "newOrderBtn"
     text = "New order"
-    handleEvent(ActionEvent.ACTION) { () =>
+    handleEvent(ActionEvent.Action) { () =>
       val form = new OrderSubmissionForm(app)
       form.show(delegate.getScene.getWindow)
     }
@@ -40,7 +37,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     id = "cancelOrderBtn"
     text = "Cancel"
     disable <== Bindings.not(cancellableOperationProperty)
-    handleEvent(ActionEvent.ACTION) { () =>
+    handleEvent(ActionEvent.Action) { () =>
       val confirm = Dialogs.create()
         .title("Order cancellation")
         .message("You are about to cancel the selected operation. Are you sure?")

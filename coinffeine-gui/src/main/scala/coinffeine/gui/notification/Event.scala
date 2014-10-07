@@ -20,7 +20,7 @@ trait Event {
 }
 
 object Event {
-  val DefaultPos = Pos.TOP_RIGHT
+  val DefaultPos = Pos.TopRight
   val DefaultDuration: Duration = new Duration(Duration.apply(5000))
 }
 

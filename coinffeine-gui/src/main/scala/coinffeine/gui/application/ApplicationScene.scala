@@ -32,7 +32,7 @@ class ApplicationScene(views: Seq[ApplicationView],
     }
     val buttons = for (view <- views) yield new ToggleButton(view.name) {
       disable <== selected
-      handleEvent(ActionEvent.ACTION) { () => currentView.value = view }
+      handleEvent(ActionEvent.Action) { () => currentView.value = view }
     }
     buttons.foreach(b => selector.getButtons.add(b))
     buttons.head.selected = true

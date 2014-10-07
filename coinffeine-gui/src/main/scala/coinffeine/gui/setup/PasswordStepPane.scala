@@ -2,7 +2,7 @@ package coinffeine.gui.setup
 
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.Event
-import scalafx.geometry.{Insets, Pos}
+import scalafx.geometry.Pos
 import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
 import scalafx.scene.text.TextAlignment
@@ -45,8 +45,8 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   private val passwordWarningLabel = new Label() {
     id = "wizard-password-warn-label"
     styleClass.add("wizard-error-label")
-    textAlignment = TextAlignment.CENTER
-    alignment = Pos.TOP_CENTER
+    textAlignment = TextAlignment.Center
+    alignment = Pos.TopCenter
     disable <== noPasswordProperty
   }
 
@@ -55,9 +55,9 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
     columnConstraints = Seq(
       new ColumnConstraints {
         minWidth = 130
-        hgrow = Priority.NEVER
+        hgrow = Priority.Never
       },
-      new ColumnConstraints { hgrow = Priority.ALWAYS }
+      new ColumnConstraints { hgrow = Priority.Always }
     )
     add(new Label("Password") { disable <== noPasswordProperty }, 0, 0)
     add(passwordField, 1, 0)

@@ -26,8 +26,8 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   private val balanceDetailsPane = new GridPane() {
     id = "wallet-balance-details"
     columnConstraints = Seq(
-      new ColumnConstraints() { halignment = HPos.RIGHT },
-      new ColumnConstraints() { halignment = HPos.LEFT }
+      new ColumnConstraints() { halignment = HPos.Right},
+      new ColumnConstraints() { halignment = HPos.Left }
     )
 
     val lines: Seq[(String, BitcoinBalance => String)] = Seq(
@@ -50,7 +50,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   private val leftDetailsPane = new VBox() {
     id = "wallet-left-pane"
-    hgrow = Priority.ALWAYS
+    hgrow = Priority.Always
     content = Seq(
       new Label("Wallet funds") {
         styleClass = Seq("title")
@@ -119,7 +119,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   private val transactionsTable = new TableView[WalletActivityEntryProperties](properties.transactions) {
     id = "wallet-transactions-table"
     placeholder = new Label("No transactions found")
-    hgrow = Priority.ALWAYS
+    hgrow = Priority.Always
     columns ++= Seq(
       new TableColumn[WalletActivityEntryProperties, DateTime] {
         text = "Time"

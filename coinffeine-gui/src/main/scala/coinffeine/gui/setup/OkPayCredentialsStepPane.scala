@@ -1,7 +1,6 @@
 package coinffeine.gui.setup
 
 import scalafx.beans.property.{ObjectProperty, StringProperty}
-import scalafx.geometry.Insets
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -24,10 +23,10 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
       columnConstraints = Seq(new ColumnConstraints {
         prefWidth = 100
         fillWidth = false
-        hgrow = Priority.NEVER
+        hgrow = Priority.Never
       }, new ColumnConstraints {
         fillWidth = true
-        hgrow = Priority.ALWAYS
+        hgrow = Priority.Always
       })
       add(new Label("Email"), 0, 0)
       add(new TextField() {

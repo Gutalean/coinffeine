@@ -84,7 +84,7 @@ class CurrencyTextField[C <: Currency](
   /*
    * This event handler is triggered when enter key is pressed, normalising the text.
    */
-  handleEvent(ActionEvent.ACTION) { () =>
+  handleEvent(ActionEvent.Action) { () =>
     text = normalise(text.value)
   }
 

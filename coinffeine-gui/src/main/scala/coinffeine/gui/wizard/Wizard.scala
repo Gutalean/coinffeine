@@ -3,10 +3,8 @@ package coinffeine.gui.wizard
 import scalafx.Includes._
 import scalafx.beans.property.{IntegerProperty, ObjectProperty}
 import scalafx.event.ActionEvent
-import scalafx.scene.Scene
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
-import scalafx.scene.text.Font
 import scalafx.stage.{Stage, StageStyle}
 
 import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
@@ -46,13 +44,13 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
 
   private val backButton = new Button("< Back") {
     visible <== currentStep =!= 1
-    handleEvent(ActionEvent.ACTION) { () => changeToStep(currentStep.value - 1) }
+    handleEvent(ActionEvent.Action) { () => changeToStep(currentStep.value - 1) }
   }
 
   private val nextButton = new Button {
     text <== when(currentStep === stepNumber) choose "Finish" otherwise "Next >"
     disable = true
-    handleEvent(ActionEvent.ACTION) { () =>
+    handleEvent(ActionEvent.Action) { () =>
       if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else close()
     }
   }
