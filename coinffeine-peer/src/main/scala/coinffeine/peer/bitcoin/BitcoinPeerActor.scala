@@ -5,25 +5,25 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import com.google.common.util.concurrent._
 import org.bitcoinj.core._
-import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture, Service}
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.config.ConfigComponent
 
-class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGroup,
-                       blockchainProps: Props,
-                       walletProps: (MutableWalletProperties, SmartWallet) => Props,
-                       wallet: SmartWallet, blockchain: AbstractBlockChain,
-                       network: NetworkParameters, connectionRetryInterval: FiniteDuration)
+class BitcoinPeerActor(properties: MutableNetworkProperties,
+                       peerGroup: PeerGroup,
+                       delegates: BitcoinPeerActor.Delegates,
+                       blockchain: AbstractBlockChain,
+                       connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging {
 
-  import coinffeine.peer.bitcoin.BitcoinPeerActor._
+  import BitcoinPeerActor._
 
-  private val blockchainRef = context.actorOf(blockchainProps, "blockchain")
-  private val walletRef = context.actorOf(walletProps(properties.wallet, wallet), "wallet")
+  private val blockchainRef = context.actorOf(delegates.blockchainActor, "blockchain")
+  private val walletRef = context.actorOf(delegates.walletActor, "wallet")
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
@@ -65,11 +65,8 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
 
   private def connected: Receive = {
     case PublishTransaction(tx) =>
-      log.info(s"Publishing transaction $tx to the Bitcoin network")
-      Futures.addCallback(
-        peerGroup.broadcastTransaction(tx.get),
-        new TxBroadcastCallback(tx, sender()),
-        context.dispatcher)
+      val name = s"broadcast-${tx.get.getHash}-${System.currentTimeMillis()}"
+      context.actorOf(delegates.transactionPublisher(tx, sender()), name)
   }
 
   private def commonHandling: Receive = {
@@ -89,7 +86,7 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       ))
 
     case DownloadProgress(remainingBlocks) =>
-      properties.network.blockchainStatus.get match {
+      properties.blockchainStatus.get match {
         case BlockchainStatus.Downloading(totalBlocks, previouslyRemainingBlocks)
           if remainingBlocks <= previouslyRemainingBlocks =>
           updateConnectionStatus(BlockchainStatus.Downloading(totalBlocks, remainingBlocks))
@@ -102,32 +99,12 @@ class BitcoinPeerActor(properties: MutableBitcoinProperties, peerGroup: PeerGrou
       updateConnectionStatus(BlockchainStatus.NotDownloading)
   }
 
-  private def updateConnectionStatus(activePeers: Int,
-                                     blockchainStatus: BlockchainStatus): Unit = {
-    updateConnectionStatus(activePeers)
-    updateConnectionStatus(blockchainStatus)
-  }
-
   private def updateConnectionStatus(activePeers: Int): Unit = {
-    properties.network.activePeers.set(activePeers)
+    properties.activePeers.set(activePeers)
   }
 
   private def updateConnectionStatus(blockchainStatus: BlockchainStatus): Unit = {
-    properties.network.blockchainStatus.set(blockchainStatus)
-  }
-
-  private class TxBroadcastCallback(originalTx: ImmutableTransaction, respondTo: ActorRef)
-      extends FutureCallback[MutableTransaction] {
-
-    override def onSuccess(result: MutableTransaction): Unit = {
-      log.info(s"Transaction $originalTx successfully broadcast to the Bitcoin network")
-      respondTo ! TransactionPublished(originalTx, ImmutableTransaction(result))
-    }
-
-    override def onFailure(error: Throwable): Unit = {
-      log.error(error, s"Transaction $originalTx failed to be broadcast to the Bitcoin network")
-      respondTo ! TransactionNotPublished(originalTx, error)
-    }
+    properties.blockchainStatus.set(blockchainStatus)
   }
 
   private def startConnecting(): Unit = {
@@ -241,21 +218,30 @@ object BitcoinPeerActor {
 
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
+  trait Delegates {
+    def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
+    val walletActor: Props
+    val blockchainActor: Props
+  }
+
   trait Component {
 
     this: PeerGroupComponent with NetworkComponent with BlockchainComponent
       with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
+      val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
-        bitcoinProperties,
+        bitcoinProperties.network,
         peerGroup,
-        BlockchainActor.props(blockchain, network),
-        WalletActor.props,
-        wallet,
+        new Delegates {
+          override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+            Props(new TransactionPublisher(tx, peerGroup, listener, settings.connectionRetryInterval))
+          override val walletActor = WalletActor.props(bitcoinProperties.wallet, wallet)
+          override val blockchainActor = BlockchainActor.props(blockchain, network)
+        },
         blockchain,
-        network,
-        configProvider.bitcoinSettings().connectionRetryInterval
+        settings.connectionRetryInterval
       ))
     }
   }

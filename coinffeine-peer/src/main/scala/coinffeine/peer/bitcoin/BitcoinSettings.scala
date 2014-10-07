@@ -5,5 +5,6 @@ import scala.concurrent.duration._
 
 case class BitcoinSettings(
   connectionRetryInterval: FiniteDuration,
-  walletFile: File
+  walletFile: File,
+  rebroadcastTimeout: FiniteDuration
 )
