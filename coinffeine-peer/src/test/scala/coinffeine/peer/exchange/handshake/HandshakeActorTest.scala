@@ -2,8 +2,7 @@ package coinffeine.peer.exchange.handshake
 
 import akka.testkit.TestProbe
 
-import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.WalletActor

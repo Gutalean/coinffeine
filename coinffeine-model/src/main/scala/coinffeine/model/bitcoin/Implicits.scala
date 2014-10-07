@@ -3,13 +3,20 @@ package coinffeine.model.bitcoin
 import scala.collection.JavaConversions._
 
 import org.bitcoinj.core.Coin
+import org.bitcoinj.core.ECKey.MissingPrivateKeyException
 import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.currency._
 
-object Implicits {
+trait Implicits {
+  import Implicits._
 
-  implicit class PimpMyMutableTransaction(val tx: MutableTransaction) extends AnyVal {
+  implicit def pimpMyMutableTransaction(tx: MutableTransaction) = new PimpMyMutableTransaction(tx)
+  implicit def pimpMyKeyPair(keyPair: KeyPair) = new PimpMyKeyPair(keyPair)
+}
+
+object Implicits {
+  class PimpMyMutableTransaction(val tx: MutableTransaction) extends AnyVal {
 
     def addChangeOutput(inputAmount: Bitcoin.Amount,
                         spentAmount: Bitcoin.Amount,
@@ -32,9 +39,15 @@ object Implicits {
     def outputAmount: Bitcoin.Amount = tx.getOutputs.foldLeft(Coin.ZERO)((a, b) => a.add(b.getValue))
   }
 
-  implicit class PimpMyKeyPair(val keyPair: KeyPair) extends AnyVal {
+  class PimpMyKeyPair(val keyPair: KeyPair) extends AnyVal {
 
     /** Copies just the public key */
     def publicKey: PublicKey = PublicKey(keyPair.getPubKey)
+
+    def canSign: Boolean = try {
+      keyPair.getPrivKey != null
+    } catch {
+      case _: MissingPrivateKeyException => false
+    }
   }
 }

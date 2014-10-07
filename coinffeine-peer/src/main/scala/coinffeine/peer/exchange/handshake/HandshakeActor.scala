@@ -7,8 +7,7 @@ import akka.actor._
 import akka.pattern._
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.bitcoin.Implicits._
-import coinffeine.model.bitcoin.{Hash, ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId

@@ -6,7 +6,7 @@ import org.bitcoinj.{core, crypto}
 
 import coinffeine.model.currency.Bitcoin
 
-package object bitcoin {
+package object bitcoin extends Implicits {
 
   /** Bitcoinj's ECKey contains a public key and optionally the private one. We might replace
     * this typedef by a class ensuring that both public and private key are present.
