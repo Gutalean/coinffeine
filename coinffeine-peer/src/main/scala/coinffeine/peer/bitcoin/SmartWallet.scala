@@ -8,7 +8,6 @@ import org.bitcoinj.core.{TransactionConfidence, AbstractWalletEventListener}
 import org.bitcoinj.core.Wallet.{SendRequest, BalanceType}
 import org.bitcoinj.wallet.WalletTransaction
 
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 

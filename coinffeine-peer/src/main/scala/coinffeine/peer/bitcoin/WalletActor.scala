@@ -6,7 +6,6 @@ import scala.util.control.NonFatal
 import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
 
 private class WalletActor(

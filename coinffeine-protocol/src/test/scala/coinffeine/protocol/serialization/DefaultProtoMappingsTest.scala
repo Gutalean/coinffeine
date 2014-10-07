@@ -5,7 +5,6 @@ import java.math.BigInteger
 import com.google.protobuf.{ByteString, Message}
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._

@@ -1,7 +1,6 @@
 package coinffeine.protocol.messages.handshake
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, PublicKey}
-import coinffeine.model.bitcoin.Implicits._
+import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
 

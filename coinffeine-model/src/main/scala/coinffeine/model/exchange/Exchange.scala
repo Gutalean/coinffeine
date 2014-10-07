@@ -3,7 +3,6 @@ package coinffeine.model.exchange
 import scala.util.Try
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
