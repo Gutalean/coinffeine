@@ -6,7 +6,7 @@ import scala.concurrent.ExecutionContext
 
 import org.bitcoinj.core.{TransactionConfidence, AbstractWalletEventListener}
 import org.bitcoinj.core.Wallet.{SendRequest, BalanceType}
-import org.bitcoinj.wallet.{KeyChain, WalletTransaction}
+import org.bitcoinj.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.bitcoin._
@@ -14,7 +14,7 @@ import coinffeine.model.currency._
 
 class SmartWallet(val delegate: Wallet) {
 
-  import coinffeine.peer.bitcoin.SmartWallet._
+  import SmartWallet._
 
   def this(network: Network) = this(new Wallet(network))
 
@@ -49,7 +49,7 @@ class SmartWallet(val delegate: Wallet) {
   def valueSentToMe(tx: MutableTransaction): Bitcoin.Amount = tx.getValueSentToMe(delegate)
 
   def freshKeyPair(): KeyPair = synchronized {
-    delegate.freshKey(KeyChain.KeyPurpose.RECEIVE_FUNDS)
+    delegate.freshReceiveKey()
   }
 
   def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }

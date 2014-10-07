@@ -3,6 +3,7 @@ package coinffeine.model.bitcoin
 import scala.collection.JavaConversions._
 
 import org.bitcoinj.core.Coin
+import org.bitcoinj.core.ECKey.MissingPrivateKeyException
 import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.currency._
@@ -36,5 +37,11 @@ object Implicits {
 
     /** Copies just the public key */
     def publicKey: PublicKey = PublicKey(keyPair.getPubKey)
+
+    def canSign: Boolean = try {
+      keyPair.getPrivKey != null
+    } catch {
+      case _: MissingPrivateKeyException => false
+    }
   }
 }

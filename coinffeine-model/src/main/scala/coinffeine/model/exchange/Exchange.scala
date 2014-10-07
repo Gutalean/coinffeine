@@ -3,6 +3,7 @@ package coinffeine.model.exchange
 import scala.util.Try
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
@@ -365,7 +366,7 @@ object Exchange {
     val user: Exchange.PeerInfo
     val counterpart: Exchange.PeerInfo
 
-    require(user.bitcoinKey.hasPrivKey)
+    require(user.bitcoinKey.canSign)
   }
 
   implicit class StartedHandshakePimps(val exchange: Exchange[_, StartedHandshake[_]])

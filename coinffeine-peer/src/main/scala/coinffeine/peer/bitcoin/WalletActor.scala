@@ -6,6 +6,7 @@ import scala.util.control.NonFatal
 import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.Implicits._
 import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
 
 private class WalletActor(
@@ -180,5 +181,7 @@ object WalletActor {
   case object CreateKeyPair
 
   /** Response to [[CreateKeyPair]] */
-  case class KeyPairCreated(keyPair: KeyPair)
+  case class KeyPairCreated(keyPair: KeyPair) {
+    require(keyPair.canSign, s"Can't sign with $keyPair")
+  }
 }

@@ -9,14 +9,15 @@ class PimpMyKeyPairTest extends UnitTest {
   val publicKey = keyPair.publicKey
 
   "Pimp my key pair" should "get the public key from a key pair" in {
-    publicKey.publicKey should be(publicKey)
+    publicKey.publicKey shouldBe publicKey
   }
 
   it should "get just the public key from a key pair" in {
-    publicKey.hasPrivKey should be (false)
+    publicKey shouldBe 'pubKeyOnly
+    publicKey.canSign shouldBe false
   }
 
-  it should "be idempontent when extracting public keys" in {
-    publicKey.getPubKey.sameElements(keyPair.getPubKey)
+  it should "be idempotent when extracting public keys" in {
+    publicKey.getPubKey shouldEqual keyPair.getPubKey
   }
 }
