@@ -20,21 +20,26 @@ class SettingsMappingTest extends UnitTest {
   "Bitcoins settings mapping" should "map from config" in {
     val conf = makeConfig(
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
-      "coinffeine.bitcoin.walletFile" -> "user.wallet"
+      "coinffeine.bitcoin.walletFile" -> "user.wallet",
+      "coinffeine.bitcoin.rebroadcastTimeout" -> "60s"
     )
-    val settings = SettingsMapping.fromConfig[BitcoinSettings](conf)
-    settings.connectionRetryInterval should be (30.seconds)
-    settings.walletFile should be (new File("user.wallet"))
+    SettingsMapping.fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
+      connectionRetryInterval = 30.seconds,
+      walletFile = new File("user.wallet"),
+      rebroadcastTimeout = 1.minute
+    )
   }
 
   it should "map to config" in {
     val settings = BitcoinSettings(
       connectionRetryInterval = 50.seconds,
-      walletFile = new File("/tmp/user.wallet")
+      walletFile = new File("/tmp/user.wallet"),
+      rebroadcastTimeout = 60.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) should be (50)
+    cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
     cfg.getString("coinffeine.bitcoin.walletFile") should be (new File("/tmp/user.wallet").getPath)
+    cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
   }
 
   "Message Gateway settings mapping" should "map from config" in {
