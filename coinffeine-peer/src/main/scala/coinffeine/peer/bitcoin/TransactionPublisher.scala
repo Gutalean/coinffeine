@@ -3,14 +3,14 @@ package coinffeine.peer.bitcoin
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor._
 import akka.pattern._
 import org.bitcoinj.core.TransactionBroadcaster
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.utils.FutureUtils
 
-class TransactionPublisher(originalTx: ImmutableTransaction,
+private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
                            transactionBroadcaster: TransactionBroadcaster,
                            listener: ActorRef,
                            rebroadcastTimeout: FiniteDuration)
@@ -24,6 +24,7 @@ class TransactionPublisher(originalTx: ImmutableTransaction,
   private case class AttemptTimeout(attempt: Int)
 
   private var currentAttempt = 0
+  private var attemptTimeout: Option[Cancellable] = None
 
   override def preStart(): Unit = {
     nextAttempt()
@@ -34,6 +35,7 @@ class TransactionPublisher(originalTx: ImmutableTransaction,
       finishWith(BitcoinPeerActor.TransactionPublished(originalTx, broadcastTx))
 
     case AttemptFailure(MaxAttempts, cause) =>
+      log.error(cause, "Attempt {} of {} broadcast failed", MaxAttempts, originalTx.get.getHash)
       finishWith(BitcoinPeerActor.TransactionNotPublished(originalTx, cause))
 
     case AttemptFailure(attempt, cause) if attempt == currentAttempt =>
@@ -46,17 +48,23 @@ class TransactionPublisher(originalTx: ImmutableTransaction,
   }
 
   private def nextAttempt(): Unit = {
+    clearTimeout()
     currentAttempt += 1
     scheduleAttemptTimeout()
     attemptToBroadcast()
   }
 
   private def scheduleAttemptTimeout(): Unit = {
-    context.system.scheduler.scheduleOnce(
+    attemptTimeout = Some(context.system.scheduler.scheduleOnce(
       delay = rebroadcastTimeout,
       receiver = self,
       message = AttemptTimeout(currentAttempt)
-    )
+    ))
+  }
+
+  private def clearTimeout(): Unit = {
+    attemptTimeout.foreach(_.cancel())
+    attemptTimeout = None
   }
 
   private def attemptToBroadcast(): Unit = {
@@ -69,6 +77,7 @@ class TransactionPublisher(originalTx: ImmutableTransaction,
   }
 
   private def finishWith(notification: Any): Unit = {
+    clearTimeout()
     listener ! notification
     context.stop(self)
   }

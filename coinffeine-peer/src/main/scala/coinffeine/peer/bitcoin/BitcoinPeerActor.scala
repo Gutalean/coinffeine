@@ -236,7 +236,7 @@ object BitcoinPeerActor {
         peerGroup,
         new Delegates {
           override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
-            Props(new TransactionPublisher(tx, peerGroup, listener, settings.connectionRetryInterval))
+            Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
           override val walletActor = WalletActor.props(bitcoinProperties.wallet, wallet)
           override val blockchainActor = BlockchainActor.props(blockchain, network)
         },
