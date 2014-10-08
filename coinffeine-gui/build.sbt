@@ -1,4 +1,4 @@
-name := "coinffeine-gui"
+name := "Coinffeine"
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
 
@@ -15,8 +15,18 @@ fork := true
 
 jfxSettings
 
+JFX.vendor := "Coinffeine S.L."
+
+JFX.copyright := "Copyright (c) 2013, 2014 Coinffeine S.L."
+
+JFX.artifactBaseNameValue := "packages"
+
 JFX.mainClass := Some("coinffeine.gui.Main")
 
 JFX.title := "Coinffeine"
 
 JFX.nativeBundles := "all"
+
+JFX.pkgResourcesDir := baseDirectory.value + "/src/deploy"
+
+JFX.verbose := true

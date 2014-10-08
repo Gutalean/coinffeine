@@ -54,3 +54,5 @@ libraryDependencies in ThisBuild ++= Seq(
   Dependencies.scalatest % "test",
   Dependencies.slf4j
 )
+
+exportJars in ThisBuild := true
