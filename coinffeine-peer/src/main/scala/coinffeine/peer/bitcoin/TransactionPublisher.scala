@@ -10,7 +10,7 @@ import org.bitcoinj.core.TransactionBroadcaster
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.utils.FutureUtils
 
-class TransactionPublisher(originalTx: ImmutableTransaction,
+private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
                            transactionBroadcaster: TransactionBroadcaster,
                            listener: ActorRef,
                            rebroadcastTimeout: FiniteDuration)
