@@ -3,12 +3,13 @@ package coinffeine.gui.application
 import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
-import scalafx.scene.control.{Separator, ToggleButton, ToolBar}
+import scalafx.scene.control._
 import scalafx.scene.layout.BorderPane
-import scalafx.scene.{Node, Parent, Scene}
+import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
 
+import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 
 /** Main scene of the application.
@@ -23,6 +24,23 @@ class ApplicationScene(views: Seq[ApplicationView],
     extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Wallet) {
 
   require(views.nonEmpty, "At least one view is required")
+
+  val menuBar = new MenuBar {
+    useSystemMenuBar = true
+
+    menus = Seq(
+      new Menu("Edit") {
+        items = Seq(
+          new MenuItem("Preferences") {
+            onAction = { e: ActionEvent =>
+              val form = new PreferencesForm
+              form.show()
+            }
+          }
+        )
+      }
+    )
+  }
 
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)
 
@@ -55,6 +73,7 @@ class ApplicationScene(views: Seq[ApplicationView],
       id = "main-root-pane"
       top = toolbarPane
       bottom = statusBarPane
+      children.add(menuBar)
     }
     currentView.onChange { mainPane.center = currentView.value.centerPane }
     mainPane

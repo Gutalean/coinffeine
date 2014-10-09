@@ -8,4 +8,5 @@ object Stylesheets {
   val Operations = "/css/operations.css"
   val Wallet = "/css/wallet.css"
   val Wizard = "/css/wizard.css"
+  val Preferences = "/css/preferences.css"
 }

@@ -1,0 +1,14 @@
+/* This file defines the styles for the preferences form. */
+
+#preferences-root-pane {
+    -fx-padding: 0 0 20px 0;
+    -fx-alignment: center;
+}
+
+#preferences-okpay-userid-field {
+    -fx-pref-column-count: 20;
+}
+
+#preferences-okpay-token-field {
+    -fx-pref-column-count: 20;
+}
