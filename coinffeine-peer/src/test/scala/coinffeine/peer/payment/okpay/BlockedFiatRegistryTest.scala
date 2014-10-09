@@ -8,19 +8,19 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
-class BlockingFundsActorTest extends AkkaSpec {
+class BlockedFiatRegistryTest extends AkkaSpec {
 
   "The blocking funds actor" must "retrieve no blocked funds when no funds are blocked" in
     new WithBlockingFundsActor {
-      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.TotalBlockedFunds(Euro.Zero))
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(Euro.Zero))
     }
 
   it must "retrieve blocked funds when blocked" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { funds =>
-      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.TotalBlockedFunds(100.EUR))
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(100.EUR))
     }
   }
 
@@ -28,23 +28,23 @@ class BlockingFundsActorTest extends AkkaSpec {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { funds =>
       actor ! PaymentProcessorActor.UnblockFunds(funds)
-      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.TotalBlockedFunds(Euro.Zero))
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(Euro.Zero))
     }
   }
 
   it must "retrieve blocked after using some" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { funds =>
-      actor ! BlockingFundsActor.UseFunds(funds, 60.EUR)
-      expectMsgPF() { case BlockingFundsActor.FundsUsed(`funds`, _) => }
-      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.TotalBlockedFunds(40.EUR))
+      actor ! BlockedFiatRegistry.UseFunds(funds, 60.EUR)
+      expectMsgPF() { case BlockedFiatRegistry.FundsUsed(`funds`, _) => }
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
     }
   }
 
   it must "block funds up to existing balances" in new WithBlockingFundsActor {
-    actor ! BlockingFundsActor.BalancesUpdate(Seq(100.EUR))
+    actor ! BlockedFiatRegistry.BalancesUpdate(Seq(100.EUR))
     actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
     actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
     actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
@@ -127,23 +127,23 @@ class BlockingFundsActorTest extends AkkaSpec {
 
   it must "reject funds usage for unknown funds id" in new WithBlockingFundsActor {
     val unknownFunds = ExchangeId("unknown")
-    actor ! BlockingFundsActor.UseFunds(unknownFunds, 10.EUR)
-    expectMsgPF() { case BlockingFundsActor.CannotUseFunds(`unknownFunds`, _, _) => }
+    actor ! BlockedFiatRegistry.UseFunds(unknownFunds, 10.EUR)
+    expectMsgPF() { case BlockedFiatRegistry.CannotUseFunds(`unknownFunds`, _, _) => }
   }
 
   it must "reject funds usage when it exceeds blocked amount" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(50.EUR) { funds =>
-      actor ! BlockingFundsActor.UseFunds(funds, 100.EUR)
-      expectMsgPF() { case BlockingFundsActor.CannotUseFunds(`funds`, _, _) => }
+      actor ! BlockedFiatRegistry.UseFunds(funds, 100.EUR)
+      expectMsgPF() { case BlockedFiatRegistry.CannotUseFunds(`funds`, _, _) => }
     }
   }
 
   it must "reject funds usage when block is unavailable" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenUnavailableFunds(150.EUR) { funds =>
-      actor ! BlockingFundsActor.UseFunds(funds, 100.EUR)
-      expectMsgPF() { case BlockingFundsActor.CannotUseFunds(`funds`, _, _) => }
+      actor ! BlockedFiatRegistry.UseFunds(funds, 100.EUR)
+      expectMsgPF() { case BlockedFiatRegistry.CannotUseFunds(`funds`, _, _) => }
     }
   }
 
@@ -151,8 +151,8 @@ class BlockingFundsActorTest extends AkkaSpec {
     new WithBlockingFundsActor {
       setBalance(100.EUR)
       givenAvailableFunds(50.EUR) { funds =>
-        actor ! BlockingFundsActor.UseFunds(funds, 10.EUR)
-        expectMsgPF() { case BlockingFundsActor.FundsUsed(`funds`, _) => }
+        actor ! BlockedFiatRegistry.UseFunds(funds, 10.EUR)
+        expectMsgPF() { case BlockedFiatRegistry.FundsUsed(`funds`, _) => }
       }
     }
 
@@ -160,16 +160,16 @@ class BlockingFundsActorTest extends AkkaSpec {
     new WithBlockingFundsActor {
       setBalance(100.EUR)
       givenAvailableFunds(50.EUR) { funds =>
-        actor ! BlockingFundsActor.UseFunds(funds, 50.EUR)
-        expectMsgPF() { case BlockingFundsActor.FundsUsed(`funds`, _) => }
+        actor ! BlockedFiatRegistry.UseFunds(funds, 50.EUR)
+        expectMsgPF() { case BlockedFiatRegistry.FundsUsed(`funds`, _) => }
       }
     }
 
   it must "consider new balance after funds are used" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(50.EUR) { funds1 =>
-      actor ! BlockingFundsActor.UseFunds(funds1, 10.EUR)
-      expectMsgPF() { case BlockingFundsActor.FundsUsed(`funds1`, _) => }
+      actor ! BlockedFiatRegistry.UseFunds(funds1, 10.EUR)
+      expectMsgPF() { case BlockedFiatRegistry.FundsUsed(`funds1`, _) => }
       givenBlockedFunds(60.EUR) { funds2 =>
         expectBecomingUnavailable(funds2)
       }
@@ -177,7 +177,7 @@ class BlockingFundsActorTest extends AkkaSpec {
   }
 
   private trait WithBlockingFundsActor {
-    val actor = system.actorOf(Props(new BlockingFundsActor()))
+    val actor = system.actorOf(Props(new BlockedFiatRegistry()))
 
     val eventProbe = TestProbe()
     system.eventStream.subscribe(
@@ -208,7 +208,7 @@ class BlockingFundsActorTest extends AkkaSpec {
     }
 
     def setBalance(balance: FiatAmount): Unit = {
-      actor ! BlockingFundsActor.BalancesUpdate(Seq(balance))
+      actor ! BlockedFiatRegistry.BalancesUpdate(Seq(balance))
     }
 
     def expectBecomingAvailable(fundsId: ExchangeId): Unit = {

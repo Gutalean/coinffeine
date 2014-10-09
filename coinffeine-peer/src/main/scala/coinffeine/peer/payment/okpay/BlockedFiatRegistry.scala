@@ -7,8 +7,8 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FundsAvailabilityEvent
 
-class BlockingFundsActor extends Actor with ActorLogging {
-  import coinffeine.peer.payment.okpay.BlockingFundsActor._
+private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
+  import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
       id: ExchangeId, remainingAmount: CurrencyAmount[C], @deprecated listener: ActorRef) {
@@ -26,8 +26,8 @@ class BlockingFundsActor extends Actor with ActorLogging {
   override def receive: Receive = {
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
-        case Some(blockedFunds) => sender ! BlockingFundsActor.TotalBlockedFunds(blockedFunds)
-        case None => sender ! BlockingFundsActor.TotalBlockedFunds(currency.Zero)
+        case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
+        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.Zero)
       }
 
     case BalancesUpdate(newBalances) =>
@@ -180,7 +180,7 @@ class BlockingFundsActor extends Actor with ActorLogging {
   }
 }
 
-object BlockingFundsActor {
+private[okpay] object BlockedFiatRegistry {
 
   case class RetrieveTotalBlockedFunds[C <: FiatCurrency](currency: C)
   case class TotalBlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
@@ -191,5 +191,5 @@ object BlockingFundsActor {
   case class FundsUsed(funds: ExchangeId, amount: FiatAmount)
   case class CannotUseFunds(funds: ExchangeId, amount: FiatAmount, reason: String)
 
-  def props = Props(new BlockingFundsActor)
+  def props = Props(new BlockedFiatRegistry)
 }

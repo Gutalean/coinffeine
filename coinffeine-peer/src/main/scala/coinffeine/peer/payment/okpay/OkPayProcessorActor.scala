@@ -14,7 +14,7 @@ import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.BlockingFundsActor._
+import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
 
 class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
@@ -25,7 +25,7 @@ class OkPayProcessorActor(
   import context.dispatcher
   import OkPayProcessorActor._
 
-  private val blockingFunds = context.actorOf(BlockingFundsActor.props, "blocking")
+  private val blockingFunds = context.actorOf(BlockedFiatRegistry.props, "funds")
 
   private var timer: Cancellable = _
 
