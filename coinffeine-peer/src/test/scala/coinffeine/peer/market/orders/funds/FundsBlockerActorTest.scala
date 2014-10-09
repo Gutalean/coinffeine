@@ -98,11 +98,11 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def givenFiatFundsBecomeAvailable(): Unit = {
-      paymentProcessor.reply(PaymentProcessorActor.AvailableFunds(exchangeId))
+      system.eventStream.publish(PaymentProcessorActor.AvailableFunds(exchangeId))
     }
 
     def givenFiatFundsBecomeUnavailable(): Unit = {
-      paymentProcessor.reply(PaymentProcessorActor.UnavailableFunds(exchangeId))
+      system.eventStream.publish(PaymentProcessorActor.UnavailableFunds(exchangeId))
     }
 
     def expectBitcoinFundsUnblocking(): Unit = {

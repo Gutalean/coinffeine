@@ -63,7 +63,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     requester.send(
       processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
     requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    requester.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
+    eventsProbe.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
     val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
     response.id should be (payment.id)
@@ -86,7 +86,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     requester.send(processor, PaymentProcessorActor.BlockFunds(funds, amount / 2))
     requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    requester.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
+    eventsProbe.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
     requester.expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
   }
@@ -97,7 +97,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     requester.send(
       processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
     requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    requester.fishForMessage() {
+    eventsProbe.fishForMessage() {
       case _: PaymentProcessorActor.UnavailableFunds => false
       case _: PaymentProcessorActor.AvailableFunds => true
     }
@@ -164,7 +164,9 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
       override def shutdown(): Unit = {}
     }
     val processorProps = Props(new OkPayProcessorActor(clientFactory, pollingInterval, properties))
-    val requester = TestProbe()
+    val eventsProbe, requester = TestProbe()
+    system.eventStream.subscribe(
+      eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
 
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))

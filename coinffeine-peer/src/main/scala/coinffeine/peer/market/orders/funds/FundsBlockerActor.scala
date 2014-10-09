@@ -68,6 +68,8 @@ private[funds] class FundsBlockerActor(
 
   private def requestFiatFunds(): Unit = {
     if (isFiatRequired) {
+      context.system.eventStream.subscribe(self,
+        classOf[PaymentProcessorActor.FundsAvailabilityEvent])
       paymentProcessor ! PaymentProcessorActor.BlockFunds(id, requiredFunds.fiat)
     } else {
       fiatFunds = UnneededFiatFunds

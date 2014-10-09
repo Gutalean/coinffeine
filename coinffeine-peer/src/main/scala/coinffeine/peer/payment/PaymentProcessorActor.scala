@@ -33,14 +33,16 @@ object PaymentProcessorActor {
   /** A message sent to the payment processor to release some previously reserved funds. */
   case class UnblockFunds(id: ExchangeId)
 
+  sealed trait FundsAvailabilityEvent
+
   /** A message sent by the payment processor to notify that some blocked funds are not available
     * for external reasons.
     */
-  case class UnavailableFunds(id: ExchangeId)
+  case class UnavailableFunds(id: ExchangeId) extends FundsAvailabilityEvent
 
   /** A message sent by the payment processor to notify when some blocked but not available funds
     * are available back */
-  case class AvailableFunds(id: ExchangeId)
+  case class AvailableFunds(id: ExchangeId) extends FundsAvailabilityEvent
 
   /** A message sent to the payment processor ordering a new pay.
     *

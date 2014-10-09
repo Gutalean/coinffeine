@@ -5,12 +5,13 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.PaymentProcessorActor.FundsAvailabilityEvent
 
 class BlockingFundsActor extends Actor with ActorLogging {
   import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
-      id: ExchangeId, remainingAmount: CurrencyAmount[C], listener: ActorRef) {
+      id: ExchangeId, remainingAmount: CurrencyAmount[C], @deprecated listener: ActorRef) {
 
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
@@ -135,12 +136,13 @@ class BlockingFundsActor extends Actor with ActorLogging {
       currentlyAvailable.diff(previouslyAvailable))
   }
 
-  private def notifyListeners(messageBuilder: ExchangeId => Any, fundsIds: Iterable[ExchangeId]): Unit = {
+  private def notifyListeners(eventBuilder: ExchangeId => FundsAvailabilityEvent,
+                              fundsIds: Iterable[ExchangeId]): Unit = {
     for {
       fundsId <- fundsIds
       BlockedFundsInfo(_, _, listener) <- funds.get(fundsId)
     } {
-      listener ! messageBuilder(fundsId)
+      context.system.eventStream.publish(eventBuilder(fundsId))
     }
   }
 
