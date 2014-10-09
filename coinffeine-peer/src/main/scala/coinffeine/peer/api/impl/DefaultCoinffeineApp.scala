@@ -6,6 +6,7 @@ import scala.util.Random
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
+import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
@@ -13,7 +14,7 @@ import coinffeine.model.bitcoin.BitcoinProperties
 import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
-import coinffeine.peer.amounts.{DefaultAmountsComponent, AmountsCalculator}
+import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.api._
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.payment.PaymentProcessorProperties
@@ -24,9 +25,10 @@ class DefaultCoinffeineApp(name: String,
                            properties: DefaultCoinffeineApp.Properties,
                            lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
-                           amountsCalculator: AmountsCalculator) extends CoinffeineApp {
+                           amountsCalculator: AmountsCalculator,
+                           config: Config) extends CoinffeineApp {
 
-  private val system = ActorSystem(name)
+  private val system = ActorSystem(name, config)
   private val peerRef = system.actorOf(peerProps, "peer")
 
   override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
@@ -71,13 +73,13 @@ object DefaultCoinffeineApp {
     this: CoinffeinePeerActor.Component with ConfigComponent
       with DefaultAmountsComponent with DefaultCoinffeinePropertiesComponent =>
 
-    private def accountId() = configProvider.okPaySettings.userAccount
+    private def accountId() = configProvider.okPaySettings().userAccount
 
     private val properties = Properties(
       bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties)
 
     override lazy val app = new DefaultCoinffeineApp(
-      name = chooseName(), properties, accountId, peerProps, amountsCalculator)
+      name = chooseName(), properties, accountId, peerProps, amountsCalculator, configProvider.config)
 
     /** Choose a name use for naming the actor systems and logging */
     private def chooseName() = accountId().getOrElse("app-" + Random.nextInt(1000))

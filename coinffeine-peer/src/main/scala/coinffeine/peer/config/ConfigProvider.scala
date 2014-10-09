@@ -1,6 +1,8 @@
 package coinffeine.peer.config
 
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory, Config}
+import scala.collection.JavaConverters._
+
+import com.typesafe.config.{Config, ConfigFactory}
 
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.config.user.LocalAppDataDir
@@ -23,10 +25,16 @@ trait ConfigProvider extends SettingsProvider {
   def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit
 
   /** Retrieve the reference configuration obtained from the app bundle. */
-  def referenceConfig: Config = ConfigFactory.load().withValue(
-    "coinffeine.bitcoin.walletFile",
-    ConfigValueFactory.fromAnyRef(
-      LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toAbsolutePath.toString))
+  def referenceConfig: Config = defaultPathConfiguration.withFallback(ConfigFactory.load())
+
+  private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
+    "coinffeine.bitcoin.walletFile" -> configPath("user.wallet"),
+    "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
+    "akka.persistence.snapshot-store.dir" -> configPath("journal")
+  ).asJava)
+
+  private def configPath(filename: String) =
+    LocalAppDataDir.getFile(filename, ensureCreated = false).toAbsolutePath.toString
 
   /** Retrieve the whole configuration, including reference and user config. */
   def config: Config = userConfig.withFallback(referenceConfig)
