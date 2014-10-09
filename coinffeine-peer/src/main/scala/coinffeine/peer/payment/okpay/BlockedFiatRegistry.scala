@@ -11,7 +11,7 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
   import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
-      id: ExchangeId, remainingAmount: CurrencyAmount[C], @deprecated listener: ActorRef) {
+      id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
 
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
@@ -44,7 +44,7 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
     case PaymentProcessorActor.BlockFunds(fundsId, amount) =>
       sender() ! PaymentProcessorActor.BlockedFunds(fundsId)
       arrivalOrder :+= fundsId
-      funds += fundsId -> BlockedFundsInfo(fundsId, amount, sender())
+      funds += fundsId -> BlockedFundsInfo(fundsId, amount)
       setNeverBacked(fundsId)
       updateBackedFunds()
 
@@ -138,10 +138,7 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
 
   private def notifyListeners(eventBuilder: ExchangeId => FundsAvailabilityEvent,
                               fundsIds: Iterable[ExchangeId]): Unit = {
-    for {
-      fundsId <- fundsIds
-      BlockedFundsInfo(_, _, listener) <- funds.get(fundsId)
-    } {
+    for (fundsId <- fundsIds) {
       context.system.eventStream.publish(eventBuilder(fundsId))
     }
   }
