@@ -19,6 +19,8 @@ JFX.vendor := "Coinffeine S.L."
 
 JFX.copyright := "Copyright (c) 2013, 2014 Coinffeine S.L."
 
+JFX.license := "Coinffeine License"
+
 JFX.artifactBaseNameValue := "packages"
 
 JFX.mainClass := Some("coinffeine.gui.Main")
