@@ -85,14 +85,13 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "notify on wallet changes until being unsubscribed" in new Fixture {
     instance ! SubscribeToWalletChanges
-    expectMsg(WalletChanged)
-    expectNoMsg(100.millis)
     wallet.delegate.importKey(new KeyPair)
-    expectMsg(WalletChanged)
+    receiveWhile(max = 1.second) {
+      case WalletChanged =>
+    }
     instance ! UnsubscribeToWalletChanges
-    expectNoMsg(100.millis)
     wallet.delegate.importKey(new KeyPair)
-    expectNoMsg(100.millis)
+    expectNoMsg(1.second)
   }
 
   trait Fixture {
