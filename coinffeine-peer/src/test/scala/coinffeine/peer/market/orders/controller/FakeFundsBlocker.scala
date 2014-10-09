@@ -9,10 +9,10 @@ import coinffeine.model.market.RequiredFunds
 
 class FakeFundsBlocker extends FundsBlocker {
 
-  private case class PendingFundsBlock(id: ExchangeId, listener: FundsBlocker.Listener) {
+  private case class PendingFundsBlock(listener: FundsBlocker.Listener) {
 
     def succeed(coinsId: BlockedCoinsId): Unit = {
-      listener.onComplete(Success(Exchange.BlockedFunds(Some(id), coinsId)))
+      listener.onComplete(Success(Exchange.BlockedFunds(coinsId)))
     }
 
     def fail(cause: Throwable): Unit = {
@@ -25,7 +25,7 @@ class FakeFundsBlocker extends FundsBlocker {
   override def blockFunds(id: ExchangeId,
                           funds: RequiredFunds[_ <: FiatCurrency],
                           listener: FundsBlocker.Listener): Unit = {
-    pending :+= PendingFundsBlock(id, listener)
+    pending :+= PendingFundsBlock(listener)
   }
 
   def successfullyBlockFunds(coinsId: BlockedCoinsId): Unit = {

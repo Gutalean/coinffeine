@@ -118,8 +118,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectSuccessfulBlocking(): Unit = {
-      val funds = Exchange.BlockedFunds(
-        if (requiredFiat.isPositive) Some(exchangeId) else None, btcFunds)
+      val funds = Exchange.BlockedFunds(btcFunds)
       expectMsg(FundsBlockerActor.BlockingResult(Success(funds)))
     }
 

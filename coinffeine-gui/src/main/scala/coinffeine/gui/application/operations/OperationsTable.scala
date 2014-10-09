@@ -160,8 +160,6 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       add(fieldValue(exchange.amounts.grossFiatExchanged.toString), 1, 3)
       add(fieldName("Net fiat"), 2, 3)
       add(fieldValue(exchange.amounts.netFiatExchanged.toString), 3, 3)
-      add(fieldName("Blocked fiat ID"), 4, 3)
-      add(fieldValue(exchange.blockedFunds.fiat.map(_.value).getOrElse("None")), 5, 3)
 
       add(fieldName("Seller deposit input"), 0, 4)
       add(fieldValue(exchange.amounts.deposits.seller.input.toString), 1, 4)

@@ -107,9 +107,9 @@ private[funds] class FundsBlockerActor(
   private def completeFundsBlocking(fiatResult: Try[Unit],
                                     bitcoinResult: Try[BlockedBitcoin]): Unit = {
     val overallResult = for {
-      fiatFunds <- fiatResult
+      _ <- fiatResult
       bitcoinFunds <- bitcoinResult
-    } yield Exchange.BlockedFunds(if (isFiatRequired) Some(id) else None, bitcoinFunds)
+    } yield Exchange.BlockedFunds(bitcoinFunds)
 
     if (overallResult.isFailure) {
       bitcoinFunds.unblock()

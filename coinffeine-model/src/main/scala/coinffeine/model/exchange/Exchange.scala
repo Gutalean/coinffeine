@@ -133,7 +133,7 @@ object Exchange {
   }
 
   /** Funds reserved for the order this exchange belongs to */
-  case class BlockedFunds(@deprecated fiat: Option[ExchangeId], bitcoin: BlockedCoinsId)
+  case class BlockedFunds(bitcoin: BlockedCoinsId)
 
   type Deposits = Both[ImmutableTransaction]
 
