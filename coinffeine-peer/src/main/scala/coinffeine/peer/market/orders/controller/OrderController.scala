@@ -50,8 +50,8 @@ private[orders] class OrderController[C <: FiatCurrency](
       listeners.foreach(_.onOrderMatchResolution(orderMatch, result))
     }
 
-    override def blockFunds(funds: RequiredFunds[C]): Unit =
-      fundsBlocker.blockFunds(funds, new Listener {
+    override def blockFunds(id: ExchangeId, funds: RequiredFunds[C]): Unit =
+      fundsBlocker.blockFunds(id, funds, new Listener {
         override def onComplete(maybeFunds: Try[BlockedFunds]): Unit = {
           state.fundsRequestResult(context, maybeFunds)
         }

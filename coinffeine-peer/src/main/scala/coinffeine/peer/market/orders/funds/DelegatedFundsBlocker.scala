@@ -3,6 +3,7 @@ package coinffeine.peer.market.orders.funds
 import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.market.orders.OrderActor
 import coinffeine.peer.market.orders.controller.FundsBlocker
@@ -13,7 +14,7 @@ import coinffeine.peer.market.orders.controller.FundsBlocker
   * [[DelegatedFundsBlocker#blockingFunds]] in its receive behavior.
   */
 class DelegatedFundsBlocker(
-     fundsBlockingProps: RequiredFunds[_ <: FiatCurrency] => Props)(implicit context: ActorContext)
+     fundsBlockingProps: (ExchangeId, RequiredFunds[_ <: FiatCurrency]) => Props)(implicit context: ActorContext)
   extends OrderActor.OrderFundsBlocker {
 
   private case class BlockingInProgress(ref: ActorRef, listener: FundsBlocker.Listener)
@@ -21,9 +22,10 @@ class DelegatedFundsBlocker(
   private implicit val self = context.self
   private var tasks = Set.empty[BlockingInProgress]
 
-  override def blockFunds(funds: RequiredFunds[_ <: FiatCurrency],
+  override def blockFunds(id: ExchangeId,
+                          funds: RequiredFunds[_ <: FiatCurrency],
                           listener: FundsBlocker.Listener): Unit = {
-    val ref = context.actorOf(fundsBlockingProps(funds))
+    val ref = context.actorOf(fundsBlockingProps(id, funds))
     tasks += BlockingInProgress(ref, listener)
   }
 

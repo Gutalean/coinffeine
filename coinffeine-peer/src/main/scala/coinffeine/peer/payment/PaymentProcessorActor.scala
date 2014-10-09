@@ -5,6 +5,7 @@ import scala.concurrent.duration._
 import akka.util.Timeout
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 
@@ -16,23 +17,32 @@ object PaymentProcessorActor {
   /** A message sent by the payment processor identifying the account id. */
   case class RetrievedAccountId(id: AccountId)
 
-  /** A message sent to the payment processor to reserve some funds. As response, the sender must
-    * expect a [[BlockedFundsId]] object and then, availability will be notified via
-    * [[AvailableFunds]] and [[UnavailableFunds]] messages.
+  /** A message sent to the payment processor to reserve some funds for an exchange.
+    * Availability will be notified via [[AvailableFunds]] and [[UnavailableFunds]] messages on the
+    * event stream.
     */
-  case class BlockFunds(amount: FiatAmount)
+  case class BlockFunds(id: ExchangeId, amount: FiatAmount)
+
+  /** Reply to [[BlockFunds]] to confirm the funds blocking is created. However, this doesn't mean
+    * that the funds are available, that should be notified via [[AvailableFunds]]. */
+  case class BlockedFunds(id: ExchangeId)
+
+  /** Funds previously exist so the request had no effect */
+  case class AlreadyBlockedFunds(id: ExchangeId)
 
   /** A message sent to the payment processor to release some previously reserved funds. */
-  case class UnblockFunds(funds: BlockedFundsId)
+  case class UnblockFunds(id: ExchangeId)
+
+  sealed trait FundsAvailabilityEvent
 
   /** A message sent by the payment processor to notify that some blocked funds are not available
     * for external reasons.
     */
-  case class UnavailableFunds(funds: BlockedFundsId)
+  case class UnavailableFunds(id: ExchangeId) extends FundsAvailabilityEvent
 
   /** A message sent by the payment processor to notify when some blocked but not available funds
     * are available back */
-  case class AvailableFunds(funds: BlockedFundsId)
+  case class AvailableFunds(id: ExchangeId) extends FundsAvailabilityEvent
 
   /** A message sent to the payment processor ordering a new pay.
     *
@@ -47,7 +57,7 @@ object PaymentProcessorActor {
     * @param comment   The comment to be attached to the payment
     * @tparam C        The fiat currency of the payment amount
     */
-  case class Pay[C <: FiatCurrency](fundsId: BlockedFundsId,
+  case class Pay[C <: FiatCurrency](fundsId: ExchangeId,
                                     to: AccountId,
                                     amount: CurrencyAmount[C],
                                     comment: String)

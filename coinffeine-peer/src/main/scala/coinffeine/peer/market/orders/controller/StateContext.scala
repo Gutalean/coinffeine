@@ -2,6 +2,7 @@ package coinffeine.peer.market.orders.controller
 
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.{Order, OrderStatus, RequiredFunds}
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -23,8 +24,8 @@ private[controller] trait StateContext[C <: FiatCurrency] {
   /** Accept or reject a previously received order match */
   def resolveOrderMatch(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit
 
-  /** Request to block funds for exclusive use */
-  def blockFunds(funds: RequiredFunds[C]): Unit
+  /** Request to block funds for exclusive use of an exchange */
+  def blockFunds(id: ExchangeId, funds: RequiredFunds[C]): Unit
 
   /** Start publishing the order on the corresponding market */
   def keepInMarket(): Unit
