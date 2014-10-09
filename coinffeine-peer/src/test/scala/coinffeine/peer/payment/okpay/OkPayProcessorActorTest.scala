@@ -96,7 +96,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     requester.send(
       processor, PaymentProcessorActor.BlockFunds(OkPayPaymentProcessor.amountPlusFee(amount)))
     val funds = requester.expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
-    requester.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
+    requester.fishForMessage() {
+      case _: PaymentProcessorActor.UnavailableFunds => false
+      case _: PaymentProcessorActor.AvailableFunds => true
+    }
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     requester.send(processor, payRequest)
     requester.expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
