@@ -46,11 +46,7 @@ class OrderActorTest extends AkkaSpec
     exchange.counterpartId
   )
 
-  "An order actor" should "block FIAT funds plus fees when initialized" in new Fixture {
-    givenInitializedOrder()
-  }
-
-  it should "submit to the broker and receive submission status" in new Fixture {
+  "An order actor" should "submit to the broker and receive submission status" in new Fixture {
     givenOfflineOrder()
     submissionProbe.send(actor, InMarket(entry))
     expectProperty { _.status shouldBe InMarketOrder }
