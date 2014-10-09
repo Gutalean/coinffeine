@@ -13,7 +13,7 @@ private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
 
   protected val forwarding = new MessageForwarding(collaborators.gateway, exchange.counterpartId)
 
-  protected def reportProgress(signatures: Int, payments: Int): Unit = {
+  protected def reportProgress(signatures: Int): Unit = {
     val progressUpdate = exchange.increaseProgress(
       if (signatures == 0) Both.fill(Bitcoin.Zero)
       else exchange.amounts.steps(signatures - 1).progress.bitcoinsTransferred

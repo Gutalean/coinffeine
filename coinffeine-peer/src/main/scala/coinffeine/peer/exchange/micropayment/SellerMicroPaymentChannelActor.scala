@@ -49,10 +49,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
         case intermediateStep: IntermediateStep =>
           forwardSignaturesExpectingPaymentProof()
-          reportProgress(
-            signatures = channel.currentStep.value,
-            payments = channel.currentStep.value - 1
-          )
           context.become(waitForPaymentProof(intermediateStep))
       }
     }
@@ -75,8 +71,9 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
     private def forwardSignatures[A](expectingHint: String)
                                     (confirmation: PartialFunction[PublicMessage, A]): Unit = {
-      log.debug("Exchange {}: forwarding signatures for {} expecting {}",
+      log.error("Exchange {}: forwarding signatures for {} expecting {}",
         exchange.id, channel.currentStep, expectingHint)
+      reportProgress(signatures = channel.currentStep.value)
       forwarderFactory.forward(
         msg = StepSignatures(
           exchange.id, channel.currentStep.value, channel.signCurrentTransaction),
@@ -88,14 +85,14 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
     private def waitForPaymentProof(step: IntermediateStep): Receive = {
       case PaymentProof(_, paymentId, step.value) =>
-        log.debug("Received payment proof with ID {} for step {}", paymentId, step.value)
+        log.error("Received payment proof with ID {} for step {}", paymentId, step.value)
         validatePayment(step, paymentId).onComplete { tryResult =>
           self ! PaymentValidationResult(tryResult)
         }
         context.become(waitForPaymentValidation(paymentId, step))
 
       case PaymentProof(_, paymentId, otherStep) =>
-        log.debug("Received a payment with ID {} for an unexpected step {}: ignored",
+        log.warning("Received a payment with ID {} for an unexpected step {}: ignored",
           paymentId, otherStep)
     }
 
@@ -109,8 +106,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
       case PaymentValidationResult(_) =>
         unstashAll()
-        log.debug("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
-        reportProgress(signatures = step.value, payments = step.value)
+        log.error("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
         new StepBehavior(channel.nextStep).start()
 
       case _ => stash()
@@ -122,7 +118,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     }
 
     private def finishExchange(): Unit = {
-      log.info(s"Exchange {}: micropayment channel finished with success", exchange.id)
+      log.error(s"Exchange {}: micropayment channel finished with success", exchange.id)
       finishWith(ChannelSuccess(None))
     }
 
