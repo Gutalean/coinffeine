@@ -61,7 +61,7 @@ class OkPayProcessorActor(
       updateBalances(balances)
     case BalanceUpdateFailed(cause) =>
       notifyBalanceUpdateFailure(cause)
-    case msg@(BlockFunds(_) | UnblockFunds(_)) =>
+    case msg @ (_: BlockFunds | _: UnblockFunds) =>
       blockingFunds.forward(msg)
   }
 
@@ -116,8 +116,8 @@ class OkPayProcessorActor(
   }
 
   private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
-    AskPattern(blockingFunds, RetrieveBlockedFunds(currency))
-      .withImmediateReply[BlockedFunds[C]]().map(_.funds)
+    AskPattern(blockingFunds, RetrieveTotalBlockedFunds(currency))
+      .withImmediateReply[TotalBlockedFunds[C]]().map(_.funds)
   }
 
   private def updateBalances(balances: Seq[FiatAmount]): Unit = {

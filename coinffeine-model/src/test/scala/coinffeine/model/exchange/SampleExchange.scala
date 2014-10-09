@@ -52,7 +52,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
   val buyerBlockedFunds = Exchange.BlockedFunds(
-    fiat = Some(PaymentProcessor.BlockedFundsId(1)),
+    fiat = Some(exchangeId),
     bitcoin = BlockedCoinsId(1)
   )
   val sellerBlockedFunds = Exchange.BlockedFunds(fiat = None, bitcoin = BlockedCoinsId(2))

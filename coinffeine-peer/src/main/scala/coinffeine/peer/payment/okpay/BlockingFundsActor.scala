@@ -3,30 +3,30 @@ package coinffeine.peer.payment.okpay
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class BlockingFundsActor extends Actor with ActorLogging {
   import coinffeine.peer.payment.okpay.BlockingFundsActor._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
-      id: BlockedFundsId, remainingAmount: CurrencyAmount[C], listener: ActorRef) {
+      id: ExchangeId, remainingAmount: CurrencyAmount[C], listener: ActorRef) {
 
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
 
-  private var nextId = 1
   private var balances: Map[FiatCurrency, FiatAmount] = Map.empty
-  private var funds: Map[BlockedFundsId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
-  private var backedFunds = Set.empty[BlockedFundsId]
-  private var notBackedFunds = Set.empty[BlockedFundsId]
-  private var neverBackedFunds = Set.empty[BlockedFundsId]
+  private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
+  private var arrivalOrder: Seq[ExchangeId] = Seq.empty
+  private var backedFunds = Set.empty[ExchangeId]
+  private var notBackedFunds = Set.empty[ExchangeId]
+  private var neverBackedFunds = Set.empty[ExchangeId]
 
   override def receive: Receive = {
-    case RetrieveBlockedFunds(currency) =>
+    case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
-        case Some(blockedFunds) => sender ! BlockingFundsActor.BlockedFunds(blockedFunds)
-        case None => sender ! BlockingFundsActor.BlockedFunds(currency.Zero)
+        case Some(blockedFunds) => sender ! BlockingFundsActor.TotalBlockedFunds(blockedFunds)
+        case None => sender ! BlockingFundsActor.TotalBlockedFunds(currency.Zero)
       }
 
     case BalancesUpdate(newBalances) =>
@@ -37,20 +37,24 @@ class BlockingFundsActor extends Actor with ActorLogging {
       useFunds(fundsId, amount, sender())
       updateBackedFunds()
 
-    case PaymentProcessorActor.BlockFunds(amount) =>
-      val fundsId = generateFundsId()
-      sender() ! fundsId
+    case PaymentProcessorActor.BlockFunds(fundsId, _) if funds.contains(fundsId) =>
+      sender() ! PaymentProcessorActor.AlreadyBlockedFunds(fundsId)
+
+    case PaymentProcessorActor.BlockFunds(fundsId, amount) =>
+      sender() ! PaymentProcessorActor.BlockedFunds(fundsId)
+      arrivalOrder :+= fundsId
       funds += fundsId -> BlockedFundsInfo(fundsId, amount, sender())
       setNeverBacked(fundsId)
       updateBackedFunds()
 
     case PaymentProcessorActor.UnblockFunds(fundsId) =>
+      arrivalOrder = arrivalOrder.filter(_ != fundsId)
       funds -= fundsId
       clearBacked(fundsId)
       updateBackedFunds()
   }
 
-  private def useFunds[C <: FiatCurrency](fundsId: BlockedFundsId,
+  private def useFunds[C <: FiatCurrency](fundsId: ExchangeId,
                                           amount: CurrencyAmount[C],
                                           requester: ActorRef): Unit = {
     funds.get(fundsId) match {
@@ -105,14 +109,14 @@ class BlockingFundsActor extends Actor with ActorLogging {
     newlyBacked.foreach(setBacked)
   }
 
-  private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[BlockedFundsId] = {
+  private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[ExchangeId] = {
     val availableBalance = balances.getOrElse(currency, currency.Zero)
     val eligibleFunds = funds
       .values
       .filter(_.remainingAmount.currency == currency)
       .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
       .toSeq
-      .sortBy(_.id.underlying)
+      .sortBy(f => arrivalOrder.indexOf(f.id))
     val fundsThatCanBeBacked =
       eligibleFunds.scanLeft(CurrencyAmount.zero(currency))(_ + _.remainingAmount)
         .takeWhile(_ <= availableBalance)
@@ -120,9 +124,9 @@ class BlockingFundsActor extends Actor with ActorLogging {
     eligibleFunds.take(fundsThatCanBeBacked).map(_.id).toSet
   }
 
-  private def notifyAvailabilityChanges(neverBacked: Set[BlockedFundsId],
-                                        previouslyAvailable: Set[BlockedFundsId],
-                                        currentlyAvailable: Set[BlockedFundsId]): Unit = {
+  private def notifyAvailabilityChanges(neverBacked: Set[ExchangeId],
+                                        previouslyAvailable: Set[ExchangeId],
+                                        currentlyAvailable: Set[ExchangeId]): Unit = {
     notifyListeners(
       PaymentProcessorActor.UnavailableFunds,
       (previouslyAvailable ++ neverBacked).diff(currentlyAvailable))
@@ -131,7 +135,7 @@ class BlockingFundsActor extends Actor with ActorLogging {
       currentlyAvailable.diff(previouslyAvailable))
   }
 
-  private def notifyListeners(messageBuilder: BlockedFundsId => Any, fundsIds: Iterable[BlockedFundsId]): Unit = {
+  private def notifyListeners(messageBuilder: ExchangeId => Any, fundsIds: Iterable[ExchangeId]): Unit = {
     for {
       fundsId <- fundsIds
       BlockedFundsInfo(_, _, listener) <- funds.get(fundsId)
@@ -143,34 +147,24 @@ class BlockingFundsActor extends Actor with ActorLogging {
   private def currenciesInUse(): Set[FiatCurrency] =
     funds.values.map(_.remainingAmount.currency).toSet
 
-  private def generateFundsId() = {
-    val id = BlockedFundsId(nextId)
-    nextId += 1
-    id
-  }
-
-  private def setBacked(funds: BlockedFundsId): Unit = {
+  private def setBacked(funds: ExchangeId): Unit = {
     backedFunds += funds
   }
 
-  private def setNotBacked(funds: BlockedFundsId): Unit = {
-    notBackedFunds += funds
-  }
-
-  private def setNeverBacked(funds: BlockedFundsId): Unit = {
+  private def setNeverBacked(funds: ExchangeId): Unit = {
     neverBackedFunds += funds
   }
 
-  private def clearBacked(funds: BlockedFundsId): Unit = {
+  private def clearBacked(funds: ExchangeId): Unit = {
     backedFunds -= funds
     notBackedFunds -= funds
     neverBackedFunds -= funds
   }
 
-  private def fundsForCurrency(currency: FiatCurrency): Set[BlockedFundsId] =
+  private def fundsForCurrency(currency: FiatCurrency): Set[ExchangeId] =
     funds.values.filter(_.remainingAmount.currency == currency).map(_.id).toSet
 
-  private def filterForCurrency(currency: FiatCurrency, funds: Set[BlockedFundsId]): Set[BlockedFundsId] = {
+  private def filterForCurrency(currency: FiatCurrency, funds: Set[ExchangeId]): Set[ExchangeId] = {
     val currencyFunds = fundsForCurrency(currency)
     funds.filter(currencyFunds.contains)
   }
@@ -186,14 +180,14 @@ class BlockingFundsActor extends Actor with ActorLogging {
 
 object BlockingFundsActor {
 
-  case class RetrieveBlockedFunds[C <: FiatCurrency](currency: C)
-  case class BlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
+  case class RetrieveTotalBlockedFunds[C <: FiatCurrency](currency: C)
+  case class TotalBlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
 
   case class BalancesUpdate(balances: Seq[FiatAmount])
 
-  case class UseFunds(funds: BlockedFundsId, amount: FiatAmount)
-  case class FundsUsed(funds: BlockedFundsId, amount: FiatAmount)
-  case class CannotUseFunds(funds: BlockedFundsId, amount: FiatAmount, reason: String)
+  case class UseFunds(funds: ExchangeId, amount: FiatAmount)
+  case class FundsUsed(funds: ExchangeId, amount: FiatAmount)
+  case class CannotUseFunds(funds: ExchangeId, amount: FiatAmount, reason: String)
 
   def props = Props(new BlockingFundsActor)
 }

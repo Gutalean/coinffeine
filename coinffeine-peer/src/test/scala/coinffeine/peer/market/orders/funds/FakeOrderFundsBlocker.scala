@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 import akka.actor.Actor.Receive
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.{Exchange, ExchangeId}
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.market.orders.OrderActor
 import coinffeine.peer.market.orders.controller.FundsBlocker.Listener
@@ -22,7 +22,9 @@ class FakeOrderFundsBlocker extends OrderActor.OrderFundsBlocker {
     result = Failure(new Error(message))
   }
 
-  override def blockFunds(funds: RequiredFunds[_ <: FiatCurrency], listener: Listener): Unit =
+  override def blockFunds(id: ExchangeId,
+                          funds: RequiredFunds[_ <: FiatCurrency],
+                          listener: Listener): Unit =
     synchronized { listener.onComplete(result) }
 
   override def blockingFunds: Receive = Map.empty

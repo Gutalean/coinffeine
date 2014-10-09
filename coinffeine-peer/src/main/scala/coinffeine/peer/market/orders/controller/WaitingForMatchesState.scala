@@ -63,7 +63,7 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
       ctx.order.role.select(amounts.fiatRequired)
     )
     matchWaitingForFunds = Some(orderMatch)
-    ctx.blockFunds(requiredFunds)
+    ctx.blockFunds(orderMatch.exchangeId, requiredFunds)
   }
 
   private def hasConsistentAmounts(orderMatch: OrderMatch[C], amounts: Amounts[C]): Boolean = {

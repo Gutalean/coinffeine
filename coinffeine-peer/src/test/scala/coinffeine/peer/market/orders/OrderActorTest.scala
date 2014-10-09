@@ -16,7 +16,6 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
-import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
@@ -117,7 +116,7 @@ class OrderActorTest extends AkkaSpec
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
-    val blockedFunds = Exchange.BlockedFunds(Some(PaymentProcessor.BlockedFundsId(1)), BlockedCoinsId(2))
+    val blockedFunds = Exchange.BlockedFunds(Some(exchangeId), BlockedCoinsId(2))
     val fundsBlocking = new FakeOrderFundsBlocker
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)

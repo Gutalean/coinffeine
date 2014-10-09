@@ -181,8 +181,8 @@ object OrderActor {
           wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }
       override def delegatedFundsBlocking()(implicit context: ActorContext) =
-        new DelegatedFundsBlocker(requiredFunds =>
-          FundsBlockerActor.props(wallet, paymentProcessor, requiredFunds, context.self))
+        new DelegatedFundsBlocker((id, requiredFunds) =>
+          FundsBlockerActor.props(id, wallet, paymentProcessor, requiredFunds, context.self))
     }
     Props(new OrderActor[C](
       order,

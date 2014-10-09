@@ -28,7 +28,4 @@ object PaymentProcessor {
 
   /** The ID type of a payment registered by the payment processor. */
   type PaymentId = String
-
-  /** Identifier of some funds blocked for a specific use. */
-  case class BlockedFundsId(underlying: Int) extends AnyVal
 }

@@ -5,22 +5,22 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.payment.PaymentProcessor
-import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class BlockingFundsActorTest extends AkkaSpec {
 
-  it must "retrieve no blocked funds when no funds are blocked" in new WithBlockingFundsActor {
-    actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-    expectMsg(BlockingFundsActor.BlockedFunds(Euro.Zero))
-  }
+  "The blocking funds actor" must "retrieve no blocked funds when no funds are blocked" in
+    new WithBlockingFundsActor {
+      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.TotalBlockedFunds(Euro.Zero))
+    }
 
   it must "retrieve blocked funds when blocked" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { (listener, funds) =>
-      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.BlockedFunds(100.EUR))
+      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.TotalBlockedFunds(100.EUR))
     }
   }
 
@@ -28,8 +28,8 @@ class BlockingFundsActorTest extends AkkaSpec {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { (listener, funds) =>
       actor ! PaymentProcessorActor.UnblockFunds(funds)
-      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.BlockedFunds(Euro.Zero))
+      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.TotalBlockedFunds(Euro.Zero))
     }
   }
 
@@ -38,24 +38,35 @@ class BlockingFundsActorTest extends AkkaSpec {
     givenAvailableFunds(100.EUR) { (listener, funds) =>
       listener.send(actor, BlockingFundsActor.UseFunds(funds, 60.EUR))
       listener.expectMsgPF() { case BlockingFundsActor.FundsUsed(`funds`, _) => }
-      actor ! BlockingFundsActor.RetrieveBlockedFunds(Euro)
-      expectMsg(BlockingFundsActor.BlockedFunds(40.EUR))
+      actor ! BlockingFundsActor.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockingFundsActor.TotalBlockedFunds(40.EUR))
     }
   }
 
   it must "block funds up to existing balances" in new WithBlockingFundsActor {
     actor ! BlockingFundsActor.BalancesUpdate(Seq(100.EUR))
-    actor ! PaymentProcessorActor.BlockFunds(50.EUR)
-    actor ! PaymentProcessorActor.BlockFunds(50.EUR)
-    actor ! PaymentProcessorActor.BlockFunds(50.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
     expectMsgAllConformingOf(
-      classOf[PaymentProcessor.BlockedFundsId],
+      classOf[PaymentProcessorActor.BlockedFunds],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessor.BlockedFundsId],
+      classOf[PaymentProcessorActor.BlockedFunds],
       classOf[PaymentProcessorActor.AvailableFunds],
-      classOf[PaymentProcessor.BlockedFundsId],
+      classOf[PaymentProcessorActor.BlockedFunds],
       classOf[PaymentProcessorActor.UnavailableFunds]
     )
+  }
+
+  it must "reject blocking funds twice for the same exchange" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId("ex"), 50.EUR)
+    expectMsgAllConformingOf(
+      classOf[PaymentProcessorActor.BlockedFunds],
+      classOf[PaymentProcessorActor.AvailableFunds]
+    )
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId("ex"), 20.EUR)
+    expectMsgType[PaymentProcessorActor.AlreadyBlockedFunds]
   }
 
   it must "unblock blocked funds to make then available again" in new WithBlockingFundsActor {
@@ -115,8 +126,9 @@ class BlockingFundsActorTest extends AkkaSpec {
     }
 
   it must "reject funds usage for unknown funds id" in new WithBlockingFundsActor {
-    actor ! BlockingFundsActor.UseFunds(BlockedFundsId(100), 10.EUR)
-    expectMsgPF() { case BlockingFundsActor.CannotUseFunds(BlockedFundsId(100), _, _) => }
+    val unknownFunds = ExchangeId("unknown")
+    actor ! BlockingFundsActor.UseFunds(unknownFunds, 10.EUR)
+    expectMsgPF() { case BlockingFundsActor.CannotUseFunds(`unknownFunds`, _, _) => }
   }
 
   it must "reject funds usage when it exceeds blocked amount" in new WithBlockingFundsActor {
@@ -167,24 +179,25 @@ class BlockingFundsActorTest extends AkkaSpec {
   private trait WithBlockingFundsActor {
     val actor = system.actorOf(Props(new BlockingFundsActor()))
 
-    def givenBlockedFunds(amount: FiatAmount)(block: (TestProbe, BlockedFundsId) => Unit): Unit = {
+    def givenBlockedFunds(amount: FiatAmount, fundsId: ExchangeId = ExchangeId.random())
+                         (block: (TestProbe, ExchangeId) => Unit): Unit = {
       val listener = TestProbe()
-      listener.send(actor, PaymentProcessorActor.BlockFunds(amount))
-      val funds = listener.expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
-      block(listener, funds)
+      listener.send(actor, PaymentProcessorActor.BlockFunds(fundsId, amount))
+      listener.expectMsgType[PaymentProcessorActor.BlockedFunds]
+      block(listener, fundsId)
     }
 
-    def givenAvailableFunds(amount: FiatAmount)
-                           (block: (TestProbe, BlockedFundsId) => Unit): Unit = {
-      givenBlockedFunds(amount) { (listener, funds) =>
+    def givenAvailableFunds(amount: FiatAmount, fundsId: ExchangeId = ExchangeId.random())
+                           (block: (TestProbe, ExchangeId) => Unit): Unit = {
+      givenBlockedFunds(amount, fundsId) { (listener, funds) =>
         listener.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
         block(listener, funds)
       }
     }
 
-    def givenUnavailableFunds(amount: FiatAmount)
-                             (block: (TestProbe, BlockedFundsId) => Unit): Unit = {
-      givenBlockedFunds(amount) { (listener, funds) =>
+    def givenUnavailableFunds(amount: FiatAmount, fundsId: ExchangeId = ExchangeId.random())
+                             (block: (TestProbe, ExchangeId) => Unit): Unit = {
+      givenBlockedFunds(amount, fundsId) { (listener, funds) =>
         listener.expectMsg(PaymentProcessorActor.UnavailableFunds(funds))
         block(listener, funds)
       }

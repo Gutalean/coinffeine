@@ -9,9 +9,8 @@ import org.scalatest.Inside
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.{ExchangeId, Exchange}
 import coinffeine.model.market.RequiredFunds
-import coinffeine.model.payment.PaymentProcessor.BlockedFundsId
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -40,7 +39,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     givenBitcoinFundsAreBlocked()
     expectBitcoinFundsUnblocking()
     expectFiatFundsUnblocking()
-    expectFailedBlocking(s"100.00 EUR blocked in $fiatFunds but not available")
+    expectFailedBlocking(s"100.00 EUR blocked for $exchangeId but not available")
   }
 
   it should "fail if bitcoin funds cannot be blocked" in new Fixture {
@@ -62,10 +61,10 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
 
   abstract class Fixture(requiredFiat: Euro.Amount = 100.EUR,
                          requiredBitcoin: Bitcoin.Amount = 1.BTC) {
+    val exchangeId = ExchangeId.random()
     val walletProbe, paymentProcessor = TestProbe()
-    val actor = system.actorOf(FundsBlockerActor.props(walletProbe.ref, paymentProcessor.ref,
-      RequiredFunds(requiredBitcoin, requiredFiat), listener = self))
-    val fiatFunds = BlockedFundsId(1)
+    val actor = system.actorOf(FundsBlockerActor.props(exchangeId, walletProbe.ref,
+      paymentProcessor.ref, RequiredFunds(requiredBitcoin, requiredFiat), listener = self))
     val btcFunds = BlockedCoinsId(1)
 
     def expectFundsAreRequested(): Unit = {
@@ -79,7 +78,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectFiatFundsAreRequested(): Unit = {
-      paymentProcessor.expectMsg(PaymentProcessorActor.BlockFunds(requiredFiat))
+      paymentProcessor.expectMsg(PaymentProcessorActor.BlockFunds(exchangeId, requiredFiat))
     }
 
     def expectNoRequestToPaymentProcessor(): Unit = {
@@ -95,15 +94,15 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def givenFiatFundsAreCreated(): Unit = {
-      paymentProcessor.reply(fiatFunds)
+      paymentProcessor.reply(PaymentProcessorActor.BlockedFunds(exchangeId))
     }
 
     def givenFiatFundsBecomeAvailable(): Unit = {
-      paymentProcessor.reply(PaymentProcessorActor.AvailableFunds(fiatFunds))
+      paymentProcessor.reply(PaymentProcessorActor.AvailableFunds(exchangeId))
     }
 
     def givenFiatFundsBecomeUnavailable(): Unit = {
-      paymentProcessor.reply(PaymentProcessorActor.UnavailableFunds(fiatFunds))
+      paymentProcessor.reply(PaymentProcessorActor.UnavailableFunds(exchangeId))
     }
 
     def expectBitcoinFundsUnblocking(): Unit = {
@@ -111,7 +110,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectFiatFundsUnblocking(): Unit = {
-      paymentProcessor.expectMsg(PaymentProcessorActor.UnblockFunds(fiatFunds))
+      paymentProcessor.expectMsg(PaymentProcessorActor.UnblockFunds(exchangeId))
     }
 
     def expectNoFiatFundsUnblocking(): Unit = {
@@ -120,7 +119,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
 
     def expectSuccessfulBlocking(): Unit = {
       val funds = Exchange.BlockedFunds(
-        if (requiredFiat.isPositive) Some(fiatFunds) else None, btcFunds)
+        if (requiredFiat.isPositive) Some(exchangeId) else None, btcFunds)
       expectMsg(FundsBlockerActor.BlockingResult(Success(funds)))
     }
 

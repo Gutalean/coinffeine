@@ -15,7 +15,8 @@ import org.scalatest.mock.MockitoSugar
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.payment.{OkPayPaymentProcessor, Payment, PaymentProcessor}
+import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
@@ -60,8 +61,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
       .willReturn(Future.successful(payment))
     givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
     requester.send(
-      processor, PaymentProcessorActor.BlockFunds(OkPayPaymentProcessor.amountPlusFee(amount)))
-    val funds = requester.expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
+      processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
+    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
     requester.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
     val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
@@ -83,8 +84,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    requester.send(processor, PaymentProcessorActor.BlockFunds(amount / 2))
-    val funds = requester.expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
+    requester.send(processor, PaymentProcessorActor.BlockFunds(funds, amount / 2))
+    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
     requester.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
     requester.expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
@@ -94,8 +95,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
     givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
     requester.send(
-      processor, PaymentProcessorActor.BlockFunds(OkPayPaymentProcessor.amountPlusFee(amount)))
-    val funds = requester.expectMsgClass(classOf[PaymentProcessor.BlockedFundsId])
+      processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
+    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
     requester.fishForMessage() {
       case _: PaymentProcessorActor.UnavailableFunds => false
       case _: PaymentProcessorActor.AvailableFunds => true
@@ -153,6 +154,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
       description = "comment",
       completed = true
     )
+    val funds = ExchangeId.random()
     val cause = new Exception("Sample error")
     val client = mock[OkPayClient]
     var processor: ActorRef = _

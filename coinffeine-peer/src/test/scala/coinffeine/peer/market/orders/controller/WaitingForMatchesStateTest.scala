@@ -14,7 +14,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.{OkPayPaymentProcessor, PaymentProcessor}
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol.DummyDeposits
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -25,8 +25,7 @@ class WaitingForMatchesStateTest extends UnitTest
   val nonStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
   val partiallyCompletedOrder = nonStartedOrder
     .withExchange(buyerHandshakingExchange.startExchanging(DummyDeposits).complete)
-  val blockedFunds =
-    Exchange.BlockedFunds(Some(PaymentProcessor.BlockedFundsId(1)), BlockedCoinsId(2))
+  val blockedFunds = Exchange.BlockedFunds(Some(exchangeId), BlockedCoinsId(2))
 
   "When waiting for matches" should "be initially offline and trying to get to the market" in
     new FreshInstance {
