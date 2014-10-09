@@ -1,14 +1,20 @@
 package coinffeine.peer.payment.okpay
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import scalaz.{Validation, Scalaz}
+
+import akka.actor.{ActorLogging, Props}
+import akka.persistence.PersistentActor
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FundsAvailabilityEvent
 
-private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
-  import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
+private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
+  extends PersistentActor with ActorLogging {
+
+  import Scalaz._
+  import BlockedFiatRegistry._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
       id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
@@ -23,7 +29,13 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
   private var notBackedFunds = Set.empty[ExchangeId]
   private var neverBackedFunds = Set.empty[ExchangeId]
 
-  override def receive: Receive = {
+  override def receiveRecover: Receive = {
+    case event: FundsBlockedEvent => onFundsBlocked(event)
+    case event: FundsUsedEvent => onFundsUsed(event)
+    case event: FundsUnblockedEvent => onFundsUnblocked(event)
+  }
+
+  override def receiveCommand: Receive = {
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
@@ -35,49 +47,72 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
       updateBackedFunds()
 
     case UseFunds(fundsId, amount) =>
-      useFunds(fundsId, amount, sender())
-      updateBackedFunds()
+      canUseFunds(fundsId, amount).fold(
+        succ = funds => persist(FundsUsedEvent(fundsId, amount)) { event =>
+          onFundsUsed(event)
+          sender() ! FundsUsed(fundsId, amount)
+        },
+        fail = reason => sender() ! CannotUseFunds(fundsId, amount, reason)
+      )
 
     case PaymentProcessorActor.BlockFunds(fundsId, _) if funds.contains(fundsId) =>
       sender() ! PaymentProcessorActor.AlreadyBlockedFunds(fundsId)
 
     case PaymentProcessorActor.BlockFunds(fundsId, amount) =>
-      sender() ! PaymentProcessorActor.BlockedFunds(fundsId)
-      arrivalOrder :+= fundsId
-      funds += fundsId -> BlockedFundsInfo(fundsId, amount)
-      setNeverBacked(fundsId)
-      updateBackedFunds()
+      persist(FundsBlockedEvent(fundsId, amount)) { event =>
+        sender() ! PaymentProcessorActor.BlockedFunds(fundsId)
+        onFundsBlocked(event)
+      }
 
     case PaymentProcessorActor.UnblockFunds(fundsId) =>
-      arrivalOrder = arrivalOrder.filter(_ != fundsId)
-      funds -= fundsId
-      clearBacked(fundsId)
-      updateBackedFunds()
+      persist(FundsUnblockedEvent(fundsId))(onFundsUnblocked)
   }
 
-  private def useFunds[C <: FiatCurrency](fundsId: ExchangeId,
-                                          amount: CurrencyAmount[C],
-                                          requester: ActorRef): Unit = {
-    funds.get(fundsId) match {
-      case Some(blockedFunds) if blockedFunds.remainingAmount.currency != amount.currency =>
-        throw new IllegalArgumentException(s"Cannot use $amount out of ${blockedFunds.remainingAmount}")
-      case Some(blockedFunds: BlockedFundsInfo[C]) =>
-        if (amount > blockedFunds.remainingAmount) {
-          requester ! CannotUseFunds(fundsId, amount,
-            s"insufficient blocked funds for id $fundsId: " +
-              s"$amount requested, ${blockedFunds.remainingAmount} available")
-        } else if (!areBacked(blockedFunds)) {
-          requester ! CannotUseFunds(
-            fundsId, amount, s"funds with id $fundsId are not currently blocked")
-        } else {
-          updateFunds(blockedFunds.copy(remainingAmount = blockedFunds.remainingAmount - amount))
-          reduceBalance(amount)
-          requester ! FundsUsed(fundsId, amount)
-        }
-      case None =>
-        requester ! CannotUseFunds(fundsId, amount, s"no such funds with id $fundsId")
-    }
+  private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
+    arrivalOrder :+= event.fundsId
+    funds += event.fundsId -> BlockedFundsInfo(event.fundsId, event.amount)
+    setNeverBacked(event.fundsId)
+    updateBackedFunds()
   }
+
+  private def onFundsUsed(event: FundsUsedEvent): Unit = {
+    type C = event.amount.currency.type
+    val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
+    updateFunds(fundsToUse.copy(remainingAmount =
+      fundsToUse.remainingAmount - event.amount.asInstanceOf[CurrencyAmount[C]]))
+    reduceBalance(event.amount)
+    updateBackedFunds()
+  }
+
+  private def onFundsUnblocked(event: FundsUnblockedEvent): Unit = {
+    arrivalOrder = arrivalOrder.filter(_ != event.fundsId)
+    funds -= event.fundsId
+    clearBacked(event.fundsId)
+    updateBackedFunds()
+  }
+
+  private def canUseFunds[C <: FiatCurrency](
+      fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
+    funds <- requireExistingFunds(fundsId, amount.currency)
+    _ <- requireEnoughBalance(funds, amount)
+    _ <- requiredBackedFunds(funds)
+  } yield funds
+
+  private def requireExistingFunds[C <: FiatCurrency](
+      fundsId: ExchangeId, currency: C): Validation[String, BlockedFundsInfo[C]] =
+    funds.get(fundsId).toSuccess(s"no such funds with id $fundsId")
+      .ensure(s"cannot spend $currency out of $fundsId")(_.remainingAmount.currency == currency)
+      .map(_.asInstanceOf[BlockedFundsInfo[C]])
+
+  private def requireEnoughBalance[C <: FiatCurrency](
+      funds: BlockedFundsInfo[C], minimumBalance: CurrencyAmount[C]): Validation[String, Unit] =
+    if (funds.remainingAmount >= minimumBalance) ().success
+    else s"""insufficient blocked funds for id ${funds.id}: $minimumBalance requested,
+            |${funds.remainingAmount} available""".stripMargin.failure
+
+  private def requiredBackedFunds(funds: BlockedFundsInfo[_]): Validation[String, Unit] =
+    if (areBacked(funds)) ().success
+    else s"funds with id ${funds.id} are not currently available".failure
 
   private def areBacked(blockedFunds: BlockedFundsInfo[_]): Boolean =
     backedFunds.contains(blockedFunds.id)
@@ -87,10 +122,11 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
   }
 
   private def reduceBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
-    val prevAmount = balances.getOrElse(amount.currency, CurrencyAmount.zero(amount.currency))
+    val zero = CurrencyAmount.zero(amount.currency)
+    val prevAmount = balances.getOrElse(amount.currency, zero)
       .asInstanceOf[CurrencyAmount[C]]
-    require(amount <= prevAmount)
-    balances += amount.currency -> (prevAmount - amount)
+    val newBalance = (prevAmount - amount).max(zero)
+    balances += amount.currency -> newBalance
   }
 
   private def updateBackedFunds(): Unit = {
@@ -104,8 +140,9 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
     val previouslyBacked = filterForCurrency(currency, backedFunds)
     val neverBacked = filterForCurrency(currency, neverBackedFunds)
 
-    notifyAvailabilityChanges(neverBacked, previouslyBacked, newlyBacked)
-
+    if (recoveryFinished) {
+      notifyAvailabilityChanges(neverBacked, previouslyBacked, newlyBacked)
+    }
     fundsForCurrency(currency).foreach(clearBacked)
     newlyBacked.foreach(setBacked)
   }
@@ -179,6 +216,8 @@ private[okpay] class BlockedFiatRegistry extends Actor with ActorLogging {
 
 private[okpay] object BlockedFiatRegistry {
 
+  val PersistenceId = "blockedFiatRegistry"
+
   case class RetrieveTotalBlockedFunds[C <: FiatCurrency](currency: C)
   case class TotalBlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
 
@@ -188,5 +227,10 @@ private[okpay] object BlockedFiatRegistry {
   case class FundsUsed(funds: ExchangeId, amount: FiatAmount)
   case class CannotUseFunds(funds: ExchangeId, amount: FiatAmount, reason: String)
 
-  def props = Props(new BlockedFiatRegistry)
+  private sealed trait StateEvents
+  private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvents
+  private case class FundsUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvents
+  private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvents
+
+  def props = Props(new BlockedFiatRegistry(PersistenceId))
 }

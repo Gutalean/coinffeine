@@ -33,7 +33,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     }
   }
 
-  it must "retrieve blocked after using some" in new WithBlockingFundsActor {
+  it must "retrieve blocked funds after using some" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     givenAvailableFunds(100.EUR) { funds =>
       actor ! BlockedFiatRegistry.UseFunds(funds, 60.EUR)
@@ -176,8 +176,32 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     }
   }
 
-  private trait WithBlockingFundsActor {
-    val actor = system.actorOf(Props(new BlockedFiatRegistry()))
+  val funds1, funds2 = ExchangeId.random()
+
+  it must "persist its state" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(funds1, 60.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(funds2, 40.EUR)
+    expectMsgAllOf(
+      PaymentProcessorActor.BlockedFunds(funds1),
+      PaymentProcessorActor.BlockedFunds(funds2)
+    )
+    actor ! PaymentProcessorActor.UnblockFunds(funds2)
+    actor ! BlockedFiatRegistry.UseFunds(funds1, 20.EUR)
+    expectMsg(BlockedFiatRegistry.FundsUsed(funds1, 20.EUR))
+    system.stop(actor)
+  }
+
+  it must "recover its previous state" in new WithBlockingFundsActor(persistentId = lastId) {
+    setBalance(100.EUR)
+    expectBecomingAvailable(funds1)
+    actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+    expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
+    system.stop(actor)
+  }
+
+  private abstract class WithBlockingFundsActor(persistentId: Int = freshId()) {
+    val actor = system.actorOf(Props(new BlockedFiatRegistry(persistentId.toString)))
 
     val eventProbe = TestProbe()
     system.eventStream.subscribe(
@@ -218,5 +242,11 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     def expectBecomingUnavailable(fundsId: ExchangeId): Unit = {
       eventProbe.expectMsg(PaymentProcessorActor.UnavailableFunds(fundsId))
     }
+  }
+
+  private var lastId = 0
+  private def freshId(): Int = {
+    lastId += 1
+    lastId
   }
 }

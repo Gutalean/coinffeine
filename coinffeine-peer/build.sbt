@@ -7,6 +7,7 @@ libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.jcommander,
   Dependencies.netty,
   Dependencies.scalacheck % "test",
+  Dependencies.scalaz,
   // Support libraries for scalaxb
   Dependencies.dispatch,
   Dependencies.scalaParser,
