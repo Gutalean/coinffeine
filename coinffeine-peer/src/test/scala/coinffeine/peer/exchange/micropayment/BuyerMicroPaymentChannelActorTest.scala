@@ -51,13 +51,13 @@ class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExcha
     for (i <- 1 to lastStep) withClue(s"At step $i:") {
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       listener.expectMsgType[LastBroadcastableOffer]
-      expectProgress(signatures = i, payments = i - 1)
+      expectProgress(signatures = i)
       paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
       paymentProcessor.reply(PaymentProcessorActor.Paid(
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
           completed = true)
       ))
-      expectProgress(signatures = i, payments = i)
+      expectProgress(signatures = i)
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
       gateway.expectNoMsg(100 milliseconds)
     }

@@ -52,7 +52,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       channel.currentStep match {
         case step: IntermediateStep =>
           log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
-          reportProgress(signatures = step.value, payments = step.value - 1)
+          reportProgress(step.value)
           pay(step)
           context.become(waitForPaymentResult(channel))
 
@@ -66,7 +66,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   private def waitForPaymentResult(channel: MicroPaymentChannel[C]): Receive = {
     case proof: PaymentProof =>
       val completedSteps = channel.currentStep.value
-      reportProgress(signatures = completedSteps, payments = completedSteps)
+      reportProgress(completedSteps)
       log.debug("Exchange {}: payment {} for step {} done",
         exchange.id, proof.paymentId, completedSteps)
       forwarding.forwardToCounterpart(proof)
