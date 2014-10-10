@@ -13,11 +13,12 @@ import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
-import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
 import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
 
@@ -33,7 +34,11 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
   it must "be able to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
-    requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(amount, UsDollar.Zero))
+    fundsRegistry.expectAskWithReply {
+      case BlockedFiatRegistry.RetrieveTotalBlockedFunds(UsDollar) =>
+        BlockedFiatRegistry.TotalBlockedFunds(13.USD)
+    }
+    requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(amount, 13.USD))
   }
 
   it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
@@ -41,7 +46,11 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     val nextAmount = amount * 2
     given(client.currentBalances()).willReturn(Future.successful(Seq(nextAmount)))
     requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
-    requester.expectMsgClass(classOf[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]])
+    fundsRegistry.expectAskWithReply {
+      case BlockedFiatRegistry.RetrieveTotalBlockedFunds(UsDollar) =>
+        BlockedFiatRegistry.TotalBlockedFunds(13.USD)
+    }
+    requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]]
 
     expectBalanceUpdate(nextAmount)
   }
@@ -56,15 +65,26 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
 
+  it must "delegate funds blocking and unblocking" in new WithOkPayProcessor {
+    givenPaymentProcessorIsInitialized()
+    val blockRequest = PaymentProcessorActor.BlockFunds(funds, amount)
+    requester.send(processor, blockRequest)
+    fundsRegistry.expectForward(blockRequest, requester.ref)
+    val unblockRequest = PaymentProcessorActor.UnblockFunds(funds)
+    requester.send(processor, unblockRequest)
+    fundsRegistry.expectForward(unblockRequest, requester.ref)
+  }
+
   it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment"))
       .willReturn(Future.successful(payment))
-    givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
-    requester.send(
-      processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
-    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    eventsProbe.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
+    val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
+    givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
+    fundsRegistry.expectAskWithReply {
+      case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
+        BlockedFiatRegistry.FundsUsed(funds, amountPlusFee)
+    }
     val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
     response.id should be (payment.id)
     response.senderId should be (senderAccount)
@@ -84,25 +104,24 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    requester.send(processor, PaymentProcessorActor.BlockFunds(funds, amount / 2))
-    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    eventsProbe.expectMsg(PaymentProcessorActor.AvailableFunds(funds))
     requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
+    fundsRegistry.expectAskWithReply {
+      case BlockedFiatRegistry.UseFunds(_, requested) =>
+        BlockedFiatRegistry.CannotUseFunds(funds, requested, "not enough!")
+    }
     requester.expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
   }
 
   it must "report failure to send a payment" in new WithOkPayProcessor {
     given(client.sendPayment(receiverAccount, amount, "comment")).willReturn(Future.failed(cause))
-    givenPaymentProcessorIsInitialized(balances = Seq(OkPayPaymentProcessor.amountPlusFee(amount)))
-    requester.send(
-      processor, PaymentProcessorActor.BlockFunds(funds, OkPayPaymentProcessor.amountPlusFee(amount)))
-    requester.expectMsgType[PaymentProcessorActor.BlockedFunds]
-    eventsProbe.fishForMessage() {
-      case _: PaymentProcessorActor.UnavailableFunds => false
-      case _: PaymentProcessorActor.AvailableFunds => true
-    }
+    val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
+    givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
     requester.send(processor, payRequest)
+    fundsRegistry.expectAskWithReply {
+      case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
+        BlockedFiatRegistry.FundsUsed(funds, amountPlusFee)
+    }
     requester.expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
   }
 
@@ -163,7 +182,9 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
       override def build(): OkPayClient = client
       override def shutdown(): Unit = {}
     }
-    val processorProps = Props(new OkPayProcessorActor(clientFactory, pollingInterval, properties))
+    val fundsRegistry = new MockSupervisedActor()
+    val processorProps = Props(new OkPayProcessorActor(
+      clientFactory, fundsRegistry.props, pollingInterval, properties))
     val eventsProbe, requester = TestProbe()
     system.eventStream.subscribe(
       eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
@@ -171,8 +192,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
       given(client.currentBalances()).willReturn(Future.successful(balances))
       processor = system.actorOf(processorProps)
+      fundsRegistry.expectCreation()
       requester.send(processor, ServiceActor.Start({}))
       requester.expectMsg(ServiceActor.Started)
+      fundsRegistry.expectMsgType[BlockedFiatRegistry.BalancesUpdate]
     }
 
     def expectBalanceUpdate(balance: FiatAmount,

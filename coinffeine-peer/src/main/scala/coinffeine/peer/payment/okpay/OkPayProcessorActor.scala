@@ -14,10 +14,12 @@ import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry._
 
-class OkPayProcessorActor(
+private class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
+    registryProps: Props,
     pollingInterval: FiniteDuration,
     properties: MutablePaymentProcessorProperties)
   extends Actor with ActorLogging with ServiceActor[Unit] {
@@ -25,7 +27,7 @@ class OkPayProcessorActor(
   import context.dispatcher
   import OkPayProcessorActor._
 
-  private val blockingFunds = context.actorOf(BlockedFiatRegistry.props, "funds")
+  private val registry = context.actorOf(registryProps, "funds")
 
   private var timer: Cancellable = _
 
@@ -62,7 +64,7 @@ class OkPayProcessorActor(
     case BalanceUpdateFailed(cause) =>
       notifyBalanceUpdateFailure(cause)
     case msg @ (_: BlockFunds | _: UnblockFunds) =>
-      blockingFunds.forward(msg)
+      registry.forward(msg)
   }
 
   private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
@@ -83,7 +85,7 @@ class OkPayProcessorActor(
     val request = UseFunds(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
     log.debug(s"Using funds with id ${pay.fundsId}. " +
       s"Amount to use: ${OkPayPaymentProcessor.amountPlusFee(pay.amount)}")
-    AskPattern(blockingFunds, request, "fail to use funds")
+    AskPattern(registry, request, "fail to use funds")
       .withImmediateReplyOrError[FundsUsed, CannotUseFunds](
         failure => throw new RuntimeException(failure.reason))
       .map(_ => {})
@@ -116,7 +118,7 @@ class OkPayProcessorActor(
   }
 
   private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
-    AskPattern(blockingFunds, RetrieveTotalBlockedFunds(currency))
+    AskPattern(registry, RetrieveTotalBlockedFunds(currency))
       .withImmediateReply[TotalBlockedFunds[C]]().map(_.funds)
   }
 
@@ -124,7 +126,7 @@ class OkPayProcessorActor(
     for (amount <- balances) {
       updateBalance(FiatBalance(amount, hasExpired = false))
     }
-    blockingFunds ! BalancesUpdate(balances)
+    registry ! BalancesUpdate(balances)
   }
 
   private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
@@ -166,7 +168,7 @@ object OkPayProcessorActor {
   private case class BalanceUpdateFailed(cause: Throwable)
 
   def props(lookupSettings: () => OkPaySettings, properties: MutablePaymentProcessorProperties) = {
-    val clientFactory = new OkPayClientFactory(lookupSettings)
-    Props(new OkPayProcessorActor(clientFactory, lookupSettings().pollingInterval, properties))
+    Props(new OkPayProcessorActor(new OkPayClientFactory(lookupSettings), BlockedFiatRegistry.props,
+      lookupSettings().pollingInterval, properties))
   }
 }
