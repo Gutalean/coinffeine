@@ -8,7 +8,6 @@ import akka.persistence.PersistentActor
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FundsAvailabilityEvent
 
 private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   extends PersistentActor with ActorLogging {
@@ -25,9 +24,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private val balances = new MultipleBalance()
   private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
   private var arrivalOrder: Seq[ExchangeId] = Seq.empty
-  private var backedFunds = Set.empty[ExchangeId]
-  private var notBackedFunds = Set.empty[ExchangeId]
-  private var neverBackedFunds = Set.empty[ExchangeId]
+  private val fundsAvailability = new BlockedFundsAvailability()
 
   override def receiveRecover: Receive = {
     case event: FundsBlockedEvent => onFundsBlocked(event)
@@ -71,7 +68,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
     arrivalOrder :+= event.fundsId
     funds += event.fundsId -> BlockedFundsInfo(event.fundsId, event.amount)
-    setNeverBacked(event.fundsId)
+    fundsAvailability.addFunds(event.fundsId)
     updateBackedFunds()
   }
 
@@ -87,7 +84,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private def onFundsUnblocked(event: FundsUnblockedEvent): Unit = {
     arrivalOrder = arrivalOrder.filter(_ != event.fundsId)
     funds -= event.fundsId
-    clearBacked(event.fundsId)
+    fundsAvailability.removeFunds(event.fundsId)
     updateBackedFunds()
   }
 
@@ -95,7 +92,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
     funds <- requireExistingFunds(fundsId, amount.currency)
     _ <- requireEnoughBalance(funds, amount)
-    _ <- requiredBackedFunds(funds)
+    _ <- requiredBackedFunds(funds.id)
   } yield funds
 
   private def requireExistingFunds[C <: FiatCurrency](
@@ -110,33 +107,23 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     else s"""insufficient blocked funds for id ${funds.id}: $minimumBalance requested,
             |${funds.remainingAmount} available""".stripMargin.failure
 
-  private def requiredBackedFunds(funds: BlockedFundsInfo[_]): Validation[String, Unit] =
-    if (areBacked(funds)) ().success
-    else s"funds with id ${funds.id} are not currently available".failure
-
-  private def areBacked(blockedFunds: BlockedFundsInfo[_]): Boolean =
-    backedFunds.contains(blockedFunds.id)
+  private def requiredBackedFunds(fundsId: ExchangeId): Validation[String, Unit] =
+    if (fundsAvailability.areAvailable(fundsId)) ().success
+    else s"funds with id $fundsId are not currently available".failure
 
   private def updateFunds(newFunds: BlockedFundsInfo[_ <: FiatCurrency]): Unit = {
     funds += newFunds.id -> newFunds
   }
 
   private def updateBackedFunds(): Unit = {
-    for (currency <- currenciesInUse()) {
-      updateBackedFunds(currency)
+    fundsAvailability.clearAvailable()
+    for (currency <- currenciesInUse();
+         funds <- fundsThatCanBeBacked(currency)) {
+      fundsAvailability.setAvailable(funds)
     }
-  }
-
-  private def updateBackedFunds(currency: FiatCurrency): Unit = {
-    val newlyBacked = fundsThatCanBeBacked(currency)
-    val previouslyBacked = filterForCurrency(currency, backedFunds)
-    val neverBacked = filterForCurrency(currency, neverBackedFunds)
-
     if (recoveryFinished) {
-      notifyAvailabilityChanges(neverBacked, previouslyBacked, newlyBacked)
+      notifyAvailabilityChanges()
     }
-    fundsForCurrency(currency).foreach(clearBacked)
-    newlyBacked.foreach(setBacked)
   }
 
   private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[ExchangeId] = {
@@ -154,48 +141,20 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     eligibleFunds.take(fundsThatCanBeBacked).map(_.id).toSet
   }
 
-  private def notifyAvailabilityChanges(neverBacked: Set[ExchangeId],
-                                        previouslyAvailable: Set[ExchangeId],
-                                        currentlyAvailable: Set[ExchangeId]): Unit = {
-    notifyListeners(
-      PaymentProcessorActor.UnavailableFunds,
-      (previouslyAvailable ++ neverBacked).diff(currentlyAvailable))
-    notifyListeners(
-      PaymentProcessorActor.AvailableFunds,
-      currentlyAvailable.diff(previouslyAvailable))
-  }
-
-  private def notifyListeners(eventBuilder: ExchangeId => FundsAvailabilityEvent,
-                              fundsIds: Iterable[ExchangeId]): Unit = {
-    for (fundsId <- fundsIds) {
-      context.system.eventStream.publish(eventBuilder(fundsId))
-    }
+  private def notifyAvailabilityChanges(): Unit = {
+    fundsAvailability.notifyChanges(
+      onAvailable = funds =>
+        context.system.eventStream.publish(PaymentProcessorActor.AvailableFunds(funds)),
+      onUnavailable = funds =>
+        context.system.eventStream.publish(PaymentProcessorActor.UnavailableFunds(funds))
+    )
   }
 
   private def currenciesInUse(): Set[FiatCurrency] =
     funds.values.map(_.remainingAmount.currency).toSet
 
-  private def setBacked(funds: ExchangeId): Unit = {
-    backedFunds += funds
-  }
-
-  private def setNeverBacked(funds: ExchangeId): Unit = {
-    neverBackedFunds += funds
-  }
-
-  private def clearBacked(funds: ExchangeId): Unit = {
-    backedFunds -= funds
-    notBackedFunds -= funds
-    neverBackedFunds -= funds
-  }
-
   private def fundsForCurrency(currency: FiatCurrency): Set[ExchangeId] =
     funds.values.filter(_.remainingAmount.currency == currency).map(_.id).toSet
-
-  private def filterForCurrency(currency: FiatCurrency, funds: Set[ExchangeId]): Set[ExchangeId] = {
-    val currencyFunds = fundsForCurrency(currency)
-    funds.filter(currencyFunds.contains)
-  }
 
   private def totalBlockedForCurrency[C <: FiatCurrency](currency: C): Option[FiatAmount] = {
     val fundsForCurrency = funds.values
