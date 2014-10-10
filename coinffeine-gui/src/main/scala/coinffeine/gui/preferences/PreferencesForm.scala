@@ -1,20 +1,23 @@
 package coinffeine.gui.preferences
 
-import scalafx.Includes._
+import scalafx.Includes
 import scalafx.event.ActionEvent
-import scalafx.scene.control.{Button, TabPane, Label}
-import scalafx.scene.layout.{VBox, Pane}
+import scalafx.scene.control.{Tab, Button, TabPane}
+import scalafx.scene.layout.VBox
 import scalafx.stage.{Modality, Stage, StageStyle}
 
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.peer.config.SettingsProvider
 
-class PreferencesForm {
+class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
+
+  private val tabs: Seq[PreferencesTab] = Seq(new OkPayTab(settingsProvider))
 
   private val content = new VBox() {
     id = "preferences-root-pane"
     content = Seq(
       new TabPane() {
-        tabs = Seq(new OkPayTab)
+        tabs = PreferencesForm.this.tabs
       },
       new Button("Close") {
         onAction = { e: ActionEvent =>
@@ -35,6 +38,7 @@ class PreferencesForm {
   }
 
   private def close(): Unit = {
+    tabs.foreach(_.close())
     stage.close()
   }
 
