@@ -8,7 +8,7 @@ import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -116,8 +116,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectSuccessfulBlocking(): Unit = {
-      val funds = Exchange.BlockedFunds(exchangeId)
-      expectMsg(FundsBlockerActor.BlockingResult(Success(funds)))
+      expectMsg(FundsBlockerActor.BlockingResult(Success {}))
     }
 
     def expectFailedBlocking(message: String): Unit = {

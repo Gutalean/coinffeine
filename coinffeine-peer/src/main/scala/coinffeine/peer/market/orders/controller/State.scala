@@ -18,7 +18,7 @@ private[controller] trait State[C <: FiatCurrency] {
   def enter(ctx: Context): Unit = {}
 
   /** Funds request result */
-  def fundsRequestResult(ctx: Context, blockedFunds: Try[Exchange.BlockedFunds]): Unit = {}
+  def fundsRequestResult(ctx: Context, blockedFunds: Try[Unit]): Unit = {}
 
   /** The order is published on the market */
   def becomeInMarket(ctx: Context): Unit = {}

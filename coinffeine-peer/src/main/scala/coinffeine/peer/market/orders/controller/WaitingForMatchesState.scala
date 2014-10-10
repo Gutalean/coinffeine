@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.{Amounts, BlockedFunds}
+import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.exchange.{Exchange, Role}
 import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -27,9 +27,9 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
     ctx.updateOrderStatus(OfflineOrder)
   }
 
-  override def fundsRequestResult(ctx: Context, blockedFunds: Try[BlockedFunds]): Unit = {
+  override def fundsRequestResult(ctx: Context, blockedFunds: Try[Unit]): Unit = {
     (matchWaitingForFunds, blockedFunds) match {
-      case (Some(orderMatch), Success(funds)) => startExchange(ctx, orderMatch, funds)
+      case (Some(orderMatch), Success(_)) => startExchange(ctx, orderMatch)
 
       case (Some(orderMatch), Failure(cause)) =>
         WaitingForMatchesState.Log.error(s"Cannot block funds for $orderMatch", cause)
@@ -71,16 +71,13 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
       orderMatch.fiatAmount.seller != amounts.netFiatExchanged
   }
 
-  private def startExchange(ctx: Context,
-                            orderMatch: OrderMatch[C],
-                            blockedFunds: BlockedFunds): Unit = {
+  private def startExchange(ctx: Context, orderMatch: OrderMatch[C]): Unit = {
     val exchange = Exchange.notStarted(
       id = orderMatch.exchangeId,
       Role.fromOrderType(ctx.order.orderType),
       counterpartId = orderMatch.counterpart,
       ctx.calculator.exchangeAmountsFor(orderMatch),
-      Exchange.Parameters(orderMatch.lockTime, ctx.network),
-      blockedFunds
+      Exchange.Parameters(orderMatch.lockTime, ctx.network)
     )
     ctx.resolveOrderMatch(orderMatch, MatchAccepted(exchange))
     ctx.keepOffMarket()

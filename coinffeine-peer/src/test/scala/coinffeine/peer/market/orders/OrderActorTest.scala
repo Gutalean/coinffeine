@@ -68,7 +68,7 @@ class OrderActorTest extends AkkaSpec
 
   it should "stop submitting to the broker & report new status once matching is received" in
     new Fixture {
-      fundsBlocking.givenSuccessfulFundsBlocking(blockedFunds)
+      fundsBlocking.givenSuccessfulFundsBlocking()
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
       submissionProbe.fishForMessage() {
@@ -82,7 +82,7 @@ class OrderActorTest extends AkkaSpec
     }
 
   it should "spawn an exchange upon matching" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking(blockedFunds)
+    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     val keyPair = givenAFreshKeyIsGenerated()
@@ -91,7 +91,7 @@ class OrderActorTest extends AkkaSpec
   }
 
   it should "reject new order matches if an exchange is active" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking(blockedFunds)
+    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     givenAFreshKeyIsGenerated()
@@ -101,7 +101,7 @@ class OrderActorTest extends AkkaSpec
   }
 
   it should "not reject resubmissions of already accepted order matches" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking(blockedFunds)
+    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     givenAFreshKeyIsGenerated()
@@ -116,7 +116,6 @@ class OrderActorTest extends AkkaSpec
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
-    val blockedFunds = Exchange.BlockedFunds(exchangeId)
     val fundsBlocking = new FakeOrderFundsBlocker
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)

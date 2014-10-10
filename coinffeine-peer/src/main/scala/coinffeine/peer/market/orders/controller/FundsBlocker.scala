@@ -22,6 +22,6 @@ trait FundsBlocker {
 
 object FundsBlocker {
   trait Listener {
-    def onComplete(maybeFunds: Try[Exchange.BlockedFunds]): Unit
+    def onComplete(maybeFunds: Try[Unit]): Unit
   }
 }

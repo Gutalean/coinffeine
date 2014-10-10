@@ -6,7 +6,7 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -109,7 +109,7 @@ private[funds] class FundsBlockerActor(
     val overallResult = for {
       _ <- fiatFunds.result
       _ <- bitcoinFunds.result
-    } yield Exchange.BlockedFunds(id)
+    } yield ()
 
     if (overallResult.isFailure) {
       bitcoinFunds.unblock()
@@ -131,5 +131,5 @@ object FundsBlockerActor {
     Props(new FundsBlockerActor(id, wallet, paymentProcessor, requiredFunds, listener))
 
   /** Message sent to the listener when blocking has finished either successfully or with failure */
-  case class BlockingResult(maybeFunds: Try[Exchange.BlockedFunds])
+  case class BlockingResult(maybeFunds: Try[Unit])
 }

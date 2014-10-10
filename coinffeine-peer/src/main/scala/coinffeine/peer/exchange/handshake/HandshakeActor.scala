@@ -92,7 +92,7 @@ private class HandshakeActor[C <: FiatCurrency](
     AskPattern(
       to = collaborators.wallet,
       request = WalletActor.CreateDeposit(
-        exchange.blockedFunds.bitcoin,
+        exchange.id,
         requiredSignatures,
         depositAmounts.output,
         depositAmounts.fee

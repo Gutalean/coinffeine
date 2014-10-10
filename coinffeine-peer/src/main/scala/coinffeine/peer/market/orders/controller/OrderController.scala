@@ -4,7 +4,6 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.BlockedFunds
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
@@ -52,7 +51,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 
     override def blockFunds(id: ExchangeId, funds: RequiredFunds[C]): Unit =
       fundsBlocker.blockFunds(id, funds, new Listener {
-        override def onComplete(maybeFunds: Try[BlockedFunds]): Unit = {
+        override def onComplete(maybeFunds: Try[Unit]): Unit = {
           state.fundsRequestResult(context, maybeFunds)
         }
       })

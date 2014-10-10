@@ -3,15 +3,15 @@ package coinffeine.peer.market.orders.controller
 import scala.util.{Failure, Success}
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 
 class FakeFundsBlocker extends FundsBlocker {
 
   private case class PendingFundsBlock(listener: FundsBlocker.Listener) {
 
-    def succeed(coinsId: ExchangeId): Unit = {
-      listener.onComplete(Success(Exchange.BlockedFunds(coinsId)))
+    def succeed(): Unit = {
+      listener.onComplete(Success {})
     }
 
     def fail(cause: Throwable): Unit = {
@@ -27,9 +27,9 @@ class FakeFundsBlocker extends FundsBlocker {
     pending :+= PendingFundsBlock(listener)
   }
 
-  def successfullyBlockFunds(coinsId: ExchangeId): Unit = {
+  def successfullyBlockFunds(): Unit = {
     require(pending.nonEmpty, "No funds were requested")
-    pending.head.succeed(coinsId)
+    pending.head.succeed()
     pending = pending.tail
   }
 
