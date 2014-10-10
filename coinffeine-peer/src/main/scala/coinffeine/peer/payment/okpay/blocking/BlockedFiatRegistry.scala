@@ -3,7 +3,7 @@ package coinffeine.peer.payment.okpay.blocking
 import scalaz.{Scalaz, Validation}
 
 import akka.actor.{ActorLogging, Props}
-import akka.persistence.PersistentActor
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
@@ -30,6 +30,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case event: FundsBlockedEvent => onFundsBlocked(event)
     case event: FundsUsedEvent => onFundsUsed(event)
     case event: FundsUnblockedEvent => onFundsUnblocked(event)
+    case RecoveryCompleted => notifyAvailabilityChanges()
   }
 
   override def receiveCommand: Receive = {
