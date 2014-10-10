@@ -44,7 +44,8 @@ object Main extends JFXApp
       ),
       statusBarWidgets = Seq(
         new ConnectionStatusWidget(properties.connectionStatusProperty)
-      )
+      ),
+      settingsProvider = configProvider
     )
     icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
   }

@@ -11,6 +11,7 @@ import org.controlsfx.control.SegmentedButton
 
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
   *
@@ -20,7 +21,8 @@ import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
   */
 class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
-                       statusBarWidgets: Seq[Node])
+                       statusBarWidgets: Seq[Node],
+                       settingsProvider: SettingsProvider)
     extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Wallet) {
 
   require(views.nonEmpty, "At least one view is required")
@@ -33,7 +35,7 @@ class ApplicationScene(views: Seq[ApplicationView],
         items = Seq(
           new MenuItem("Preferences") {
             onAction = { e: ActionEvent =>
-              val form = new PreferencesForm
+              val form = new PreferencesForm(settingsProvider)
               form.show()
             }
           }

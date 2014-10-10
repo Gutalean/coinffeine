@@ -4,7 +4,11 @@ import scalafx.geometry.HPos
 import scalafx.scene.control.{TextField, Label, Tab}
 import scalafx.scene.layout.{ColumnConstraints, GridPane}
 
-class OkPayTab extends Tab {
+import coinffeine.peer.config.SettingsProvider
+
+class OkPayTab(settingsProvider: SettingsProvider) extends Tab {
+
+  private val okPaySettings = settingsProvider.okPaySettings()
 
   text = "OK Pay"
 
@@ -19,8 +23,14 @@ class OkPayTab extends Tab {
     )
 
     add(new Label("Wallet ID"), 0, 0)
-    add(new TextField { id = "preferences-okpay-userid-field" }, 1, 0)
+    add(new TextField {
+      id = "preferences-okpay-userid-field"
+      text = okPaySettings.userAccount.getOrElse("")
+    }, 1, 0)
     add(new Label("Seed token"), 0, 1)
-    add(new TextField { id = "preferences-okpay-token-field" }, 1, 1)
+    add(new TextField {
+      id = "preferences-okpay-token-field"
+      text = okPaySettings.seedToken.getOrElse("")
+    }, 1, 1)
   }
 }
