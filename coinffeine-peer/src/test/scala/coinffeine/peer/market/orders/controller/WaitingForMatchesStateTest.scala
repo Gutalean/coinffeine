@@ -9,7 +9,6 @@ import org.mockito.Mockito.verify
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -25,7 +24,6 @@ class WaitingForMatchesStateTest extends UnitTest
   val nonStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
   val partiallyCompletedOrder = nonStartedOrder
     .withExchange(buyerHandshakingExchange.startExchanging(DummyDeposits).complete)
-  val blockedFunds = Exchange.BlockedFunds(BlockedCoinsId(2))
 
   "When waiting for matches" should "be initially offline and trying to get to the market" in
     new FreshInstance {

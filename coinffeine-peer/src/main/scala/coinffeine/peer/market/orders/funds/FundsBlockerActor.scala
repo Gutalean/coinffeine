@@ -1,10 +1,10 @@
 package coinffeine.peer.market.orders.funds
 
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 
-import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Exchange, ExchangeId}
 import coinffeine.model.market.RequiredFunds
@@ -19,43 +19,44 @@ private[funds] class FundsBlockerActor(
     requiredFunds: RequiredFunds[_ <: FiatCurrency],
     listener: ActorRef) extends Actor with ActorLogging {
 
-  type BlockedBitcoin = BlockedCoinsId
-
-  private sealed trait FiatFunds {
+  private trait Funds {
     def unblock(): Unit = {}
-    def result: Option[Try[Unit]] = None
+    def finished: Boolean = false
+    def result: Try[Unit] = Failure(new IllegalStateException("Not ready") with NoStackTrace)
   }
+
+  private sealed trait FiatFunds extends Funds
   private case object NoFiatFunds extends FiatFunds {
     override def unblock(): Unit = {
       paymentProcessor ! PaymentProcessorActor.UnblockFunds(id)
     }
   }
   private case object UnneededFiatFunds extends FiatFunds {
-    override val result = Some(Success {})
+    override val finished = true
+    override val result = Success {}
   }
   private case class BlockedFiatFunds(available: Boolean) extends FiatFunds {
+    override val finished = true
     override def unblock(): Unit = {
       paymentProcessor ! PaymentProcessorActor.UnblockFunds(id)
     }
-    override val result = Some(
+    override val result =
       if (available) Success {}
       else Failure(new Error(s"${requiredFunds.fiat} blocked for $id but not available"))
-    )
   }
 
-  private sealed trait BitcoinFunds {
-    def unblock(): Unit = {}
-    def result: Option[Try[BlockedBitcoin]] = None
-  }
+  private sealed trait BitcoinFunds extends Funds
   private case object NoBitcoinFunds extends BitcoinFunds
-  private case class SuccessfullyBlockedBitcoins(funds: BlockedBitcoin) extends BitcoinFunds {
-    override val result = Some(Success(funds))
+  private case object SuccessfullyBlockedBitcoins extends BitcoinFunds {
+    override val finished = true
+    override val result = Success {}
     override def unblock(): Unit = {
-      wallet ! WalletActor.UnblockBitcoins(funds)
+      wallet ! WalletActor.UnblockBitcoins(id)
     }
   }
   private case object FailedBitcoinBlocking extends BitcoinFunds {
-    override val result = Some(Failure(new Error(s"Cannot block ${requiredFunds.bitcoin}")))
+    override val finished = true
+    override val result = Failure(new Error(s"Cannot block ${requiredFunds.bitcoin}"))
   }
 
   private var fiatFunds: FiatFunds = NoFiatFunds
@@ -86,7 +87,7 @@ private[funds] class FundsBlockerActor(
 
   private def receiveResponses: Receive = {
     case WalletActor.BlockedBitcoins(funds) =>
-      bitcoinFunds = SuccessfullyBlockedBitcoins(funds)
+      bitcoinFunds = SuccessfullyBlockedBitcoins
 
     case WalletActor.CannotBlockBitcoins =>
       bitcoinFunds = FailedBitcoinBlocking
@@ -99,19 +100,16 @@ private[funds] class FundsBlockerActor(
   }
 
   private def tryToCompleteFundsBlocking(): Unit = {
-    (fiatFunds.result, bitcoinFunds.result) match {
-      case (Some(fiatResult), Some(bitcoinResult)) =>
-        completeFundsBlocking(fiatResult, bitcoinResult)
-      case _ => // Not yet ready
+    if (fiatFunds.finished && bitcoinFunds.finished) {
+      completeFundsBlocking()
     }
   }
 
-  private def completeFundsBlocking(fiatResult: Try[Unit],
-                                    bitcoinResult: Try[BlockedBitcoin]): Unit = {
+  private def completeFundsBlocking(): Unit = {
     val overallResult = for {
-      _ <- fiatResult
-      bitcoinFunds <- bitcoinResult
-    } yield Exchange.BlockedFunds(bitcoinFunds)
+      _ <- fiatFunds.result
+      _ <- bitcoinFunds.result
+    } yield Exchange.BlockedFunds(id)
 
     if (overallResult.isFailure) {
       bitcoinFunds.unblock()

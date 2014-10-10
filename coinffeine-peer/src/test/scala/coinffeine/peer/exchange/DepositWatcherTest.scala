@@ -48,8 +48,9 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   trait Fixture {
     private val wallet = new SmartWallet(createWallet(new KeyPair(), 100.BTC))
     requiredSignatures.foreach(wallet.delegate.importKey)
+    wallet.blockFunds(exchangeId, 100.BTC)
     val myDeposit = wallet.createMultisignTransaction(
-      coinsId = wallet.blockFunds(100.BTC).get,
+      coinsId = exchangeId,
       amount = 100.BTC,
       fee = 0.BTC,
       signatures = requiredSignatures

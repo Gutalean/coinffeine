@@ -54,7 +54,7 @@ private class WalletActor(
       notifyListeners()
 
     case BlockBitcoins(fundsId, amount) =>
-      sender() ! wallet.blockFunds(amount)
+      sender() ! wallet.blockFunds(fundsId, amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
     case UnblockBitcoins(id) =>
@@ -130,7 +130,7 @@ object WalletActor {
   sealed trait BlockBitcoinsResponse
 
   /** Bitcoin amount was blocked successfully */
-  case class BlockedBitcoins(id: BlockedCoinsId) extends BlockBitcoinsResponse
+  case class BlockedBitcoins(id: ExchangeId) extends BlockBitcoinsResponse
 
   /** Cannot block the requested amount of bitcoins */
   case object CannotBlockBitcoins extends BlockBitcoinsResponse
@@ -138,7 +138,7 @@ object WalletActor {
   /** A message sent to the wallet actor to release for general use the previously blocked
     * bitcoins.
     */
-  case class UnblockBitcoins(id: BlockedCoinsId)
+  case class UnblockBitcoins(id: ExchangeId)
 
   /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
@@ -154,7 +154,7 @@ object WalletActor {
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     * @param transactionFee     The fee to include in the transaction
     */
-  case class CreateDeposit(coinsId: BlockedCoinsId,
+  case class CreateDeposit(coinsId: ExchangeId,
                            requiredSignatures: Seq[KeyPair],
                            amount: Bitcoin.Amount,
                            transactionFee: Bitcoin.Amount)

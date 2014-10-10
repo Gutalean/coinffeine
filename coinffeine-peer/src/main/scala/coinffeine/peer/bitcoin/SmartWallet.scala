@@ -10,6 +10,7 @@ import org.bitcoinj.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ExchangeId
 
 class SmartWallet(val delegate: Wallet) {
 
@@ -53,16 +54,16 @@ class SmartWallet(val delegate: Wallet) {
 
   def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }
 
-  def blockFunds(amount: Bitcoin.Amount): Option[BlockedCoinsId] = synchronized {
+  def blockFunds(id: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = synchronized {
     try {
-      blockedOutputs.block(amount)
+      blockedOutputs.block(id, amount)
     } catch {
       case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
         "cannot create multisign transaction: not enough funds", e)
     }
   }
 
-  def unblockFunds(coinsId: BlockedCoinsId): Unit = synchronized {
+  def unblockFunds(coinsId: ExchangeId): Unit = synchronized {
     blockedOutputs.unblock(coinsId)
   }
 
@@ -76,7 +77,7 @@ class SmartWallet(val delegate: Wallet) {
       s"cannot create a transaction of $amount: not enough funds in wallet")
   }
 
-  def createMultisignTransaction(coinsId: BlockedCoinsId,
+  def createMultisignTransaction(coinsId: ExchangeId,
                                  amount: Bitcoin.Amount,
                                  fee: Bitcoin.Amount,
                                  signatures: Seq[KeyPair]): ImmutableTransaction = synchronized {

@@ -2,11 +2,12 @@ package coinffeine.peer.bitcoin
 
 import scala.annotation.tailrec
 
-import coinffeine.model.bitcoin.{BlockedCoinsId, MutableTransactionOutput}
+import coinffeine.model.bitcoin.MutableTransactionOutput
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ExchangeId
 
 private[bitcoin] class BlockedOutputs {
-  import coinffeine.peer.bitcoin.BlockedOutputs._
+  import BlockedOutputs._
   type Outputs = Set[MutableTransactionOutput]
 
   private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
@@ -29,9 +30,8 @@ private[bitcoin] class BlockedOutputs {
       .map(o => Bitcoin(o.getValue.value)).sum
   }
 
-  private var nextId = 1
   private var spendableOutputs = Set.empty[MutableTransactionOutput]
-  private var blockedFunds = Map.empty[BlockedCoinsId, BlockedFunds]
+  private var blockedFunds = Map.empty[ExchangeId, BlockedFunds]
 
   def minOutput: Option[Bitcoin.Amount] = spendableAndNotBlocked
     .toSeq
@@ -49,20 +49,19 @@ private[bitcoin] class BlockedOutputs {
     spendableOutputs = spendCandidates
   }
 
-  def block(amount: Bitcoin.Amount): Option[BlockedCoinsId] = {
+  def block(coinsId: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = {
     collectFunds(amount).map { funds =>
-      val coinsId = generateNextCoinsId()
       blockedFunds += coinsId -> new BlockedFunds(funds)
       coinsId
     }
   }
 
-  def unblock(id: BlockedCoinsId): Unit = {
+  def unblock(id: ExchangeId): Unit = {
     blockedFunds -= id
   }
 
   @throws[BlockedOutputs.BlockingFundsException]
-  def use(id: BlockedCoinsId, amount: Bitcoin.Amount): Outputs = {
+  def use(id: ExchangeId, amount: Bitcoin.Amount): Outputs = {
     val funds = blockedFunds.getOrElse(id, throw UnknownCoinsId(id))
     funds.use(amount)
   }
@@ -95,12 +94,6 @@ private[bitcoin] class BlockedOutputs {
 
   private def blockedOutputs: Outputs = blockedFunds.values.flatMap(_.reservedOutputs).toSet
 
-  private def generateNextCoinsId() = {
-    val coinsId = BlockedCoinsId(nextId)
-    nextId += 1
-    coinsId
-  }
-
   private def sumOutputs(outputs: Outputs): Bitcoin.Amount =
     outputs.foldLeft(Bitcoin.Zero)(_ + _.getValue)
 }
@@ -108,7 +101,7 @@ private[bitcoin] class BlockedOutputs {
 object BlockedOutputs {
   sealed abstract class BlockingFundsException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
-  case class UnknownCoinsId(unknownId: BlockedCoinsId)
+  case class UnknownCoinsId(unknownId: ExchangeId)
     extends BlockingFundsException(s"Unknown coins id $unknownId")
   case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
     extends BlockingFundsException(
