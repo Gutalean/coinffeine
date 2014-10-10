@@ -22,7 +22,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
 
-  private var balances: Map[FiatCurrency, FiatAmount] = Map.empty
+  private val balances = new MultipleBalance()
   private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
   private var arrivalOrder: Seq[ExchangeId] = Seq.empty
   private var backedFunds = Set.empty[ExchangeId]
@@ -43,7 +43,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       }
 
     case BalancesUpdate(newBalances) =>
-      balances = newBalances.map(b => b.currency -> b).toMap
+      balances.resetTo(newBalances)
       updateBackedFunds()
 
     case UseFunds(fundsId, amount) =>
@@ -80,7 +80,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
     updateFunds(fundsToUse.copy(remainingAmount =
       fundsToUse.remainingAmount - event.amount.asInstanceOf[CurrencyAmount[C]]))
-    reduceBalance(event.amount)
+    balances.reduceBalance(event.amount)
     updateBackedFunds()
   }
 
@@ -121,14 +121,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     funds += newFunds.id -> newFunds
   }
 
-  private def reduceBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
-    val zero = CurrencyAmount.zero(amount.currency)
-    val prevAmount = balances.getOrElse(amount.currency, zero)
-      .asInstanceOf[CurrencyAmount[C]]
-    val newBalance = (prevAmount - amount).max(zero)
-    balances += amount.currency -> newBalance
-  }
-
   private def updateBackedFunds(): Unit = {
     for (currency <- currenciesInUse()) {
       updateBackedFunds(currency)
@@ -148,7 +140,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[ExchangeId] = {
-    val availableBalance = balances.getOrElse(currency, currency.Zero)
+    val availableBalance = balances.balanceFor(currency)
     val eligibleFunds = funds
       .values
       .filter(_.remainingAmount.currency == currency)
