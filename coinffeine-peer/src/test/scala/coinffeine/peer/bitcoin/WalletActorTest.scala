@@ -8,6 +8,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
 import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
@@ -104,7 +105,8 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val someAddress = new KeyPair().toAddress(network)
 
     def givenBlockedFunds(amount: Bitcoin.Amount): BlockedCoinsId = {
-      instance ! WalletActor.BlockBitcoins(amount)
+      val fundsId = ExchangeId.random()
+      instance ! WalletActor.BlockBitcoins(fundsId, amount)
       expectMsgClass(classOf[WalletActor.BlockedBitcoins]).id
     }
 

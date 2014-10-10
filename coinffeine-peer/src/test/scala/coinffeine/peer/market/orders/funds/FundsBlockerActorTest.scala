@@ -74,7 +74,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectBitcoinFundsAreRequested(): Unit = {
-      walletProbe.expectMsg(WalletActor.BlockBitcoins(requiredBitcoin))
+      walletProbe.expectMsg(WalletActor.BlockBitcoins(exchangeId, requiredBitcoin))
     }
 
     def expectFiatFundsAreRequested(): Unit = {

@@ -7,6 +7,7 @@ import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
+import coinffeine.model.exchange.ExchangeId
 
 private class WalletActor(
     properties: MutableWalletProperties,
@@ -52,7 +53,7 @@ private class WalletActor(
       updateActivity()
       notifyListeners()
 
-    case BlockBitcoins(amount) =>
+    case BlockBitcoins(fundsId, amount) =>
       sender() ! wallet.blockFunds(amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
@@ -123,7 +124,7 @@ object WalletActor {
   case object WalletChanged
 
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
-  case class BlockBitcoins(amount: Bitcoin.Amount)
+  case class BlockBitcoins(id: ExchangeId, amount: Bitcoin.Amount)
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse

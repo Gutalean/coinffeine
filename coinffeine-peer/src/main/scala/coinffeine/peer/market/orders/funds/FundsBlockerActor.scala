@@ -79,7 +79,7 @@ private[funds] class FundsBlockerActor(
   private def isFiatRequired: Boolean = requiredFunds.fiat.isPositive
 
   private def requestBitcoinFunds(): Unit = {
-    wallet ! WalletActor.BlockBitcoins(requiredFunds.bitcoin)
+    wallet ! WalletActor.BlockBitcoins(id, requiredFunds.bitcoin)
   }
 
   override def receive: Receive = receiveResponses.andThen(_ => tryToCompleteFundsBlocking())
