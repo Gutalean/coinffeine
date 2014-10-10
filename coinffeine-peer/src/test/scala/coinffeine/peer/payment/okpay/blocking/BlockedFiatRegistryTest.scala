@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.peer.payment.okpay.blocking
 
 import akka.actor.Props
 import akka.testkit.TestProbe

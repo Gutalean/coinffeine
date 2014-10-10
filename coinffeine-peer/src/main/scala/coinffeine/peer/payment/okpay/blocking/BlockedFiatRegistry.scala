@@ -1,6 +1,6 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.peer.payment.okpay.blocking
 
-import scalaz.{Validation, Scalaz}
+import scalaz.{Scalaz, Validation}
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence.PersistentActor

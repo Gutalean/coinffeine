@@ -14,7 +14,8 @@ import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.BlockedFiatRegistry._
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry._
 
 class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
