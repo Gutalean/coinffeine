@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.{Failure, Success, Try}
-
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.FiatCurrency
@@ -11,6 +9,8 @@ import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends State[C] {
+
+  import WaitingForMatchesState.Log
 
   private var matchWaitingForFunds: Option[OrderMatch[C]] = None
 
@@ -27,17 +27,21 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
     ctx.updateOrderStatus(OfflineOrder)
   }
 
-  override def fundsRequestResult(ctx: Context, blockedFunds: Try[Unit]): Unit = {
-    (matchWaitingForFunds, blockedFunds) match {
-      case (Some(orderMatch), Success(_)) => startExchange(ctx, orderMatch)
-
-      case (Some(orderMatch), Failure(cause)) =>
-        WaitingForMatchesState.Log.error(s"Cannot block funds for $orderMatch", cause)
-        ctx.resolveOrderMatch(orderMatch, MatchRejected("Cannot block funds"))
-
-      case _ => WaitingForMatchesState.Log.warn("Unexpected blocked funds result {}", blockedFunds)
+  override def fundsBlocked(ctx: Context): Unit = {
+    whenWaitingForFunds { orderMatch =>
+      startExchange(ctx, orderMatch)
     }
-    matchWaitingForFunds = None
+  }
+
+  override def cannotBlockFunds(ctx: Context, cause: Throwable): Unit = {
+    whenWaitingForFunds { orderMatch =>
+      Log.error(s"Cannot block funds for $orderMatch", cause)
+      ctx.resolveOrderMatch(orderMatch, MatchRejected("Cannot block funds"))
+    }
+  }
+
+  private def whenWaitingForFunds(block: OrderMatch[C] => Unit): Unit = {
+    matchWaitingForFunds.fold(Log.warn("Unexpected blocked funds result"))(block)
   }
 
   override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {

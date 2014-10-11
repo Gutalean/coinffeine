@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.{Failure, Success}
-
 import org.mockito.ArgumentCaptor
 import org.mockito.BDDMockito.given
 import org.mockito.Matchers.any
@@ -48,7 +46,7 @@ class WaitingForMatchesStateTest extends UnitTest
   it should "reject order matches when funds cannot be blocked" in new FreshInstance {
     val m = orderMatch(95.BTC, 1.EUR)
     state.acceptOrderMatch(context, m)
-    state.fundsRequestResult(context, Failure(new Error("injected error")))
+    state.cannotBlockFunds(context, new Error("injected error"))
     verify(context).resolveOrderMatch(m, MatchRejected("Cannot block funds"))
   }
 
@@ -75,7 +73,7 @@ class WaitingForMatchesStateTest extends UnitTest
 
   it should "accept perfect matches" in new FreshInstance {
     state.acceptOrderMatch(context, orderMatch(100.BTC, 1.EUR))
-    state.fundsRequestResult(context, Success {})
+    state.fundsBlocked(context)
     verify(context).keepOffMarket()
     val MatchAccepted(exchange) = matchResult()
     exchange.amounts.netBitcoinExchanged shouldBe 100.BTC
@@ -83,7 +81,7 @@ class WaitingForMatchesStateTest extends UnitTest
 
   it should "accept partial matches" in new FreshInstance(partiallyCompletedOrder) {
     state.acceptOrderMatch(context, orderMatch(50.BTC, 1.EUR))
-    state.fundsRequestResult(context, Success {})
+    state.fundsBlocked(context)
     verify(context).keepOffMarket()
     val MatchAccepted(exchange) = matchResult()
     exchange.amounts.netBitcoinExchanged shouldBe 50.BTC

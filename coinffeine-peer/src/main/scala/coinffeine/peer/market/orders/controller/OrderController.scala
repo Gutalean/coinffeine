@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.Try
-
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -51,8 +49,11 @@ private[orders] class OrderController[C <: FiatCurrency](
 
     override def blockFunds(id: ExchangeId, funds: RequiredFunds[C]): Unit =
       fundsBlocker.blockFunds(id, funds, new Listener {
-        override def onComplete(maybeFunds: Try[Unit]): Unit = {
-          state.fundsRequestResult(context, maybeFunds)
+        override def onSuccess(): Unit = {
+          state.fundsBlocked(context)
+        }
+        override def onFailure(cause: Throwable): Unit = {
+          state.cannotBlockFunds(context, cause)
         }
       })
 

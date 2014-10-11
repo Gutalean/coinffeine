@@ -1,9 +1,9 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{ExchangeId, Exchange}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 
 /** Encapsulates how funds for an exchange are blocked */
@@ -22,6 +22,12 @@ trait FundsBlocker {
 
 object FundsBlocker {
   trait Listener {
-    def onComplete(maybeFunds: Try[Unit]): Unit
+    def onSuccess(): Unit
+    def onFailure(cause: Throwable): Unit
+
+    final def onComplete(result: Try[Unit]): Unit = result match {
+      case Failure(cause) => onFailure(cause)
+      case _ => onSuccess()
+    }
   }
 }

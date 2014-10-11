@@ -17,8 +17,10 @@ private[controller] trait State[C <: FiatCurrency] {
   /** Triggered when the state become current */
   def enter(ctx: Context): Unit = {}
 
-  /** Funds request result */
-  def fundsRequestResult(ctx: Context, blockedFunds: Try[Unit]): Unit = {}
+  /** Funds were successfully blocked */
+  def fundsBlocked(ctx: Context): Unit = {}
+  /** Funds blocking failed */
+  def cannotBlockFunds(ctx: Context, cause: Throwable): Unit = {}
 
   /** The order is published on the market */
   def becomeInMarket(ctx: Context): Unit = {}
