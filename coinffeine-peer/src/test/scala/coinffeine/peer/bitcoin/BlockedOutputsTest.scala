@@ -5,7 +5,7 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.BlockedOutputs.{BlockingFundsException, UnknownCoinsId}
+import coinffeine.peer.bitcoin.BlockedOutputs.{FundsUseException, UnknownFunds}
 
 class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
@@ -66,9 +66,16 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
     instance.block(ExchangeId("1"), 3.BTC) should not be 'empty
   }
 
+  it should "reject blocking funds for the same id twice" in {
+    val instance = new BlockedOutputs()
+    instance.setSpendCandidates(buildOutputs(1))
+    instance.block(ExchangeId("1"), 1.BTC) should not be 'empty
+    instance.block(ExchangeId("1"), 1.BTC) shouldBe 'empty
+  }
+
   it should "reject using funds from an unknown identifier" in {
     val instance = new BlockedOutputs()
-    a [UnknownCoinsId] shouldBe thrownBy {
+    a [UnknownFunds] shouldBe thrownBy {
       instance.use(ExchangeId("unknown"), 2.BTC)
     }
   }
@@ -76,7 +83,7 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
   it should "reject using more funds that previously blocked" in {
     val instance = instanceWithOutputs(2)
     val Some(funds) = instance.block(ExchangeId("1"), 2.BTC)
-    a [BlockingFundsException] shouldBe thrownBy {
+    a [FundsUseException] shouldBe thrownBy {
       instance.use(funds, 1000.BTC)
     }
   }

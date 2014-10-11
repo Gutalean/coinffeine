@@ -55,12 +55,7 @@ class SmartWallet(val delegate: Wallet) {
   def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }
 
   def blockFunds(id: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = synchronized {
-    try {
-      blockedOutputs.block(id, amount)
-    } catch {
-      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
-        "cannot create multisign transaction: not enough funds", e)
-    }
+    blockedOutputs.block(id, amount)
   }
 
   def unblockFunds(coinsId: ExchangeId): Unit = synchronized {
@@ -222,7 +217,6 @@ object SmartWallet {
     }
     new SmartWallet(delegate)
   }
-
 
   case class NotEnoughFunds(message: String, cause: Throwable = null)
     extends RuntimeException(message, cause)

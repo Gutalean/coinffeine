@@ -50,7 +50,8 @@ private[bitcoin] class BlockedOutputs {
   }
 
   def block(coinsId: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = {
-    collectFunds(amount).map { funds =>
+    if (blockedFunds.contains(coinsId)) None
+    else collectFunds(amount).map { funds =>
       blockedFunds += coinsId -> new BlockedFunds(funds)
       coinsId
     }
@@ -60,9 +61,9 @@ private[bitcoin] class BlockedOutputs {
     blockedFunds -= id
   }
 
-  @throws[BlockedOutputs.BlockingFundsException]
+  @throws[BlockedOutputs.FundsUseException]
   def use(id: ExchangeId, amount: Bitcoin.Amount): Outputs = {
-    val funds = blockedFunds.getOrElse(id, throw UnknownCoinsId(id))
+    val funds = blockedFunds.getOrElse(id, throw UnknownFunds(id))
     funds.use(amount)
   }
 
@@ -99,11 +100,11 @@ private[bitcoin] class BlockedOutputs {
 }
 
 object BlockedOutputs {
-  sealed abstract class BlockingFundsException(message: String, cause: Throwable = null)
+  sealed abstract class FundsUseException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
-  case class UnknownCoinsId(unknownId: ExchangeId)
-    extends BlockingFundsException(s"Unknown coins id $unknownId")
+  case class UnknownFunds(unknownId: ExchangeId)
+    extends FundsUseException(s"Unknown coins id $unknownId")
   case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
-    extends BlockingFundsException(
+    extends FundsUseException(
       s"Not enough funds blocked: $requested requested, $available available")
 }
