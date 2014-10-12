@@ -10,4 +10,8 @@ case class ExchangeCommitment(
   commitmentTransaction: ImmutableTransaction
 ) extends PublicMessage {
   require(!publicKey.canSign, "Just the public key is needed")
+
+  override def toString =
+    s"""ExchangeCommitment($exchangeId,
+       |key=${publicKey.toString}}, tx=${commitmentTransaction.get.getHash}})""".stripMargin
 }

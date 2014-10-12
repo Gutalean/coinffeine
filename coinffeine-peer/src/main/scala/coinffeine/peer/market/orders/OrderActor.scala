@@ -104,7 +104,7 @@ class OrderActor[C <: FiatCurrency](
           case MatchAccepted(newExchange) => startExchange(newExchange)
           case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
           case MatchAlreadyAccepted(oldExchange) =>
-            log.debug("Received order match for the already accepted exchange {}", oldExchange)
+            log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
         }
       }
     })

@@ -6,6 +6,9 @@ import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 case class OrderBookEntry[C <: FiatCurrency](
     id: OrderId, orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) {
   require(amount.isPositive, "Amount ordered must be strictly positive")
+
+  override def toString = "%s(%s, %s at %s)".format(
+    if (orderType == Bid) "Bid" else "Ask", id, amount, price)
 }
 
 object OrderBookEntry {
