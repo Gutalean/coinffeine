@@ -11,7 +11,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
-class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
+class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
   "The wallet actor" must "update wallet primary address upon start" in new Fixture {
     eventually {
@@ -102,7 +102,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
     val wallet = new SmartWallet(createWallet(keyPair, initialBalance.amount))
     val properties = new MutableWalletProperties
-    val instance = system.actorOf(WalletActor.props(properties, wallet))
+    val instance = system.actorOf(DefaultWalletActor.props(properties, wallet))
     val someAddress = new KeyPair().toAddress(network)
 
     def givenBlockedFunds(amount: Bitcoin.Amount): ExchangeId = {
