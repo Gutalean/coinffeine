@@ -5,7 +5,7 @@ import akka.testkit.TestProbe
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeUpdate, ExchangeToStart}
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest

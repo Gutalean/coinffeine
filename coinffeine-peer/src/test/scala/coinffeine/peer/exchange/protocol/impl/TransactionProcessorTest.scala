@@ -65,8 +65,8 @@ class TransactionProcessorTest extends BitcoinjTest with SampleExchange {
       Seq(multiSigDeposit.getOutput(0)), Seq(sellerKey -> 2.BTC), network
     )
     TransactionProcessor.setMultipleSignatures(tx, index = 0,
-      TransactionProcessor.signMultiSignedOutput(tx, index = 0, buyerKey, requiredSignatures),
-      TransactionProcessor.signMultiSignedOutput(tx, index = 0, sellerKey, requiredSignatures)
+      TransactionProcessor.signMultiSignedOutput(tx, index = 0, buyerKey, requiredSignatures.toSeq),
+      TransactionProcessor.signMultiSignedOutput(tx, index = 0, sellerKey, requiredSignatures.toSeq)
     )
     sendToBlockChain(tx)
     Bitcoin.fromSatoshi(sellerWallet.getBalance.value) shouldBe 2.BTC

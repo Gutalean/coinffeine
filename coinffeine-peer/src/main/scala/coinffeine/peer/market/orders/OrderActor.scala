@@ -17,7 +17,7 @@ import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
 import coinffeine.peer.market.orders.controller._

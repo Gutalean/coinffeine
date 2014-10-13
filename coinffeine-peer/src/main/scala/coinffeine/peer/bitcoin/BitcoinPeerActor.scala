@@ -11,6 +11,7 @@ import org.bitcoinj.core._
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(properties: MutableNetworkProperties,

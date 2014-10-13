@@ -1,4 +1,4 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import scala.concurrent.duration._
 
@@ -8,9 +8,8 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
-import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
+import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -33,16 +32,17 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
     Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.BTC)
   }
 
-  it must "fail to create a new transaction when insufficient balance" in new Fixture {
+  it must "fail to create a new transaction given insufficient balance" in new Fixture {
     val req = WalletActor.CreateTransaction(20.BTC, someAddress)
     instance ! req
-    val WalletActor.TransactionCreationFailure(`req`, error: NotEnoughFunds) =
-      expectMsgType[WalletActor.TransactionCreationFailure]
+    val error = expectMsgType[WalletActor.TransactionCreationFailure]
+    error.req shouldBe req
+    error.failure.getMessage should include ("Not enough funds blocked")
   }
 
   it must "create a deposit as a multisign transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.1.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.1.BTC)
     instance ! request
     expectMsgPF() {
       case WalletActor.DepositCreated(`request`, tx) =>
@@ -53,16 +53,16 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "fail to create a deposit when there is no enough amount" in new Fixture {
     val funds = givenBlockedFunds(1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 10000.BTC, 0.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 10000.BTC, 0.BTC)
     instance ! request
-    expectMsgPF() {
-      case WalletActor.DepositCreationError(`request`, _: NotEnoughFunds) =>
-    }
+    val error = expectMsgType[WalletActor.DepositCreationError]
+    error.request shouldBe request
+    error.error.getMessage should include ("Not enough funds")
   }
 
   it must "release unpublished deposit funds" in new Fixture {
     val funds = givenBlockedFunds(1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.BTC)
     instance ! request
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
@@ -98,6 +98,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
+    val requiredSignatures = Both(keyPair, otherKeyPair)
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
     val wallet = new SmartWallet(createWallet(keyPair, initialBalance.amount))
     val properties = new MutableWalletProperties

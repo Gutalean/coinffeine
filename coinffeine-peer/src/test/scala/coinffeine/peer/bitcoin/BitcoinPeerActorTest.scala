@@ -13,6 +13,7 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.peer.bitcoin.BitcoinPeerActor.Delegates
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
 
@@ -69,7 +70,7 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
       peerGroup,
       new Delegates {
-        override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props = 
+        override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
           Fixture.this.transactionPublisher.props
         override val walletActor = Fixture.this.walletActor.props
         override val blockchainActor = Fixture.this.blockchainActor.props

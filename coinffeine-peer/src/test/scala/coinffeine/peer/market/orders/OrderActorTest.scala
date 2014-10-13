@@ -17,7 +17,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.peer.amounts.AmountsCalculatorStub
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective

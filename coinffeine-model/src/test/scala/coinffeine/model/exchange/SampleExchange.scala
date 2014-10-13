@@ -19,7 +19,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     )
   )
 
-  val requiredSignatures = participants.map(_.bitcoinKey).toSeq
+  val requiredSignatures = participants.map(_.bitcoinKey)
 
   val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
 

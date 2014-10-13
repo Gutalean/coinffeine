@@ -8,6 +8,7 @@ import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin._
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigComponent
 
 trait DefaultBitcoinComponents

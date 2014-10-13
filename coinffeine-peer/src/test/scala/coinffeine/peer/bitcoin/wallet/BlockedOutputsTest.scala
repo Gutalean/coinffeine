@@ -1,11 +1,11 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.BlockedOutputs.{FundsUseException, UnknownFunds}
+import coinffeine.peer.bitcoin.wallet.BlockedOutputs.{FundsUseException, UnknownFunds}
 
 class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 

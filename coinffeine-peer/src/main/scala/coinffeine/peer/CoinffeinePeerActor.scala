@@ -13,7 +13,8 @@ import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
-import coinffeine.peer.bitcoin.{WalletActor, BitcoinPeerActor}
+import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._

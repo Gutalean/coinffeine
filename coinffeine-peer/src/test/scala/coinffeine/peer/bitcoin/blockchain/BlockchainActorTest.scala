@@ -11,7 +11,9 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.peer.bitcoin.{MockTransactionBroadcaster, SmartWallet}
+import coinffeine.model.exchange.Both
+import coinffeine.peer.bitcoin.MockTransactionBroadcaster
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     with BitcoinjTest with MockitoSugar {
@@ -24,10 +26,10 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
   }
 
   it must "report multisigned transaction confirmation" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(multisignedTx.getHash, 1))
+    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(multisignedTx.get.getHash, 1))
     expectNoMsg()
-    sendToBlockChain(multisignedTx)
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(multisignedTx.getHash, 1))
+    sendToBlockChain(multisignedTx.get)
+    requester.expectMsg(BlockchainActor.TransactionConfirmed(multisignedTx.get.getHash, 1))
   }
 
   it must "report transaction confirmation only once" in new Fixture {
@@ -99,10 +101,9 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
   it must "retrieve existing multisigned transaction in blockchain" in new Fixture {
     requester.send(instance, BlockchainActor.WatchMultisigKeys(Seq(keyPair, otherKeyPair)))
     expectNoMsg()
-    sendToBlockChain(multisignedTx)
-    requester.send(instance, BlockchainActor.RetrieveTransaction(multisignedTx.getHash))
-    requester.expectMsg(BlockchainActor.TransactionFound(
-      multisignedTx.getHash, ImmutableTransaction(multisignedTx)))
+    sendToBlockChain(multisignedTx.get)
+    requester.send(instance, BlockchainActor.RetrieveTransaction(multisignedTx.get.getHash))
+    requester.expectMsg(BlockchainActor.TransactionFound(multisignedTx.get.getHash, multisignedTx))
   }
 
   it must "fail to retrieve nonexistent transaction in blockchain" in new Fixture {
@@ -145,7 +146,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val tx = wallet.delegate.createSend(keyPair.toAddress(network), 0.1.BTC)
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.delegate.createSend(keyPair.toAddress(network), 0.1.BTC)
-    val multisignedTx = otherWallet.blockMultisignFunds(Seq(keyPair, otherKeyPair), 0.1.BTC)
+    val multisignedTx = otherWallet.createMultisignTransaction(Both(keyPair, otherKeyPair), 0.1.BTC)
     val requester = TestProbe()
 
     val instance = system.actorOf(Props(new BlockchainActor(chain, network)))

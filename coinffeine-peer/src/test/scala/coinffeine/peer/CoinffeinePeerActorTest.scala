@@ -11,7 +11,8 @@ import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.bitcoin.{BitcoinPeerActor, WalletActor}
+import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway

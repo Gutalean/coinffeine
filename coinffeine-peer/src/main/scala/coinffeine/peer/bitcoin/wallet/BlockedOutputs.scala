@@ -1,4 +1,4 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import scala.annotation.tailrec
 
@@ -6,8 +6,8 @@ import coinffeine.model.bitcoin.MutableTransactionOutput
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 
-private[bitcoin] class BlockedOutputs {
-  import BlockedOutputs._
+private class BlockedOutputs {
+  import coinffeine.peer.bitcoin.wallet.BlockedOutputs._
   type Outputs = Set[MutableTransactionOutput]
 
   private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
@@ -67,6 +67,9 @@ private[bitcoin] class BlockedOutputs {
     funds.use(amount)
   }
 
+  def useUnblockedFunds(amount: Bitcoin.Amount): Outputs =
+    collectFunds(amount).getOrElse(throw NotEnoughFunds(amount, available))
+
   def cancelUsage(outputs: Outputs): Unit = {
     blockedFunds.values.foreach(_.cancelUsage(outputs))
   }
@@ -99,7 +102,7 @@ private[bitcoin] class BlockedOutputs {
     outputs.foldLeft(Bitcoin.Zero)(_ + _.getValue)
 }
 
-object BlockedOutputs {
+private object BlockedOutputs {
   sealed abstract class FundsUseException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
   case class UnknownFunds(unknownId: ExchangeId)
