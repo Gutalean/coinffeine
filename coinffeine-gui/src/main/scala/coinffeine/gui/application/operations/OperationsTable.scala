@@ -153,8 +153,6 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       add(fieldValue(exchange.amounts.grossBitcoinExchanged.toString), 1, 2)
       add(fieldName("Net bitcoin"), 2, 2)
       add(fieldValue(exchange.amounts.netBitcoinExchanged.toString), 3, 2)
-      add(fieldName("Blocked bitcoins ID"), 4, 2)
-      add(fieldValue(exchange.blockedFunds.bitcoin.underlying.toString), 5, 2)
 
       add(fieldName("Gross fiat"), 0, 3)
       add(fieldValue(exchange.amounts.grossFiatExchanged.toString), 1, 3)

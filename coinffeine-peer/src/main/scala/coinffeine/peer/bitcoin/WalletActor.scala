@@ -7,6 +7,7 @@ import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
+import coinffeine.model.exchange.ExchangeId
 
 private class WalletActor(
     properties: MutableWalletProperties,
@@ -52,8 +53,8 @@ private class WalletActor(
       updateActivity()
       notifyListeners()
 
-    case BlockBitcoins(amount) =>
-      sender() ! wallet.blockFunds(amount)
+    case BlockBitcoins(fundsId, amount) =>
+      sender() ! wallet.blockFunds(fundsId, amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
     case UnblockBitcoins(id) =>
@@ -123,13 +124,13 @@ object WalletActor {
   case object WalletChanged
 
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
-  case class BlockBitcoins(amount: Bitcoin.Amount)
+  case class BlockBitcoins(id: ExchangeId, amount: Bitcoin.Amount)
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
 
   /** Bitcoin amount was blocked successfully */
-  case class BlockedBitcoins(id: BlockedCoinsId) extends BlockBitcoinsResponse
+  case class BlockedBitcoins(id: ExchangeId) extends BlockBitcoinsResponse
 
   /** Cannot block the requested amount of bitcoins */
   case object CannotBlockBitcoins extends BlockBitcoinsResponse
@@ -137,7 +138,7 @@ object WalletActor {
   /** A message sent to the wallet actor to release for general use the previously blocked
     * bitcoins.
     */
-  case class UnblockBitcoins(id: BlockedCoinsId)
+  case class UnblockBitcoins(id: ExchangeId)
 
   /** A message sent to the wallet actor in order to create a multisigned deposit transaction.
     *
@@ -153,7 +154,7 @@ object WalletActor {
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     * @param transactionFee     The fee to include in the transaction
     */
-  case class CreateDeposit(coinsId: BlockedCoinsId,
+  case class CreateDeposit(coinsId: ExchangeId,
                            requiredSignatures: Seq[KeyPair],
                            amount: Bitcoin.Amount,
                            transactionFee: Bitcoin.Amount)

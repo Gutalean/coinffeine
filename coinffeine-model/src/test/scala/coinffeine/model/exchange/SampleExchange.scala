@@ -1,11 +1,10 @@
 package coinffeine.model.exchange
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.bitcoin.{BlockedCoinsId, KeyPair, PublicKey}
+import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
 import coinffeine.model.network.PeerId
-import coinffeine.model.payment.PaymentProcessor
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
@@ -48,21 +47,15 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   )
 
   val exchangeId = ExchangeId("id")
-
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
-  val buyerBlockedFunds = Exchange.BlockedFunds(
-    bitcoin = BlockedCoinsId(1)
-  )
-  val sellerBlockedFunds = Exchange.BlockedFunds(bitcoin = BlockedCoinsId(2))
-
-  val buyerExchange = Exchange.notStarted(exchangeId, BuyerRole, peerIds.seller, amounts,
-    parameters, buyerBlockedFunds)
+  val buyerExchange =
+    Exchange.notStarted(exchangeId, BuyerRole, peerIds.seller, amounts, parameters)
   val buyerHandshakingExchange =
     buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
-  val sellerExchange = Exchange.notStarted(exchangeId, SellerRole, peerIds.buyer, amounts,
-    parameters, buyerBlockedFunds)
+  val sellerExchange =
+    Exchange.notStarted(exchangeId, SellerRole, peerIds.buyer, amounts, parameters)
   val sellerHandshakingExchange =
     sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
 }

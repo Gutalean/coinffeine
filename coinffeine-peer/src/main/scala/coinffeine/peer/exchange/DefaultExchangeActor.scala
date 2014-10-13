@@ -33,7 +33,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   override def postStop(): Unit = {
     log.info("Unblocking funds just in case")
-    collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.info.blockedFunds.bitcoin)
+    collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.info.id)
     if (exchange.info.role == BuyerRole) {
       collaborators.paymentProcessor ! PaymentProcessorActor.UnblockFunds(exchange.info.id)
     }

@@ -231,6 +231,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
   it should "unblock funds on termination" in new Fixture {
     startExchange()
     system.stop(actor)
-    walletActor.expectMsg(WalletActor.UnblockBitcoins(exchange.blockedFunds.bitcoin))
+    walletActor.expectMsg(WalletActor.UnblockBitcoins(exchangeId))
   }
 }

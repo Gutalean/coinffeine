@@ -14,7 +14,6 @@ case class Exchange[C <: FiatCurrency, +S <: Exchange.State[C]](
     counterpartId: PeerId,
     amounts: Exchange.Amounts[C],
     parameters: Exchange.Parameters,
-    blockedFunds: Exchange.BlockedFunds,
     state: S) {
 
   val currency: C = amounts.netFiatExchanged.currency
@@ -132,9 +131,6 @@ object Exchange {
       Both(buyer = grossFiatExchanged, seller = netFiatExchanged)
   }
 
-  /** Funds reserved for the order this exchange belongs to */
-  case class BlockedFunds(bitcoin: BlockedCoinsId)
-
   type Deposits = Both[ImmutableTransaction]
 
   case class Progress(bitcoinsTransferred: Both[Bitcoin.Amount]) {
@@ -148,9 +144,8 @@ object Exchange {
                                     role: Role,
                                     counterpartId: PeerId,
                                     amounts: Exchange.Amounts[C],
-                                    parameters: Exchange.Parameters,
-                                    blockedFunds: Exchange.BlockedFunds) = Exchange(
-    id, role, counterpartId, amounts, parameters, blockedFunds, NotStarted()(amounts.currency))
+                                    parameters: Exchange.Parameters) = Exchange(
+    id, role, counterpartId, amounts, parameters, NotStarted()(amounts.currency))
 
   sealed trait State[C <: FiatCurrency] {
     val progress: Exchange.Progress

@@ -9,7 +9,6 @@ import org.scalatest.Inside
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -23,7 +22,6 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class OrderControllerTest extends UnitTest with Inside with MockitoSugar with SampleExchange {
 
   val initialOrder = Order(Bid, 10.BTC, Price(1.EUR))
-  val coinsId = BlockedCoinsId(1)
   val orderMatch = OrderMatch(
     orderId = initialOrder.id,
     exchangeId = ExchangeId.random(),
@@ -35,10 +33,9 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
 
   "A mutable order" should "start new exchanges" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     val MatchAccepted(newExchange) = orderMatchResolution()
     order.view.exchanges should have size 1
-    newExchange.blockedFunds.bitcoin shouldBe coinsId
     newExchange.amounts shouldBe amountsCalculator.exchangeAmountsFor(orderMatch)
     newExchange.role shouldBe BuyerRole
   }
@@ -51,7 +48,7 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     verify(listener).onStatusChanged(OfflineOrder, InMarketOrder)
 
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     verify(listener).onStatusChanged(OfflineOrder, InProgressOrder)
 
     order.completeExchange(complete(order.view.exchanges.values.head))
@@ -66,7 +63,7 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
 
   it should "notify successful termination" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.head))
     verify(listener).onStatusChanged(InProgressOrder, CompletedOrder)
   }
@@ -85,14 +82,14 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
 
   it should "reject order matches during other exchange" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     order.acceptOrderMatch(orderMatch.copy(exchangeId = ExchangeId("other")))
     orderMatchResolutions(2).last shouldBe MatchRejected("Exchange already in progress")
   }
 
   it should "recognize already accepted matches" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     order.acceptOrderMatch(orderMatch)
     inside (orderMatchResolutions(2)) {
       case Seq(MatchAccepted(exchangeAccepted), MatchAlreadyAccepted(exchangeInProgress)) =>
@@ -116,7 +113,7 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     publisher.expectSuccessfulPublication()
 
     order.acceptOrderMatch(firstHalfMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
 
     verify(listener).onStatusChanged(InProgressOrder, OfflineOrder)
@@ -124,7 +121,7 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     publisher.expectSuccessfulPublication()
 
     order.acceptOrderMatch(secondHalfMatch)
-    fundRequests.successfullyBlockFunds(coinsId)
+    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
     verify(listener).onStatusChanged(InProgressOrder, CompletedOrder)
     publisher should not be 'inMarket

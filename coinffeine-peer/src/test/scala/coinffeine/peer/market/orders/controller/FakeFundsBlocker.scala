@@ -1,42 +1,28 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.{Failure, Success}
-
-import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 
 class FakeFundsBlocker extends FundsBlocker {
 
-  private case class PendingFundsBlock(listener: FundsBlocker.Listener) {
-
-    def succeed(coinsId: BlockedCoinsId): Unit = {
-      listener.onComplete(Success(Exchange.BlockedFunds(coinsId)))
-    }
-
-    def fail(cause: Throwable): Unit = {
-      listener.onComplete(Failure(cause))
-    }
-  }
-
-  private var pending = Seq.empty[PendingFundsBlock]
+  private var pending = Seq.empty[FundsBlocker.Listener]
 
   override def blockFunds(id: ExchangeId,
                           funds: RequiredFunds[_ <: FiatCurrency],
                           listener: FundsBlocker.Listener): Unit = {
-    pending :+= PendingFundsBlock(listener)
+    pending :+= listener
   }
 
-  def successfullyBlockFunds(coinsId: BlockedCoinsId): Unit = {
+  def successfullyBlockFunds(): Unit = {
     require(pending.nonEmpty, "No funds were requested")
-    pending.head.succeed(coinsId)
+    pending.head.onSuccess()
     pending = pending.tail
   }
 
   def failToBlockFunds(cause: Throwable = new Error("Injected error")): Unit = {
     require(pending.nonEmpty, "No funds were requested")
-    pending.head.fail(cause)
+    pending.head.onFailure(cause)
     pending = pending.tail
   }
 }

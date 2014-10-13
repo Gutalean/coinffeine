@@ -7,9 +7,8 @@ import akka.testkit.TestProbe
 import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.bitcoin.BlockedCoinsId
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{ExchangeId, Exchange}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.bitcoin.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -65,7 +64,6 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     val walletProbe, paymentProcessor = TestProbe()
     val actor = system.actorOf(FundsBlockerActor.props(exchangeId, walletProbe.ref,
       paymentProcessor.ref, RequiredFunds(requiredBitcoin, requiredFiat), listener = self))
-    val btcFunds = BlockedCoinsId(1)
 
     def expectFundsAreRequested(): Unit = {
       if (requiredFiat.isPositive) expectFiatFundsAreRequested()
@@ -74,7 +72,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectBitcoinFundsAreRequested(): Unit = {
-      walletProbe.expectMsg(WalletActor.BlockBitcoins(requiredBitcoin))
+      walletProbe.expectMsg(WalletActor.BlockBitcoins(exchangeId, requiredBitcoin))
     }
 
     def expectFiatFundsAreRequested(): Unit = {
@@ -86,7 +84,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def givenBitcoinFundsAreBlocked(): Unit = {
-      walletProbe.reply(WalletActor.BlockedBitcoins(btcFunds))
+      walletProbe.reply(WalletActor.BlockedBitcoins(exchangeId))
     }
 
     def givenBitcoinFundsFailToBeBlocked(): Unit = {
@@ -106,7 +104,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectBitcoinFundsUnblocking(): Unit = {
-      walletProbe.expectMsg(WalletActor.UnblockBitcoins(btcFunds))
+      walletProbe.expectMsg(WalletActor.UnblockBitcoins(exchangeId))
     }
 
     def expectFiatFundsUnblocking(): Unit = {
@@ -118,8 +116,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectSuccessfulBlocking(): Unit = {
-      val funds = Exchange.BlockedFunds(btcFunds)
-      expectMsg(FundsBlockerActor.BlockingResult(Success(funds)))
+      expectMsg(FundsBlockerActor.BlockingResult(Success {}))
     }
 
     def expectFailedBlocking(message: String): Unit = {
