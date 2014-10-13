@@ -19,10 +19,24 @@ class SmartWallet(val delegate: Wallet) {
 
   def this(network: Network) = this(new Wallet(network))
 
-  private var listeners: Set[(Listener, ExecutionContext)] = Set.empty
+  private case class ListenerExecutor(listener: Listener, context: ExecutionContext) {
+    private val task = new Runnable {
+      override def run(): Unit = {
+        listener.onChange()
+      }
+    }
+    def apply(): Unit = {
+      context.execute(task)
+    }
+  }
+  private var listeners: Map[Listener, ListenerExecutor] = Map.empty
 
   def addListener(listener: Listener)(implicit executor: ExecutionContext) = synchronized {
-    listeners += listener -> executor
+    listeners += listener -> ListenerExecutor(listener, executor)
+  }
+
+  def removeListener(listener: Listener) = synchronized {
+    listeners -= listener
   }
 
   def currentReceiveAddress: Address = synchronized {
@@ -116,9 +130,7 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   private def update(): Unit = synchronized {
-    listeners.foreach { case (l, e) => e.execute(new Runnable {
-      override def run() = l.onChange()
-    })}
+    listeners.values.foreach(_.apply())
   }
 
   private def releaseFunds(tx: MutableTransaction): Unit = {

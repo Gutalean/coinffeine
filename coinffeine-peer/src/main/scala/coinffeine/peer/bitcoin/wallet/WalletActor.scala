@@ -25,6 +25,10 @@ private class WalletActor(
     updateActivity()
   }
 
+  override def postStop(): Unit = {
+    unsubscribeFromWalletChanges()
+  }
+
   override val receive: Receive = {
 
     case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
@@ -95,13 +99,21 @@ private class WalletActor(
   }
 
   private def subscribeToWalletChanges(): Unit = {
-    wallet.addListener(new SmartWallet.Listener {
-      override def onChange() = self ! InternalWalletChanged
-    })(context.dispatcher)
+    wallet.addListener(WalletListener)(context.dispatcher)
+  }
+
+  private def unsubscribeFromWalletChanges(): Unit = {
+    wallet.removeListener(WalletListener)
   }
 
   private def notifyListeners(): Unit = {
     listeners.foreach(_ ! WalletChanged)
+  }
+
+  private object WalletListener extends SmartWallet.Listener {
+    override def onChange() = {
+      self ! InternalWalletChanged
+    }
   }
 }
 
