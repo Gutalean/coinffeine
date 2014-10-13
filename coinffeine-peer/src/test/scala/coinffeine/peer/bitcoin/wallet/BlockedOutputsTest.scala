@@ -1,13 +1,13 @@
 package coinffeine.peer.bitcoin.wallet
 
+import org.bitcoinj.core.TransactionOutPoint
+
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin._
-import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.BlockedOutputs.{FundsUseException, UnknownFunds}
 
-class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
+class BlockedOutputsTest extends UnitTest {
 
   private def instanceWithOutputs(numberOfOneBtcOutputs: Int): BlockedOutputs = {
     val instance = new BlockedOutputs()
@@ -15,10 +15,9 @@ class BlockedOutputsTest extends UnitTest with CoinffeineUnitTestNetwork.Compone
     instance
   }
 
-  private def buildOutputs(numberOfOneBtcOutputs: Int): Set[MutableTransactionOutput] = {
-    val tx = new MutableTransaction(network)
+  private def buildOutputs(numberOfOneBtcOutputs: Int): Set[TransactionOutPoint] = {
     Seq.fill(numberOfOneBtcOutputs) {
-      new MutableTransactionOutput(network, tx, 1.BTC, new PublicKey())
+      DummyOutput.of(1.BTC).getOutPointFor
     }.toSet
   }
 

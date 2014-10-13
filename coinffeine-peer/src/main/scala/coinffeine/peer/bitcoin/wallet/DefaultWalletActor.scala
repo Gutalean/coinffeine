@@ -57,7 +57,8 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
-      val releasedOutputs = wallet.releaseTransaction(tx)
+      wallet.releaseTransaction(tx)
+      val releasedOutputs = tx.get.getInputs.map(_.getOutpoint).toSet
       blockedOutputs.cancelUsage(releasedOutputs)
 
     case CreateKeyPair =>
@@ -93,7 +94,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   }
 
   private def updateBalance(): Unit = {
-    blockedOutputs.setSpendCandidates(wallet.spendCandidates.toSet)
+    blockedOutputs.setSpendCandidates(wallet.spendCandidates.map(_.getOutPointFor).toSet)
     properties.balance.set(Some(BitcoinBalance(
       estimated = wallet.estimatedBalance,
       available = wallet.availableBalance,

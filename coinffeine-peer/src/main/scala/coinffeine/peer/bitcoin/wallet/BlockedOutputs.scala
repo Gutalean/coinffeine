@@ -2,13 +2,14 @@ package coinffeine.peer.bitcoin.wallet
 
 import scala.annotation.tailrec
 
-import coinffeine.model.bitcoin.MutableTransactionOutput
+import org.bitcoinj.core.TransactionOutPoint
+
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 
 private class BlockedOutputs {
-  import coinffeine.peer.bitcoin.wallet.BlockedOutputs._
-  type Outputs = Set[MutableTransactionOutput]
+  import BlockedOutputs._
+  type Outputs = Set[TransactionOutPoint]
 
   private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
                              var usedOutputs: Outputs = Set.empty) {
@@ -26,18 +27,14 @@ private class BlockedOutputs {
       usedOutputs --= revertedOutputs
     }
 
-    def reservedAmount: Bitcoin.Amount = reservedOutputs.toSeq
-      .map(o => Bitcoin(o.getValue.value)).sum
+    def reservedAmount: Bitcoin.Amount = reservedOutputs.toSeq.map(outputValue).sum
   }
 
-  private var spendableOutputs = Set.empty[MutableTransactionOutput]
+  private var spendableOutputs = Set.empty[TransactionOutPoint]
   private var blockedFunds = Map.empty[ExchangeId, BlockedFunds]
 
-  def minOutput: Option[Bitcoin.Amount] = spendableAndNotBlocked
-    .toSeq
-    .map(output => Bitcoin.fromSatoshi(output.getValue.value))
-    .sortBy(_.value)
-    .headOption
+  def minOutput: Option[Bitcoin.Amount] =
+    spendableAndNotBlocked.toSeq.map(outputValue).sortBy(_.value).headOption
 
   def blocked: Bitcoin.Amount = sumOutputs(blockedOutputs)
 
@@ -80,14 +77,14 @@ private class BlockedOutputs {
 
   @tailrec
   private def collectFundsGreedily(remainingAmount: Bitcoin.Amount,
-                                   candidates: Seq[MutableTransactionOutput],
+                                   candidates: Seq[TransactionOutPoint],
                                    alreadyCollected: Outputs = Set.empty): Option[Outputs] = {
     if (!remainingAmount.isPositive) Some(alreadyCollected)
     else candidates match  {
       case Seq() => None
       case Seq(candidate, remainingCandidates @ _*) =>
         collectFundsGreedily(
-          remainingAmount - candidate.getValue,
+          remainingAmount - outputValue(candidate),
           remainingCandidates,
           alreadyCollected + candidate
         )
@@ -98,8 +95,10 @@ private class BlockedOutputs {
 
   private def blockedOutputs: Outputs = blockedFunds.values.flatMap(_.reservedOutputs).toSet
 
-  private def sumOutputs(outputs: Outputs): Bitcoin.Amount =
-    outputs.foldLeft(Bitcoin.Zero)(_ + _.getValue)
+  private def sumOutputs(outputs: Outputs): Bitcoin.Amount = outputs.toSeq.map(outputValue).sum
+
+  private def outputValue(output: TransactionOutPoint): Bitcoin.Amount =
+    output.getConnectedOutput.getValue
 }
 
 private object BlockedOutputs {
