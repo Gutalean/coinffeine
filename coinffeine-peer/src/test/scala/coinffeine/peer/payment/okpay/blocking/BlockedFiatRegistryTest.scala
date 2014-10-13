@@ -10,6 +10,9 @@ import coinffeine.peer.payment.PaymentProcessorActor
 
 class BlockedFiatRegistryTest extends AkkaSpec {
 
+  val eventProbe = TestProbe()
+  system.eventStream.subscribe(eventProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
+
   "The blocking funds actor" must "retrieve no blocked funds when no funds are blocked" in
     new WithBlockingFundsActor {
       actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
@@ -170,6 +173,8 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     setBalance(100.EUR)
     actor ! PaymentProcessorActor.BlockFunds(funds1, 60.EUR)
     actor ! PaymentProcessorActor.BlockFunds(funds2, 40.EUR)
+    expectBecomingAvailable(funds1)
+    expectBecomingAvailable(funds2)
     expectMsgAllOf(
       PaymentProcessorActor.BlockedFunds(funds1),
       PaymentProcessorActor.BlockedFunds(funds2)
@@ -181,6 +186,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
   }
 
   it must "recover its previous state" in new WithBlockingFundsActor(persistentId = lastId) {
+    expectBecomingUnavailable(funds1)
     setBalance(100.EUR)
     expectBecomingAvailable(funds1)
     actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
@@ -190,10 +196,6 @@ class BlockedFiatRegistryTest extends AkkaSpec {
 
   private abstract class WithBlockingFundsActor(persistentId: Int = freshId()) {
     val actor = system.actorOf(Props(new BlockedFiatRegistry(persistentId.toString)))
-
-    val eventProbe = TestProbe()
-    system.eventStream.subscribe(
-      eventProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
 
     def givenBlockedFunds(amount: FiatAmount): ExchangeId = {
       val fundsId = ExchangeId.random()

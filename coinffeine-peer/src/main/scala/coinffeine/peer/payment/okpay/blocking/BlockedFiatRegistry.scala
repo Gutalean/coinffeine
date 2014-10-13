@@ -154,9 +154,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private def currenciesInUse(): Set[FiatCurrency] =
     funds.values.map(_.remainingAmount.currency).toSet
 
-  private def fundsForCurrency(currency: FiatCurrency): Set[ExchangeId] =
-    funds.values.filter(_.remainingAmount.currency == currency).map(_.id).toSet
-
   private def totalBlockedForCurrency[C <: FiatCurrency](currency: C): Option[FiatAmount] = {
     val fundsForCurrency = funds.values
       .filter(_.remainingAmount.currency == currency)
