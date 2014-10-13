@@ -11,6 +11,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
+import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.MockTransactionBroadcaster
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
@@ -145,7 +146,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val tx = wallet.delegate.createSend(keyPair.toAddress(network), 0.1.BTC)
     val immutableTx = ImmutableTransaction(tx)
     val otherTx = otherWallet.delegate.createSend(keyPair.toAddress(network), 0.1.BTC)
-    val multisignedTx = otherWallet.createMultisignTransaction(Seq(keyPair, otherKeyPair), 0.1.BTC)
+    val multisignedTx = otherWallet.createMultisignTransaction(Both(keyPair, otherKeyPair), 0.1.BTC)
     val requester = TestProbe()
 
     val instance = system.actorOf(Props(new BlockchainActor(chain, network)))

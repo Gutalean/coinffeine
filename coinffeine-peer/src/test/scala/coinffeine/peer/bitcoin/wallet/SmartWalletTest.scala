@@ -4,6 +4,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
+import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
 
 class SmartWalletTest extends UnitTest with BitcoinjTest {
@@ -49,7 +50,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
-    val signatures = Seq(keyPair, otherKeyPair)
+    val signatures = Both(keyPair, otherKeyPair)
     val initialFunds = 10.BTC
     val someAddress = new KeyPair().toAddress(network)
     val wallet = new SmartWallet(createWallet(keyPair, initialFunds))

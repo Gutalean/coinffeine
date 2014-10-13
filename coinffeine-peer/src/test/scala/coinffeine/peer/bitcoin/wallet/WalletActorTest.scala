@@ -8,8 +8,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
+import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
@@ -43,7 +42,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "create a deposit as a multisign transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.1.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.1.BTC)
     instance ! request
     expectMsgPF() {
       case WalletActor.DepositCreated(`request`, tx) =>
@@ -54,7 +53,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "fail to create a deposit when there is no enough amount" in new Fixture {
     val funds = givenBlockedFunds(1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 10000.BTC, 0.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 10000.BTC, 0.BTC)
     instance ! request
     val error = expectMsgType[WalletActor.DepositCreationError]
     error.request shouldBe request
@@ -63,7 +62,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
 
   it must "release unpublished deposit funds" in new Fixture {
     val funds = givenBlockedFunds(1.BTC)
-    val request = WalletActor.CreateDeposit(funds, Seq(keyPair, otherKeyPair), 1.BTC, 0.BTC)
+    val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.BTC)
     instance ! request
     val reply = expectMsgType[WalletActor.DepositCreated]
     instance ! WalletActor.ReleaseDeposit(reply.tx)
@@ -99,6 +98,7 @@ class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with
   trait Fixture {
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
+    val requiredSignatures = Both(keyPair, otherKeyPair)
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
     val wallet = new SmartWallet(createWallet(keyPair, initialBalance.amount))
     val properties = new MutableWalletProperties

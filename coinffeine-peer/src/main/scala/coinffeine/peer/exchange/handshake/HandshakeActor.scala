@@ -87,7 +87,7 @@ private class HandshakeActor[C <: FiatCurrency](
   }
 
   private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
-    val requiredSignatures = exchange.participants.map(_.bitcoinKey).toSeq
+    val requiredSignatures = exchange.participants.map(_.bitcoinKey)
     val depositAmounts = exchange.role.select(exchange.amounts.deposits)
     AskPattern(
       to = collaborators.wallet,

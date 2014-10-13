@@ -8,6 +8,7 @@ import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
+import coinffeine.model.exchange.Both
 
 /** This trait encapsulates the transaction processing actions. */
 object TransactionProcessor {
@@ -15,7 +16,7 @@ object TransactionProcessor {
   def createMultiSignedDeposit(unspentOutputs: Seq[MutableTransactionOutput],
                                amountToCommit: Bitcoin.Amount,
                                changeAddress: Address,
-                               requiredSignatures: Seq[PublicKey],
+                               requiredSignatures: Both[PublicKey],
                                wallet: Wallet): MutableTransaction = {
     require(amountToCommit.isPositive, "Amount to commit must be greater than zero")
 
@@ -25,7 +26,7 @@ object TransactionProcessor {
 
     val tx = new MutableTransaction(wallet.getParams)
     unspentOutputs.foreach(tx.addInput)
-    addMultisignOutput(tx, amountToCommit, requiredSignatures)
+    addMultisignOutput(tx, amountToCommit, requiredSignatures.toSeq)
     addChangeOutput(tx, totalInputFunds, amountToCommit, changeAddress)
 
     wallet.signTransaction(SendRequest.forTx(tx))

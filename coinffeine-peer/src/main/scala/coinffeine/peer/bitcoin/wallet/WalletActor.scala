@@ -7,7 +7,7 @@ import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
-import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.exchange.{Both, ExchangeId}
 
 private class WalletActor(
     properties: MutableWalletProperties,
@@ -171,7 +171,7 @@ object WalletActor {
     * @param transactionFee     The fee to include in the transaction
     */
   case class CreateDeposit(coinsId: ExchangeId,
-                           requiredSignatures: Seq[KeyPair],
+                           requiredSignatures: Both[KeyPair],
                            amount: Bitcoin.Amount,
                            transactionFee: Bitcoin.Amount)
 

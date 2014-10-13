@@ -47,7 +47,7 @@ trait ExchangeTest extends BitcoinjTest {
     )
     sendToBlockChain(commitments.toSeq.map(_.get): _*)
     private val validation = protocol.validateDeposits(
-      commitments, amounts, Both.fromSeq(requiredSignatures), parameters.network)
+      commitments, amounts, requiredSignatures, parameters.network)
     require(validation.forall(_.isSuccess))
     val buyerRunningExchange = buyerHandshakingExchange.startExchanging(commitments)
     val sellerRunningExchange = sellerHandshakingExchange.startExchanging(commitments)

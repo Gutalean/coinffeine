@@ -10,6 +10,7 @@ import org.bitcoinj.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin.{Address, Wallet, _}
 import coinffeine.model.currency._
+import coinffeine.model.exchange.Both
 
 class SmartWallet(val delegate: Wallet) {
 
@@ -93,7 +94,7 @@ class SmartWallet(val delegate: Wallet) {
     } yield output).toSet
   }
 
-  def createMultisignTransaction(requiredSignatures: Seq[PublicKey],
+  def createMultisignTransaction(requiredSignatures: Both[PublicKey],
                                  amount: Bitcoin.Amount,
                                  fee: Bitcoin.Amount = Bitcoin.Zero): ImmutableTransaction = try {
     createMultisignTransaction(collectFunds(amount), requiredSignatures, amount, fee)
@@ -103,7 +104,7 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def createMultisignTransaction(inputs: Inputs,
-                                 requiredSignatures: Seq[PublicKey],
+                                 requiredSignatures: Both[PublicKey],
                                  amount: Bitcoin.Amount,
                                  fee: Bitcoin.Amount): ImmutableTransaction = synchronized {
     require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
@@ -117,7 +118,7 @@ class SmartWallet(val delegate: Wallet) {
 
     val tx = new MutableTransaction(delegate.getNetworkParameters)
     inputs.foreach(tx.addInput)
-    tx.addMultisignOutput(amount, requiredSignatures)
+    tx.addMultisignOutput(amount, requiredSignatures.toSeq)
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
 
     delegate.signTransaction(SendRequest.forTx(tx))
