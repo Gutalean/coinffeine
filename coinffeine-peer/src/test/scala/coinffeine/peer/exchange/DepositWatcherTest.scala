@@ -12,8 +12,8 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.SampleExchange
-import coinffeine.peer.bitcoin.SmartWallet
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.protocol.impl.TransactionProcessor
 

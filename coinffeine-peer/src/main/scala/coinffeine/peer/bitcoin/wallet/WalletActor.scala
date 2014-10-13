@@ -1,4 +1,4 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
@@ -6,7 +6,7 @@ import scala.util.control.NonFatal
 import akka.actor.{Address => _, _}
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinBalance, Bitcoin}
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.model.exchange.ExchangeId
 
 private class WalletActor(

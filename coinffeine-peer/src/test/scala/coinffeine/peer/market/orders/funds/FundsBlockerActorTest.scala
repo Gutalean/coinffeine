@@ -10,7 +10,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class FundsBlockerActorTest extends AkkaSpec with Inside {

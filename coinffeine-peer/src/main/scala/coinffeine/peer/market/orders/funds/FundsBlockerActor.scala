@@ -8,7 +8,7 @@ import akka.actor._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
 /** Manages funds blocking for an exchange */

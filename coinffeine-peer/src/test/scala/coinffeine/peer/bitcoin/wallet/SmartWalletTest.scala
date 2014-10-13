@@ -1,11 +1,11 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
+import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
 
 class SmartWalletTest extends UnitTest with BitcoinjTest {
 

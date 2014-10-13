@@ -1,4 +1,4 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import scala.concurrent.duration._
 
@@ -9,8 +9,8 @@ import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.bitcoin.SmartWallet.NotEnoughFunds
-import coinffeine.peer.bitcoin.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
+import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
+import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class WalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 

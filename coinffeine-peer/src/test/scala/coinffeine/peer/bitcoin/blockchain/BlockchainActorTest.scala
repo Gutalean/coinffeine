@@ -11,7 +11,8 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.peer.bitcoin.{MockTransactionBroadcaster, SmartWallet}
+import coinffeine.peer.bitcoin.MockTransactionBroadcaster
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     with BitcoinjTest with MockitoSugar {

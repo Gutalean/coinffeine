@@ -2,7 +2,7 @@ package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency._
-import coinffeine.peer.bitcoin.SmartWallet
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class DefaultExchangeProtocolTest extends ExchangeTest {
 

@@ -4,7 +4,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange._
-import coinffeine.peer.bitcoin.SmartWallet
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 /** Base trait for testing the default exchange protocol */
 trait ExchangeTest extends BitcoinjTest {

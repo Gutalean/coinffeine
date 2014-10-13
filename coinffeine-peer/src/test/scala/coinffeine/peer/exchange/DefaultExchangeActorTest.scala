@@ -15,7 +15,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.bitcoin.WalletActor
+import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor.Collaborators
 import coinffeine.peer.exchange.ExchangeActor._

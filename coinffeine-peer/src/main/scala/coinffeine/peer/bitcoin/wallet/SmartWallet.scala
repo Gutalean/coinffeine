@@ -1,11 +1,11 @@
-package coinffeine.peer.bitcoin
+package coinffeine.peer.bitcoin.wallet
 
 import java.io.{File, FileInputStream}
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
-import org.bitcoinj.core.{TransactionConfidence, AbstractWalletEventListener}
-import org.bitcoinj.core.Wallet.{SendRequest, BalanceType}
+import org.bitcoinj.core.Wallet.{BalanceType, SendRequest}
+import org.bitcoinj.core.{AbstractWalletEventListener, TransactionConfidence}
 import org.bitcoinj.wallet.WalletTransaction
 
 import coinffeine.model.bitcoin._
