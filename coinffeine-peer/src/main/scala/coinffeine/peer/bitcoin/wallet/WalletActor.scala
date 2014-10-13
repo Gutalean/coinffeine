@@ -15,6 +15,7 @@ private class WalletActor(
 
   import WalletActor._
 
+  private val blockedOutputs = new BlockedOutputs()
   private var listeners = Set.empty[ActorRef]
 
   override def preStart(): Unit = {
@@ -28,7 +29,8 @@ private class WalletActor(
 
     case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
-        val tx = wallet.createMultisignTransaction(coinsId, amount, transactionFee, signatures)
+        val inputs = blockedOutputs.use(coinsId, amount + transactionFee)
+        val tx = wallet.createMultisignTransaction(inputs, signatures, amount, transactionFee)
         sender ! WalletActor.DepositCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
@@ -36,14 +38,15 @@ private class WalletActor(
 
     case req @ WalletActor.CreateTransaction(amount, to) =>
       try {
-        val tx = wallet.createTransaction(amount, to)
+        val tx = wallet.createTransaction(blockedOutputs.useUnblockedFunds(amount), amount, to)
         sender ! WalletActor.TransactionCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
-      wallet.releaseTransaction(tx)
+      val releasedOutputs = wallet.releaseTransaction(tx)
+      blockedOutputs.cancelUsage(releasedOutputs)
 
     case CreateKeyPair =>
       sender() ! KeyPairCreated(wallet.freshKeyPair())
@@ -54,11 +57,11 @@ private class WalletActor(
       notifyListeners()
 
     case BlockBitcoins(fundsId, amount) =>
-      sender() ! wallet.blockFunds(fundsId, amount)
+      sender() ! blockedOutputs.block(fundsId, amount)
         .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
 
     case UnblockBitcoins(id) =>
-      wallet.unblockFunds(id)
+      blockedOutputs.unblock(id)
 
     case SubscribeToWalletChanges =>
       context.watch(sender())
@@ -78,11 +81,12 @@ private class WalletActor(
   }
 
   private def updateBalance(): Unit = {
+    blockedOutputs.setSpendCandidates(wallet.spendCandidates.toSet)
     properties.balance.set(Some(BitcoinBalance(
       estimated = wallet.estimatedBalance,
       available = wallet.availableBalance,
-      minOutput = wallet.minOutput,
-      blocked = wallet.blockedFunds
+      minOutput = blockedOutputs.minOutput,
+      blocked = blockedOutputs.blocked
     )))
   }
 

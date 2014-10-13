@@ -21,9 +21,9 @@ trait ExchangeTest extends BitcoinjTest {
   trait BuyerHandshake extends FreshInstance {
     val buyerWallet = new SmartWallet(
       createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer))
-    val buyerDeposit = ImmutableTransaction {
+    val buyerDeposit = {
       val depositAmounts = amounts.deposits.buyer
-      buyerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+      buyerWallet.createMultisignTransaction(requiredSignatures, depositAmounts.output, depositAmounts.fee)
     }
     val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
   }
@@ -32,9 +32,9 @@ trait ExchangeTest extends BitcoinjTest {
   trait SellerHandshake extends FreshInstance {
     val sellerWallet = new SmartWallet(
       createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller))
-    val sellerDeposit = ImmutableTransaction {
+    val sellerDeposit = {
       val depositAmounts = amounts.deposits.seller
-      sellerWallet.blockMultisignFunds(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+      sellerWallet.createMultisignTransaction(requiredSignatures, depositAmounts.output, depositAmounts.fee)
     }
     val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)
   }

@@ -5,24 +5,19 @@ import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import org.bitcoinj.core.Wallet.{BalanceType, SendRequest}
-import org.bitcoinj.core.{AbstractWalletEventListener, TransactionConfidence}
+import org.bitcoinj.core._
 import org.bitcoinj.wallet.WalletTransaction
 
-import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.{Address, Wallet, _}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.ExchangeId
 
 class SmartWallet(val delegate: Wallet) {
 
   import SmartWallet._
 
-  def this(network: Network) = this(new Wallet(network))
+  type Inputs = Traversable[MutableTransactionOutput]
 
-  private val blockedOutputs = {
-    val outputs = new BlockedOutputs
-    outputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
-    outputs
-  }
+  def this(network: Network) = this(new Wallet(network))
 
   private var listeners: Set[(Listener, ExecutionContext)] = Set.empty
 
@@ -52,87 +47,59 @@ class SmartWallet(val delegate: Wallet) {
     delegate.freshReceiveKey()
   }
 
-  def minOutput: Option[Bitcoin.Amount] = synchronized { blockedOutputs.minOutput }
-
-  def blockFunds(id: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = synchronized {
-    blockedOutputs.block(id, amount)
-  }
-
-  def unblockFunds(coinsId: ExchangeId): Unit = synchronized {
-    blockedOutputs.unblock(coinsId)
-  }
-
-  def blockedFunds: Bitcoin.Amount = synchronized {
-    blockedOutputs.blocked
+  def createTransaction(inputs: Inputs,
+                        amount: Bitcoin.Amount,
+                        to: Address): ImmutableTransaction = synchronized {
+    val request = SendRequest.to(to, amount)
+    request.coinSelector = new HandpickedCoinSelector(inputs.toSet)
+    createTransaction(request)
   }
 
   def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = synchronized {
-    if (amount < blockedOutputs.spendable) ImmutableTransaction(blockFunds(to, amount))
-    else throw new NotEnoughFunds(
-      s"cannot create a transaction of $amount: not enough funds in wallet")
+    createTransaction(SendRequest.to(to, amount))
   }
 
-  def createMultisignTransaction(coinsId: ExchangeId,
-                                 amount: Bitcoin.Amount,
-                                 fee: Bitcoin.Amount,
-                                 signatures: Seq[KeyPair]): ImmutableTransaction = synchronized {
-    try {
-      val inputs = blockedOutputs.use(coinsId, amount + fee)
-      ImmutableTransaction(blockMultisignFunds(inputs, signatures, amount, fee))
+  private def createTransaction(request: SendRequest): ImmutableTransaction = {
+    val result = try {
+      delegate.sendCoinsOffline(request)
     } catch {
-      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
-        "cannot create multisign transaction: not enough funds", e)
+      case ex: InsufficientMoneyException =>
+        throw new NotEnoughFunds("Cannot create transaction", ex)
     }
+    ImmutableTransaction(result.tx)
   }
 
-  def releaseTransaction(tx: ImmutableTransaction): Unit = synchronized {
+  /** Mark the inputs of the given transaction as unspent. Returns the affected outputs. */
+  def releaseTransaction(tx: ImmutableTransaction): Set[MutableTransactionOutput] = synchronized {
     releaseFunds(tx.get)
-    val releasedOutputs = for {
+    (for {
       input <- tx.get.getInputs.toList
       parentTx <- Option(delegate.getTransaction(input.getOutpoint.getHash))
       output <- Option(parentTx.getOutput(input.getOutpoint.getIndex.toInt))
-    } yield output
-    blockedOutputs.cancelUsage(releasedOutputs.toSet)
+    } yield output).toSet
   }
 
-  def blockMultisignFunds(requiredSignatures: Seq[PublicKey],
-                          amount: Bitcoin.Amount,
-                          fee: Bitcoin.Amount = Bitcoin.Zero): MutableTransaction = synchronized {
-    try {
-      blockMultisignFunds(collectFunds(amount), requiredSignatures, amount, fee)
-    } catch {
-      case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
-        "cannot block multisign funds: not enough funds", e)
-    }
+  def createMultisignTransaction(requiredSignatures: Seq[PublicKey],
+                                 amount: Bitcoin.Amount,
+                                 fee: Bitcoin.Amount = Bitcoin.Zero): ImmutableTransaction = try {
+    createMultisignTransaction(collectFunds(amount), requiredSignatures, amount, fee)
+  } catch {
+    case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
+      "cannot block multisign funds: not enough funds", e)
   }
 
-  private def update(): Unit = synchronized {
-    blockedOutputs.setSpendCandidates(delegate.calculateAllSpendCandidates(true).toSet)
-    listeners.foreach { case (l, e) => e.execute(new Runnable {
-      override def run() = l.onChange()
-    })}
-  }
-
-  private def blockFunds(tx: MutableTransaction): Unit = {
-    delegate.commitTx(tx)
-  }
-
-  private def blockFunds(to: Address, amount: Bitcoin.Amount): MutableTransaction = {
-    val tx = delegate.createSend(to, amount)
-    blockFunds(tx)
-    tx
-  }
-
-  private def blockMultisignFunds(
-      inputs: Traversable[MutableTransactionOutput],
-      requiredSignatures: Seq[PublicKey],
-      amount: Bitcoin.Amount,
-      fee: Bitcoin.Amount): MutableTransaction = {
+  def createMultisignTransaction(inputs: Inputs,
+                                 requiredSignatures: Seq[PublicKey],
+                                 amount: Bitcoin.Amount,
+                                 fee: Bitcoin.Amount): ImmutableTransaction = synchronized {
     require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
     require(!fee.isNegative, s"Fee should be non-negative ($fee given)")
     val totalInputFunds = valueOf(inputs)
-    require(totalInputFunds >= amount + fee,
-      "Input funds must cover the amount of funds to commit and the TX fee")
+    if (totalInputFunds < amount + fee) {
+      throw new NotEnoughFunds(
+        s"""Not enough funds: $totalInputFunds is not enough for
+           |putting $amount in multisig with a fee of $fee""".stripMargin)
+    }
 
     val tx = new MutableTransaction(delegate.getNetworkParameters)
     inputs.foreach(tx.addInput)
@@ -140,8 +107,18 @@ class SmartWallet(val delegate: Wallet) {
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
 
     delegate.signTransaction(SendRequest.forTx(tx))
-    blockFunds(tx)
-    tx
+    delegate.commitTx(tx)
+    ImmutableTransaction(tx)
+  }
+
+  def spendCandidates: Seq[MutableTransactionOutput] = synchronized {
+    delegate.calculateAllSpendCandidates(ExcludeImmatureCoinBases)
+  }
+
+  private def update(): Unit = synchronized {
+    listeners.foreach { case (l, e) => e.execute(new Runnable {
+      override def run() = l.onChange()
+    })}
   }
 
   private def releaseFunds(tx: MutableTransaction): Unit = {
@@ -160,7 +137,7 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   private def collectFunds(amount: Bitcoin.Amount): Set[MutableTransactionOutput] = {
-    val inputFundCandidates = delegate.calculateAllSpendCandidates(true)
+    val inputFundCandidates = spendCandidates
     val necessaryInputCount =
       inputFundCandidates.view.scanLeft(Bitcoin.Zero)(_ + _.getValue)
         .takeWhile(_ < amount)
@@ -172,8 +149,8 @@ class SmartWallet(val delegate: Wallet) {
 
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
-  private def valueOf(outputs: Traversable[MutableTransactionOutput]): Bitcoin.Amount =
-    outputs.map(funds => Bitcoin.fromSatoshi(funds.getValue.value)).sum
+  private def valueOf(inputs: Inputs): Bitcoin.Amount =
+    inputs.map(funds => Bitcoin.fromSatoshi(funds.getValue.value)).sum
 
   private def moveToPool(tx: MutableTransaction, pool: WalletTransaction.Pool): Unit = {
     val wtxs = delegate.getWalletTransactions
@@ -203,6 +180,8 @@ class SmartWallet(val delegate: Wallet) {
 }
 
 object SmartWallet {
+
+  private val ExcludeImmatureCoinBases = true
 
   trait Listener {
     def onChange(): Unit

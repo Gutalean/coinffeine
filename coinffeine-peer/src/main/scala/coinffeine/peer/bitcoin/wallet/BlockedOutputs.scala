@@ -67,6 +67,9 @@ private class BlockedOutputs {
     funds.use(amount)
   }
 
+  def useUnblockedFunds(amount: Bitcoin.Amount): Outputs =
+    collectFunds(amount).getOrElse(throw NotEnoughFunds(amount, available))
+
   def cancelUsage(outputs: Outputs): Unit = {
     blockedFunds.values.foreach(_.cancelUsage(outputs))
   }
