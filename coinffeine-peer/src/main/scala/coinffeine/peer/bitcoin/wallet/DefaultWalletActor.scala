@@ -4,13 +4,18 @@ import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
 import akka.actor._
+import akka.persistence.PersistentActor
+import org.bitcoinj.core.TransactionOutPoint
 
-import coinffeine.model.bitcoin.{WalletActivity, MutableWalletProperties}
+import coinffeine.model.bitcoin.{ImmutableTransaction, WalletActivity, MutableWalletProperties}
 import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor._
 
-private class DefaultWalletActor(properties: MutableWalletProperties, wallet: SmartWallet)
-  extends Actor with ActorLogging {
+private class DefaultWalletActor(properties: MutableWalletProperties,
+                                 wallet: SmartWallet,
+                                 override val persistenceId: String)
+  extends PersistentActor with ActorLogging {
 
   import DefaultWalletActor._
 
@@ -22,13 +27,17 @@ private class DefaultWalletActor(properties: MutableWalletProperties, wallet: Sm
     updateBalance()
     updateWalletPrimaryKeys()
     updateActivity()
+    super.preStart()
   }
 
   override def postStop(): Unit = {
+    super.postStop()
     unsubscribeFromWalletChanges()
   }
 
-  override val receive: Receive = {
+  override def receiveRecover: Receive = Map.empty
+
+  override def receiveCommand: Receive = {
 
     case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       try {
@@ -117,8 +126,17 @@ private class DefaultWalletActor(properties: MutableWalletProperties, wallet: Sm
 }
 
 object DefaultWalletActor {
-  private[bitcoin] def props(properties: MutableWalletProperties, wallet: SmartWallet) =
-    Props(new DefaultWalletActor(properties, wallet))
+  val PersistenceId = "wallet"
+
+  def props(properties: MutableWalletProperties,
+            wallet: SmartWallet,
+            persistenceId: String = PersistenceId) =
+    Props(new DefaultWalletActor(properties, wallet, persistenceId))
 
   private case object InternalWalletChanged
+
+  private case class FundsBlocked(id: ExchangeId, outputs: Seq[TransactionOutPoint])
+  private case class FundsUnblocked(id: ExchangeId)
+  private case class DepositCreated(tx: ImmutableTransaction)
+  private case class DepositCancelled(tx: ImmutableTransaction)
 }
