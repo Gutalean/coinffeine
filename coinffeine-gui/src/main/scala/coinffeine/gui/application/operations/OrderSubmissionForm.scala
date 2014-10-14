@@ -1,6 +1,8 @@
 package coinffeine.gui.application.operations
 
+import java.net.URI
 import scala.util.Try
+import scalafx.Includes
 import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
 import scalafx.event.{ActionEvent, Event}
@@ -16,7 +18,7 @@ import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
-class OrderSubmissionForm(app: CoinffeineApp) {
+class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
 
   private val amountsCalculator = app.utils.exchangeAmountsCalculator
 
@@ -65,6 +67,12 @@ class OrderSubmissionForm(app: CoinffeineApp) {
 
   private val limitOrderSelectedProperty = limitOrderRadioButton.selected
 
+  private val limitLabel = new Label("Limit") {
+    text <== when(operationChoiceBox.value.isEqualTo(Bid))
+      .choose("By no more than")
+      .otherwise("By no less than")
+  }
+
   amountTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
   limitTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
 
@@ -98,11 +106,25 @@ class OrderSubmissionForm(app: CoinffeineApp) {
                 new HBox {
                   styleClass += ("operations-submit-declaration-pane", "indented")
                   disable <== limitOrderSelectedProperty.not()
-                  content = Seq(new Label("Limit"), limitTextField)
+                  content = Seq(limitLabel, limitTextField)
                 }
               )
             },
             marketPriceRadioButton
+          )
+        },
+        new HBox {
+          id = "operations-submit-disclaimer-pane"
+          content = Seq(
+            new Label("These are gross amounts. Payment processor and Bitcoin fees are included.") {
+              styleClass += "smalltext"
+            },
+            new Hyperlink("Know more.") {
+              styleClass += "smalltext"
+              onAction = { e: ActionEvent =>
+                java.awt.Desktop.getDesktop.browse(OrderSubmissionForm.OrderAmountsUrl)
+              }
+            }
           )
         },
         new HBox {
@@ -199,4 +221,8 @@ class OrderSubmissionForm(app: CoinffeineApp) {
         response == Dialog.Actions.YES
     }
   }
+}
+
+object OrderSubmissionForm {
+  val OrderAmountsUrl = new URI("https://github.com/coinffeine/coinffeine/wiki/order-amounts")
 }

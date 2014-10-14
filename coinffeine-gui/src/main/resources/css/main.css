@@ -53,6 +53,10 @@ GridPane {
     -fx-font-weight: bold;
 }
 
+.smalltext {
+    -fx-font-size: 11px;
+}
+
 .indented {
     -fx-padding: 0 0 0 30px;
 }
