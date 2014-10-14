@@ -3,9 +3,10 @@ package coinffeine.peer.market.orders
 import scala.concurrent.duration._
 
 import akka.actor.{ActorContext, Props}
-import akka.testkit.TestProbe
+import akka.testkit._
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.mock.MockitoSugar
 
@@ -185,7 +186,7 @@ class OrderActorTest extends AkkaSpec
     }
 
     def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
-      eventually {
+      eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }
     }

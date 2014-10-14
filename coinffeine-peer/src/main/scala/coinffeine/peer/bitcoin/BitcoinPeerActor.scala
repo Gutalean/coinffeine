@@ -11,7 +11,7 @@ import org.bitcoinj.core._
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.bitcoin.wallet.WalletActor
+import coinffeine.peer.bitcoin.wallet.DefaultWalletActor
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(properties: MutableNetworkProperties,
@@ -238,7 +238,7 @@ object BitcoinPeerActor {
         new Delegates {
           override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
-          override val walletActor = WalletActor.props(bitcoinProperties.wallet, wallet)
+          override val walletActor = DefaultWalletActor.props(bitcoinProperties.wallet, wallet)
           override val blockchainActor = BlockchainActor.props(blockchain, network)
         },
         blockchain,

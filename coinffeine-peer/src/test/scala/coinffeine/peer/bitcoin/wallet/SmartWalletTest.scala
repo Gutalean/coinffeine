@@ -16,7 +16,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
 
   it must "create a new transaction with chosen inputs" in new Fixture {
     withFees {
-      val inputs = wallet.spendCandidates.take(1)
+      val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor)
       val tx = wallet.createTransaction(inputs, 1.BTC, someAddress)
       Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.0001.BTC)
     }
@@ -42,8 +42,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
 
   it must "release unpublished deposit funds" in new Fixture {
     val tx = wallet.createMultisignTransaction(signatures, 1.BTC, 0.1.BTC)
-    val outputs = wallet.releaseTransaction(tx)
-    outputs.toSeq.foldLeft(Bitcoin.Zero)(_ + _.getValue) should be >= 1.BTC
+    wallet.releaseTransaction(tx)
     wallet.estimatedBalance shouldBe initialFunds
   }
 
