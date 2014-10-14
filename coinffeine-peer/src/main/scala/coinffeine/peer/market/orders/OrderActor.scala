@@ -30,7 +30,6 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
-    amountsCalculator: AmountsCalculator,
     controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
     delegates: OrderActor.Delegates[C],
     collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
@@ -186,7 +185,6 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      amountsCalculator,
       (publisher, funds) => new OrderController(
         amountsCalculator, network, order, coinffeineProperties, publisher, funds),
       delegates,

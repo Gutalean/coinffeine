@@ -123,7 +123,6 @@ class OrderActorTest extends AkkaSpec
     val properties = new MutableCoinffeineNetworkProperties
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
-      calculatorStub,
       (publisher, funds) =>
         new OrderController(calculatorStub, network, order, properties, publisher, funds),
       new Delegates[Euro.type] {
