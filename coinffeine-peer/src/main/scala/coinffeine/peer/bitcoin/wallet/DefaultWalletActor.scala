@@ -35,31 +35,38 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     unsubscribeFromWalletChanges()
   }
 
-  override def receiveRecover: Receive = Map.empty
+  override def receiveRecover: Receive = {
+    case event: FundsBlocked => onFundsBlocked(event)
+    case event: FundsUnblocked => onFundsUnblocked(event)
+    case event: DepositCreated => onDepositCreated(event)
+    case event: DepositCancelled => onDepositCancelled(event)
+  }
 
   override def receiveCommand: Receive = {
 
-    case req @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
-      try {
-        val inputs = blockedOutputs.use(coinsId, amount + transactionFee)
-        val tx = wallet.createMultisignTransaction(inputs, signatures, amount, transactionFee)
-        sender ! WalletActor.DepositCreated(req, tx)
-      } catch {
-        case NonFatal(ex) => sender ! WalletActor.DepositCreationError(req, ex)
+    case request @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
+      blockedOutputs.canUse(coinsId, amount + transactionFee) match {
+        case scalaz.Success(outputs) =>
+          persist(DepositCreated(request, outputs)) { event =>
+            val tx = onDepositCreated(event)
+            sender ! WalletActor.DepositCreated(request, tx)
+          }
+        case scalaz.Failure(error) =>
+          sender() ! WalletActor.DepositCreationError(request, error)
       }
 
     case req @ WalletActor.CreateTransaction(amount, to) =>
       try {
-        val tx = wallet.createTransaction(blockedOutputs.useUnblockedFunds(amount), amount, to)
+        val funds = blockedOutputs.collectUnblockedFunds(amount)
+          .getOrElse(throw new Exception("Not enough funds"))
+        val tx = wallet.createTransaction(funds, amount, to)
         sender ! WalletActor.TransactionCreated(req, tx)
       } catch {
         case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
-      wallet.releaseTransaction(tx)
-      val releasedOutputs = tx.get.getInputs.map(_.getOutpoint).toSet
-      blockedOutputs.cancelUsage(releasedOutputs)
+      persist(DepositCancelled(tx))(onDepositCancelled)
 
     case CreateKeyPair =>
       sender() ! KeyPairCreated(wallet.freshKeyPair())
@@ -69,12 +76,22 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
       updateActivity()
       notifyListeners()
 
-    case BlockBitcoins(fundsId, amount) =>
-      sender() ! blockedOutputs.block(fundsId, amount)
-        .fold[BlockBitcoinsResponse](CannotBlockBitcoins)(BlockedBitcoins.apply)
+    case BlockBitcoins(fundsId, _) if blockedOutputs.areBlocked(fundsId) =>
+      sender() ! CannotBlockBitcoins
 
-    case UnblockBitcoins(id) =>
-      blockedOutputs.unblock(id)
+    case BlockBitcoins(fundsId, amount) =>
+      blockedOutputs.collectFunds(amount) match {
+        case Some(funds) =>
+          persist(FundsBlocked(fundsId, funds)) { event =>
+            onFundsBlocked(event)
+            sender() ! BlockedBitcoins(fundsId)
+          }
+        case None =>
+          sender() ! CannotBlockBitcoins
+      }
+
+    case UnblockBitcoins(fundsId) if blockedOutputs.areBlocked(fundsId) =>
+      persist(FundsUnblocked(fundsId))(onFundsUnblocked)
 
     case SubscribeToWalletChanges =>
       context.watch(sender())
@@ -86,6 +103,26 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
     case Terminated(listener) =>
       listeners -= listener
+  }
+
+  private def onFundsBlocked(event: FundsBlocked): Unit = {
+    blockedOutputs.block(event.id, event.outputs)
+  }
+
+  private def onFundsUnblocked(event: FundsUnblocked): Unit = {
+    blockedOutputs.unblock(event.id)
+  }
+
+  private def onDepositCreated(event: DepositCreated): ImmutableTransaction = {
+    import event.request._
+    blockedOutputs.use(coinsId, event.outputs)
+    wallet.createMultisignTransaction(event.outputs, requiredSignatures, amount, transactionFee)
+  }
+
+  private def onDepositCancelled(event: DepositCancelled): Unit = {
+    wallet.releaseTransaction(event.tx)
+    val releasedOutputs = event.tx.get.getInputs.map(_.getOutpoint).toSet
+    blockedOutputs.cancelUsage(releasedOutputs)
   }
 
   private def updateActivity(): Unit = {
@@ -136,8 +173,8 @@ object DefaultWalletActor {
 
   private case object InternalWalletChanged
 
-  private case class FundsBlocked(id: ExchangeId, outputs: Seq[TransactionOutPoint])
+  private case class FundsBlocked(id: ExchangeId, outputs: Set[TransactionOutPoint])
   private case class FundsUnblocked(id: ExchangeId)
-  private case class DepositCreated(tx: ImmutableTransaction)
+  private case class DepositCreated(request: CreateDeposit, outputs: Set[TransactionOutPoint])
   private case class DepositCancelled(tx: ImmutableTransaction)
 }

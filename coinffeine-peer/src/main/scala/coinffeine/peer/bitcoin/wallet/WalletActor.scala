@@ -1,5 +1,7 @@
 package coinffeine.peer.bitcoin.wallet
 
+import scala.util.control.NoStackTrace
+
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{Both, ExchangeId}
@@ -68,7 +70,13 @@ object WalletActor {
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * an error while blocking the funds.
     */
-  case class DepositCreationError(request: CreateDeposit, error: Throwable)
+  case class DepositCreationError(request: CreateDeposit, error: FundsUseException)
+
+  sealed abstract class FundsUseException(message: String)
+    extends Exception(message) with NoStackTrace
+  case object UnknownFunds extends FundsUseException("Unknown funds")
+  case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
+    extends FundsUseException(s"Not enough funds blocked: $requested requested, $available available")
 
   /** A message sent to the wallet actor in order to release the funds that of a non published
     * deposit.

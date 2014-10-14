@@ -2,23 +2,31 @@ package coinffeine.peer.bitcoin.wallet
 
 import scala.annotation.tailrec
 
+import scalaz.{Scalaz, Validation}
+
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
+import coinffeine.peer.bitcoin.wallet.WalletActor.{NotEnoughFunds, UnknownFunds, FundsUseException}
 
 private class BlockedOutputs {
-  import BlockedOutputs._
+  import Scalaz._
+
   type Outputs = Set[TransactionOutPoint]
 
   private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
                              var usedOutputs: Outputs = Set.empty) {
-    def use(amount: Bitcoin.Amount): Outputs = {
-      val outputsToUse = collectFundsGreedily(amount, reservedOutputs.toSeq)
-        .getOrElse(throw NotEnoughFunds(amount, reservedAmount))
+
+    def canUse(amount: Bitcoin.Amount): Validation[NotEnoughFunds, Outputs] = {
+      collectFundsGreedily(amount, reservedOutputs.toSeq)
+        .toSuccess(NotEnoughFunds(amount, reservedAmount))
+    }
+
+    def use(outputsToUse: Outputs): Unit = {
+      require(outputsToUse.subsetOf(reservedOutputs))
       reservedOutputs --= outputsToUse
       usedOutputs ++= outputsToUse
-      outputsToUse
     }
 
     def cancelUsage(outputs: Outputs): Unit = {
@@ -46,33 +54,34 @@ private class BlockedOutputs {
     spendableOutputs = spendCandidates
   }
 
-  def block(coinsId: ExchangeId, amount: Bitcoin.Amount): Option[ExchangeId] = {
-    if (blockedFunds.contains(coinsId)) None
-    else collectFunds(amount).map { funds =>
-      blockedFunds += coinsId -> new BlockedFunds(funds)
-      coinsId
-    }
+  def collectFunds(amount: Bitcoin.Amount): Option[Outputs] =
+    collectFundsGreedily(amount, spendableAndNotBlocked.toSeq)
+
+  def areBlocked(coinsId: ExchangeId): Boolean = blockedFunds.contains(coinsId)
+
+  def block(coinsId: ExchangeId, funds: Outputs): Unit = {
+    require(!areBlocked(coinsId), s"$coinsId funds are already blocked")
+    blockedFunds += coinsId -> new BlockedFunds(funds)
   }
 
   def unblock(id: ExchangeId): Unit = {
     blockedFunds -= id
   }
 
-  @throws[BlockedOutputs.FundsUseException]
-  def use(id: ExchangeId, amount: Bitcoin.Amount): Outputs = {
-    val funds = blockedFunds.getOrElse(id, throw UnknownFunds(id))
-    funds.use(amount)
+  def canUse(id: ExchangeId, amount: Bitcoin.Amount): Validation[FundsUseException, Outputs] = for {
+    funds <- blockedFunds.get(id).toSuccess(UnknownFunds)
+    outputs <- funds.canUse(amount)
+  } yield outputs
+
+  def use(id: ExchangeId, outputs: Outputs): Unit = {
+    require(areBlocked(id))
+    blockedFunds(id).use(outputs)
   }
 
-  def useUnblockedFunds(amount: Bitcoin.Amount): Outputs =
-    collectFunds(amount).getOrElse(throw NotEnoughFunds(amount, available))
+  def collectUnblockedFunds(amount: Bitcoin.Amount): Option[Outputs] = collectFunds(amount)
 
   def cancelUsage(outputs: Outputs): Unit = {
     blockedFunds.values.foreach(_.cancelUsage(outputs))
-  }
-
-  private def collectFunds(amount: Bitcoin.Amount): Option[Outputs] = {
-    collectFundsGreedily(amount, spendableAndNotBlocked.toSeq)
   }
 
   @tailrec
@@ -99,14 +108,4 @@ private class BlockedOutputs {
 
   private def outputValue(output: TransactionOutPoint): Bitcoin.Amount =
     output.getConnectedOutput.getValue
-}
-
-private object BlockedOutputs {
-  sealed abstract class FundsUseException(message: String, cause: Throwable = null)
-    extends Exception(message, cause)
-  case class UnknownFunds(unknownId: ExchangeId)
-    extends FundsUseException(s"Unknown coins id $unknownId")
-  case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
-    extends FundsUseException(
-      s"Not enough funds blocked: $requested requested, $available available")
 }

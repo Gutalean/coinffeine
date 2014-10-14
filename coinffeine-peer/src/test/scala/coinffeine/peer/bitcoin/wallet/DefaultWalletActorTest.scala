@@ -1,12 +1,14 @@
 package coinffeine.peer.bitcoin.wallet
 
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import scala.concurrent.duration._
 
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{KeyPair, MutableWalletProperties}
+import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
@@ -14,8 +16,8 @@ import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, Uns
 class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
   "The wallet actor" must "update wallet primary address upon start" in new Fixture {
-    eventually {
-      properties.primaryAddress.get shouldBe Some(wallet.currentReceiveAddress)
+    eventually(timeout = Timeout(10.seconds)) {
+      properties.primaryAddress.get shouldBe 'nonEmpty
     }
   }
 
@@ -26,10 +28,13 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
   }
 
   it must "create a new transaction" in new Fixture {
-    val req = WalletActor.CreateTransaction(1.BTC, someAddress)
-    instance ! req
-    val WalletActor.TransactionCreated(`req`, tx) = expectMsgType[WalletActor.TransactionCreated]
-    Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.BTC)
+    val request = WalletActor.CreateTransaction(1.BTC, someAddress)
+    instance ! request
+    val depositCreated = expectMsgPF() {
+      case WalletActor.TransactionCreated(`request`, responseTx) => responseTx
+    }
+    val value: Bitcoin.Amount = depositCreated.get.getValue(wallet.delegate)
+    value shouldBe (-1.BTC)
   }
 
   it must "fail to create a new transaction given insufficient balance" in new Fixture {
@@ -37,7 +42,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     instance ! req
     val error = expectMsgType[WalletActor.TransactionCreationFailure]
     error.req shouldBe req
-    error.failure.getMessage should include ("Not enough funds blocked")
+    error.failure.getMessage should include ("Not enough funds")
   }
 
   it must "create a deposit as a multisign transaction" in new Fixture {
@@ -45,9 +50,9 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.1.BTC)
     instance ! request
     expectMsgPF() {
-      case WalletActor.DepositCreated(`request`, tx) =>
-        wallet.value(tx.get) shouldBe (-1.1.BTC)
-        Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue.value) shouldBe 1.BTC
+      case WalletActor.DepositCreated(`request`, depositTx) =>
+        wallet.value(depositTx.get) shouldBe (-1.1.BTC)
+        Bitcoin.fromSatoshi(depositTx.get.getOutput(0).getValue.value) shouldBe 1.BTC
     }
   }
 
@@ -95,14 +100,49 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     expectNoMsg(1.second)
   }
 
+  val funds1, funds2 = ExchangeId.random()
+  val serializedWallet = new ByteArrayOutputStream()
+  var tx: ImmutableTransaction = _
+
+  it must "save the state of the bitcoins blocked" in new Fixture {
+    instance ! WalletActor.BlockBitcoins(funds1, 1.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds1))
+    instance ! WalletActor.UnblockBitcoins(funds1)
+    instance ! WalletActor.BlockBitcoins(funds2, 2.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds2))
+    instance ! WalletActor.CreateDeposit(funds2, requiredSignatures, 1.BTC, 0.1.BTC)
+    tx = expectMsgType[WalletActor.DepositCreated].tx
+    system.stop(instance)
+    wallet.delegate.saveToFileStream(serializedWallet)
+  }
+
+  it must "recover its previous state" in new Fixture {
+    override def useLastPersistenceId = true
+    override def buildWallet() = SmartWallet.loadFromStream(
+      new ByteArrayInputStream(serializedWallet.toByteArray))
+    instance ! WalletActor.BlockBitcoins(funds2, 2.BTC)
+    expectMsg(WalletActor.CannotBlockBitcoins)
+    wallet.estimatedBalance shouldBe 8.9.BTC
+  }
+
+  var lastPersistenceId = 0
+
   trait Fixture {
+    def useLastPersistenceId: Boolean = false
     val keyPair = new KeyPair
     val otherKeyPair = new KeyPair
     val requiredSignatures = Both(keyPair, otherKeyPair)
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
-    val wallet = new SmartWallet(createWallet(keyPair, initialBalance.amount))
-    val properties = new MutableWalletProperties
-    val instance = system.actorOf(DefaultWalletActor.props(properties, wallet))
+    private val persistenceId = {
+      if (!useLastPersistenceId) {
+        lastPersistenceId += 1
+      }
+      lastPersistenceId.toString
+    }
+    protected def buildWallet() = new SmartWallet(createWallet(keyPair, initialBalance.amount))
+    lazy val wallet = buildWallet()
+    val properties = new MutableWalletProperties()
+    val instance = system.actorOf(DefaultWalletActor.props(properties, wallet, persistenceId))
     val someAddress = new KeyPair().toAddress(network)
 
     def givenBlockedFunds(amount: Bitcoin.Amount): ExchangeId = {

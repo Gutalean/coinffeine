@@ -1,6 +1,6 @@
 package coinffeine.peer.bitcoin.wallet
 
-import java.io.{File, FileInputStream}
+import java.io.{InputStream, File, FileInputStream}
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
@@ -102,12 +102,8 @@ class SmartWallet(val delegate: Wallet) {
 
   def createMultisignTransaction(requiredSignatures: Both[PublicKey],
                                  amount: Bitcoin.Amount,
-                                 fee: Bitcoin.Amount = Bitcoin.Zero): ImmutableTransaction = try {
+                                 fee: Bitcoin.Amount = Bitcoin.Zero): ImmutableTransaction =
     createMultisignTransaction(collectFunds(amount), requiredSignatures, amount, fee)
-  } catch {
-    case e: BlockedOutputs.NotEnoughFunds => throw new NotEnoughFunds(
-      "cannot block multisign funds: not enough funds", e)
-  }
 
   def createMultisignTransaction(inputs: Inputs,
                                  requiredSignatures: Both[PublicKey],
@@ -130,7 +126,7 @@ class SmartWallet(val delegate: Wallet) {
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
 
     delegate.signTransaction(SendRequest.forTx(tx))
-    delegate.commitTx(tx)
+    commitTransaction(tx)
     ImmutableTransaction(tx)
   }
 
@@ -149,6 +145,12 @@ class SmartWallet(val delegate: Wallet) {
         .takeWhile(_ < amount)
         .length
     inputFundCandidates.take(necessaryInputCount).map(_.getOutPointFor).toSet
+  }
+
+  private def commitTransaction(tx: MutableTransaction): Unit = {
+    if (delegate.getTransactionPool(WalletTransaction.Pool.PENDING).contains(tx.getHash)) return
+    if (delegate.getTransactionPool(WalletTransaction.Pool.SPENT).contains(tx.getHash)) return
+    delegate.commitTx(tx)
   }
 
   private def contains(tx: MutableTransaction): Boolean = getTransaction(tx.getHash).isDefined
@@ -199,12 +201,15 @@ object SmartWallet {
 
   def loadFromFile(file: File): SmartWallet = {
     val stream = new FileInputStream(file)
-    val delegate = try {
-      Wallet.loadFromFileStream(stream)
+    try {
+      loadFromStream(stream)
     } finally {
       stream.close()
     }
-    new SmartWallet(delegate)
+  }
+
+  def loadFromStream(stream: InputStream): SmartWallet = {
+    new SmartWallet(Wallet.loadFromFileStream(stream))
   }
 
   case class NotEnoughFunds(message: String, cause: Throwable = null)
