@@ -7,8 +7,6 @@ import coinffeine.model.exchange._
 
 /** This actor handles all the necessary steps for an exchange to happen */
 object ExchangeActor {
-  type ExchangeActorProps = (ExchangeToStart[_ <: FiatCurrency], Collaborators) => Props
-
   val HandshakeActorName = "handshake"
   val ChannelActorName = "exchange"
   val TransactionBroadcastActorName = "transactionBroadcast"
@@ -19,9 +17,6 @@ object ExchangeActor {
                            bitcoinPeer: ActorRef,
                            blockchain: ActorRef,
                            listener: ActorRef)
-
-  case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],
-                                                user: Exchange.PeerInfo)
 
   /** This is sent back to listener to indicate exchange progress. */
   case class ExchangeUpdate(exchange: AnyStateExchange[_ <: FiatCurrency])
@@ -35,6 +30,7 @@ object ExchangeActor {
   case class ExchangeFailure(exchange: FailedExchange[_ <: FiatCurrency]) extends ExchangeResult
 
   trait Component {
-    def exchangeActorProps: ExchangeActorProps
+    def exchangeActorProps(exchange: NonStartedExchange[_ <: FiatCurrency],
+                           collaborators: Collaborators): Props
   }
 }
