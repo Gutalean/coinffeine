@@ -16,11 +16,11 @@ class ReRequestsHandshakeActorTest extends HandshakeActorTest("retries") {
 
   "The handshake actor" should "resubmit the counterpart peer handshake" in {
     shouldForwardPeerHandshake()
-    givenCounterpartPeerHandshake()
     shouldForwardPeerHandshake()
   }
 
   it should "request refund transaction signature after a timeout" in {
+    givenCounterpartPeerHandshake()
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
     shouldSignCounterpartRefund()
