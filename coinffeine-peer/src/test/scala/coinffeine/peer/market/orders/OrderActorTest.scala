@@ -11,22 +11,18 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
-import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.peer.amounts.AmountsCalculatorStub
-import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.ExchangeToStart
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
 import coinffeine.peer.market.orders.funds.FakeOrderFundsBlocker
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
@@ -86,8 +82,6 @@ class OrderActorTest extends AkkaSpec
     fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    val keyPair = givenAFreshKeyIsGenerated()
-    givenPaymentProcessorAccountIsRetrieved()
     exchangeActor.expectCreation()
   }
 
@@ -95,8 +89,6 @@ class OrderActorTest extends AkkaSpec
     fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenAFreshKeyIsGenerated()
-    givenPaymentProcessorAccountIsRetrieved()
     exchangeActor.expectCreation()
     shouldRejectAnOrderMatch("Exchange already in progress")
   }
@@ -105,8 +97,6 @@ class OrderActorTest extends AkkaSpec
     fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenAFreshKeyIsGenerated()
-    givenPaymentProcessorAccountIsRetrieved()
     exchangeActor.expectCreation()
 
     gatewayProbe.relayMessageFromBroker(orderMatch)
@@ -123,11 +113,10 @@ class OrderActorTest extends AkkaSpec
     val properties = new MutableCoinffeineNetworkProperties
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
-      calculatorStub,
       (publisher, funds) =>
         new OrderController(calculatorStub, network, order, properties, publisher, funds),
       new Delegates[Euro.type] {
-        override def exchangeActor(exchange: ExchangeToStart[Euro.type])
+        override def exchangeActor(exchange: NonStartedExchange[Euro.type])
                                   (implicit context: ActorContext) =
           Fixture.this.exchangeActor.props
 
@@ -153,28 +142,9 @@ class OrderActorTest extends AkkaSpec
       expectProperty { _.status shouldBe InMarketOrder }
     }
 
-    def givenAFreshKeyIsGenerated(): KeyPair = {
-      val keyPair = new KeyPair()
-      walletProbe.expectMsg(WalletActor.CreateKeyPair)
-      walletProbe.reply(WalletActor.KeyPairCreated(keyPair))
-      keyPair
-    }
-
-    def givenPaymentProcessorAccountIsRetrieved(): Unit = {
-      paymentProcessorProbe.expectMsg(PaymentProcessorActor.RetrieveAccountId)
-      val paymentProcessorId = participants.buyer.paymentProcessorAccount
-      paymentProcessorProbe.reply(PaymentProcessorActor.RetrievedAccountId(paymentProcessorId))
-    }
-
-    def expectAPerfectMatchExchangeToBeStarted(): Unit = {
-      givenAFreshKeyIsGenerated()
-      givenPaymentProcessorAccountIsRetrieved()
-      exchangeActor.expectCreation()
-    }
-
     def givenASuccessfulPerfectMatchExchange(): Unit = {
       gatewayProbe.relayMessageFromBroker(orderMatch)
-      expectAPerfectMatchExchangeToBeStarted()
+      exchangeActor.expectCreation()
       exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
     }
 

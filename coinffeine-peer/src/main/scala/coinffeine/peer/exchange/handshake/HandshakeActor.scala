@@ -16,8 +16,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.bitcoin.wallet.WalletActor.{DepositCreated, DepositCreationError}
-import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.{ExchangeToStart, ExchangeUpdate}
+import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
@@ -26,7 +25,7 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.handshake._
 
 private class HandshakeActor[C <: FiatCurrency](
-    exchange: ExchangeActor.ExchangeToStart[C],
+    exchange: HandshakeActor.ExchangeToStart[C],
     collaborators: HandshakeActor.Collaborators,
     protocol: HandshakeActor.ProtocolDetails) extends Actor with ActorLogging {
 
@@ -266,6 +265,9 @@ object HandshakeActor {
                            listener: ActorRef)
 
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
+
+  case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],
+                                                user: Exchange.PeerInfo)
 
   def props(exchange: ExchangeToStart[_ <: FiatCurrency],
             collaborators: Collaborators,

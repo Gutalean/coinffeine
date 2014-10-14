@@ -1,28 +1,16 @@
 package coinffeine.peer.market.orders
 
-import scala.concurrent.Future
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
-
 import akka.actor._
-import akka.pattern._
 import org.bitcoinj.core.NetworkParameters
 
-import coinffeine.common.akka.AskPattern
-import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.CannotStartHandshake
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties}
-import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.{ExchangeActorProps, ExchangeToStart}
 import coinffeine.peer.market.orders.controller._
 import coinffeine.peer.market.orders.funds.{DelegatedFundsBlocker, FundsBlockerActor}
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -30,15 +18,11 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
-    amountsCalculator: AmountsCalculator,
     controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
     delegates: OrderActor.Delegates[C],
     collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
 
-  import context.dispatcher
-  import OrderActor._
-
-  private case class SpawnExchange(exchange: NonStartedExchange[C], user: Try[Exchange.PeerInfo])
+  import coinffeine.peer.market.orders.OrderActor._
 
   private val orderId = initialOrder.id
   private val currency = initialOrder.price.currency
@@ -57,13 +41,6 @@ class OrderActor[C <: FiatCurrency](
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       order.acceptOrderMatch(message.asInstanceOf[OrderMatch[C]])
-
-    case SpawnExchange(exchange, Success(userInfo)) =>
-      spawnExchange(exchange, userInfo)
-
-    case SpawnExchange(exchange, Failure(cause)) =>
-      log.error(cause, "Cannot start exchange {} for {} order", exchange.id, orderId)
-      order.completeExchange(exchange.cancel(CannotStartHandshake(cause)))
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
@@ -101,7 +78,7 @@ class OrderActor[C <: FiatCurrency](
       override def onOrderMatchResolution(orderMatch: OrderMatch[C],
                                           result: MatchResult[C]): Unit = {
         result match {
-          case MatchAccepted(newExchange) => startExchange(newExchange)
+          case MatchAccepted(newExchange) => acceptMatch(newExchange)
           case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
           case MatchAlreadyAccepted(oldExchange) =>
             log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
@@ -117,35 +94,11 @@ class OrderActor[C <: FiatCurrency](
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
 
-  private def startExchange(newExchange: NonStartedExchange[C]): Unit = {
+  private def acceptMatch(newExchange: NonStartedExchange[C]): Unit = {
     log.info("Accepting match for {} against counterpart {} identified as {}",
       orderId, newExchange.counterpartId, newExchange.id)
-    (for {
-      keyPair <- createFreshKeyPair()
-      paymentProcessorId <- retrievePaymentProcessorId()
-    } yield Exchange.PeerInfo(paymentProcessorId, keyPair))
-      .map(Success.apply)
-      .recover { case NonFatal(ex) => Failure(ex) }
-      .map(SpawnExchange(newExchange, _))
-      .pipeTo(self)
+    context.actorOf(delegates.exchangeActor(newExchange), newExchange.id.value)
   }
-
-  private def spawnExchange(exchange: NonStartedExchange[C], user: Exchange.PeerInfo): Unit = {
-    val props = delegates.exchangeActor(ExchangeActor.ExchangeToStart(exchange, user))
-    context.actorOf(props, exchange.id.value)
-  }
-
-  private def createFreshKeyPair(): Future[KeyPair] = AskPattern(
-    to = collaborators.wallet,
-    request = WalletActor.CreateKeyPair,
-    errorMessage = "Cannot get a fresh key pair"
-  ).withImmediateReply[WalletActor.KeyPairCreated]().map(_.keyPair)
-
-  private def retrievePaymentProcessorId(): Future[AccountId] = AskPattern(
-    to = collaborators.paymentProcessor,
-    request = PaymentProcessorActor.RetrieveAccountId,
-    errorMessage = "Cannot retrieve the user account id"
-  ).withImmediateReply[PaymentProcessorActor.RetrievedAccountId]().map(_.id)
 }
 
 object OrderActor {
@@ -161,14 +114,13 @@ object OrderActor {
   }
 
   trait Delegates[C <: FiatCurrency] {
-    def exchangeActor(exchange: ExchangeActor.ExchangeToStart[C])
-                     (implicit context: ActorContext): Props
+    def exchangeActor(exchange: NonStartedExchange[C])(implicit context: ActorContext): Props
     def delegatedFundsBlocking()(implicit context: ActorContext): OrderFundsBlocker
   }
 
   case class CancelOrder(reason: String)
 
-  def props[C <: FiatCurrency](exchangeActorProps: ExchangeActorProps,
+  def props[C <: FiatCurrency](exchangeActorProps: (NonStartedExchange[C], ExchangeActor.Collaborators) => Props,
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
                                order: Order[C],
@@ -176,7 +128,7 @@ object OrderActor {
                                collaborators: Collaborators): Props = {
     import collaborators._
     val delegates = new Delegates[C] {
-      override def exchangeActor(exchange: ExchangeToStart[C])(implicit context: ActorContext) = {
+      override def exchangeActor(exchange: NonStartedExchange[C])(implicit context: ActorContext) = {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
           wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }
@@ -186,7 +138,6 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      amountsCalculator,
       (publisher, funds) => new OrderController(
         amountsCalculator, network, order, coinffeineProperties, publisher, funds),
       delegates,

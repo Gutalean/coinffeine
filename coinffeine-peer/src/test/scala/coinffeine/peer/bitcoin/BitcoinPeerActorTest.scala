@@ -3,6 +3,7 @@ package coinffeine.peer.bitcoin
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
+import akka.testkit._
 import org.bitcoinj.core.{FullPrunedBlockChain, PeerGroup}
 import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.scalatest.concurrent.Eventually
@@ -12,7 +13,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.peer.bitcoin.BitcoinPeerActor.Delegates
+import coinffeine.peer.bitcoin.BitcoinPeerActor.{TransactionNotPublished, Delegates}
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
@@ -48,11 +49,14 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
   it should "delegate transaction publication" in new Fixture {
     actor ! ServiceActor.Start {}
     expectMsg(ServiceActor.Started)
-    eventually {
-      peerGroup shouldBe 'running
-    }
     val dummyTx = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
     actor ! BitcoinPeerActor.PublishTransaction(dummyTx)
+    val notYetConnected = receiveWhile(max = 1.second.dilated) {
+      case TransactionNotPublished(_, cause) if cause.getMessage.contains("Not connected") =>
+    }.nonEmpty
+    if (notYetConnected) {
+      actor ! BitcoinPeerActor.PublishTransaction(dummyTx)
+    }
     transactionPublisher.expectCreation()
   }
 

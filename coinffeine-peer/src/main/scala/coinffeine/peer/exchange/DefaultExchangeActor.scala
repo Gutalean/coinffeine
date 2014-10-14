@@ -1,10 +1,11 @@
 package coinffeine.peer.exchange
 
 import akka.actor._
+import akka.pattern._
 
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange.{HandshakeFailed, HandshakeWithCommitmentFailed, InvalidCommitments}
+import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -19,7 +20,8 @@ import coinffeine.peer.payment.PaymentProcessorActor
 
 class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
-    exchange: ExchangeToStart[C],
+    exchange: NonStartedExchange[C],
+    peerInfoLookup: PeerInfoLookup,
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
 
@@ -27,23 +29,32 @@ class DefaultExchangeActor[C <: FiatCurrency](
     context.actorOf(delegates.transactionBroadcaster, TransactionBroadcastActorName)
 
   override def preStart(): Unit = {
-    log.info("Starting exchange {}", exchange.info.id)
-    context.actorOf(delegates.handshake(self), HandshakeActorName)
+    import context.dispatcher
+    log.info("Starting {}", exchange.id)
+    peerInfoLookup.lookup().pipeTo(self)
   }
 
   override def postStop(): Unit = {
     log.info("Unblocking funds just in case")
-    collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.info.id)
-    if (exchange.info.role == BuyerRole) {
-      collaborators.paymentProcessor ! PaymentProcessorActor.UnblockFunds(exchange.info.id)
+    collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.id)
+    if (exchange.role == BuyerRole) {
+      collaborators.paymentProcessor ! PaymentProcessorActor.UnblockFunds(exchange.id)
     }
   }
 
-  override val receive: Receive = inHandshake
+  override val receive: Receive = {
+    case user: PeerInfo =>
+      context.actorOf(delegates.handshake(user, self), HandshakeActorName)
+      context.become(inHandshake(user))
 
-  private def inHandshake: Receive = propagatingNotifications orElse {
+    case Status.Failure(cause) =>
+      log.error(cause, "Cannot start handshake of {}", exchange.id)
+      finishWith(ExchangeFailure(exchange.cancel(CannotStartHandshake(cause))))
+  }
+
+  private def inHandshake(user: Exchange.PeerInfo): Receive = propagatingNotifications orElse {
     case HandshakeSuccess(rawExchange, commitments, refundTx)
-      if rawExchange.currency == exchange.info.currency =>
+      if rawExchange.currency == exchange.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
       spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
       spawnBroadcaster(refundTx)
@@ -57,13 +68,13 @@ class DefaultExchangeActor[C <: FiatCurrency](
       }
 
     case HandshakeFailure(cause) =>
-      finishWith(ExchangeFailure(exchange.info.cancel(HandshakeFailed(cause), Some(exchange.user))))
+      finishWith(ExchangeFailure(exchange.cancel(HandshakeFailed(cause), Some(user))))
 
     case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
       startAbortion(
-        exchange.info.abort(HandshakeWithCommitmentFailed(cause), exchange.user, refundTx))
+        exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
   private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
@@ -89,16 +100,16 @@ class DefaultExchangeActor[C <: FiatCurrency](
     propagatingNotifications orElse {
 
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
-      log.info("Finishing exchange '{}' successfully", exchange.info.id)
+      log.info("Finishing exchange '{}' successfully", exchange.id)
       txBroadcaster ! PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
     case DepositSpent(broadcastTx, CompletedChannel) =>
-      log.info("Finishing exchange '{}' successfully", exchange.info.id)
+      log.info("Finishing exchange '{}' successfully", exchange.id)
       finishWith(ExchangeSuccess(runningExchange.complete))
 
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
-      log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.info.id, step)
+      log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
       txBroadcaster ! PublishBestTransaction
       context.become(failingAtStep(runningExchange, step, cause))
 
@@ -136,7 +147,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       val expectedDestination = ChannelAtStep(step)
       if (destination != expectedDestination) {
         log.warning("Expected broadcast of {} but got {} for exchange {} (tx = {})",
-          expectedDestination, destination, exchange.info.id, tx)
+          expectedDestination, destination, exchange.id, tx)
       }
       finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(tx))))
 
@@ -153,7 +164,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case DepositSpent(broadcastTx, destination) =>
       log.error("{} ({}) was unexpectedly broadcast for exchange {}", broadcastTx,
-        destination, exchange.info.id)
+        destination, exchange.id)
       finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
 
     case FailedBroadcast(cause) =>
@@ -170,7 +181,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 object DefaultExchangeActor {
 
   trait Delegates {
-    def handshake(listener: ActorRef): Props
+    def handshake(user: Exchange.PeerInfo, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster: Props
@@ -182,22 +193,23 @@ object DefaultExchangeActor {
   trait Component extends ExchangeActor.Component {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
-    override lazy val exchangeActorProps = (exchange: ExchangeToStart[_ <: FiatCurrency],
-                                            collaborators: ExchangeActor.Collaborators) => {
+    override def exchangeActorProps(exchange: NonStartedExchange[_ <: FiatCurrency],
+                                    collaborators: ExchangeActor.Collaborators) = {
       import collaborators._
 
       val delegates = new Delegates {
         val transactionBroadcaster =
           TransactionBroadcastActor.props(bitcoinPeer, blockchain, protocolConstants)
 
-        def handshake(listener: ActorRef) = HandshakeActor.props(exchange,
+        def handshake(user: Exchange.PeerInfo, listener: ActorRef) = HandshakeActor.props(
+          ExchangeToStart(exchange, user),
           HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
           HandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]): Props = {
-          val propsFactory = exchange.info.role match {
+          val propsFactory = exchange.role match {
             case BuyerRole => BuyerMicroPaymentChannelActor.props _
             case SellerRole => SellerMicroPaymentChannelActor.props _
           }
@@ -212,7 +224,9 @@ object DefaultExchangeActor {
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
-      Props(new DefaultExchangeActor(exchangeProtocol, exchange, delegates, collaborators))
+      val lookup = new DefaultPeerInfoLookup(wallet, paymentProcessor)
+
+      Props(new DefaultExchangeActor(exchangeProtocol, exchange, lookup, delegates, collaborators))
     }
   }
 }
