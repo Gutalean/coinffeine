@@ -20,6 +20,7 @@ class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
     controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
     delegates: OrderActor.Delegates[C],
+    coinffeineProperties: MutableCoinffeineNetworkProperties,
     collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
 
   import coinffeine.peer.market.orders.OrderActor._
@@ -66,13 +67,14 @@ class OrderActor[C <: FiatCurrency](
 
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
-      override def onProgress(prevProgress: Double, newProgress: Double): Unit = {
-        log.debug("Order {} progressed from {}% to {}%",
-          orderId, (100 * prevProgress).formatted("%5.2f"), (100 * newProgress).formatted("%5.2f"))
-      }
-
-      override def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit = {
-        log.info("Order {} status changed from {} to {}", orderId, oldStatus, newStatus)
+      override def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit = {
+        if (newOrder.status != oldOrder.status) {
+          log.info("Order {} has now {} status", orderId, newOrder.status)
+        }
+        if (newOrder.progress != oldOrder.progress) {
+          log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
+        }
+        coinffeineProperties.orders.set(newOrder.id, newOrder)
       }
 
       override def onOrderMatchResolution(orderMatch: OrderMatch[C],
@@ -138,9 +140,9 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      (publisher, funds) => new OrderController(
-        amountsCalculator, network, order, coinffeineProperties, publisher, funds),
+      (publisher, funds) => new OrderController(amountsCalculator, network, order, publisher, funds),
       delegates,
+      coinffeineProperties,
       collaborators
     ))
   }

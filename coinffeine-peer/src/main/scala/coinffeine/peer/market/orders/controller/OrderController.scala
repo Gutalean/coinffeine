@@ -4,7 +4,6 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.market.orders.controller.FundsBlocker.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -20,7 +19,6 @@ private[orders] class OrderController[C <: FiatCurrency](
     amountsCalculator: AmountsCalculator,
     network: Network,
     initialOrder: Order[C],
-    coinffeineProperties: MutableCoinffeineNetworkProperties,
     publisher: OrderPublication[C],
     fundsBlocker: FundsBlocker) {
 
@@ -66,16 +64,11 @@ private[orders] class OrderController[C <: FiatCurrency](
     }
 
     override def updateOrderStatus(newStatus: OrderStatus): Unit = {
-      val prevStatus = _order.status
       updateOrder(_.withStatus(newStatus))
-      listeners.foreach(_.onStatusChanged(prevStatus, newStatus))
     }
 
     def updateExchange(exchange: AnyStateExchange[C]): Unit = {
-      val prevProgress = _order.progress
       updateOrder(_.withExchange(exchange))
-      val newProgress = _order.progress
-      listeners.foreach(_.onProgress(prevProgress, newProgress))
     }
 
     def completeExchange(exchange: CompletedExchange[C]): Unit = {
@@ -84,8 +77,12 @@ private[orders] class OrderController[C <: FiatCurrency](
     }
 
     private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
-      _order = mutator(_order)
-      coinffeineProperties.orders.set(_order.id, _order)
+      val previousOrder = _order
+      val newOrder = mutator(_order)
+      if (previousOrder != newOrder) {
+        _order = newOrder
+        listeners.foreach(_.onOrderChange(previousOrder, _order))
+      }
     }
   }
 
@@ -106,6 +103,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 
   def addListener(listener: OrderController.Listener[C]): Unit = {
     listeners :+= listener
+    listener.onOrderChange(context._order, context._order)
   }
 
   def acceptOrderMatch(orderMatch: OrderMatch[C]): Unit = {
@@ -118,8 +116,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 
 private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
-    def onOrderMatchResolution(orderMatch: OrderMatch[C], result: MatchResult[C])
-    def onProgress(oldProgress: Double, newProgress: Double): Unit
-    def onStatusChanged(oldStatus: OrderStatus, newStatus: OrderStatus): Unit
+    def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit
+    def onOrderMatchResolution(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit
   }
 }
