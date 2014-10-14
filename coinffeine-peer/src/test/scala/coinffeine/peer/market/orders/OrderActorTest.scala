@@ -113,8 +113,7 @@ class OrderActorTest extends AkkaSpec
     val properties = new MutableCoinffeineNetworkProperties
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
-      (publisher, funds) =>
-        new OrderController(calculatorStub, network, order, properties, publisher, funds),
+      (publisher, funds) => new OrderController(calculatorStub, network, order, publisher, funds),
       new Delegates[Euro.type] {
         override def exchangeActor(exchange: NonStartedExchange[Euro.type])
                                   (implicit context: ActorContext) =
@@ -122,6 +121,7 @@ class OrderActorTest extends AkkaSpec
 
         override def delegatedFundsBlocking()(implicit context: ActorContext) = fundsBlocking
       },
+      properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
         submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref)
     )))
