@@ -6,7 +6,7 @@ import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.protocol.messages.handshake.{PeerHandshake, ExchangeRejection}
 
-class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
+class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signature-timeout") {
 
   import HandshakeActor._
 

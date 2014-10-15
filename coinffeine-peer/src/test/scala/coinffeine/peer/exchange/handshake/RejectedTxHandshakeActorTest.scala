@@ -6,7 +6,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 
-class RejectedTxHandshakeActorTest extends HandshakeActorTest("rejected-tx") {
+class RejectedTxHandshakeActorTest extends DefaultHandshakeActorTest("rejected-tx") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
