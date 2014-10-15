@@ -19,7 +19,6 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor.{Collaborators, _}
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster
 import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
