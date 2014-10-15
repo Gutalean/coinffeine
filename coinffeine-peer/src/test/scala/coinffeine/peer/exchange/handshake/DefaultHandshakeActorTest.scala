@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.handshake
 
+import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
 import coinffeine.model.bitcoin._
@@ -21,15 +22,26 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   lazy val handshake = new MockHandshake(handshakingExchange)
   val listener, blockchain, wallet = TestProbe()
-  val actor = system.actorOf(
-    DefaultHandshakeActor.props(
-      DefaultHandshakeActor.ExchangeToStart(exchange, user),
-      DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-      DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
-    ),
-    "handshake-actor"
-  )
-  listener.watch(actor)
+  var actor: ActorRef = _
+  startActor()
+
+  def startActor(): Unit = {
+    actor = system.actorOf(
+      DefaultHandshakeActor.props(
+        DefaultHandshakeActor.ExchangeToStart(exchange, user),
+        DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
+        DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
+      ),
+      "handshake-actor"
+    )
+    listener.watch(actor)
+  }
+
+  def restartActor(): Unit = {
+    system.stop(actor)
+    listener.expectTerminated(actor)
+    startActor()
+  }
 
   def givenCounterpartPeerHandshake(): Unit = {
     val peerHandshake =

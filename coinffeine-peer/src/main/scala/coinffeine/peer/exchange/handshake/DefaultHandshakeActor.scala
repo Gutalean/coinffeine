@@ -5,6 +5,7 @@ import scala.util.Try
 
 import akka.actor._
 import akka.pattern._
+import akka.persistence.PersistentActor
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.bitcoin._
@@ -28,11 +29,12 @@ import coinffeine.protocol.messages.handshake._
 private class DefaultHandshakeActor[C <: FiatCurrency](
     exchange: DefaultHandshakeActor.ExchangeToStart[C],
     collaborators: DefaultHandshakeActor.Collaborators,
-    protocol: DefaultHandshakeActor.ProtocolDetails) extends Actor with ActorLogging {
+    protocol: DefaultHandshakeActor.ProtocolDetails) extends PersistentActor with ActorLogging {
 
   import protocol.constants._
   import context.dispatcher
 
+  override val persistenceId = s"handshake/${exchange.info.id.value}"
   private var timers = Seq.empty[Cancellable]
   private val forwarding = MessageForwarder.Factory(collaborators.gateway)
   private val counterpartRefundSigner =
@@ -46,9 +48,11 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     sendPeerHandshakeUntilFirstSignatureRequest()
     scheduleSignatureTimeout()
     log.info("Handshake {}: Handshake started", exchange.info.id)
+    super.preStart()
   }
 
   override def postStop(): Unit = {
+    super.postStop()
     timers.foreach(_.cancel())
   }
 
@@ -63,7 +67,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     }
   }
 
-  override def receive = waitForPeerHandshake()
+  override def receiveRecover: Receive = Map.empty
+
+  override def receiveCommand = waitForPeerHandshake()
 
   private def waitForPeerHandshake(): Receive = {
 
