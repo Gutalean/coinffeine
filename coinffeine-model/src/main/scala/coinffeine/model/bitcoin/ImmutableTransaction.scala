@@ -1,5 +1,7 @@
 package coinffeine.model.bitcoin
 
+import scala.util.control.NonFatal
+
 /** Wrapper for bitcoinj transactions.
   *
   * As bitcoinj transactions are mutable we need a source of fresh objects to keep our sanity.
@@ -10,7 +12,14 @@ class ImmutableTransaction(private val bytes: Array[Byte], private val network: 
 
   def this(tx: MutableTransaction) = this(tx.bitcoinSerialize(), tx.getParams)
 
-  override def toString: String = s"ImmutableTransaction(${get.toString})"
+  override lazy val toString: String = {
+    val string = try {
+      get.toString
+    } catch {
+      case NonFatal(ex) => s"Cannot format as string (${ex.getMessage}})"
+    }
+    s"ImmutableTransaction($string)"
+  }
 
   def get: MutableTransaction = new MutableTransaction(network, bytes)
 
