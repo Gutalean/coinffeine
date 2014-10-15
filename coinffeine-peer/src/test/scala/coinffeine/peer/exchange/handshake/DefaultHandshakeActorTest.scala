@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.handshake
 
+import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
 import coinffeine.model.bitcoin._
@@ -7,7 +8,6 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
-import coinffeine.peer.exchange.handshake.HandshakeActor.ExchangeToStart
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
@@ -15,22 +15,33 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
-abstract class HandshakeActorTest(systemName: String)
+abstract class DefaultHandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with SellerPerspective {
 
   def protocolConstants: ProtocolConstants
 
   lazy val handshake = new MockHandshake(handshakingExchange)
   val listener, blockchain, wallet = TestProbe()
-  val actor = system.actorOf(
-    HandshakeActor.props(
-      ExchangeToStart(exchange, user),
-      HandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-      HandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
-    ),
-    "handshake-actor"
-  )
-  listener.watch(actor)
+  var actor: ActorRef = _
+  startActor()
+
+  def startActor(): Unit = {
+    actor = system.actorOf(
+      DefaultHandshakeActor.props(
+        DefaultHandshakeActor.ExchangeToStart(exchange, user),
+        DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
+        DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
+      ),
+      "handshake-actor"
+    )
+    listener.watch(actor)
+  }
+
+  def restartActor(): Unit = {
+    system.stop(actor)
+    listener.expectTerminated(actor)
+    startActor()
+  }
 
   def givenCounterpartPeerHandshake(): Unit = {
     val peerHandshake =
@@ -56,7 +67,7 @@ abstract class HandshakeActorTest(systemName: String)
   }
 
   def shouldCreateDeposits(): Unit = {
-    val request = wallet.expectMsgClass(classOf[WalletActor.CreateDeposit])
+    val request = wallet.expectMsgType[WalletActor.CreateDeposit]
     val depositAmounts = exchange.amounts.deposits.seller
     request.amount shouldBe depositAmounts.output
     request.transactionFee shouldBe depositAmounts.fee

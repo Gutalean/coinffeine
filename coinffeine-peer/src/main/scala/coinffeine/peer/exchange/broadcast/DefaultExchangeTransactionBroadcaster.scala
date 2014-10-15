@@ -13,7 +13,7 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadc
 private class DefaultExchangeTransactionBroadcaster(
      refund: ImmutableTransaction,
      collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
-     constants: ProtocolConstants) extends PersistentActor with ActorLogging with Stash {
+     constants: ProtocolConstants) extends PersistentActor with ActorLogging {
   import DefaultExchangeTransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString

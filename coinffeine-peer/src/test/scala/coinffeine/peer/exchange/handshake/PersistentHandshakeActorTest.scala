@@ -7,10 +7,8 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
-import coinffeine.protocol.messages.handshake._
 
-class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
+class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
@@ -18,40 +16,28 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
     refundSignatureAbortTimeout = 1 minute
   )
 
-  "Handshake happy path" should "send peer handshake when started" in {
+  "A handshake" should "persist successful counterpart handshake" in {
     shouldForwardPeerHandshake()
-  }
-
-  it should "request refund transaction signature after getting counterpart peer handshake" in {
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
-    shouldForwardRefundSignatureRequest()
     blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    shouldForwardRefundSignatureRequest()
   }
 
-  it should "reject signature of invalid counterpart refund transactions" in {
-    val invalidRequest =
-      RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction))
-    gateway.relayMessage(invalidRequest, counterpartId)
-    gateway.expectNoMsg(100 millis)
+  it should "continue after a restart" in {
+    restartActor()
+    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    shouldForwardPeerHandshake()
+    shouldForwardRefundSignatureRequest()
   }
 
   it should "sign counterpart refund while waiting for our refund" in {
     shouldSignCounterpartRefund()
   }
 
-  it should "don't be fooled by invalid refund TX or source" in {
-    val invalidReply = RefundSignatureResponse(exchange.id, MockExchangeProtocol.InvalidSignature)
-    gateway.relayMessage(invalidReply, counterpartId)
-  }
-
   it should "send commitment TX to the broker after getting his refund TX signed" in {
     givenValidRefundSignatureResponse()
     shouldForwardCommitmentToBroker()
-  }
-
-  it should "sign counterpart refund after having our refund signed" in {
-    shouldSignCounterpartRefund()
   }
 
   it should "wait until the broker publishes commitments" in {
