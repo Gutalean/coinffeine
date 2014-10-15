@@ -79,7 +79,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
-    txBroadcaster ! StartBroadcastHandling(refundTx, resultListeners = Set(self))
+    txBroadcaster ! StartBroadcastHandling(refundTx)
   }
 
   private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
@@ -185,7 +185,7 @@ object DefaultExchangeActor {
     def handshake(user: Exchange.PeerInfo, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
-    def transactionBroadcaster: Props
+    def transactionBroadcaster(implicit context: ActorContext): Props
     def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
@@ -199,8 +199,10 @@ object DefaultExchangeActor {
       import collaborators._
 
       val delegates = new Delegates {
-        val transactionBroadcaster =
-          DefaultExchangeTransactionBroadcaster.props(bitcoinPeer, blockchain, protocolConstants)
+        def transactionBroadcaster(implicit context: ActorContext) =
+          DefaultExchangeTransactionBroadcaster.props(
+            DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            protocolConstants)
 
         def handshake(user: Exchange.PeerInfo, listener: ActorRef) = HandshakeActor.props(
           ExchangeToStart(exchange, user),

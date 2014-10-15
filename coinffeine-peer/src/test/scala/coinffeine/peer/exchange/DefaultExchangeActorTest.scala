@@ -52,7 +52,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
-        val transactionBroadcaster = transactionBroadcastActor.props
+        def transactionBroadcaster(implicit context: ActorContext) = transactionBroadcastActor.props
         def handshake(user: PeerInfo, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) = micropaymentChannelActor.props
@@ -81,7 +81,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeActor.expectCreation()
       handshakeActor.probe.send(actor,
         HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
+      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx))
     }
 
     def givenHandshakeSuccessWithInvalidCounterpartCommitment(): Unit = {
@@ -89,7 +89,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       val invalidCommitment = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
       val handshakeSuccess = HandshakeSuccess(handshakingExchange, invalidCommitment,dummyTx)
       handshakeActor.probe.send(actor,handshakeSuccess)
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
+      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx))
     }
 
     def givenTransactionIsCorrectlyBroadcast(destination: DepositDestination = CompletedChannel): Unit = {

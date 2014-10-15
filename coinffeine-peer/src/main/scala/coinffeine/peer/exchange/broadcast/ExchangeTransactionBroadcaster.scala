@@ -1,20 +1,18 @@
 package coinffeine.peer.exchange.broadcast
 
-import akka.actor._
-
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 
 /** This actor is in charge of broadcasting the appropriate transactions for an exchange, whether
   * the exchange ends successfully or not.
+  *
+  * The actor will receive via props the refund transaction and a listener actor ref. This refund
+  * will be broadcast as soon as its timelock expires if there are no better alternatives (like
+  * broadcasting the successful exchange transaction).
   */
 object ExchangeTransactionBroadcaster {
 
-  /** A request to the actor to start the necessary broadcast handling. It sets the refund
-    * transaction to be used. This transaction will be broadcast as soon as its timelock expires if
-    * there are no better alternatives (like broadcasting the successful exchange transaction)
-    */
-  case class StartBroadcastHandling(refund: ImmutableTransaction, resultListeners: Set[ActorRef])
+  case class StartBroadcastHandling(refund: ImmutableTransaction)
 
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction

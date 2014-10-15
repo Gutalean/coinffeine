@@ -13,14 +13,13 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
-private class DefaultExchangeTransactionBroadcaster(bitcoinPeerActor: ActorRef,
-                                                    blockchain: ActorRef,
-                                                    constants: ProtocolConstants)
-  extends Actor with ActorLogging with Stash {
+private class DefaultExchangeTransactionBroadcaster(
+     collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
+     constants: ProtocolConstants) extends Actor with ActorLogging with Stash {
 
   override val receive: Receive = {
     case msg: StartBroadcastHandling =>
-      new InitializedBroadcastActor(msg, blockchain).start()
+      new InitializedBroadcastActor(msg, collaborators.blockchain).start()
   }
 
   private class InitializedBroadcastActor(init: StartBroadcastHandling, blockchain: ActorRef) {
@@ -55,7 +54,7 @@ private class DefaultExchangeTransactionBroadcaster(bitcoinPeerActor: ActorRef,
 
     private def readyForBroadcast(offer: ImmutableTransaction): Receive = {
       case ReadyForBroadcast =>
-        bitcoinPeerActor ! PublishTransaction(offer)
+        collaborators.bitcoinPeer ! PublishTransaction(offer)
         context.become(broadcastCompleted(offer))
     }
 
@@ -69,7 +68,7 @@ private class DefaultExchangeTransactionBroadcaster(bitcoinPeerActor: ActorRef,
     }
 
     private def finishWith(result: Any): Unit = {
-      resultListeners.foreach { _ ! result}
+      collaborators.listener ! result
       context.stop(self)
     }
 
@@ -85,11 +84,12 @@ private class DefaultExchangeTransactionBroadcaster(bitcoinPeerActor: ActorRef,
   }
 }
 
-
 object DefaultExchangeTransactionBroadcaster {
 
-  def props(bitcoinPeerActor: ActorRef, blockchain: ActorRef, constants: ProtocolConstants) =
-    Props(new DefaultExchangeTransactionBroadcaster(bitcoinPeerActor, blockchain, constants))
+  case class Collaborators(bitcoinPeer: ActorRef, blockchain: ActorRef, listener: ActorRef)
+
+  def props(collaborators: Collaborators, constants: ProtocolConstants) =
+    Props(new DefaultExchangeTransactionBroadcaster(collaborators, constants))
 
   private case object ReadyForBroadcast
 }
