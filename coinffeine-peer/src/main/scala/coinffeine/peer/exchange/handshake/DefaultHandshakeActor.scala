@@ -31,6 +31,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     collaborators: DefaultHandshakeActor.Collaborators,
     protocol: DefaultHandshakeActor.ProtocolDetails) extends PersistentActor with ActorLogging {
 
+  import DefaultHandshakeActor._
   import protocol.constants._
   import context.dispatcher
 
@@ -67,31 +68,31 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     }
   }
 
-  override def receiveRecover: Receive = Map.empty
+  override def receiveRecover: Receive = {
+    case event: HandshakeStarted[C] => onHandshakeStarted(event)
+  }
 
-  override def receiveCommand = waitForPeerHandshake()
+  override def receiveCommand = abortOnSignatureTimeout orElse abortOnBrokerNotification orElse {
 
-  private def waitForPeerHandshake(): Receive = {
+    case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
+      val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
+      val handshakingExchange = exchange.info.startHandshaking(exchange.user, counterpart)
+      collaborators.listener ! ExchangeUpdate(handshakingExchange)
+      createDeposit(handshakingExchange)
+        .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
+        .pipeTo(self)
 
-    val receivePeerHandshake: Receive = {
-      case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
-        val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-        val handshakingExchange = exchange.info.startHandshaking(exchange.user, counterpart)
-        collaborators.listener ! ExchangeUpdate(handshakingExchange)
-        createDeposit(handshakingExchange)
-          .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
-          .pipeTo(self)
+    case handshake: Handshake[C] =>
+      persist(HandshakeStarted(handshake))(onHandshakeStarted)
 
-      case handshake: Handshake[C] =>
-        collaborators.blockchain ! BlockchainActor.WatchMultisigKeys(
-          handshake.exchange.requiredSignatures.toSeq)
-        counterpartRefundSigner ! CounterpartRefundSigner.StartSigningRefunds(handshake)
-        context.become(waitForRefundSignature(handshake))
+    case Status.Failure(cause) => finishWith(HandshakeFailure(cause))
+  }
 
-      case Status.Failure(cause) => finishWith(HandshakeFailure(cause))
-    }
-
-    receivePeerHandshake orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
+  private def onHandshakeStarted(event: HandshakeStarted[C]): Unit = {
+    collaborators.blockchain ! BlockchainActor.WatchMultisigKeys(
+      event.handshake.exchange.requiredSignatures.toSeq)
+    counterpartRefundSigner ! CounterpartRefundSigner.StartSigningRefunds(event.handshake)
+    context.become(waitForRefundSignature(event.handshake))
   }
 
   private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
@@ -202,7 +203,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   private def retrieveCommitmentTransactions(
-                                              commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
+      commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
     val retrievals = commitmentIds.map(retrieveCommitmentTransaction)
     for {
       buyerTx <- retrievals.buyer
@@ -279,4 +280,6 @@ object DefaultHandshakeActor {
             collaborators: Collaborators,
             protocol: ProtocolDetails) =
     Props(new DefaultHandshakeActor(exchange, collaborators, protocol))
+
+  private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C])
 }
