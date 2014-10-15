@@ -11,7 +11,8 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster
+import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
@@ -199,7 +200,7 @@ object DefaultExchangeActor {
 
       val delegates = new Delegates {
         val transactionBroadcaster =
-          TransactionBroadcastActor.props(bitcoinPeer, blockchain, protocolConstants)
+          ExchangeTransactionBroadcaster.props(bitcoinPeer, blockchain, protocolConstants)
 
         def handshake(user: Exchange.PeerInfo, listener: ActorRef) = HandshakeActor.props(
           ExchangeToStart(exchange, user),

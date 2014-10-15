@@ -1,4 +1,4 @@
-package coinffeine.peer.exchange
+package coinffeine.peer.exchange.broadcast
 
 import scala.concurrent.duration._
 
@@ -10,13 +10,14 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.exchange.TransactionBroadcastActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
-class TransactionBroadcastActor(bitcoinPeerActor: ActorRef,
+class ExchangeTransactionBroadcaster(bitcoinPeerActor: ActorRef,
                                 blockchain: ActorRef,
                                 constants: ProtocolConstants)
   extends Actor with ActorLogging with Stash {
+
+  import ExchangeTransactionBroadcaster._
 
   override val receive: Receive = {
     case msg: StartBroadcastHandling =>
@@ -87,10 +88,10 @@ class TransactionBroadcastActor(bitcoinPeerActor: ActorRef,
 /** This actor is in charge of broadcasting the appropriate transactions for an exchange, whether
   * the exchange ends successfully or not.
   */
-object TransactionBroadcastActor {
+object ExchangeTransactionBroadcaster {
 
   def props(bitcoinPeerActor: ActorRef, blockchain: ActorRef, constants: ProtocolConstants) =
-    Props(new TransactionBroadcastActor(bitcoinPeerActor, blockchain, constants))
+    Props(new ExchangeTransactionBroadcaster(bitcoinPeerActor, blockchain, constants))
 
   /** A request to the actor to start the necessary broadcast handling. It sets the refund
     * transaction to be used. This transaction will be broadcast as soon as its timelock expires if

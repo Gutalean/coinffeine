@@ -1,4 +1,4 @@
-package coinffeine.peer.exchange
+package coinffeine.peer.exchange.broadcast
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
@@ -9,11 +9,11 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, Trans
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor.{BlockchainHeightReached, WatchBlockchainHeight}
-import coinffeine.peer.exchange.TransactionBroadcastActor._
+import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
-class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTest") {
+class ExchangeTransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
 
   private val refundLockTime = 20
   private val refundTx = ImmutableTransaction {
@@ -80,7 +80,7 @@ class TransactionBroadcastActorTest extends CoinffeineClientTest("txBroadcastTes
   trait Fixture {
     val peerActor, blockchain = TestProbe()
     val instance: ActorRef = system.actorOf(Props(
-      new TransactionBroadcastActor(peerActor.ref, blockchain.ref, protocolConstants)))
+      new ExchangeTransactionBroadcaster(peerActor.ref, blockchain.ref, protocolConstants)))
 
     def expectPanicNotificationRequest(): Unit = {
       blockchain.expectMsg(WatchBlockchainHeight(panicBlock))
