@@ -3,7 +3,7 @@ package coinffeine.peer.bitcoin.blockchain
 import scala.concurrent.duration._
 
 import akka.actor.Props
-import akka.testkit.TestProbe
+import akka.testkit._
 import org.bitcoinj.core.Wallet.SendRequest
 import org.scalatest.mock.MockitoSugar
 
@@ -124,6 +124,14 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
       requester.expectMsg(BlockchainActor.BlockchainHeightReached(50))
     }
 
+  it must "report blockchain height immediately when asking for an already reached height" in
+    new Fixture {
+      requester.send(instance, BlockchainActor.WatchBlockchainHeight(chain.getBestChainHeight - 1))
+      requester.expectMsg(BlockchainActor.BlockchainHeightReached(chain.getBestChainHeight))
+      requester.send(instance, BlockchainActor.WatchBlockchainHeight(chain.getBestChainHeight))
+      requester.expectMsg(BlockchainActor.BlockchainHeightReached(chain.getBestChainHeight))
+    }
+
   it must "retrieve the blockchain height" in new Fixture {
     requester.send(instance, BlockchainActor.RetrieveBlockchainHeight)
     requester.expectMsg(BlockchainActor.BlockchainHeightReached(chain.getBestChainHeight))
@@ -152,7 +160,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
     val instance = system.actorOf(Props(new BlockchainActor(chain, network)))
 
     def expectNoMsg(): Unit = {
-      requester.expectNoMsg(100.millis)
+      requester.expectNoMsg(100.millis.dilated)
     }
 
     def givenAnOutput(amount: Bitcoin.Amount): MutableTransactionOutput = {
