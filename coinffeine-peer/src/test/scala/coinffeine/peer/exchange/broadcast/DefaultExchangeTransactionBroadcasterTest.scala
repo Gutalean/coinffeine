@@ -17,17 +17,6 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest
 class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
 
   private val refundLockTime = 20
-  private val refundTx = ImmutableTransaction {
-    val tx = new MutableTransaction(network)
-    tx.setLockTime(refundLockTime)
-    val input = new TransactionInput(
-      network,
-      null, // parent transaction
-      ScriptBuilder.createInputScript(TransactionSignature.dummy).getProgram)
-    input.setSequenceNumber(0)
-    tx.addInput(input)
-    tx
-  }
   private val someLastOffer = ImmutableTransaction(new MutableTransaction(network))
   private val protocolConstants = ProtocolConstants()
   private val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
@@ -74,7 +63,25 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
     system.stop(instance)
   }
 
+  // Last refund transaction is saved to allow testing the persistence
+  var lastRefundTx: ImmutableTransaction = _
+
   trait Fixture {
+    def useLastRefundTx: Boolean = false
+    val refundTx =
+      if (useLastRefundTx) lastRefundTx
+      else ImmutableTransaction {
+        val tx = new MutableTransaction(network)
+        tx.setLockTime(refundLockTime)
+        val input = new TransactionInput(
+          network,
+          null, // parent transaction
+          ScriptBuilder.createInputScript(TransactionSignature.dummy).getProgram)
+        input.setSequenceNumber(Option(lastRefundTx).map(_.get.getInput(0).getSequenceNumber).getOrElse(0))
+        tx.addInput(input)
+        tx
+      }
+    lastRefundTx = refundTx
     val peerActor, blockchain = TestProbe()
     val instance: ActorRef = system.actorOf(DefaultExchangeTransactionBroadcaster.props(
       refundTx, Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))

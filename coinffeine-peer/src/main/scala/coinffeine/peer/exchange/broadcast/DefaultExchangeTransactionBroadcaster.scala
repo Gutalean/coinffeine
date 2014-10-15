@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 
 import akka.actor._
 import akka.pattern.ask
+import akka.persistence.PersistentActor
 import akka.util.Timeout
 
 import coinffeine.model.bitcoin.ImmutableTransaction
@@ -16,10 +17,10 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadc
 private class DefaultExchangeTransactionBroadcaster(
      refund: ImmutableTransaction,
      collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
-     constants: ProtocolConstants) extends Actor with ActorLogging with Stash {
-
+     constants: ProtocolConstants) extends PersistentActor with ActorLogging with Stash {
   import DefaultExchangeTransactionBroadcaster.ReadyForBroadcast
 
+  override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
   private val transactions = new ExchangeTransactions(refund)
 
   override def preStart(): Unit = {
@@ -31,8 +32,9 @@ private class DefaultExchangeTransactionBroadcaster(
     val panicBlock = refund.get.getLockTime - constants.refundSafetyBlockCount
     autoNotifyBlockchainHeightWith(panicBlock, PublishBestTransaction)
   }
+  override val receiveRecover: Receive = Map.empty
 
-  override val receive: Receive = {
+  override val receiveCommand: Receive =  {
     case LastBroadcastableOffer(tx) =>
       transactions.addOfferTransaction(tx)
 
