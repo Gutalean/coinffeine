@@ -1,7 +1,10 @@
 package coinffeine.peer.exchange.broadcast
 
+import scala.util.Random
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
-import akka.testkit.TestProbe
+import akka.testkit._
 import org.bitcoinj.core.TransactionInput
 import org.bitcoinj.script.ScriptBuilder
 
@@ -28,7 +31,7 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
       blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
       val result = givenSuccessfulBroadcast(refundTx)
       expectMsg(SuccessfulBroadcast(result))
-      system.stop(instance)
+      terminationListener.expectTerminated(instance)
     }
 
   it should "broadcast the refund transaction if it receives a finish exchange signal" in
@@ -39,7 +42,7 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
       blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
       val result = givenSuccessfulBroadcast(refundTx)
       expectMsg(SuccessfulBroadcast(result))
-      system.stop(instance)
+      terminationListener.expectTerminated(instance)
     }
 
   it should "broadcast the last offer when the refund transaction is about to become valid" in
@@ -49,7 +52,7 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
 
       val result = givenSuccessfulBroadcast(someLastOffer)
       expectMsg(SuccessfulBroadcast(result))
-      system.stop(instance)
+      terminationListener.expectTerminated(instance)
     }
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
@@ -60,7 +63,24 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
 
     val result = givenSuccessfulBroadcast(refundTx)
     expectMsg(SuccessfulBroadcast(result))
+    terminationListener.expectTerminated(instance)
+  }
+
+  it should "persist its state" in new Fixture {
+    givenLastOffer(someLastOffer)
+    expectNoMsg(100.millis.dilated)
     system.stop(instance)
+  }
+
+  it should "restore its state" in new Fixture {
+    override def useLastRefundTx = true
+    expectPanicNotificationRequest()
+
+    instance ! PublishBestTransaction
+
+    givenSuccessfulBroadcast(someLastOffer)
+    expectMsgType[SuccessfulBroadcast]
+    terminationListener.expectTerminated(instance)
   }
 
   // Last refund transaction is saved to allow testing the persistence
@@ -77,14 +97,15 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
           network,
           null, // parent transaction
           ScriptBuilder.createInputScript(TransactionSignature.dummy).getProgram)
-        input.setSequenceNumber(Option(lastRefundTx).map(_.get.getInput(0).getSequenceNumber).getOrElse(0))
+        input.setSequenceNumber(Random.nextLong().abs)
         tx.addInput(input)
         tx
       }
     lastRefundTx = refundTx
-    val peerActor, blockchain = TestProbe()
-    val instance: ActorRef = system.actorOf(DefaultExchangeTransactionBroadcaster.props(
+    val peerActor, blockchain, terminationListener = TestProbe()
+    val instance = system.actorOf(DefaultExchangeTransactionBroadcaster.props(
       refundTx, Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))
+    terminationListener.watch(instance)
 
     def expectPanicNotificationRequest(): Unit = {
       blockchain.expectMsg(WatchBlockchainHeight(panicBlock))

@@ -18,7 +18,7 @@ private class DefaultExchangeTransactionBroadcaster(
      refund: ImmutableTransaction,
      collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
      constants: ProtocolConstants) extends PersistentActor with ActorLogging with Stash {
-  import DefaultExchangeTransactionBroadcaster.ReadyForBroadcast
+  import DefaultExchangeTransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
   private val transactions = new ExchangeTransactions(refund)
@@ -32,11 +32,14 @@ private class DefaultExchangeTransactionBroadcaster(
     val panicBlock = refund.get.getLockTime - constants.refundSafetyBlockCount
     autoNotifyBlockchainHeightWith(panicBlock, PublishBestTransaction)
   }
-  override val receiveRecover: Receive = Map.empty
+
+  override val receiveRecover: Receive = {
+    case event: OfferAdded => onOfferAdded(event)
+  }
 
   override val receiveCommand: Receive =  {
     case LastBroadcastableOffer(tx) =>
-      transactions.addOfferTransaction(tx)
+      persist(OfferAdded(tx))(onOfferAdded)
 
     case PublishBestTransaction =>
       val bestTransaction = transactions.bestTransaction.get
@@ -46,6 +49,10 @@ private class DefaultExchangeTransactionBroadcaster(
         self ! ReadyForBroadcast
       }
       context.become(readyForBroadcast(ImmutableTransaction(bestTransaction)))
+  }
+
+  private def onOfferAdded(event: OfferAdded): Unit = {
+    transactions.addOfferTransaction(event.offer)
   }
 
   private def readyForBroadcast(offer: ImmutableTransaction): Receive = {
@@ -87,4 +94,6 @@ object DefaultExchangeTransactionBroadcaster {
     Props(new DefaultExchangeTransactionBroadcaster(refund, collaborators, constants))
 
   private case object ReadyForBroadcast
+
+  private case class OfferAdded(offer: ImmutableTransaction)
 }
