@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.broadcast
 
 import akka.actor._
-import akka.persistence.PersistentActor
+import akka.persistence.{RecoveryCompleted, PersistentActor}
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
@@ -14,11 +14,10 @@ private class DefaultExchangeTransactionBroadcaster(
      refund: ImmutableTransaction,
      collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
      constants: ProtocolConstants) extends PersistentActor with ActorLogging with Stash {
-  import coinffeine.peer.exchange.broadcast.DefaultExchangeTransactionBroadcaster._
+  import DefaultExchangeTransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
   private val transactions = new ExchangeTransactions(refund, constants.refundSafetyBlockCount)
-  private var transactionBeingBroadcast: Option[ImmutableTransaction] = None
 
   override def preStart(): Unit = {
     watchRelevantBlocks()
@@ -33,6 +32,10 @@ private class DefaultExchangeTransactionBroadcaster(
 
   override val receiveRecover: Receive = {
     case event: OfferAdded => onOfferAdded(event)
+    case PublicationRequested => onPublicationRequested()
+    case event: FinishedWithResult => onFinished(event)
+    case RecoveryCompleted =>
+      collaborators.blockchain ! BlockchainActor.RetrieveBlockchainHeight
   }
 
   override val receiveCommand: Receive =  {
@@ -40,8 +43,10 @@ private class DefaultExchangeTransactionBroadcaster(
       persist(OfferAdded(tx))(onOfferAdded)
 
     case PublishBestTransaction =>
-      transactions.requestPublication()
-      broadcastIfNeeded()
+      persist(PublicationRequested) { _ =>
+        onPublicationRequested()
+        broadcastIfNeeded()
+      }
 
     case BlockchainActor.BlockchainHeightReached(height) =>
       transactions.updateHeight(height)
@@ -59,18 +64,25 @@ private class DefaultExchangeTransactionBroadcaster(
 
   private def broadcastIfNeeded(): Unit = {
     if (transactions.shouldBroadcast) {
-      transactionBeingBroadcast = Some(transactions.bestTransaction)
       collaborators.bitcoinPeer ! PublishTransaction(transactions.bestTransaction)
     }
+  }
+
+  private def finishWith(result: BroadcastResult): Unit = {
+    persist(FinishedWithResult(result))(onFinished)
   }
 
   private def onOfferAdded(event: OfferAdded): Unit = {
     transactions.addOfferTransaction(event.offer)
   }
 
-  private def finishWith(result: Any): Unit = {
-    collaborators.listener ! result
-    context.stop(self)
+  private def onPublicationRequested(): Unit = {
+    transactions.requestPublication()
+  }
+
+  private def onFinished(event: FinishedWithResult): Unit = {
+    collaborators.listener ! event.result
+    self ! PoisonPill
   }
 }
 
@@ -82,4 +94,6 @@ object DefaultExchangeTransactionBroadcaster {
     Props(new DefaultExchangeTransactionBroadcaster(refund, collaborators, constants))
 
   private case class OfferAdded(offer: ImmutableTransaction)
+  private case object PublicationRequested
+  private case class FinishedWithResult(result: BroadcastResult)
 }
