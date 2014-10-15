@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.broadcast
 import coinffeine.model.bitcoin.ImmutableTransaction
 
 /** Keep the transactions related to an exchange and determine what should be broadcast */
-private class ExchangeTransactions(refund: ImmutableTransaction, refundSafetyBlockCount: Int) {
+private class BroadcastPolicy(refund: ImmutableTransaction, refundSafetyBlockCount: Int) {
 
   private var lastOffer: Option[ImmutableTransaction] = None
   private var publicationRequested: Boolean = false

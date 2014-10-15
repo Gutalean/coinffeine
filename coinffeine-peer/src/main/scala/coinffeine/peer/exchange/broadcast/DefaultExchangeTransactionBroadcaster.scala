@@ -17,7 +17,7 @@ private class DefaultExchangeTransactionBroadcaster(
   import DefaultExchangeTransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
-  private val transactions = new ExchangeTransactions(refund, constants.refundSafetyBlockCount)
+  private val policy = new BroadcastPolicy(refund, constants.refundSafetyBlockCount)
 
   override def preStart(): Unit = {
     watchRelevantBlocks()
@@ -25,7 +25,7 @@ private class DefaultExchangeTransactionBroadcaster(
   }
 
   private def watchRelevantBlocks(): Unit = {
-    for (blockHeight <- transactions.relevantBlocks) {
+    for (blockHeight <- policy.relevantBlocks) {
       collaborators.blockchain ! BlockchainActor.WatchBlockchainHeight(blockHeight)
     }
   }
@@ -49,10 +49,10 @@ private class DefaultExchangeTransactionBroadcaster(
       }
 
     case BlockchainActor.BlockchainHeightReached(height) =>
-      transactions.updateHeight(height)
+      policy.updateHeight(height)
       broadcastIfNeeded()
 
-    case msg @ TransactionPublished(tx, _) if tx == transactions.bestTransaction =>
+    case msg @ TransactionPublished(tx, _) if tx == policy.bestTransaction =>
       finishWith(SuccessfulBroadcast(msg))
 
     case TransactionPublished(_, unexpectedTx) =>
@@ -63,8 +63,8 @@ private class DefaultExchangeTransactionBroadcaster(
   }
 
   private def broadcastIfNeeded(): Unit = {
-    if (transactions.shouldBroadcast) {
-      collaborators.bitcoinPeer ! PublishTransaction(transactions.bestTransaction)
+    if (policy.shouldBroadcast) {
+      collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
     }
   }
 
@@ -73,11 +73,11 @@ private class DefaultExchangeTransactionBroadcaster(
   }
 
   private def onOfferAdded(event: OfferAdded): Unit = {
-    transactions.addOfferTransaction(event.offer)
+    policy.addOfferTransaction(event.offer)
   }
 
   private def onPublicationRequested(): Unit = {
-    transactions.requestPublication()
+    policy.requestPublication()
   }
 
   private def onFinished(event: FinishedWithResult): Unit = {
