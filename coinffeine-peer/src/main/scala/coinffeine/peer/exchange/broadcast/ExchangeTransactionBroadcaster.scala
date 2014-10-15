@@ -12,8 +12,6 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor._
   */
 object ExchangeTransactionBroadcaster {
 
-  case class StartBroadcastHandling(refund: ImmutableTransaction)
-
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction
 

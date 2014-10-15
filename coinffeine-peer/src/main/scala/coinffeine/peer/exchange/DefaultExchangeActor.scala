@@ -26,8 +26,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
 
-  private val txBroadcaster =
-    context.actorOf(delegates.transactionBroadcaster, TransactionBroadcastActorName)
+  private var txBroadcaster: ActorRef = _
 
   override def preStart(): Unit = {
     import context.dispatcher
@@ -78,8 +77,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
         exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
-  private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
-    txBroadcaster ! StartBroadcastHandling(refundTx)
+  private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
+    txBroadcaster =
+      context.actorOf(delegates.transactionBroadcaster(refund), TransactionBroadcastActorName)
   }
 
   private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
@@ -185,7 +185,7 @@ object DefaultExchangeActor {
     def handshake(user: Exchange.PeerInfo, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
-    def transactionBroadcaster(implicit context: ActorContext): Props
+    def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
     def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
@@ -199,8 +199,9 @@ object DefaultExchangeActor {
       import collaborators._
 
       val delegates = new Delegates {
-        def transactionBroadcaster(implicit context: ActorContext) =
+        def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
           DefaultExchangeTransactionBroadcaster.props(
+            refund,
             DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 

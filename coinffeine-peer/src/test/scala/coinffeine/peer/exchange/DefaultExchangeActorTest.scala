@@ -52,7 +52,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
-        def transactionBroadcaster(implicit context: ActorContext) = transactionBroadcastActor.props
+        def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
+          transactionBroadcastActor.props
         def handshake(user: PeerInfo, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) = micropaymentChannelActor.props
@@ -69,7 +70,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenSuccessfulExchangeStart(): Unit = {
       peerInfoLookup.willSucceed(Exchange.PeerInfo("Account007", new KeyPair()))
       startActor()
-      transactionBroadcastActor.expectCreation()
     }
 
     def startActor(): Unit = {
@@ -81,15 +81,15 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeActor.expectCreation()
       handshakeActor.probe.send(actor,
         HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx))
+      transactionBroadcastActor.expectCreation()
     }
 
     def givenHandshakeSuccessWithInvalidCounterpartCommitment(): Unit = {
       handshakeActor.expectCreation()
       val invalidCommitment = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
       val handshakeSuccess = HandshakeSuccess(handshakingExchange, invalidCommitment,dummyTx)
-      handshakeActor.probe.send(actor,handshakeSuccess)
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx))
+      handshakeActor.probe.send(actor, handshakeSuccess)
+      transactionBroadcastActor.expectCreation()
     }
 
     def givenTransactionIsCorrectlyBroadcast(destination: DepositDestination = CompletedChannel): Unit = {

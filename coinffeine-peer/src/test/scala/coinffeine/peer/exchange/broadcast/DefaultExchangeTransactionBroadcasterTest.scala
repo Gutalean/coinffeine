@@ -34,7 +34,6 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
 
   "An exchange transaction broadcast actor" should
     "broadcast the refund transaction if it becomes valid" in new Fixture {
-      instance ! StartBroadcastHandling(refundTx)
       givenPanicNotification()
       val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
       blockchain.send(broadcastReadyRequester, BlockchainHeightReached(refundLockTime))
@@ -45,7 +44,6 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
 
   it should "broadcast the refund transaction if it receives a finish exchange signal" in
     new Fixture {
-      instance ! StartBroadcastHandling(refundTx)
       expectPanicNotificationRequest()
       instance ! PublishBestTransaction
       val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
@@ -57,7 +55,6 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
 
   it should "broadcast the last offer when the refund transaction is about to become valid" in
     new Fixture {
-      instance ! StartBroadcastHandling(refundTx)
       givenLastOffer(someLastOffer)
       givenPanicNotification()
 
@@ -67,7 +64,6 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
     }
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
-    instance ! StartBroadcastHandling(refundTx)
     expectPanicNotificationRequest()
     instance ! PublishBestTransaction
     val broadcastReadyRequester = expectBroadcastReadinessRequest(refundLockTime)
@@ -81,7 +77,7 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
   trait Fixture {
     val peerActor, blockchain = TestProbe()
     val instance: ActorRef = system.actorOf(DefaultExchangeTransactionBroadcaster.props(
-      Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))
+      refundTx, Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))
 
     def expectPanicNotificationRequest(): Unit = {
       blockchain.expectMsg(WatchBlockchainHeight(panicBlock))
