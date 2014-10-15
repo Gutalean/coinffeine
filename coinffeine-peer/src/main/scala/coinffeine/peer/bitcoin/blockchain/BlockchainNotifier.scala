@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, Hash}
 
-private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener {
+private[blockchain] class BlockchainNotifier(initialHeight: Int) extends AbstractBlockChainListener {
   import BlockchainNotifier._
 
   private case class BlockIdentity(hash: Hash, height: Int)
@@ -34,6 +34,7 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
   private var heightSubscriptions: Set[HeightSubscription] = Set.empty
   private var outputSubscriptions: Map[TransactionOutPoint, Set[OutputListener]] =
     Map.empty.withDefaultValue(Set.empty)
+  private var currentHeight = initialHeight
 
   def watchTransactionConfirmation(tx: Hash,
                                    confirmations: Int,
@@ -42,7 +43,11 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
   }
 
   def watchHeight(height: Long, listener: HeightListener): Unit = synchronized {
-    heightSubscriptions += HeightSubscription(height, listener)
+    if (height <= currentHeight) {
+      listener.heightReached(currentHeight)
+    } else {
+      heightSubscriptions += HeightSubscription(height, listener)
+    }
   }
 
   def watchOutput(output: TransactionOutPoint, listener: OutputListener): Unit = synchronized {
@@ -51,9 +56,9 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
   }
 
   override def notifyNewBestBlock(block: StoredBlock): Unit = synchronized {
-    val currentHeight = block.getHeight
-    notifyConfirmedTransactions(currentHeight)
-    notifyHeight(currentHeight)
+    currentHeight = block.getHeight
+    notifyConfirmedTransactions()
+    notifyHeight()
   }
 
   override def reorganize(splitPoint: StoredBlock, oldBlocks: util.List[StoredBlock],
@@ -112,7 +117,7 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
                                           blockType: NewBlockType, relativityOffset: Int): Boolean =
     confirmationSubscriptions.contains(txHash)
 
-  private def notifyConfirmedTransactions(currentHeight: Int): Unit = {
+  private def notifyConfirmedTransactions(): Unit = {
     confirmationSubscriptions.foreach {
       case (txHash, ConfirmationSubscription(_, listener, reqConf, Some(foundInBlock))) =>
         val confirmations = (currentHeight - foundInBlock.height) + 1
@@ -130,7 +135,7 @@ private[blockchain] class BlockchainNotifier extends AbstractBlockChainListener 
     }
   }
 
-  private def notifyHeight(currentHeight: Int): Unit = {
+  private def notifyHeight(): Unit = {
     heightSubscriptions.foreach { case subscription @ HeightSubscription(height, listener) =>
       if (currentHeight >= height) {
         heightSubscriptions -= subscription

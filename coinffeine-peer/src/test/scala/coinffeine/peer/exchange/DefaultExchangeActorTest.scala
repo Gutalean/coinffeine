@@ -19,7 +19,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor.{Collaborators, _}
-import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor.{HandshakeFailure, HandshakeSuccess}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.protocol.{MicroPaymentChannel, MockExchangeProtocol}
@@ -52,7 +52,8 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       exchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
-        val transactionBroadcaster = transactionBroadcastActor.props
+        def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
+          transactionBroadcastActor.props
         def handshake(user: PeerInfo, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) = micropaymentChannelActor.props
@@ -69,7 +70,6 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
     def givenSuccessfulExchangeStart(): Unit = {
       peerInfoLookup.willSucceed(Exchange.PeerInfo("Account007", new KeyPair()))
       startActor()
-      transactionBroadcastActor.expectCreation()
     }
 
     def startActor(): Unit = {
@@ -81,15 +81,15 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
       handshakeActor.expectCreation()
       handshakeActor.probe.send(actor,
         HandshakeSuccess(handshakingExchange, Both.fill(dummyTx), dummyTx))
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
+      transactionBroadcastActor.expectCreation()
     }
 
     def givenHandshakeSuccessWithInvalidCounterpartCommitment(): Unit = {
       handshakeActor.expectCreation()
       val invalidCommitment = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
       val handshakeSuccess = HandshakeSuccess(handshakingExchange, invalidCommitment,dummyTx)
-      handshakeActor.probe.send(actor,handshakeSuccess)
-      transactionBroadcastActor.expectMsg(StartBroadcastHandling(dummyTx, Set(actor)))
+      handshakeActor.probe.send(actor, handshakeSuccess)
+      transactionBroadcastActor.expectCreation()
     }
 
     def givenTransactionIsCorrectlyBroadcast(destination: DepositDestination = CompletedChannel): Unit = {

@@ -14,7 +14,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   import BlockchainActor._
 
   private val wallet = new Wallet(network)
-  private val notifier = new BlockchainNotifier
+  private val notifier = new BlockchainNotifier(blockchain.getBestChainHeight)
 
   override def preStart(): Unit = {
     blockchain.addListener(notifier)
@@ -131,7 +131,8 @@ object BlockchainActor {
   case object RetrieveBlockchainHeight
 
   /** A message sent to the blockchain actor requesting to be notified when the best block in the
-    * blockchain reaches a specified height.
+    * blockchain reaches a specified height. If, when receiving this request the chain is tallest
+    * an immediate response with the current height will be sent in response.
     */
   case class WatchBlockchainHeight(height: Long)
 

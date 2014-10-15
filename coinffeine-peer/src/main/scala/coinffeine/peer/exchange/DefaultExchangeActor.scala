@@ -11,7 +11,8 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.TransactionBroadcastActor.{UnexpectedTxBroadcast => _, _}
+import coinffeine.peer.exchange.broadcast.DefaultExchangeTransactionBroadcaster
+import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster.{UnexpectedTxBroadcast => _, _}
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
@@ -25,8 +26,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
 
-  private val txBroadcaster =
-    context.actorOf(delegates.transactionBroadcaster, TransactionBroadcastActorName)
+  private var txBroadcaster: ActorRef = _
 
   override def preStart(): Unit = {
     import context.dispatcher
@@ -77,8 +77,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
         exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
-  private def spawnBroadcaster(refundTx: ImmutableTransaction): Unit = {
-    txBroadcaster ! StartBroadcastHandling(refundTx, resultListeners = Set(self))
+  private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
+    txBroadcaster =
+      context.actorOf(delegates.transactionBroadcaster(refund), TransactionBroadcastActorName)
   }
 
   private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
@@ -184,7 +185,7 @@ object DefaultExchangeActor {
     def handshake(user: Exchange.PeerInfo, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
-    def transactionBroadcaster: Props
+    def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
     def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
@@ -198,8 +199,11 @@ object DefaultExchangeActor {
       import collaborators._
 
       val delegates = new Delegates {
-        val transactionBroadcaster =
-          TransactionBroadcastActor.props(bitcoinPeer, blockchain, protocolConstants)
+        def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
+          DefaultExchangeTransactionBroadcaster.props(
+            refund,
+            DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            protocolConstants)
 
         def handshake(user: Exchange.PeerInfo, listener: ActorRef) = HandshakeActor.props(
           ExchangeToStart(exchange, user),
