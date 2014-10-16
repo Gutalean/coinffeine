@@ -20,39 +20,49 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
-    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardRefundSignatureRequest()
   }
 
-  it should "continue after a restart" in {
+  it should "remember the handshake after a restart" in {
     restartActor()
-    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardPeerHandshake()
     shouldForwardRefundSignatureRequest()
-  }
-
-  it should "sign counterpart refund while waiting for our refund" in {
     shouldSignCounterpartRefund()
   }
 
-  it should "send commitment TX to the broker after getting his refund TX signed" in {
+  it should "persist valid refund signature received" in {
     givenValidRefundSignatureResponse()
     shouldForwardCommitmentToBroker()
   }
 
-  it should "wait until the broker publishes commitments" in {
-    listener.expectNoMsg(100 millis)
+  it should "remember the refund signature after a restart" in {
+    restartActor()
+    blockchain.expectMsgType[WatchMultisigKeys]
+    shouldForwardCommitmentToBroker()
+  }
+
+  it should "persist commitment notification" in {
     givenCommitmentPublicationNotification()
     shouldAckCommitmentNotification()
-    val confirmations = protocolConstants.commitmentConfirmations
-    blockchain.expectMsgAllOf(
-      WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
-      WatchTransactionConfirmation(handshake.counterpartCommitmentTransaction.getHash, confirmations)
+    blockchain.expectMsgAllClassOf(
+      classOf[WatchTransactionConfirmation],
+      classOf[WatchTransactionConfirmation]
     )
   }
 
-  it should "wait until commitments are confirmed" in {
-    listener.expectNoMsg(100 millis)
+  it should "remember commitment notification after a restart" in {
+    restartActor()
+    shouldAckCommitmentNotification()
+    blockchain.expectMsgAllClassOf(
+      classOf[WatchMultisigKeys],
+      classOf[WatchTransactionConfirmation],
+      classOf[WatchTransactionConfirmation]
+    )
+  }
+
+  it should "persist successful result when transactions are published" in {
     val expectedCommitments = Both(
       buyer = handshake.myDeposit,
       seller = ImmutableTransaction(handshake.counterpartCommitmentTransaction)
@@ -64,12 +74,13 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
       blockchain.expectMsg(RetrieveTransaction(tx.get.getHash))
       blockchain.reply(TransactionFound(tx.get.getHash, tx))
     }
-    listener.expectMsgPF() {
-      case HandshakeSuccess(_, `expectedCommitments`, handshake.`mySignedRefund`) =>
-    }
+    listener.expectMsgType[HandshakeSuccess]
+    listener.expectTerminated(actor)
   }
 
-  it should "finally terminate himself" in {
+  it should "remember how it ended and resubmit the final notification" in {
+    startActor()
+    listener.expectMsgType[HandshakeSuccess]
     listener.expectTerminated(actor)
   }
 }
