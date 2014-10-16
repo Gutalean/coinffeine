@@ -15,4 +15,7 @@ case class RefundSignatureResponse(exchangeId: ExchangeId, refundSignature: Tran
 
   override def hashCode(): Int =
     31 * exchangeId.hashCode() + TransactionSignatureUtils.hashCode(refundSignature)
+
+  override def toString =
+    s"RefundSignatureResponse($exchangeId, ${TransactionSignatureUtils.toString(refundSignature)})"
 }
