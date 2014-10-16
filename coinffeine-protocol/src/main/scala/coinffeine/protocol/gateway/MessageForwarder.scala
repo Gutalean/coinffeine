@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.util.Timeout
 
-import coinffeine.model.network.{NodeId, PeerId}
+import coinffeine.model.network.NodeId
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
 import coinffeine.protocol.messages.PublicMessage
 

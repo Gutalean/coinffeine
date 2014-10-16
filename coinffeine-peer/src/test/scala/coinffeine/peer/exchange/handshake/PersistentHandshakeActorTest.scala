@@ -24,19 +24,23 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
     shouldForwardRefundSignatureRequest()
   }
 
-  it should "continue after a restart" in {
+  it should "remember the handshake after a restart" in {
     restartActor()
     blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
     shouldForwardPeerHandshake()
     shouldForwardRefundSignatureRequest()
-  }
-
-  it should "sign counterpart refund while waiting for our refund" in {
     shouldSignCounterpartRefund()
   }
 
-  it should "send commitment TX to the broker after getting his refund TX signed" in {
+  it should "persist valid refund signature received" in {
     givenValidRefundSignatureResponse()
+    shouldForwardCommitmentToBroker()
+  }
+
+  it should "remember the refund signature after a restart" in {
+    restartActor()
+    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    shouldForwardPeerHandshake()
     shouldForwardCommitmentToBroker()
   }
 
