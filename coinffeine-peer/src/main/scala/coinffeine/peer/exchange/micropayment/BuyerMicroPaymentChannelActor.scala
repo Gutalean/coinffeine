@@ -50,22 +50,46 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     }
   }
 
-  private def waitForNextStepSignature: Receive =
-    waitForValidSignature { signatures =>
-      updateLastSignedOffer(currentChannel.closingTransaction(signatures))
-      currentChannel.currentStep match {
-        case step: IntermediateStep =>
-          log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
-          reportProgress(step)
-          pay(step)
-          context.become(waitForPaymentResult)
+  private def waitForNextStepSignature: Receive = {
+    val behavior: Receive = {
+      case ReceiveMessage(StepSignatures(_, signaturesStep, signatures), _)
+        if signaturesStep == currentChannel.currentStep.value =>
+        currentChannel.validateCurrentTransactionSignatures(signatures) match {
+          case Success(_) =>
+            context.setReceiveTimeout(Duration.Undefined)
+            handleValidSignatures(signatures)
 
-        case _: FinalStep =>
-          log.info("Exchange {}: micropayment channel finished with success", exchange.id)
-          reportClosedChannel()
-          finishWith(ChannelSuccess(lastSignedOffer))
-      }
+          case Failure(cause) => handleInvalidSignatures(signatures, cause)
+        }
+
+      case ReceiveTimeout => previousPaymentProof.foreach(forwarding.forwardToCounterpart)
     }
+    context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
+    behavior
+  }
+
+  private def handleInvalidSignatures(signatures: Both[TransactionSignature], cause: Throwable): Unit = {
+    log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
+      exchange.id, currentChannel.currentStep, signatures)
+    finishWith(ChannelFailure(currentChannel.currentStep.value,
+      InvalidStepSignatures(currentChannel.currentStep.value, signatures, cause)))
+  }
+
+  private def handleValidSignatures(signatures: Both[TransactionSignature]): Unit = {
+    updateLastSignedOffer(currentChannel.closingTransaction(signatures))
+    currentChannel.currentStep match {
+      case step: IntermediateStep =>
+        log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
+        reportProgress(step)
+        pay(step)
+        context.become(waitForPaymentResult)
+
+      case _: FinalStep =>
+        log.info("Exchange {}: micropayment channel finished with success", exchange.id)
+        reportClosedChannel()
+        finishWith(ChannelSuccess(lastSignedOffer))
+    }
+  }
 
   private def waitForPaymentResult: Receive = {
     case proof: PaymentProof =>
@@ -80,28 +104,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     case PaymentProcessorActor.PaymentFailed(_, cause) =>
       // TODO: look more carefully to the error and consider retrying
       finishWith(ChannelFailure(currentChannel.currentStep.value, cause))
-  }
-
-  private def waitForValidSignature(body: Both[TransactionSignature] => Unit): Receive = {
-    val behavior: Receive = {
-      case ReceiveMessage(StepSignatures(_, signaturesStep, signatures), _)
-        if signaturesStep == currentChannel.currentStep.value =>
-        currentChannel.validateCurrentTransactionSignatures(signatures) match {
-          case Success(_) =>
-            context.setReceiveTimeout(Duration.Undefined)
-            body(signatures)
-          case Failure(cause) =>
-            log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
-              exchange.id, currentChannel.currentStep, signatures)
-            finishWith(ChannelFailure(currentChannel.currentStep.value,
-              InvalidStepSignatures(currentChannel.currentStep.value, signatures, cause)))
-        }
-
-      case ReceiveTimeout =>
-        previousPaymentProof.foreach(forwarding.forwardToCounterpart)
-    }
-    context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
-    behavior
   }
 
   private def finishWith(result: ExchangeResult): Unit = {
