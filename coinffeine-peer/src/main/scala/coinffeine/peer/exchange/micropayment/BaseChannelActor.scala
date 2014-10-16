@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange.micropayment
 
-import akka.actor.Actor
+import akka.persistence.PersistentActor
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.RunningExchange
@@ -10,7 +10,9 @@ import coinffeine.peer.exchange.util.MessageForwarding
 
 private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
     exchange: RunningExchange[C],
-    collaborators: MicroPaymentChannelActor.Collaborators) extends Actor {
+    collaborators: MicroPaymentChannelActor.Collaborators) extends PersistentActor {
+
+  override def persistenceId: String = s"micropayment-channel-${exchange.id.value}"
 
   protected val forwarding = new MessageForwarding(collaborators.gateway, exchange.counterpartId)
 

@@ -36,9 +36,12 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   override def preStart(): Unit = {
     subscribeToMessages()
     log.info(s"Exchange {}: buyer micropayment channel started", exchange.id)
+    super.preStart()
   }
 
-  override def receive: Receive = waitForNextStepSignature
+  override def receiveRecover: Receive = Map.empty
+
+  override def receiveCommand: Receive = waitForNextStepSignature
 
   private def subscribeToMessages(): Unit = {
     val counterpart = exchange.counterpartId

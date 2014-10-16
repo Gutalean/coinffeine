@@ -35,9 +35,11 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   override def preStart(): Unit = {
     log.info("Exchange {}: seller micropayment channel started", exchange.id)
     new StepBehavior(initialChannel).start()
+    super.preStart()
   }
 
-  override def receive: Receive = Map.empty
+  override def receiveRecover: Receive = Map.empty
+  override def receiveCommand: Receive = Map.empty
 
   private class StepBehavior(channel: MicroPaymentChannel[C]) {
 
