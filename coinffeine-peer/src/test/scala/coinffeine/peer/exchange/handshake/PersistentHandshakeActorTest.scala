@@ -40,7 +40,6 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
   it should "remember the refund signature after a restart" in {
     restartActor()
     blockchain.expectMsgType[WatchMultisigKeys]
-    shouldForwardPeerHandshake()
     shouldForwardCommitmentToBroker()
   }
 
@@ -55,7 +54,6 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
 
   it should "remember commitment notification after a restart" in {
     restartActor()
-    shouldForwardPeerHandshake()
     shouldAckCommitmentNotification()
     blockchain.expectMsgAllClassOf(
       classOf[WatchMultisigKeys],
@@ -82,7 +80,6 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
 
   it should "remember how it ended and resubmit the final notification" in {
     startActor()
-    shouldForwardPeerHandshake()
     listener.expectMsgType[HandshakeSuccess]
     listener.expectTerminated(actor)
   }

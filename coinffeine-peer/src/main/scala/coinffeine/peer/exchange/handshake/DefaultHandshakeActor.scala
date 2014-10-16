@@ -49,7 +49,6 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   override def preStart(): Unit = {
     subscribeToMessages()
-    sendPeerHandshakeUntilFirstSignatureRequest()
     scheduleSignatureTimeout()
     log.info("Handshake {}: Handshake started", exchange.info.id)
     super.preStart()
@@ -80,6 +79,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   override def receiveCommand = abortOnSignatureTimeout orElse abortOnBrokerNotification orElse {
+
+    case ResumeHandshake =>
+      sendPeerHandshakeUntilFirstSignatureRequest()
 
     case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
       val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
@@ -164,7 +166,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     val receiveRefundSignature: Receive = {
       case ResumeHandshake =>
         log.info("Handshake {}: resumed after handshake start", exchange.info.id)
+        sendPeerHandshakeUntilFirstSignatureRequest()
         requestRefundSignature()
+
       case signedRefund: ImmutableTransaction =>
         persist(RefundCreated(signedRefund))(onRefundCreated)
     }
