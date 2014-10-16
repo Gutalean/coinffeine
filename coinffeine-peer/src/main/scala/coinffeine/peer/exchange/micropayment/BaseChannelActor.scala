@@ -2,9 +2,10 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.actor.Actor
 
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.Step
 import coinffeine.peer.exchange.util.MessageForwarding
 
 private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
@@ -13,11 +14,9 @@ private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
 
   protected val forwarding = new MessageForwarding(collaborators.gateway, exchange.counterpartId)
 
-  protected def reportProgress(signatures: Int): Unit = {
-    val progressUpdate = exchange.increaseProgress(
-      if (signatures == 0) Both.fill(Bitcoin.Zero)
-      else exchange.amounts.steps(signatures - 1).progress.bitcoinsTransferred
-    )
+  protected def reportProgress(step: Step): Unit = {
+    val progress = step.select(exchange.amounts).progress
+    val progressUpdate = exchange.increaseProgress(progress.bitcoinsTransferred)
     collaborators.resultListeners.foreach { _ ! ExchangeUpdate(progressUpdate) }
   }
 }
