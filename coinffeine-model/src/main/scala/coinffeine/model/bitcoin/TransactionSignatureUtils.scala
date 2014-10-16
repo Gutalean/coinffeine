@@ -12,4 +12,8 @@ object TransactionSignatureUtils {
   def hashCode(s: TransactionSignature): Int = {
     s.encodeToBitcoin().foldLeft(0) { (accum, byte) =>  31 * accum + byte }
   }
+
+  def toString(signature: TransactionSignature): String = {
+    "Signature(r=%s, s=%s, flags=%X".format(signature.r, signature.s, signature.sighashFlags)
+  }
 }

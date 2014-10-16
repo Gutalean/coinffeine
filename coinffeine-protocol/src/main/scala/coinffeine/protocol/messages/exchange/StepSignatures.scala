@@ -27,4 +27,8 @@ case class StepSignatures(exchangeId: ExchangeId, step: Int, signatures: Both[Tr
       signatures.toSeq.map(TransactionSignatureUtils.hashCode)
     state.foldLeft(0)((a, b) => 31 * a + b)
   }
+
+  override def toString = "StepSignatures(%s, step = %d, buyerSig = %s, sellerSig = %s)"
+    .format(exchangeId, step, TransactionSignatureUtils.toString(signatures.buyer),
+      TransactionSignatureUtils.toString(signatures.seller))
 }
