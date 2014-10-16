@@ -64,8 +64,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
     )
   }
 
-  it should "wait until commitments are confirmed" in {
-    listener.expectNoMsg(100 millis)
+  it should "persist successful result when transactions are published" in {
     val expectedCommitments = Both(
       buyer = handshake.myDeposit,
       seller = ImmutableTransaction(handshake.counterpartCommitmentTransaction)
@@ -77,12 +76,14 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
       blockchain.expectMsg(RetrieveTransaction(tx.get.getHash))
       blockchain.reply(TransactionFound(tx.get.getHash, tx))
     }
-    listener.expectMsgPF() {
-      case HandshakeSuccess(_, `expectedCommitments`, handshake.`mySignedRefund`) =>
-    }
+    listener.expectMsgType[HandshakeSuccess]
+    listener.expectTerminated(actor)
   }
 
-  it should "finally terminate himself" in {
+  it should "remember how it ended and resubmit the final notification" in {
+    startActor()
+    shouldForwardPeerHandshake()
+    listener.expectMsgType[HandshakeSuccess]
     listener.expectTerminated(actor)
   }
 }

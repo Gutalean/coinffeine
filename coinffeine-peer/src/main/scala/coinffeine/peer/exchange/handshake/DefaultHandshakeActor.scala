@@ -75,6 +75,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case event: HandshakeStarted[C] => onHandshakeStarted(event)
     case event: RefundCreated => onRefundCreated(event)
     case event: NotifiedCommitments => onNotifiedCommitments(event)
+    case event: FinishedWith => onFinishedWith(event)
     case RecoveryCompleted => self ! ResumeHandshake
   }
 
@@ -110,9 +111,12 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   private def onNotifiedCommitments(event: NotifiedCommitments): Unit = {
     context.stop(counterpartRefundSigner)
-    log.info("Handshake {}: The broker published {}, waiting for confirmations",
-      exchange.info.id, event.commitments)
     context.become(waitForConfirmations(event.commitments))
+  }
+
+  private def onFinishedWith(event: FinishedWith): Unit = {
+    collaborators.listener ! event.result
+    context.stop(self)
   }
 
   private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
@@ -204,6 +208,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       case ResumeHandshake =>
         log.info("Handshake {}: resumed after commitment notification", exchange.info.id)
         acknowledgeCommitmentNotification()
+        watchCommitmentConfirmations(commitmentIds)
 
       case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
         val stillPending = pendingConfirmation - tx
@@ -234,10 +239,18 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         handshake.exchange, cause, handshake.myDeposit, refund))
     }
 
-    commitmentIds.toSeq.foreach { txId =>
-      collaborators.blockchain ! WatchTransactionConfirmation(txId, commitmentConfirmations)
+    if (recoveryFinished) {
+      watchCommitmentConfirmations(commitmentIds)
     }
     waitForPendingConfirmations(commitmentIds.toSet)
+  }
+
+  private def watchCommitmentConfirmations(commitmentIds: Both[Hash]): Unit = {
+    log.info("Handshake {}: The broker published {}, waiting for confirmations",
+      exchange.info.id, commitmentIds)
+    commitmentIds.foreach { txId =>
+      collaborators.blockchain ! WatchTransactionConfirmation(txId, commitmentConfirmations)
+    }
   }
 
   private def acknowledgeCommitmentNotification(): Unit = {
@@ -294,8 +307,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   private def finishWith(result: HandshakeResult): Unit = {
-    collaborators.listener ! result
-    context.stop(self)
+    persist(FinishedWith(result))(onFinishedWith)
   }
 }
 
@@ -327,4 +339,5 @@ object DefaultHandshakeActor {
   private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C])
   private case class RefundCreated(refund: ImmutableTransaction)
   private case class NotifiedCommitments(commitments: Both[Hash])
+  private case class FinishedWith(result: HandshakeResult)
 }
