@@ -20,13 +20,13 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
     shouldForwardPeerHandshake()
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
-    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardRefundSignatureRequest()
   }
 
   it should "remember the handshake after a restart" in {
     restartActor()
-    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardPeerHandshake()
     shouldForwardRefundSignatureRequest()
     shouldSignCounterpartRefund()
@@ -39,19 +39,28 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
 
   it should "remember the refund signature after a restart" in {
     restartActor()
-    blockchain.expectMsg(WatchMultisigKeys(handshake.exchange.requiredSignatures.toSeq))
+    blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardPeerHandshake()
     shouldForwardCommitmentToBroker()
   }
 
-  it should "wait until the broker publishes commitments" in {
-    listener.expectNoMsg(100 millis)
+  it should "persist commitment notification" in {
     givenCommitmentPublicationNotification()
     shouldAckCommitmentNotification()
-    val confirmations = protocolConstants.commitmentConfirmations
-    blockchain.expectMsgAllOf(
-      WatchTransactionConfirmation(handshake.myDeposit.get.getHash, confirmations),
-      WatchTransactionConfirmation(handshake.counterpartCommitmentTransaction.getHash, confirmations)
+    blockchain.expectMsgAllClassOf(
+      classOf[WatchTransactionConfirmation],
+      classOf[WatchTransactionConfirmation]
+    )
+  }
+
+  it should "remember commitment notification after a restart" in {
+    restartActor()
+    shouldForwardPeerHandshake()
+    shouldAckCommitmentNotification()
+    blockchain.expectMsgAllClassOf(
+      classOf[WatchMultisigKeys],
+      classOf[WatchTransactionConfirmation],
+      classOf[WatchTransactionConfirmation]
     )
   }
 

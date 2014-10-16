@@ -42,6 +42,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     context.actorOf(CounterpartRefundSigner.props(collaborators.gateway, exchange.info))
 
   private var handshake: Handshake[C] = _
+  private var refund: ImmutableTransaction = _
 
   /** Self-message that aborts the handshake. */
   private case object RequestSignatureTimeout
@@ -73,6 +74,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   override def receiveRecover: Receive = {
     case event: HandshakeStarted[C] => onHandshakeStarted(event)
     case event: RefundCreated => onRefundCreated(event)
+    case event: NotifiedCommitments => onNotifiedCommitments(event)
     case RecoveryCompleted => self ! ResumeHandshake
   }
 
@@ -101,8 +103,16 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   private def onRefundCreated(event: RefundCreated): Unit = {
+    refund = event.refund
     log.info("Handshake {}: Got a valid refund TX signature", exchange.info.id)
-    context.become(waitForPublication(event.refund))
+    context.become(waitForPublication)
+  }
+
+  private def onNotifiedCommitments(event: NotifiedCommitments): Unit = {
+    context.stop(counterpartRefundSigner)
+    log.info("Handshake {}: The broker published {}, waiting for confirmations",
+      exchange.info.id, event.commitments)
+    context.become(waitForConfirmations(event.commitments))
   }
 
   private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
@@ -149,7 +159,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
     val receiveRefundSignature: Receive = {
       case ResumeHandshake =>
-        log.info("Handshake {}: resumed at the point refund signature is requested")
+        log.info("Handshake {}: resumed after handshake start", exchange.info.id)
         requestRefundSignature()
       case signedRefund: ImmutableTransaction =>
         persist(RefundCreated(signedRefund))(onRefundCreated)
@@ -158,8 +168,27 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     receiveRefundSignature orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
   }
 
-  private def waitForPublication(refund: ImmutableTransaction) = {
+  private def waitForPublication = {
+    if (recoveryFinished) {
+      forwardMyCommitment()
+    }
 
+    val getNotifiedByBroker: Receive = {
+      case ResumeHandshake =>
+        log.info("Handshake {}: resumed after having my refund signed", exchange.info.id)
+        forwardMyCommitment()
+
+      case CommitmentNotification(_, bothCommitments) =>
+        persist(NotifiedCommitments(bothCommitments)){ event =>
+          onNotifiedCommitments(event)
+          acknowledgeCommitmentNotification()
+        }
+    }
+
+    getNotifiedByBroker orElse abortOnBrokerNotification
+  }
+
+  private def forwardMyCommitment(): Unit = {
     forwarding.forward(
       msg = ExchangeCommitment(exchange.info.id, exchange.user.bitcoinKey.publicKey, handshake.myDeposit),
       destination = BrokerId,
@@ -167,28 +196,20 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     ) {
       case commitments: CommitmentNotification => commitments
     }
-
-    val getNotifiedByBroker: Receive = {
-      case CommitmentNotification(_, bothCommitments) =>
-        context.stop(counterpartRefundSigner)
-        log.info("Handshake {}: The broker published {}, waiting for confirmations",
-          exchange.info.id, bothCommitments)
-        collaborators.gateway ! ForwardMessage(CommitmentNotificationAck(exchange.info.id), BrokerId)
-        context.become(waitForConfirmations(bothCommitments, refund))
-    }
-
-    getNotifiedByBroker orElse abortOnBrokerNotification
   }
 
-  private def waitForConfirmations(commitmentIds: Both[Hash],
-                                   refundTx: ImmutableTransaction): Receive = {
+  private def waitForConfirmations(commitmentIds: Both[Hash]): Receive = {
 
     def waitForPendingConfirmations(pendingConfirmation: Set[Hash]): Receive = {
+      case ResumeHandshake =>
+        log.info("Handshake {}: resumed after commitment notification", exchange.info.id)
+        acknowledgeCommitmentNotification()
+
       case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
         val stillPending = pendingConfirmation - tx
         if (stillPending.isEmpty) {
           retrieveCommitmentTransactions(commitmentIds).map { commitmentTxs =>
-            HandshakeSuccess(handshake.exchange, commitmentTxs, refundTx)
+            HandshakeSuccess(handshake.exchange, commitmentTxs, refund)
           }.pipeTo(self)
         } else {
           context.become(waitForPendingConfirmations(stillPending))
@@ -199,24 +220,28 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
         finishWith(HandshakeFailureWithCommitment(
-          handshake.exchange, cause, handshake.myDeposit, refundTx))
+          handshake.exchange, cause, handshake.myDeposit, refund))
 
       case CommitmentNotification(_, bothCommitments) =>
         log.info("Handshake {}: commitment notification was received again; " +
           "seems like last ack was missed, retransmitting it to the broker",
           exchange.info.id)
-        collaborators.gateway ! ForwardMessage(CommitmentNotificationAck(exchange.info.id), BrokerId)
+        acknowledgeCommitmentNotification()
 
       case result: HandshakeSuccess => finishWith(result)
 
       case Status.Failure(cause) => finishWith(HandshakeFailureWithCommitment(
-        handshake.exchange, cause, handshake.myDeposit, refundTx))
+        handshake.exchange, cause, handshake.myDeposit, refund))
     }
 
     commitmentIds.toSeq.foreach { txId =>
       collaborators.blockchain ! WatchTransactionConfirmation(txId, commitmentConfirmations)
     }
     waitForPendingConfirmations(commitmentIds.toSet)
+  }
+
+  private def acknowledgeCommitmentNotification(): Unit = {
+    collaborators.gateway ! ForwardMessage(CommitmentNotificationAck(exchange.info.id), BrokerId)
   }
 
   private def retrieveCommitmentTransactions(
@@ -301,4 +326,5 @@ object DefaultHandshakeActor {
   private case object ResumeHandshake
   private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C])
   private case class RefundCreated(refund: ImmutableTransaction)
+  private case class NotifiedCommitments(commitments: Both[Hash])
 }
