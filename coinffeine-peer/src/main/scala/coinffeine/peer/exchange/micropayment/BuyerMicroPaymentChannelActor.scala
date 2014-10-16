@@ -29,6 +29,8 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
 
   private val exchange = initialChannel.exchange
+  private var currentChannel = initialChannel
+  private var previousPaymentProof: Option[PaymentProof] = None
   private var lastSignedOffer: Option[ImmutableTransaction] = None
 
   override def preStart(): Unit = {
@@ -36,7 +38,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     log.info(s"Exchange {}: buyer micropayment channel started", exchange.id)
   }
 
-  override def receive: Receive = waitForNextStepSignature(initialChannel)
+  override def receive: Receive = waitForNextStepSignature
 
   private def subscribeToMessages(): Unit = {
     val counterpart = exchange.counterpartId
@@ -45,16 +47,15 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     }
   }
 
-  private def waitForNextStepSignature(channel: MicroPaymentChannel[C],
-                                       previousPaymentProof: Option[PaymentProof] = None): Receive =
-    waitForValidSignature(channel, previousPaymentProof) { signatures =>
-      updateLastSignedOffer(channel.closingTransaction(signatures))
-      channel.currentStep match {
+  private def waitForNextStepSignature: Receive =
+    waitForValidSignature { signatures =>
+      updateLastSignedOffer(currentChannel.closingTransaction(signatures))
+      currentChannel.currentStep match {
         case step: IntermediateStep =>
           log.debug("Exchange {}: received valid signature at {}, paying", exchange.id, step)
           reportProgress(step)
           pay(step)
-          context.become(waitForPaymentResult(channel))
+          context.become(waitForPaymentResult)
 
         case _: FinalStep =>
           log.info("Exchange {}: micropayment channel finished with success", exchange.id)
@@ -63,33 +64,34 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       }
     }
 
-  private def waitForPaymentResult(channel: MicroPaymentChannel[C]): Receive = {
+  private def waitForPaymentResult: Receive = {
     case proof: PaymentProof =>
-      reportProgress(channel.currentStep)
-      log.debug("Exchange {}: payment {} for step {} done",
-        exchange.id, proof.paymentId, channel.currentStep.value)
+      previousPaymentProof = Some(proof)
+      reportProgress(currentChannel.currentStep)
+      log.debug("Exchange {}: payment {} for {} done",
+        exchange.id, proof.paymentId, currentChannel.currentStep)
       forwarding.forwardToCounterpart(proof)
-      context.become(waitForNextStepSignature(channel.nextStep, Some(proof)))
+      currentChannel = currentChannel.nextStep
+      context.become(waitForNextStepSignature)
 
     case PaymentProcessorActor.PaymentFailed(_, cause) =>
       // TODO: look more carefully to the error and consider retrying
-      finishWith(ChannelFailure(channel.currentStep.value, cause))
+      finishWith(ChannelFailure(currentChannel.currentStep.value, cause))
   }
 
-  private def waitForValidSignature(channel: MicroPaymentChannel[C],
-                                    previousPaymentProof: Option[PaymentProof])
-                                   (body: Both[TransactionSignature] => Unit): Receive = {
+  private def waitForValidSignature(body: Both[TransactionSignature] => Unit): Receive = {
     val behavior: Receive = {
-      case ReceiveMessage(StepSignatures(_, channel.currentStep.`value`, signatures), _) =>
-        channel.validateCurrentTransactionSignatures(signatures) match {
+      case ReceiveMessage(StepSignatures(_, signaturesStep, signatures), _)
+        if signaturesStep == currentChannel.currentStep.value =>
+        currentChannel.validateCurrentTransactionSignatures(signatures) match {
           case Success(_) =>
             context.setReceiveTimeout(Duration.Undefined)
             body(signatures)
           case Failure(cause) =>
             log.error(cause, s"Exchange {}: received invalid signature for {}: ({})",
-              exchange.id, channel.currentStep, signatures)
-            finishWith(ChannelFailure(channel.currentStep.value,
-              InvalidStepSignatures(channel.currentStep.value, signatures, cause)))
+              exchange.id, currentChannel.currentStep, signatures)
+            finishWith(ChannelFailure(currentChannel.currentStep.value,
+              InvalidStepSignatures(currentChannel.currentStep.value, signatures, cause)))
         }
 
       case ReceiveTimeout =>
