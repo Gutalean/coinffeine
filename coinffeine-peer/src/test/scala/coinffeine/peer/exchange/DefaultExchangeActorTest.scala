@@ -133,7 +133,7 @@ class DefaultExchangeActorTest extends CoinffeineClientTest("buyerExchange")
 
   it should "forward progress reports" in new Fixture {
     givenSuccessfulExchangeStart()
-    val progressUpdate = ExchangeUpdate(runningExchange.increaseProgress(Both.fill(1.BTC)))
+    val progressUpdate = ExchangeUpdate(runningExchange.completeStep(1))
     givenHandshakeSuccess()
     micropaymentChannelActor.probe.send(actor, progressUpdate)
     listener.expectMsg(progressUpdate)

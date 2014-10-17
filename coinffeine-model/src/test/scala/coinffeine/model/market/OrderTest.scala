@@ -16,22 +16,22 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   }
 
   it must "report progress with one incomplete exchange" in {
-    val order = Order(Bid, 10.BTC, Price(10.EUR)).withExchange(createExchangeInProgress(0.5))
+    val order = Order(Bid, 10.BTC, Price(10.EUR)).withExchange(createExchangeInProgress(5))
     order.progress shouldBe 0.5
   }
 
   it must "report progress with one incomplete exchange that overwrites itself" in {
-    val exchange = createExchangeInProgress(0.5)
+    val exchange = createExchangeInProgress(5)
     val order = Order(OrderId.random(), Bid, 10.BTC, Price(10.EUR))
       .withExchange(exchange)
-      .withExchange(exchange.increaseProgress(Both.fill(1.BTC)))
+      .withExchange(exchange.completeStep(6))
     order.progress shouldBe 0.6
   }
 
   it must "report progress with a mixture of completed and incomplete exchanges" in {
     val order = Order(Bid, 20.BTC, Price(10.EUR))
       .withExchange(createSuccessfulExchange())
-      .withExchange(createExchangeInProgress(0.5))
+      .withExchange(createExchangeInProgress(5))
     order.progress shouldBe 0.75
   }
 
@@ -50,18 +50,17 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   it must "consider in-progress exchange amounts" in {
     val order = Order(Bid, 100.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())
-      .withExchange(createExchangeInProgress(0.5))
+      .withExchange(createExchangeInProgress(5))
     order.amounts shouldBe Order.Amounts(exchanged = 10.BTC, exchanging = 10.BTC, pending = 80.BTC)
   }
 
-  private def createSuccessfulExchange() = createExchangeInProgress(1.0).complete
+  private def createSuccessfulExchange() = createExchangeInProgress(10).complete
 
-  private def createExchangeInProgress(completion: Double) = {
-    val amount = Bitcoin.closestAmount(10 * completion)
+  private def createExchangeInProgress(stepsCompleted: Int) = {
     createRandomExchange()
       .startHandshaking(participants.buyer, participants.seller)
       .startExchanging(dummyDeposits)
-      .increaseProgress(Both(buyer = amount, seller = amount + 0.0003.BTC))
+      .completeStep(stepsCompleted)
   }
 
   private def createRandomExchange(): NonStartedExchange[Euro.type] = {
