@@ -1,17 +1,16 @@
 package coinffeine.peer.exchange.micropayment
 
 import scala.concurrent.Future
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
 
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
-import coinffeine.peer.exchange.micropayment.SellerMicroPaymentChannelActor.PaymentValidationResult
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
-import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
 import coinffeine.protocol.gateway.MessageForwarder
@@ -31,7 +30,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
   private val exchange = initialChannel.exchange
   private val forwarderFactory = new MessageForwarder.Factory(collaborators.gateway, context)
-  private var channel = initialChannel
+  private val seller = new SellerChannel(initialChannel)
 
   override def preStart(): Unit = {
     log.info("Exchange {}: seller micropayment channel started", exchange.id)
@@ -42,14 +41,12 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   override def receiveCommand: Receive = nextStep()
 
   private def nextStep(): Receive = {
-    channel.currentStep match {
-      case _: FinalStep =>
-        forwardSignaturesExpectingClose()
-        waitForChannelClosed
-
-      case intermediateStep: IntermediateStep =>
-        forwardSignaturesExpectingPaymentProof()
-        waitForPaymentProof(intermediateStep)
+    if (seller.step.isFinal) {
+      forwardSignaturesExpectingClose()
+      waitForChannelClosed
+    } else {
+      forwardSignaturesExpectingPaymentProof()
+      waitForPaymentProof
     }
   }
 
@@ -57,8 +54,8 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     case MicropaymentChannelClosed(exchange.`id`) => finishExchange()
   }
 
-    val step = channel.currentStep.value
   private def forwardSignaturesExpectingPaymentProof(): Unit = {
+    val step = seller.step.value
     forwardSignatures("payment proof") {
       case proof @ PaymentProof(_, _, `step`) => proof
     }
@@ -73,45 +70,47 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   private def forwardSignatures[A](expectingHint: String)
                                   (confirmation: PartialFunction[PublicMessage, A]): Unit = {
     log.error("Exchange {}: forwarding signatures for {} expecting {}",
-      exchange.id, channel.currentStep, expectingHint)
-    notifyCompletedStep(channel.currentStep)
+      exchange.id, seller.step, expectingHint)
+    notifyCompletedStep(seller.step)
     forwarderFactory.forward(
-      msg = StepSignatures(
-        exchange.id, channel.currentStep.value, channel.signCurrentTransaction),
+      msg = seller.stepSignatures,
       destination = exchange.counterpartId,
       retry = MessageForwarder.RetrySettings.continuouslyEvery(
         constants.microPaymentChannelResubmitTimeout)
     )(confirmation)
   }
 
-  private def waitForPaymentProof(step: IntermediateStep): Receive = {
-    case PaymentProof(_, paymentId, step.value) =>
-      log.error("Received payment proof with ID {} for step {}", paymentId, step.value)
-      validatePayment(step, paymentId).onComplete { tryResult =>
-        self ! PaymentValidationResult(tryResult)
-      }
-      context.become(waitForPaymentValidation(paymentId, step))
+  private def waitForPaymentProof: Receive = {
+    case proof: PaymentProof if seller.relevantPaymentProof(proof)  =>
+      log.info("Received {} for step {}", proof, seller.step)
+      findPayment(proof.paymentId)
+      context.become(waitForPaymentValidation(proof.paymentId))
 
-    case PaymentProof(_, paymentId, otherStep) =>
-      log.warning("Received a payment with ID {} for an unexpected step {}: ignored",
-        paymentId, otherStep)
+    case unexpectedProof: PaymentProof =>
+      log.warning("Received unexpected payment proof: {}", unexpectedProof)
   }
 
-  private def waitForPaymentValidation(paymentId: String, step: IntermediateStep): Receive = {
-    case PaymentValidationResult(Failure(cause)) =>
-      unstashAll()
-      log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
-        exchange.id, channel.currentStep, paymentId)
+  private def waitForPaymentValidation(paymentId: String): Receive = {
+
+    case payment @ Payment(_, _, _, _, _, _, _) =>
+      seller.validatePayment(payment) match {
+        case Success(_) =>
+          log.info("Exchange {}: valid payment proof in {}", exchange.id, seller.step)
+          seller.stepPayed()
+          context.become(nextStep())
+
+        case Failure(cause) =>
+          log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
+            exchange.id, seller.step, paymentId)
+          forwardSignaturesExpectingPaymentProof()
+          context.become(waitForPaymentProof)
+      }
+
+    case Status.Failure(cause) =>
+      log.error(cause, "Exchange {}: couldn't find payment {} for {}",
+        exchange.id, paymentId, seller.step)
       forwardSignaturesExpectingPaymentProof()
-      context.become(waitForPaymentProof(step))
-
-    case PaymentValidationResult(_) =>
-      unstashAll()
-      log.error("Exchange {}: valid payment proof in {}", exchange.id, channel.currentStep)
-      channel = channel.nextStep
-      context.become(nextStep())
-
-    case _ => stash()
+      context.become(waitForPaymentProof)
   }
 
   private def finishWith(result: Any): Unit = {
@@ -124,22 +123,12 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     finishWith(ChannelSuccess(None))
   }
 
-  private def validatePayment(step: IntermediateStep, paymentId: String): Future[Unit] = {
+  private def findPayment(paymentId: String): Future[Payment[_ <: FiatCurrency]] = {
     implicit val timeout = PaymentProcessorActor.RequestTimeout
-    for {
+    (for {
       PaymentFound(payment) <- collaborators.paymentProcessor
         .ask(PaymentProcessorActor.FindPayment(paymentId)).mapTo[PaymentFound]
-    } yield {
-      require(payment.amount == step.select(exchange.amounts).fiatAmount,
-        s"Payment $step amount does not match expected amount")
-      require(payment.receiverId == exchange.participants.seller.paymentProcessorAccount,
-        s"Payment $step is not being sent to the seller")
-      require(payment.senderId == exchange.participants.buyer.paymentProcessorAccount,
-        s"Payment $step is not coming from the buyer")
-      require(payment.description == PaymentDescription(exchange.id, step),
-        s"Payment $step does not have the required description")
-      require(payment.completed, s"Payment $step is not complete")
-    }
+    } yield payment).pipeTo(self)
   }
 }
 
