@@ -16,9 +16,13 @@ private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
 
   protected val forwarding = new MessageForwarding(collaborators.gateway, exchange.counterpartId)
 
-  protected def reportProgress(step: Step): Unit = {
+  protected def notifyCompletedStep(step: Step): Unit = {
     val progress = step.select(exchange.amounts).progress
     val progressUpdate = exchange.increaseProgress(progress.bitcoinsTransferred)
-    collaborators.resultListeners.foreach { _ ! ExchangeUpdate(progressUpdate) }
+    notifyListeners(ExchangeUpdate(progressUpdate))
+  }
+
+  protected def notifyListeners(message: Any): Unit = {
+    collaborators.resultListeners.foreach { _ ! message }
   }
 }

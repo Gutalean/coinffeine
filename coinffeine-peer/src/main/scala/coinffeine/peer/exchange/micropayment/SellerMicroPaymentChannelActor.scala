@@ -75,7 +75,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
                                     (confirmation: PartialFunction[PublicMessage, A]): Unit = {
       log.error("Exchange {}: forwarding signatures for {} expecting {}",
         exchange.id, channel.currentStep, expectingHint)
-      reportProgress(channel.currentStep)
+      notifyCompletedStep(channel.currentStep)
       forwarderFactory.forward(
         msg = StepSignatures(
           exchange.id, channel.currentStep.value, channel.signCurrentTransaction),

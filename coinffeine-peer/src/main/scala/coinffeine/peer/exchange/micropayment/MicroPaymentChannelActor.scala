@@ -34,7 +34,4 @@ object MicroPaymentChannelActor {
   case class LastBroadcastableOffer(transaction: ImmutableTransaction)
 
   private[micropayment] case object StepSignatureTimeout
-
-  case class InvalidStepSignatures(step: Int, sigs: Both[TransactionSignature], cause: Throwable)
-    extends RuntimeException(s"Received an invalid step signature for $step. Received: $sigs", cause)
 }

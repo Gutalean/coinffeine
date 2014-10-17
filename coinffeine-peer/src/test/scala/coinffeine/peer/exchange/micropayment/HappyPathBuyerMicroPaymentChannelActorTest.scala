@@ -32,7 +32,6 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
         Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
           completed = true)
       ))
-      expectProgress(signatures = i)
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
       gateway.expectNoMsg(100.millis.dilated)
     }
@@ -47,6 +46,7 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
     actor ! fromCounterpart(
       StepSignatures(exchange.id, exchange.amounts.breakdown.totalSteps, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
+    expectProgress(signatures = 10)
     listener.expectMsg(ChannelSuccess(Some(expectedLastOffer)))
   }
 }
