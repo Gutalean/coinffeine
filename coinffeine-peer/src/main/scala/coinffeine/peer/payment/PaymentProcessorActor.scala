@@ -76,14 +76,16 @@ object PaymentProcessorActor {
   /** A message sent to the payment processor in order to find a payment. */
   case class FindPayment(payment: PaymentId)
 
+  sealed trait FindPaymentResponse
+
   /** A message sent by the payment processor to notify a found payment. */
-  case class PaymentFound(payment: Payment[_ <: FiatCurrency])
+  case class PaymentFound(payment: Payment[_ <: FiatCurrency]) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify a not found payment. */
-  case class PaymentNotFound(payment: PaymentId)
+  case class PaymentNotFound(payment: PaymentId) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify an error while finding a payment. */
-  case class FindPaymentFailed(payment: PaymentId, error: Throwable)
+  case class FindPaymentFailed(payment: PaymentId, error: Throwable) extends FindPaymentResponse
 
   /** A message sent to the payment processor to retrieve the current balance
     * in the given currency.
