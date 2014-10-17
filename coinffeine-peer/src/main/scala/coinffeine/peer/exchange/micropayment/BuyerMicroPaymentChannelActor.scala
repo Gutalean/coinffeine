@@ -61,8 +61,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
   private def waitingForSignatures: Receive = {
     val behavior: Receive = {
-      case ResumeMicroPaymentChannel =>
-
       case ReceiveMessage(stepSignatures: StepSignatures, _) if buyer.shouldAcceptSignatures(stepSignatures) =>
         context.setReceiveTimeout(Duration.Undefined)
         persist(AcceptedSignatures(stepSignatures.signatures))(onAcceptedSignatures)

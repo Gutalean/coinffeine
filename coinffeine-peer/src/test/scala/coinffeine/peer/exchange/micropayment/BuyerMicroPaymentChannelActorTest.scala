@@ -25,19 +25,17 @@ abstract class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("b
       initialChannel, exchange.amounts.breakdown.totalSteps)(_.nextStep).last
     lastChannel.closingTransaction(signatures)
   }
+  private val props = BuyerMicroPaymentChannelActor.props(
+    exchangeProtocol.createMicroPaymentChannel(runningExchange),
+    protocolConstants,
+    MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
+  )
   var actor: ActorRef = _
 
   startActor()
 
   def startActor(): Unit = {
-    actor = system.actorOf(
-      BuyerMicroPaymentChannelActor.props(
-        exchangeProtocol.createMicroPaymentChannel(runningExchange),
-        protocolConstants,
-        MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
-      ),
-      "buyer-exchange-actor"
-    )
+    actor = system.actorOf(props)
     listener.watch(actor)
   }
 
