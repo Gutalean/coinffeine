@@ -1,23 +1,28 @@
 package coinffeine.peer.exchange.micropayment
 
-import akka.actor.Actor
+import akka.persistence.PersistentActor
 
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.Step
 import coinffeine.peer.exchange.util.MessageForwarding
 
 private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
     exchange: RunningExchange[C],
-    collaborators: MicroPaymentChannelActor.Collaborators) extends Actor {
+    collaborators: MicroPaymentChannelActor.Collaborators) extends PersistentActor {
+
+  override def persistenceId: String = s"micropayment-channel-${exchange.id.value}"
 
   protected val forwarding = new MessageForwarding(collaborators.gateway, exchange.counterpartId)
 
-  protected def reportProgress(signatures: Int): Unit = {
-    val progressUpdate = exchange.increaseProgress(
-      if (signatures == 0) Both.fill(Bitcoin.Zero)
-      else exchange.amounts.steps(signatures - 1).progress.bitcoinsTransferred
-    )
-    collaborators.resultListeners.foreach { _ ! ExchangeUpdate(progressUpdate) }
+  protected def notifyCompletedStep(step: Step): Unit = {
+    val progress = step.select(exchange.amounts).progress
+    val progressUpdate = exchange.increaseProgress(progress.bitcoinsTransferred)
+    notifyListeners(ExchangeUpdate(progressUpdate))
+  }
+
+  protected def notifyListeners(message: Any): Unit = {
+    collaborators.resultListeners.foreach { _ ! message }
   }
 }

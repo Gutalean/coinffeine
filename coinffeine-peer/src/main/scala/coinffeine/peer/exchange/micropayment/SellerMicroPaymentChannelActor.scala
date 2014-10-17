@@ -35,9 +35,11 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   override def preStart(): Unit = {
     log.info("Exchange {}: seller micropayment channel started", exchange.id)
     new StepBehavior(initialChannel).start()
+    super.preStart()
   }
 
-  override def receive: Receive = Map.empty
+  override def receiveRecover: Receive = Map.empty
+  override def receiveCommand: Receive = Map.empty
 
   private class StepBehavior(channel: MicroPaymentChannel[C]) {
 
@@ -73,7 +75,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
                                     (confirmation: PartialFunction[PublicMessage, A]): Unit = {
       log.error("Exchange {}: forwarding signatures for {} expecting {}",
         exchange.id, channel.currentStep, expectingHint)
-      reportProgress(signatures = channel.currentStep.value)
+      notifyCompletedStep(channel.currentStep)
       forwarderFactory.forward(
         msg = StepSignatures(
           exchange.id, channel.currentStep.value, channel.signCurrentTransaction),

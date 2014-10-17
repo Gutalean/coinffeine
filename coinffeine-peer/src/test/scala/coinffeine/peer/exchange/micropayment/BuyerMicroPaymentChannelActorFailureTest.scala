@@ -1,43 +1,41 @@
 package coinffeine.peer.exchange.micropayment
 
-import akka.testkit.TestProbe
+import scala.concurrent.duration._
 
-import coinffeine.model.bitcoin.TransactionSignature
-import coinffeine.model.exchange.Both
-import coinffeine.peer.ProtocolConstants
+import akka.testkit._
+
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
-import coinffeine.peer.exchange.test.CoinffeineClientTest
-import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.messages.exchange.StepSignatures
 
-class BuyerMicroPaymentChannelActorFailureTest
-  extends CoinffeineClientTest("buyerExchange") with BuyerPerspective {
+class BuyerMicroPaymentChannelActorFailureTest extends BuyerMicroPaymentChannelActorTest {
 
-  val exchangeProtocol = new MockExchangeProtocol
-  val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
-
-  trait Fixture {
-    val listener = TestProbe()
-    val paymentProcessor = TestProbe()
-    val actor = system.actorOf(
-      BuyerMicroPaymentChannelActor.props(
-        exchangeProtocol.createMicroPaymentChannel(runningExchange),
-        ProtocolConstants.Default,
-        MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
-      ),
-      "buyer-exchange-actor"
-    )
-    listener.watch(actor)
-
-  }
-
-  "The buyer exchange actor" should "fail if the seller provides signatures" in new Fixture {
+  "The buyer exchange actor" should "ignore invalid signatures" in {
     val invalidDeposits = signatures.copy(buyer = MockExchangeProtocol.InvalidSignature)
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
-    val failure = listener.expectMsgClass(classOf[ChannelFailure])
-    failure.cause shouldBe an [InvalidStepSignatures]
-    failure.cause.asInstanceOf[InvalidStepSignatures].step should be (1)
-    listener.expectTerminated(actor)
+    listener.expectNoMsg(100.millis.dilated)
+  }
+
+  it should "fail if payments fail" in {
+    actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
+    listener.expectMsgType[LastBroadcastableOffer]
+    expectProgress(signatures = 1)
+
+    val request = paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_ <: FiatCurrency]]
+    val cause = new Exception("test error")
+    paymentProcessor.reply(PaymentProcessorActor.PaymentFailed(request, cause))
+    listener.expectMsgPF() {
+      case ChannelFailure(1, error) =>
+        error.getCause shouldBe cause
+    }
+  }
+
+  it should "remember how it failed" in {
+    restartActor()
+    listener.expectMsgType[LastBroadcastableOffer]
+    expectProgress(signatures = 1)
+    listener.expectMsgType[ChannelFailure]
   }
 }
