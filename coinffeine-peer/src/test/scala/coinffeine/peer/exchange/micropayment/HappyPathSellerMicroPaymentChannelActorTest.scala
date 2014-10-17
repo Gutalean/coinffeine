@@ -32,7 +32,6 @@ class HappyPathSellerMicroPaymentChannelActorTest extends SellerMicroPaymentChan
   it should "send the second step signature once payment proof has been provided" in {
     gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", 1), counterpartId)
     expectPaymentLookup(firstStep)
-    expectProgress(signatures = 1)
     gateway.expectForwarding(secondSignatures, counterpartId)
     expectProgress(signatures = 2)
   }

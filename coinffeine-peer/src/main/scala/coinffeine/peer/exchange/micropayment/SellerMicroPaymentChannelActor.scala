@@ -41,6 +41,7 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   override def receiveCommand: Receive = nextStep()
 
   private def nextStep(): Receive = {
+    notifyCompletedStep(seller.step)
     if (seller.step.isFinal) {
       forwardSignaturesExpectingClose()
       waitForChannelClosed
@@ -71,7 +72,6 @@ private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
                                   (confirmation: PartialFunction[PublicMessage, A]): Unit = {
     log.error("Exchange {}: forwarding signatures for {} expecting {}",
       exchange.id, seller.step, expectingHint)
-    notifyCompletedStep(seller.step)
     forwarderFactory.forward(
       msg = seller.stepSignatures,
       destination = exchange.counterpartId,
