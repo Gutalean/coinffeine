@@ -31,4 +31,11 @@ class BuyerMicroPaymentChannelActorFailureTest extends BuyerMicroPaymentChannelA
         error.getCause shouldBe cause
     }
   }
+
+  it should "remember how it failed" in {
+    restartActor()
+    listener.expectMsgType[LastBroadcastableOffer]
+    expectProgress(signatures = 1)
+    listener.expectMsgType[ChannelFailure]
+  }
 }

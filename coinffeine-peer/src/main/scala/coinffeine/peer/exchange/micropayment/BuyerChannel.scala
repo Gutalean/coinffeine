@@ -17,9 +17,11 @@ class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) {
   private var channel = initialChannel
   private var _lastOffer: Option[ImmutableTransaction] = None
   private var _lastPaymentProof: Option[PaymentProof] = None
+  private var _lastCompletedStep: Option[Step] = None
 
   def lastOffer: Option[ImmutableTransaction] = _lastOffer
   def lastPaymentProof: Option[PaymentProof] = _lastPaymentProof
+  def lastCompletedStep: Option[Step] = _lastCompletedStep
   def currentStep: Step = channel.currentStep
 
   def shouldAcceptSignatures(stepSigs: StepSignatures): Boolean =
@@ -39,6 +41,7 @@ class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) {
 
   def acceptSignatures(signatures: Both[TransactionSignature]): Unit = {
     _lastOffer = Some(channel.closingTransaction(signatures))
+    _lastCompletedStep = Some(channel.currentStep)
   }
 
   def paymentRequest: Option[PaymentProcessorActor.Pay[C]] = channel.currentStep match {
