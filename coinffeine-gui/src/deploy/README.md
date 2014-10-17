@@ -1,2 +1,21 @@
-Add here extra files for distributable bundles (icon for windows, background
-DMG image for OS X, etc).
+This directory contains misc data to generate the installable packages for 
+Coinffeine.
+
+In order to build such packages, please run `sbt gui/package-javafx` from the
+root source directory.
+
+**For Windows 8 users**. There is a known bug in JDK 8 that prevents 
+msvcp100.dll library to be included in the bundle. Nevertheless, this library
+is required by the Java runtime, so the app will fail if such library is not
+included in the bundle. 
+
+This bug is known and will be fixed in JDK 8u40, which will be relased in
+March 2015. Until then, the Inno Setup config file includes msvcp100.dll
+by following these steps.
+
+* Install MSVC 2010 Redistributable package in the system. You may obtain it 
+from http://www.microsoft.com/en-US/download/confirmation.aspx?id=14632
+* Copy the library from `C:\Windows\System32\msvcp100.dll` into 
+`C:\Windows\Temp`. This step is needed because Inno Setup is unable to access
+`C:\Windows\System32\msvcp100.dll` for some unknown reason. 
+* Execute `sbt gui/package-javafx` normally to have a valid Windows installer.
