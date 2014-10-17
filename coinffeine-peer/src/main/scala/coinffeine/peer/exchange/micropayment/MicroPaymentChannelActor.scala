@@ -3,7 +3,6 @@ package coinffeine.peer.exchange.micropayment
 import akka.actor.ActorRef
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.exchange.Both
 
 /** A micropayment channel actor is in charge of performing each of the exchange steps by
   * sending/receiving bitcoins and fiat.

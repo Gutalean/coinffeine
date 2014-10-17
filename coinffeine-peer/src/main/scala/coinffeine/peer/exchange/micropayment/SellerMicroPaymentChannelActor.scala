@@ -5,138 +5,175 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
+import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
+import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.PaymentFound
-import coinffeine.protocol.gateway.MessageForwarder
-import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.messages.exchange._
+import coinffeine.peer.payment.PaymentProcessorActor._
+import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 
-/** This actor implements the seller's side of the exchange. You can find more information about
-  * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
-  */
-private class SellerMicroPaymentChannelActor[C <: FiatCurrency](
-    initialChannel: MicroPaymentChannel[C],
+class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     constants: ProtocolConstants,
-    collaborators: Collaborators)
-  extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
+    collaborators: MicroPaymentChannelActor.Collaborators,
+    initialChannel: MicroPaymentChannel[C]) extends PersistentActor with ActorLogging {
 
   import context.dispatcher
+  import SellerMicroPaymentChannelActor._
 
-  private val exchange = initialChannel.exchange
-  private val forwarderFactory = new MessageForwarder.Factory(collaborators.gateway, context)
-  private val seller = new SellerChannel(initialChannel)
+  private var channel = initialChannel
+  private var exchange = initialChannel.exchange.completeStep(1)
+  override val persistenceId = "micropayment-channel-" + exchange.id.value
+  private var resubmitTimer: Option[Cancellable] = None
 
   override def preStart(): Unit = {
-    log.info("Exchange {}: seller micropayment channel started", exchange.id)
     super.preStart()
+    subscribeToMessages()
+    resetResubmitTimer()
   }
 
-  override def receiveRecover: Receive = Map.empty
-  override def receiveCommand: Receive = nextStep()
+  override def postStop(): Unit = {
+    cancelResubmitTimer()
+    super.postStop()
+  }
 
-  private def nextStep(): Receive = {
-    notifyCompletedStep(seller.step)
-    if (seller.step.isFinal) {
-      forwardSignaturesExpectingClose()
-      waitForChannelClosed
-    } else {
-      forwardSignaturesExpectingPaymentProof()
-      waitForPaymentProof
+  private def subscribeToMessages(): Unit = {
+    collaborators.gateway ! MessageGateway.Subscribe {
+      case ReceiveMessage(
+        PaymentProof(initialChannel.exchange.id, _, _) |
+        MicropaymentChannelClosed(initialChannel.exchange.id),
+        initialChannel.exchange.counterpartId) =>
     }
   }
 
-  private val waitForChannelClosed: Receive = {
-    case MicropaymentChannelClosed(exchange.`id`) => finishExchange()
+  override val receiveRecover: Receive = {
+    case AcceptedPayment => onAcceptedPayment()
+    case ChannelClosed => onChannelClosed()
+    case RecoveryCompleted =>
+      notifyProgress()
+      self ! SubmitSignatures
   }
 
-  private def forwardSignaturesExpectingPaymentProof(): Unit = {
-    val step = seller.step.value
-    forwardSignatures("payment proof") {
-      case proof @ PaymentProof(_, _, `step`) => proof
-    }
-  }
+  override val receiveCommand: Receive = submittingSignatures orElse {
+    case ReceiveMessage(PaymentProof(_, paymentId, step), _) if step == channel.currentStep.value =>
+      log.info("Exchange {}: received {} for step {}", exchange.id, paymentId, channel.currentStep)
+      resetResubmitTimer()
+      lookupPayment(paymentId).pipeTo(self)
 
-  private def forwardSignaturesExpectingClose(): Unit = {
-    forwardSignatures("channel closing") {
-      case closed @ MicropaymentChannelClosed(exchange.`id`) => closed
-    }
-  }
+    case ReceiveMessage(proof: PaymentProof, _) =>
+      log.warning("Exchange {}: received unexpected {}", exchange.id, proof)
 
-  private def forwardSignatures[A](expectingHint: String)
-                                  (confirmation: PartialFunction[PublicMessage, A]): Unit = {
-    log.error("Exchange {}: forwarding signatures for {} expecting {}",
-      exchange.id, seller.step, expectingHint)
-    forwarderFactory.forward(
-      msg = seller.stepSignatures,
-      destination = exchange.counterpartId,
-      retry = MessageForwarder.RetrySettings.continuouslyEvery(
-        constants.microPaymentChannelResubmitTimeout)
-    )(confirmation)
-  }
-
-  private def waitForPaymentProof: Receive = {
-    case proof: PaymentProof if seller.relevantPaymentProof(proof)  =>
-      log.info("Received {} for step {}", proof, seller.step)
-      findPayment(proof.paymentId)
-      context.become(waitForPaymentValidation(proof.paymentId))
-
-    case unexpectedProof: PaymentProof =>
-      log.warning("Received unexpected payment proof: {}", unexpectedProof)
-  }
-
-  private def waitForPaymentValidation(paymentId: String): Receive = {
-
-    case payment @ Payment(_, _, _, _, _, _, _) =>
-      seller.validatePayment(payment) match {
-        case Success(_) =>
-          log.info("Exchange {}: valid payment proof in {}", exchange.id, seller.step)
-          seller.stepPayed()
-          context.become(nextStep())
-
+    case PaymentFound(payment) =>
+      validatePayment(payment) match {
         case Failure(cause) =>
-          log.error(cause, "Exchange {}: invalid payment proof received in {}: {}",
-            exchange.id, seller.step, paymentId)
-          forwardSignaturesExpectingPaymentProof()
-          context.become(waitForPaymentProof)
+          log.error(cause, "Exchange {}: invalid payment {}", exchange.id, payment.id)
+
+        case Success(_) =>
+          log.info("")
+          resetResubmitTimer()
+          persist(AcceptedPayment){ _ =>
+            onAcceptedPayment()
+            self ! SubmitSignatures
+          }
       }
 
-    case Status.Failure(cause) =>
-      log.error(cause, "Exchange {}: couldn't find payment {} for {}",
-        exchange.id, paymentId, seller.step)
-      forwardSignaturesExpectingPaymentProof()
-      context.become(waitForPaymentProof)
+    case PaymentNotFound(paymentId) =>
+      log.error("Exchange {}: no payment with id {} found", exchange.id, paymentId)
+
+    case FindPaymentFailed(paymentId, error) =>
+      log.error(error, "Exchange {}: cannot look up payment {}", exchange.id, paymentId)
   }
 
-  private def finishWith(result: Any): Unit = {
-    collaborators.resultListeners.foreach { _ ! result }
+  private val closingChannel: Receive = submittingSignatures orElse {
+    case ReceiveMessage(_: MicropaymentChannelClosed, _) =>
+      persist(ChannelClosed)(_ => onChannelClosed())
+  }
+
+  private def submittingSignatures: Receive = {
+    case SubmitSignatures =>
+      val stepSignatures = StepSignatures(
+        exchange.id, channel.currentStep.value, channel.signCurrentTransaction)
+      collaborators.gateway ! ForwardMessage(stepSignatures, channel.exchange.counterpartId)
+  }
+
+  private def onAcceptedPayment(): Unit = {
+    channel = channel.nextStep
+    exchange = exchange.completeStep(channel.currentStep.value)
+    if (recoveryFinished) {
+      notifyProgress()
+    }
+    if (channel.currentStep.isFinal) {
+      context.become(closingChannel)
+    }
+  }
+
+  private def onChannelClosed(): Unit = {
+    notifyListeners(ChannelSuccess(None))
     context.stop(self)
   }
 
-  private def finishExchange(): Unit = {
-    log.error(s"Exchange {}: micropayment channel finished with success", exchange.id)
-    finishWith(ChannelSuccess(None))
+  private def lookupPayment(paymentId: String): Future[FindPaymentResponse] = {
+    implicit val timeout = PaymentProcessorActor.RequestTimeout
+    AskPattern(
+      to = collaborators.paymentProcessor,
+      request = FindPayment(paymentId),
+      errorMessage = s"cannot find payment $paymentId"
+    ).withReply[FindPaymentResponse]
   }
 
-  private def findPayment(paymentId: String): Future[Payment[_ <: FiatCurrency]] = {
-    implicit val timeout = PaymentProcessorActor.RequestTimeout
-    (for {
-      PaymentFound(payment) <- collaborators.paymentProcessor
-        .ask(PaymentProcessorActor.FindPayment(paymentId)).mapTo[PaymentFound]
-    } yield payment).pipeTo(self)
+  def validatePayment(payment: Payment[_ <: FiatCurrency]): Try[Unit] = Try {
+    channel.currentStep match {
+      case _: FinalStep => throw new IllegalArgumentException("No payment is expected at the final step")
+      case step: IntermediateStep =>
+        val participants = channel.exchange.participants
+        require(payment.amount == step.select(channel.exchange.amounts).fiatAmount,
+          s"Payment $step amount does not match expected amount")
+        require(payment.receiverId == participants.seller.paymentProcessorAccount,
+          s"Payment $step is not being sent to the seller")
+        require(payment.senderId == participants.buyer.paymentProcessorAccount,
+          s"Payment $step is not coming from the buyer")
+        require(payment.description == PaymentDescription(channel.exchange.id, step),
+          s"Payment $step does not have the required description")
+        require(payment.completed, s"Payment $step is not complete")
+    }
+  }
+
+  private def cancelResubmitTimer(): Unit = {
+    resubmitTimer.foreach(_.cancel())
+  }
+
+  private def resetResubmitTimer(): Unit = {
+    cancelResubmitTimer()
+    resubmitTimer = Some(context.system.scheduler.schedule(
+      constants.microPaymentChannelResubmitTimeout,
+      constants.microPaymentChannelResubmitTimeout, self, SubmitSignatures))
+  }
+
+  private def notifyProgress(): Unit = {
+    notifyListeners(ExchangeUpdate(exchange))
+  }
+
+  private def notifyListeners(message: Any): Unit = {
+    collaborators.resultListeners.foreach(_ ! message)
   }
 }
 
 object SellerMicroPaymentChannelActor {
-  private case class PaymentValidationResult(result: Try[Unit])
 
   def props(initialChannel: MicroPaymentChannel[_ <: FiatCurrency],
             constants: ProtocolConstants,
-            collaborators: Collaborators) =
-    Props(new SellerMicroPaymentChannelActor(initialChannel, constants, collaborators))
+            collaborators: MicroPaymentChannelActor.Collaborators) =
+    Props(new SellerMicroPaymentChannelActor(constants, collaborators, initialChannel))
+
+  private case object SubmitSignatures
+  private case object AcceptedPayment
+  private case object ChannelClosed
 }

@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.micropayment
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.ActorRef
+import akka.actor.{ActorRef, Props}
 import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
@@ -28,9 +28,11 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
     refundSignatureAbortTimeout = 1.minute,
     microPaymentChannelResubmitTimeout = 2.seconds.dilated
   )
-  val channel = new MockMicroPaymentChannel(runningExchange)
-  private val props = SellerMicroPaymentChannelActor.props(channel, protocolConstants,
-    MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref)))
+  private val props = SellerMicroPaymentChannelActor.props(
+    new MockMicroPaymentChannel(runningExchange),
+    protocolConstants,
+    MicroPaymentChannelActor.Collaborators(gateway.ref, paymentProcessor.ref, Set(listener.ref))
+  )
   var actor: ActorRef = _
   startActor()
 
@@ -51,7 +53,6 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
   }
 
   protected def expectPaymentLookup(step: IntermediateStep, completed: Boolean = true): Unit = {
-    println(s"step $step")
     val FindPayment(paymentId) = paymentProcessor.expectMsgType[FindPayment]
     paymentProcessor.reply(PaymentFound(Payment(
       id = paymentId,
