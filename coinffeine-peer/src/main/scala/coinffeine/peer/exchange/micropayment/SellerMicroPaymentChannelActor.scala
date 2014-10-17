@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.{PersistentActor, RecoveryCompleted}
+import akka.persistence.RecoveryCompleted
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
@@ -18,13 +18,14 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, Interme
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
+import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 
 class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     constants: ProtocolConstants,
     collaborators: MicroPaymentChannelActor.Collaborators,
-    initialChannel: MicroPaymentChannel[C]) extends PersistentActor with ActorLogging {
+    initialChannel: MicroPaymentChannel[C])
+  extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
 
   import context.dispatcher
   import SellerMicroPaymentChannelActor._
@@ -101,7 +102,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     case SubmitSignatures =>
       val stepSignatures = StepSignatures(
         exchange.id, channel.currentStep.value, channel.signCurrentTransaction)
-      collaborators.gateway ! ForwardMessage(stepSignatures, channel.exchange.counterpartId)
+      forwardToCounterpart(stepSignatures)
   }
 
   private def onAcceptedPayment(): Unit = {
@@ -159,10 +160,6 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
   private def notifyProgress(): Unit = {
     notifyListeners(ExchangeUpdate(exchange))
-  }
-
-  private def notifyListeners(message: Any): Unit = {
-    collaborators.resultListeners.foreach(_ ! message)
   }
 }
 

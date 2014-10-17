@@ -32,6 +32,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   private case object ResumeMicroPaymentChannel
 
   private val exchange = initialChannel.exchange
+  override def persistenceId: String = s"micropayment-channel-${exchange.id.value}"
   private val buyer = new BuyerChannel(initialChannel)
   private var waitingForPaymentResult = false
 
@@ -152,11 +153,11 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private def forwardLastPaymentProof(): Unit = {
-    buyer.lastPaymentProof.foreach(forwarding.forwardToCounterpart)
+    buyer.lastPaymentProof.foreach(forwardToCounterpart)
   }
 
   private def forwardClosedChannel(): Unit = {
-    forwarding.forwardToCounterpart(MicropaymentChannelClosed(exchange.id))
+    forwardToCounterpart(MicropaymentChannelClosed(exchange.id))
   }
 }
 

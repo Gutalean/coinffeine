@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.micropayment
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.ActorRef
 import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
