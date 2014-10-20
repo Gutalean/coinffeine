@@ -120,7 +120,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     completeWith(ChannelFailure(buyer.currentStep.value, event.cause))
   }
 
-  private def completeWith(result: ExchangeResult): Unit = {
+  private def completeWith(result: ChannelResult): Unit = {
     if (recoveryFinished) {
       notifyListeners(result)
       forwardClosedChannel()

@@ -21,13 +21,13 @@ object MicroPaymentChannelActor {
                            paymentProcessor: ActorRef,
                            resultListeners: Set[ActorRef])
 
-  sealed trait ExchangeResult
+  sealed trait ChannelResult
 
   /** Sent to the exchange listeners to notify success of the exchange */
-  case class ChannelSuccess(successTransaction: Option[ImmutableTransaction]) extends ExchangeResult
+  case class ChannelSuccess(successTransaction: Option[ImmutableTransaction]) extends ChannelResult
 
   /** Sent to the exchange listeners to notify of a failure during the exchange */
-  case class ChannelFailure(step: Int, cause: Throwable) extends ExchangeResult
+  case class ChannelFailure(step: Int, cause: Throwable) extends ChannelResult
 
   /** Sent to the listeners to notify about what the last broadcastable offer is */
   case class LastBroadcastableOffer(transaction: ImmutableTransaction)
