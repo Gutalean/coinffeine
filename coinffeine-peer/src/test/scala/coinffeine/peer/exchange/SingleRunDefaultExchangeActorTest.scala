@@ -15,6 +15,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     startActor()
     givenMicropaymentChannelSuccess()
     notifyDepositDestination(CompletedChannel)
+    walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
     listener.expectMsg(ExchangeSuccess(completedExchange))
     listener.expectTerminated(actor)
   }
@@ -112,9 +113,18 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       listener.expectTerminated(actor)
     }
 
-  it should "unblock funds on termination" in new Fixture {
+  it should "unblock funds when finishing with error" in new Fixture {
+    givenFailingUserInfoLookup()
     startActor()
+    listener.expectMsgType[ExchangeFailure]
+    listener.expectTerminated(actor)
+    walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
+  }
+
+  it should "not unblock funds when abruptly stopped" in new Fixture {
+    startActor()
+    expectNoMsg()
     system.stop(actor)
-    walletActor.expectMsg(WalletActor.UnblockBitcoins(exchangeId))
+    walletActor.expectNoMsg()
   }
 }

@@ -27,13 +27,14 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
   protected val dummyTx = ImmutableTransaction(new MutableTransaction(network))
 
   protected trait Fixture {
+    protected val currentExchange = exchange.copy(id = ExchangeId.random())
     protected val listener, blockchain, peers, walletActor, paymentProcessor = TestProbe()
     protected val micropaymentChannelActor, depositWatcherActor = new MockSupervisedActor()
     private val peerInfoLookup = new PeerInfoLookupStub()
     private var handshakeProps, broadcasterProps: Props = _
     private def props = Props(new DefaultExchangeActor(
       new MockExchangeProtocol,
-      exchange,
+      currentExchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
@@ -60,7 +61,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
     }
 
     protected def givenFailingUserInfoLookup(): Unit = {
-      peerInfoLookup.willFail(new Exception("injected error"))
+      peerInfoLookup.willFail(new Exception("injected lookup error"))
     }
 
     protected def startActor(): Unit = {
@@ -145,6 +146,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
         refundTx = dummyTx
       )))
 
-    def failure = Props(new HandshakeStub(HandshakeFailure(new Exception("injected failure"))))
+    def failure = Props(new HandshakeStub(HandshakeFailure(
+      new Exception("injected handshake failure"))))
   }
 }
