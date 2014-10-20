@@ -47,11 +47,10 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
 
     val expectedAmount = 0.1.BTC
     val expectedPrice = Price(100.EUR)
-    println(s"orders are: ${app.network.orders.values}")
     eventually {
       app.network.orders.values.collect {
         case Order(_, Bid, _, `expectedAmount`, `expectedPrice`, _) =>
-      } should not be 'empty
+      } shouldBe 'nonEmpty
     }
   }
 }
