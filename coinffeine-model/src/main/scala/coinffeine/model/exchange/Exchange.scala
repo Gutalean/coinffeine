@@ -233,8 +233,8 @@ object Exchange {
     def noBroadcast: Exchange[C, Failed[C]] =
       exchange.copy(state = Failed(NoBroadcast, exchange.state, transaction = None))
 
-    def increaseProgress(increase: Both[Bitcoin.Amount]): Exchange[C, Exchanging[C]] = {
-      val progress = exchange.state.progress + Exchange.Progress(increase)
+    def completeStep(step: Int): Exchange[C, Exchanging[C]] = {
+      val progress = exchange.amounts.steps(step - 1).progress
       exchange.copy(state = exchange.state.copy(progress = progress))
     }
   }
