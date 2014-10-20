@@ -73,8 +73,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
-      startAbortion(
-        exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
+      startAbortion(exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {

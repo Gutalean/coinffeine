@@ -14,7 +14,7 @@ object HandshakeActor {
   /** Sent to the handshake listeners to notify success. */
   case class HandshakeSuccess(exchange: HandshakingExchange[_ <: FiatCurrency],
                               bothCommitments: Both[ImmutableTransaction],
-                              refundTransaction: ImmutableTransaction) extends HandshakeResult
+                              refundTx: ImmutableTransaction) extends HandshakeResult
 
   /** Sent to the handshake listeners to notify a failure without having committed funds. */
   case class HandshakeFailure(cause: Throwable) extends HandshakeResult
