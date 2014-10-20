@@ -3,9 +3,13 @@ package coinffeine.gui
 import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.Try
+import scala.util.control.NonFatal
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.image.Image
+
+import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
 import coinffeine.gui.application.main.MainView
 import coinffeine.gui.application.operations.OperationsView
@@ -21,6 +25,8 @@ import coinffeine.peer.config.user.LocalAppDataDir
 
 object Main extends JFXApp
   with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
+
+  private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 
   if (mustRunWizard) {
     runSetupWizard()
@@ -50,7 +56,19 @@ object Main extends JFXApp
     icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
   }
   stage.show()
-  Await.result(appStart, Duration.Inf)
+
+  try Await.result(appStart, Duration.Inf)
+  catch {
+    case NonFatal(e) =>
+      Dialogs.create()
+        .message("An unexpected error was thrown while starting Coinffeine app. " +
+          "This may be due to network connectivity issues. Please check your network " +
+          "connectivity and try again. If the error persists, please report in:\n\n" +
+          issueReportingResource)
+        .style(DialogStyle.NATIVE)
+        .showException(e)
+      stage.close()
+  }
 
   override def stopApp(): Unit = {
     app.stopAndWait(30.seconds)
