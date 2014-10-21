@@ -8,6 +8,7 @@ import akka.pattern._
 import akka.persistence.RecoveryCompleted
 
 import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
@@ -171,6 +172,7 @@ object SellerMicroPaymentChannelActor {
     Props(new SellerMicroPaymentChannelActor(constants, collaborators, initialChannel))
 
   private case object SubmitSignatures
-  private case object AcceptedPayment
-  private case object ChannelClosed
+  
+  private case object AcceptedPayment extends PersistentEvent
+  private case object ChannelClosed extends PersistentEvent
 }

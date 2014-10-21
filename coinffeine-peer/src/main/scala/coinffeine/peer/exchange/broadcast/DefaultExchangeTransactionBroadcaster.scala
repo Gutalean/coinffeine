@@ -3,6 +3,7 @@ package coinffeine.peer.exchange.broadcast
 import akka.actor._
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
@@ -93,7 +94,7 @@ object DefaultExchangeTransactionBroadcaster {
   def props(refund: ImmutableTransaction, collaborators: Collaborators, constants: ProtocolConstants) =
     Props(new DefaultExchangeTransactionBroadcaster(refund, collaborators, constants))
 
-  private case class OfferAdded(offer: ImmutableTransaction)
-  private case object PublicationRequested
-  private case class FinishedWithResult(result: BroadcastResult)
+  private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
+  private case object PublicationRequested extends PersistentEvent
+  private case class FinishedWithResult(result: BroadcastResult) extends PersistentEvent
 }

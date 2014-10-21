@@ -9,6 +9,7 @@ import akka.persistence.RecoveryCompleted
 import org.bitcoinj.crypto.TransactionSignature
 
 import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
@@ -166,7 +167,7 @@ object BuyerMicroPaymentChannelActor {
             collaborators: Collaborators) =
     Props(new BuyerMicroPaymentChannelActor(initialChannel, constants, collaborators))
 
-  private case class AcceptedSignatures(signatures: Both[TransactionSignature])
-  private case class CompletedPayment(paymentId: String)
-  private case class PaymentFailed(cause: Throwable)
+  private case class AcceptedSignatures(signatures: Both[TransactionSignature]) extends PersistentEvent
+  private case class CompletedPayment(paymentId: String) extends PersistentEvent
+  private case class PaymentFailed(cause: Throwable) extends PersistentEvent
 }

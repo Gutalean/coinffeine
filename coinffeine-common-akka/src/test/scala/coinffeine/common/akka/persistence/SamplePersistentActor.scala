@@ -27,5 +27,5 @@ object SamplePersistentActor {
   case object RequestSum
   case class Sum(n: Int)
 
-  private case class AddedNumber(n: Int)
+  private case class AddedNumber(n: Int) extends PersistentEvent
 }

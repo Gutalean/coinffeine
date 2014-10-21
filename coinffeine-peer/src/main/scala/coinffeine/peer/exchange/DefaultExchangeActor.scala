@@ -4,6 +4,7 @@ import akka.actor._
 import akka.pattern._
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange._
@@ -259,6 +260,6 @@ object DefaultExchangeActor {
   }
 
   private case object ResumeExchange
-  private case class RetrievedUserInfo(user: Exchange.PeerInfo)
-  private case class ExchangeFinished(result: ExchangeResult)
+  private case class RetrievedUserInfo(user: Exchange.PeerInfo) extends PersistentEvent
+  private case class ExchangeFinished(result: ExchangeResult) extends PersistentEvent
 }

@@ -7,6 +7,7 @@ import akka.actor._
 import akka.persistence.PersistentActor
 import org.bitcoinj.core.TransactionOutPoint
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin.{ImmutableTransaction, WalletActivity, MutableWalletProperties}
 import coinffeine.model.currency.BitcoinBalance
 import coinffeine.model.exchange.ExchangeId
@@ -174,7 +175,9 @@ object DefaultWalletActor {
   private case object InternalWalletChanged
 
   private case class FundsBlocked(id: ExchangeId, outputs: Set[TransactionOutPoint])
-  private case class FundsUnblocked(id: ExchangeId)
+    extends PersistentEvent
+  private case class FundsUnblocked(id: ExchangeId) extends PersistentEvent
   private case class DepositCreated(request: CreateDeposit, outputs: Set[TransactionOutPoint])
-  private case class DepositCancelled(tx: ImmutableTransaction)
+    extends PersistentEvent
+  private case class DepositCancelled(tx: ImmutableTransaction) extends PersistentEvent
 }

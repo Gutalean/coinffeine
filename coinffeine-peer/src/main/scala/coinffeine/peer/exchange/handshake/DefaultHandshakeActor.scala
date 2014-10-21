@@ -8,6 +8,7 @@ import akka.pattern._
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 
 import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -340,8 +341,8 @@ object DefaultHandshakeActor {
     Props(new DefaultHandshakeActor(exchange, collaborators, protocol))
 
   private case object ResumeHandshake
-  private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C])
-  private case class RefundCreated(refund: ImmutableTransaction)
-  private case class NotifiedCommitments(commitments: Both[Hash])
-  private case class FinishedWith(result: HandshakeResult)
+  private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C]) extends PersistentEvent
+  private case class RefundCreated(refund: ImmutableTransaction) extends PersistentEvent
+  private case class NotifiedCommitments(commitments: Both[Hash]) extends PersistentEvent
+  private case class FinishedWith(result: HandshakeResult) extends PersistentEvent
 }

@@ -5,6 +5,7 @@ import scalaz.{Scalaz, Validation}
 import akka.actor.{ActorLogging, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -176,10 +177,10 @@ private[okpay] object BlockedFiatRegistry {
   case class FundsUsed(funds: ExchangeId, amount: FiatAmount)
   case class CannotUseFunds(funds: ExchangeId, amount: FiatAmount, reason: String)
 
-  private sealed trait StateEvents
-  private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvents
-  private case class FundsUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvents
-  private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvents
+  private sealed trait StateEvent extends PersistentEvent
+  private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  private case class FundsUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvent
 
   def props = Props(new BlockedFiatRegistry(PersistenceId))
 }
