@@ -34,7 +34,14 @@ object Exchange {
     */
   case class Parameters(lockTime: Long, network: Network)
 
-  case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair)
+  case class PeerInfo(paymentProcessorAccount: PaymentProcessor.AccountId, bitcoinKey: KeyPair) {
+    override def equals(obj: scala.Any) = obj match {
+      case other: PeerInfo =>
+        paymentProcessorAccount == other.paymentProcessorAccount &&
+          KeyPairUtils.equals(bitcoinKey, other.bitcoinKey)
+      case _ => false
+    }
+  }
 
   /** How the exchange is break down into steps */
   case class StepBreakdown(intermediateSteps: Int) {
