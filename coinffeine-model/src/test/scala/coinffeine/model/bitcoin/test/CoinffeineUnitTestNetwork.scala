@@ -4,7 +4,7 @@ import org.bitcoinj.params.UnitTestParams
 
 import coinffeine.model.bitcoin.NetworkComponent
 
-object CoinffeineUnitTestNetwork extends UnitTestParams {
+case object CoinffeineUnitTestNetwork extends UnitTestParams {
   // Ensures difficulty stays at minimum level
   interval = Int.MaxValue
 
