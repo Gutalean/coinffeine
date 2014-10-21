@@ -26,15 +26,8 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
     }
   }
 
-  override def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) = {
+  override def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {
     ctx.transitionTo(new ExchangingState(orderMatch.exchangeId))
-    Exchange.notStarted(
-      id = orderMatch.exchangeId,
-      Role.fromOrderType(ctx.order.orderType),
-      counterpartId = orderMatch.counterpart,
-      ctx.calculator.exchangeAmountsFor(orderMatch),
-      Exchange.Parameters(orderMatch.lockTime, ctx.network)
-    )
   }
 
   private def hasInconsistentAmounts(orderMatch: OrderMatch[C], amounts: Amounts[C]): Boolean = {

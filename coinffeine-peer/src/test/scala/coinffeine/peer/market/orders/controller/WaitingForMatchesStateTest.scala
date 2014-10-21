@@ -53,15 +53,15 @@ class WaitingForMatchesStateTest extends UnitTest
   }
 
   it should "accept perfect matches" in new FreshInstance {
-    val m = orderMatch(100.BTC, 1.EUR)
-    inside(state.shouldAcceptOrderMatch(context, m)) { case MatchAccepted(_) => }
-    state.acceptedOrderMatch(context, m).amounts.netBitcoinExchanged shouldBe 100.BTC
+    inside(state.shouldAcceptOrderMatch(context, orderMatch(100.BTC, 1.EUR))) {
+      case MatchAccepted(_) =>
+    }
   }
 
   it should "accept partial matches" in new FreshInstance(partiallyCompletedOrder) {
-    val m = orderMatch(50.BTC, 1.EUR)
-    inside(state.shouldAcceptOrderMatch(context, m)) { case MatchAccepted(_) => }
-    state.acceptedOrderMatch(context, m).amounts.netBitcoinExchanged shouldBe 50.BTC
+    inside(state.shouldAcceptOrderMatch(context, orderMatch(50.BTC, 1.EUR))) {
+      case MatchAccepted(_) =>
+    }
   }
 
   abstract class FreshInstance(val order: Order[Euro.type] = nonStartedOrder) {

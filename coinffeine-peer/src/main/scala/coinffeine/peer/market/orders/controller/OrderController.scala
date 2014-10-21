@@ -21,7 +21,6 @@ private[orders] class OrderController[C <: FiatCurrency](
 
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
-      override val network: Network,
       var _order: Order[C],
       var shouldBeOnMarket: Boolean = true) extends StateContext[C] {
 
@@ -67,7 +66,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   private var listeners = Seq.empty[OrderController.Listener[C]]
-  private val context = new OrderControllerContext(amountsCalculator, network, initialOrder)
+  private val context = new OrderControllerContext(amountsCalculator, initialOrder)
   context.transitionTo(new WaitingForMatchesState[C])
 
   /** Immutable snapshot of the order */
@@ -80,16 +79,25 @@ private[orders] class OrderController[C <: FiatCurrency](
     else listener.keepOffMarket()
   }
 
+  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
+    context.state.shouldAcceptOrderMatch(context, orderMatch)
+
+  def acceptOrderMatch(orderMatch: OrderMatch[C]): NonStartedExchange[C] = {
+    val newExchange = Exchange.notStarted(
+      id = orderMatch.exchangeId,
+      Role.fromOrderType(view.orderType),
+      counterpartId = orderMatch.counterpart,
+      amountsCalculator.exchangeAmountsFor(orderMatch),
+      Exchange.Parameters(orderMatch.lockTime, network)
+    )
+    context.updateExchange(newExchange)
+    context.state.acceptedOrderMatch(context, orderMatch)
+    newExchange
+  }
+
   def shouldBeOnMarket: Boolean = context.shouldBeOnMarket
   def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
   def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
-  def acceptOrderMatch(orderMatch: OrderMatch[C]): NonStartedExchange[C] = {
-    val newExchange = context.state.acceptedOrderMatch(context, orderMatch)
-    context.updateExchange(newExchange)
-    newExchange
-  }
-  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
-    context.state.shouldAcceptOrderMatch(context, orderMatch)
   def cancel(reason: String): Unit = { context.state.cancel(context, reason) }
   def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
   def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }

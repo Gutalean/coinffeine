@@ -22,8 +22,7 @@ private[controller] trait State[C <: FiatCurrency] {
   def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): MatchResult[C]
 
   /** When an order match has been accepted */
-  def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): NonStartedExchange[C] =
-    throw new UnsupportedOperationException()
+  def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {}
 
   /** Triggered when the order should be cancelled */
   def cancel(ctx: Context, reason: String): Unit
