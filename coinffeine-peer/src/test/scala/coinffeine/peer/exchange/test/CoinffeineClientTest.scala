@@ -3,7 +3,6 @@ package coinffeine.peer.exchange.test
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency.Euro
 import coinffeine.model.exchange._
-import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.gateway.MockGateway
@@ -12,9 +11,7 @@ import coinffeine.protocol.messages.PublicMessage
 abstract class CoinffeineClientTest(systemName: String)
   extends AkkaSpec(systemName) with SampleExchange {
 
-  val gateway = new MockGateway(PeerId("broker"))
-
-  def fromBroker(message: PublicMessage) = ReceiveMessage(message, BrokerId)
+  val gateway = new MockGateway()
 }
 
 object CoinffeineClientTest {

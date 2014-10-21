@@ -26,14 +26,11 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   startActor()
 
   def startActor(): Unit = {
-    actor = system.actorOf(
-      DefaultHandshakeActor.props(
-        DefaultHandshakeActor.ExchangeToStart(exchange, user),
-        DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-        DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
-      ),
-      "handshake-actor"
-    )
+    actor = system.actorOf(DefaultHandshakeActor.props(
+      DefaultHandshakeActor.ExchangeToStart(exchange, user),
+      DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
+      DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
+    ))
     listener.watch(actor)
   }
 

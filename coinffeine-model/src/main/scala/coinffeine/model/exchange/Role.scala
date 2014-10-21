@@ -24,7 +24,7 @@ object Role {
   }
 }
 
-object BuyerRole extends Role {
+case object BuyerRole extends Role {
 
   override def select[A](both: Both[A]) = both.buyer
 
@@ -39,7 +39,7 @@ object BuyerRole extends Role {
   override def update[A](both: Both[A], value: A) = both.copy(buyer = value)
 }
 
-object SellerRole extends Role {
+case object SellerRole extends Role {
 
   override def select[A](both: Both[A]) = both.seller
 

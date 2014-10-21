@@ -2,7 +2,9 @@ package coinffeine.peer.exchange
 
 import akka.actor._
 import akka.pattern._
+import akka.persistence.{RecoveryCompleted, PersistentActor}
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange._
@@ -24,28 +26,53 @@ class DefaultExchangeActor[C <: FiatCurrency](
     exchange: NonStartedExchange[C],
     peerInfoLookup: PeerInfoLookup,
     delegates: DefaultExchangeActor.Delegates,
-    collaborators: ExchangeActor.Collaborators) extends Actor with ActorLogging {
+    collaborators: ExchangeActor.Collaborators) extends PersistentActor with ActorLogging {
+
+  import DefaultExchangeActor._
+
+  override def persistenceId: String = s"exchange-${exchange.id.value}"
 
   private var txBroadcaster: ActorRef = _
 
   override def preStart(): Unit = {
-    import context.dispatcher
     log.info("Starting {}", exchange.id)
-    peerInfoLookup.lookup().pipeTo(self)
+    super.preStart()
   }
 
-  override def postStop(): Unit = {
-    log.info("Unblocking funds just in case")
+  override def receiveRecover: Receive = {
+    case event: RetrievedUserInfo => onRetrievedUserInfo(event)
+    case event: ExchangeFinished => onExchangeFinished(event)
+    case RecoveryCompleted => self ! ResumeExchange
+  }
+
+  override def receiveCommand: Receive = waitingForUserInfo
+
+  private def onRetrievedUserInfo(event: RetrievedUserInfo): Unit = {
+    context.actorOf(delegates.handshake(event.user, self), HandshakeActorName)
+    context.become(inHandshake(event.user))
+  }
+
+  private def onExchangeFinished(event: ExchangeFinished): Unit = {
+    collaborators.listener ! event.result
+    unblockFunds()
+    context.stop(self)
+  }
+
+  private def unblockFunds(): Unit = {
+    log.info("Exchange {}: unblocking funds just in case", exchange.id)
     collaborators.wallet ! WalletActor.UnblockBitcoins(exchange.id)
     if (exchange.role == BuyerRole) {
       collaborators.paymentProcessor ! PaymentProcessorActor.UnblockFunds(exchange.id)
     }
   }
 
-  override val receive: Receive = {
+  private val waitingForUserInfo: Receive = {
+    case ResumeExchange =>
+      import context.dispatcher
+      peerInfoLookup.lookup().pipeTo(self)
+
     case user: PeerInfo =>
-      context.actorOf(delegates.handshake(user, self), HandshakeActorName)
-      context.become(inHandshake(user))
+      persist(RetrievedUserInfo(user))(onRetrievedUserInfo)
 
     case Status.Failure(cause) =>
       log.error(cause, "Cannot start handshake of {}", exchange.id)
@@ -73,8 +100,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
-      startAbortion(
-        exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
+      startAbortion(exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
@@ -174,8 +200,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def finishWith(result: ExchangeResult): Unit = {
-    collaborators.listener ! result
-    context.stop(self)
+    persist(ExchangeFinished(result))(onExchangeFinished)
   }
 }
 
@@ -233,4 +258,8 @@ object DefaultExchangeActor {
       Props(new DefaultExchangeActor(exchangeProtocol, exchange, lookup, delegates, collaborators))
     }
   }
+
+  private case object ResumeExchange
+  private case class RetrievedUserInfo(user: Exchange.PeerInfo) extends PersistentEvent
+  private case class ExchangeFinished(result: ExchangeResult) extends PersistentEvent
 }
