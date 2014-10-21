@@ -6,9 +6,9 @@ trait VersionChecker {
 
   def latestStableVersion()(implicit executor: ExecutionContext): Future[CoinffeineVersion]
 
-  def newestStableVersion()(implicit executor: ExecutionContext): Future[Option[CoinffeineVersion]] =
+  def canUpdateTo()(implicit executor: ExecutionContext): Future[Option[CoinffeineVersion]] =
     latestStableVersion().map { v =>
-      if (v.isNewestThan(CoinffeineVersion.Current)) Some(v)
+      if (v.isNewerThan(CoinffeineVersion.Current)) Some(v)
       else None
     }
 }

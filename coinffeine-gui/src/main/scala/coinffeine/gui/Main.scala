@@ -14,8 +14,6 @@ object Main extends JFXApp
 
   private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 
-  JFXApp.AUTO_SHOW = false
-
   launchApp() match {
     case Success(s) => stage = s
     case Failure(e) =>

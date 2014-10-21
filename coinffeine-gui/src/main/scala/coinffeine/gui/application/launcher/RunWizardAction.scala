@@ -10,9 +10,9 @@ import coinffeine.model.bitcoin.{KeyPair, Network}
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.config.user.LocalAppDataDir
 
-class RunWizardAction(configProvider: ConfigProvider, network: Network) extends LaunchAction[Unit] {
+class RunWizardAction(configProvider: ConfigProvider, network: Network) {
 
-  override def apply() = Success(if (mustRunWizard) { runSetupWizard() })
+  def apply() = Success(if (mustRunWizard) { runSetupWizard() })
 
   private def mustRunWizard: Boolean = configProvider.userConfig.isEmpty
 

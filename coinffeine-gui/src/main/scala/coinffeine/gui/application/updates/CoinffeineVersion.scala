@@ -6,7 +6,7 @@ case class CoinffeineVersion(major: Int, minor: Int, revision: Int, build: Strin
 
   override def toString = s"v$major.$minor.$revision$printableBuild"
 
-  def isNewestThan(other: CoinffeineVersion): Boolean =
+  def isNewerThan(other: CoinffeineVersion): Boolean =
     this.major >= other.major &&
     this.minor >= other.minor &&
     this.revision >= other.revision

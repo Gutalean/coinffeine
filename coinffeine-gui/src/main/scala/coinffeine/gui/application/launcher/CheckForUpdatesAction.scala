@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 import coinffeine.gui.application.updates.HttpConfigVersionChecker
 import coinffeine.gui.util.FxExecutor
 
-class CheckForUpdatesAction extends LaunchAction[Unit] {
+class CheckForUpdatesAction {
 
   private implicit val executor = FxExecutor.asContext
 
@@ -18,9 +18,9 @@ class CheckForUpdatesAction extends LaunchAction[Unit] {
 
   private val checker = new HttpConfigVersionChecker()
 
-  override def apply() = Try {
+  def apply() = Try {
     log.info("Checking for new versions of Coinffeine app... ")
-    checker.newestStableVersion().onComplete {
+    checker.canUpdateTo().onComplete {
       case Success(Some(version)) =>
         val answer = Dialogs.create()
           .title("New version available")

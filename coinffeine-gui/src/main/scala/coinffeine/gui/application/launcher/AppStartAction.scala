@@ -6,9 +6,9 @@ import scala.util.Try
 
 import coinffeine.peer.api.CoinffeineApp
 
-class AppStartAction(app: CoinffeineApp) extends LaunchAction[Unit] {
+class AppStartAction(app: CoinffeineApp) {
 
-  override def apply() = Try {
+  def apply() = Try {
     val appStart = app.start(30.seconds)
     Await.result(appStart, Duration.Inf)
   }
