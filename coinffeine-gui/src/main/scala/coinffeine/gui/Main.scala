@@ -1,103 +1,34 @@
 package coinffeine.gui
 
-import java.io.File
-import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Try
-import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 import scalafx.application.JFXApp
-import scalafx.application.JFXApp.PrimaryStage
-import scalafx.scene.image.Image
 
 import org.controlsfx.dialog.{DialogStyle, Dialogs}
-
-import coinffeine.gui.application.main.MainView
-import coinffeine.gui.application.operations.OperationsView
-import coinffeine.gui.application.wallet.WalletView
-import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
-import coinffeine.gui.control.ConnectionStatusWidget
-import coinffeine.gui.control.wallet.{BitcoinBalanceWidget, FiatBalanceWidget}
-import coinffeine.gui.notification.NotificationManager
-import coinffeine.gui.setup.SetupWizard
-import coinffeine.model.bitcoin.{IntegrationTestNetworkComponent, KeyPair, Wallet}
+import coinffeine.gui.application.launcher.AppLauncher
+import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
-import coinffeine.peer.config.user.LocalAppDataDir
 
 object Main extends JFXApp
-  with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent {
+  with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent with AppLauncher {
 
   private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 
-  if (mustRunWizard) {
-    runSetupWizard()
-  }
-
-  val properties = new ApplicationProperties(app)
-  val notificationManager = new NotificationManager(app)
   JFXApp.AUTO_SHOW = false
 
-  val appStart = app.start(30.seconds)
-  stage = new PrimaryStage {
-    title = "Coinffeine"
-    scene = new ApplicationScene(
-      views = Seq(
-        new MainView,
-        new WalletView(app, properties.wallet),
-        new OperationsView(app, properties)),
-      toolbarWidgets = Seq(
-        new BitcoinBalanceWidget(properties.wallet.balance),
-        new FiatBalanceWidget(properties.fiatBalanceProperty)
-      ),
-      statusBarWidgets = Seq(
-        new ConnectionStatusWidget(properties.connectionStatusProperty)
-      ),
-      settingsProvider = configProvider
-    )
-    icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
-  }
-  stage.show()
-
-  try Await.result(appStart, Duration.Inf)
-  catch {
-    case NonFatal(e) =>
+  launchApp() match {
+    case Success(s) => stage = s
+    case Failure(e) =>
       Dialogs.create()
         .message("An unexpected error was thrown while starting Coinffeine app. " +
-          "This may be due to network connectivity issues. Please check your network " +
-          "connectivity and try again. If the error persists, please report in:\n\n" +
-          issueReportingResource)
+        "This may be due to network connectivity issues. Please check your network " +
+        "connectivity and try again. If the error persists, please report in:\n\n" +
+        issueReportingResource)
         .style(DialogStyle.NATIVE)
         .showException(e)
-      stage.close()
   }
 
   override def stopApp(): Unit = {
     app.stopAndWait(30.seconds)
-  }
-
-  private def mustRunWizard: Boolean = configProvider.userConfig.isEmpty
-
-  private def runSetupWizard(): Unit = {
-    val keys = new KeyPair()
-    val address = keys.toAddress(network)
-    val setupConfig = new SetupWizard(address.toString).run()
-
-    configProvider.saveUserSettings(
-      configProvider.bitcoinSettings().copy(walletFile = createWallet(keys)))
-
-    setupConfig.okPayWalletAccess.foreach { access =>
-      val okPaySettings = configProvider.okPaySettings()
-      configProvider.saveUserSettings(okPaySettings.copy(
-        userAccount = Some(access.walletId),
-        seedToken = Some(access.seedToken)
-      ))
-    }
-  }
-
-  private def createWallet(keys: KeyPair): File = {
-    val wallet = new Wallet(network)
-    wallet.importKey(keys)
-    val walletFile = LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toFile
-    wallet.saveToFile(walletFile)
-    walletFile
   }
 }
