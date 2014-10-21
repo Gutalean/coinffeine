@@ -2,6 +2,10 @@ package coinffeine.gui.application.updates
 
 case class CoinffeineVersion(major: Int, minor: Int, revision: Int, build: String) {
 
+  private lazy val printableBuild = if (build.isEmpty) build else s"-$build"
+
+  override def toString = s"v$major.$minor.$revision$printableBuild"
+
   def isNewestThan(other: CoinffeineVersion): Boolean =
     this.major >= other.major &&
     this.minor >= other.minor &&

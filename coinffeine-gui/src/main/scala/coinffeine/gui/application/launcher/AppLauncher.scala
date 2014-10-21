@@ -11,6 +11,7 @@ trait AppLauncher { this: ProductionCoinffeineApp.Component with IntegrationTest
   private val runWizardAction = new RunWizardAction(configProvider, network)
   private val notificationManagerRunAction = new NotificationManagerRunAction(app)
   private val appStartAction = new AppStartAction(app)
+  private val checkForUpdatesAction = new CheckForUpdatesAction()
   private val displayMainWindowAction = new DisplayMainWindowAction(app, configProvider)
 
   def launchApp(): Try[PrimaryStage] = {
@@ -18,6 +19,7 @@ trait AppLauncher { this: ProductionCoinffeineApp.Component with IntegrationTest
       _ <- runWizardAction()
       _ <- notificationManagerRunAction()
       _ <- appStartAction()
+      _ <- checkForUpdatesAction()
       stage <- displayMainWindowAction()
     } yield stage
   }
