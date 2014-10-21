@@ -19,18 +19,17 @@ private[orders] class OrderController[C <: FiatCurrency](
     amountsCalculator: AmountsCalculator,
     network: Network,
     initialOrder: Order[C],
-    publisher: OrderPublication[C],
     fundsBlocker: FundsBlocker) {
 
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
       override val network: Network,
-      var _order: Order[C]) extends StateContext[C] {
+      var _order: Order[C],
+      var shouldBeOnMarket: Boolean = true) extends StateContext[C] {
 
     var state: State[C] = _
 
     override def order = _order
-    override def isInMarket = publisher.isInMarket
 
     override def transitionTo(newState: State[C]): Unit = {
       state = newState
@@ -56,11 +55,12 @@ private[orders] class OrderController[C <: FiatCurrency](
       })
 
     override def keepInMarket(): Unit = {
-      publisher.keepPublishing(order.amounts.pending)
+      shouldBeOnMarket = true
+      listeners.foreach(_.keepInMarket())
     }
-
     override def keepOffMarket(): Unit = {
-      publisher.stopPublishing()
+      shouldBeOnMarket = false
+      listeners.foreach(_.keepOffMarket())
     }
 
     override def updateOrderStatus(newStatus: OrderStatus): Unit = {
@@ -88,14 +88,6 @@ private[orders] class OrderController[C <: FiatCurrency](
 
   private var listeners = Seq.empty[OrderController.Listener[C]]
   private val context = new OrderControllerContext(amountsCalculator, network, initialOrder)
-  publisher.addListener(new OrderPublication.Listener {
-    override def inMarket(): Unit = {
-      context.state.becomeInMarket(context)
-    }
-    override def offline(): Unit = {
-      context.state.becomeOffline(context)
-    }
-  })
   context.transitionTo(new WaitingForMatchesState[C])
 
   /** Immutable snapshot of the order */
@@ -104,8 +96,13 @@ private[orders] class OrderController[C <: FiatCurrency](
   def addListener(listener: OrderController.Listener[C]): Unit = {
     listeners :+= listener
     listener.onOrderChange(context._order, context._order)
+    if (shouldBeOnMarket) listener.keepInMarket()
+    else listener.keepOffMarket()
   }
 
+  def shouldBeOnMarket: Boolean = context.shouldBeOnMarket
+  def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
+  def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
   def acceptOrderMatch(orderMatch: OrderMatch[C]): Unit = {
     context.state.acceptOrderMatch(context, orderMatch)
   }
@@ -118,5 +115,7 @@ private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
     def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit
     def onOrderMatchResolution(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit
+    def keepInMarket(): Unit
+    def keepOffMarket(): Unit
   }
 }

@@ -12,8 +12,6 @@ private[controller] trait StateContext[C <: FiatCurrency] {
   def order: Order[C]
   def calculator: AmountsCalculator
   def network: Network
-  /** Whether the order is published or not */
-  def isInMarket: Boolean
 
   /** Allow to transition to the next state */
   def transitionTo(state: State[C]): Unit

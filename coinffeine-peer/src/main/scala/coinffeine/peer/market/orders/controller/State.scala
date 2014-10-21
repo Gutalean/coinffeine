@@ -1,7 +1,5 @@
 package coinffeine.peer.market.orders.controller
 
-import scala.util.Try
-
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -19,14 +17,9 @@ private[controller] trait State[C <: FiatCurrency] {
 
   /** Funds were successfully blocked */
   def fundsBlocked(ctx: Context): Unit = {}
+
   /** Funds blocking failed */
   def cannotBlockFunds(ctx: Context, cause: Throwable): Unit = {}
-
-  /** The order is published on the market */
-  def becomeInMarket(ctx: Context): Unit = {}
-
-  /** The order stop being published on the market */
-  def becomeOffline(ctx: Context): Unit = {}
 
   /** An exchange just finished */
   def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {}

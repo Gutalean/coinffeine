@@ -18,19 +18,19 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
-    controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
+    controllerFactory: FundsBlocker => OrderController[C],
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
-    collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
+    collaborators: OrderActor.Collaborators)
+  extends Actor with ActorLogging with OrderPublisher.Listener {
 
-  import coinffeine.peer.market.orders.OrderActor._
+  import OrderActor._
 
   private val orderId = initialOrder.id
   private val currency = initialOrder.price.currency
   private val fundsBlocker = delegates.delegatedFundsBlocking()
-  private val publisher = new DelegatedPublication(
-    initialOrder.id, initialOrder.orderType, initialOrder.price, collaborators.submissionSupervisor)
-  private val order = controllerFactory(publisher, fundsBlocker)
+  private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
+  private val order = controllerFactory(fundsBlocker)
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -57,6 +57,9 @@ class OrderActor[C <: FiatCurrency](
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
       order.completeExchange(exchange.asInstanceOf[FailedExchange[C]])
   }
+
+  override def inMarket(): Unit = { order.becomeInMarket() }
+  override def offline(): Unit = { order.becomeOffline() }
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
@@ -85,6 +88,14 @@ class OrderActor[C <: FiatCurrency](
           case MatchAlreadyAccepted(oldExchange) =>
             log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
         }
+      }
+
+      override def keepInMarket(): Unit = {
+        publisher.keepPublishing(order.view.pendingOrderBookEntry)
+      }
+
+      override def keepOffMarket(): Unit = {
+        publisher.stopPublishing()
       }
     })
   }
@@ -140,7 +151,7 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      (publisher, funds) => new OrderController(amountsCalculator, network, order, publisher, funds),
+      funds => new OrderController(amountsCalculator, network, order, funds),
       delegates,
       coinffeineProperties,
       collaborators

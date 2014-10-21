@@ -11,6 +11,7 @@ class MockOrderControllerListener[C <: FiatCurrency]
 
   var currentOrder: Order[C] = _
   var orderMatchResolutions = Seq.empty[MatchResult[C]]
+  var inMarket = false
 
   override def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit = {
     currentOrder = newOrder
@@ -20,6 +21,14 @@ class MockOrderControllerListener[C <: FiatCurrency]
     orderMatchResolutions :+= result
   }
 
+  override def keepOffMarket(): Unit = {
+    inMarket = false
+  }
+
+  override def keepInMarket(): Unit = {
+    inMarket = true
+  }
+
   def lastStatus: OrderStatus = {
     require(currentOrder != null, "Order status was never updated")
     currentOrder.status
@@ -27,4 +36,6 @@ class MockOrderControllerListener[C <: FiatCurrency]
 
   def lastMatchResolution: MatchResult[C] =
     orderMatchResolutions.headOption.getOrElse(fail("No order match was resolved"))
+
+  def isInMarket: Boolean = inMarket
 }

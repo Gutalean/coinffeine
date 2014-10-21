@@ -36,10 +36,10 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
   }
 
   it should "notify order state changes" in new Fixture {
-    publisher.expectUnsuccessfulPublication()
+    order.becomeOffline()
     listener.lastStatus shouldBe OfflineOrder
 
-    publisher.expectSuccessfulPublication()
+    order.becomeInMarket()
     listener.lastStatus shouldBe InMarketOrder
 
     order.acceptOrderMatch(orderMatch)
@@ -51,9 +51,8 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
   }
 
   it should "stop publishing orders upon cancellation" in new Fixture {
-    publisher.expectSuccessfulPublication()
     order.cancel("not needed anymore")
-    publisher should not be 'inMarket
+    listener should not be 'inMarket
   }
 
   it should "notify successful termination" in new Fixture {
@@ -106,30 +105,29 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
       bitcoinAmount = Both(buyer = 5.BTC, seller = 5.0003.BTC),
       fiatAmount = Both(buyer = 5.EUR, seller = OkPayPaymentProcessor.amountMinusFee(5.EUR))
     )
-    publisher.amountToPublish shouldBe initialOrder.amount
-    publisher.expectSuccessfulPublication()
+    order.view.amounts.pending shouldBe initialOrder.amount
+    order.becomeInMarket()
 
     order.acceptOrderMatch(firstHalfMatch)
     fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastStatus shouldBe OfflineOrder
 
-    publisher.amountToPublish shouldBe (initialOrder.amount / 2)
-    publisher.expectSuccessfulPublication()
+    order.view.amounts.pending shouldBe (initialOrder.amount / 2)
+    order.becomeInMarket()
 
     order.acceptOrderMatch(secondHalfMatch)
     fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastStatus shouldBe CompletedOrder
-    publisher should not be 'inMarket
+    listener should not be 'inMarket
   }
 
   trait Fixture extends DefaultAmountsComponent {
     val listener = new MockOrderControllerListener[Euro.type]
-    val publisher = new MockPublication[Euro.type]
     val fundRequests = new FakeFundsBlocker
     val order = new OrderController[Euro.type](
-      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, publisher, fundRequests)
+      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, fundRequests)
     order.addListener(listener)
 
     def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {

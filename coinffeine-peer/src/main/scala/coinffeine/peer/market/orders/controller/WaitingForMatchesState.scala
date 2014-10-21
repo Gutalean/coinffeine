@@ -19,14 +19,6 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
     ctx.keepInMarket()
   }
 
-  override def becomeInMarket(ctx: Context): Unit = {
-    ctx.updateOrderStatus(InMarketOrder)
-  }
-
-  override def becomeOffline(ctx: Context): Unit = {
-    ctx.updateOrderStatus(OfflineOrder)
-  }
-
   override def fundsBlocked(ctx: Context): Unit = {
     whenWaitingForFunds { orderMatch =>
       startExchange(ctx, orderMatch)
