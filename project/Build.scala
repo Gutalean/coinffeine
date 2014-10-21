@@ -18,7 +18,8 @@ object Build extends sbt.Build {
     lazy val akka = Seq(
       "com.typesafe.akka" %% "akka-actor" % Versions.akka,
       "com.typesafe.akka" %% "akka-slf4j" % Versions.akka,
-      "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.akka
+      "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.akka,
+      "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.2"
     )
     lazy val akkaTest = Seq(
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka,
