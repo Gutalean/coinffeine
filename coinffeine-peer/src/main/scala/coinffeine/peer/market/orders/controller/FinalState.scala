@@ -15,9 +15,8 @@ private[controller] case class FinalState[C <: FiatCurrency](cause: FinalState.C
     })
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) = {
-    ctx.resolveOrderMatch(orderMatch, MatchRejected("Order already finished"))
-  }
+  override def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) =
+    MatchRejected("Order already finished")
 
   override def cancel(ctx: Context, reason: String): Unit = {
     throw new UnsupportedOperationException("Already finished order")

@@ -113,7 +113,7 @@ class OrderActorTest extends AkkaSpec
     val properties = new MutableCoinffeineNetworkProperties
     val actor = system.actorOf(Props(new OrderActor[Euro.type](
       order,
-      funds => new OrderController(calculatorStub, network, order, funds),
+      new OrderController(calculatorStub, network, order),
       new Delegates[Euro.type] {
         override def exchangeActor(exchange: NonStartedExchange[Euro.type])
                                   (implicit context: ActorContext) =

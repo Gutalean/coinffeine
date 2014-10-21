@@ -26,13 +26,13 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     counterpart = PeerId("counterpart")
   )
 
-  "A mutable order" should "start new exchanges" in new Fixture {
-    order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds()
-    val MatchAccepted(newExchange) = listener.lastMatchResolution
-    order.view.exchanges should have size 1
+  "An order controller" should "start new exchanges" in new Fixture {
+    order.shouldAcceptOrderMatch(orderMatch) shouldBe
+      MatchAccepted(RequiredFunds(4.0202005.BTC, 10.EUR))
+    val newExchange = order.acceptOrderMatch(orderMatch)
     newExchange.amounts shouldBe amountsCalculator.exchangeAmountsFor(orderMatch)
     newExchange.role shouldBe BuyerRole
+    order.view.exchanges should have size 1
   }
 
   it should "notify order state changes" in new Fixture {
@@ -43,7 +43,6 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     listener.lastStatus shouldBe InMarketOrder
 
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds()
     listener.lastStatus shouldBe InProgressOrder
 
     order.completeExchange(complete(order.view.exchanges.values.head))
@@ -57,7 +56,6 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
 
   it should "notify successful termination" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.head))
     listener.lastStatus shouldBe CompletedOrder
   }
@@ -68,35 +66,20 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     listener.lastStatus shouldBe CancelledOrder(cancellationReason)
   }
 
-  it should "reject order matches when blocking funds for an exchange" in new Fixture {
-    order.acceptOrderMatch(orderMatch)
-    order.acceptOrderMatch(orderMatch.copy(exchangeId = ExchangeId.random()))
-    listener.lastMatchResolution shouldBe MatchRejected("Accepting other match")
-  }
-
   it should "reject order matches during other exchange" in new Fixture {
     order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds()
-    order.acceptOrderMatch(orderMatch.copy(exchangeId = ExchangeId("other")))
-    inside(listener.orderMatchResolutions) {
-      case Seq(MatchAccepted(_), MatchRejected("Exchange already in progress")) =>
-    }
+    order.shouldAcceptOrderMatch(orderMatch.copy(exchangeId = ExchangeId("other"))) shouldBe
+      MatchRejected("Exchange already in progress")
   }
 
   it should "recognize already accepted matches" in new Fixture {
-    order.acceptOrderMatch(orderMatch)
-    fundRequests.successfullyBlockFunds()
-    order.acceptOrderMatch(orderMatch)
-    inside(listener.orderMatchResolutions) {
-      case Seq(MatchAccepted(exchangeAccepted), MatchAlreadyAccepted(exchangeInProgress)) =>
-        exchangeAccepted shouldBe exchangeInProgress
-    }
+    val exchangeInProgress = order.acceptOrderMatch(orderMatch)
+    order.shouldAcceptOrderMatch(orderMatch) shouldBe MatchAlreadyAccepted(exchangeInProgress)
   }
 
   it should "reject order matches when order is finished" in new Fixture {
     order.cancel("finished")
-    order.acceptOrderMatch(orderMatch)
-    listener.lastMatchResolution shouldBe MatchRejected("Order already finished")
+    order.shouldAcceptOrderMatch(orderMatch) shouldBe MatchRejected("Order already finished")
   }
 
   it should "support partial matching" in new Fixture {
@@ -108,16 +91,16 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     order.view.amounts.pending shouldBe initialOrder.amount
     order.becomeInMarket()
 
+    inside(order.shouldAcceptOrderMatch(firstHalfMatch)) { case MatchAccepted(_) => }
     order.acceptOrderMatch(firstHalfMatch)
-    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastStatus shouldBe OfflineOrder
 
     order.view.amounts.pending shouldBe (initialOrder.amount / 2)
     order.becomeInMarket()
 
+    inside(order.shouldAcceptOrderMatch(secondHalfMatch)) { case MatchAccepted(_) => }
     order.acceptOrderMatch(secondHalfMatch)
-    fundRequests.successfullyBlockFunds()
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastStatus shouldBe CompletedOrder
     listener should not be 'inMarket
@@ -125,9 +108,8 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
 
   trait Fixture extends DefaultAmountsComponent {
     val listener = new MockOrderControllerListener[Euro.type]
-    val fundRequests = new FakeFundsBlocker
     val order = new OrderController[Euro.type](
-      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder, fundRequests)
+      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
     order.addListener(listener)
 
     def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {

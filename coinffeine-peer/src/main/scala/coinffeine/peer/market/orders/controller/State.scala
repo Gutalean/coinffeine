@@ -15,19 +15,15 @@ private[controller] trait State[C <: FiatCurrency] {
   /** Triggered when the state become current */
   def enter(ctx: Context): Unit = {}
 
-  /** Funds were successfully blocked */
-  def fundsBlocked(ctx: Context): Unit = {}
-
-  /** Funds blocking failed */
-  def cannotBlockFunds(ctx: Context, cause: Throwable): Unit = {}
-
   /** An exchange just finished */
   def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {}
 
-  /** An order match has been received. This request should be accepted or rejected using
-    * [[StateContext.resolveOrderMatch()]] method.
-    */
-  def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit
+  /** Whether to accept or not an order match */
+  def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): MatchResult[C]
+
+  /** When an order match has been accepted */
+  def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): NonStartedExchange[C] =
+    throw new UnsupportedOperationException()
 
   /** Triggered when the order should be cancelled */
   def cancel(ctx: Context, reason: String): Unit

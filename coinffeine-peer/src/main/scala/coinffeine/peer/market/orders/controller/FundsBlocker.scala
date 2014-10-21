@@ -22,12 +22,12 @@ trait FundsBlocker {
 
 object FundsBlocker {
   trait Listener {
-    def onSuccess(): Unit
-    def onFailure(cause: Throwable): Unit
+    def fundsBlocked(): Unit
+    def cannotBlockFunds(cause: Throwable): Unit
 
     final def onComplete(result: Try[Unit]): Unit = result match {
-      case Failure(cause) => onFailure(cause)
-      case _ => onSuccess()
+      case Failure(cause) => cannotBlockFunds(cause)
+      case _ => fundsBlocked()
     }
   }
 }
