@@ -1,6 +1,5 @@
 package coinffeine.peer.exchange.micropayment
 
-import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
 import akka.actor._
@@ -14,6 +13,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
+import coinffeine.peer.exchange.micropayment.ResubmitTimer.ResubmitTimeout
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
@@ -36,10 +36,12 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   override def persistenceId: String = s"micropayment-channel-${exchange.id.value}"
   private val buyer = new BuyerChannel(initialChannel)
   private var waitingForPaymentResult = false
+  private val resubmitTimer = new ResubmitTimer(context, constants.microPaymentChannelResubmitTimeout)
 
   override def preStart(): Unit = {
     subscribeToMessages()
     log.info(s"Exchange {}: buyer micropayment channel started", exchange.id)
+    resubmitTimer.start()
     super.preStart()
   }
 
@@ -62,15 +64,12 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   override def receiveCommand: Receive = waitingForSignatures
 
   private def waitingForSignatures: Receive = {
-    val behavior: Receive = {
-      case ReceiveMessage(stepSignatures: StepSignatures, _) if buyer.shouldAcceptSignatures(stepSignatures) =>
-        context.setReceiveTimeout(Duration.Undefined)
-        persist(AcceptedSignatures(stepSignatures.signatures))(onAcceptedSignatures)
+    case ReceiveMessage(stepSignatures: StepSignatures, _)
+        if buyer.shouldAcceptSignatures(stepSignatures) =>
+      resubmitTimer.reset()
+      persist(AcceptedSignatures(stepSignatures.signatures))(onAcceptedSignatures)
 
-      case ReceiveTimeout => forwardLastPaymentProof()
-    }
-    context.setReceiveTimeout(constants.microPaymentChannelResubmitTimeout)
-    behavior
+    case ResubmitTimeout => forwardLastPaymentProof()
   }
 
   private def onAcceptedSignatures(event: AcceptedSignatures): Unit = {
@@ -103,6 +102,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       persist(CompletedPayment(paymentId)) { event =>
         log.debug("Exchange {}: payment {} for {} done", exchange.id, paymentId, buyer.currentStep)
         onCompletedPayment(event)
+        resubmitTimer.reset()
         forwardLastPaymentProof()
       }
 
