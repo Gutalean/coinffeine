@@ -1,6 +1,7 @@
 package coinffeine.peer.market.orders
 
 import akka.actor._
+import akka.persistence.PersistentActor
 import org.bitcoinj.core.NetworkParameters
 
 import coinffeine.model.currency._
@@ -22,11 +23,12 @@ class OrderActor[C <: FiatCurrency](
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
     collaborators: OrderActor.Collaborators)
-  extends Actor with ActorLogging with OrderPublisher.Listener with FundsBlocker.Listener {
+  extends PersistentActor with ActorLogging with OrderPublisher.Listener with FundsBlocker.Listener {
 
   import OrderActor._
 
   private val orderId = initialOrder.id
+  override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
   private val fundsBlocker = delegates.delegatedFundsBlocking()
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
@@ -36,9 +38,12 @@ class OrderActor[C <: FiatCurrency](
     log.info("Order actor initialized for {}", orderId)
     subscribeToOrderMatches()
     subscribeToOrderChanges()
+    super.preStart()
   }
 
-  override def receive = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
+  override def receiveRecover: Receive = Map.empty
+
+  override def receiveCommand = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
 
     case ReceiveMessage(orderMatch: OrderMatch[_], _) if pendingOrderMatch.nonEmpty =>
       rejectOrderMatch("Accepting other match", orderMatch)

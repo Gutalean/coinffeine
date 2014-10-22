@@ -31,17 +31,17 @@ abstract class OrderActorTest extends AkkaSpec
     with Inside  with Eventually {
 
   protected val idleTime = 500.millis
-  protected val order = Order(Bid, 10.BTC, Price(2.EUR))
-  protected val orderMatch = OrderMatch(
-    order.id,
-    exchangeId,
-    Both(buyer = amounts.netBitcoinExchanged, seller = amounts.grossBitcoinExchanged),
-    Both(buyer = amounts.grossFiatExchanged, seller = amounts.netFiatExchanged),
-    lockTime = 400000L,
-    exchange.counterpartId
-  )
 
   protected trait Fixture {
+    val order = Order(Bid, 10.BTC, Price(2.EUR))
+    val orderMatch = OrderMatch(
+      order.id,
+      exchangeId,
+      Both(buyer = amounts.netBitcoinExchanged, seller = amounts.grossBitcoinExchanged),
+      Both(buyer = amounts.grossFiatExchanged, seller = amounts.netFiatExchanged),
+      lockTime = 400000L,
+      exchange.counterpartId
+    )
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
