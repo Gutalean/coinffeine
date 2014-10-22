@@ -68,6 +68,8 @@ case class Order[C <: FiatCurrency](
     */
   def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
 
+  def pendingOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id, orderType, amounts.pending, price)
+
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: AnyStateExchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)

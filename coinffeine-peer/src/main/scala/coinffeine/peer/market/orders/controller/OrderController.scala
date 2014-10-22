@@ -5,7 +5,6 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.market.orders.controller.FundsBlocker.Listener
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 /** Runs and order deciding when to accept/reject order matches and notifying order changes.
@@ -18,49 +17,29 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 private[orders] class OrderController[C <: FiatCurrency](
     amountsCalculator: AmountsCalculator,
     network: Network,
-    initialOrder: Order[C],
-    publisher: OrderPublication[C],
-    fundsBlocker: FundsBlocker) {
+    initialOrder: Order[C]) {
 
   private class OrderControllerContext(
       override val calculator: AmountsCalculator,
-      override val network: Network,
-      var _order: Order[C]) extends StateContext[C] {
+      var _order: Order[C],
+      var shouldBeOnMarket: Boolean = true) extends StateContext[C] {
 
     var state: State[C] = _
 
     override def order = _order
-    override def isInMarket = publisher.isInMarket
 
     override def transitionTo(newState: State[C]): Unit = {
       state = newState
       newState.enter(context)
     }
 
-    override def resolveOrderMatch(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit = {
-      result match {
-        case MatchAccepted(exchange) => updateExchange(exchange)
-        case _ =>
-      }
-      listeners.foreach(_.onOrderMatchResolution(orderMatch, result))
-    }
-
-    override def blockFunds(id: ExchangeId, funds: RequiredFunds[C]): Unit =
-      fundsBlocker.blockFunds(id, funds, new Listener {
-        override def onSuccess(): Unit = {
-          state.fundsBlocked(context)
-        }
-        override def onFailure(cause: Throwable): Unit = {
-          state.cannotBlockFunds(context, cause)
-        }
-      })
-
     override def keepInMarket(): Unit = {
-      publisher.keepPublishing(order.amounts.pending)
+      shouldBeOnMarket = true
+      listeners.foreach(_.keepInMarket())
     }
-
     override def keepOffMarket(): Unit = {
-      publisher.stopPublishing()
+      shouldBeOnMarket = false
+      listeners.foreach(_.keepOffMarket())
     }
 
     override def updateOrderStatus(newStatus: OrderStatus): Unit = {
@@ -87,15 +66,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   private var listeners = Seq.empty[OrderController.Listener[C]]
-  private val context = new OrderControllerContext(amountsCalculator, network, initialOrder)
-  publisher.addListener(new OrderPublication.Listener {
-    override def inMarket(): Unit = {
-      context.state.becomeInMarket(context)
-    }
-    override def offline(): Unit = {
-      context.state.becomeOffline(context)
-    }
-  })
+  private val context = new OrderControllerContext(amountsCalculator, initialOrder)
   context.transitionTo(new WaitingForMatchesState[C])
 
   /** Immutable snapshot of the order */
@@ -104,11 +75,29 @@ private[orders] class OrderController[C <: FiatCurrency](
   def addListener(listener: OrderController.Listener[C]): Unit = {
     listeners :+= listener
     listener.onOrderChange(context._order, context._order)
+    if (shouldBeOnMarket) listener.keepInMarket()
+    else listener.keepOffMarket()
   }
 
-  def acceptOrderMatch(orderMatch: OrderMatch[C]): Unit = {
-    context.state.acceptOrderMatch(context, orderMatch)
+  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
+    context.state.shouldAcceptOrderMatch(context, orderMatch)
+
+  def acceptOrderMatch(orderMatch: OrderMatch[C]): NonStartedExchange[C] = {
+    val newExchange = Exchange.notStarted(
+      id = orderMatch.exchangeId,
+      Role.fromOrderType(view.orderType),
+      counterpartId = orderMatch.counterpart,
+      amountsCalculator.exchangeAmountsFor(orderMatch),
+      Exchange.Parameters(orderMatch.lockTime, network)
+    )
+    context.updateExchange(newExchange)
+    context.state.acceptedOrderMatch(context, orderMatch)
+    newExchange
   }
+
+  def shouldBeOnMarket: Boolean = context.shouldBeOnMarket
+  def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
+  def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
   def cancel(reason: String): Unit = { context.state.cancel(context, reason) }
   def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
   def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
@@ -117,6 +106,7 @@ private[orders] class OrderController[C <: FiatCurrency](
 private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
     def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit
-    def onOrderMatchResolution(orderMatch: OrderMatch[C], result: MatchResult[C]): Unit
+    def keepInMarket(): Unit
+    def keepOffMarket(): Unit
   }
 }

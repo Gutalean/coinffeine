@@ -1,9 +1,8 @@
 package coinffeine.peer.market.orders.controller
 
-import org.mockito.ArgumentCaptor
 import org.mockito.BDDMockito.given
-import org.mockito.Matchers.any
 import org.mockito.Mockito.verify
+import org.scalatest.Inside
 import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
@@ -17,7 +16,7 @@ import coinffeine.peer.exchange.protocol.MockExchangeProtocol.DummyDeposits
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class WaitingForMatchesStateTest extends UnitTest
-  with MockitoSugar with SampleExchange with DefaultAmountsComponent {
+  with MockitoSugar with Inside with SampleExchange with DefaultAmountsComponent {
 
   val nonStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
   val partiallyCompletedOrder = nonStartedOrder
@@ -32,23 +31,14 @@ class WaitingForMatchesStateTest extends UnitTest
 
   it should "reject order matches with prices off the limit" in new FreshInstance {
     val m = orderMatch(100.BTC, 2.EUR)
-    state.acceptOrderMatch(context, m)
-    verify(context).resolveOrderMatch(m, MatchRejected("Invalid price"))
+    state.shouldAcceptOrderMatch(context, m) shouldBe MatchRejected("Invalid price")
   }
 
   it should "reject order matches with amounts greater than pending" in
     new FreshInstance(partiallyCompletedOrder) {
       val m = orderMatch(95.BTC, 1.EUR)
-      state.acceptOrderMatch(context, m)
-      verify(context).resolveOrderMatch(m, MatchRejected("Invalid amount"))
+      state.shouldAcceptOrderMatch(context, m) shouldBe MatchRejected("Invalid amount")
     }
-
-  it should "reject order matches when funds cannot be blocked" in new FreshInstance {
-    val m = orderMatch(95.BTC, 1.EUR)
-    state.acceptOrderMatch(context, m)
-    state.cannotBlockFunds(context, new Error("injected error"))
-    verify(context).resolveOrderMatch(m, MatchRejected("Cannot block funds"))
-  }
 
   it should "reject order matches when amounts make no sense" in new FreshInstance {
     val m = OrderMatch(
@@ -59,32 +49,19 @@ class WaitingForMatchesStateTest extends UnitTest
       lockTime = 10,
       counterpart = PeerId("counterpart")
     )
-    state.acceptOrderMatch(context, m)
-    verify(context).resolveOrderMatch(m, MatchRejected("Match with inconsistent amounts"))
-  }
-
-  it should "reject order matches when blocking funds for other order match" in  new FreshInstance {
-    val match1 = orderMatch(95.BTC, 1.EUR)
-    val match2 = orderMatch(50.BTC, 1.2.EUR)
-    state.acceptOrderMatch(context, match1)
-    state.acceptOrderMatch(context, match2)
-    verify(context).resolveOrderMatch(match2, MatchRejected("Accepting other match"))
+    state.shouldAcceptOrderMatch(context, m) shouldBe MatchRejected("Match with inconsistent amounts")
   }
 
   it should "accept perfect matches" in new FreshInstance {
-    state.acceptOrderMatch(context, orderMatch(100.BTC, 1.EUR))
-    state.fundsBlocked(context)
-    verify(context).keepOffMarket()
-    val MatchAccepted(exchange) = matchResult()
-    exchange.amounts.netBitcoinExchanged shouldBe 100.BTC
+    inside(state.shouldAcceptOrderMatch(context, orderMatch(100.BTC, 1.EUR))) {
+      case MatchAccepted(_) =>
+    }
   }
 
   it should "accept partial matches" in new FreshInstance(partiallyCompletedOrder) {
-    state.acceptOrderMatch(context, orderMatch(50.BTC, 1.EUR))
-    state.fundsBlocked(context)
-    verify(context).keepOffMarket()
-    val MatchAccepted(exchange) = matchResult()
-    exchange.amounts.netBitcoinExchanged shouldBe 50.BTC
+    inside(state.shouldAcceptOrderMatch(context, orderMatch(50.BTC, 1.EUR))) {
+      case MatchAccepted(_) =>
+    }
   }
 
   abstract class FreshInstance(val order: Order[Euro.type] = nonStartedOrder) {
@@ -92,7 +69,6 @@ class WaitingForMatchesStateTest extends UnitTest
     val context = mock[StateContext[Euro.type]]
     given(context.order).willReturn(order)
     given(context.calculator).willReturn(amountsCalculator)
-    val funds = new FakeFundsBlocker
 
     def orderMatch(amount: Bitcoin.Amount, price: Euro.Amount) = {
       val fiatSpent = price * amount.value
@@ -102,12 +78,6 @@ class WaitingForMatchesStateTest extends UnitTest
         Both(buyer = fiatSpent, seller = OkPayPaymentProcessor.amountMinusFee(fiatSpent)),
         20, PeerId("counterpart")
       )
-    }
-
-    def matchResult(): MatchResult[Euro.type] = {
-      val result = ArgumentCaptor.forClass(classOf[MatchResult[Euro.type]])
-      verify(context).resolveOrderMatch(any[OrderMatch[Euro.type]], result.capture())
-      result.getValue
     }
   }
 }

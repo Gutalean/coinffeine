@@ -18,19 +18,19 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](
     initialOrder: Order[C],
-    controllerFactory: (OrderPublication[C], FundsBlocker) => OrderController[C],
+    order: OrderController[C],
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
-    collaborators: OrderActor.Collaborators) extends Actor with ActorLogging {
+    collaborators: OrderActor.Collaborators)
+  extends Actor with ActorLogging with OrderPublisher.Listener with FundsBlocker.Listener {
 
-  import coinffeine.peer.market.orders.OrderActor._
+  import OrderActor._
 
   private val orderId = initialOrder.id
   private val currency = initialOrder.price.currency
   private val fundsBlocker = delegates.delegatedFundsBlocking()
-  private val publisher = new DelegatedPublication(
-    initialOrder.id, initialOrder.orderType, initialOrder.price, collaborators.submissionSupervisor)
-  private val order = controllerFactory(publisher, fundsBlocker)
+  private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
+  private var pendingOrderMatch: Option[OrderMatch[C]] = None
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -40,8 +40,20 @@ class OrderActor[C <: FiatCurrency](
 
   override def receive = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
 
+    case ReceiveMessage(orderMatch: OrderMatch[_], _) if pendingOrderMatch.nonEmpty =>
+      rejectOrderMatch("Accepting other match", orderMatch)
+
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
-      order.acceptOrderMatch(message.asInstanceOf[OrderMatch[C]])
+      val orderMatch = message.asInstanceOf[OrderMatch[C]]
+      order.shouldAcceptOrderMatch(orderMatch) match {
+        case MatchAccepted(requiredFunds) =>
+          pendingOrderMatch = Some(orderMatch)
+          fundsBlocker.blockFunds(orderMatch.exchangeId, requiredFunds, this)
+        case MatchRejected(cause) =>
+          rejectOrderMatch(cause, orderMatch)
+        case MatchAlreadyAccepted(oldExchange) =>
+          log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
+      }
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
@@ -56,6 +68,19 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
       order.completeExchange(exchange.asInstanceOf[FailedExchange[C]])
+  }
+
+  override def inMarket(): Unit = { order.becomeInMarket() }
+  override def offline(): Unit = { order.becomeOffline() }
+
+  override def fundsBlocked(): Unit = {
+    spawnExchange(order.acceptOrderMatch(pendingOrderMatch.get))
+    pendingOrderMatch = None
+  }
+
+  override def cannotBlockFunds(cause: Throwable): Unit = {
+    rejectOrderMatch("Cannot block funds", pendingOrderMatch.get)
+    pendingOrderMatch = None
   }
 
   private def subscribeToOrderMatches(): Unit = {
@@ -77,26 +102,24 @@ class OrderActor[C <: FiatCurrency](
         coinffeineProperties.orders.set(newOrder.id, newOrder)
       }
 
-      override def onOrderMatchResolution(orderMatch: OrderMatch[C],
-                                          result: MatchResult[C]): Unit = {
-        result match {
-          case MatchAccepted(newExchange) => acceptMatch(newExchange)
-          case MatchRejected(cause) => rejectOrderMatch(cause, orderMatch)
-          case MatchAlreadyAccepted(oldExchange) =>
-            log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
-        }
+      override def keepInMarket(): Unit = {
+        publisher.keepPublishing(order.view.pendingOrderBookEntry)
+      }
+
+      override def keepOffMarket(): Unit = {
+        publisher.stopPublishing()
       }
     })
   }
 
-  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[C]): Unit = {
+  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[_]): Unit = {
     log.info("Rejecting match for {} against counterpart {}: {}",
       orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
 
-  private def acceptMatch(newExchange: NonStartedExchange[C]): Unit = {
+  private def spawnExchange(newExchange: NonStartedExchange[C]): Unit = {
     log.info("Accepting match for {} against counterpart {} identified as {}",
       orderId, newExchange.counterpartId, newExchange.id)
     context.actorOf(delegates.exchangeActor(newExchange), newExchange.id.value)
@@ -140,7 +163,7 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      (publisher, funds) => new OrderController(amountsCalculator, network, order, publisher, funds),
+      new OrderController(amountsCalculator, network, order),
       delegates,
       coinffeineProperties,
       collaborators

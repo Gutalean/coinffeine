@@ -9,6 +9,7 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
   extends State[C] {
 
   override def enter(ctx: Context): Unit = {
+    ctx.keepOffMarket()
     ctx.updateOrderStatus(InProgressOrder)
   }
 
@@ -22,12 +23,10 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
     )
   }
 
-  override def acceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {
-    val resolution = if (exchangeInProgress == orderMatch.exchangeId)
+  override def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): MatchResult[C] =
+    if (exchangeInProgress == orderMatch.exchangeId)
       MatchAlreadyAccepted[C](ctx.order.exchanges(exchangeInProgress))
     else MatchRejected[C]("Exchange already in progress")
-    ctx.resolveOrderMatch(orderMatch, resolution)
-  }
 
   override def cancel(ctx: Context, reason: String): Unit = {
     // TODO: is this what we wanna do?
