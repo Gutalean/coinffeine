@@ -22,7 +22,7 @@ class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider)
   scene = new ApplicationScene(
     views = Seq(
       new MainView,
-      new StatsView,
+      new StatsView(app),
       new WalletView(app, properties.wallet),
       new OperationsView(app, properties)),
     toolbarWidgets = Seq(

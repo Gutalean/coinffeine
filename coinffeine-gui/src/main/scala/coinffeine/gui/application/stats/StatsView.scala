@@ -1,15 +1,17 @@
 package coinffeine.gui.application.stats
 
-import scalafx.scene.chart.{AreaChart, XYChart}
 import scalafx.scene.layout.StackPane
 
 import coinffeine.gui.application.ApplicationView
+import coinffeine.model.currency.Euro
+import coinffeine.model.market.Market
+import coinffeine.peer.api.CoinffeineApp
 
-class StatsView extends ApplicationView {
+class StatsView(app: CoinffeineApp) extends ApplicationView {
 
   override val name = "Stats"
 
-  private val orderBookChart = new OrderBookChart
+  private val orderBookChart = new OrderBookChart(app.marketStats, Market(Euro))
 
   override def centerPane = new StackPane {
     id = "stats-center-pane"

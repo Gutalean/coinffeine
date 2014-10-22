@@ -1,44 +1,78 @@
 package coinffeine.gui.application.stats
 
+import javafx.animation.{Animation, KeyFrame, Timeline}
+import javafx.event.{ActionEvent, EventHandler}
+import javafx.util.Duration
+import scala.concurrent.duration._
 import scalafx.Includes
-import scalafx.scene.chart.{XYChart, NumberAxis, AreaChart}
+import scalafx.scene.chart.{AreaChart, NumberAxis, XYChart}
 
-class OrderBookChart extends AreaChart[Number, Number](
-    xAxis = new NumberAxis("Price", 0, 1000, 10),
-    yAxis = new NumberAxis("Bitcoins", 0, 1000, 10)) with Includes {
+import coinffeine.gui.util.FxExecutor
+import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.market._
+import coinffeine.peer.api.MarketStats
+
+class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
+                                        market: Market[C]) extends AreaChart[Number, Number](
+    OrderBookChart.xAxis(market), OrderBookChart.yAxis()) with Includes {
+
+  private val reloader = new Timeline(new KeyFrame(
+    Duration.millis(OrderBookChart.UpdateInterval.toMillis), new EventHandler[ActionEvent] {
+      override def handle(event: ActionEvent) = reloadData()
+    }))
 
   title = "Order Book"
 
-  XAxis.setAutoRanging(true)
-  YAxis.setAutoRanging(true)
+  startDataReload()
 
-  /* Some fake data */
-  val bidSeries = new XYChart.Series[Number, Number]() {
-    name = "Bid"
-    data = Seq(
-      (100.0, 1000.0),
-      (150.0, 869.0),
-      (200.0, 646.0),
-      (250.0, 353.0),
-      (300.0, 154.0),
-      (350.0, 40.0),
-      (400.0, 3.0)).map(toChartData)
+  private def startDataReload(): Unit = {
+    reloadData()
+    reloader.setCycleCount(Animation.INDEFINITE)
+    reloader.play()
   }
 
-  val askSeries = new XYChart.Series[Number, Number]() {
-    name = "Ask"
-    data = Seq(
-      (401.0, 3.0),
-      (450.0, 62.0),
-      (500.0, 123.0),
-      (550.0, 459.0),
-      (600.0, 646.0),
-      (650.0, 845.0),
-      (700.0, 1000.0)).map(toChartData)
+  private def reloadData(): Unit = {
+    implicit val executor = FxExecutor.asContext
+    stats.openOrders(market).onSuccess {
+      case entries =>
+        data().clear()
+        data() += toSeries(entries, Bid)
+        data() += toSeries(entries, Ask)
+    }
   }
 
-  data() += bidSeries
-  data() += askSeries
+  private def toSeries(data: Set[OrderBookEntry[C]], orderType: OrderType) = {
+    val series = new XYChart.Series[Number, Number]() {
+      name = orderType.toString
+    }
+    val seriesData = data.toSeq
+      .filter(_.orderType == orderType)
+      .groupBy(_.price.value.toDouble)
+      .mapValues(sumCurrencyAmount)
+    series.data = seriesData.toSeq.map(toChartData)
+    series
+  }
+
+  private def sumCurrencyAmount(entries: Seq[OrderBookEntry[C]]) =
+    entries.map(_.amount.value.toDouble).sum
 
   private def toChartData(data: (Double, Double)) = XYChart.Data[Number, Number](data._1, data._2)
+}
+
+object OrderBookChart {
+
+  val UpdateInterval = 20.seconds
+
+  private def xAxis[C <: FiatCurrency](market: Market[C]) = new NumberAxis {
+    autoRanging = true
+    label = s"Price (${market.currency}/BTC)"
+    tickLabelFormatter = NumberAxis.DefaultFormatter(
+      this, "", market.currency.javaCurrency.getSymbol)
+  }
+
+  private def yAxis[C <: FiatCurrency]() = new NumberAxis {
+    autoRanging = true
+    label = s"Bitcoins"
+    tickLabelFormatter = NumberAxis.DefaultFormatter(this, "", "BTC")
+  }
 }
