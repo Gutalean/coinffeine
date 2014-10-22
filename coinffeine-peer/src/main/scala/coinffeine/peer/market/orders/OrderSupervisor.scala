@@ -7,17 +7,17 @@ import coinffeine.model.market.{Order, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 
 /** Manages orders */
-private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
-                              submissionSupervisorProps: Props)
+private[this] class OrderSupervisor(delegates: OrderSupervisor.Delegates)
   extends Actor with ActorLogging {
 
-  private val submission = context.actorOf(submissionSupervisorProps, "submission")
+  private val submission = context.actorOf(delegates.submissionProps, "submission")
   private var orders = Map.empty[OrderId, ActorRef]
 
   override def receive: Receive = {
 
     case OpenOrder(order) =>
-      val ref = context.actorOf(orderActorProps(order, submission), s"order-${order.id.value}")
+      val ref = context.actorOf(
+        delegates.orderActorProps(order, submission), s"order-${order.id.value}")
       orders += order.id -> ref
 
     case CancelOrder(orderId, reason) =>
@@ -27,12 +27,10 @@ private class OrderSupervisor(orderActorProps: OrderSupervisor.OrderActorProps,
 }
 
 object OrderSupervisor {
+  trait Delegates {
+    val submissionProps: Props
+    def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef): Props
+  }
 
-  /** Props of a submission supervisor given a message gateway */
-  type SubmissionSupervisorProps = ActorRef => Props
-
-  type OrderActorProps = (Order[_ <: FiatCurrency], ActorRef) => Props
-
-  def props(orderActorProps: OrderActorProps, submissionSupervisorProps: Props) =
-    Props(new OrderSupervisor(orderActorProps, submissionSupervisorProps))
+  def props(delegates: Delegates): Props = Props(new OrderSupervisor(delegates))
 }

@@ -8,6 +8,7 @@ import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.ProtocolConstants
+import coinffeine.peer.market.orders.OrderSupervisor.Delegates
 
 class OrderSupervisorTest extends AkkaSpec {
 
@@ -46,10 +47,12 @@ class OrderSupervisorTest extends AkkaSpec {
   trait Fixture extends ProtocolConstants.DefaultComponent {
     val orderActorProbe, eventChannel, paymentProcessor, bitcoinPeer, wallet = TestProbe()
     val submissionProbe = new MockSupervisedActor()
-    val actor = system.actorOf(OrderSupervisor.props(
-      (order, _) => MockOrderActor.props(order, orderActorProbe),
-      submissionProbe.props()
-    ))
+    private val delegates = new Delegates {
+      def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef) =
+        MockOrderActor.props(order, orderActorProbe)
+      val submissionProps = submissionProbe.props()
+    }
+    val actor = system.actorOf(OrderSupervisor.props(delegates))
 
     val order1 = Order(Bid, 5.BTC, Price(500.EUR))
     val order2 = Order(Ask, 2.BTC, Price(800.EUR))

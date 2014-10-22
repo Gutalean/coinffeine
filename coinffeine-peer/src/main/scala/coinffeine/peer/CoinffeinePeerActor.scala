@@ -178,10 +178,7 @@ object CoinffeinePeerActor {
       val props = PropsCatalogue(
         messageGatewayProps(settings),
         MarketInfoActor.props,
-        collaborators => OrderSupervisor.props(
-          orderActorProps(collaborators),
-          SubmissionSupervisor.props(collaborators.gateway, protocolConstants)
-        ),
+        orderSupervisorProps,
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
@@ -190,14 +187,18 @@ object CoinffeinePeerActor {
         props))
     }
 
-    private def orderActorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators)
-                               (order: Order[_ <: FiatCurrency], submissionSupervisor: ActorRef) = {
-      import orderSupervisorCollaborators._
-      val collaborators = OrderActor.Collaborators(
-        wallet, paymentProcessor, submissionSupervisor, gateway, bitcoinPeer, blockchain)
-      OrderActor.props(
-        exchangeActorProps, network, amountsCalculator,
-        order, coinffeineNetworkProperties, collaborators)
-    }
+    private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =
+      OrderSupervisor.props(new OrderSupervisor.Delegates {
+        import orderSupervisorCollaborators._
+
+        override def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef) = {
+          val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
+            gateway, bitcoinPeer, blockchain)
+          OrderActor.props(exchangeActorProps, network, amountsCalculator, order,
+            coinffeineNetworkProperties, collaborators)
+        }
+
+        override val submissionProps = SubmissionSupervisor.props(gateway, protocolConstants)
+      })
   }
 }
