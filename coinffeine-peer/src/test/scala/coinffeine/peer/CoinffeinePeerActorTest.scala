@@ -83,11 +83,11 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val peer = system.actorOf(Props(new CoinffeinePeerActor(
       CoinffeinePeerActor.NetworkParams(localPort, brokerAddress),
       PropsCatalogue(
-        gateway = gateway.props,
-        marketInfo = _ => marketInfo.props,
-        orderSupervisor = _ => orders.props,
-        paymentProcessor = paymentProcessor.props,
-        bitcoinPeer = bitcoinPeer.props))))
+        gateway = gateway.props(),
+        marketInfo = market => marketInfo.props(market),
+        orderSupervisor = collaborators => orders.props(collaborators),
+        paymentProcessor = paymentProcessor.props(),
+        bitcoinPeer = bitcoinPeer.props()))))
 
     def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
       peer ! message

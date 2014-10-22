@@ -184,7 +184,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with MockitoSugar wi
     }
     val fundsRegistry = new MockSupervisedActor()
     val processorProps = Props(new OkPayProcessorActor(
-      clientFactory, fundsRegistry.props, pollingInterval, properties))
+      clientFactory, fundsRegistry.props(), pollingInterval, properties))
     val eventsProbe, requester = TestProbe()
     system.eventStream.subscribe(
       eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
