@@ -3,8 +3,8 @@ package coinffeine.peer.api
 import scala.concurrent.Future
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.OrderBookEntry
-import coinffeine.protocol.messages.brokerage.{Market, Quote}
+import coinffeine.model.market.{Market, OrderBookEntry}
+import coinffeine.protocol.messages.brokerage.Quote
 
 /** Give access to current and historical prices and other market stats. */
 trait MarketStats {

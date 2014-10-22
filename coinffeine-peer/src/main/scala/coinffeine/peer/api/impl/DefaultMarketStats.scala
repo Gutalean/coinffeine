@@ -9,6 +9,7 @@ import akka.util.Timeout
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.market.Market
 import coinffeine.peer.api.MarketStats
 import coinffeine.protocol.messages.brokerage._
 

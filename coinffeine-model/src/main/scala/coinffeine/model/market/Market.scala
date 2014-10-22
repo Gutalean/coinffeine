@@ -1,4 +1,4 @@
-package coinffeine.protocol.messages.brokerage
+package coinffeine.model.market
 
 import coinffeine.model.currency.FiatCurrency
 

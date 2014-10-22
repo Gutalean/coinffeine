@@ -2,7 +2,7 @@ package coinffeine.protocol.messages.brokerage
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.market.{Price, Spread}
+import coinffeine.model.market.{Market, Price, Spread}
 
 class QuoteTest extends UnitTest {
 

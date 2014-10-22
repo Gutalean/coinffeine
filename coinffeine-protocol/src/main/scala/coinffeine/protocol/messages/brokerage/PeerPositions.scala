@@ -3,7 +3,7 @@ package coinffeine.protocol.messages.brokerage
 import java.util.UUID
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.OrderBookEntry
+import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.protocol.messages.PublicMessage
 
 /** Represents the set of orders placed by a peer for a given market. */

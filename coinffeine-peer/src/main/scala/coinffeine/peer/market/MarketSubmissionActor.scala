@@ -3,7 +3,7 @@ package coinffeine.peer.market
 import akka.actor._
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.OrderBookEntry
+import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.brokerage._

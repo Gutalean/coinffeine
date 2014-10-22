@@ -6,10 +6,9 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{OrderBookEntry, OrderId}
+import coinffeine.model.market.{Market, OrderBookEntry, OrderId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
-import coinffeine.protocol.messages.brokerage.Market
 
 private class SubmissionSupervisor(gateway: ActorRef, protocolConstants: ProtocolConstants)
   extends Actor with ActorLogging {
