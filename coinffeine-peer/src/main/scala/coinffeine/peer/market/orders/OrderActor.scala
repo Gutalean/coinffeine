@@ -1,5 +1,7 @@
 package coinffeine.peer.market.orders
 
+import scala.util.{Failure, Success}
+
 import akka.actor._
 import akka.persistence.PersistentActor
 import org.bitcoinj.core.NetworkParameters
@@ -11,7 +13,7 @@ import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties}
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.orders.controller._
-import coinffeine.peer.market.orders.funds.{DelegatedFundsBlocker, FundsBlockerActor}
+import coinffeine.peer.market.orders.funds.FundsBlockerActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage}
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -23,16 +25,17 @@ class OrderActor[C <: FiatCurrency](
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
     collaborators: OrderActor.Collaborators)
-  extends PersistentActor with ActorLogging with OrderPublisher.Listener with FundsBlocker.Listener {
+  extends PersistentActor with ActorLogging with OrderPublisher.Listener {
 
   import OrderActor._
+
+  private case class BlockingInProgress(orderMatch: OrderMatch[C], funds: RequiredFunds[C])
 
   private val orderId = initialOrder.id
   override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
-  private val fundsBlocker = delegates.delegatedFundsBlocking()
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
-  private var pendingOrderMatch: Option[OrderMatch[C]] = None
+  private var blockingInProgress: Option[BlockingInProgress] = None
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -43,22 +46,30 @@ class OrderActor[C <: FiatCurrency](
 
   override def receiveRecover: Receive = Map.empty
 
-  override def receiveCommand = publisher.receiveSubmissionEvents orElse fundsBlocker.blockingFunds orElse {
+  override def receiveCommand = publisher.receiveSubmissionEvents orElse {
 
-    case ReceiveMessage(orderMatch: OrderMatch[_], _) if pendingOrderMatch.nonEmpty =>
+    case ReceiveMessage(orderMatch: OrderMatch[_], _) if blockingInProgress.nonEmpty =>
       rejectOrderMatch("Accepting other match", orderMatch)
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.shouldAcceptOrderMatch(orderMatch) match {
         case MatchAccepted(requiredFunds) =>
-          pendingOrderMatch = Some(orderMatch)
-          fundsBlocker.blockFunds(orderMatch.exchangeId, requiredFunds, this)
+          blockingInProgress = Some(BlockingInProgress(orderMatch, requiredFunds))
+          context.actorOf(delegates.fundsBlocker(orderMatch.exchangeId, requiredFunds))
         case MatchRejected(cause) =>
           rejectOrderMatch(cause, orderMatch)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
       }
+
+    case FundsBlockerActor.BlockingResult(Success(_)) if blockingInProgress.nonEmpty =>
+      spawnExchange(order.acceptOrderMatch(blockingInProgress.get.orderMatch))
+      blockingInProgress = None
+
+    case FundsBlockerActor.BlockingResult(Failure(cause)) =>
+      log.error(cause, "Cannot block funds")
+      blockingInProgress = None
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
@@ -77,16 +88,6 @@ class OrderActor[C <: FiatCurrency](
 
   override def inMarket(): Unit = { order.becomeInMarket() }
   override def offline(): Unit = { order.becomeOffline() }
-
-  override def fundsBlocked(): Unit = {
-    spawnExchange(order.acceptOrderMatch(pendingOrderMatch.get))
-    pendingOrderMatch = None
-  }
-
-  override def cannotBlockFunds(cause: Throwable): Unit = {
-    rejectOrderMatch("Cannot block funds", pendingOrderMatch.get)
-    pendingOrderMatch = None
-  }
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
@@ -139,13 +140,9 @@ object OrderActor {
                            bitcoinPeer: ActorRef,
                            blockchain: ActorRef)
 
-  trait OrderFundsBlocker extends FundsBlocker {
-    def blockingFunds: Actor.Receive
-  }
-
   trait Delegates[C <: FiatCurrency] {
     def exchangeActor(exchange: NonStartedExchange[C])(implicit context: ActorContext): Props
-    def delegatedFundsBlocking()(implicit context: ActorContext): OrderFundsBlocker
+    def fundsBlocker(id: ExchangeId, funds: RequiredFunds[C])(implicit context: ActorContext): Props
   }
 
   case class CancelOrder(reason: String)
@@ -162,9 +159,9 @@ object OrderActor {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
           wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }
-      override def delegatedFundsBlocking()(implicit context: ActorContext) =
-        new DelegatedFundsBlocker((id, requiredFunds) =>
-          FundsBlockerActor.props(id, wallet, paymentProcessor, requiredFunds, context.self))
+      override def fundsBlocker(id: ExchangeId, funds: RequiredFunds[C])
+                               (implicit context: ActorContext) =
+        FundsBlockerActor.props(id, wallet, paymentProcessor, funds, context.self)
     }
     Props(new OrderActor[C](
       order,

@@ -29,9 +29,9 @@ class SingleRunOrderActorTest extends OrderActorTest {
 
   it should "stop submitting to the broker & report new status once matching is received" in
     new Fixture {
-      fundsBlocking.givenSuccessfulFundsBlocking()
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
+      givenSuccessfulFundsBlocking()
       submissionProbe.fishForMessage() {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
@@ -43,24 +43,24 @@ class SingleRunOrderActorTest extends OrderActorTest {
     }
 
   it should "spawn an exchange upon matching" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenSuccessfulFundsBlocking()
     exchangeActor.expectCreation()
   }
 
   it should "reject new order matches if an exchange is active" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenSuccessfulFundsBlocking()
     exchangeActor.expectCreation()
     shouldRejectAnOrderMatch("Exchange already in progress")
   }
 
   it should "not reject resubmissions of already accepted order matches" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenSuccessfulFundsBlocking()
     exchangeActor.expectCreation()
 
     gatewayProbe.relayMessageFromBroker(orderMatch)

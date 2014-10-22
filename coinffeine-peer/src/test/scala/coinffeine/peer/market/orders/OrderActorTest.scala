@@ -1,6 +1,7 @@
 package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
+import scala.util.Success
 
 import akka.actor.{ActorContext, ActorRef, Props}
 import akka.testkit._
@@ -21,7 +22,7 @@ import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting}
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
-import coinffeine.peer.market.orders.funds.FakeOrderFundsBlocker
+import coinffeine.peer.market.orders.funds.FundsBlockerActor
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
@@ -43,9 +44,8 @@ abstract class OrderActorTest extends AkkaSpec
       exchange.counterpartId
     )
     val gatewayProbe = new MockGateway(PeerId("broker"))
-    val exchangeActor = new MockSupervisedActor()
+    val fundsBlocker, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
-    val fundsBlocking = new FakeOrderFundsBlocker
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)
     val properties = new MutableCoinffeineNetworkProperties
@@ -55,9 +55,11 @@ abstract class OrderActorTest extends AkkaSpec
       new Delegates[Euro.type] {
         override def exchangeActor(exchange: NonStartedExchange[Euro.type])
                                   (implicit context: ActorContext) =
-          Fixture.this.exchangeActor.props
+          Fixture.this.exchangeActor.props(exchange)
 
-        override def delegatedFundsBlocking()(implicit context: ActorContext) = fundsBlocking
+        override def fundsBlocker(id: ExchangeId, funds: RequiredFunds[Euro.type])
+                                 (implicit context: ActorContext): Props =
+          Fixture.this.fundsBlocker.props(id, funds)
       },
       properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
@@ -104,6 +106,11 @@ abstract class OrderActorTest extends AkkaSpec
       gatewayProbe.relayMessageFromBroker(orderMatch.copy(exchangeId = otherExchangeId))
       gatewayProbe.expectForwardingToBroker(
         ExchangeRejection(otherExchangeId, errorMessage))
+    }
+
+    def givenSuccessfulFundsBlocking(): Unit = {
+      fundsBlocker.expectCreation()
+      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(Success {}))
     }
 
     def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
