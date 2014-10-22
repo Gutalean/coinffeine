@@ -1,5 +1,7 @@
 package coinffeine.peer.market.orders
 
+import scala.util.Random
+
 import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
@@ -27,43 +29,56 @@ class OrderSupervisorTest extends AkkaSpec {
       Props(new MockOrderActor(order, probe.ref))
   }
 
-  "An OrderSupervisor" should "initialize the OrderSubmissionSupervisor" in new Fixture {
-    givenOrderSupervisorIsInitialized()
-  }
-
-  it should "create an OrderActor when receives a create order message" in new Fixture {
-    givenOrderSupervisorIsInitialized()
-    givenOpenOrder(order1)
-  }
+  "An OrderSupervisor" should "create an OrderActor when receives a create order message" in
+    new Fixture {
+      shouldCreateActorForOrder(order1)
+    }
 
   it should "cancel an order when requested" in new Fixture {
-    givenOrderSupervisorIsInitialized()
-    givenOpenOrder(order1)
+    shouldCreateActorForOrder(order1)
     val reason = "foo"
     actor ! CancelOrder(order1.id, reason)
-    orderActorProbe.expectMsg(OrderActor.CancelOrder(reason))
+    createdOrdersProbe.expectMsg(OrderActor.CancelOrder(reason))
+  }
+
+  it should "remember created order actors" in new Fixture {
+    shouldCreateActorForOrder(order1)
+    shouldCreateActorForOrder(order2)
+    restartActor()
+    createdOrdersProbe.expectMsgAllOf(order1, order2)
   }
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
-    val orderActorProbe, eventChannel, paymentProcessor, bitcoinPeer, wallet = TestProbe()
+    val id = Random.nextInt().toHexString
+    val order1 = Order(Bid, 5.BTC, Price(500.EUR))
+    val order2 = Order(Ask, 2.BTC, Price(800.EUR))
+    val createdOrdersProbe = TestProbe()
     val submissionProbe = new MockSupervisedActor()
     private val delegates = new Delegates {
       def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef) =
-        MockOrderActor.props(order, orderActorProbe)
+        MockOrderActor.props(order, createdOrdersProbe)
       val submissionProps = submissionProbe.props()
     }
-    val actor = system.actorOf(OrderSupervisor.props(delegates))
+    private val props = OrderSupervisor.props(id, delegates)
+    var actor: ActorRef = _
+    startActor()
 
-    val order1 = Order(Bid, 5.BTC, Price(500.EUR))
-    val order2 = Order(Ask, 2.BTC, Price(800.EUR))
-
-    def givenOrderSupervisorIsInitialized(): Unit = {
+    def startActor(): Unit = {
+      actor = system.actorOf(props)
+      watch(actor)
       submissionProbe.expectCreation()
     }
 
-    def givenOpenOrder(order: Order[_ <: FiatCurrency]): Unit = {
+    def shouldCreateActorForOrder(order: Order[_ <: FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
-      orderActorProbe.expectMsg(order)
+      createdOrdersProbe.expectMsg(order)
+    }
+
+    def restartActor(): Unit = {
+      system.stop(actor)
+      submissionProbe.expectStop()
+      expectTerminated(actor)
+      startActor()
     }
   }
 }
