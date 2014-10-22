@@ -2,13 +2,12 @@ package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
 
-import akka.actor.{ActorContext, Props}
+import akka.actor.{ActorContext, ActorRef, Props}
 import akka.testkit._
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -19,7 +18,7 @@ import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
-import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting}
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
 import coinffeine.peer.market.orders.funds.FakeOrderFundsBlocker
@@ -27,13 +26,13 @@ import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
-class OrderActorTest extends AkkaSpec
+abstract class OrderActorTest extends AkkaSpec
     with SampleExchange with BuyerPerspective with CoinffeineUnitTestNetwork.Component
-    with Inside  with Eventually with MockitoSugar {
+    with Inside  with Eventually {
 
-  val idleTime = 500.millis
-  val order = Order(Bid, 10.BTC, Price(2.EUR))
-  val orderMatch = OrderMatch(
+  protected val idleTime = 500.millis
+  protected val order = Order(Bid, 10.BTC, Price(2.EUR))
+  protected val orderMatch = OrderMatch(
     order.id,
     exchangeId,
     Both(buyer = amounts.netBitcoinExchanged, seller = amounts.grossBitcoinExchanged),
@@ -42,68 +41,7 @@ class OrderActorTest extends AkkaSpec
     exchange.counterpartId
   )
 
-  "An order actor" should "submit to the broker and receive submission status" in new Fixture {
-    givenOfflineOrder()
-    submissionProbe.send(actor, InMarket(entry))
-    expectProperty { _.status shouldBe InMarketOrder }
-  }
-
-  it should "keep submitting to the broker until been cancelled" in new Fixture {
-    givenOfflineOrder()
-    expectNoMsg(idleTime)
-    val reason = "some reason"
-    actor ! OrderActor.CancelOrder(reason)
-    submissionProbe.expectMsg(StopSubmitting(order.id))
-    expectProperty { _.status should beCancelled }
-  }
-
-  it should "reject order matches after being cancelled" in new Fixture {
-    givenOfflineOrder()
-    actor ! OrderActor.CancelOrder("got bored")
-    shouldRejectAnOrderMatch("Order already finished")
-  }
-
-  it should "stop submitting to the broker & report new status once matching is received" in
-    new Fixture {
-      fundsBlocking.givenSuccessfulFundsBlocking()
-      givenInMarketOrder()
-      gatewayProbe.relayMessageFromBroker(orderMatch)
-      submissionProbe.fishForMessage() {
-        case StopSubmitting(orderId) if orderId == order.id => true
-        case _ => false
-      }
-      expectProperty { _.status shouldBe InProgressOrder }
-      expectProperty { _.progress shouldBe 0.0 }
-      exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
-      expectProperty { _.status shouldBe CompletedOrder }
-    }
-
-  it should "spawn an exchange upon matching" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
-    givenInMarketOrder()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    exchangeActor.expectCreation()
-  }
-
-  it should "reject new order matches if an exchange is active" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
-    givenInMarketOrder()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    exchangeActor.expectCreation()
-    shouldRejectAnOrderMatch("Exchange already in progress")
-  }
-
-  it should "not reject resubmissions of already accepted order matches" in new Fixture {
-    fundsBlocking.givenSuccessfulFundsBlocking()
-    givenInMarketOrder()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    exchangeActor.expectCreation()
-
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    gatewayProbe.expectNoMsg(idleTime)
-  }
-
-  trait Fixture {
+  protected trait Fixture {
     val gatewayProbe = new MockGateway(PeerId("broker"))
     val exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
@@ -111,7 +49,7 @@ class OrderActorTest extends AkkaSpec
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts)
     val properties = new MutableCoinffeineNetworkProperties
-    val actor = system.actorOf(Props(new OrderActor[Euro.type](
+    private val props = Props(new OrderActor[Euro.type](
       order,
       new OrderController(calculatorStub, network, order),
       new Delegates[Euro.type] {
@@ -124,9 +62,22 @@ class OrderActorTest extends AkkaSpec
       properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
         submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref)
-    )))
+    ))
+    var actor: ActorRef = _
+
+    def startOrder(): Unit = {
+      actor = system.actorOf(props)
+      watch(actor)
+    }
+
+    def restartOrder(): Unit = {
+      system.stop(actor)
+      expectTerminated(actor)
+      startOrder()
+    }
 
     def givenInitializedOrder(): Unit = {
+      startOrder()
       eventually { properties.orders.get(order.id) shouldBe 'defined }
     }
 
@@ -162,7 +113,7 @@ class OrderActorTest extends AkkaSpec
     }
   }
 
-  val beCancelled = new Matcher[OrderStatus] {
+  protected val cancelled = new BeMatcher[OrderStatus] {
     override def apply(left: OrderStatus) = MatchResult(
       left.isInstanceOf[CancelledOrder],
       s"$left is not cancelled",
