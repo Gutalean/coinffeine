@@ -12,7 +12,7 @@ import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MockGateway
-import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
+import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsReceived}
 
 class SubmissionSupervisorTest extends AkkaSpec with Inside {
 

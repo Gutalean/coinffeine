@@ -17,7 +17,7 @@ import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.messages.brokerage.{Market, OpenOrdersRequest, QuoteRequest}
+import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 

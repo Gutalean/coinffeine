@@ -4,13 +4,13 @@ import akka.actor._
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.OrderBookEntry
+import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, Offline}
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
-import coinffeine.protocol.messages.brokerage.{Market, PeerPositions, PeerPositionsReceived}
+import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsReceived}
 
 /** An actor that submits the order positions.
   *

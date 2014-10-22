@@ -3,6 +3,7 @@ package coinffeine.gui.application.main
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.image.Image
 
+import coinffeine.gui.application.stats.StatsView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.wallet.WalletView
@@ -21,6 +22,7 @@ class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider)
   scene = new ApplicationScene(
     views = Seq(
       new MainView,
+      new StatsView(app),
       new WalletView(app, properties.wallet),
       new OperationsView(app, properties)),
     toolbarWidgets = Seq(

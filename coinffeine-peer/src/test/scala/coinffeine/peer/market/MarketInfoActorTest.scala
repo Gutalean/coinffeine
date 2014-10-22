@@ -6,6 +6,7 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
+import coinffeine.model.market.Market
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage._
 
