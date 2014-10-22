@@ -14,6 +14,7 @@ import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
+import coinffeine.peer.exchange.micropayment.ResubmitTimer.ResubmitTimeout
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -34,16 +35,16 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   private var channel = initialChannel
   private var exchange = initialChannel.exchange.completeStep(1)
   override val persistenceId = "micropayment-channel-" + exchange.id.value
-  private var resubmitTimer: Option[Cancellable] = None
+  private val resubmitTimer = new ResubmitTimer(context, constants.microPaymentChannelResubmitTimeout)
 
   override def preStart(): Unit = {
     super.preStart()
     subscribeToMessages()
-    resetResubmitTimer()
+    resubmitTimer.start()
   }
 
   override def postStop(): Unit = {
-    cancelResubmitTimer()
+    resubmitTimer.cancel()
     super.postStop()
   }
 
@@ -61,13 +62,13 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     case ChannelClosed => onChannelClosed()
     case RecoveryCompleted =>
       notifyProgress()
-      self ! SubmitSignatures
+      self ! ResubmitTimeout
   }
 
   override val receiveCommand: Receive = submittingSignatures orElse {
     case ReceiveMessage(PaymentProof(_, paymentId, step), _) if step == channel.currentStep.value =>
       log.info("Exchange {}: received {} for step {}", exchange.id, paymentId, channel.currentStep)
-      resetResubmitTimer()
+      resubmitTimer.reset()
       lookupPayment(paymentId).pipeTo(self)
 
     case ReceiveMessage(proof: PaymentProof, _) =>
@@ -80,10 +81,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
         case Success(_) =>
           log.info("")
-          resetResubmitTimer()
+          resubmitTimer.reset()
           persist(AcceptedPayment){ _ =>
             onAcceptedPayment()
-            self ! SubmitSignatures
+            self ! ResubmitTimeout
           }
       }
 
@@ -100,7 +101,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private def submittingSignatures: Receive = {
-    case SubmitSignatures =>
+    case ResubmitTimeout =>
       val stepSignatures = StepSignatures(
         exchange.id, channel.currentStep.value, channel.signCurrentTransaction)
       forwardToCounterpart(stepSignatures)
@@ -148,17 +149,6 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     }
   }
 
-  private def cancelResubmitTimer(): Unit = {
-    resubmitTimer.foreach(_.cancel())
-  }
-
-  private def resetResubmitTimer(): Unit = {
-    cancelResubmitTimer()
-    resubmitTimer = Some(context.system.scheduler.schedule(
-      constants.microPaymentChannelResubmitTimeout,
-      constants.microPaymentChannelResubmitTimeout, self, SubmitSignatures))
-  }
-
   private def notifyProgress(): Unit = {
     notifyListeners(ExchangeUpdate(exchange))
   }
@@ -171,8 +161,6 @@ object SellerMicroPaymentChannelActor {
             collaborators: MicroPaymentChannelActor.Collaborators) =
     Props(new SellerMicroPaymentChannelActor(constants, collaborators, initialChannel))
 
-  private case object SubmitSignatures
-  
   private case object AcceptedPayment extends PersistentEvent
   private case object ChannelClosed extends PersistentEvent
 }
