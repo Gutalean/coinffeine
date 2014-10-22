@@ -3,9 +3,10 @@ package coinffeine.peer.market.orders
 import scala.util.{Failure, Success}
 
 import akka.actor._
-import akka.persistence.PersistentActor
+import akka.persistence.{RecoveryCompleted, PersistentActor}
 import org.bitcoinj.core.NetworkParameters
 
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -44,9 +45,34 @@ class OrderActor[C <: FiatCurrency](
     super.preStart()
   }
 
-  override def receiveRecover: Receive = Map.empty
+  override def receiveRecover: Receive = {
+    case event: AcceptedOrderMatch[_] =>
+      onAcceptedOrderMatch(event.asInstanceOf[AcceptedOrderMatch[C]])
+    case FundsBlocked => onFundsBlocked()
+    case CannotBlockFunds => onCannotBlockFunds()
+    case RecoveryCompleted => self ! ResumeOrder
+  }
+
+  private def onAcceptedOrderMatch(event: AcceptedOrderMatch[C]): Unit = {
+    blockingInProgress = Some(BlockingInProgress(event.orderMatch, event.requiredFunds))
+  }
+
+  private def onFundsBlocked(): Unit = {
+    val exchange = order.acceptOrderMatch(blockingInProgress.get.orderMatch)
+    blockingInProgress = None
+    context.actorOf(delegates.exchangeActor(exchange), exchange.id.value)
+  }
+
+  private def onCannotBlockFunds(): Unit = {
+    blockingInProgress = None
+  }
 
   override def receiveCommand = publisher.receiveSubmissionEvents orElse {
+    case ResumeOrder =>
+      requestPendingFunds()
+      if (order.shouldBeOnMarket) {
+        publisher.keepPublishing(order.view.pendingOrderBookEntry)
+      }
 
     case ReceiveMessage(orderMatch: OrderMatch[_], _) if blockingInProgress.nonEmpty =>
       rejectOrderMatch("Accepting other match", orderMatch)
@@ -55,21 +81,34 @@ class OrderActor[C <: FiatCurrency](
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.shouldAcceptOrderMatch(orderMatch) match {
         case MatchAccepted(requiredFunds) =>
-          blockingInProgress = Some(BlockingInProgress(orderMatch, requiredFunds))
-          context.actorOf(delegates.fundsBlocker(orderMatch.exchangeId, requiredFunds))
+          persist(AcceptedOrderMatch(orderMatch, requiredFunds)) { event =>
+            log.info("Blocking funds for {}", orderMatch)
+            onAcceptedOrderMatch(event)
+            requestPendingFunds()
+          }
         case MatchRejected(cause) =>
           rejectOrderMatch(cause, orderMatch)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
       }
 
-    case FundsBlockerActor.BlockingResult(Success(_)) if blockingInProgress.nonEmpty =>
-      spawnExchange(order.acceptOrderMatch(blockingInProgress.get.orderMatch))
-      blockingInProgress = None
+    case FundsBlockerActor.BlockingResult(result) if blockingInProgress.isEmpty =>
+      log.warning("Unexpected blocking result {}", result)
+
+    case FundsBlockerActor.BlockingResult(Success(_)) =>
+      val orderMatch = blockingInProgress.get.orderMatch
+      persist(FundsBlocked) { _ =>
+        log.info("Accepting match for {} against counterpart {} identified as {}",
+          orderId, orderMatch.counterpart, orderMatch.exchangeId)
+        onFundsBlocked()
+      }
 
     case FundsBlockerActor.BlockingResult(Failure(cause)) =>
-      log.error(cause, "Cannot block funds")
-      blockingInProgress = None
+      persist(CannotBlockFunds) { _ =>
+        log.error(cause, "Cannot block funds")
+        rejectOrderMatch("Cannot block funds", blockingInProgress.get.orderMatch)
+        onCannotBlockFunds()
+      }
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
@@ -88,6 +127,12 @@ class OrderActor[C <: FiatCurrency](
 
   override def inMarket(): Unit = { order.becomeInMarket() }
   override def offline(): Unit = { order.becomeOffline() }
+
+  private def requestPendingFunds(): Unit = {
+    blockingInProgress.foreach { blocking =>
+      context.actorOf(delegates.fundsBlocker(blocking.orderMatch.exchangeId, blocking.funds))
+    }
+  }
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
@@ -109,11 +154,15 @@ class OrderActor[C <: FiatCurrency](
       }
 
       override def keepInMarket(): Unit = {
-        publisher.keepPublishing(order.view.pendingOrderBookEntry)
+        if (recoveryFinished) {
+          publisher.keepPublishing(order.view.pendingOrderBookEntry)
+        }
       }
 
       override def keepOffMarket(): Unit = {
-        publisher.stopPublishing()
+        if (recoveryFinished) {
+          publisher.stopPublishing()
+        }
       }
     })
   }
@@ -123,12 +172,6 @@ class OrderActor[C <: FiatCurrency](
       orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
-  }
-
-  private def spawnExchange(newExchange: NonStartedExchange[C]): Unit = {
-    log.info("Accepting match for {} against counterpart {} identified as {}",
-      orderId, newExchange.counterpartId, newExchange.id)
-    context.actorOf(delegates.exchangeActor(newExchange), newExchange.id.value)
   }
 }
 
@@ -171,4 +214,10 @@ object OrderActor {
       collaborators
     ))
   }
+
+  private case object ResumeOrder
+  private case class AcceptedOrderMatch[C <: FiatCurrency](
+      orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
+  private case object FundsBlocked extends PersistentEvent
+  private case object CannotBlockFunds extends PersistentEvent
 }

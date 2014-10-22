@@ -1,7 +1,7 @@
 package coinffeine.peer.market.orders
 
 import scala.concurrent.duration._
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 import akka.actor.{ActorContext, ActorRef, Props}
 import akka.testkit._
@@ -59,7 +59,7 @@ abstract class OrderActorTest extends AkkaSpec
 
         override def fundsBlocker(id: ExchangeId, funds: RequiredFunds[Euro.type])
                                  (implicit context: ActorContext): Props =
-          Fixture.this.fundsBlocker.props(id, funds)
+          Fixture.this.fundsBlocker.props(id)
       },
       properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
@@ -111,6 +111,12 @@ abstract class OrderActorTest extends AkkaSpec
     def givenSuccessfulFundsBlocking(): Unit = {
       fundsBlocker.expectCreation()
       fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(Success {}))
+    }
+
+    def givenFailedFundsBlocking(): Unit = {
+      fundsBlocker.expectCreation()
+      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(
+        Failure(new Exception("intended lack of funds"))))
     }
 
     def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
