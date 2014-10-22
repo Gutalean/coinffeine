@@ -1,0 +1,5 @@
+/* This file defines the styles for the stats view. */
+
+#stats-center-pane {
+    -fx-padding: 20px;
+}

@@ -6,6 +6,7 @@ object Stylesheets {
   val Popup = "/css/popup.css"
 
   val Operations = "/css/operations.css"
+  val Stats = "/css/stats.css"
   val Wallet = "/css/wallet.css"
   val Wizard = "/css/wizard.css"
   val Preferences = "/css/preferences.css"
