@@ -47,8 +47,13 @@ private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties
       server ! SendProtoMessage(to, serialization.toProtobuf(msg))
 
     case ReceiveProtoMessage(senderId, protoMessage) =>
-      val message = serialization.fromProtobuf(protoMessage)
-      subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId))
+      try {
+        val message = serialization.fromProtobuf(protoMessage)
+        subscriptions ! NotifySubscribers(ReceiveMessage(message, senderId))
+      } catch {
+        case e: ProtocolSerialization.ProtocolVersionException =>
+          log.error(e, "A message is received with an unexpected protocol version; dropping")
+      }
   }
 
   override protected def stopping(): Receive = {

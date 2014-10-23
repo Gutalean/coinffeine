@@ -12,6 +12,7 @@ import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization.ProtocolSerialization.ProtocolVersionException
 
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
@@ -81,8 +82,10 @@ private[serialization] class DefaultProtocolSerialization(
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {
     val parsedVersion = Version(messageVersion.getMajor, messageVersion.getMinor)
-    require(Version.Current == parsedVersion,
-      s"Cannot deserialize message with version $parsedVersion, expected version ${Version.Current}")
+    if (Version.Current != parsedVersion) {
+      throw ProtocolVersionException(
+        s"Cannot deserialize message with version $parsedVersion, ${Version.Current} expected")
+    }
   }
 
   private def fromPayload(payload: proto.Payload): PublicMessage = {

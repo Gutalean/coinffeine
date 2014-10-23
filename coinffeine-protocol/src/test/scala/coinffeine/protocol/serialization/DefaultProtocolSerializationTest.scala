@@ -52,7 +52,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
       .setPayload(proto.Payload.newBuilder.setExchangeAborted(
         proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason")))
       .build
-    val ex = the [IllegalArgumentException] thrownBy {
+    val ex = the [ProtocolSerialization.ProtocolVersionException] thrownBy {
       instance.fromProtobuf(message)
     }
     ex.getMessage should include ("Cannot deserialize message with version 42.0")
