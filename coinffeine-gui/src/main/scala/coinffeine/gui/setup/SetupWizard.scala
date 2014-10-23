@@ -6,9 +6,7 @@ import coinffeine.gui.wizard.Wizard
 class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
   wizardTitle = "Initial setup",
   steps = Seq(
-    new PasswordStepPane,
-    new OkPayCredentialsStepPane,
-    new OkPaySeedTokenRetrievalPane,
+    new OkPayWalletDataPane,
     new TopUpStepPane(walletAddress)
   ),
   initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None)
