@@ -75,9 +75,9 @@ class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
       peerGroup,
       new Delegates {
         override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
-          Fixture.this.transactionPublisher.props
-        override val walletActor = Fixture.this.walletActor.props
-        override val blockchainActor = Fixture.this.blockchainActor.props
+          Fixture.this.transactionPublisher.props(tx, listener)
+        override val walletActor = Fixture.this.walletActor.props()
+        override val blockchainActor = Fixture.this.blockchainActor.props()
       },
       blockchain, connectionRetryInterval)))
     walletActor.expectCreation()

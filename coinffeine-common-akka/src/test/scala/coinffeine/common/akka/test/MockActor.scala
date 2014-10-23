@@ -7,10 +7,10 @@ import akka.testkit.TestProbe
   *
   * @param master who is informed about the actor activity
   */
-class MockActor(master: ActorRef) extends Actor with ActorLogging {
+class MockActor(master: ActorRef, args: Seq[Any]) extends Actor with ActorLogging {
   import MockActor._
 
-  override def preStart(): Unit = { master ! MockStarted(self) }
+  override def preStart(): Unit = { master ! MockStarted(self, args) }
   override def postStop(): Unit = { master ! MockStopped(self) }
   override def postRestart(reason: Throwable): Unit = {
     master ! MockRestarted(self, reason)
@@ -27,14 +27,14 @@ class MockActor(master: ActorRef) extends Actor with ActorLogging {
 }
 
 object MockActor {
-  def props(master: ActorRef): Props = Props(new MockActor(master))
-  def props(probe: TestProbe): Props = props(probe.ref)
+  def props(master: ActorRef, args: Any*): Props = Props(new MockActor(master, args))
+  def props(probe: TestProbe, args: Any*): Props = props(probe.ref, args: _*)
 
   /** Notification to the master when the mock is started.
     *
     * @param ref The reference of the newly created actor
     */
-  case class MockStarted(ref: ActorRef)
+  case class MockStarted(ref: ActorRef, args: Seq[Any])
 
   /** Notification to the master when the mock is stopped.
     *

@@ -4,21 +4,23 @@ import scala.reflect.ClassTag
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit.TestProbe
+import org.scalatest.ShouldMatchers
 
 import coinffeine.common.akka.test.MockActor.{MockRestarted, MockStopped, MockThrow}
 
 /** Utility class for testing supervisor actors */
-class MockSupervisedActor(implicit system: ActorSystem) {
+class MockSupervisedActor(implicit system: ActorSystem) extends ShouldMatchers {
 
   val probe = TestProbe()
 
-  val props: Props = Props(new MockActor(probe.ref))
+  def props(args: Any*): Props = Props(new MockActor(probe.ref, args))
 
   def ref: ActorRef = refOpt.getOrElse(throw new Error("Mock was not yet created"))
 
-  def expectCreation(): Unit = {
-    val started = probe.expectMsgClass(classOf[MockActor.MockStarted])
+  def expectCreation(): Seq[Any] = {
+    val started = probe.expectMsgType[MockActor.MockStarted]
     refOpt = Some(started.ref)
+    started.args
   }
 
   def expectRestart(): Unit = {
