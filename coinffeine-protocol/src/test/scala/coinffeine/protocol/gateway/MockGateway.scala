@@ -65,6 +65,8 @@ abstract class AbstractMockGateway(brokerId: PeerId, system: ActorSystem) extend
 class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSystem)
     extends AbstractMockGateway(brokerId, system) {
 
+  type AnyForward = ForwardMessage[_ <: PublicMessage]
+
   protected val messagesProbe = TestProbe()
   protected val subscriptionsProbe = TestProbe()
 
@@ -97,8 +99,8 @@ class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSys
     }
   }
 
-  def expectForwardingFromPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
-                               (payloadMatcher: PartialFunction[PublicMessage, T]): T =
+  def expectForwardingToPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
+                             (payloadMatcher: PartialFunction[PublicMessage, T]): T =
     messagesProbe.expectMsgPF(timeout) {
       case ForwardMessage(payload, `dest`) if payloadMatcher.isDefinedAt(payload) =>
         payloadMatcher.apply(payload)
@@ -108,10 +110,22 @@ class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSys
     }
 
   def expectForwardingPF[T](timeout: Duration = Duration.Undefined)
-                           (matcher: PartialFunction[ForwardMessage[_ <: PublicMessage], T]): T =
+                           (matcher: PartialFunction[AnyForward, T]): T =
     messagesProbe.expectMsgPF(timeout) {
       case forward @ ForwardMessage(_, _) if matcher.isDefinedAt(forward) => matcher.apply(forward)
     }
+
+  def fishForForwarding(timeout: Duration = Duration.Undefined)
+                       (matcher: PartialFunction[AnyForward, Boolean]): AnyForward =
+    messagesProbe.fishForMessage(max = timeout) {
+      case forward @ ForwardMessage(_, _) if matcher.isDefinedAt(forward) => matcher(forward)
+    }.asInstanceOf[AnyForward]
+
+  def fishForForwardingTo(dest: NodeId, timeout: Duration = Duration.Undefined)
+                         (matcher: PartialFunction[PublicMessage, Boolean]): PublicMessage =
+    messagesProbe.fishForMessage(max = timeout) {
+      case ForwardMessage(message, `dest`) if matcher.isDefinedAt(message) => matcher(message)
+    }.asInstanceOf[AnyForward].message
 
   def expectNoMsg(timeout: FiniteDuration = messagesProbe.testKitSettings.DefaultTimeout.duration): Unit = {
     messagesProbe.expectNoMsg(timeout)

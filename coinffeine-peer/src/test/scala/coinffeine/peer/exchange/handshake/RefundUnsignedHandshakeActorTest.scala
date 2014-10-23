@@ -17,7 +17,7 @@ class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signat
   )
 
   "Handshakes without our refund signed" should "be aborted after a timeout" in {
-    gateway.expectForwardingFromPF(counterpartId) {
+    gateway.expectForwardingToPF(counterpartId) {
       case _: PeerHandshake =>
     }
     listener.expectMsgClass(classOf[HandshakeFailure])
@@ -25,7 +25,7 @@ class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signat
   }
 
   it must "notify the broker that the exchange is rejected" in {
-    gateway.expectForwardingFromPF(BrokerId) {
+    gateway.expectForwardingToPF(BrokerId) {
       case ExchangeRejection(exchange.`id`, _) =>
     }
   }
