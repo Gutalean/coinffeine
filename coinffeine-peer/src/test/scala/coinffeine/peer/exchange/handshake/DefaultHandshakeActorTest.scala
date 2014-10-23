@@ -25,6 +25,11 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   var actor: ActorRef = _
   startActor()
 
+  private val peerHandshake =
+    PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount)
+  private val refundSignatureRequest =
+    RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund)
+
   def startActor(): Unit = {
     actor = system.actorOf(DefaultHandshakeActor.props(
       DefaultHandshakeActor.ExchangeToStart(exchange, user),
@@ -72,14 +77,15 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   def shouldForwardPeerHandshake(): Unit = {
-    val peerHandshake =
-      PeerHandshake(exchange.id, user.bitcoinKey.publicKey, user.paymentProcessorAccount)
     gateway.expectForwarding(peerHandshake, counterpartId)
   }
 
   def shouldForwardRefundSignatureRequest(): Unit = {
-    val refundSignatureRequest = RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund)
     gateway.expectForwarding(refundSignatureRequest, counterpartId)
+  }
+
+  def shouldForwardPeerHandshakeAndRefundSignatureRequest(): Unit = {
+    gateway.expectForwardingToAllOf(counterpartId, peerHandshake, refundSignatureRequest)
   }
 
   def shouldSignCounterpartRefund(): Unit = {
