@@ -69,19 +69,18 @@ class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSys
 
   protected val messagesProbe = TestProbe()
   protected val subscriptionsProbe = TestProbe()
+  private val defaultTimeout = messagesProbe.testKitSettings.DefaultTimeout.duration
 
   override protected val messagesRecipient = messagesProbe.ref
   override protected val subscriptionsRecipient = subscriptionsProbe.ref
 
-  def expectSubscription(
-      timeout: Duration = messagesProbe.testKitSettings.DefaultTimeout.duration): Subscribe = {
+  def expectSubscription(timeout: Duration = Duration.Undefined): Subscribe = {
     subscriptionsProbe.expectMsgPF(timeout, hint = "expected subscription") {
       case s: Subscribe => s
     }
   }
 
-  def expectUnsubscription(
-      timeout: FiniteDuration = messagesProbe.testKitSettings.DefaultTimeout.duration): Unsubscribe.type = {
+  def expectUnsubscription(timeout: FiniteDuration = defaultTimeout): Unsubscribe.type = {
     subscriptionsProbe.expectMsg(timeout, hint = "expected unsubscription to broker", Unsubscribe)
   }
 
@@ -97,6 +96,22 @@ class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSys
       case message@ForwardMessage(`payload`, `dest`) => message
       case message@ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
     }
+  }
+
+  def expectForwardingAllOf(forwards: AnyForward*): Unit = {
+    messagesProbe.expectMsgAllOf(forwards: _*)
+  }
+
+  def expectForwardingAllOf(timeout: FiniteDuration, forwards: AnyForward*): Unit = {
+    messagesProbe.expectMsgAllOf(timeout, forwards: _*)
+  }
+
+  def expectForwardingToAllOf(dest: NodeId, messages: PublicMessage*): Unit = {
+    expectForwardingToAllOf(dest, defaultTimeout, messages: _*)
+  }
+
+  def expectForwardingToAllOf(dest: NodeId, timeout: FiniteDuration, messages: PublicMessage*): Unit = {
+    expectForwardingAllOf(timeout, messages.map(m => ForwardMessage(m, dest)): _*)
   }
 
   def expectForwardingToPF[T](dest: NodeId, timeout: Duration = Duration.Undefined)
@@ -127,7 +142,7 @@ class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSys
       case ForwardMessage(message, `dest`) if matcher.isDefinedAt(message) => matcher(message)
     }.asInstanceOf[AnyForward].message
 
-  def expectNoMsg(timeout: FiniteDuration = messagesProbe.testKitSettings.DefaultTimeout.duration): Unit = {
+  def expectNoMsg(timeout: FiniteDuration = defaultTimeout): Unit = {
     messagesProbe.expectNoMsg(timeout)
   }
 }
