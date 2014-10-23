@@ -27,8 +27,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
   it should "remember the handshake after a restart" in {
     restartActor()
     blockchain.expectMsgType[WatchMultisigKeys]
-    shouldForwardPeerHandshake()
-    shouldForwardRefundSignatureRequest()
+    shouldForwardPeerHandshakeAndRefundSignatureRequest()
     shouldSignCounterpartRefund()
   }
 
