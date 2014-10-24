@@ -161,6 +161,7 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
       initModality(Modality.WINDOW_MODAL)
       initOwner(parentWindow)
     })
+    operationChoiceBox.requestFocus()
     stage.get.show()
   }
 
