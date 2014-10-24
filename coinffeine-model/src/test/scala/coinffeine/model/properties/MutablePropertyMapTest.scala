@@ -21,6 +21,16 @@ class MutablePropertyMapTest extends UnitTest with FutureMatchers {
     prop("foo") should be (1234)
   }
 
+  it should "notify of preexisting values when adding a handler" in {
+    val prop = new MutablePropertyMap[String, Int]()
+    prop.set("foo", 1234)
+    val notification = Promise[(String, Option[Int], Int)]()
+    prop.onChange { (key, oldValue, newValue) =>
+      notification.success(key, oldValue, newValue)
+    }
+    notification.future.futureValue shouldBe ("foo", None, 1234)
+  }
+
   it should "invoke its handlers when entry is set" in new HandlerFixture {
     prop.set("foobar", fooInitialValue + 10)
     newValue.future.futureValue should be (fooInitialValue + 10)
@@ -29,7 +39,8 @@ class MutablePropertyMapTest extends UnitTest with FutureMatchers {
   it should "not invoke its handlers when set is not changing its value" in new HandlerFixture {
     prop.set("foobar", fooInitialValue)
     after(100.millis) {
-      newValue should not be 'completed
+      newValue shouldBe 'completed
+      modifiedValue should not be 'completed
     }
   }
 
@@ -44,11 +55,12 @@ class MutablePropertyMapTest extends UnitTest with FutureMatchers {
   trait HandlerFixture {
     val fooInitialValue = 1234
     val prop = new MutablePropertyMap[String, Int]()
-    prop.set("foobar", fooInitialValue)
     val newValue = Promise[Int]()
+    val modifiedValue = Promise[Int]()
     val handler = prop.onNewValue { (key, value) =>
       key should be ("foobar")
-      newValue.success(value)
+      if (newValue.isCompleted) modifiedValue.success(value)
+      else newValue.success(value)
     }
   }
 

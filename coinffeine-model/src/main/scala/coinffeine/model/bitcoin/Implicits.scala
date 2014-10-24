@@ -1,6 +1,7 @@
 package coinffeine.model.bitcoin
 
 import scala.collection.JavaConversions._
+import scala.language.implicitConversions
 
 import org.bitcoinj.core.Coin
 import org.bitcoinj.core.ECKey.MissingPrivateKeyException

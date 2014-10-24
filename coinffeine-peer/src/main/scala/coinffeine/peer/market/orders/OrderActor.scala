@@ -37,6 +37,7 @@ class OrderActor[C <: FiatCurrency](
   private val currency = initialOrder.price.currency
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
   private var blockingInProgress: Option[BlockingInProgress] = None
+  private var started = false
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -46,11 +47,16 @@ class OrderActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
+    case OrderStarted => onOrderStarted()
     case event: AcceptedOrderMatch[_] =>
       onAcceptedOrderMatch(event.asInstanceOf[AcceptedOrderMatch[C]])
     case FundsBlocked => onFundsBlocked()
     case CannotBlockFunds => onCannotBlockFunds()
     case RecoveryCompleted => self ! ResumeOrder
+  }
+
+  private def onOrderStarted(): Unit = {
+    started = true
   }
 
   private def onAcceptedOrderMatch(event: AcceptedOrderMatch[C]): Unit = {
@@ -68,11 +74,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   override def receiveCommand = publisher.receiveSubmissionEvents orElse {
-    case ResumeOrder =>
-      requestPendingFunds()
-      if (order.shouldBeOnMarket) {
-        publisher.keepPublishing(order.view.pendingOrderBookEntry)
-      }
+    case ResumeOrder => resumeOrder()
 
     case ReceiveMessage(orderMatch: OrderMatch[_], _) if blockingInProgress.nonEmpty =>
       rejectOrderMatch("Accepting other match", orderMatch)
@@ -123,6 +125,20 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
       order.completeExchange(exchange.asInstanceOf[FailedExchange[C]])
+  }
+
+  private def resumeOrder(): Unit = {
+    requestPendingFunds()
+    val currentOrder = order.view
+    if (order.shouldBeOnMarket) {
+      publisher.keepPublishing(currentOrder.pendingOrderBookEntry)
+    }
+    if (!started) {
+      persist(OrderStarted) { _ =>
+        coinffeineProperties.orders.set(orderId, initialOrder)
+        onOrderStarted()
+      }
+    }
   }
 
   override def inMarket(): Unit = { order.becomeInMarket() }
@@ -216,6 +232,7 @@ object OrderActor {
   }
 
   private case object ResumeOrder
+  private case object OrderStarted extends PersistentEvent
   private case class AcceptedOrderMatch[C <: FiatCurrency](
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
   private case object FundsBlocked extends PersistentEvent

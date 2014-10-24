@@ -8,6 +8,12 @@ sealed trait OrderStatus {
   override def toString: String = name
 }
 
+case object NotStartedOrder extends OrderStatus {
+  override val name = "not started"
+  override val isCancellable = true
+  override def isFinal = false
+}
+
 /** The order is offline.
   *
   * This status indicates that the corresponding order has been loaded in the system (either just

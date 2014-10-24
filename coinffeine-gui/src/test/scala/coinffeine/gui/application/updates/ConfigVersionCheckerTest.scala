@@ -6,7 +6,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
 
 import coinffeine.common.test.{FutureMatchers, UnitTest}
-import coinffeine.gui.application.updates.VersionChecker
 
 class ConfigVersionCheckerTest extends UnitTest with FutureMatchers {
 

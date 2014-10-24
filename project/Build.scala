@@ -19,7 +19,8 @@ object Build extends sbt.Build {
       "com.typesafe.akka" %% "akka-actor" % Versions.akka,
       "com.typesafe.akka" %% "akka-slf4j" % Versions.akka,
       "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.akka,
-      "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.2"
+      // Use custom build to having a fix for https://github.com/romix/akka-kryo-serialization/issues/35
+      "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.3-20141023"
     )
     lazy val akkaTest = Seq(
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka,
