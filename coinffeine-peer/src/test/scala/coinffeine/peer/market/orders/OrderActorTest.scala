@@ -85,7 +85,7 @@ abstract class OrderActorTest extends AkkaSpec
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      expectProperty { _.status shouldBe OfflineOrder }
+      expectProperty { _.status shouldBe NotStartedOrder }
       submissionProbe.expectMsg(KeepSubmitting(entry))
     }
 
