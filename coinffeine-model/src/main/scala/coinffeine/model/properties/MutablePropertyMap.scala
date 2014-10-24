@@ -14,6 +14,7 @@ class MutablePropertyMap[K, V] extends PropertyMap[K, V] {
   override def content: Set[(K, V)] = synchronized { map.toSet }
 
   override def onChange(handler: OnEntryChangeHandler)(implicit executor: ExecutionContext) = {
+    map.foreach { case (k, v) => handler(k, None, v) }
     listeners.add(handler)
   }
 

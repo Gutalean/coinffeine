@@ -28,6 +28,7 @@ trait PropertyMap[K, V] {
   def values: Iterable[V] = content.map(_._2)
 
   /** Set a on-change handler which will be invoked when a property entry changes.
+    * It will be invoked immediately for preexisting keys.
     *
     * @param handler    The handler to be invoked when some entry is changed
     * @param executor   The executor used to invoke the handler
@@ -36,6 +37,7 @@ trait PropertyMap[K, V] {
               (implicit executor: ExecutionContext): Cancellable
 
   /** Set a on-change handler which will be invoked when a new entry value is set
+    * It will be invoked immediately for preexisting keys.
     *
     * @param handler    The handler to be invoked when some entry value is set
     * @param executor   The executor used to invoke the handler
