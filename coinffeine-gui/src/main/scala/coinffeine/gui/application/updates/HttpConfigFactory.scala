@@ -14,5 +14,5 @@ class HttpConfigFactory extends ConfigVersionChecker.ConfigFactory {
 
 object HttpConfigFactory {
   val FileLocation = url(
-    "https://github.com/Coinffeine/coinffeine-server/raw/master-server/VERSION")
+    "https://raw.githubusercontent.com/Coinffeine/coinffeine/master/VERSION")
 }
