@@ -52,6 +52,7 @@ class OrderActor[C <: FiatCurrency](
       onAcceptedOrderMatch(event.asInstanceOf[AcceptedOrderMatch[C]])
     case FundsBlocked => onFundsBlocked()
     case CannotBlockFunds => onCannotBlockFunds()
+    case event: CancelledOrder => onCancelledOrder(event)
     case RecoveryCompleted => self ! ResumeOrder
   }
 
@@ -71,6 +72,10 @@ class OrderActor[C <: FiatCurrency](
 
   private def onCannotBlockFunds(): Unit = {
     blockingInProgress = None
+  }
+
+  private def onCancelledOrder(event: CancelledOrder): Unit = {
+    order.cancel(event.reason)
   }
 
   override def receiveCommand = publisher.receiveSubmissionEvents orElse {
@@ -114,7 +119,7 @@ class OrderActor[C <: FiatCurrency](
 
     case CancelOrder(reason) =>
       log.info("Cancelling order {}", orderId)
-      order.cancel(reason)
+      persist(CancelledOrder(reason))(onCancelledOrder)
 
     case ExchangeActor.ExchangeUpdate(exchange) if exchange.currency == currency =>
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
@@ -237,4 +242,5 @@ object OrderActor {
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
   private case object FundsBlocked extends PersistentEvent
   private case object CannotBlockFunds extends PersistentEvent
+  private case class CancelledOrder(reason: String) extends PersistentEvent
 }
