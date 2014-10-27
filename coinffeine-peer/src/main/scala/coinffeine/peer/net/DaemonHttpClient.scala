@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay.ws
+package coinffeine.peer.net
 
 import java.util.{concurrent => juc}
 
@@ -8,7 +8,7 @@ import dispatch.{BuildInfo, DaemonThreads}
 import org.jboss.netty.channel.socket.nio.{NioClientSocketChannelFactory, NioWorkerPool}
 import org.jboss.netty.util.HashedWheelTimer
 
-private[ws] class DaemonHttpClient {
+class DaemonHttpClient {
   private val timer = new HashedWheelTimer(DaemonThreads.factory)
   private val shuttingDown = new juc.atomic.AtomicBoolean(false)
 
