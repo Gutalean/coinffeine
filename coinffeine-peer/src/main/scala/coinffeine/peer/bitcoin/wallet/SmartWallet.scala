@@ -148,9 +148,11 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   private def commitTransaction(tx: MutableTransaction): Unit = {
-    if (delegate.getTransactionPool(WalletTransaction.Pool.PENDING).contains(tx.getHash)) return
-    if (delegate.getTransactionPool(WalletTransaction.Pool.SPENT).contains(tx.getHash)) return
-    delegate.commitTx(tx)
+    def containsTransaction(pool: WalletTransaction.Pool) =
+      delegate.getTransactionPool(pool).contains(tx.getHash)
+    if (!WalletTransaction.Pool.values().exists(containsTransaction)) {
+      delegate.commitTx(tx)
+    }
   }
 
   private def contains(tx: MutableTransaction): Boolean = getTransaction(tx.getHash).isDefined
