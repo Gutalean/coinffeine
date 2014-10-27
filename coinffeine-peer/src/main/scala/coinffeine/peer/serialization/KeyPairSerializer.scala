@@ -17,7 +17,8 @@ class KeyPairSerializer extends Serializer[KeyPair] {
 
   override def read(kryo: Kryo, input: Input, clazz: Class[KeyPair]): KeyPair = {
     val hasPrivKey = input.readBoolean()
-    val bytes = input.readBytes(input.readInt())
+    val size = input.readInt()
+    val bytes = input.readBytes(size)
     if (hasPrivKey) ECKey.fromASN1(bytes) else ECKey.fromPublicOnly(bytes)
   }
 }

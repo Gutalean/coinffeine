@@ -367,7 +367,7 @@ object Exchange {
     val user: Exchange.PeerInfo
     val counterpart: Exchange.PeerInfo
 
-    require(user.bitcoinKey.canSign)
+    require(user.bitcoinKey.canSign, s"Cannot sign with ${user.bitcoinKey}")
   }
 
   implicit class StartedHandshakePimps(val exchange: Exchange[_, StartedHandshake[_]])
