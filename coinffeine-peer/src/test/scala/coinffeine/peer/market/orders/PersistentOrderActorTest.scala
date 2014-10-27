@@ -3,6 +3,7 @@ package coinffeine.peer.market.orders
 import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.currency.Euro
 import coinffeine.model.exchange.NonStartedExchange
+import coinffeine.peer.market.SubmissionSupervisor.StopSubmitting
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class PersistentOrderActorTest extends OrderActorTest {
@@ -43,5 +44,15 @@ class PersistentOrderActorTest extends OrderActorTest {
     restartOrder()
     exchangeActor.probe.expectMsgType[MockStopped]
     exchangeActor.expectCreation() shouldBe Seq(exchange)
+  }
+
+  it should "remember that the order was cancelled" in new Fixture {
+    givenInMarketOrder()
+    actor ! OrderActor.CancelOrder("test cancellation")
+    submissionProbe.expectMsg(StopSubmitting(order.id))
+
+    restartOrder()
+    expectNoMsg(idleTime)
+    shouldRejectAnOrderMatch("Order already finished")
   }
 }
