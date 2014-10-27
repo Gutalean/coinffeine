@@ -9,7 +9,7 @@ object BlockchainStatus {
 
   /** Blockchain download is in progress */
   case class Downloading(totalBlocks: Int, remainingBlocks: Int) extends BlockchainStatus {
-    require(totalBlocks > 0)
+    require(totalBlocks > 0, s"Total blocks should be positive ($totalBlocks given)")
 
     def progress: Double = (totalBlocks - remainingBlocks) / totalBlocks.toDouble
   }

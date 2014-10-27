@@ -58,7 +58,10 @@ class DefaultCoinffeineApp(name: String,
     ServiceActor.askStop(peerRef).recover {
       case cause =>
         DefaultCoinffeineApp.Log.error("cannot gracefully stop coinffeine app", cause)
-    }.map(_ => system.shutdown())
+    }.map { _ =>
+      system.shutdown()
+      system.awaitTermination()
+    }
   }
 }
 

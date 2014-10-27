@@ -8,7 +8,6 @@ object KeyPairUtils {
   def equals(k1: KeyPair, k2: KeyPair): Boolean = (k1, k2) match {
     case (null, null) => true
     case (_, null) | (null, _) => false
-    case _ =>
-      (k1.hasPrivKey == k2.hasPrivKey) && (!k1.hasPrivKey || (k1.getPrivKey == k2.getPrivKey))
+    case _ => (k1.canSign == k2.canSign) && (!k1.canSign || (k1.getPrivKey == k2.getPrivKey))
   }
 }
