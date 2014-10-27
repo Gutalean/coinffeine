@@ -7,11 +7,12 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 
 class KeyPairSerializerTest extends UnitTest {
 
   val kryo = new Kryo()
-  kryo.register(classOf[KeyPair], new KeyPairSerializer)
+  new KryoConfigurator().customize(kryo)
 
   "Key pairs" should "support roundtrip Kryo serialization" in {
     val keyPair = new KeyPair()
@@ -21,6 +22,12 @@ class KeyPairSerializerTest extends UnitTest {
   "Public keys" should "support roundtrip Kryo serialization" in {
     val publicKey = new KeyPair().publicKey
     KeyPairUtils.equals(publicKey, deserialize(serialize(publicKey))) shouldBe true
+  }
+
+  "Deterministic keys" should "support roundtrip Kryo serialization" in {
+    val wallet = new Wallet(CoinffeineUnitTestNetwork)
+    val keyPair = wallet.freshReceiveKey()
+    KeyPairUtils.equals(keyPair, deserialize(serialize(keyPair))) shouldBe true
   }
 
   def serialize(keyPair: KeyPair): Array[Byte] = {
