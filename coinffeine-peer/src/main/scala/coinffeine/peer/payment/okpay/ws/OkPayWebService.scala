@@ -6,6 +6,7 @@ import scalaxb.{HttpClientsAsync, Soap11ClientsAsync}
 import dispatch._
 import org.slf4j.LoggerFactory
 
+import coinffeine.peer.net.DaemonHttpClient
 import coinffeine.peer.payment.okpay.generated.BasicHttpBinding_I_OkPayAPIBindings
 
 /** SOAP client of the OKPay service

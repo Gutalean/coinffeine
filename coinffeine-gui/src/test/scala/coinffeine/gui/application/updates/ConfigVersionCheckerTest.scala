@@ -72,15 +72,17 @@ class ConfigVersionCheckerTest extends UnitTest with FutureMatchers {
     an [VersionChecker.VersionFetchingException] should be thrownBy stable.futureValue
   }
 
-  private def withConfigFactory(settings: (String, Any)*): ConfigVersionChecker.ConfigFactory =
-    new ConfigVersionChecker.ConfigFactory {
+  private def withConfigFactory(settings: (String, Any)*): ConfigVersionChecker.ConfigProvider =
+    new ConfigVersionChecker.ConfigProvider {
       override def apply() = Future.successful(settings.foldLeft(ConfigFactory.empty()) {
         case (c, (k, v)) => c.withValue(k, ConfigValueFactory.fromAnyRef(v))
       })
+      override def shutdown() = {}
     }
 
-  private def withFailingConfigFactory(e: Throwable): ConfigVersionChecker.ConfigFactory =
-    new ConfigVersionChecker.ConfigFactory {
+  private def withFailingConfigFactory(e: Throwable): ConfigVersionChecker.ConfigProvider =
+    new ConfigVersionChecker.ConfigProvider {
       override def apply() = Future.failed(e)
+      override def shutdown() = {}
     }
 }

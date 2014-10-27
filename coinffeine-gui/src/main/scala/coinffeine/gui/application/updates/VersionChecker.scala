@@ -11,6 +11,8 @@ trait VersionChecker {
       if (v.isNewerThan(CoinffeineVersion.Current)) Some(v)
       else None
     }
+
+  def shutdown(): Unit
 }
 
 object VersionChecker {

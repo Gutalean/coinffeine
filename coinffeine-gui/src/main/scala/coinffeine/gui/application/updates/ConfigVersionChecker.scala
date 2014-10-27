@@ -7,16 +7,18 @@ import scala.util.control.NonFatal
 import com.typesafe.config.Config
 
 class ConfigVersionChecker(
-    configFactory: ConfigVersionChecker.ConfigFactory) extends VersionChecker {
+    configProvider: ConfigVersionChecker.ConfigProvider) extends VersionChecker {
 
   override def latestStableVersion()(implicit executor: ExecutionContext) = {
-    configFactory().map { config =>
+    configProvider().map { config =>
       extractCurrent(config)
     }.recoverWith {
       case NonFatal(e) => Future.failed(new VersionChecker.VersionFetchingException(
         "something went wrong while obtaining latest estable version from config", e))
     }
   }
+
+  override def shutdown() = configProvider.shutdown()
 
   private def extractCurrent(config: Config): CoinffeineVersion = CoinffeineVersion(
     major = config.getInt("latest-stable.major"),
@@ -28,5 +30,8 @@ class ConfigVersionChecker(
 
 object ConfigVersionChecker {
 
-  type ConfigFactory = () => Future[Config]
+  trait ConfigProvider {
+    def apply(): Future[Config]
+    def shutdown(): Unit
+  }
 }
