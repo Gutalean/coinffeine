@@ -2,12 +2,13 @@ package coinffeine.gui.application.launcher
 
 import java.awt.Desktop
 import java.net.URI
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 import org.controlsfx.dialog.{Dialog, DialogStyle, Dialogs}
 import org.slf4j.LoggerFactory
 
-import coinffeine.gui.application.updates.HttpConfigVersionChecker
+import coinffeine.gui.application.updates.{CoinffeineVersion, HttpConfigVersionChecker}
 import coinffeine.gui.util.FxExecutor
 
 class CheckForUpdatesAction {
@@ -16,11 +17,11 @@ class CheckForUpdatesAction {
 
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  private val checker = new HttpConfigVersionChecker()
-
   def apply() = Try {
+    val checker = new HttpConfigVersionChecker()
     log.info("Checking for new versions of Coinffeine app... ")
-    checker.canUpdateTo().onComplete {
+    val checking = checker.canUpdateTo()
+    checking.onComplete {
       case Success(Some(version)) =>
         val answer = Dialogs.create()
           .title("New version available")
@@ -36,6 +37,7 @@ class CheckForUpdatesAction {
       case Failure(e) =>
         log.error("cannot retrieve information of newest versions", e)
     }
+    checking.onComplete(_ => checker.shutdown())
   }
 }
 
