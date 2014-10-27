@@ -39,6 +39,7 @@ abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
     },
     new Label(formatBalance(balanceProperty.value)) {
       prefWidth = 100
+      prefHeight = 24
       id = s"$symbol-balance"
       styleClass = Seq("balance")
       alignment = Pos.CenterRight
