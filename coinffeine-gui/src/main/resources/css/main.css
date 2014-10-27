@@ -17,21 +17,23 @@ GridPane {
     -fx-color: black;
 }
 
-#balance-widget {
+#balance-widget .balance {
+    -fx-border-width: 1 1 1 0;
+    -fx-border-color: #aaa;
     -fx-border-style: solid;
-    -fx-border-radius: 5;
+    -fx-border-radius: 0 4 4 0;
 }
+
 #balance-widget .currency-label {
-    -fx-border-width: 0 1 0 0;
-    -fx-border-color: black;
-    -fx-border-style: solid;
-    -fx-border-radius: 5 0 0 5;
+    -fx-background-radius: 4 0 0 4;
 }
 .BTC-label {
-    -fx-background-color: #AACCAA;
+    -fx-background-color: #e71;
+    -fx-text-fill: white;
 }
 .EUR-label {
-    -fx-background-color: #99CCFF;
+    -fx-background-color: #490;
+    -fx-text-fill: white;
 }
 .non-current .balance {
     -fx-graphic: url('../graphics/warning.png');
