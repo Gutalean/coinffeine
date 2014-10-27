@@ -5,12 +5,13 @@ import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.bitcoinj.core.ECKey
 
 import coinffeine.model.bitcoin.KeyPair
+import coinffeine.model.bitcoin._
 
 class KeyPairSerializer extends Serializer[KeyPair] {
 
   override def write(kryo: Kryo, output: Output, keyPair: KeyPair): Unit = {
-    output.writeBoolean(keyPair.hasPrivKey)
-    val bytes = if (keyPair.hasPrivKey) keyPair.toASN1 else keyPair.getPubKey
+    output.writeBoolean(keyPair.canSign)
+    val bytes = if (keyPair.canSign) keyPair.getPrivKeyBytes else keyPair.getPubKey
     output.writeInt(bytes.length)
     output.write(bytes)
   }
@@ -19,6 +20,6 @@ class KeyPairSerializer extends Serializer[KeyPair] {
     val hasPrivKey = input.readBoolean()
     val size = input.readInt()
     val bytes = input.readBytes(size)
-    if (hasPrivKey) ECKey.fromASN1(bytes) else ECKey.fromPublicOnly(bytes)
+    if (hasPrivKey) ECKey.fromPrivate(bytes) else ECKey.fromPublicOnly(bytes)
   }
 }

@@ -27,7 +27,10 @@ class KeyPairSerializerTest extends UnitTest {
   "Deterministic keys" should "support roundtrip Kryo serialization" in {
     val wallet = new Wallet(CoinffeineUnitTestNetwork)
     val keyPair = wallet.freshReceiveKey()
-    KeyPairUtils.equals(keyPair, deserialize(serialize(keyPair))) shouldBe true
+    keyPair.canSign shouldBe true
+    val deserializedKeyPair = deserialize(serialize(keyPair))
+    KeyPairUtils.equals(keyPair, deserializedKeyPair) shouldBe true
+    deserializedKeyPair.canSign shouldBe true
   }
 
   def serialize(keyPair: KeyPair): Array[Byte] = {
