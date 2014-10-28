@@ -40,11 +40,11 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
         publishAddress().onComplete { case result =>
           self ! AddressPublicationResult(result)
         }
-        publishingAddress(sender()) orElse manageConnectionStatus
+        publishingAddress(id, sender()) orElse manageConnectionStatus
 
       case JoinAsPeer(id, port, broker) =>
         initPeer(id, port, sender())
-        connectToBroker(createPeerId(me), broker, sender())
+        connectToBroker(id, broker, sender())
     })
   }
 
@@ -68,10 +68,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     properties.brokerId.set(brokerId)
   }
 
-  private def publishingAddress(listener: ActorRef): Receive = {
+  private def publishingAddress(id: PeerId, listener: ActorRef): Receive = {
     case AddressPublicationResult(Success(_)) =>
-      val myId = createPeerId(me)
-      new InitializedServer(myId, listener).start()
+      new InitializedServer(id, listener).start()
 
     case AddressPublicationResult(Failure(error)) =>
       log.error(error, "Address publication failed, retrying")
@@ -116,7 +115,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
     val bootstrapFuture = discover(brokerAddress).map({ dis =>
       val realIp = dis.getPeerAddress
-      log.info(s"Attempting connection to Coinffeine using IP $realIp")
+      log.info(s"Attempting connection to Coinffeine using broker at $realIp")
       dis.getReporter
     }).flatMap(bootstrap).recoverWith {
       case err if me.getPeerAddress.getInetAddress.isLinkLocalAddress =>
@@ -182,7 +181,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
           .start()
       })
       sendMsg.onFailure { case err =>
-        log.error(err, s"Failure when sending send message $msg to $to")
+        log.error(err, s"Failure when sending message to $to: $msg")
       }
     }
   }
@@ -217,7 +216,6 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString.substring(2))
   private def createPeerId(address: PeerAddress): PeerId = createPeerId(address.getID)
-  private def createPeerId(peer: Peer): PeerId = createPeerId(peer.getPeerID)
   private def createNumber160(peerId: PeerId) = new Number160("0x" + peerId.value)
 }
 

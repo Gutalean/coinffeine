@@ -14,10 +14,14 @@ class PeerIdTest extends UnitTest {
     }
   }
 
-  it should "reject values with uppercase letters" in {
-    an [IllegalArgumentException] shouldBe thrownBy {
-      PeerId("12F")
-    }
+  it should "ignore casing" in {
+    PeerId("12F") shouldBe PeerId("12f")
+    PeerId("12F").hashCode() shouldBe PeerId("12f").hashCode()
+  }
+
+  it should "ignore leading zeroes" in {
+    PeerId("012f") shouldBe PeerId("12f")
+    PeerId("012f").hashCode() shouldBe PeerId("12f").hashCode()
   }
 
   it should "reject values longer than 40 hex digits (160 bits)" in {
