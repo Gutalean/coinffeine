@@ -35,15 +35,15 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   override protected def starting(args: Join): Receive = {
     becomeStarted(args match {
-      case JoinAsBroker(port) =>
-        initPeer(port, sender())
+      case JoinAsBroker(id, port) =>
+        initPeer(id, port, sender())
         publishAddress().onComplete { case result =>
           self ! AddressPublicationResult(result)
         }
         publishingAddress(sender()) orElse manageConnectionStatus
 
-      case JoinAsPeer(port, broker) =>
-        initPeer(port, sender())
+      case JoinAsPeer(id, port, broker) =>
+        initPeer(id, port, sender())
         connectToBroker(createPeerId(me), broker, sender())
     })
   }
@@ -80,13 +80,13 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
       }
   }
 
-  def initPeer(localPort: Int, listener: ActorRef): Unit = {
+  def initPeer(id: PeerId, localPort: Int, listener: ActorRef): Unit = {
     val bindings = new Bindings()
     acceptedNetworkInterfaces.map(_.getName).foreach(bindings.addInterface)
     val ifaces = bindings.getInterfaces.mkString(",")
     log.info(s"Initiating a peer on port $localPort for interfaces $ifaces")
 
-    me = new PeerMaker(Number160.createHash(Random.nextInt()))
+    me = new PeerMaker(createNumber160(id))
       .setPorts(localPort)
       .setBindings(bindings)
       .makeAndListen()

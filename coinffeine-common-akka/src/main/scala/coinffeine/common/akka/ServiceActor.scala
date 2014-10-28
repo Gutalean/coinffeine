@@ -219,8 +219,7 @@ object ServiceActor {
     * @param timeout  The timeout for considering the start as failed
     * @return         A future representing the service start
     */
-  def askStart[Args](to: ActorRef)
-                    (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
+  def askStart(to: ActorRef)(implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
     askStart(to, {})
 
   /** Ask a service actor to start.

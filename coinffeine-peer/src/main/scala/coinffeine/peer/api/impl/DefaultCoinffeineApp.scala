@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
-import coinffeine.model.network.CoinffeineNetworkProperties
+import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
@@ -47,10 +47,12 @@ class DefaultCoinffeineApp(name: String,
   override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
     implicit val to = Timeout(timeout)
-    ServiceActor.askStart(peerRef).recoverWith {
+    ServiceActor.askStart(peerRef, peerId).recoverWith {
       case cause => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
     }
   }
+
+  private val peerId = PeerId.random() // TODO: make it persistent instead of random
 
   override def stop(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher

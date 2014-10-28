@@ -11,7 +11,7 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.network.{PeerId, MutableCoinffeineNetworkProperties}
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -32,10 +32,9 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
   */
 class CoinffeinePeerActor(
     networkParams: CoinffeinePeerActor.NetworkParams,
-    props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[Unit] {
+    props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[PeerId] {
+  import CoinffeinePeerActor._
   import context.dispatcher
-
-import coinffeine.peer.CoinffeinePeerActor._
 
   private val gatewayRef = context.actorOf(props.gateway, "gateway")
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
@@ -44,7 +43,7 @@ import coinffeine.peer.CoinffeinePeerActor._
   private var orderSupervisorRef: ActorRef = _
   private var walletRef: ActorRef = _
 
-  override def starting(args: Unit) = {
+  override def starting(peerId: PeerId) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
     // TODO: replace all children actors by services and start them here
@@ -52,7 +51,7 @@ import coinffeine.peer.CoinffeinePeerActor._
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
       _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(
-        networkParams.listenPort, networkParams.brokerAddress))
+        peerId, networkParams.listenPort, networkParams.brokerAddress))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)

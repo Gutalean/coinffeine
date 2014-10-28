@@ -26,4 +26,8 @@ class PeerIdTest extends UnitTest {
       PeerId("f" * 41)
     }
   }
+
+  it should "be generated randomly" in {
+    PeerId.random() should not be PeerId.random()
+  }
 }

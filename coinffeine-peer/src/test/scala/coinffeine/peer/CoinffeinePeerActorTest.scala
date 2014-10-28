@@ -9,6 +9,7 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -74,6 +75,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
+    val peerId = PeerId.random()
     val localPort = 8080
     val brokerAddress = BrokerAddress("host", 8888)
 
@@ -114,7 +116,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
-    requester.send(peer, ServiceActor.Start({}))
+    requester.send(peer, ServiceActor.Start(peerId))
 
     // Then it must request the payment processor to start
     shouldRequestStart(paymentProcessor, {})
@@ -123,7 +125,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
-    shouldRequestStart(gateway, MessageGateway.JoinAsPeer(`localPort`, `brokerAddress`))
+    shouldRequestStart(gateway, MessageGateway.JoinAsPeer(peerId, localPort, brokerAddress))
 
     // Then request the wallet and blockchain actors from bitcoin actor
     bitcoinPeer.expectAskWithReply {
