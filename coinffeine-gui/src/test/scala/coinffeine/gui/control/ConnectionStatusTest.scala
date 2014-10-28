@@ -19,8 +19,8 @@ class ConnectionStatusTest extends UnitTest {
     ConnectionStatus.Coinffeine(0),
     ConnectionStatus.Coinffeine(1),
     ConnectionStatus.Coinffeine(2),
-    ConnectionStatus.Coinffeine(1, brokerId = Some(PeerId("broker"))),
-    ConnectionStatus.Coinffeine(2, brokerId = Some(PeerId("broker")))
+    ConnectionStatus.Coinffeine(1, brokerId = Some(PeerId.hashOf("broker"))),
+    ConnectionStatus.Coinffeine(2, brokerId = Some(PeerId.hashOf("broker")))
   )
   val anyStatus = for {
     coinffeineStatus <- coinffeineStatuses

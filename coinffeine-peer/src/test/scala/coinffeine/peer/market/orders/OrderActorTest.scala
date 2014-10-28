@@ -15,7 +15,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
@@ -43,7 +43,7 @@ abstract class OrderActorTest extends AkkaSpec
       lockTime = 400000L,
       exchange.counterpartId
     )
-    val gatewayProbe = new MockGateway(PeerId("broker"))
+    val gatewayProbe = new MockGateway()
     val fundsBlocker, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)

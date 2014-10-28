@@ -215,10 +215,10 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
   }
 
-  private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString)
+  private def createPeerId(tomp2pId: Number160): PeerId = PeerId(tomp2pId.toString.substring(2))
   private def createPeerId(address: PeerAddress): PeerId = createPeerId(address.getID)
   private def createPeerId(peer: Peer): PeerId = createPeerId(peer.getPeerID)
-  private def createNumber160(peerId: PeerId) = new Number160(peerId.value)
+  private def createNumber160(peerId: PeerId) = new Number160("0x" + peerId.value)
 }
 
 private[gateway] object ProtobufServerActor {

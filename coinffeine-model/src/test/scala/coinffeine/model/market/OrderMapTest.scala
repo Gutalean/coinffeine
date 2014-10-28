@@ -5,8 +5,8 @@ import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
 class OrderMapTest extends UnitTest {
-  val peerA = PeerId("peerA")
-  val peerB = PeerId("peerB")
+  val peerA = PeerId.hashOf("peerA")
+  val peerB = PeerId.hashOf("peerB")
   val posA1 = PositionId(peerA, OrderId("order1"))
   val posA2 = PositionId(peerA, OrderId("order2"))
   val posB = PositionId(peerB, OrderId("order1"))

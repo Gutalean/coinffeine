@@ -7,9 +7,12 @@ import coinffeine.model.network.PeerId
 class PositionQueueTest extends UnitTest {
 
   val emptyQueue = PositionQueue.empty(Bid, Euro)
-  val posA1 = Position(Bid, 1.BTC, Price(100.EUR), PositionId(PeerId("A"), OrderId("A1")))
-  val posA2 = Position(Bid, 0.3.BTC, Price(100.EUR), PositionId(PeerId("A"), OrderId("A2")))
-  val posB = Position(Bid, 0.2.BTC, Price(100.EUR), PositionId(PeerId("B"), OrderId("B")))
+  val peerA = PeerId.hashOf("A")
+  val peerB = PeerId.hashOf("B")
+  val unknownPeer = PeerId.hashOf("unknown")
+  val posA1 = Position(Bid, 1.BTC, Price(100.EUR), PositionId(peerA, OrderId("A1")))
+  val posA2 = Position(Bid, 0.3.BTC, Price(100.EUR), PositionId(peerA, OrderId("A2")))
+  val posB = Position(Bid, 0.2.BTC, Price(100.EUR), PositionId(peerB, OrderId("B")))
   val queue = emptyQueue.enqueue(posA1).enqueue(posB).enqueue(posA2)
 
   "A position queue" should "enqueue new positions at the end" in new {
@@ -25,13 +28,13 @@ class PositionQueueTest extends UnitTest {
 
   it should "remove a position by position id" in new {
     queue.removeByPositionId(posB.id) should be(emptyQueue.enqueue(posA1).enqueue(posA2))
-    queue.removeByPositionId(PositionId(PeerId("unknown"), OrderId("unknown"))) should be (queue)
+    queue.removeByPositionId(PositionId(unknownPeer, OrderId("unknown"))) should be (queue)
   }
 
   it should "remove positions by peer id" in new {
-    queue.removeByPeerId(PeerId("B")) should be(emptyQueue.enqueue(posA1).enqueue(posA2))
-    queue.removeByPeerId(PeerId("A")) should be(emptyQueue.enqueue(posB))
-    queue.removeByPeerId(PeerId("unknown")) should be (queue)
+    queue.removeByPeerId(peerB) should be(emptyQueue.enqueue(posA1).enqueue(posA2))
+    queue.removeByPeerId(peerA) should be(emptyQueue.enqueue(posB))
+    queue.removeByPeerId(unknownPeer) should be (queue)
   }
 
   it should "decrease amount from position" in {
@@ -50,7 +53,7 @@ class PositionQueueTest extends UnitTest {
 
   it should "be price-homogeneous" in new {
     an [IllegalArgumentException] shouldBe thrownBy {
-      queue.enqueue(Position(Bid, 1.BTC, Price(120.EUR), PositionId(PeerId("A"), OrderId("A3"))))
+      queue.enqueue(Position(Bid, 1.BTC, Price(120.EUR), PositionId(peerA, OrderId("A3"))))
     }
   }
 }

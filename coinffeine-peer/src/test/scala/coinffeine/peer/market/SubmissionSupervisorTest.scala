@@ -8,7 +8,7 @@ import org.scalatest.Inside
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.network.{BrokerId, PeerId}
+import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MockGateway
@@ -30,7 +30,7 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
       orderResubmitInterval = 4.seconds,
       orderAcknowledgeTimeout = orderAcknowledgeTimeout
     )
-    val gateway = new MockGateway(PeerId("broker"))
+    val gateway = new MockGateway()
 
     val requester = TestProbe()
     val actor = system.actorOf(SubmissionSupervisor.props(gateway.ref, constants))

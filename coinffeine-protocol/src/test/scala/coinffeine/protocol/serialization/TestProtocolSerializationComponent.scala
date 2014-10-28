@@ -28,7 +28,7 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
     bitcoinAmount = Both.fill(randomSatoshi()),
     fiatAmount = Both.fill(randomEuros()),
     lockTime = 42L,
-    counterpart = PeerId("bob")
+    counterpart = PeerId.hashOf("bob")
   )
 
   private def randomSatoshi() = CurrencyAmount.closestAmount(Random.nextDouble(), Bitcoin)

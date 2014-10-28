@@ -21,7 +21,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val requiredSignatures = participants.map(_.bitcoinKey)
 
-  val peerIds = Both(buyer = PeerId("buyer"), seller = PeerId("seller"))
+  val peerIds = Both(buyer = PeerId.hashOf("buyer"), seller = PeerId.hashOf("seller"))
 
   val amounts = Exchange.Amounts(
     grossBitcoinExchanged = 10.006.BTC,

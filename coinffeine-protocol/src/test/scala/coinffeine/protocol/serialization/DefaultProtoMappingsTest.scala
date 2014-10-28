@@ -137,13 +137,14 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   "Exchange rejection" should behave like thereIsAMappingBetween(
     exchangeRejection, exchangeRejectionMessage)
 
+  val buyer = PeerId.hashOf("buyer")
   val orderMatch = OrderMatch(
     orderId = sampleOrderId,
     exchangeId = sampleExchangeId,
     bitcoinAmount = Both(buyer = 0.1.BTC, seller = 0.1003.BTC),
     fiatAmount = Both(buyer = 10050.EUR, seller = 10000.EUR),
     lockTime = 310000L,
-    counterpart = PeerId("buyer")
+    counterpart = buyer
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
     .setOrderId(sampleOrderId.value)
@@ -154,7 +155,7 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
     .setBuyerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10050)))
     .setSellerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10000)))
     .setLockTime(310000L)
-    .setCounterpart("buyer")
+    .setCounterpart(buyer.value)
     .build
   "Order match" must behave like
     thereIsAMappingBetween[OrderMatch[_ <: FiatCurrency], msg.OrderMatch](
