@@ -116,7 +116,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
     val bootstrapFuture = discover(brokerAddress).map({ dis =>
       val realIp = dis.getPeerAddress
-      log.info(s"Attempting connection to Coinffeine using IP $realIp")
+      log.info(s"Attempting connection to Coinffeine using broker at $realIp")
       dis.getReporter
     }).flatMap(bootstrap).recoverWith {
       case err if me.getPeerAddress.getInetAddress.isLinkLocalAddress =>
@@ -182,7 +182,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
           .start()
       })
       sendMsg.onFailure { case err =>
-        log.error(err, s"Failure when sending send message $msg to $to")
+        log.error(err, s"Failure when sending message to $to: $msg")
       }
     }
   }
