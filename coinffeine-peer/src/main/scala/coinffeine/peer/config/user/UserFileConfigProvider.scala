@@ -1,8 +1,8 @@
 package coinffeine.peer.config.user
 
-import java.io.{File, FileOutputStream}
+import java.io.FileOutputStream
 import java.nio.charset.Charset
-import java.nio.file.{Path, Paths}
+import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConversions._
 
