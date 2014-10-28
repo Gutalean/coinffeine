@@ -23,7 +23,7 @@ class OrderControllerTest extends UnitTest with Inside with MockitoSugar with Sa
     bitcoinAmount = Both(buyer = 10.BTC, seller = 10.0003.BTC),
     fiatAmount = Both(buyer = 10.EUR, seller = OkPayPaymentProcessor.amountMinusFee(10.EUR)),
     lockTime = 80L,
-    counterpart = PeerId("counterpart")
+    counterpart = PeerId.hashOf("counterpart")
   )
 
   "An order controller" should "start new exchanges" in new Fixture {

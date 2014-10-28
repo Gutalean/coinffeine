@@ -17,7 +17,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val protocolConstants = ProtocolConstants()
   val paymentProcFactory = new MockPaymentProcessorFactory()
   val exchangeProtocol = new MockExchangeProtocol()
-  val gateways = new LinkedMessageGateways(PeerId("broker"), peerIds.buyer, peerIds.seller)
+  val gateways = new LinkedMessageGateways(PeerId.hashOf("broker"), peerIds.buyer, peerIds.seller)
 
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))

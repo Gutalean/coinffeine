@@ -7,7 +7,7 @@ import coinffeine.model.network.PeerId
 class PositionTest extends UnitTest {
 
   "A position" should "be folded depending on its type" in  {
-    val id = PositionId(PeerId("user"), OrderId("order"))
+    val id = PositionId(PeerId.hashOf("user"), OrderId("order"))
     Position.bid(1.BTC, Price(100.EUR), id).fold(
       bid = p => p.amount,
       ask = p => -p.amount

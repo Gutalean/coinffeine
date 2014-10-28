@@ -1,19 +1,21 @@
 package coinffeine.peer.config
 
 import java.io.File
-import java.net.{URI, NetworkInterface}
+import java.net.{NetworkInterface, URI}
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
+import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
-class SettingsMappingTest extends UnitTest {
+class SettingsMappingTest extends UnitTest with OptionValues {
 
   import SettingsMapping._
 
@@ -38,7 +40,7 @@ class SettingsMappingTest extends UnitTest {
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
-    cfg.getString("coinffeine.bitcoin.walletFile") should be (new File("/tmp/user.wallet").getPath)
+    cfg.getString("coinffeine.bitcoin.walletFile") shouldBe new File("/tmp/user.wallet").getPath
     cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
   }
 
@@ -50,25 +52,35 @@ class SettingsMappingTest extends UnitTest {
       "coinffeine.peer.ifaces.ignore" -> asJavaIterable(Seq(existingNetInterface().getName))
     )
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.peerPort should be (5000)
-    settings.brokerHost should be ("broker-host")
-    settings.brokerPort should be (4000)
-    settings.ignoredNetworkInterfaces should be (Seq(existingNetInterface()))
+    settings.peerId shouldBe 'empty
+    settings.peerPort shouldBe 5000
+    settings.brokerHost shouldBe "broker-host"
+    settings.brokerPort shouldBe 4000
+    settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
+
+    SettingsMapping.fromConfig[MessageGatewaySettings](
+      conf.withValue("coinffeine.peer.id", ConfigValueFactory.fromAnyRef("1234")))
+      .peerId.value shouldBe PeerId("1234")
   }
 
   it should "map to config" in {
     val settings = MessageGatewaySettings(
+      peerId = Some(PeerId("1234")),
       peerPort = 5050,
       brokerHost = "andromeda",
       brokerPort = 5051,
       ignoredNetworkInterfaces = Seq(existingNetInterface())
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getInt("coinffeine.peer.port") should be (5050)
-    cfg.getString("coinffeine.broker.hostname") should be ("andromeda")
-    cfg.getInt("coinffeine.broker.port") should be (5051)
-    cfg.getStringList("coinffeine.peer.ifaces.ignore") should be (
-      seqAsJavaList(Seq(existingNetInterface().getName)))
+    cfg.getString("coinffeine.peer.id") shouldBe "1234"
+    cfg.getInt("coinffeine.peer.port") shouldBe 5050
+    cfg.getString("coinffeine.broker.hostname") shouldBe "andromeda"
+    cfg.getInt("coinffeine.broker.port") shouldBe 5051
+    cfg.getStringList("coinffeine.peer.ifaces.ignore") shouldBe
+      seqAsJavaList(Seq(existingNetInterface().getName))
+
+    val cfg2 = SettingsMapping.toConfig(settings.copy(peerId = None))
+    cfg2.getString("coinffeine.peer.id") shouldBe 'empty
   }
 
   "OKPay settings mapping" should "map from config" in {

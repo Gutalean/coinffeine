@@ -1,9 +1,8 @@
 package coinffeine.protocol.gateway.proto
 
-import coinffeine.common.akka.ServiceActor
-
 import akka.actor.ActorRef
 
+import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
@@ -42,7 +41,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
     val properties = new MutableCoinffeineNetworkProperties
     val peer = system.actorOf(
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"broker-$port")
-    peer ! ServiceActor.Start(JoinAsBroker(port))
+    peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), port))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)
@@ -52,7 +51,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
     val properties = new MutableCoinffeineNetworkProperties
     val peer = system.actorOf(
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"peer-$port")
-    peer ! ServiceActor.Start(JoinAsPeer(port, connectTo))
+    peer ! ServiceActor.Start(JoinAsPeer(PeerId.random(), port, connectTo))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 1)
     (peer, brokerId)

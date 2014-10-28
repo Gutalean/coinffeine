@@ -62,7 +62,7 @@ abstract class AbstractMockGateway(brokerId: PeerId, system: ActorSystem) extend
 }
 
 /** MessageGateway mock to ease testing of actors communicating with other nodes. */
-class MockGateway(brokerId: PeerId = PeerId("broker"))(implicit system: ActorSystem)
+class MockGateway(brokerId: PeerId = PeerId.hashOf("broker"))(implicit system: ActorSystem)
     extends AbstractMockGateway(brokerId, system) {
 
   type AnyForward = ForwardMessage[_ <: PublicMessage]

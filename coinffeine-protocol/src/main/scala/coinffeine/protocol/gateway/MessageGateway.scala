@@ -4,7 +4,7 @@ import java.net.NetworkInterface
 
 import akka.actor.Props
 
-import coinffeine.model.network.{BrokerId, NodeId}
+import coinffeine.model.network.{PeerId, BrokerId, NodeId}
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 
@@ -14,13 +14,15 @@ object MessageGateway {
     override def toString = s"$hostname:$port"
   }
 
-  sealed trait Join
+  sealed trait Join {
+    val id: PeerId
+  }
 
   /** A request message to bind & create a new, empty P2P network. */
-  case class JoinAsBroker(localPort: Int) extends Join
+  case class JoinAsBroker(id: PeerId, localPort: Int) extends Join
 
   /** A request message to join to an already existing network. */
-  case class JoinAsPeer(localPort: Int, connectTo: BrokerAddress) extends Join
+  case class JoinAsPeer(id: PeerId, localPort: Int, connectTo: BrokerAddress) extends Join
 
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)

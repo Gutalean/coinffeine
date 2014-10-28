@@ -8,6 +8,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config._
 
+import coinffeine.model.network.PeerId
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -52,6 +53,7 @@ object SettingsMapping {
   implicit val messageGateway = new SettingsMapping[MessageGatewaySettings] {
 
     override def fromConfig(config: Config) = MessageGatewaySettings(
+      peerId = getOptionalString(config, "coinffeine.peer.id").map(PeerId.apply),
       peerPort = config.getInt("coinffeine.peer.port"),
       brokerHost = config.getString("coinffeine.broker.hostname"),
       brokerPort = config.getInt("coinffeine.broker.port"),
@@ -60,6 +62,7 @@ object SettingsMapping {
 
     /** Write settings to given config. */
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
+      .withValue("coinffeine.peer.id", configValue(settings.peerId.fold("")(_.value)))
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
       .withValue("coinffeine.broker.hostname", configValue(settings.brokerHost))
       .withValue("coinffeine.broker.port", configValue(settings.brokerPort))
@@ -91,14 +94,14 @@ object SettingsMapping {
       .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
       .withValue("coinffeine.okpay.pollingInterval",
         configValue(s"${settings.pollingInterval.toSeconds}s"))
+  }
 
-    private def getOptionalString(config: Config, key: String): Option[String] = try {
-      val value = config.getString(key).trim
-      if (value.isEmpty) None else Some(value)
-    } catch {
-      case ex: ConfigException.Missing => None
-    }
-}
+  private def getOptionalString(config: Config, key: String): Option[String] = try {
+    val value = config.getString(key).trim
+    if (value.isEmpty) None else Some(value)
+  } catch {
+    case ex: ConfigException.Missing => None
+  }
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
 }

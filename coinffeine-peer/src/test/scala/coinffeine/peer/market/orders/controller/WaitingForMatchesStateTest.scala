@@ -47,7 +47,7 @@ class WaitingForMatchesStateTest extends UnitTest
       Both(buyer = 100.BTC, seller = 3.BTC),
       Both(buyer = 10.EUR, seller = 20.EUR),
       lockTime = 10,
-      counterpart = PeerId("counterpart")
+      counterpart = PeerId.hashOf("counterpart")
     )
     state.shouldAcceptOrderMatch(context, m) shouldBe MatchRejected("Match with inconsistent amounts")
   }
@@ -76,7 +76,7 @@ class WaitingForMatchesStateTest extends UnitTest
         order.id, ExchangeId.random(),
         Both(buyer = amount, seller = amount + 0.0003.BTC),
         Both(buyer = fiatSpent, seller = OkPayPaymentProcessor.amountMinusFee(fiatSpent)),
-        20, PeerId("counterpart")
+        20, PeerId.hashOf("counterpart")
       )
     }
   }

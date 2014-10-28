@@ -2,7 +2,7 @@ package coinffeine.protocol.gateway.proto
 
 import scala.concurrent.duration._
 
-import akka.actor.{Props, ActorRef}
+import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.ServiceActor
@@ -10,7 +10,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{MutableCoinffeineNetworkProperties, BrokerId, PeerId}
+import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -122,7 +122,7 @@ class ProtoMessageGatewayTest
     def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway(peerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsPeer(localPort, connectTo))
+      ref ! ServiceActor.Start(JoinAsPeer(PeerId.random(), localPort, connectTo))
       expectMsg(ServiceActor.Started)
       waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
@@ -132,7 +132,7 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsBroker(localPort))
+      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), localPort))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()

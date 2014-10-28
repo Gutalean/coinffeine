@@ -6,17 +6,16 @@ import scala.util.Random
 
 import akka.actor.{ActorSystem, Props}
 import akka.util.Timeout
-import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
-import coinffeine.model.network.CoinffeineNetworkProperties
+import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.api._
-import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.config.{ConfigProvider, ConfigComponent}
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 
@@ -26,9 +25,9 @@ class DefaultCoinffeineApp(name: String,
                            lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator,
-                           config: Config) extends CoinffeineApp {
+                           configProvider: ConfigProvider) extends CoinffeineApp {
 
-  private val system = ActorSystem(name, config)
+  private val system = ActorSystem(name, configProvider.config)
   private val peerRef = system.actorOf(peerProps, "peer")
 
   override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
@@ -47,9 +46,18 @@ class DefaultCoinffeineApp(name: String,
   override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
     implicit val to = Timeout(timeout)
-    ServiceActor.askStart(peerRef).recoverWith {
+    ServiceActor.askStart(peerRef, peerId).recoverWith {
       case cause => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
     }
+  }
+
+  private val peerId = configProvider.messageGatewaySettings().peerId.getOrElse(registerNewPeerId())
+
+  private def registerNewPeerId(): PeerId = {
+    val id = PeerId.random()
+    DefaultCoinffeineApp.Log.info("{} chosen as peer id", id)
+    configProvider.saveUserSettings(configProvider.messageGatewaySettings().copy(peerId = Some(id)))
+    id
   }
 
   override def stop(timeout: FiniteDuration): Future[Unit] = {
@@ -82,7 +90,7 @@ object DefaultCoinffeineApp {
       bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties)
 
     override lazy val app = new DefaultCoinffeineApp(
-      name = chooseName(), properties, accountId, peerProps, amountsCalculator, configProvider.config)
+      name = chooseName(), properties, accountId, peerProps, amountsCalculator, configProvider)
 
     /** Choose a name use for naming the actor systems and logging */
     private def chooseName() = accountId().getOrElse("app-" + Random.nextInt(1000))
