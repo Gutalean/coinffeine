@@ -80,7 +80,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
         case p: Parent =>
           val children = p.getChildrenUnmodifiable
           if (children.isEmpty) Seq.empty
-          else if (children.get(0).isInstanceOf[RowType]) toRowTypeSeq(children)
+          else if (children.get(0).isInstanceOf[TreeTableRow[_]]) toRowTypeSeq(children)
           else children.toArray(new Array[Node](0)).toSeq.flatMap(findTableRowChildren)
         case _ => Seq.empty
       }
