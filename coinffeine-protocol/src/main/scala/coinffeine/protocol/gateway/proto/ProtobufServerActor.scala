@@ -1,10 +1,11 @@
 package coinffeine.protocol.gateway.proto
 
-import java.net.{InetAddress, NetworkInterface}
+import java.net.{InetSocketAddress, InetAddress, NetworkInterface}
 import scala.collection.JavaConversions._
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util._
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.pattern._
@@ -99,51 +100,13 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     .setData(new Data(me.getPeerAddress.toByteArray))
     .start()
 
-  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = for {
-    address <- resolveBrokerAddress(brokerAddress)
-    discover <- me.discover()
-      .setInetAddress(address)
-      .setPorts(brokerAddress.port)
-      .start()
-  } yield discover
-
-  private def bootstrap(brokerAddress: PeerAddress): Future[FutureBootstrap] = me.bootstrap()
-    .setPeerAddress(brokerAddress)
-    .start()
-
-  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = for {
-    address <- resolveBrokerAddress(brokerAddress)
-    bootstrap <- me.bootstrap()
-      .setInetAddress(address)
-      .setPorts(brokerAddress.port)
-      .start()
-  } yield bootstrap
-
-  private def resolveBrokerAddress(address: BrokerAddress) = Future {
-    InetAddress.getByName(address.hostname)
-  }
-
   private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
-    val bootstrapFuture = discover(brokerAddress).map({ dis =>
-      val realIp = dis.getPeerAddress
-      log.info(s"Attempting connection to Coinffeine using broker at $realIp")
-      dis.getReporter
-    }).flatMap(bootstrap).recoverWith {
-      case err if me.getPeerAddress.getInetAddress.isLinkLocalAddress =>
-        log.warning("TomP2P bootstrap with discover failed: " + err)
-        log.warning("Attempting bootstrap without discover")
-        me.getConfiguration.setBehindFirewall(false)
-        bootstrap(brokerAddress)
-    }
-
     (for {
-      bs <- bootstrapFuture
+      resolvedBroker <- resolveBrokerAddress(brokerAddress)
+      bootstrapResult <- bootstrap(resolvedBroker)
+      broker = bootstrapResult.getBootstrapTo.head
       _ <- publishAddress()
-    } yield {
-      val brokerId = bs.getBootstrapTo.head
-      log.info(s"Bootstrapped to $brokerId")
-      createPeerId(bs.getBootstrapTo.head)
-    }).pipeTo(self)
+    } yield createPeerId(broker)).pipeTo(self)
 
     val waitForBootstrap: Receive = {
       case brokerId: PeerId =>
@@ -152,7 +115,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
         new InitializedServer(brokerId, listener).start()
 
       case Status.Failure(error) =>
-        log.error(error, "Cannot connect as {} using broker in {}, retrying", ownId, brokerAddress)
+        log.error(error, "Cannot connect as {} using broker in {}, retrying in {}",
+          ownId, brokerAddress, connectionRetryInterval)
         context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
 
       case RetryConnection =>
@@ -160,6 +124,43 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
 
     waitForBootstrap orElse manageConnectionStatus
+  }
+
+  private def bootstrap(broker: InetSocketAddress): Future[FutureBootstrap] =
+    bootstrapWithDiscover(broker).recoverWith {
+      case NonFatal(cause) =>
+        log.warning("TomP2P bootstrap with discover failed: " + cause)
+        log.warning("Attempting bootstrap without discover")
+        standaloneBootstrap(broker)
+    }
+
+  private def bootstrapWithDiscover(broker: InetSocketAddress): Future[FutureBootstrap] = for {
+    discovery <- discover(broker)
+    brokerAddress = discovery.getReporter
+    bootstrap <- {
+      log.info(s"Attempting connection to Coinffeine after discovery with broker at $brokerAddress")
+      me.bootstrap ()
+        .setPeerAddress(brokerAddress)
+        .start ()
+    }
+  } yield bootstrap
+
+  private def discover(broker: InetSocketAddress): Future[FutureDiscover] = me.discover()
+    .setInetAddress(broker.getAddress)
+    .setPorts(broker.getPort)
+    .start()
+
+  private def standaloneBootstrap(broker: InetSocketAddress): Future[FutureBootstrap] = {
+    log.info(s"Attempting connection to Coinffeine using broker at $broker")
+    me.getConfiguration.setBehindFirewall(false)
+    me.bootstrap()
+      .setInetAddress(broker.getAddress)
+      .setPorts(broker.getPort)
+      .start()
+  }
+
+  private def resolveBrokerAddress(address: BrokerAddress): Future[InetSocketAddress] = Future {
+    new InetSocketAddress(InetAddress.getByName(address.hostname), address.port)
   }
 
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
