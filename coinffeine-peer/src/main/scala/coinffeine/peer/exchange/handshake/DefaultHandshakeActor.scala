@@ -232,7 +232,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         finishWith(HandshakeFailureWithCommitment(
           handshake.exchange, cause, handshake.myDeposit, refund))
 
-      case CommitmentNotification(_, bothCommitments) =>
+      case ReceiveMessage(CommitmentNotification(_, bothCommitments), BrokerId) =>
         log.info("Handshake {}: commitment notification was received again; " +
           "seems like last ack was missed, retransmitting it to the broker",
           exchange.info.id)
@@ -296,7 +296,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     val id = exchange.info.id
     val counterpart = exchange.info.counterpartId
     collaborators.gateway ! Subscribe {
-      case ReceiveMessage(ExchangeAborted(`id`, _), BrokerId) =>
+      case ReceiveMessage(ExchangeAborted(`id`, _) | CommitmentNotification(`id`, _), BrokerId) =>
       case ReceiveMessage(PeerHandshake(`id`, _, _), `counterpart`) =>
     }
   }

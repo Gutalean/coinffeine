@@ -1,5 +1,7 @@
 package coinffeine.peer.exchange.handshake
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
@@ -21,6 +23,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   def protocolConstants: ProtocolConstants
 
   lazy val handshake = new MockHandshake(handshakingExchange)
+  val idleTime = 100.millis
   val listener, blockchain, wallet = TestProbe()
   var actor: ActorRef = _
   startActor()
