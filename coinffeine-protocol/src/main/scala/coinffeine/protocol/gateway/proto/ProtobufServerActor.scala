@@ -152,6 +152,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
       case Status.Failure(error) =>
         log.error(error, "Cannot connect as {} using broker in {}, retrying", ownId, brokerAddress)
+        context.system.scheduler.scheduleOnce(10.seconds, self, RetryConnection)
+
+      case RetryConnection =>
         become(connectToBroker(ownId, brokerAddress, listener))
     }
 
@@ -233,6 +236,7 @@ private[gateway] object ProtobufServerActor {
   private case class AddressPublicationResult(result: Try[FutureDHT])
   private case object PeerMapChanged
   private case class ReceiveData(from: PeerId, data: Array[Byte])
+  private case object RetryConnection
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
