@@ -5,6 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import com.google.common.util.concurrent.Service.State
 import com.google.common.util.concurrent._
 import org.bitcoinj.core._
 
@@ -29,6 +30,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
 
   override protected def starting(args: Unit): Receive = {
     peerGroup.addEventListener(PeerGroupListener)
+    peerGroup.addListener(PeerGroupLifecycleListener, context.dispatcher)
     startConnecting()
     becomeStarted(joining orElse commonHandling)
   }
@@ -37,7 +39,8 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
     clearRetryTimer()
     if (peerGroup.isRunning) {
       log.info("Shutting down peer group")
-      peerGroup.stopAndWait()
+      peerGroup.stopAsync()
+      peerGroup.awaitTerminated()
       log.info("Peer group stopped")
     }
     blockchain.getBlockStore.close()
@@ -54,7 +57,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
     case PeerGroupStartResult(Failure(_)) =>
       scheduleRetryTimer()
 
-    case PeerGroupStopResult(_) | RetryConnection =>
+    case RetryConnection =>
       clearRetryTimer()
       startConnecting()
 
@@ -110,7 +113,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
 
   private def startConnecting(): Unit = {
     log.info("Trying to join the bitcoin network")
-    replyToSelf(peerGroup.start(), PeerGroupStartResult.apply)
+    peerGroup.startAsync()
   }
 
   private object PeerGroupListener extends AbstractPeerEventListener {
@@ -131,18 +134,17 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
     }
   }
 
-  /** Translates a listenable future result into messages sent back to self to safely modify
-    * the actor state.
-    */
-  private def replyToSelf[T](future: ListenableFuture[T], reply: Try[T] => Any): Unit = {
-    Futures.addCallback[T](future, new FutureCallback[T] {
-      override def onFailure(t: Throwable): Unit = {
-        self ! reply(Failure(t))
+  private object PeerGroupLifecycleListener extends Service.Listener {
+
+    override def starting(): Unit = {
+      self ! PeerGroupStartResult(Success {})
+    }
+
+    override def failed(from: State, cause: Throwable): Unit = {
+      if (from == State.STARTING) {
+        self ! PeerGroupStartResult(Failure(cause))
       }
-      override def onSuccess(result: T): Unit = {
-        self ! reply(Success(result))
-      }
-    }, context.dispatcher)
+    }
   }
 
   private def scheduleRetryTimer(): Unit = {
@@ -164,8 +166,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   */
 object BitcoinPeerActor {
 
-  private case class PeerGroupStartResult(result: Try[Service.State])
-  private case class PeerGroupStopResult(result: Try[Service.State])
+  private case class PeerGroupStartResult(result: Try[Unit])
   private case object RetryConnection
 
   // Self-messages to manage the connection status
