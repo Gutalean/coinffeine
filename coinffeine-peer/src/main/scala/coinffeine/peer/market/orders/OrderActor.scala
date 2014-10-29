@@ -138,6 +138,7 @@ class OrderActor[C <: FiatCurrency](
     if (order.shouldBeOnMarket) {
       publisher.keepPublishing(currentOrder.pendingOrderBookEntry)
     }
+    coinffeineProperties.orders.set(currentOrder.id, currentOrder)
     if (!started) {
       persist(OrderStarted) { _ =>
         coinffeineProperties.orders.set(orderId, initialOrder)
@@ -165,13 +166,15 @@ class OrderActor[C <: FiatCurrency](
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
       override def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit = {
-        if (newOrder.status != oldOrder.status) {
-          log.info("Order {} has now {} status", orderId, newOrder.status)
+        if (recoveryFinished) {
+          if (newOrder.status != oldOrder.status) {
+            log.info("Order {} has now {} status", orderId, newOrder.status)
+          }
+          if (newOrder.progress != oldOrder.progress) {
+            log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
+          }
+          coinffeineProperties.orders.set(newOrder.id, newOrder)
         }
-        if (newOrder.progress != oldOrder.progress) {
-          log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
-        }
-        coinffeineProperties.orders.set(newOrder.id, newOrder)
       }
 
       override def keepInMarket(): Unit = {
