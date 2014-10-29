@@ -11,6 +11,7 @@ class MutableProperty[A](initialValue: A) extends Property[A] {
 
   override def onChange(handler: OnChangeHandler)
                        (implicit executor: ExecutionContext) = {
+    handler(value, value)
     listeners.add(handler)
   }
 
