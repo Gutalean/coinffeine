@@ -33,7 +33,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
     val invalidRequest =
       RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.invalidRefundTransaction))
     gateway.relayMessage(invalidRequest, counterpartId)
-    gateway.expectNoMsg(100 millis)
+    gateway.expectNoMsg(idleTime)
   }
 
   it should "sign counterpart refund while waiting for our refund" in {
@@ -55,7 +55,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
   }
 
   it should "wait until the broker publishes commitments" in {
-    listener.expectNoMsg(100 millis)
+    listener.expectNoMsg(idleTime)
     givenCommitmentPublicationNotification()
     shouldAckCommitmentNotification()
     val confirmations = protocolConstants.commitmentConfirmations
@@ -65,8 +65,13 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
     )
   }
 
+  it should "acknowledge again if the broker keeps notifying the commitment notification" in {
+    givenCommitmentPublicationNotification()
+    shouldAckCommitmentNotification()
+  }
+
   it should "wait until commitments are confirmed" in {
-    listener.expectNoMsg(100 millis)
+    listener.expectNoMsg(idleTime)
     val expectedCommitments = Both(
       buyer = handshake.myDeposit,
       seller = ImmutableTransaction(handshake.counterpartCommitmentTransaction)
