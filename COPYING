@@ -16,6 +16,9 @@ URL: http://github.com/Coinffeine/coinffeine/, as updated from time to time.
 principal place of business at Ancora, 14, Bajo B, Postal Code 28045, 
 Madrid, Spain.
 
+1.4 "NonCommercial" means not intended for related to or directed towards 
+commercial purposes.
+
 2. Accepting this License Agreement
 
 2.1 In order to use, copy, modify, adapt, redistribute, decompile, 
@@ -42,9 +45,15 @@ use the Coinffeine Software on behalf of your employer or other entity.
 3. Coinffeine License from Coinffeine Company
 
 3.1 Subject to the terms of this License Agreement, Coinffeine Company grants 
-you a limited, worldwide, royalty-free, non-assignable and non-exclusive license
-to use the Coinffeine Software solely to develop plugins for the 
-Coinffeine Software or applications to run using the Coinffeine Software.
+you a limited, worldwide, royalty-free, non-transferable and non-exclusive 
+license to use the Coinffeine Software solely to:
+
+A. Develop plugins for the Coinffeine Software.
+
+B. Develop applications for NonCommercial purposes to run using the 
+Coinffeine Software, Coinffeine Software APIs or Coinffeine Network information.
+
+C. Use the Coinffeine Software for NonCommercial purposes.
 
 3.2 You agree that Coinffeine Company or third parties own all legal right, 
 title and interest in and to the Coinffeine Software, including any Intellectual
