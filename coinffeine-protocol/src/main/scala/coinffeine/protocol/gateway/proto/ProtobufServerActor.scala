@@ -21,7 +21,8 @@ import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
-                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface],
+                                  connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   import coinffeine.protocol.gateway.proto.ProtobufServerActor._
@@ -98,19 +99,29 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     .setData(new Data(me.getPeerAddress.toByteArray))
     .start()
 
-  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = me.discover()
-    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-    .setPorts(brokerAddress.port)
-    .start()
+  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = for {
+    address <- resolveBrokerAddress(brokerAddress)
+    discover <- me.discover()
+      .setInetAddress(address)
+      .setPorts(brokerAddress.port)
+      .start()
+  } yield discover
 
   private def bootstrap(brokerAddress: PeerAddress): Future[FutureBootstrap] = me.bootstrap()
     .setPeerAddress(brokerAddress)
     .start()
 
-  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
-    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-    .setPorts(brokerAddress.port)
-    .start()
+  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = for {
+    address <- resolveBrokerAddress(brokerAddress)
+    bootstrap <- me.bootstrap()
+      .setInetAddress(address)
+      .setPorts(brokerAddress.port)
+      .start()
+  } yield bootstrap
+
+  private def resolveBrokerAddress(address: BrokerAddress) = Future {
+    InetAddress.getByName(address.hostname)
+  }
 
   private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
     val bootstrapFuture = discover(brokerAddress).map({ dis =>
@@ -142,6 +153,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
       case Status.Failure(error) =>
         log.error(error, "Cannot connect as {} using broker in {}, retrying", ownId, brokerAddress)
+        context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
+
+      case RetryConnection =>
         become(connectToBroker(ownId, brokerAddress, listener))
     }
 
@@ -223,12 +237,14 @@ private[gateway] object ProtobufServerActor {
   private case class AddressPublicationResult(result: Try[FutureDHT])
   private case object PeerMapChanged
   private case class ReceiveData(from: PeerId, data: Array[Byte])
+  private case object RetryConnection
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
   def props(properties: MutableCoinffeineNetworkProperties,
-            ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
-    new ProtobufServerActor(properties, ignoredNetworkInterfaces))
+            ignoredNetworkInterfaces: Seq[NetworkInterface],
+            connectionRetryInterval: FiniteDuration): Props = Props(
+    new ProtobufServerActor(properties, ignoredNetworkInterfaces, connectionRetryInterval))
 
   /** Send a message to a peer */
   case class SendProtoMessage(to: NodeId, msg: CoinffeineMessage)

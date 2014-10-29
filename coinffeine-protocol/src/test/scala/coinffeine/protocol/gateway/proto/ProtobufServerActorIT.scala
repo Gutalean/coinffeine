@@ -1,6 +1,9 @@
 package coinffeine.protocol.gateway.proto
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
+import akka.testkit._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
@@ -13,6 +16,7 @@ import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Paylo
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
   with ProtoServerAssertions with IgnoredNetworkInterfaces {
 
+  private val connectionRetryInterval = 3.seconds.dilated
   private val msg = CoinffeineMessage.newBuilder()
     .setPayload(Payload.getDefaultInstance)
     .setVersion(ProtocolVersion.newBuilder().setMajor(1).setMinor(4))
@@ -40,7 +44,9 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   private def createBroker(port: Int): (ActorRef, PeerId) = {
     val properties = new MutableCoinffeineNetworkProperties
     val peer = system.actorOf(
-      ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"broker-$port")
+      ProtobufServerActor.props(properties, ignoredNetworkInterfaces, connectionRetryInterval),
+      s"broker-$port"
+    )
     peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), port))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 0)
@@ -50,7 +56,9 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
     val properties = new MutableCoinffeineNetworkProperties
     val peer = system.actorOf(
-      ProtobufServerActor.props(properties, ignoredNetworkInterfaces), s"peer-$port")
+      ProtobufServerActor.props(properties, ignoredNetworkInterfaces, connectionRetryInterval),
+      s"peer-$port"
+    )
     peer ! ServiceActor.Start(JoinAsPeer(PeerId.random(), port, connectTo))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 1)

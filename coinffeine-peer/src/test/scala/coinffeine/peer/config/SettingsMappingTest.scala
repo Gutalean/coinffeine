@@ -49,7 +49,8 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       "coinffeine.peer.port" -> 5000,
       "coinffeine.broker.hostname" -> "broker-host",
       "coinffeine.broker.port" -> 4000,
-      "coinffeine.peer.ifaces.ignore" -> asJavaIterable(Seq(existingNetInterface().getName))
+      "coinffeine.peer.ifaces.ignore" -> asJavaIterable(Seq(existingNetInterface().getName)),
+      "coinffeine.peer.connectionRetryInterval" -> "10s"
     )
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
     settings.peerId shouldBe 'empty
@@ -57,6 +58,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.brokerHost shouldBe "broker-host"
     settings.brokerPort shouldBe 4000
     settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
+    settings.connectionRetryInterval shouldBe 10.seconds
 
     SettingsMapping.fromConfig[MessageGatewaySettings](
       conf.withValue("coinffeine.peer.id", ConfigValueFactory.fromAnyRef("1234")))
@@ -69,7 +71,8 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       peerPort = 5050,
       brokerHost = "andromeda",
       brokerPort = 5051,
-      ignoredNetworkInterfaces = Seq(existingNetInterface())
+      ignoredNetworkInterfaces = Seq(existingNetInterface()),
+      connectionRetryInterval = 10.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.peer.id") shouldBe "1234"
@@ -78,6 +81,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getInt("coinffeine.broker.port") shouldBe 5051
     cfg.getStringList("coinffeine.peer.ifaces.ignore") shouldBe
       seqAsJavaList(Seq(existingNetInterface().getName))
+    cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
 
     val cfg2 = SettingsMapping.toConfig(settings.copy(peerId = None))
     cfg2.getString("coinffeine.peer.id") shouldBe 'empty
