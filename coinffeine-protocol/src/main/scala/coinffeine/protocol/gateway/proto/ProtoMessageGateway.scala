@@ -1,6 +1,7 @@
 package coinffeine.protocol.gateway.proto
 
 import java.net.NetworkInterface
+import scala.concurrent.duration._
 
 import akka.actor._
 
@@ -15,12 +16,15 @@ import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSeriali
 
 private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties,
                                   serialization: ProtocolSerialization,
-                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface],
+                                  connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props, "subscriptions")
   private val server = context.actorOf(
-    ProtobufServerActor.props(properties, ignoredNetworkInterfaces), "server")
+    ProtobufServerActor.props(properties, ignoredNetworkInterfaces, connectionRetryInterval),
+    "server"
+  )
 
   override protected def starting(join: Join): Receive = {
     server ! ServiceActor.Start(join)
@@ -71,8 +75,9 @@ object ProtoMessageGateway {
     this: ProtocolSerializationComponent with NetworkComponent
       with MutableCoinffeineNetworkProperties.Component =>
 
-    override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface]) = Props(
-      new ProtoMessageGateway(
-        coinffeineNetworkProperties, protocolSerialization, ignoredNetworkInterfaces))
+    override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface],
+                                     connectionRetryInterval: FiniteDuration) = Props(
+      new ProtoMessageGateway(coinffeineNetworkProperties, protocolSerialization,
+        ignoredNetworkInterfaces, connectionRetryInterval))
   }
 }

@@ -21,7 +21,8 @@ import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
-                                  ignoredNetworkInterfaces: Seq[NetworkInterface])
+                                  ignoredNetworkInterfaces: Seq[NetworkInterface],
+                                  connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   import coinffeine.protocol.gateway.proto.ProtobufServerActor._
@@ -152,7 +153,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
       case Status.Failure(error) =>
         log.error(error, "Cannot connect as {} using broker in {}, retrying", ownId, brokerAddress)
-        context.system.scheduler.scheduleOnce(10.seconds, self, RetryConnection)
+        context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
 
       case RetryConnection =>
         become(connectToBroker(ownId, brokerAddress, listener))
@@ -241,8 +242,9 @@ private[gateway] object ProtobufServerActor {
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
   def props(properties: MutableCoinffeineNetworkProperties,
-            ignoredNetworkInterfaces: Seq[NetworkInterface]): Props = Props(
-    new ProtobufServerActor(properties, ignoredNetworkInterfaces))
+            ignoredNetworkInterfaces: Seq[NetworkInterface],
+            connectionRetryInterval: FiniteDuration): Props = Props(
+    new ProtobufServerActor(properties, ignoredNetworkInterfaces, connectionRetryInterval))
 
   /** Send a message to a peer */
   case class SendProtoMessage(to: NodeId, msg: CoinffeineMessage)

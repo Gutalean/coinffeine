@@ -114,7 +114,8 @@ class ProtoMessageGatewayTest
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
 
     def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties): Props = Props(
-      new ProtoMessageGateway(networkProperties, protocolSerialization, ignoredNetworkInterfaces))
+      new ProtoMessageGateway(networkProperties, protocolSerialization, ignoredNetworkInterfaces,
+        connectionRetryInterval = 3.seconds))
 
     def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
       system.actorOf(messageGatewayProps(networkProperties))

@@ -57,7 +57,9 @@ object SettingsMapping {
       peerPort = config.getInt("coinffeine.peer.port"),
       brokerHost = config.getString("coinffeine.broker.hostname"),
       brokerPort = config.getInt("coinffeine.broker.port"),
-      ignoredNetworkInterfaces(config)
+      ignoredNetworkInterfaces = ignoredNetworkInterfaces(config),
+      connectionRetryInterval =
+        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds
     )
 
     /** Write settings to given config. */
@@ -68,6 +70,8 @@ object SettingsMapping {
       .withValue("coinffeine.broker.port", configValue(settings.brokerPort))
       .withValue("coinffeine.peer.ifaces.ignore",
         configValue(asJavaIterable(settings.ignoredNetworkInterfaces.map(_.getName))))
+      .withValue("coinffeine.peer.connectionRetryInterval",
+        configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
 
     private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
       config.getStringList("coinffeine.peer.ifaces.ignore")

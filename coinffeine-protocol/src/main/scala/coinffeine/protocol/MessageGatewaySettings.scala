@@ -1,6 +1,7 @@
 package coinffeine.protocol
 
 import java.net.NetworkInterface
+import scala.concurrent.duration.FiniteDuration
 
 import coinffeine.model.network.PeerId
 
@@ -9,5 +10,6 @@ case class MessageGatewaySettings(
   peerPort: Int,
   brokerHost: String,
   brokerPort: Int,
-  ignoredNetworkInterfaces: Seq[NetworkInterface]
+  ignoredNetworkInterfaces: Seq[NetworkInterface],
+  connectionRetryInterval: FiniteDuration
 )
