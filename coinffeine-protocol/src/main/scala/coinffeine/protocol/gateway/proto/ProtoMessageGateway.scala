@@ -6,10 +6,10 @@ import akka.actor._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
-import coinffeine.model.network.{MutableCoinffeineNetworkProperties, CoinffeineNetworkProperties}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
-import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage, SendProtoMessageToBroker}
+import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
 import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.NotifySubscribers
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 

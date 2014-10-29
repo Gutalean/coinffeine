@@ -98,19 +98,29 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     .setData(new Data(me.getPeerAddress.toByteArray))
     .start()
 
-  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = me.discover()
-    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-    .setPorts(brokerAddress.port)
-    .start()
+  private def discover(brokerAddress: BrokerAddress): Future[FutureDiscover] = for {
+    address <- resolveBrokerAddress(brokerAddress)
+    discover <- me.discover()
+      .setInetAddress(address)
+      .setPorts(brokerAddress.port)
+      .start()
+  } yield discover
 
   private def bootstrap(brokerAddress: PeerAddress): Future[FutureBootstrap] = me.bootstrap()
     .setPeerAddress(brokerAddress)
     .start()
 
-  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = me.bootstrap()
-    .setInetAddress(InetAddress.getByName(brokerAddress.hostname))
-    .setPorts(brokerAddress.port)
-    .start()
+  private def bootstrap(brokerAddress: BrokerAddress): Future[FutureBootstrap] = for {
+    address <- resolveBrokerAddress(brokerAddress)
+    bootstrap <- me.bootstrap()
+      .setInetAddress(address)
+      .setPorts(brokerAddress.port)
+      .start()
+  } yield bootstrap
+
+  private def resolveBrokerAddress(address: BrokerAddress) = Future {
+    InetAddress.getByName(address.hostname)
+  }
 
   private def connectToBroker(ownId: PeerId, brokerAddress: BrokerAddress, listener: ActorRef): Receive = {
     val bootstrapFuture = discover(brokerAddress).map({ dis =>

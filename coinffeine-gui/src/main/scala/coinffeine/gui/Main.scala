@@ -19,9 +19,7 @@ object Main extends JFXApp
     case Failure(e) =>
       Dialogs.create()
         .message("An unexpected error was thrown while starting Coinffeine app. " +
-        "This may be due to network connectivity issues. Please check your network " +
-        "connectivity and try again. If the error persists, please report in:\n\n" +
-        issueReportingResource)
+          "If the error persists, please report in:\n\n" + issueReportingResource)
         .style(DialogStyle.NATIVE)
         .showException(e)
   }
