@@ -32,7 +32,7 @@ abstract class OrderActorTest extends AkkaSpec
     with Inside with Eventually {
 
   protected val idleTime = 100.millis.dilated
-  private implicit val patience = PatienceConfig(idleTime, idleTime / 10)
+  private implicit val patience = PatienceConfig(idleTime * 10, idleTime)
 
   protected trait Fixture {
     val order = Order(Bid, 10.BTC, Price(2.EUR))
