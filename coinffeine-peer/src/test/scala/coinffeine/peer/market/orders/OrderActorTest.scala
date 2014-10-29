@@ -29,9 +29,10 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 abstract class OrderActorTest extends AkkaSpec
     with SampleExchange with BuyerPerspective with CoinffeineUnitTestNetwork.Component
-    with Inside  with Eventually {
+    with Inside with Eventually {
 
-  protected val idleTime = 500.millis
+  protected val idleTime = 100.millis.dilated
+  private implicit val patience = PatienceConfig(idleTime, idleTime / 10)
 
   protected trait Fixture {
     val order = Order(Bid, 10.BTC, Price(2.EUR))
