@@ -18,11 +18,8 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
 
   private val operationsTable = new OperationsTable(props.ordersProperty)
 
-  private val operationSelectionProperty =
-    operationsTable.selected.map(Option(_).map(_.getValue)).toReadOnlyProperty
-
   private val cancellableOperationProperty =
-    operationSelectionProperty.delegate.mapToBool(_.exists(_.isCancellable.value)).toReadOnlyProperty
+    operationsTable.selected.delegate.mapToBool(_.exists(_.isCancellable.value)).toReadOnlyProperty
 
   private val newOrderButton = new Button {
     id = "newOrderBtn"
@@ -44,7 +41,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         .actions(Actions.YES, Actions.NO)
         .showConfirm()
       if (confirm == Actions.YES) {
-        operationSelectionProperty.value.foreach {
+        operationsTable.selected.value.foreach {
           case order: OrderProperties =>
             app.network.cancelOrder(order.orderIdProperty.value, "Cancelled by the user")
         }
@@ -57,7 +54,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     text <== operationsTable.showDetails.delegate.mapToString { shown =>
       if (shown) "Hide details" else "Show details"
     }
-    disable <== operationSelectionProperty.delegate.mapToBool(!_.isDefined)
+    disable <== operationsTable.selected.delegate.mapToBool(!_.isDefined)
     onAction = { action: Any =>
       operationsTable.showDetails.value = !operationsTable.showDetails.value
     }

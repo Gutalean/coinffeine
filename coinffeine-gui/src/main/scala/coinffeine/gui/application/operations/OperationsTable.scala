@@ -1,5 +1,6 @@
 package coinffeine.gui.application.operations
 
+import javafx.beans.property.ReadOnlyProperty
 import javafx.beans.value.ObservableValue
 import javafx.collections.ObservableList
 import javafx.scene.Node
@@ -33,8 +34,8 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       val item = new TreeItem[OperationProperties](order)
 
       item.graphic = order.orderTypeProperty.value match {
-        case Bid => new ImageView { id = "operations-bid-icon" }
-        case Ask => new ImageView { id = "operations-ask-icon" }
+        case Bid => new ImageView { styleClass += "operations-bid-icon" }
+        case Ask => new ImageView { styleClass += "operations-ask-icon" }
       }
 
       order.exchanges.bindToList(item.children) { exchange =>
@@ -91,7 +92,10 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
     table
   }
 
-  val selected = table.getSelectionModel.selectedItemProperty()
+  val selected: ReadOnlyProperty[Option[OperationProperties]] =
+    table.getSelectionModel.selectedItemProperty()
+      .map(item => Option(item).map(_.getValue))
+      .toReadOnlyProperty
   val showDetails: BooleanProperty = BooleanProperty(value = false)
 
   private def configMasterDetail(): Unit = {
@@ -107,8 +111,8 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
 
   private def bindToSelected(content: ObservableList[Node]): Unit = {
     selected.onChange { (_, _, newValue) =>
-      Option(newValue).foreach { item =>
-        item.getValue.sourceProperty.delegate.bindToList(content) {
+      newValue.foreach { item =>
+        item.sourceProperty.delegate.bindToList(content) {
           case order: AnyCurrencyOrder =>
             orderDetailsContent(order)
           case exchange: AnyExchange =>

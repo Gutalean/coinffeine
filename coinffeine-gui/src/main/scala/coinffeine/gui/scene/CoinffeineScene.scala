@@ -2,7 +2,7 @@ package coinffeine.gui.scene
 
 import scalafx.scene.Scene
 
-/** A scene that loads the Coinffiene style sheets and applies specific ones. */
+/** A scene that loads the Coinffeine style sheets and applies specific ones. */
 class CoinffeineScene(additionalStyles: String*) extends Scene {
 
   stylesheets.add(Stylesheets.Main)

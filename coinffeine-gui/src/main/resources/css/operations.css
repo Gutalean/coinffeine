@@ -9,11 +9,11 @@
     -fx-spacing: 10px;
 }
 
-#operations-bid-icon {
+.operations-bid-icon {
     -fx-image: url('../graphics/operations/bid.gif');
 }
 
-#operations-ask-icon {
+.operations-ask-icon {
     -fx-image: url('../graphics/operations/ask.gif');
 }
 
