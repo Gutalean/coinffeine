@@ -14,7 +14,9 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) {
 
   def apply() = Success(if (mustRunWizard) { runSetupWizard() })
 
-  private def mustRunWizard: Boolean = configProvider.userConfig.isEmpty
+  private def mustRunWizard: Boolean =
+    configProvider.okPaySettings().userAccount.isEmpty &&
+    configProvider.okPaySettings().seedToken.isEmpty
 
   private def runSetupWizard(): Unit = {
     val keys = new KeyPair()
