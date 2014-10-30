@@ -21,10 +21,10 @@ class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider)
   title = "Coinffeine"
   scene = new ApplicationScene(
     views = Seq(
-      new MainView,
       new StatsView(app),
       new WalletView(app, properties.wallet),
-      new OperationsView(app, properties)),
+      new OperationsView(app, properties)
+    ),
     toolbarWidgets = Seq(
       new BitcoinBalanceWidget(properties.wallet.balance),
       new FiatBalanceWidget(properties.fiatBalanceProperty)
