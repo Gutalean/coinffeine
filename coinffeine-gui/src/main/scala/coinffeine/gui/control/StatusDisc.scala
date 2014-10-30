@@ -1,15 +1,15 @@
 package coinffeine.gui.control
 
-import scalafx.beans.value.ObservableValue
+import javafx.beans.value.ObservableValue
 import scalafx.scene.paint._
 import scalafx.scene.shape.Circle
 
 import coinffeine.gui.util.ScalafxImplicits._
 
-class StatusDisc(statusProperty: ObservableValue[ConnectionStatus.Color, ConnectionStatus.Color])
+class StatusDisc(statusProperty: ObservableValue[ConnectionStatus.Color])
   extends Circle {
   radius = 8
-  fill.bind(statusProperty.delegate.map(status => StatusDisc.FillMapping(status)))
+  fill.bind(statusProperty.map(status => StatusDisc.FillMapping(status)))
 }
 
 object StatusDisc {
