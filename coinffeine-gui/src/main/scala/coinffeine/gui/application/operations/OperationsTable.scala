@@ -48,6 +48,7 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
     val table = new TreeTableView[OperationProperties](root)
     table.setId("operations-table")
     table.setShowRoot(false)
+    table.setPlaceholder(new Label("No active operations found"))
 
     table.getColumns.addAll(
       new TreeTableColumn[OperationProperties, String] {
