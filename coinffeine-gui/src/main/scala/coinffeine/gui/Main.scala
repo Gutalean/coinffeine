@@ -22,6 +22,7 @@ object Main extends JFXApp
           "If the error persists, please report in:\n\n" + issueReportingResource)
         .style(DialogStyle.NATIVE)
         .showException(e)
+      System.exit(-1)
   }
 
   override def stopApp(): Unit = {
