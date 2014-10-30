@@ -26,7 +26,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
                                   connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Join] with ActorLogging {
 
-  import coinffeine.protocol.gateway.proto.ProtobufServerActor._
+  import ProtobufServerActor._
   import context.dispatcher
 
   private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
@@ -35,19 +35,30 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private var me: Peer = _
   private var connections: Map[PeerAddress, PeerConnection] = Map.empty
 
-  override protected def starting(args: Join): Receive = {
-    becomeStarted(args match {
-      case JoinAsBroker(id, port) =>
-        initPeer(id, port, sender())
-        publishAddress().onComplete { case result =>
-          self ! AddressPublicationResult(result)
-        }
-        publishingAddress(id, sender()) orElse manageConnectionStatus
+  override protected def starting(join: Join): Receive = {
+    val listener = sender()
+    bindPeer(join.id, join.localPort, listener).pipeTo(self)
+    becomeStarted {
+      case peer: Peer =>
+        me = peer
+        become(join match {
+          case JoinAsBroker(id, _) =>
+            publishAddress().onComplete { case result =>
+              self ! AddressPublicationResult(result)
+            }
+            publishingAddress(id, listener) orElse manageConnectionStatus
+          case JoinAsPeer(id, _, broker) =>
+            connectToBroker(id, broker, listener)
+        })
 
-      case JoinAsPeer(id, port, broker) =>
-        initPeer(id, port, sender())
-        connectToBroker(id, broker, sender())
-    })
+      case Status.Failure(cause) =>
+        log.error(cause, "Cannot bind at local port {}, retrying in {}",
+          join.localPort, connectionRetryInterval)
+        context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
+
+      case RetryConnection =>
+        bindPeer(join.id, join.localPort, listener).pipeTo(self)
+    }
   }
 
   override protected def stopping(): Receive = {
@@ -81,19 +92,21 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
       }
   }
 
-  def initPeer(id: PeerId, localPort: Int, listener: ActorRef): Unit = {
+  private def bindPeer(id: PeerId, localPort: Int, listener: ActorRef): Future[Peer] = Future {
     val bindings = new Bindings()
     acceptedNetworkInterfaces.map(_.getName).foreach(bindings.addInterface)
     val ifaces = bindings.getInterfaces.mkString(",")
     log.info(s"Initiating a peer on port $localPort for interfaces $ifaces")
 
-    me = new PeerMaker(createNumber160(id))
+    val peer = new PeerMaker(createNumber160(id))
       .setPorts(localPort)
       .setBindings(bindings)
       .makeAndListen()
-    me.getConfiguration.setBehindFirewall(true)
-    me.setObjectDataReply(IncomingDataListener)
-    me.getPeerBean.getPeerMap.addPeerMapChangeListener(PeerChangeListener)
+    peer.getConfiguration.setBehindFirewall(true)
+    peer.setObjectDataReply(IncomingDataListener)
+    peer.getPeerBean.getPeerMap.addPeerMapChangeListener(PeerChangeListener)
+
+    peer
   }
 
   private def publishAddress(): Future[FutureDHT] = me.put(me.getPeerID)

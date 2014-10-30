@@ -1,10 +1,11 @@
 package coinffeine.peer.api.impl
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.util.Random
+import scala.util.control.{NoStackTrace, NonFatal}
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor._
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 
@@ -46,9 +47,16 @@ class DefaultCoinffeineApp(name: String,
   override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
     implicit val to = Timeout(timeout)
-    ServiceActor.askStart(peerRef, peerId).recoverWith {
-      case cause => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
-    }
+    for {
+      _ <- ServiceActor.askStart(peerRef, peerId).recoverWith {
+        case NonFatal(cause) => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
+      }
+      _ <- system.actorSelection("/system/journal").resolveOne().recoverWith {
+        case ActorNotFound(_) => Future.failed(new RuntimeException(
+          "Application data files cannot be locked. You might have already opened the Coinffeine app."
+        ) with NoStackTrace)
+      }
+    } yield ()
   }
 
   private val peerId = configProvider.messageGatewaySettings().peerId.getOrElse(registerNewPeerId())

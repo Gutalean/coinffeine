@@ -18,6 +18,7 @@ object MessageGateway {
 
   sealed trait Join {
     val id: PeerId
+    val localPort: Int
   }
 
   /** A request message to bind & create a new, empty P2P network. */
