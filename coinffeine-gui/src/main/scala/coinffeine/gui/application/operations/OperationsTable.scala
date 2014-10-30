@@ -33,8 +33,8 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       val item = new TreeItem[OperationProperties](order)
 
       item.graphic = order.orderTypeProperty.value match {
-        case Bid => new ImageView { id = "operations-bid-icon" }
-        case Ask => new ImageView { id = "operations-ask-icon" }
+        case Bid => new ImageView { styleClass += "operations-bid-icon" }
+        case Ask => new ImageView { styleClass += "operations-ask-icon" }
       }
 
       order.exchanges.bindToList(item.children) { exchange =>
