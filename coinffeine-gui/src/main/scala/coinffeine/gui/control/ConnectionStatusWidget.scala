@@ -6,8 +6,7 @@ import scalafx.scene.control.Label
 import coinffeine.gui.control.ConnectionStatus._
 import coinffeine.gui.util.ScalafxImplicits._
 
-class ConnectionStatusWidget(status: ReadOnlyObjectProperty[ConnectionStatus])
-  extends Label {
+class ConnectionStatusWidget(status: ReadOnlyObjectProperty[ConnectionStatus]) extends Label {
 
   val statusColor = ObjectProperty[Color](Red)
   statusColor.bind(status.delegate.map(_.color))
