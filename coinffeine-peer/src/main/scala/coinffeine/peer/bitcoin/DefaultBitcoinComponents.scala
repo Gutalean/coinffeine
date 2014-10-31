@@ -3,17 +3,27 @@ package coinffeine.peer.bitcoin
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import org.bitcoinj.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
+import org.bitcoinj.core._
 import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.bitcoin.network.{IntegrationTestNetwork, PublicTestNetwork, MainNetwork}
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigComponent
 
 trait DefaultBitcoinComponents
-    extends PeerGroupComponent with BlockchainComponent with WalletComponent {
-  this: NetworkComponent with ConfigComponent =>
+    extends PeerGroupComponent with BlockchainComponent with WalletComponent with NetworkComponent {
+  this: ConfigComponent =>
+
+  private lazy val configuredNetwork: NetworkComponent =
+    configProvider.bitcoinSettings().network match {
+      case BitcoinSettings.IntegrationTestnet => new IntegrationTestNetwork.Component {}
+      case BitcoinSettings.PublicTestnet => new PublicTestNetwork.Component {}
+      case BitcoinSettings.MainNet => MainNetwork
+    }
+  override lazy val network = configuredNetwork.network
+  override lazy val peerAddresses = configuredNetwork.peerAddresses
 
   override lazy val blockchain: AbstractBlockChain = {
     val blockStore = new MemoryFullPrunedBlockStore(network, 1000)

@@ -23,12 +23,14 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val conf = makeConfig(
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
       "coinffeine.bitcoin.walletFile" -> "user.wallet",
-      "coinffeine.bitcoin.rebroadcastTimeout" -> "60s"
+      "coinffeine.bitcoin.rebroadcastTimeout" -> "60s",
+      "coinffeine.bitcoin.network" -> "mainnet"
     )
     SettingsMapping.fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
       connectionRetryInterval = 30.seconds,
       walletFile = new File("user.wallet"),
-      rebroadcastTimeout = 1.minute
+      rebroadcastTimeout = 1.minute,
+      network = BitcoinSettings.MainNet
     )
   }
 
@@ -36,12 +38,14 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val settings = BitcoinSettings(
       connectionRetryInterval = 50.seconds,
       walletFile = new File("/tmp/user.wallet"),
-      rebroadcastTimeout = 60.seconds
+      rebroadcastTimeout = 60.seconds,
+      network = BitcoinSettings.PublicTestnet
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
     cfg.getString("coinffeine.bitcoin.walletFile") shouldBe new File("/tmp/user.wallet").getPath
     cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
+    cfg.getString("coinffeine.bitcoin.network") shouldBe "public-testnet"
   }
 
   "Message Gateway settings mapping" should "map from config" in {
