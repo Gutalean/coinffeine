@@ -39,7 +39,8 @@ object SettingsMapping {
         config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds,
       walletFile = new File(config.getString("coinffeine.bitcoin.walletFile")),
       rebroadcastTimeout =
-        config.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS).seconds
+        config.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS).seconds,
+      network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
     )
 
     override def toConfig(settings: BitcoinSettings, config: Config) = config
@@ -48,6 +49,7 @@ object SettingsMapping {
       .withValue("coinffeine.bitcoin.walletFile", configValue(settings.walletFile.toString))
       .withValue("coinffeine.bitcoin.rebroadcastTimeout",
         configValue(s"${settings.rebroadcastTimeout.toSeconds}s"))
+      .withValue("coinffeine.bitcoin.network", configValue(settings.network.toString))
   }
 
   implicit val messageGateway = new SettingsMapping[MessageGatewaySettings] {
