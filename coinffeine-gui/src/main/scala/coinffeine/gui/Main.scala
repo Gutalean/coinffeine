@@ -6,11 +6,11 @@ import scalafx.application.JFXApp
 
 import org.controlsfx.dialog.{DialogStyle, Dialogs}
 import coinffeine.gui.application.launcher.AppLauncher
-import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
+import coinffeine.model.bitcoin.network.IntegrationTestNetwork
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 
 object Main extends JFXApp
-  with ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent with AppLauncher {
+  with ProductionCoinffeineApp.Component with IntegrationTestNetwork.Component with AppLauncher {
 
   private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 

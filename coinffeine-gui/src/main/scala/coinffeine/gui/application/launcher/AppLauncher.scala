@@ -4,10 +4,10 @@ import scala.util.Try
 import scalafx.application.JFXApp.PrimaryStage
 
 import coinffeine.gui.application.main.CoinffeinePrimaryStage
-import coinffeine.model.bitcoin.IntegrationTestNetworkComponent
+import coinffeine.model.bitcoin.network.IntegrationTestNetwork
 import coinffeine.peer.api.impl.ProductionCoinffeineApp
 
-trait AppLauncher { this: ProductionCoinffeineApp.Component with IntegrationTestNetworkComponent =>
+trait AppLauncher { this: ProductionCoinffeineApp.Component with IntegrationTestNetwork.Component =>
 
   private val runWizardAction = new RunWizardAction(configProvider, network)
   private val appStartAction = new AppStartAction(app)
