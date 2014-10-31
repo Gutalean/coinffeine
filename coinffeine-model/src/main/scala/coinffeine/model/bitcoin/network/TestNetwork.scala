@@ -8,9 +8,9 @@ import org.bitcoinj.params.TestNet3Params
 
 import coinffeine.model.bitcoin.NetworkComponent
 
-object IntegrationTestNetwork {
+trait TestNetwork {
+  val Hostname: String
   val Port = 19000
-  val Hostname = "testnet.test.coinffeine.com"
   val NetworkParams = new TestNet3Params() {
     dnsSeeds = Array.empty
   }
@@ -19,9 +19,15 @@ object IntegrationTestNetwork {
     override def network = NetworkParams
     override def peerAddresses = testnetAddress().toSeq
 
-    def testnetAddress(): Option[PeerAddress] = Try(new PeerAddress(
-      InetAddress.getByName(IntegrationTestNetwork.Hostname),
-      IntegrationTestNetwork.Port
-    )).toOption
+    def testnetAddress(): Option[PeerAddress] =
+      Try(new PeerAddress(InetAddress.getByName(Hostname), Port)).toOption
   }
+}
+
+object IntegrationTestNetwork extends TestNetwork {
+  val Hostname = "testnet.test.coinffeine.com"
+}
+
+object PublicTestNetwork extends TestNetwork {
+  val Hostname = "prod.coinffeine.com"
 }
