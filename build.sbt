@@ -51,7 +51,6 @@ libraryDependencies in ThisBuild ++= Seq(
   Dependencies.jodaTime,
   Dependencies.logbackClassic,
   Dependencies.logbackCore,
-  Dependencies.mockito % "test",
   Dependencies.scalatest % "test",
   Dependencies.slf4j
 )
