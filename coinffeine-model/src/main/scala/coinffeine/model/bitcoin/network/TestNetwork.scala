@@ -29,5 +29,5 @@ object IntegrationTestNetwork extends TestNetwork {
 }
 
 object PublicTestNetwork extends TestNetwork {
-  val Hostname = "prod.coinffeine.com"
+  val Hostname = "testnet.trial.coinffeine.com"
 }
