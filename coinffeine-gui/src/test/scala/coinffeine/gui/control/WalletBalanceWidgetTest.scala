@@ -2,10 +2,11 @@ package coinffeine.gui.control
 
 import java.text.DecimalFormat
 import javafx.scene.control.Label
-import javafx.scene.layout.HBox
+import javafx.scene.image.ImageView
 import scalafx.application.Platform
 import scalafx.beans.property.ObjectProperty
 
+import org.loadui.testfx.exceptions.NoNodesVisibleException
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
@@ -21,8 +22,8 @@ class WalletBalanceWidgetTest
     new WalletBalanceWidget(Bitcoin, balanceProperty) with NoPopUpContent
 
   "A wallet balance widget" should "start with the provided value" in new Fixture {
-    find[Label]("#BTC-balance").getText should be (formatNumber(0.0))
-    find[HBox]("#balance-widget").getStyleClass should not contain "non-current"
+    findBalanceLabel().getText shouldBe formatNumber(0.0)
+    expectNoWarnImageVisible()
   }
 
   it should "reflect changes on the balance property" in new Fixture {
@@ -30,8 +31,8 @@ class WalletBalanceWidgetTest
       balanceProperty.set(Some(BitcoinBalance.singleOutput(0.85.BTC)))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be (formatNumber(0.85))
-      find[HBox]("#balance-widget").getStyleClass should not contain "non-current"
+      findBalanceLabel().getText shouldBe formatNumber(0.85)
+      expectNoWarnImageVisible()
     }
   }
 
@@ -40,7 +41,7 @@ class WalletBalanceWidgetTest
       balanceProperty.set(Some(BitcoinBalance.singleOutput(0.12345678.BTC)))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be (formatNumber(0.12345678))
+      findBalanceLabel().getText shouldBe formatNumber(0.12345678)
     }
   }
 
@@ -49,8 +50,8 @@ class WalletBalanceWidgetTest
       balanceProperty.set(None)
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be ("-.--")
-      find[HBox]("#balance-widget").getStyleClass should contain ("non-current")
+      findBalanceLabel().getText shouldBe "-.--"
+      findWarnImage() shouldBe 'visible
     }
   }
 
@@ -59,8 +60,18 @@ class WalletBalanceWidgetTest
       balanceProperty.set(Some(BitcoinBalance.singleOutput(10.BTC).copy(hasExpired = true)))
     }
     eventually {
-      find[Label]("#BTC-balance").getText should be (formatNumber(10))
-      find[HBox]("#balance-widget").getStyleClass should contain ("non-current")
+      findBalanceLabel().getText shouldBe formatNumber(10)
+      findWarnImage() shouldBe 'visible
+    }
+  }
+
+  private def findBalanceLabel(): Label = find[Label]("#BTC-balance Label")
+
+  private def findWarnImage(): ImageView = find[ImageView](".balance-warning")
+
+  private def expectNoWarnImageVisible(): Unit = {
+    a[NoNodesVisibleException] shouldBe thrownBy {
+      findWarnImage()
     }
   }
 

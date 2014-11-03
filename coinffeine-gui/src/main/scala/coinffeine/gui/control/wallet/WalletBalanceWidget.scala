@@ -5,6 +5,7 @@ import scalafx.Includes._
 import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.geometry.Pos
 import scalafx.scene.control.Label
+import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout.HBox
 
@@ -27,7 +28,7 @@ abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
     pop
   }
 
-  id = "balance-widget"
+  styleClass += "balance-widget"
   prefHeight = 26
   alignment = Pos.Center
   content = Seq(
@@ -37,18 +38,25 @@ abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
       styleClass = Seq("currency-label", s"$symbol-label")
       alignment = Pos.Center
     },
-    new Label(formatBalance(balanceProperty.value)) {
-      prefWidth = 100
-      prefHeight = 24
+    new HBox(spacing = 4) {
       id = s"$symbol-balance"
       styleClass = Seq("balance")
-      alignment = Pos.CenterRight
-      text <== balanceProperty.delegate.map(formatBalance)
+      content = Seq(
+        new ImageView(new Image("/graphics/warning.png")) {
+          styleClass += "balance-warning"
+          alignment = Pos.Center
+          visible <== balanceProperty.delegate.mapToBool(isCurrent)
+        },
+        new Label(formatBalance(balanceProperty.value)) {
+          prefWidth = 100
+          prefHeight = 24
+          alignment = Pos.CenterRight
+          text <== balanceProperty.delegate.map(formatBalance)
+        }
+      )
     }
   )
 
-  balanceProperty.onChange(updateClasses())
-  updateClasses()
   configMouseHandlers()
 
   private def configMouseHandlers(): Unit = {
@@ -63,13 +71,8 @@ abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
     }
   }
 
-  private def updateClasses(): Unit = {
-    val nonCurrent = balanceProperty.value.fold(true)(_.hasExpired)
-    styleClass.clear()
-    if (nonCurrent) {
-      styleClass.add("non-current")
-    }
-  }
+  private def isCurrent(maybeBalance: Option[Balance[C]]): Boolean =
+    maybeBalance.fold(true)(_.hasExpired)
 
   private def formatBalance(balanceOpt: Option[B]): String =
     balanceOpt.fold("-.--") { balance =>
