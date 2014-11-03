@@ -1,9 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
-import org.mockito.BDDMockito.given
-import org.mockito.Mockito.verify
 import org.scalatest.Inside
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
@@ -11,12 +8,12 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.OkPayPaymentProcessor
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol.DummyDeposits
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-class WaitingForMatchesStateTest extends UnitTest
-  with MockitoSugar with Inside with SampleExchange with DefaultAmountsComponent {
+class WaitingForMatchesStateTest extends UnitTest with Inside with SampleExchange
+  with DefaultAmountsComponent {
 
   val nonStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
   val partiallyCompletedOrder = nonStartedOrder
@@ -25,8 +22,8 @@ class WaitingForMatchesStateTest extends UnitTest
   "When waiting for matches" should "be initially offline and trying to get to the market" in
     new FreshInstance {
       state.enter(context)
-      verify(context).updateOrderStatus(OfflineOrder)
-      verify(context).keepInMarket()
+      context.updatedStatus shouldBe Some(OfflineOrder)
+      context shouldBe 'askedToBeKeptInMarket
     }
 
   it should "reject order matches with prices off the limit" in new FreshInstance {
@@ -64,11 +61,22 @@ class WaitingForMatchesStateTest extends UnitTest
     }
   }
 
+  class StateContextMock(override val order: Order[Euro.type],
+                         override val calculator: AmountsCalculator) extends StateContext[Euro.type] {
+
+    var updatedStatus: Option[OrderStatus] = None
+    var askedToBeKeptInMarket: Boolean = false
+    override def updateOrderStatus(newStatus: OrderStatus): Unit = {
+      updatedStatus = Some(newStatus)
+    }
+    override def transitionTo(state: State[Euro.type]): Unit = {}
+    override def keepInMarket(): Unit = { askedToBeKeptInMarket = true }
+    override def keepOffMarket(): Unit = {}
+  }
+
   abstract class FreshInstance(val order: Order[Euro.type] = nonStartedOrder) {
     val state = new WaitingForMatchesState[Euro.type]
-    val context = mock[StateContext[Euro.type]]
-    given(context.order).willReturn(order)
-    given(context.calculator).willReturn(amountsCalculator)
+    val context = new StateContextMock(order, amountsCalculator)
 
     def orderMatch(amount: Bitcoin.Amount, price: Euro.Amount) = {
       val fiatSpent = price * amount.value

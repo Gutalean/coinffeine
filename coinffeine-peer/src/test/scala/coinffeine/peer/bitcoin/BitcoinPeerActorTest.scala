@@ -7,7 +7,6 @@ import akka.testkit._
 import org.bitcoinj.core.{FullPrunedBlockChain, PeerGroup}
 import org.bitcoinj.store.MemoryFullPrunedBlockStore
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
@@ -16,7 +15,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.peer.bitcoin.BitcoinPeerActor.{TransactionNotPublished, Delegates}
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
-class BitcoinPeerActorTest extends AkkaSpec with MockitoSugar with Eventually {
+class BitcoinPeerActorTest extends AkkaSpec with Eventually {
 
   "The bitcoin peer actor" should "join the bitcoin network" in new Fixture {
     actor ! ServiceActor.Start {}

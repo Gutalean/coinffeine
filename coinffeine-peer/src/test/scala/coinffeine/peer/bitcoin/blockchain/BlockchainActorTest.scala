@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import akka.actor.Props
 import akka.testkit._
 import org.bitcoinj.core.Wallet.SendRequest
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.BitcoinjTest
@@ -15,8 +14,7 @@ import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.MockTransactionBroadcaster
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
-class BlockchainActorTest extends AkkaSpec("BlockChainActorTest")
-    with BitcoinjTest with MockitoSugar {
+class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjTest {
 
   "The blockchain actor" must "report transaction confirmation" in new Fixture {
     requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1))

@@ -1,7 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
 import org.scalatest.Inside
-import org.scalatest.mock.MockitoSugar
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -14,7 +13,7 @@ import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-class OrderControllerTest extends UnitTest with Inside with MockitoSugar with SampleExchange {
+class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
   val initialOrder = Order(Bid, 10.BTC, Price(1.EUR))
   val orderMatch = OrderMatch(
