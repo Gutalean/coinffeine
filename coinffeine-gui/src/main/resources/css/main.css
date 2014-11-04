@@ -22,6 +22,7 @@ GridPane {
     -fx-border-color: #aaa;
     -fx-border-style: solid;
     -fx-border-radius: 0 4 4 0;
+    -fx-border-insets: 1 0 1 0;
     -fx-padding: 0 5;
 }
 .currency-label {
