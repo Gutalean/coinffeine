@@ -10,4 +10,5 @@ object Stylesheets {
   val Wallet = "/css/wallet.css"
   val Wizard = "/css/wizard.css"
   val Preferences = "/css/preferences.css"
+  val About = "/css/about.css"
 }

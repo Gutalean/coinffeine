@@ -1,0 +1,39 @@
+/* This file defines the styles for the about dialog. */
+
+#about-root {
+    -fx-alignment: center;
+    -fx-min-width: 700px;
+    -fx-max-width: 700px;
+    -fx-min-height: 320px;
+    -fx-max-height: 320px;
+    -fx-padding: 30px;
+    -fx-spacing: 30px;
+}
+
+#about-root HBox {
+    -fx-spacing: 50px;
+}
+
+#about-root #productinfo {
+    -fx-alignment: center;
+}
+
+#about-root #authorinfo {
+    -fx-alignment: center;
+    -fx-spacing: 20px;
+}
+
+#about-root .title {
+    -fx-font-size: 30;
+}
+
+#about-root .avatar {
+    -fx-alignment: center;
+    -fx-spacing: 5px;
+}
+
+#about-root #author-list {
+    -fx-font-weight: bold;
+    -fx-hgap: 20px;
+    -fx-vgap: 20px;
+}
