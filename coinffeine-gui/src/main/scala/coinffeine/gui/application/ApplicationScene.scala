@@ -9,6 +9,7 @@ import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
 
+import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 import coinffeine.peer.config.SettingsProvider
@@ -37,6 +38,16 @@ class ApplicationScene(views: Seq[ApplicationView],
             onAction = { e: ActionEvent =>
               val form = new PreferencesForm(settingsProvider)
               form.show()
+            }
+          }
+        )
+      },
+      new Menu("Help") {
+        items = Seq(
+          new MenuItem("About...") {
+            onAction = { e: ActionEvent =>
+              val dialog = new AboutDialog
+              dialog.show()
             }
           }
         )
