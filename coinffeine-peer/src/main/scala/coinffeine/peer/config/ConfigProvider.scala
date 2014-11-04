@@ -11,8 +11,6 @@ import coinffeine.protocol.MessageGatewaySettings
 
 trait ConfigProvider extends SettingsProvider {
 
-  import SettingsMapping._
-
   /** Retrieve the user configuration. */
   def userConfig: Config
 
@@ -30,7 +28,7 @@ trait ConfigProvider extends SettingsProvider {
   private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
     "coinffeine.bitcoin.walletFile" -> configPath("user.wallet"),
     "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
-    "akka.persistence.snapshot-store.dir" -> configPath("journal")
+    "akka.persistence.snapshot-store.local.dir" -> configPath("snapshots")
   ).asJava)
 
   private def configPath(filename: String) =
