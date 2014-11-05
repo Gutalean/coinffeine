@@ -84,6 +84,7 @@ object MessageForwarder {
     require(maxRetries >= 0, "number of retries must not be negative")
   }
   object RetrySettings {
+    val Continuously = RetrySettings(DefaultTimeout, Int.MaxValue)
     def continuouslyEvery(interval: FiniteDuration) = RetrySettings(Timeout(interval), Int.MaxValue)
   }
 
