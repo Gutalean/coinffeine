@@ -9,7 +9,8 @@ import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
-import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.{LocalDateTime, DateTime}
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
@@ -121,9 +122,13 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     placeholder = new Label("No transactions found")
     hgrow = Priority.Always
     columns ++= Seq(
-      new TableColumn[WalletActivityEntryProperties, DateTime] {
+      new TableColumn[WalletActivityEntryProperties, String] {
         text = "Time"
-        cellValueFactory = { _.value.time }
+        cellValueFactory = {
+          _.value.time.delegate.mapToString { instant =>
+            DateTimeFormat.mediumDateTime().print(instant.toLocalDateTime)
+          }
+        }
       },
       new TableColumn[WalletActivityEntryProperties, Hash] {
         text = "Hash"
