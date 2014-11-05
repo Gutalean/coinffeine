@@ -1,15 +1,18 @@
 package coinffeine.gui.application.wallet
 
+import java.net.{URI, URL}
+import scala.util.Try
 import scalafx.Includes._
+import scalafx.event.ActionEvent
 import scalafx.geometry.HPos
 import scalafx.scene.Node
 import scalafx.scene.control.TableColumn._
-import scalafx.scene.control.{Button, Label, TableColumn, TableView}
+import scalafx.scene.control._
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
-import org.joda.time.DateTime
+import org.joda.time.format.DateTimeFormat
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
@@ -121,13 +124,36 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     placeholder = new Label("No transactions found")
     hgrow = Priority.Always
     columns ++= Seq(
-      new TableColumn[WalletActivityEntryProperties, DateTime] {
+      new TableColumn[WalletActivityEntryProperties, String] {
         text = "Time"
-        cellValueFactory = { _.value.time }
+        cellValueFactory = {
+          _.value.time.delegate.mapToString { instant =>
+            DateTimeFormat.mediumDateTime().print(instant.toLocalDateTime)
+          }
+        }
       },
       new TableColumn[WalletActivityEntryProperties, Hash] {
         text = "Hash"
         cellValueFactory = { _.value.hash }
+        cellFactory = { _ => new TableCell[WalletActivityEntryProperties, Hash] {
+          item.onChange { (_, _, hash) =>
+            val hashString = Try(hash.toString).getOrElse("---")
+            graphic = new HBox(spacing = 5) {
+              styleClass += "hash-cell"
+              content = Seq(
+                new Label(hashString) {
+                  maxWidth = Double.MaxValue
+                  hgrow = Priority.Always
+                },
+                new Button("More") {
+                  onAction = { _: ActionEvent =>
+                    java.awt.Desktop.getDesktop.browse(WalletView.detailsOfTransaction(hashString))
+                  }
+                }
+              )
+            }
+          }
+        }}
       },
       new TableColumn[WalletActivityEntryProperties, Bitcoin.Amount] {
         text = "Amount"
@@ -147,4 +173,12 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     id = "wallet-center-pane"
     content = Seq(detailsPane, transactionsPane)
   }
+}
+
+object WalletView {
+
+  private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com:8085/tx/")
+
+  private def detailsOfTransaction(txHash: String): URI =
+    new URL(TransactionInfoBaseUri, txHash).toURI
 }
