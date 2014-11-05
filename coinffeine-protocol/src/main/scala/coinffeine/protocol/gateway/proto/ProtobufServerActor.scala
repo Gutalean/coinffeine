@@ -64,7 +64,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
     connections.values.foreach(_.close())
-    Option(me).map(_.shutdown())
+    Option(me).foreach(_.shutdown())
     becomeStopped()
   }
 
@@ -191,27 +191,42 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
         val msg = CoinffeineMessage.parseFrom(data)
         val source = if (from == brokerId) BrokerId else from
         listener ! ReceiveProtoMessage(source, msg)
+      case ResetConnection(peer) =>
+        log.debug("Reset connection to peer {}", peer)
+        clearConnection(peer)
     }
 
-    private def sendMessage(to: PeerId, msg: CoinffeineMessage) = {
-      val sendMsg = me.get(createNumber160(to)).start().flatMap(dhtEntry => {
-        val peerAddress = new PeerAddress(dhtEntry.getData.getData)
-        val connection = connections.get(peerAddress).filter(!_.isClosed).getOrElse {
-          val connection = me.createPeerConnection(peerAddress, IdleTCPMillisTimeout)
-          if (connection == null) {
-            throw new IllegalStateException(s"Could not create connection to $peerAddress")
-          }
-          connections = connections.updated(peerAddress, connection)
-          connection
-        }
-        me.sendDirect(connection)
-          .setObject(msg.toByteArray)
-          .start()
-      })
-      sendMsg.onFailure { case err =>
-        log.error(err, s"Failure when sending message to $to: $msg")
-      }
+    private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit = for {
+      peerAddress <- resolveAddress(to)
+    } yield {
+      me.sendDirect(getOrCreateConnection(peerAddress))
+        .setObject(msg.toByteArray)
+        .start()
+        .onFailure { case err => self ! ResetConnection(peerAddress) }
     }
+  }
+
+  private def getOrCreateConnection(to: PeerAddress): PeerConnection = connections.get(to) match {
+    case Some(connection) if !connection.isClosed => connection
+    case _ => createConnection(to)
+  }
+
+  private def resolveAddress(peer: PeerId): Future[PeerAddress] =
+    me.get(createNumber160(peer)).start().map { dhtEntry =>
+      new PeerAddress(dhtEntry.getData.getData)
+    }
+
+  private def clearConnection(peer: PeerAddress): Unit = {
+    connections.get(peer).foreach(_.close())
+    connections -= peer
+  }
+
+  private def createConnection(peer: PeerAddress): PeerConnection = {
+    clearConnection(peer)
+    val connection = Option(me.createPeerConnection(peer, IdleTCPMillisTimeout))
+      .getOrElse(throw new IllegalStateException(s"Could not create connection to $peer"))
+    connections += peer -> connection
+    connection
   }
 
   private def manageConnectionStatus: Receive = {
@@ -252,6 +267,7 @@ private[gateway] object ProtobufServerActor {
   private case object PeerMapChanged
   private case class ReceiveData(from: PeerId, data: Array[Byte])
   private case object RetryConnection
+  private case class ResetConnection(peer: PeerAddress)
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 
