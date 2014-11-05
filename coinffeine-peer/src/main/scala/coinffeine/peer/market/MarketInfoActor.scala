@@ -91,7 +91,7 @@ private class MarketInfoActor(gateway: ActorRef) extends Actor {
 
 object MarketInfoActor {
 
-  val RetryPolicy = RetrySettings(maxRetries = 2)
+  val RetryPolicy = RetrySettings.Continuously
 
   def props(gateway: ActorRef): Props = Props(new MarketInfoActor(gateway))
 
