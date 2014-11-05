@@ -4,8 +4,11 @@ import javafx.animation.{Animation, KeyFrame, Timeline}
 import javafx.event.{ActionEvent, EventHandler}
 import javafx.util.Duration
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 import scalafx.Includes
 import scalafx.scene.chart.{AreaChart, NumberAxis, XYChart}
+
+import org.slf4j.LoggerFactory
 
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency.FiatCurrency
@@ -15,6 +18,8 @@ import coinffeine.peer.api.MarketStats
 class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
                                         market: Market[C]) extends AreaChart[Number, Number](
     OrderBookChart.xAxis(market), OrderBookChart.yAxis()) with Includes {
+
+  private val log = LoggerFactory.getLogger(this.getClass)
 
   private val reloader = new Timeline(new KeyFrame(
     Duration.millis(OrderBookChart.UpdateInterval.toMillis), new EventHandler[ActionEvent] {
@@ -33,11 +38,15 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
 
   private def reloadData(): Unit = {
     implicit val executor = FxExecutor.asContext
-    stats.openOrders(market).onSuccess {
-      case entries =>
+    log.debug("Reloading order book chart data... ")
+    stats.openOrders(market).onComplete {
+      case Success(entries) =>
         data().clear()
         data() += toSeries(entries, Bid)
         data() += toSeries(entries, Ask)
+        log.debug("Order book chart data successfully reloaded")
+      case Failure(e) =>
+        log.error("Failed to reload order book chart data", e)
     }
   }
 
