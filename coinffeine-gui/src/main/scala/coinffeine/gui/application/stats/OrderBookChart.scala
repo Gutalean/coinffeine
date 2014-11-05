@@ -58,7 +58,7 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
       .filter(_.orderType == orderType)
       .groupBy(_.price.value.toDouble)
       .mapValues(sumCurrencyAmount)
-    series.data = seriesData.toSeq.map(toChartData)
+    series.data = seriesData.toSeq.sortBy(_._1).map(toChartData)
     series
   }
 
