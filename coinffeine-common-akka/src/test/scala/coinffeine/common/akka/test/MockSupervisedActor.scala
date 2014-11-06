@@ -1,5 +1,6 @@
 package coinffeine.common.akka.test
 
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 import akka.actor.{ActorRef, ActorSystem, Props}
@@ -12,25 +13,25 @@ import coinffeine.common.akka.test.MockActor.{MockRestarted, MockStopped, MockTh
 class MockSupervisedActor(implicit system: ActorSystem) extends ShouldMatchers {
 
   val probe = TestProbe()
+  private val defaultTimeout = probe.testKitSettings.DefaultTimeout.duration
 
   def props(args: Any*): Props = Props(new MockActor(probe.ref, args))
 
   def ref: ActorRef = refOpt.getOrElse(throw new Error("Mock was not yet created"))
 
-  def expectCreation(): Seq[Any] = {
-    val started = probe.expectMsgType[MockActor.MockStarted]
+  def expectCreation(timeout: FiniteDuration = defaultTimeout): Seq[Any] = {
+    val started = probe.expectMsgType[MockActor.MockStarted](timeout)
     refOpt = Some(started.ref)
     started.args
   }
 
   def expectRestart(): Unit = {
-    probe.expectMsgClass(classOf[MockStopped])
-    probe.expectMsgClass(classOf[MockRestarted])
+    probe.expectMsgType[MockStopped]
+    probe.expectMsgType[MockRestarted]
   }
 
-  def expectStop(): Unit = {
-    probe.expectMsgClass(classOf[MockStopped])
-    probe.expectNoMsg()
+  def expectStop(timeout: FiniteDuration = defaultTimeout): Unit = {
+    probe.expectMsgType[MockStopped](timeout)
   }
 
   def expectNoMsg(): Unit = {
