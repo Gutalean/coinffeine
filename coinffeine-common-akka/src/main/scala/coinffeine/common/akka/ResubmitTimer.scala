@@ -1,4 +1,4 @@
-package coinffeine.peer.exchange.micropayment
+package coinffeine.common.akka
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -7,7 +7,7 @@ import akka.actor.{ActorContext, Cancellable}
 /** Sends periodically a [[ResubmitTimer.ResubmitTimeout]] as a self-message for
   * message resubmission.
   */
-private[micropayment] class ResubmitTimer(context: ActorContext, timeout: FiniteDuration) {
+class ResubmitTimer(context: ActorContext, timeout: FiniteDuration) {
 
   private var timer: Option[Cancellable] = None
 
@@ -32,6 +32,6 @@ private[micropayment] class ResubmitTimer(context: ActorContext, timeout: Finite
   }
 }
 
-private[micropayment] object ResubmitTimer {
+object ResubmitTimer {
   case object ResubmitTimeout
 }

@@ -4,7 +4,7 @@ import akka.actor.{Actor, ActorContext, ActorRef}
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
-import coinffeine.peer.market.SubmissionSupervisor._
+import coinffeine.peer.market.submission.SubmissionSupervisor._
 
 private[orders] class OrderPublisher[C <: FiatCurrency](submissionActor: ActorRef,
                                                         listener: OrderPublisher.Listener)

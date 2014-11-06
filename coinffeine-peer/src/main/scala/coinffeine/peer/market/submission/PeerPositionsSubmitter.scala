@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.submission
 
 import akka.actor._
 import akka.util.Timeout
@@ -7,7 +7,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.market.SubmissionSupervisor.{InMarket, Offline}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, Offline}
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
 import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsReceived}
@@ -28,7 +28,7 @@ import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsRecei
   */
 private class PeerPositionsSubmitter[C <: FiatCurrency](
     market: Market[C],
-    requests: Set[(ActorRef, OrderBookEntry[C])],
+    requests: SubmittingOrders[C],
     gateway: ActorRef,
     retryPolicy: RetrySettings) extends Actor with ActorLogging {
 
@@ -65,7 +65,7 @@ object PeerPositionsSubmitter {
 
   def props[C <: FiatCurrency](
       market: Market[C],
-      requests: Set[(ActorRef, OrderBookEntry[C])],
+      requests: SubmittingOrders[C],
       gateway: ActorRef,
       constants: ProtocolConstants): Props = {
     val retryPolicy = RetrySettings(

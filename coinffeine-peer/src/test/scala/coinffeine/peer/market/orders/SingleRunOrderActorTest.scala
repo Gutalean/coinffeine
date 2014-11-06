@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import coinffeine.model.market._
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.SubmissionSupervisor.{InMarket, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, StopSubmitting}
 
 class SingleRunOrderActorTest extends OrderActorTest {
 

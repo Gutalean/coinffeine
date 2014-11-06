@@ -19,7 +19,7 @@ import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
-import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting}
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
 import coinffeine.peer.market.orders.funds.FundsBlockerActor
