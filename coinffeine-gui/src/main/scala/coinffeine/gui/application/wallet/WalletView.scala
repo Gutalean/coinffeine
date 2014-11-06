@@ -177,7 +177,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
 object WalletView {
 
-  private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com:8085/tx/")
+  private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com/tx/")
 
   private def detailsOfTransaction(txHash: String): URI =
     new URL(TransactionInfoBaseUri, txHash).toURI
