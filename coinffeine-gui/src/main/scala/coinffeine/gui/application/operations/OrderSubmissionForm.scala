@@ -176,12 +176,12 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
       price = Price(limitAmount.get))
     if (checkPrerequisites(order)) {
       app.network.submitOrder(order)
+      closeForm()
     }
-    closeForm()
   }
 
   private def checkPrerequisites(order: Order[Euro.type]): Boolean =
-    checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
+    checkFiatLimit(order) && checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
 
   private def checkEnoughFiatFunds(order: Order[Euro.type]): Boolean = checkFunds(
     required = amountsCalculator.exchangeAmountsFor(order).fiatRequired(order.orderType),
@@ -192,6 +192,17 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
     required = amountsCalculator.exchangeAmountsFor(order).bitcoinRequired(order.orderType),
     available = app.wallet.balance.get.map(_.amount)
   )
+
+  private def checkFiatLimit(order: Order[Euro.type]): Boolean = {
+    val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
+    if (order.price.value > maxFiat.value) {
+      Dialogs.create()
+        .title("Invalid fiat amount")
+        .message(s"Cannot submit your order: maximum allowed fiat amount is $maxFiat")
+        .showInformation()
+      false
+    } else true
+  }
 
   private def checkFunds[Amount <: CurrencyAmount[_]](
       required: Amount, available: Option[Amount]): Boolean = {

@@ -10,11 +10,17 @@ private[amounts] class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
 
+  override def maxFiatPerExchange[C <: FiatCurrency](currency: C) =
+    stepwiseCalculator.maximumBreakableFiatAmount(currency)
+
   override def exchangeAmountsFor[C <: FiatCurrency](grossBitcoinAmount: Bitcoin.Amount,
                                                      grossFiatAmount: CurrencyAmount[C]) = {
     type FiatAmount = CurrencyAmount[C]
     require(grossBitcoinAmount.isPositive && grossFiatAmount.isPositive,
-     s"Gross amounts must be positive ($grossBitcoinAmount, $grossFiatAmount given)")
+      s"Gross amounts must be positive ($grossBitcoinAmount, $grossFiatAmount given)")
+    val maxFiat = maxFiatPerExchange(grossFiatAmount.currency)
+    require(grossFiatAmount <= maxFiat,
+      s"Gross fiat amount ($grossFiatAmount) must not exceed the max fiat per exchange ($maxFiat)")
 
     val txFee = bitcoinFeeCalculator.defaultTransactionFee
     val netBitcoinAmount = grossBitcoinAmount - txFee * HappyPathTransactions
@@ -85,4 +91,6 @@ private[amounts] class DefaultAmountsCalculator(
 private object DefaultAmountsCalculator {
   /** Amount of escrow deposits in terms of the amount exchanged on every step */
   private val EscrowSteps = Both(buyer = 2, seller = 1)
+
+  private val MaxEurosPerOrder = 500.EUR
 }
