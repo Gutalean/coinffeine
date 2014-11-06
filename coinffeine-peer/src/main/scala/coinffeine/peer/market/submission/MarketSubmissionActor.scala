@@ -4,6 +4,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor._
 
+import coinffeine.common.akka.ResubmitTimer
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.peer.ProtocolConstants
@@ -15,36 +16,33 @@ private class MarketSubmissionActor[C <: FiatCurrency](
      forwarderProps: SubmittingOrders[C] => Props,
      resubmitInterval: FiniteDuration) extends Actor with ActorLogging with Stash {
 
+  private val timer = new ResubmitTimer(context, resubmitInterval)
   private var currentForwarder: Option[ActorRef] = None
 
-  override def receive: Receive = waitingForOrders
+  override def preStart(): Unit = { timer.start() }
+  override def postStop(): Unit = { timer.cancel() }
 
-  private def waitingForOrders: Receive = handleOpenOrders(SubmittingOrders.empty)
-
-  private def keepingOpenOrders(orders: SubmittingOrders[C]): Receive =
-    handleOpenOrders(orders).orElse {
-
-      case StopSubmitting(orderId) =>
-        val newOrders = orders.filterNot { case (_, entry) => entry.id == orderId }
-        val continuation = if (newOrders.isEmpty) waitingForOrders else keepingOpenOrders(newOrders)
-        forwardOrders(newOrders, continuation)
-
-      case ReceiveTimeout => forwardOrders(orders, keepingOpenOrders(orders))
-
-      case Terminated(child) if currentForwarder.contains(child) => currentForwarder = None
-    }
+  override def receive: Receive = handleOpenOrders(SubmittingOrders.empty)
 
   private def handleOpenOrders(orders: SubmittingOrders[C]): Receive = {
 
     case KeepSubmitting(order: OrderBookEntry[C]) if order.price.currency == market.currency =>
       val newOrders = orders + (sender() -> order)
-      forwardOrders(newOrders, keepingOpenOrders(newOrders))
+      if (newOrders != orders) {
+        timer.reset()
+        forwardOrders(newOrders)
+      }
 
-    case Terminated(child) if currentForwarder.contains(child) =>
-      currentForwarder = None
+    case StopSubmitting(orderId) =>
+      val newOrders = orders.filterNot { case (_, entry) => entry.id == orderId }
+      forwardOrders(newOrders)
+
+    case ResubmitTimer.ResubmitTimeout if orders.nonEmpty => forwardOrders(orders)
+
+    case Terminated(child) if currentForwarder.contains(child) => currentForwarder = None
   }
 
-  private def forwardOrders(orders: SubmittingOrders[C], continuation: Receive): Unit = {
+  private def forwardOrders(orders: SubmittingOrders[C]): Unit = {
 
     def replaceForwarder(forwarder: ActorRef): Unit = {
       context.stop(forwarder)
@@ -58,7 +56,7 @@ private class MarketSubmissionActor[C <: FiatCurrency](
 
     def startForwarder(): Unit = {
       spawnForwarder(orders)
-      context.become(continuation)
+      context.become(handleOpenOrders(orders))
     }
 
     currentForwarder.fold(startForwarder())(replaceForwarder)
@@ -68,7 +66,6 @@ private class MarketSubmissionActor[C <: FiatCurrency](
     val forwarder = context.actorOf(forwarderProps(orders), s"forward${orders.hashCode()}")
     context.watch(forwarder)
     currentForwarder = Some(forwarder)
-    context.setReceiveTimeout(resubmitInterval)
   }
 }
 
