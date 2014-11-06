@@ -181,7 +181,8 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   }
 
   private def checkPrerequisites(order: Order[Euro.type]): Boolean =
-    checkFiatLimit(order) && checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
+    checkFiatLimit(order) && checkNoSelfCross(order) &&
+      checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
 
   private def checkEnoughFiatFunds(order: Order[Euro.type]): Boolean = checkFunds(
     required = amountsCalculator.exchangeAmountsFor(order).fiatRequired(order.orderType),
@@ -231,6 +232,31 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
               |Do you want to proceed with the order submission?""".stripMargin)
           .showConfirm()
         response == Dialog.Actions.YES
+    }
+  }
+
+  private def checkNoSelfCross(order: Order[Euro.type]): Boolean = {
+    order.orderType match {
+      case Bid =>
+        val askOrders = app.network.orders.values.filter(_.orderType == Ask)
+        isSelfCrossed(order, askOrders)(_.value <= order.price.value)
+      case Ask =>
+        val bidOrders = app.network.orders.values.filter(_.orderType == Bid)
+        isSelfCrossed(order, bidOrders)(_.value >= order.price.value)
+    }
+  }
+
+  private def isSelfCrossed(order: Order[Euro.type], counterparts: Iterable[AnyCurrencyOrder])
+                           (condition: Price[_ <: FiatCurrency] => Boolean): Boolean = {
+    counterparts.find(c => condition(c.price)) match {
+      case Some(selfCross) =>
+        Dialogs.create()
+          .title("Self cross detected")
+          .message("This order would be self-crossing a previously submitted " +
+            s"order of ${selfCross.price}")
+          .showInformation()
+        false
+      case None => true
     }
   }
 }
