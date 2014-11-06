@@ -1,7 +1,7 @@
 package coinffeine.peer.bitcoin.wallet
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.KeyPair
+import coinffeine.model.bitcoin.{MutableTransaction, KeyPair}
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
@@ -17,8 +17,10 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
   it must "create a new transaction with chosen inputs" in new Fixture {
     withFees {
       val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor)
-      val tx = wallet.createTransaction(inputs, 1.BTC, someAddress)
-      Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe (-1.0001.BTC)
+      val amount = 1.BTC
+      val tx = wallet.createTransaction(inputs, amount, someAddress)
+      val amountPlusFee = amount + MutableTransaction.ReferenceDefaultMinTxFee
+      Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe -amountPlusFee
     }
   }
 
