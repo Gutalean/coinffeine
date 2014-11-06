@@ -7,14 +7,14 @@ import akka.actor._
 import akka.pattern._
 import akka.persistence.RecoveryCompleted
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.{AskPattern, ResubmitTimer}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
-import coinffeine.peer.exchange.micropayment.ResubmitTimer.ResubmitTimeout
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.payment.PaymentProcessorActor

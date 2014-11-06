@@ -7,13 +7,13 @@ import akka.pattern._
 import akka.persistence.RecoveryCompleted
 import org.bitcoinj.crypto.TransactionSignature
 
-import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.{AskPattern, ResubmitTimer}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
-import coinffeine.peer.exchange.micropayment.ResubmitTimer.ResubmitTimeout
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.gateway.MessageGateway.{ReceiveMessage, Subscribe}
