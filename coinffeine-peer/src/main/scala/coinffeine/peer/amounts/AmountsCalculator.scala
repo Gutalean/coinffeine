@@ -7,6 +7,9 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 trait AmountsCalculator {
 
+  /** Compute the maximum fiat amount allowed per exchange. */
+  def maxFiatPerExchange[C <: FiatCurrency](currency: C): CurrencyAmount[C]
+
   /** Compute amounts governing an exchange from the raw bitcoin and fiat exchanged */
   def exchangeAmountsFor[C <: FiatCurrency](
       bitcoinAmount: Bitcoin.Amount,

@@ -11,6 +11,9 @@ trait StepwisePaymentCalculator {
   def maximumPaymentWithGrossAmount[C <: FiatCurrency](
       grossAmount: CurrencyAmount[C]): CurrencyAmount[C]
 
+  /** Computes the maximum fiat amount that can be breaj into steps. */
+  def maximumBreakableFiatAmount[C <: FiatCurrency](currency: C): CurrencyAmount[C]
+
   /** Break into steps with their corresponding fees a net amount to be payed. */
   def breakIntoSteps[C <: FiatCurrency](
       netAmount: CurrencyAmount[C]): Seq[StepwisePaymentCalculator.Payment[C]]

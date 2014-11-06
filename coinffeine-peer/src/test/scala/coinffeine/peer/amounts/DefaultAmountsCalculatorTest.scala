@@ -23,6 +23,12 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
     }
   }
 
+  it must "reject fiat amounts exceeding the maximum per exchange" in new Fixture {
+    an [IllegalArgumentException] shouldBe thrownBy {
+      instance.exchangeAmountsFor(1.BTC, 3000.EUR)
+    }
+  }
+
   it must "respect the passed gross amounts" in new Fixture {
     forAnyAmounts { (bitcoinAmount, fiatAmount, amounts) =>
       amounts.grossBitcoinExchanged shouldBe bitcoinAmount
@@ -161,7 +167,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   val exampleCases = Table(("bitcoinAmount", "fiatAmount"),
     1.BTC -> 500.EUR,
-    2.BTC -> 6000.EUR,
+    0.5.BTC -> 1500.EUR,
     0.3.BTC -> 370.2.EUR,
     100.BTC -> 12.05.EUR,
     1.BTC -> 10.03.EUR
