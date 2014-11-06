@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.submission
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -7,15 +7,13 @@ import akka.actor._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 
 /** Submits and resubmits orders for a given market */
 private class MarketSubmissionActor[C <: FiatCurrency](
      market: Market[C], 
-     forwarderProps: MarketSubmissionActor.SubmittingOrders[C] => Props,
+     forwarderProps: SubmittingOrders[C] => Props,
      resubmitInterval: FiniteDuration) extends Actor with ActorLogging with Stash {
-
-  import MarketSubmissionActor._
 
   private var currentForwarder: Option[ActorRef] = None
 
@@ -75,8 +73,6 @@ private class MarketSubmissionActor[C <: FiatCurrency](
 }
 
 private[market] object MarketSubmissionActor {
-  type SubmittingOrders[C <: FiatCurrency] = Set[(ActorRef, OrderBookEntry[C])]
-  val SubmittingOrders = Set
 
   def props[C <: FiatCurrency](market: Market[C], gateway: ActorRef, constants: ProtocolConstants): Props =
     Props(new MarketSubmissionActor[C](

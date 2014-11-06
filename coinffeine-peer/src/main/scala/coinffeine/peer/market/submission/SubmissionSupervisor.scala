@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.submission
 
 import scala.concurrent.duration._
 
@@ -8,7 +8,7 @@ import akka.util.Timeout
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Market, OrderBookEntry, OrderId}
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.market.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 
 private class SubmissionSupervisor(gateway: ActorRef, protocolConstants: ProtocolConstants)
   extends Actor with ActorLogging {

@@ -1,4 +1,4 @@
-package coinffeine.peer.market
+package coinffeine.peer.market.submission
 
 import scala.concurrent.duration._
 
@@ -10,7 +10,7 @@ import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.market.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsReceived}
 
