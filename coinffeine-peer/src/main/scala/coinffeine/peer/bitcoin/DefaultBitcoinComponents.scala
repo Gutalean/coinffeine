@@ -12,8 +12,7 @@ import coinffeine.model.bitcoin.network.{IntegrationTestNetwork, PublicTestNetwo
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigComponent
 
-trait DefaultBitcoinComponents
-    extends PeerGroupComponent with BlockchainComponent with WalletComponent with NetworkComponent {
+trait DefaultBitcoinComponents extends BlockchainComponent with WalletComponent with NetworkComponent {
   this: ConfigComponent =>
 
   private lazy val configuredNetwork: NetworkComponent =
@@ -23,25 +22,19 @@ trait DefaultBitcoinComponents
       case BitcoinSettings.MainNet => MainNetwork
     }
   override lazy val network = configuredNetwork.network
-  override lazy val peerAddresses = configuredNetwork.peerAddresses
+  override def seedPeerAddresses() = configuredNetwork.seedPeerAddresses()
 
   override lazy val blockchain: AbstractBlockChain = {
     val blockStore = new MemoryFullPrunedBlockStore(network, 1000)
     new FullPrunedBlockChain(network, blockStore)
   }
 
-  override lazy val peerGroup = {
-    val peerGroup = new PeerGroup(network, blockchain)
-    peerAddresses.foreach(peerGroup.addAddress)
-    peerGroup
-  }
-
-  override lazy val wallet = {
+  override def wallet(peerGroup: PeerGroup) = {
     val walletFile = configProvider.bitcoinSettings().walletFile
     val wallet =
       if (walletFile.exists()) loadFromFile(walletFile)
       else emptyWalletAt(walletFile)
-    setupWallet(wallet, walletFile)
+    setupWallet(peerGroup, wallet, walletFile)
     wallet
   }
 
@@ -55,7 +48,7 @@ trait DefaultBitcoinComponents
     new SmartWallet(network)
   }
 
-  private def setupWallet(wallet: SmartWallet, walletFile: File): Unit = {
+  private def setupWallet(peerGroup: PeerGroup, wallet: SmartWallet, walletFile: File): Unit = {
     blockchain.addWallet(wallet.delegate)
     peerGroup.addWallet(wallet.delegate)
     wallet.delegate.autosaveToFile(walletFile, 250, TimeUnit.MILLISECONDS, null)

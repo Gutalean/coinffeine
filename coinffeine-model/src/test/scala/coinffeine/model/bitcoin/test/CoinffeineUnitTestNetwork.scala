@@ -16,6 +16,6 @@ case object CoinffeineUnitTestNetwork extends UnitTestParams {
 
   trait Component extends NetworkComponent {
     override val network = CoinffeineUnitTestNetwork
-    override val peerAddresses = Seq.empty
+    override val seedPeerAddresses = Seq.empty
   }
 }
