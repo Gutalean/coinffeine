@@ -1,7 +1,6 @@
 package coinffeine.model.bitcoin.network
 
 import java.net.InetAddress
-import scala.util.Try
 
 import org.bitcoinj.core.PeerAddress
 import org.bitcoinj.params.TestNet3Params
@@ -10,24 +9,28 @@ import coinffeine.model.bitcoin.NetworkComponent
 
 trait TestNetwork {
   val Hostname: String
-  val Port = 19000
+  val Ports: Seq[Int]
   val NetworkParams = new TestNet3Params() {
     dnsSeeds = Array.empty
   }
 
   trait Component extends NetworkComponent {
     override def network = NetworkParams
-    override def peerAddresses = testnetAddress().toSeq
+    override def seedPeerAddresses() = testnetAddresses()
 
-    def testnetAddress(): Option[PeerAddress] =
-      Try(new PeerAddress(InetAddress.getByName(Hostname), Port)).toOption
+    def testnetAddresses(): Seq[PeerAddress] = {
+      val address = InetAddress.getByName(Hostname)
+      for (port <- Ports) yield new PeerAddress(address, port)
+    }
   }
 }
 
 object IntegrationTestNetwork extends TestNetwork {
   val Hostname = "testnet.test.coinffeine.com"
+  val Ports = Seq(19000)
 }
 
 object PublicTestNetwork extends TestNetwork {
   val Hostname = "testnet.trial.coinffeine.com"
+  val Ports = 19000 to 19004 toSeq
 }

@@ -61,24 +61,29 @@ class BitcoinPeerActorTest extends AkkaSpec with Eventually {
 
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     def connectionRetryInterval = 1.minute
-    val peerGroup = new PeerGroup(network)
     val blockchainActor, walletActor, transactionPublisher = new MockSupervisedActor()
     val wallet = new SmartWallet(network)
     val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
     val properties = new MutableNetworkProperties
 
     blockchain.addWallet(wallet.delegate)
-    peerGroup.addWallet(wallet.delegate)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
-      peerGroup,
       new Delegates {
-        override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
-          Fixture.this.transactionPublisher.props(tx, listener)
-        override val walletActor = Fixture.this.walletActor.props()
+        override def transactionPublisher(peerGroup: PeerGroup,
+                                          tx: ImmutableTransaction,
+                                          listener: ActorRef): Props =
+          Fixture.this.transactionPublisher.props(peerGroup, tx, listener)
+        override def walletActor(peerGroup: PeerGroup) = {
+          peerGroup.addWallet(wallet.delegate)
+          Fixture.this.walletActor.props(peerGroup)
+        }
         override val blockchainActor = Fixture.this.blockchainActor.props()
       },
-      blockchain, connectionRetryInterval)))
+      blockchain,
+      networkComponent = this,
+      connectionRetryInterval
+    )))
     walletActor.expectCreation()
     blockchainActor.expectCreation()
   }

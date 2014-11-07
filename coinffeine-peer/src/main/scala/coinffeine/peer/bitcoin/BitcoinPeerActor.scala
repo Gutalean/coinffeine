@@ -2,9 +2,11 @@ package coinffeine.peer.bitcoin
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
+import akka.pattern._
 import com.google.common.util.concurrent.Service.State
 import com.google.common.util.concurrent._
 import org.bitcoinj.core._
@@ -16,21 +18,23 @@ import coinffeine.peer.bitcoin.wallet.DefaultWalletActor
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(properties: MutableNetworkProperties,
-                       peerGroup: PeerGroup,
                        delegates: BitcoinPeerActor.Delegates,
                        blockchain: AbstractBlockChain,
+                       networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging {
 
   import BitcoinPeerActor._
 
+  private val peerGroup = new PeerGroup(networkComponent.network, blockchain)
   private val blockchainRef = context.actorOf(delegates.blockchainActor, "blockchain")
-  private val walletRef = context.actorOf(delegates.walletActor, "wallet")
+  private val walletRef = context.actorOf(delegates.walletActor(peerGroup), "wallet")
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
     peerGroup.addEventListener(PeerGroupListener)
     peerGroup.addListener(PeerGroupLifecycleListener, context.dispatcher)
+    peerGroup.setMinBroadcastConnections(1)
     startConnecting()
     becomeStarted(joining orElse commonHandling)
   }
@@ -49,6 +53,15 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   }
 
   private def joining: Receive = {
+
+    case SeedPeers(addresses) =>
+      addresses.foreach(peerGroup.addAddress)
+      peerGroup.startAsync()
+
+    case CannotResolveSeedPeers(cause) =>
+      log.error(cause, "Cannot resolve seed peer addresses")
+      scheduleRetryTimer()
+
     case PeerGroupStartResult(Success(_)) =>
       log.info("Connected to peer group, starting blockchain download")
       peerGroup.startBlockChainDownload(PeerGroupListener)
@@ -70,7 +83,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   private def connected: Receive = {
     case PublishTransaction(tx) =>
       val name = s"broadcast-${tx.get.getHash}-${System.currentTimeMillis()}"
-      context.actorOf(delegates.transactionPublisher(tx, sender()), name)
+      context.actorOf(delegates.transactionPublisher(peerGroup, tx, sender()), name)
   }
 
   private def commonHandling: Receive = {
@@ -112,8 +125,13 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   }
 
   private def startConnecting(): Unit = {
+    import context.dispatcher
     log.info("Trying to join the bitcoin network")
-    peerGroup.startAsync()
+    Future {
+      SeedPeers(networkComponent.seedPeerAddresses())
+    }.recover {
+      case NonFatal(cause) => CannotResolveSeedPeers(cause)
+    }.pipeTo(self)
   }
 
   private object PeerGroupListener extends AbstractPeerEventListener {
@@ -166,6 +184,8 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   */
 object BitcoinPeerActor {
 
+  private case class SeedPeers(peers: Seq[PeerAddress])
+  private case class CannotResolveSeedPeers(cause: Throwable)
   private case class PeerGroupStartResult(result: Try[Unit])
   private case object RetryConnection
 
@@ -221,28 +241,33 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Delegates {
-    def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
-    val walletActor: Props
+    def transactionPublisher(peerGroup: PeerGroup,
+                             tx: ImmutableTransaction,
+                             listener: ActorRef): Props
+    def walletActor(peerGroup: PeerGroup): Props
     val blockchainActor: Props
   }
 
   trait Component {
 
-    this: PeerGroupComponent with NetworkComponent with BlockchainComponent
+    this: NetworkComponent with BlockchainComponent
       with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
         bitcoinProperties.network,
-        peerGroup,
         new Delegates {
-          override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+          override def transactionPublisher(peerGroup: PeerGroup,
+                                            tx: ImmutableTransaction,
+                                            listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
-          override val walletActor = DefaultWalletActor.props(bitcoinProperties.wallet, wallet)
+          override def walletActor(peerGroup: PeerGroup) =
+            DefaultWalletActor.props(bitcoinProperties.wallet, wallet(peerGroup))
           override val blockchainActor = BlockchainActor.props(blockchain, network)
         },
         blockchain,
+        this,
         settings.connectionRetryInterval
       ))
     }
