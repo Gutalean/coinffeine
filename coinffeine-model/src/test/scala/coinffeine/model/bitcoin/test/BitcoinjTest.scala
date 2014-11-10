@@ -126,6 +126,21 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   /** Performs a serialization roundtrip to guarantee that it can be sent to a remote peer. */
   def throughWire(sig: TransactionSignature) = TransactionSignature.decode(sig.encodeToBitcoin())
 
+  def expectBlockHavingConfirmations(block: StoredBlock, confirmations: Int): Unit = {
+    require(confirmations > 0)
+
+    @tailrec
+    def expectBlockAtDepth(depth: Int, chainHead: StoredBlock): Boolean = {
+      if (depth == 1) chainHead.getHeader.getHash == block.getHeader.getHash
+      else expectBlockAtDepth(depth - 1, chainHead.getPrev(blockStore))
+    }
+
+    withClue(s"block ${block.getHeader.getHash} have $confirmations confirmations") {
+      blockStore.getChainHead.getHeight should be >= confirmations
+      expectBlockAtDepth(confirmations, blockStore.getChainHead) shouldBe true
+    }
+  }
+
   private def startBitcoinj(): Unit = {
     BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()

@@ -81,10 +81,12 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
     requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
     requester.send(instance, BlockchainActor.WatchTransactionConfirmation(otherTx.getHash, 3))
     expectNoMsg()
-    sendToBlockChain(tx, otherTx)
+    val block = sendToBlockChain(tx, otherTx)
     mineBlock()
+    expectBlockHavingConfirmations(block, 2)
     requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 2))
     mineBlock()
+    expectBlockHavingConfirmations(block, 3)
     requester.expectMsg(BlockchainActor.TransactionConfirmed(otherTx.getHash, 3))
   }
 
