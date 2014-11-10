@@ -3,6 +3,7 @@ package coinffeine.peer.market.orders
 import scala.util.{Failure, Success}
 
 import akka.actor._
+import akka.event.Logging
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 import org.bitcoinj.core.NetworkParameters
 
@@ -126,10 +127,10 @@ class OrderActor[C <: FiatCurrency](
       order.updateExchange(exchange.asInstanceOf[AnyStateExchange[C]])
 
     case ExchangeActor.ExchangeSuccess(exchange) if exchange.currency == currency =>
-      order.completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])
+      completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])
 
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
-      order.completeExchange(exchange.asInstanceOf[FailedExchange[C]])
+      completeExchange(exchange.asInstanceOf[FailedExchange[C]])
   }
 
   private def resumeOrder(): Unit = {
@@ -196,6 +197,12 @@ class OrderActor[C <: FiatCurrency](
       orderId, rejectedMatch.counterpart, cause)
     val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
+  }
+
+  private def completeExchange(exchange: CompletedExchange[C]): Unit = {
+    val level = if (exchange.state.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
+    log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.state)
+    order.completeExchange(exchange)
   }
 }
 
