@@ -10,21 +10,18 @@ import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway._
+import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
 import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.NotifySubscribers
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
 private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties,
                                   serialization: ProtocolSerialization,
-                                  ignoredNetworkInterfaces: Seq[NetworkInterface],
-                                  connectionRetryInterval: FiniteDuration)
+                                  protobufServerProps: Props)
   extends Actor with ServiceActor[Join] with ActorLogging {
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props, "subscriptions")
-  private val server = context.actorOf(
-    ProtobufServerActor.props(properties, ignoredNetworkInterfaces, connectionRetryInterval),
-    "server"
-  )
+  private val server = context.actorOf(protobufServerProps, "server")
 
   override protected def starting(join: Join): Receive = {
     server ! ServiceActor.Start(join)
@@ -76,8 +73,10 @@ object ProtoMessageGateway {
       with MutableCoinffeineNetworkProperties.Component =>
 
     override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface],
-                                     connectionRetryInterval: FiniteDuration) = Props(
-      new ProtoMessageGateway(coinffeineNetworkProperties, protocolSerialization,
-        ignoredNetworkInterfaces, connectionRetryInterval))
+                                     connectionRetryInterval: FiniteDuration) = {
+      val serverProps = ProtobufServerActor.props(
+        coinffeineNetworkProperties,  ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval)
+      Props(new ProtoMessageGateway(coinffeineNetworkProperties, protocolSerialization, serverProps))
+    }
   }
 }
