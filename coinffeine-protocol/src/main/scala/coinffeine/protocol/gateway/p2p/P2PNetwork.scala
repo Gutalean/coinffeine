@@ -5,16 +5,13 @@ import java.net.{NetworkInterface, InetSocketAddress}
 import scala.concurrent.{ExecutionContext, Future}
 
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.gateway.p2p.P2PNetwork.ConnectionMode
 
 trait P2PNetwork {
-  type Conn <: P2PNetwork.Connection
-
-  def connect(id: PeerId,
-              mode: ConnectionMode,
-              acceptedInterfaces: Seq[NetworkInterface],
-              listener: P2PNetwork.Listener)
-             (implicit ec: ExecutionContext): Future[Conn]
+  def join(id: PeerId,
+           mode: P2PNetwork.ConnectionMode,
+           acceptedInterfaces: Seq[NetworkInterface],
+           listener: P2PNetwork.Listener)
+          (implicit ec: ExecutionContext): Future[P2PNetwork.Session]
 }
 
 object P2PNetwork {
@@ -32,10 +29,15 @@ object P2PNetwork {
     override def localPort = externalAddress.getPort
   }
 
-  trait Connection {
+  trait Session {
     def brokerId: PeerId
+    def connect(peerId: PeerId): Future[Connection]
     def close(): Future[Unit]
-    def send(to: PeerId, payload: Array[Byte]): Unit
+  }
+
+  trait Connection {
+    def send(payload: Array[Byte]): Future[Unit]
+    def close(): Future[Unit]
   }
 
   trait Listener {

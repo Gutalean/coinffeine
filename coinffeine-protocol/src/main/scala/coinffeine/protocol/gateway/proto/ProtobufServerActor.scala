@@ -13,7 +13,7 @@ import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.P2PNetwork
 import coinffeine.protocol.gateway.p2p.P2PNetwork.{AutodetectPeerNode, StandaloneNode}
-import coinffeine.protocol.gateway.p2p.TomP2PNetwork.Conn
+import coinffeine.protocol.gateway.p2p.TomP2PNetwork.Connection
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
@@ -28,7 +28,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
     .filterNot(ignoredNetworkInterfaces.contains)
 
-  private var connection: Option[P2PNetwork#Conn] = None
+  private var connection: Option[P2PNetwork.Session] = None
 
   private object ConnectionListener extends P2PNetwork.Listener {
     override def peerCountUpdated(peers: Int): Unit = {
@@ -44,7 +44,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     val listener = sender()
     connect(join)
     becomeStarted {
-      case conn: Conn =>
+      case conn: Connection =>
         connection = Some(conn)
         new InitializedServer(conn.brokerId, listener).becomeStarted()
 
@@ -64,7 +64,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
       case JoinAsBroker(_, _) => StandaloneNode(brokerAddress)
       case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, brokerAddress)
     }
-    conn <- p2pNetwork.connect(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
+    conn <- p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
   } yield conn).pipeTo(self)
 
   override protected def stopping(): Receive = {
@@ -111,8 +111,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
         listener ! ReceiveProtoMessage(source, msg)
     }
 
-    private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit =
-      connection.get.send(to, msg.toByteArray)
+    private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit = {
+      connection.get.connect(to).map(_.send(msg.toByteArray))
+    }
   }
 
   private def manageConnectionStatus: Receive = {
