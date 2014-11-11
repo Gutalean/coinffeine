@@ -60,28 +60,31 @@ object TomP2PNetwork extends P2PNetwork {
           .start()
         bootstrap <- peer.bootstrap().setPeerAddress(discovery.getReporter).start()
         brokerAddress = bootstrap.getBootstrapTo.asScala.head
-        _ <- if (hasLocalServerAddress(peer)) Future.successful(tryToUnpublishAddress(peer))
+        _ <- if (isBehindFirewall(peer)) Future.successful(tryToUnpublishAddress(peer))
              else publishAddress(peer)
       } yield {
-        Log.info("Successfully connected as {} using broker in {}", Seq(id, brokerAddress): _*)
+        Log.info("Successfully connected as {} listening at {} using broker in {}",
+          Seq(id, peer.getPeerBean.getServerPeerAddress, brokerAddress): _*)
         Number160Util.toPeerId(brokerAddress)
       }
 
     case PortForwardedPeerNode(_, _) => Future.successful(???) // TODO: port forwarding configuration
   }
 
-  private def hasLocalServerAddress(peer: Peer): Boolean = {
-    val address = peer.getPeerBean.getServerPeerAddress.getInetAddress
-    address.isLoopbackAddress || address.isSiteLocalAddress
-  }
+  private def isBehindFirewall(peer: Peer) = peer.getPeerBean.getServerPeerAddress.isFirewalledTCP
 
-  private def publishAddress(peer: Peer): Future[FutureDHT] = peer.put(peer.getPeerID)
-    .setData(new Data(peer.getPeerAddress.toByteArray))
-    .start()
+  private def publishAddress(peer: Peer): Future[FutureDHT] = {
+    Log.debug("Publishing that we are directly accessible at {}",
+      peer.getPeerBean.getServerPeerAddress)
+    peer.put(peer.getPeerID)
+      .setData(new Data(peer.getPeerAddress.toByteArray))
+      .start()
+  }
 
   /** We don't need to wait nor need to succeed on unpublishing the address: fire and forget  */
   private def tryToUnpublishAddress(peer: Peer): Unit = {
-    Log.warn("This peer can't be accessed directly from others")
+    Log.warn("This peer can't be accessed directly from others (listening at {})",
+      peer.getPeerBean.getServerPeerAddress)
     peer.remove(peer.getPeerID).start()
   }
 

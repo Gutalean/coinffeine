@@ -46,7 +46,7 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
       }
     }
 
-    override def toString = s"DirectPeer($connection)"
+    override def toString = s"DirectPeer(${connection.getDestination})"
   }
 
   private class IndirectPeer extends CachedPeer {
