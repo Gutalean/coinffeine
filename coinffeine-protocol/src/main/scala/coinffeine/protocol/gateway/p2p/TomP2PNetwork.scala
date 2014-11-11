@@ -15,15 +15,13 @@ import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.p2p.P2PNetwork._
 
 object TomP2PNetwork extends P2PNetwork {
-  type Connection = TomP2PSession
-
   val Log = LoggerFactory.getLogger(getClass)
 
   override def join(id: PeerId,
                        mode: ConnectionMode,
                        acceptedInterfaces: Seq[NetworkInterface],
                        listener: Listener)
-                      (implicit ec: ExecutionContext): Future[Connection] = {
+                      (implicit ec: ExecutionContext): Future[P2PNetwork.Session] = {
     for {
       peer <- bindPeer(id, mode.localPort, acceptedInterfaces, listener)
       brokerId <- {

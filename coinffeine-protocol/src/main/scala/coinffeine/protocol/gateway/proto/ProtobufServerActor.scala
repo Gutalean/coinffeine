@@ -13,7 +13,6 @@ import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.P2PNetwork
 import coinffeine.protocol.gateway.p2p.P2PNetwork.{AutodetectPeerNode, StandaloneNode}
-import coinffeine.protocol.gateway.p2p.TomP2PNetwork.Connection
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
@@ -28,7 +27,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
     .filterNot(ignoredNetworkInterfaces.contains)
 
-  private var connection: Option[P2PNetwork.Session] = None
+  private var session: Option[P2PNetwork.Session] = None
+  private var connections: Map[PeerId, ActorRef] = Map.empty
 
   private object ConnectionListener extends P2PNetwork.Listener {
     override def peerCountUpdated(peers: Int): Unit = {
@@ -44,9 +44,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     val listener = sender()
     connect(join)
     becomeStarted {
-      case conn: Connection =>
-        connection = Some(conn)
-        new InitializedServer(conn.brokerId, listener).becomeStarted()
+      case newSession: P2PNetwork.Session =>
+        session = Some(newSession)
+        new InitializedServer(newSession.brokerId, listener).becomeStarted()
 
       case Status.Failure(cause) =>
         log.error(cause, "Cannot connect as {}. Retrying in {}", join, connectionRetryInterval)
@@ -64,8 +64,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
       case JoinAsBroker(_, _) => StandaloneNode(brokerAddress)
       case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, brokerAddress)
     }
-    conn <- p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
-  } yield conn).pipeTo(self)
+    session <- p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
+  } yield session).pipeTo(self)
 
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
@@ -74,8 +74,10 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   }
 
   private def disconnect(): Unit = {
-    connection.foreach(_.close())
-    connection = None
+    connections.values.foreach(context.stop)
+    connections = Map.empty
+    session.foreach(_.close())
+    session = None
   }
 
   private def updateConnectionStatus(activePeers: Int): Unit = {
@@ -112,8 +114,14 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
 
     private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit = {
-      connection.get.connect(to).map(_.send(msg.toByteArray))
+      connections.getOrElse(to, spawnConnectionActor(to)) ! ConnectionActor.Message(msg.toByteArray)
     }
+  }
+
+  private def spawnConnectionActor(to: PeerId): ActorRef = {
+    val ref = context.actorOf(Props(new ConnectionActor(session.get, to)), to.value)
+    connections += to -> ref
+    ref
   }
 
   private def manageConnectionStatus: Receive = {
