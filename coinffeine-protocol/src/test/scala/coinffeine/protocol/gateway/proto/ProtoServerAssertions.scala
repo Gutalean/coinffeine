@@ -14,7 +14,7 @@ trait ProtoServerAssertions extends Eventually with IntegrationPatience { this: 
   def waitForConnections(properties: CoinffeineNetworkProperties, minConnections: Int): PeerId = {
     eventually(timeout = Timeout(connectionTimeout)) {
       properties.activePeers.get should be >= minConnections
-      properties.brokerId.get should be ('defined)
+      properties.brokerId.get shouldBe 'defined
     }
     properties.brokerId.get.get
   }

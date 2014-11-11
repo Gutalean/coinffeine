@@ -1,17 +1,14 @@
 package coinffeine.protocol.gateway
 
+import scala.concurrent._
 import scala.concurrent.duration.Duration
-import scala.concurrent.{ExecutionContext, CanAwait, TimeoutException, Future}
 import scala.util.{Success, Failure, Try}
 
 import net.tomp2p.futures.{BaseFutureListener, BaseFuture}
 
-package object proto {
+package object p2p {
+  private[p2p] implicit class PimpMyTomFuture[+T <: BaseFuture](future: T) extends Future[T] {
 
-  val BufferSize = 1048576
-  val ConnectionTimeout = 10000
-
-  private[proto] implicit class PimpMyTomFuture[+T <: BaseFuture](future: T) extends Future[T] {
     override def onComplete[U](f: Try[T] => U)(implicit executor: ExecutionContext): Unit = {
       future.addListener(new BaseFutureListener[T] {
         override def exceptionCaught(t: Throwable): Unit =
@@ -21,8 +18,8 @@ package object proto {
 
         override def operationComplete(future: T): Unit = {
           val result =
-            if (future.isFailed) Failure(new RuntimeException(future.getFailedReason))
-            else Success(future)
+            if (future.isSuccess) Success(future)
+            else Failure(new Exception(future.getFailedReason))
           executor.execute(new Runnable {
             override def run(): Unit = f(result)
           })

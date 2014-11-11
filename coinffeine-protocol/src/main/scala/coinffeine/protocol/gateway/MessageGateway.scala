@@ -16,16 +16,16 @@ object MessageGateway {
     override def toString = s"$hostname:$port"
   }
 
-  sealed trait Join {
+  sealed trait Join { // FIXME: change join messages
     val id: PeerId
-    val localPort: Int
+    val brokerAddress: BrokerAddress
   }
 
   /** A request message to bind & create a new, empty P2P network. */
-  case class JoinAsBroker(id: PeerId, localPort: Int) extends Join
+  case class JoinAsBroker(id: PeerId, brokerAddress: BrokerAddress) extends Join
 
   /** A request message to join to an already existing network. */
-  case class JoinAsPeer(id: PeerId, localPort: Int, connectTo: BrokerAddress) extends Join
+  case class JoinAsPeer(id: PeerId, localPort: Int, brokerAddress: BrokerAddress) extends Join
 
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)

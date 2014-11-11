@@ -1,5 +1,6 @@
 package coinffeine.protocol.gateway.proto
 
+import java.net.InetAddress
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
@@ -13,6 +14,7 @@ import coinffeine.model.market.OrderId
 import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 
@@ -114,8 +116,9 @@ class ProtoMessageGatewayTest
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
 
     def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties): Props = Props(
-      new ProtoMessageGateway(networkProperties, protocolSerialization, ignoredNetworkInterfaces,
-        connectionRetryInterval = 3.seconds))
+      new ProtoMessageGateway(networkProperties, protocolSerialization,
+        ProtobufServerActor.props(networkProperties, ignoredNetworkInterfaces,
+          TomP2PNetwork, connectionRetryInterval = 3.seconds)))
 
     def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
       system.actorOf(messageGatewayProps(networkProperties))
@@ -133,7 +136,8 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), localPort))
+      val address = BrokerAddress(InetAddress.getLocalHost.getCanonicalHostName, localPort)
+      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), address))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()
