@@ -18,6 +18,7 @@ import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Paylo
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
   with ProtoServerAssertions with IgnoredNetworkInterfaces {
 
+  private val localhost = InetAddress.getLocalHost.getCanonicalHostName
   private val connectionRetryInterval = 3.seconds.dilated
   private val msg = CoinffeineMessage.newBuilder()
     .setPayload(Payload.getDefaultInstance)
@@ -27,7 +28,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   "A peer" should "be able to send a message to another peer just with its peerId" in {
     val brokerPort = DefaultTcpPortAllocator.allocatePort()
     val (_, brokerId) = createBroker(brokerPort)
-    val brokerAddress = BrokerAddress("localhost", brokerPort)
+    val brokerAddress = BrokerAddress(localhost, brokerPort)
 
     val (peer1, receivedBrokerId1) = createPeer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
     receivedBrokerId1 shouldBe brokerId
@@ -49,8 +50,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval),
       s"broker-$port"
     )
-    val address = BrokerAddress(InetAddress.getLocalHost.getCanonicalHostName, port)
-    peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), address))
+    peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), BrokerAddress(localhost, port)))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)

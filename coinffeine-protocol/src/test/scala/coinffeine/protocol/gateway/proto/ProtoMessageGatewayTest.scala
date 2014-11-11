@@ -22,7 +22,8 @@ class ProtoMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with ProtoServerAssertions {
 
-  val subscribeToOrderMatches = MessageGateway.Subscribe {
+  private val localhost = InetAddress.getLocalHost.getCanonicalHostName
+  private val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(_: OrderMatch[_], _) =>
   }
 
@@ -136,8 +137,7 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
-      val address = BrokerAddress(InetAddress.getLocalHost.getCanonicalHostName, localPort)
-      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), address))
+      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), BrokerAddress(localhost, localPort)))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()
