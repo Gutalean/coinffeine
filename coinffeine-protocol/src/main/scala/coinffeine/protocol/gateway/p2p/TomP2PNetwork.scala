@@ -1,6 +1,6 @@
 package coinffeine.protocol.gateway.p2p
 
-import java.net.NetworkInterface
+import java.net.{InetSocketAddress, NetworkInterface}
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -18,12 +18,13 @@ object TomP2PNetwork extends P2PNetwork {
   val Log = LoggerFactory.getLogger(getClass)
 
   override def join(id: PeerId,
-                       mode: ConnectionMode,
-                       acceptedInterfaces: Seq[NetworkInterface],
-                       listener: Listener)
-                      (implicit ec: ExecutionContext): Future[P2PNetwork.Session] = {
+                    mode: ConnectionMode,
+                    acceptedInterfaces: Seq[NetworkInterface],
+                    listener: Listener)
+                   (implicit ec: ExecutionContext): Future[P2PNetwork.Session] = {
+    val bindings = configureBindings(mode, acceptedInterfaces)
     for {
-      peer <- bindPeer(id, mode.localPort, acceptedInterfaces, listener)
+      peer <- bindPeer(id, mode.localPort, bindings, listener)
       brokerId <- {
         val bootstrap = bootstrapPeer(id, mode, peer)
         bootstrap.onFailure { case NonFatal(_) => peer.shutdown() }
@@ -34,12 +35,12 @@ object TomP2PNetwork extends P2PNetwork {
 
   private def bindPeer(id: PeerId,
                        localPort: Int,
-                       acceptedInterfaces: Seq[NetworkInterface],
+                       bindings: Bindings,
                        listener: Listener)
                       (implicit ec: ExecutionContext): Future[Peer] = Future {
     val peer = new PeerMaker(Number160Util.fromPeerId(id))
       .setPorts(localPort)
-      .setBindings(configureBindings(acceptedInterfaces))
+      .setBindings(bindings)
       .makeAndListen()
     val adapterListener = new P2PNetworkListenerAdapter(peer, listener)
     peer.setObjectDataReply(adapterListener)
@@ -88,11 +89,24 @@ object TomP2PNetwork extends P2PNetwork {
     peer.remove(peer.getPeerID).start()
   }
 
-  private def configureBindings(acceptedInterfaces: Seq[NetworkInterface]): Bindings = {
-    val bindings = new Bindings()
+  private def configureBindings(mode: ConnectionMode,
+                                acceptedInterfaces: Seq[NetworkInterface]): Bindings = {
+    val bindings = mode match {
+      case StandaloneNode(address) => standalonePeerBindings(address)
+      case _ => joiningPeerBindings()
+    }
+    whitelistInterfaces(bindings, acceptedInterfaces)
+    bindings
+  }
+
+  private def standalonePeerBindings(address: InetSocketAddress): Bindings =
+    new Bindings(address.getAddress, address.getPort, address.getPort)
+
+  private def joiningPeerBindings(): Bindings = new Bindings()
+
+  private def whitelistInterfaces(bindings: Bindings, acceptedInterfaces: Seq[NetworkInterface]): Unit = {
     acceptedInterfaces.map(_.getName).foreach(bindings.addInterface)
     val ifaces = bindings.getInterfaces.asScala.mkString(",")
-    Log.info("Initiating a peer on interfaces {}", ifaces)
-    bindings
+    Log.info("Initiating a peer on interfaces [{}]", ifaces)
   }
 }

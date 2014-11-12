@@ -4,8 +4,7 @@ import scala.annotation.tailrec
 
 import scalaz.{Scalaz, Validation}
 
-import org.bitcoinj.core.TransactionOutPoint
-
+import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{NotEnoughFunds, UnknownFunds, FundsUseException}
@@ -13,36 +12,36 @@ import coinffeine.peer.bitcoin.wallet.WalletActor.{NotEnoughFunds, UnknownFunds,
 private class BlockedOutputs {
   import Scalaz._
 
-  type Outputs = Set[TransactionOutPoint]
+  import BlockedOutputs.Output
 
-  private class BlockedFunds(var reservedOutputs: Outputs = Set.empty,
-                             var usedOutputs: Outputs = Set.empty) {
+  private class BlockedFunds(var reservedOutputs: Set[Output] = Set.empty,
+                             var usedOutputs: Set[Output] = Set.empty) {
 
-    def canUse(amount: Bitcoin.Amount): Validation[NotEnoughFunds, Outputs] = {
+    def canUse(amount: Bitcoin.Amount): Validation[NotEnoughFunds, Set[Output]] = {
       collectFundsGreedily(amount, reservedOutputs.toSeq)
         .toSuccess(NotEnoughFunds(amount, reservedAmount))
     }
 
-    def use(outputsToUse: Outputs): Unit = {
+    def use(outputsToUse: Set[Output]): Unit = {
       require(outputsToUse.subsetOf(reservedOutputs))
       reservedOutputs --= outputsToUse
       usedOutputs ++= outputsToUse
     }
 
-    def cancelUsage(outputs: Outputs): Unit = {
+    def cancelUsage(outputs: Set[Output]): Unit = {
       val revertedOutputs = usedOutputs.intersect(outputs)
       reservedOutputs ++= revertedOutputs
       usedOutputs --= revertedOutputs
     }
 
-    def reservedAmount: Bitcoin.Amount = reservedOutputs.toSeq.map(outputValue).sum
+    def reservedAmount: Bitcoin.Amount = sumOutputs(reservedOutputs)
   }
 
-  private var spendableOutputs = Set.empty[TransactionOutPoint]
+  private var spendableOutputs = Set.empty[Output]
   private var blockedFunds = Map.empty[ExchangeId, BlockedFunds]
 
   def minOutput: Option[Bitcoin.Amount] =
-    spendableAndNotBlocked.toSeq.map(outputValue).sortBy(_.value).headOption
+    spendableAndNotBlocked.toSeq.map(_.value).sortBy(_.value).headOption
 
   def blocked: Bitcoin.Amount = sumOutputs(blockedOutputs)
 
@@ -50,16 +49,16 @@ private class BlockedOutputs {
 
   def spendable: Bitcoin.Amount = sumOutputs(spendableOutputs)
 
-  def setSpendCandidates(spendCandidates: Outputs): Unit = {
+  def setSpendCandidates(spendCandidates: Set[Output]): Unit = {
     spendableOutputs = spendCandidates
   }
 
-  def collectFunds(amount: Bitcoin.Amount): Option[Outputs] =
+  def collectFunds(amount: Bitcoin.Amount): Option[Set[Output]] =
     collectFundsGreedily(amount, spendableAndNotBlocked.toSeq)
 
   def areBlocked(coinsId: ExchangeId): Boolean = blockedFunds.contains(coinsId)
 
-  def block(coinsId: ExchangeId, funds: Outputs): Unit = {
+  def block(coinsId: ExchangeId, funds: Set[Output]): Unit = {
     require(!areBlocked(coinsId), s"$coinsId funds are already blocked")
     blockedFunds += coinsId -> new BlockedFunds(funds)
   }
@@ -68,32 +67,33 @@ private class BlockedOutputs {
     blockedFunds -= id
   }
 
-  def canUse(id: ExchangeId, amount: Bitcoin.Amount): Validation[FundsUseException, Outputs] = for {
+  def canUse(id: ExchangeId, amount: Bitcoin.Amount): Validation[FundsUseException, Set[Output]] = for {
     funds <- blockedFunds.get(id).toSuccess(UnknownFunds)
     outputs <- funds.canUse(amount)
   } yield outputs
 
-  def use(id: ExchangeId, outputs: Outputs): Unit = {
+  def use(id: ExchangeId, outputs: Set[Output]): Unit = {
     require(areBlocked(id))
     blockedFunds(id).use(outputs)
   }
 
-  def collectUnblockedFunds(amount: Bitcoin.Amount): Option[Outputs] = collectFunds(amount)
+  def collectUnblockedFunds(amount: Bitcoin.Amount): Option[Set[Output]] =
+    collectFunds(amount)
 
-  def cancelUsage(outputs: Outputs): Unit = {
+  def cancelUsage(outputs: Set[Output]): Unit = {
     blockedFunds.values.foreach(_.cancelUsage(outputs))
   }
 
   @tailrec
   private def collectFundsGreedily(remainingAmount: Bitcoin.Amount,
-                                   candidates: Seq[TransactionOutPoint],
-                                   alreadyCollected: Outputs = Set.empty): Option[Outputs] = {
+                                   candidates: Seq[Output],
+                                   alreadyCollected: Set[Output] = Set.empty): Option[Set[Output]] = {
     if (!remainingAmount.isPositive) Some(alreadyCollected)
     else candidates match  {
       case Seq() => None
       case Seq(candidate, remainingCandidates @ _*) =>
         collectFundsGreedily(
-          remainingAmount - outputValue(candidate),
+          remainingAmount - candidate.value,
           remainingCandidates,
           alreadyCollected + candidate
         )
@@ -102,10 +102,11 @@ private class BlockedOutputs {
 
   private def spendableAndNotBlocked = spendableOutputs diff blockedOutputs
 
-  private def blockedOutputs: Outputs = blockedFunds.values.flatMap(_.reservedOutputs).toSet
+  private def blockedOutputs: Set[Output] = blockedFunds.values.flatMap(_.reservedOutputs).toSet
 
-  private def sumOutputs(outputs: Outputs): Bitcoin.Amount = outputs.toSeq.map(outputValue).sum
+  private def sumOutputs(outputs: Set[Output]): Bitcoin.Amount = outputs.toSeq.map(_.value).sum
+}
 
-  private def outputValue(output: TransactionOutPoint): Bitcoin.Amount =
-    output.getConnectedOutput.getValue
+private object BlockedOutputs {
+  case class Output(txHash: Hash, index: Int, value: Bitcoin.Amount)
 }

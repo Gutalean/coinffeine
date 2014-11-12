@@ -30,7 +30,7 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
   private class DirectPeer(connection: PeerConnection) extends CachedPeer {
     private val hasFailed = new AtomicBoolean(false)
 
-    override def isValid: Boolean = connection.isClosed || hasFailed.get()
+    override def isValid: Boolean = !(connection.isClosed || hasFailed.get())
 
     override def close(): Unit = {
       connection.close()
@@ -41,9 +41,9 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
         .setObject(payload)
         .start()
         .onFailure { case cause =>
-        Log.error("Cannot send direct message to peer {}", Seq(to, cause): _*)
-        hasFailed.set(true)
-      }
+          Log.error("Cannot send direct message to peer {}", Seq(to, cause): _*)
+          hasFailed.set(true)
+        }
     }
 
     override def toString = s"DirectPeer(${connection.getDestination})"

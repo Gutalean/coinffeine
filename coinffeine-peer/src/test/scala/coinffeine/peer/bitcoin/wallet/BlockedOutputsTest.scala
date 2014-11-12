@@ -1,12 +1,13 @@
 package coinffeine.peer.bitcoin.wallet
 
+import scala.util.Random
 import scalaz.Scalaz
 
-import org.bitcoinj.core.TransactionOutPoint
-
 import coinffeine.common.test.UnitTest
+import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
+import coinffeine.peer.bitcoin.wallet.BlockedOutputs.Output
 import coinffeine.peer.bitcoin.wallet.WalletActor.{NotEnoughFunds, UnknownFunds}
 
 class BlockedOutputsTest extends UnitTest {
@@ -18,10 +19,18 @@ class BlockedOutputsTest extends UnitTest {
     instance
   }
 
-  private def buildOutputs(numberOfOneBtcOutputs: Int): Set[TransactionOutPoint] = {
-    Seq.fill(numberOfOneBtcOutputs) {
-      DummyOutput.of(1.BTC).getOutPointFor
-    }.toSet
+  private def buildOutputs(numberOfOneBtcOutputs: Int): Set[Output] = {
+    Seq.fill(numberOfOneBtcOutputs)(Output(
+      txHash = randomHash(),
+      index = Random.nextInt(10),
+      value = 1.BTC
+    )).toSet
+  }
+
+  private def randomHash() = {
+    val bytes = new Array[Byte](32)
+    Random.nextBytes(bytes)
+    new Hash(bytes)
   }
 
   val fundsId = ExchangeId("1")

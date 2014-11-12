@@ -3,14 +3,15 @@ package coinffeine.peer.bitcoin.wallet
 import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
-import akka.actor._
+import akka.actor.{Address => _, _}
 import akka.persistence.PersistentActor
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.persistence.PersistentEvent
-import coinffeine.model.bitcoin.{ImmutableTransaction, WalletActivity, MutableWalletProperties}
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.bitcoin._
+import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.model.exchange.ExchangeId
+import coinffeine.peer.bitcoin.wallet.BlockedOutputs.Output
 import coinffeine.peer.bitcoin.wallet.WalletActor._
 
 private class DefaultWalletActor(properties: MutableWalletProperties,
@@ -58,10 +59,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
     case req @ WalletActor.CreateTransaction(amount, to) =>
       try {
-        val funds = blockedOutputs.collectUnblockedFunds(amount)
-          .getOrElse(throw new Exception("Not enough funds"))
-        val tx = wallet.createTransaction(funds, amount, to)
-        sender ! WalletActor.TransactionCreated(req, tx)
+        sender ! WalletActor.TransactionCreated(req, createTransaction(amount, to))
       } catch {
         case NonFatal(ex) => sender ! WalletActor.TransactionCreationFailure(req, ex)
       }
@@ -117,13 +115,14 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   private def onDepositCreated(event: DepositCreated): ImmutableTransaction = {
     import event.request._
     blockedOutputs.use(coinsId, event.outputs)
-    wallet.createMultisignTransaction(event.outputs, requiredSignatures, amount, transactionFee)
+    wallet.createMultisignTransaction(
+      toOutPoints(event.outputs), requiredSignatures, amount, transactionFee)
   }
 
   private def onDepositCancelled(event: DepositCancelled): Unit = {
     wallet.releaseTransaction(event.tx)
     val releasedOutputs = event.tx.get.getInputs.map(_.getOutpoint).toSet
-    blockedOutputs.cancelUsage(releasedOutputs)
+    blockedOutputs.cancelUsage(toOutputs(releasedOutputs))
   }
 
   private def updateActivity(): Unit = {
@@ -132,13 +131,38 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   }
 
   private def updateBalance(): Unit = {
-    blockedOutputs.setSpendCandidates(wallet.spendCandidates.map(_.getOutPointFor).toSet)
+    blockedOutputs.setSpendCandidates(computeSpendCandidates)
     properties.balance.set(Some(BitcoinBalance(
       estimated = wallet.estimatedBalance,
       available = wallet.availableBalance,
       minOutput = blockedOutputs.minOutput,
       blocked = blockedOutputs.blocked
     )))
+  }
+
+  private def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = {
+    val funds = blockedOutputs.collectUnblockedFunds(amount)
+      .getOrElse(throw new Exception("Not enough funds"))
+    wallet.createTransaction(toOutPoints(funds), amount, to)
+  }
+
+  private def computeSpendCandidates: Set[Output] =
+    toOutputs(wallet.spendCandidates.map(_.getOutPointFor).toSet)
+
+  private def toOutPoints(outputs: Set[Output]): Set[TransactionOutPoint] = outputs.map { output =>
+    wallet.delegate.getTransaction(output.txHash)
+      .getOutput(output.index)
+      .getOutPointFor
+  }
+
+  private def toOutputs(outPoints: Set[TransactionOutPoint]): Set[Output] =
+    outPoints.map { outPoint =>
+      val output = Option(outPoint.getConnectedOutput).getOrElse(toOutput(outPoint))
+      Output(outPoint.getHash, outPoint.getIndex.toInt, output.getValue)
+    }
+
+  private def toOutput(outPoint: TransactionOutPoint): MutableTransactionOutput = {
+    wallet.delegate.getTransaction(outPoint.getHash).getOutput(outPoint.getIndex.toInt)
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
@@ -174,10 +198,9 @@ object DefaultWalletActor {
 
   private case object InternalWalletChanged
 
-  private case class FundsBlocked(id: ExchangeId, outputs: Set[TransactionOutPoint])
-    extends PersistentEvent
+  private case class FundsBlocked(id: ExchangeId, outputs: Set[Output]) extends PersistentEvent
   private case class FundsUnblocked(id: ExchangeId) extends PersistentEvent
-  private case class DepositCreated(request: CreateDeposit, outputs: Set[TransactionOutPoint])
+  private case class DepositCreated(request: CreateDeposit, outputs: Set[Output])
     extends PersistentEvent
   private case class DepositCancelled(tx: ImmutableTransaction) extends PersistentEvent
 }
