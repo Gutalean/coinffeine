@@ -238,13 +238,16 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   private def checkNoSelfCross(order: Order[Euro.type]): Boolean = {
     order.orderType match {
       case Bid =>
-        val askOrders = app.network.orders.values.filter(_.orderType == Ask)
+        val askOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Ask))
         isSelfCrossed(order, askOrders)(_.value <= order.price.value)
       case Ask =>
-        val bidOrders = app.network.orders.values.filter(_.orderType == Bid)
+        val bidOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Bid))
         isSelfCrossed(order, bidOrders)(_.value >= order.price.value)
     }
   }
+
+  private def suitableForSelfCross(order: AnyCurrencyOrder, orderType: OrderType) =
+    order.status.isActive && order.orderType == orderType
 
   private def isSelfCrossed(order: Order[Euro.type], counterparts: Iterable[AnyCurrencyOrder])
                            (condition: Price[_ <: FiatCurrency] => Boolean): Boolean = {
