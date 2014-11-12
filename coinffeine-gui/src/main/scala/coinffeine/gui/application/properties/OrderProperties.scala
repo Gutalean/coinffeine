@@ -29,7 +29,7 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
     orderStatusProperty.delegate.mapToString(_.name.capitalize).toReadOnlyProperty
 
   override val isCancellable =
-    orderStatusProperty.delegate.mapToBool(_.isCancellable).toReadOnlyProperty
+    orderStatusProperty.delegate.mapToBool(_.isActive).toReadOnlyProperty
 
   override val amountProperty = new ObjectProperty[Bitcoin.Amount](this, "amount", order.amount)
   override val priceProperty = new ObjectProperty[Price[_ <: FiatCurrency]](this, "price", order.price)
