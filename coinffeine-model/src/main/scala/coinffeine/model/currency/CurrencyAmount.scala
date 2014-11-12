@@ -56,8 +56,12 @@ case class CurrencyAmount[C <: Currency](units: Long, currency: C)
       thatAmount
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
-  override def toString = s"%d.%0${currency.precision}d %s".format(
-    units / currency.UnitsInOne, units % currency.UnitsInOne, currency)
+  override def toString = s"%s%d.%0${currency.precision}d %s".format(
+    if(units < 0) "-" else "",
+    units.abs / currency.UnitsInOne,
+    units.abs % currency.UnitsInOne,
+    currency
+  )
 
   def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
     currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
