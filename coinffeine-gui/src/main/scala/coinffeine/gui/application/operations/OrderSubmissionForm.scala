@@ -195,11 +195,13 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   )
 
   private def checkFiatLimit(order: Order[Euro.type]): Boolean = {
+    val requestedFiat = order.price.of(order.amount)
     val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
-    if (order.price.value > maxFiat.value) {
+    if (requestedFiat > maxFiat) {
       Dialogs.create()
         .title("Invalid fiat amount")
-        .message(s"Cannot submit your order: maximum allowed fiat amount is $maxFiat")
+        .message("Cannot submit your order: " +
+          s"maximum allowed fiat amount is $maxFiat, but you requested $requestedFiat")
         .showInformation()
       false
     } else true
