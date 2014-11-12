@@ -54,6 +54,13 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
     }
   }
 
+  it should "be printable" in {
+    Euro.Zero.toString shouldBe "0.00 EUR"
+    0.01.USD.toString shouldBe "0.01 USD"
+    -2.2.EUR.toString shouldBe "-2.20 EUR"
+    Bitcoin.fromSatoshi(-1).toString shouldBe "-0.00000001 BTC"
+  }
+
   private def genericHandling[C <: Currency](amount: CurrencyAmount[C]): Unit = {
     implicit val numeric = amount.numeric
     amount + numeric.fromInt(1) should be > amount
