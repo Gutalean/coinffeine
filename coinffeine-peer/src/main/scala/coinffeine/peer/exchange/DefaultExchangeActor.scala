@@ -145,6 +145,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
+    log.warning("Exchange {}: starting abortion", exchange.id)
     txBroadcaster ! PublishBestTransaction
     context.become(aborting(abortingExchange))
   }
