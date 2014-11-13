@@ -15,6 +15,7 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
   val orderStatusProperty = new ObjectProperty[OrderStatus](this, "status", order.status)
 
   val exchanges = new ObservableBuffer[ExchangeProperties]
+  updateExchanges(order.exchanges.values.toSeq)
 
   override val sourceProperty =
     sourceOrderProperty.delegate.map(order => order: AnyRef).toReadOnlyProperty
@@ -54,5 +55,4 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
     exchanges.clear()
     newExchanges.map(ex => new ExchangeProperties(ex)).foreach(exchanges.add)
   }
-
 }
