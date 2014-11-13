@@ -51,7 +51,6 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   override def preStart(): Unit = {
     subscribeToMessages()
     scheduleSignatureTimeout()
-    log.info("Handshake {}: Handshake started", exchange.info.id)
     super.preStart()
   }
 
@@ -82,6 +81,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   override def receiveCommand = abortOnSignatureTimeout orElse abortOnBrokerNotification orElse {
 
     case ResumeHandshake =>
+      log.info("Handshake {}: started", exchange.info.id)
       sendPeerHandshakeUntilFirstSignatureRequest()
 
     case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
@@ -216,6 +216,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         watchCommitmentConfirmations(commitmentIds)
 
       case TransactionConfirmed(tx, confirmations) if confirmations >= commitmentConfirmations =>
+        log.debug("Handshake {}: {} was confirmed", exchange.info.id, tx)
         val stillPending = pendingConfirmation - tx
         if (stillPending.isEmpty) {
           retrieveCommitmentTransactions(commitmentIds).map { commitmentTxs =>
@@ -226,6 +227,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         }
 
       case TransactionRejected(tx) =>
+        log.debug("Handshake {}: {} was rejected", exchange.info.id, tx)
         val isOwn = tx == handshake.myDeposit.get.getHash
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
