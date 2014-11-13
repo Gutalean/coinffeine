@@ -30,7 +30,14 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
 
     case req @ WatchTransactionConfirmation(txHash, confirmations) =>
-      notifier.watchTransactionConfirmation(txHash, confirmations, new ConfirmationListener(sender()))
+      val confirmation = new ConfirmationListener(sender())
+      def watchForConfirmation() =
+        notifier.watchTransactionConfirmation(txHash, confirmations, confirmation)
+      def confirmImmediately(tx: MutableTransaction) =
+        confirmation.confirmed(txHash, tx.getConfidence.getDepthInBlocks)
+      transactionFor(txHash)
+        .filter(_.getConfidence.getDepthInBlocks >= confirmations)
+        .fold(watchForConfirmation())(confirmImmediately)
 
     case RetrieveTransaction(txHash) =>
       sender ! (transactionFor(txHash) match {

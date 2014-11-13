@@ -30,6 +30,14 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
     requester.expectMsg(BlockchainActor.TransactionConfirmed(multisignedTx.get.getHash, 1))
   }
 
+  it must "report transaction confirmation when watching for it after the fact" in new Fixture {
+    requester.send(instance, BlockchainActor.WatchMultisigKeys(Seq(keyPair, otherKeyPair)))
+    expectNoMsg()
+    sendToBlockChain(multisignedTx.get)
+    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(multisignedTx.get.getHash, 1))
+    requester.expectMsg(BlockchainActor.TransactionConfirmed(multisignedTx.get.getHash, 1))
+  }
+
   it must "report transaction confirmation only once" in new Fixture {
     requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
     expectNoMsg()
