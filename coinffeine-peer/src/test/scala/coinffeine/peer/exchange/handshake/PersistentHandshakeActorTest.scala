@@ -2,18 +2,20 @@ package coinffeine.peer.exchange.handshake
 
 import scala.concurrent.duration._
 
+import akka.testkit._
+
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 
-class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
+class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent-handshake") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
-    resubmitHandshakeMessagesTimeout = 1 minute,
-    refundSignatureAbortTimeout = 1 minute
+    resubmitHandshakeMessagesTimeout = 1.minute.dilated,
+    refundSignatureAbortTimeout = 1.minute.dilated
   )
 
   "A handshake" should "persist successful counterpart handshake" in {
@@ -28,6 +30,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("happy-path
     restartActor()
     blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardPeerHandshakeAndRefundSignatureRequest()
+    expectNoMsg(idleTime)
     shouldSignCounterpartRefund()
   }
 
