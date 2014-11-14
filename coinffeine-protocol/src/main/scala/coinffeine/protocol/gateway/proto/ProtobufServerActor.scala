@@ -59,7 +59,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   }
 
   private def connect(join: Join): Unit = (for {
-    brokerAddress <- resolveBrokerAddress(join.brokerAddress)
+    brokerAddress <- join.brokerAddress.resolve()
     mode = join match {
       case JoinAsBroker(_, _) => StandaloneNode(brokerAddress)
       case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, brokerAddress)
@@ -86,10 +86,6 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private def updateConnectionStatus(brokerId: Option[PeerId]): Unit = {
     properties.brokerId.set(brokerId)
-  }
-
-  private def resolveBrokerAddress(broker: BrokerAddress): Future[InetSocketAddress] = Future {
-    new InetSocketAddress(InetAddress.getByName(broker.hostname), broker.port)
   }
 
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {

@@ -11,7 +11,7 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.{PeerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.network.{NetworkEndpoint, PeerId, MutableCoinffeineNetworkProperties}
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -24,7 +24,6 @@ import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.BrokerAddress
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
@@ -161,7 +160,7 @@ object CoinffeinePeerActor {
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
-  case class NetworkParams(listenPort: Int, brokerAddress: BrokerAddress)
+  case class NetworkParams(listenPort: Int, brokerAddress: NetworkEndpoint)
 
   trait Component { this: MessageGateway.Component
     with BitcoinPeerActor.Component
@@ -183,8 +182,7 @@ object CoinffeinePeerActor {
         OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
       Props(new CoinffeinePeerActor(
-        NetworkParams(settings.peerPort, BrokerAddress(settings.brokerHost, settings.brokerPort)),
-        props))
+        NetworkParams(settings.peerPort, settings.brokerEndpoint), props))
     }
 
     private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =

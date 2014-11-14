@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config._
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -57,8 +57,9 @@ object SettingsMapping {
     override def fromConfig(config: Config) = MessageGatewaySettings(
       peerId = getOptionalString(config, "coinffeine.peer.id").map(PeerId.apply),
       peerPort = config.getInt("coinffeine.peer.port"),
-      brokerHost = config.getString("coinffeine.broker.hostname"),
-      brokerPort = config.getInt("coinffeine.broker.port"),
+      brokerEndpoint = NetworkEndpoint(
+        hostname = config.getString("coinffeine.broker.hostname"),
+        port = config.getInt("coinffeine.broker.port")),
       ignoredNetworkInterfaces = ignoredNetworkInterfaces(config),
       connectionRetryInterval =
         config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds
@@ -68,8 +69,8 @@ object SettingsMapping {
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
       .withValue("coinffeine.peer.id", configValue(settings.peerId.fold("")(_.value)))
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
-      .withValue("coinffeine.broker.hostname", configValue(settings.brokerHost))
-      .withValue("coinffeine.broker.port", configValue(settings.brokerPort))
+      .withValue("coinffeine.broker.hostname", configValue(settings.brokerEndpoint.hostname))
+      .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
       .withValue("coinffeine.peer.ifaces.ignore",
         configValue(asJavaIterable(settings.ignoredNetworkInterfaces.map(_.getName))))
       .withValue("coinffeine.peer.connectionRetryInterval",

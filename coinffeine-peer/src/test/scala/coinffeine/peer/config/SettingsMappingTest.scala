@@ -10,7 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -59,8 +59,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
     settings.peerId shouldBe 'empty
     settings.peerPort shouldBe 5000
-    settings.brokerHost shouldBe "broker-host"
-    settings.brokerPort shouldBe 4000
+    settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
     settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
     settings.connectionRetryInterval shouldBe 10.seconds
 
@@ -73,8 +72,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val settings = MessageGatewaySettings(
       peerId = Some(PeerId("1234")),
       peerPort = 5050,
-      brokerHost = "andromeda",
-      brokerPort = 5051,
+      brokerEndpoint = NetworkEndpoint("andromeda", 5051),
       ignoredNetworkInterfaces = Seq(existingNetInterface()),
       connectionRetryInterval = 10.seconds
     )

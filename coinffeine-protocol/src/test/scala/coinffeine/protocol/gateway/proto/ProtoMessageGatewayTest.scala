@@ -11,7 +11,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.network.{NetworkEndpoint, BrokerId, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
@@ -124,7 +124,7 @@ class ProtoMessageGatewayTest
     def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
       system.actorOf(messageGatewayProps(networkProperties))
 
-    def createPeerGateway(connectTo: BrokerAddress): (ActorRef, TestProbe) = {
+    def createPeerGateway(connectTo: NetworkEndpoint): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway(peerNetworkProperties)
       ref ! ServiceActor.Start(JoinAsPeer(PeerId.random(), localPort, connectTo))
@@ -137,7 +137,7 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), BrokerAddress(localhost, localPort)))
+      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), NetworkEndpoint(localhost, localPort)))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()
@@ -147,7 +147,7 @@ class ProtoMessageGatewayTest
   }
 
   trait FreshBrokerAndPeer extends Fixture {
-    val brokerAddress = BrokerAddress("localhost", DefaultTcpPortAllocator.allocatePort())
+    val brokerAddress = NetworkEndpoint("localhost", DefaultTcpPortAllocator.allocatePort())
     val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
     val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
 
