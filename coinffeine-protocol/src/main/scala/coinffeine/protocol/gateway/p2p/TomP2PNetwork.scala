@@ -11,7 +11,7 @@ import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.storage.Data
 import org.slf4j.LoggerFactory
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.protocol.gateway.p2p.P2PNetwork._
 
 object TomP2PNetwork extends P2PNetwork {
@@ -23,9 +23,9 @@ object TomP2PNetwork extends P2PNetwork {
                     listener: Listener)
                    (implicit ec: ExecutionContext): Future[P2PNetwork.Session] = {
     for {
-      brokerSocketAddress <- mode.brokerAddress.resolve()
-      bindings = configureBindings(mode, acceptedInterfaces, brokerSocketAddress)
+      bindings <- configureBindings(mode, acceptedInterfaces)
       peer <- bindPeer(id, mode.localPort, bindings, listener)
+      brokerSocketAddress <- mode.brokerAddress.resolve()
       brokerId <- {
         val bootstrap = bootstrapPeer(id, mode, peer, brokerSocketAddress)
         bootstrap.onFailure { case NonFatal(_) => peer.shutdown() }
@@ -72,7 +72,19 @@ object TomP2PNetwork extends P2PNetwork {
         Number160Util.toPeerId(brokerAddress)
       }
 
-    case PortForwardedPeerNode(_, _) => Future.successful(???) // TODO: port forwarding configuration
+    case PortForwardedPeerNode(_, _) =>
+      for {
+        bootstrap <- peer.bootstrap()
+          .setInetAddress(brokerSocketAddress.getAddress)
+          .setPorts(brokerSocketAddress.getPort)
+          .start()
+         _ <- publishAddress(peer)
+      } yield {
+        val brokerAddress = bootstrap.getBootstrapTo.asScala.head
+        Log.info("Successfully connected with port forwarding as {} listening at {} using broker in {}",
+          Seq(id, peer.getPeerBean.getServerPeerAddress, brokerAddress): _*)
+        Number160Util.toPeerId(brokerAddress)
+      }
   }
 
   private def isBehindFirewall(peer: Peer) = peer.getPeerBean.getServerPeerAddress.isFirewalledTCP
@@ -93,24 +105,30 @@ object TomP2PNetwork extends P2PNetwork {
   }
 
   private def configureBindings(mode: ConnectionMode,
-                                acceptedInterfaces: Seq[NetworkInterface],
-                                brokerSocketAddress: InetSocketAddress): Bindings = {
+                                acceptedInterfaces: Seq[NetworkInterface])
+                               (implicit ec: ExecutionContext): Future[Bindings] = {
     val bindings = mode match {
-      case StandaloneNode(address) => standalonePeerBindings(brokerSocketAddress)
+      case StandaloneNode(address) => bindingsToSpecificAddress(address)
+      case PortForwardedPeerNode(externalAddress, _) => bindingsToSpecificAddress(externalAddress)
       case _ => joiningPeerBindings()
     }
-    whitelistInterfaces(bindings, acceptedInterfaces)
-    bindings
+    bindings.map(b => whitelistInterfaces(b, acceptedInterfaces))
   }
 
-  private def standalonePeerBindings(address: InetSocketAddress): Bindings =
-    new Bindings(address.getAddress, address.getPort, address.getPort)
+  private def bindingsToSpecificAddress(address: NetworkEndpoint)
+                                       (implicit ec: ExecutionContext): Future[Bindings] = {
+    address.resolve().map { socket =>
+      new Bindings(socket.getAddress, socket.getPort, socket.getPort)
+    }
+  }
 
-  private def joiningPeerBindings(): Bindings = new Bindings()
+  private def joiningPeerBindings(): Future[Bindings] = Future.successful(new Bindings())
 
-  private def whitelistInterfaces(bindings: Bindings, acceptedInterfaces: Seq[NetworkInterface]): Unit = {
+  private def whitelistInterfaces(bindings: Bindings,
+                                  acceptedInterfaces: Seq[NetworkInterface]): Bindings = {
     acceptedInterfaces.map(_.getName).foreach(bindings.addInterface)
     val ifaces = bindings.getInterfaces.asScala.mkString(",")
     Log.info("Initiating a peer on interfaces [{}]", ifaces)
+    bindings
   }
 }
