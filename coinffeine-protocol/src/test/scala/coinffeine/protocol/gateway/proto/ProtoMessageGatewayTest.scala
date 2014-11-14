@@ -135,7 +135,7 @@ class ProtoMessageGatewayTest
         brokerEndpoint = connectTo,
         ignoredNetworkInterfaces,
         connectionRetryInterval,
-        externalEndpoint = None
+        externalForwardedPort = None
       )
       ref ! ServiceActor.Start(Join(PeerNode, settings))
       expectMsg(ServiceActor.Started)
@@ -153,7 +153,7 @@ class ProtoMessageGatewayTest
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
         ignoredNetworkInterfaces,
         connectionRetryInterval,
-        externalEndpoint = None
+        externalForwardedPort = None
       )
       ref ! ServiceActor.Start(Join(BrokerNode, settings))
       expectMsg(ServiceActor.Started)

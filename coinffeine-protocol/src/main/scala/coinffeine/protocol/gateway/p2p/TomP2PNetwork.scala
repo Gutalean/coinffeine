@@ -100,10 +100,13 @@ object TomP2PNetwork extends P2PNetwork {
     private def configureBindings(): Future[Bindings] = {
       val bindings = mode match {
         case StandaloneNode(address) => bindingsToSpecificAddress(address)
-        case PortForwardedPeerNode(externalAddress, _) => bindingsToSpecificAddress(externalAddress)
+        case PortForwardedPeerNode(externalPort, brokerAddress) =>
+          new ExternalIpProbe().detect(id, brokerAddress).flatMap { externalIp =>
+            bindingsToSpecificAddress(NetworkEndpoint(externalIp.getCanonicalHostName, externalPort))
+          }
         case _ => joiningPeerBindings()
       }
-      bindings.map(b => whitelistInterfaces(b, acceptedInterfaces))
+      bindings.map(whitelistInterfaces)
     }
 
     private def bindingsToSpecificAddress(address: NetworkEndpoint): Future[Bindings] = {
@@ -114,8 +117,7 @@ object TomP2PNetwork extends P2PNetwork {
 
     private def joiningPeerBindings(): Future[Bindings] = Future.successful(new Bindings())
 
-    private def whitelistInterfaces(bindings: Bindings,
-                                    acceptedInterfaces: Seq[NetworkInterface]): Bindings = {
+    private def whitelistInterfaces(bindings: Bindings): Bindings = {
       acceptedInterfaces.map(_.getName).foreach(bindings.addInterface)
       val ifaces = bindings.getInterfaces.asScala.mkString(",")
       Log.info("Initiating a peer on interfaces [{}]", ifaces)

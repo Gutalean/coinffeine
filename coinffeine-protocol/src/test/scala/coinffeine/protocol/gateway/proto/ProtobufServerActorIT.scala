@@ -57,7 +57,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       brokerEndpoint = NetworkEndpoint(localhost, port),
       ignoredNetworkInterfaces,
       connectionRetryInterval,
-      externalEndpoint = None
+      externalForwardedPort = None
     )
     peer ! ServiceActor.Start(Join(BrokerNode, settings))
     expectMsg(ServiceActor.Started)
@@ -77,7 +77,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       brokerEndpoint = connectTo,
       ignoredNetworkInterfaces,
       connectionRetryInterval,
-      externalEndpoint = None
+      externalForwardedPort = None
     )
     peer ! ServiceActor.Start(Join(PeerNode, settings))
     expectMsg(ServiceActor.Started)
