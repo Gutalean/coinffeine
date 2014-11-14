@@ -11,7 +11,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.P2PNetwork
-import coinffeine.protocol.gateway.p2p.P2PNetwork.{AutodetectPeerNode, StandaloneNode}
+import coinffeine.protocol.gateway.p2p.P2PNetwork.{PortForwardedPeerNode, AutodetectPeerNode, StandaloneNode}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
@@ -60,6 +60,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private def connect(join: Join): Unit = {
     val mode = join.role match {
       case BrokerNode => StandaloneNode(join.settings.brokerEndpoint)
+      case PeerNode if join.settings.externalEndpoint.isDefined =>
+        PortForwardedPeerNode(join.settings.externalEndpoint.get, join.settings.brokerEndpoint)
       case PeerNode => AutodetectPeerNode(join.settings.peerPort, join.settings.brokerEndpoint)
     }
     p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)
