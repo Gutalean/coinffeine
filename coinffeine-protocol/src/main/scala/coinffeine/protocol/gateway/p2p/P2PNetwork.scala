@@ -1,7 +1,6 @@
 package coinffeine.protocol.gateway.p2p
 
-import java.net.{NetworkInterface, InetSocketAddress}
-
+import java.net.NetworkInterface
 import scala.concurrent.{ExecutionContext, Future}
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
@@ -15,7 +14,7 @@ trait P2PNetwork {
 }
 
 object P2PNetwork {
-  
+
   sealed trait ConnectionMode {
     def brokerAddress: NetworkEndpoint
     def localPort: Int
