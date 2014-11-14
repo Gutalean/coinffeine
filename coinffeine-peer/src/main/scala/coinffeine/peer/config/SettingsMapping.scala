@@ -5,10 +5,11 @@ import java.net.{NetworkInterface, URI}
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import scala.util.Try
 
 import com.typesafe.config._
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -57,23 +58,32 @@ object SettingsMapping {
     override def fromConfig(config: Config) = MessageGatewaySettings(
       peerId = getOptionalString(config, "coinffeine.peer.id").map(PeerId.apply),
       peerPort = config.getInt("coinffeine.peer.port"),
-      brokerHost = config.getString("coinffeine.broker.hostname"),
-      brokerPort = config.getInt("coinffeine.broker.port"),
+      brokerEndpoint = NetworkEndpoint(
+        hostname = config.getString("coinffeine.broker.hostname"),
+        port = config.getInt("coinffeine.broker.port")),
       ignoredNetworkInterfaces = ignoredNetworkInterfaces(config),
       connectionRetryInterval =
-        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds
+        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds,
+      externalEndpoint = Try(NetworkEndpoint(
+        hostname = config.getString("coinffeine.peer.externalHostname"),
+        port = config.getInt("coinffeine.peer.externalPort")
+      )).toOption
     )
 
     /** Write settings to given config. */
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
       .withValue("coinffeine.peer.id", configValue(settings.peerId.fold("")(_.value)))
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
-      .withValue("coinffeine.broker.hostname", configValue(settings.brokerHost))
-      .withValue("coinffeine.broker.port", configValue(settings.brokerPort))
+      .withValue("coinffeine.broker.hostname", configValue(settings.brokerEndpoint.hostname))
+      .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
       .withValue("coinffeine.peer.ifaces.ignore",
         configValue(asJavaIterable(settings.ignoredNetworkInterfaces.map(_.getName))))
       .withValue("coinffeine.peer.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
+      .withValue("coinffeine.peer.externalHostname",
+        configValue(settings.externalEndpoint.map(_.hostname).getOrElse("")))
+      .withValue("coinffeine.peer.externalPort",
+        configValue(settings.externalEndpoint.map(_.port.toString).getOrElse("")))
 
     private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
       config.getStringList("coinffeine.peer.ifaces.ignore")

@@ -9,7 +9,8 @@ import akka.testkit._
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
-import coinffeine.model.network.{MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.network.{NetworkEndpoint, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
@@ -28,7 +29,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
   "A peer" should "be able to send a message to another peer just with its peerId" in {
     val brokerPort = DefaultTcpPortAllocator.allocatePort()
     val (_, brokerId) = createBroker(brokerPort)
-    val brokerAddress = BrokerAddress(localhost, brokerPort)
+    val brokerAddress = NetworkEndpoint(localhost, brokerPort)
 
     val (peer1, receivedBrokerId1) = createPeer(DefaultTcpPortAllocator.allocatePort(), brokerAddress)
     receivedBrokerId1 shouldBe brokerId
@@ -50,19 +51,35 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval),
       s"broker-$port"
     )
-    peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), BrokerAddress(localhost, port)))
+    val settings = MessageGatewaySettings(
+      peerId = Some(PeerId.random()),
+      peerPort = 0,
+      brokerEndpoint = NetworkEndpoint(localhost, port),
+      ignoredNetworkInterfaces,
+      connectionRetryInterval,
+      externalEndpoint = None
+    )
+    peer ! ServiceActor.Start(Join(BrokerNode, settings))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)
   }
 
-  private def createPeer(port: Int, connectTo: BrokerAddress): (ActorRef, PeerId) = {
+  private def createPeer(port: Int, connectTo: NetworkEndpoint): (ActorRef, PeerId) = {
     val properties = new MutableCoinffeineNetworkProperties
     val peer = system.actorOf(
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval),
       s"peer-$port"
     )
-    peer ! ServiceActor.Start(JoinAsPeer(PeerId.random(), port, connectTo))
+    val settings = MessageGatewaySettings(
+      peerId = Some(PeerId.random()),
+      peerPort = port,
+      brokerEndpoint = connectTo,
+      ignoredNetworkInterfaces,
+      connectionRetryInterval,
+      externalEndpoint = None
+    )
+    peer ! ServiceActor.Start(Join(PeerNode, settings))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 1)
     (peer, brokerId)

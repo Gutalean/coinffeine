@@ -1,10 +1,9 @@
 package coinffeine.protocol.gateway.p2p
 
-import java.net.{NetworkInterface, InetSocketAddress}
-
+import java.net.NetworkInterface
 import scala.concurrent.{ExecutionContext, Future}
 
-import coinffeine.model.network.PeerId
+import coinffeine.model.network.{NetworkEndpoint, PeerId}
 
 trait P2PNetwork {
   def join(id: PeerId,
@@ -15,18 +14,23 @@ trait P2PNetwork {
 }
 
 object P2PNetwork {
+
   sealed trait ConnectionMode {
+    def brokerAddress: NetworkEndpoint
     def localPort: Int
   }
 
-  case class StandaloneNode(address: InetSocketAddress) extends ConnectionMode {
-    override def localPort = address.getPort
+  case class StandaloneNode(override val brokerAddress: NetworkEndpoint) extends ConnectionMode {
+    override def localPort = brokerAddress.port
   }
-  case class AutodetectPeerNode(override val localPort: Int, bootstrapAddress: InetSocketAddress)
-    extends ConnectionMode
-  case class PortForwardedPeerNode(externalAddress: InetSocketAddress,
-                                   bootstrapAddress: InetSocketAddress) extends ConnectionMode  {
-    override def localPort = externalAddress.getPort
+
+  case class AutodetectPeerNode(override val localPort: Int,
+                                override val brokerAddress: NetworkEndpoint) extends ConnectionMode
+
+  case class PortForwardedPeerNode(
+      externalAddress: NetworkEndpoint,
+      override val brokerAddress: NetworkEndpoint) extends ConnectionMode  {
+    override def localPort = externalAddress.port
   }
 
   trait Session {

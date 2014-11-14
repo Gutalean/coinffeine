@@ -1,8 +1,7 @@
 package coinffeine.protocol.gateway.proto
 
-import java.net.{InetAddress, InetSocketAddress, NetworkInterface}
+import java.net.NetworkInterface
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -12,7 +11,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.P2PNetwork
-import coinffeine.protocol.gateway.p2p.P2PNetwork.{AutodetectPeerNode, StandaloneNode}
+import coinffeine.protocol.gateway.p2p.P2PNetwork.{PortForwardedPeerNode, AutodetectPeerNode, StandaloneNode}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
@@ -58,14 +57,15 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     } orElse manageConnectionStatus
   }
 
-  private def connect(join: Join): Unit = (for {
-    brokerAddress <- resolveBrokerAddress(join.brokerAddress)
-    mode = join match {
-      case JoinAsBroker(_, _) => StandaloneNode(brokerAddress)
-      case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, brokerAddress)
+  private def connect(join: Join): Unit = {
+    val mode = join.role match {
+      case BrokerNode => StandaloneNode(join.settings.brokerEndpoint)
+      case PeerNode if join.settings.externalEndpoint.isDefined =>
+        PortForwardedPeerNode(join.settings.externalEndpoint.get, join.settings.brokerEndpoint)
+      case PeerNode => AutodetectPeerNode(join.settings.peerPort, join.settings.brokerEndpoint)
     }
-    session <- p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
-  } yield session).pipeTo(self)
+    p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)
+  }
 
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
@@ -86,10 +86,6 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private def updateConnectionStatus(brokerId: Option[PeerId]): Unit = {
     properties.brokerId.set(brokerId)
-  }
-
-  private def resolveBrokerAddress(broker: BrokerAddress): Future[InetSocketAddress] = Future {
-    new InetSocketAddress(InetAddress.getByName(broker.hostname), broker.port)
   }
 
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
