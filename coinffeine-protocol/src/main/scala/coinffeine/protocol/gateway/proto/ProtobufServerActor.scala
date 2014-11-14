@@ -1,8 +1,7 @@
 package coinffeine.protocol.gateway.proto
 
-import java.net.{InetAddress, InetSocketAddress, NetworkInterface}
+import java.net.NetworkInterface
 import scala.collection.JavaConversions._
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -58,14 +57,13 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     } orElse manageConnectionStatus
   }
 
-  private def connect(join: Join): Unit = (for {
-    brokerAddress <- join.brokerAddress.resolve()
-    mode = join match {
-      case JoinAsBroker(_, _) => StandaloneNode(brokerAddress)
-      case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, brokerAddress)
+  private def connect(join: Join): Unit = {
+    val mode = join match {
+      case JoinAsBroker(_, _) => StandaloneNode(join.brokerAddress)
+      case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, join.brokerAddress)
     }
-    session <- p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener)
-  } yield session).pipeTo(self)
+    p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)
+  }
 
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")

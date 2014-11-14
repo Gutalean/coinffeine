@@ -1,6 +1,6 @@
 package coinffeine.protocol.gateway.p2p
 
-import java.net.{InetSocketAddress, NetworkInterface}
+import java.net.{InetAddress, InetSocketAddress, NetworkInterface}
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
@@ -22,11 +22,12 @@ object TomP2PNetwork extends P2PNetwork {
                     acceptedInterfaces: Seq[NetworkInterface],
                     listener: Listener)
                    (implicit ec: ExecutionContext): Future[P2PNetwork.Session] = {
-    val bindings = configureBindings(mode, acceptedInterfaces)
     for {
+      brokerSocketAddress <- mode.brokerAddress.resolve()
+      bindings = configureBindings(mode, acceptedInterfaces, brokerSocketAddress)
       peer <- bindPeer(id, mode.localPort, bindings, listener)
       brokerId <- {
-        val bootstrap = bootstrapPeer(id, mode, peer)
+        val bootstrap = bootstrapPeer(id, mode, peer, brokerSocketAddress)
         bootstrap.onFailure { case NonFatal(_) => peer.shutdown() }
         bootstrap
       }
@@ -48,16 +49,18 @@ object TomP2PNetwork extends P2PNetwork {
     peer
   }
 
-  private def bootstrapPeer(id: PeerId, mode: ConnectionMode, peer: Peer)
+  private def bootstrapPeer(id: PeerId, mode: ConnectionMode,
+                            peer: Peer,
+                            brokerSocketAddress: InetSocketAddress)
                            (implicit ec: ExecutionContext): Future[PeerId] = mode match {
     case StandaloneNode(_) => publishAddress(peer).map(_ => id)
 
-    case AutodetectPeerNode(_, bootStrapAddress) =>
+    case AutodetectPeerNode(_, _) =>
       peer.getConfiguration.setBehindFirewall(true)
       for {
         discovery <- peer.discover()
-          .setInetAddress(bootStrapAddress.getAddress)
-          .setPorts(bootStrapAddress.getPort)
+          .setInetAddress(brokerSocketAddress.getAddress)
+          .setPorts(brokerSocketAddress.getPort)
           .start()
         bootstrap <- peer.bootstrap().setPeerAddress(discovery.getReporter).start()
         brokerAddress = bootstrap.getBootstrapTo.asScala.head
@@ -90,9 +93,10 @@ object TomP2PNetwork extends P2PNetwork {
   }
 
   private def configureBindings(mode: ConnectionMode,
-                                acceptedInterfaces: Seq[NetworkInterface]): Bindings = {
+                                acceptedInterfaces: Seq[NetworkInterface],
+                                brokerSocketAddress: InetSocketAddress): Bindings = {
     val bindings = mode match {
-      case StandaloneNode(address) => standalonePeerBindings(address)
+      case StandaloneNode(address) => standalonePeerBindings(brokerSocketAddress)
       case _ => joiningPeerBindings()
     }
     whitelistInterfaces(bindings, acceptedInterfaces)
