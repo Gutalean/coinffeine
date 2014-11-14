@@ -10,6 +10,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.network.{NetworkEndpoint, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
@@ -50,7 +51,15 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval),
       s"broker-$port"
     )
-    peer ! ServiceActor.Start(JoinAsBroker(PeerId.random(), NetworkEndpoint(localhost, port)))
+    val settings = MessageGatewaySettings(
+      peerId = Some(PeerId.random()),
+      peerPort = 0,
+      brokerEndpoint = NetworkEndpoint(localhost, port),
+      ignoredNetworkInterfaces,
+      connectionRetryInterval,
+      externalEndpoint = None
+    )
+    peer ! ServiceActor.Start(JoinAsBroker(settings))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 0)
     (peer, brokerId)
@@ -62,7 +71,15 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       ProtobufServerActor.props(properties, ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval),
       s"peer-$port"
     )
-    peer ! ServiceActor.Start(JoinAsPeer(PeerId.random(), port, connectTo))
+    val settings = MessageGatewaySettings(
+      peerId = Some(PeerId.random()),
+      peerPort = port,
+      brokerEndpoint = connectTo,
+      ignoredNetworkInterfaces,
+      connectionRetryInterval,
+      externalEndpoint = None
+    )
+    peer ! ServiceActor.Start(JoinAsPeer(settings))
     expectMsg(ServiceActor.Started)
     val brokerId = waitForConnections(properties, minConnections = 1)
     (peer, brokerId)

@@ -81,8 +81,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(paymentProcessor, {})
     shouldRequestStart(bitcoinPeer, {})
     gateway.expectAskWithReply {
-      case ServiceActor.Start(MessageGateway.JoinAsPeer(generatedId, _, _)) =>
-        generatedId shouldBe configProvider.messageGatewaySettings().peerId.get
+      case ServiceActor.Start(MessageGateway.JoinAsPeer(updatedSettings)) =>
+        updatedSettings.peerId shouldBe 'defined
+        updatedSettings shouldBe configProvider.messageGatewaySettings()
         ServiceActor.Started
     }
   }
@@ -152,7 +153,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
-    shouldRequestStart(gateway, MessageGateway.JoinAsPeer(peerId, localPort, brokerAddress))
+    shouldRequestStart(gateway, MessageGateway.JoinAsPeer(configProvider.messageGatewaySettings()))
 
     // Then request the wallet and blockchain actors from bitcoin actor
     bitcoinPeer.expectAskWithReply {

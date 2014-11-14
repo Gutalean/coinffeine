@@ -59,8 +59,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private def connect(join: Join): Unit = {
     val mode = join match {
-      case JoinAsBroker(_, _) => StandaloneNode(join.brokerAddress)
-      case JoinAsPeer(_, localPort, _) => AutodetectPeerNode(localPort, join.brokerAddress)
+      case _: JoinAsBroker => StandaloneNode(join.brokerAddress)
+      case joinAsPeer: JoinAsPeer => AutodetectPeerNode(joinAsPeer.localPort, join.brokerAddress)
     }
     p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)
   }

@@ -12,6 +12,7 @@ import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.{NetworkEndpoint, BrokerId, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
@@ -115,11 +116,12 @@ class ProtoMessageGatewayTest
 
     val peerNetworkProperties = new MutableCoinffeineNetworkProperties
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
+    val connectionRetryInterval = 3.seconds
 
     def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties): Props = Props(
       new ProtoMessageGateway(networkProperties, protocolSerialization,
         ProtobufServerActor.props(networkProperties, ignoredNetworkInterfaces,
-          TomP2PNetwork, connectionRetryInterval = 3.seconds)))
+          TomP2PNetwork, connectionRetryInterval)))
 
     def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
       system.actorOf(messageGatewayProps(networkProperties))
@@ -127,7 +129,15 @@ class ProtoMessageGatewayTest
     def createPeerGateway(connectTo: NetworkEndpoint): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway(peerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsPeer(PeerId.random(), localPort, connectTo))
+      val settings = MessageGatewaySettings(
+        peerId = Some(PeerId.random()),
+        peerPort = localPort,
+        brokerEndpoint = connectTo,
+        ignoredNetworkInterfaces,
+        connectionRetryInterval,
+        externalEndpoint = None
+      )
+      ref ! ServiceActor.Start(JoinAsPeer(settings))
       expectMsg(ServiceActor.Started)
       waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
@@ -137,7 +147,15 @@ class ProtoMessageGatewayTest
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
-      ref ! ServiceActor.Start(JoinAsBroker(PeerId.random(), NetworkEndpoint(localhost, localPort)))
+      val settings = MessageGatewaySettings(
+        peerId = Some(PeerId.random()),
+        peerPort = localPort,
+        brokerEndpoint = NetworkEndpoint(localhost, localPort),
+        ignoredNetworkInterfaces,
+        connectionRetryInterval,
+        externalEndpoint = None
+      )
+      ref ! ServiceActor.Start(JoinAsBroker(settings))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()

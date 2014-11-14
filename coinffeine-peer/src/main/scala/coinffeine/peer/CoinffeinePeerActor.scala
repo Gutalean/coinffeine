@@ -51,8 +51,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
-      _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(
-        settings.peerId.get, settings.peerPort, settings.brokerEndpoint))
+      _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(settings))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)

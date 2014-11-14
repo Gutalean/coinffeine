@@ -1,6 +1,6 @@
 package coinffeine.protocol.gateway.p2p
 
-import java.net.{InetAddress, InetSocketAddress, NetworkInterface}
+import java.net.{InetSocketAddress, NetworkInterface}
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal

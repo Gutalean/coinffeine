@@ -18,10 +18,17 @@ object MessageGateway {
   }
 
   /** A request message to bind & create a new, empty P2P network. */
-  case class JoinAsBroker(id: PeerId, brokerAddress: NetworkEndpoint) extends Join
+  case class JoinAsBroker(settings: MessageGatewaySettings) extends Join {
+    val id: PeerId = settings.peerId.get
+    val brokerAddress: NetworkEndpoint = settings.brokerEndpoint
+  }
 
   /** A request message to join to an already existing network. */
-  case class JoinAsPeer(id: PeerId, localPort: Int, brokerAddress: NetworkEndpoint) extends Join
+  case class JoinAsPeer(settings: MessageGatewaySettings) extends Join {
+    val id: PeerId = settings.peerId.get
+    val localPort: Int = settings.peerPort
+    val brokerAddress: NetworkEndpoint = settings.brokerEndpoint
+  }
 
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
