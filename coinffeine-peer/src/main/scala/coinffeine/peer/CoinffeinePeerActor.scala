@@ -11,7 +11,7 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.network.{PeerId, MutableCoinffeineNetworkProperties}
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -23,6 +23,7 @@ import coinffeine.peer.market.submission.SubmissionSupervisor
 import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
+import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
@@ -46,9 +47,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
   override def starting(arg: Unit) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
-    val settings = configProvider.messageGatewaySettings()
-    require(settings.peerId.isDefined)
-    // TODO: replace all children actors by services and start them here
+    val settings = retrieveMessageGatewaySettings()
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
@@ -58,8 +57,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
         .withReply[BitcoinPeerActor.BlockchainActorRef]
-    } yield (walletActorRef, blockchainActorRef)
-      ).pipeTo(self)
+    } yield (walletActorRef, blockchainActorRef)).pipeTo(self)
 
     handle {
       case (BitcoinPeerActor.WalletActorRef(retrievedWalletRef),
@@ -74,6 +72,19 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
         log.error(cause, "Coinffeine peer actor failed to start")
         cancelStart(cause)
     }
+  }
+
+  private def retrieveMessageGatewaySettings(): MessageGatewaySettings = {
+    val currentSettings = configProvider.messageGatewaySettings()
+    if (currentSettings.peerId.isDefined) currentSettings else chooseARandomPeerId(currentSettings)
+  }
+
+  private def chooseARandomPeerId(currentSettings: MessageGatewaySettings): MessageGatewaySettings = {
+    val id = PeerId.random()
+    log.info("{} chosen as peer id", id)
+    val updatedSettings = currentSettings.copy(peerId = Some(id))
+    configProvider.saveUserSettings(updatedSettings)
+    updatedSettings
   }
 
   override protected def stopping(): Receive = {

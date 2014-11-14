@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
-import coinffeine.model.network.{PeerId, CoinffeineNetworkProperties}
+import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
@@ -48,7 +48,7 @@ class DefaultCoinffeineApp(name: String,
     import system.dispatcher
     implicit val to = Timeout(timeout)
     for {
-      _ <- ServiceActor.askStart(peerRef, peerId).recoverWith {
+      _ <- ServiceActor.askStart(peerRef).recoverWith {
         case NonFatal(cause) => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
       }
       _ <- system.actorSelection("/system/journal").resolveOne().recoverWith {
@@ -57,15 +57,6 @@ class DefaultCoinffeineApp(name: String,
         ) with NoStackTrace)
       }
     } yield ()
-  }
-
-  private val peerId = configProvider.messageGatewaySettings().peerId.getOrElse(registerNewPeerId())
-
-  private def registerNewPeerId(): PeerId = {
-    val id = PeerId.random()
-    DefaultCoinffeineApp.Log.info("{} chosen as peer id", id)
-    configProvider.saveUserSettings(configProvider.messageGatewaySettings().copy(peerId = Some(id)))
-    id
   }
 
   override def stop(timeout: FiniteDuration): Future[Unit] = {
