@@ -10,5 +10,6 @@ case class MessageGatewaySettings(
   peerPort: Int,
   brokerEndpoint: NetworkEndpoint,
   ignoredNetworkInterfaces: Seq[NetworkInterface],
-  connectionRetryInterval: FiniteDuration
+  connectionRetryInterval: FiniteDuration,
+  externalEndpoint: Option[NetworkEndpoint]
 )
