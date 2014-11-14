@@ -137,7 +137,7 @@ class ProtoMessageGatewayTest
         connectionRetryInterval,
         externalEndpoint = None
       )
-      ref ! ServiceActor.Start(JoinAsPeer(settings))
+      ref ! ServiceActor.Start(Join(PeerNode, settings))
       expectMsg(ServiceActor.Started)
       waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
@@ -155,7 +155,7 @@ class ProtoMessageGatewayTest
         connectionRetryInterval,
         externalEndpoint = None
       )
-      ref ! ServiceActor.Start(JoinAsBroker(settings))
+      ref ! ServiceActor.Start(Join(BrokerNode, settings))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()

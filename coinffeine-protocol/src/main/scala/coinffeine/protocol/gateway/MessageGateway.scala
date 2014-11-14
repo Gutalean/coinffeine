@@ -1,33 +1,22 @@
 package coinffeine.protocol.gateway
 
 import java.net.NetworkInterface
-
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Props
 
-import coinffeine.model.network.{NetworkEndpoint, PeerId, BrokerId, NodeId}
+import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
 
-  sealed trait Join { // FIXME: change join messages
-    val id: PeerId
-    val brokerAddress: NetworkEndpoint
-  }
+  sealed trait NodeRole
+  case object PeerNode extends NodeRole
+  case object BrokerNode extends NodeRole
 
-  /** A request message to bind & create a new, empty P2P network. */
-  case class JoinAsBroker(settings: MessageGatewaySettings) extends Join {
+  case class Join(role: NodeRole, settings: MessageGatewaySettings) {
     val id: PeerId = settings.peerId.get
-    val brokerAddress: NetworkEndpoint = settings.brokerEndpoint
-  }
-
-  /** A request message to join to an already existing network. */
-  case class JoinAsPeer(settings: MessageGatewaySettings) extends Join {
-    val id: PeerId = settings.peerId.get
-    val localPort: Int = settings.peerPort
-    val brokerAddress: NetworkEndpoint = settings.brokerEndpoint
   }
 
   /** A message sent in order to forward a message to a given destination. */
