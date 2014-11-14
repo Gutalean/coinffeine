@@ -28,9 +28,8 @@ object P2PNetwork {
                                 override val brokerAddress: NetworkEndpoint) extends ConnectionMode
 
   case class PortForwardedPeerNode(
-      externalAddress: NetworkEndpoint,
-      override val brokerAddress: NetworkEndpoint) extends ConnectionMode  {
-    override def localPort = externalAddress.port
+      externalPort: Int, override val brokerAddress: NetworkEndpoint) extends ConnectionMode  {
+    override def localPort = externalPort
   }
 
   trait Session {

@@ -11,5 +11,5 @@ case class MessageGatewaySettings(
   brokerEndpoint: NetworkEndpoint,
   ignoredNetworkInterfaces: Seq[NetworkInterface],
   connectionRetryInterval: FiniteDuration,
-  externalEndpoint: Option[NetworkEndpoint]
+  externalForwardedPort: Option[Int]
 )

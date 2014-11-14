@@ -60,8 +60,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   private def connect(join: Join): Unit = {
     val mode = join.role match {
       case BrokerNode => StandaloneNode(join.settings.brokerEndpoint)
-      case PeerNode if join.settings.externalEndpoint.isDefined =>
-        PortForwardedPeerNode(join.settings.externalEndpoint.get, join.settings.brokerEndpoint)
+      case PeerNode if join.settings.externalForwardedPort.isDefined =>
+        PortForwardedPeerNode(join.settings.externalForwardedPort.get, join.settings.brokerEndpoint)
       case PeerNode => AutodetectPeerNode(join.settings.peerPort, join.settings.brokerEndpoint)
     }
     p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)

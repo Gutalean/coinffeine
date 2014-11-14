@@ -100,9 +100,9 @@ object TomP2PNetwork extends P2PNetwork {
     private def configureBindings(): Future[Bindings] = {
       val bindings = mode match {
         case StandaloneNode(address) => bindingsToSpecificAddress(address)
-        case PortForwardedPeerNode(externalAddress, brokerAddress) =>
+        case PortForwardedPeerNode(externalPort, brokerAddress) =>
           new ExternalIpProbe().detect(id, brokerAddress).flatMap { externalIp =>
-            bindingsToSpecificAddress(externalAddress.copy(hostname = externalIp.getCanonicalHostName))
+            bindingsToSpecificAddress(NetworkEndpoint(externalIp.getCanonicalHostName, externalPort))
           }
         case _ => joiningPeerBindings()
       }

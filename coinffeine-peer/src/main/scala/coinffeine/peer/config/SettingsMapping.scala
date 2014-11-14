@@ -64,10 +64,7 @@ object SettingsMapping {
       ignoredNetworkInterfaces = ignoredNetworkInterfaces(config),
       connectionRetryInterval =
         config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds,
-      externalEndpoint = Try(NetworkEndpoint(
-        hostname = config.getString("coinffeine.peer.externalHostname"),
-        port = config.getInt("coinffeine.peer.externalPort")
-      )).toOption
+      externalForwardedPort = Try(config.getInt("coinffeine.peer.externalForwardedPort")).toOption
     )
 
     /** Write settings to given config. */
@@ -80,10 +77,8 @@ object SettingsMapping {
         configValue(asJavaIterable(settings.ignoredNetworkInterfaces.map(_.getName))))
       .withValue("coinffeine.peer.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
-      .withValue("coinffeine.peer.externalHostname",
-        configValue(settings.externalEndpoint.map(_.hostname).getOrElse("")))
-      .withValue("coinffeine.peer.externalPort",
-        configValue(settings.externalEndpoint.map(_.port.toString).getOrElse("")))
+      .withValue("coinffeine.peer.externalForwardedPort",
+        configValue(settings.externalForwardedPort.map(_.toString).getOrElse("")))
 
     private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
       config.getStringList("coinffeine.peer.ifaces.ignore")

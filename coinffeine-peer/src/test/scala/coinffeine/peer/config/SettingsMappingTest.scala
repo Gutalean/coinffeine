@@ -61,7 +61,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
     settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
     settings.connectionRetryInterval shouldBe 10.seconds
-    settings.externalEndpoint shouldBe 'empty
+    settings.externalForwardedPort shouldBe 'empty
   }
 
   it should "map peer ID from config when present" in {
@@ -71,18 +71,9 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   it should "map external endpoint from config when present" in {
     val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalHostname" -> "myexternal",
-      "coinffeine.peer.externalPort" -> "8765")
+      "coinffeine.peer.externalForwardedPort" -> "8765")
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalEndpoint.value shouldBe NetworkEndpoint("myexternal", 8765)
-  }
-
-  it should "not map external endpoint from config when hostname is empty" in {
-    val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalHostname" -> "",
-      "coinffeine.peer.externalPort" -> "8765")
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalEndpoint shouldBe 'empty
+    settings.externalForwardedPort.value shouldBe 8765
   }
 
   it should "map to config" in {
@@ -92,7 +83,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       brokerEndpoint = NetworkEndpoint("andromeda", 5051),
       ignoredNetworkInterfaces = Seq(existingNetInterface()),
       connectionRetryInterval = 10.seconds,
-      externalEndpoint = Some(NetworkEndpoint("myexternal", 8765))
+      externalForwardedPort = Some(8765)
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.peer.id") shouldBe "1234"
@@ -102,8 +93,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getStringList("coinffeine.peer.ifaces.ignore") shouldBe
       seqAsJavaList(Seq(existingNetInterface().getName))
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
-    cfg.getString("coinffeine.peer.externalHostname") shouldBe "myexternal"
-    cfg.getInt("coinffeine.peer.externalPort") shouldBe 8765
+    cfg.getInt("coinffeine.peer.externalForwardedPort") shouldBe 8765
 
     val cfg2 = SettingsMapping.toConfig(settings.copy(peerId = None))
     cfg2.getString("coinffeine.peer.id") shouldBe 'empty
