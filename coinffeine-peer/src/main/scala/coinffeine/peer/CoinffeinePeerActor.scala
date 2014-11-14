@@ -11,14 +11,14 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.{NetworkEndpoint, PeerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
-import coinffeine.peer.market.orders.{OrderSupervisor, OrderActor}
+import coinffeine.peer.market.orders.{OrderActor, OrderSupervisor}
 import coinffeine.peer.market.submission.SubmissionSupervisor
 import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
@@ -30,9 +30,9 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(
-    networkParams: CoinffeinePeerActor.NetworkParams,
-    props: CoinffeinePeerActor.PropsCatalogue) extends Actor with ActorLogging with ServiceActor[PeerId] {
+class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerActor.PropsCatalogue)
+  extends Actor with ActorLogging with ServiceActor[Unit] {
+
   import CoinffeinePeerActor._
   import context.dispatcher
 
@@ -43,15 +43,17 @@ class CoinffeinePeerActor(
   private var orderSupervisorRef: ActorRef = _
   private var walletRef: ActorRef = _
 
-  override def starting(peerId: PeerId) = {
+  override def starting(arg: Unit) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
+    val settings = configProvider.messageGatewaySettings()
+    require(settings.peerId.isDefined)
     // TODO: replace all children actors by services and start them here
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
       _ <- ServiceActor.askStart(gatewayRef, MessageGateway.JoinAsPeer(
-        peerId, networkParams.listenPort, networkParams.brokerAddress))
+        settings.peerId.get, settings.peerPort, settings.brokerEndpoint))
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
@@ -160,8 +162,6 @@ object CoinffeinePeerActor {
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
-  case class NetworkParams(listenPort: Int, brokerAddress: NetworkEndpoint)
-
   trait Component { this: MessageGateway.Component
     with BitcoinPeerActor.Component
     with ExchangeActor.Component
@@ -181,8 +181,7 @@ object CoinffeinePeerActor {
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
-      Props(new CoinffeinePeerActor(
-        NetworkParams(settings.peerPort, settings.brokerEndpoint), props))
+      Props(new CoinffeinePeerActor(configProvider, props))
     }
 
     private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =
