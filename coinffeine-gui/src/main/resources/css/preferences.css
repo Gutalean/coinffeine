@@ -12,3 +12,27 @@
 #preferences-okpay-token-field {
     -fx-pref-column-count: 20;
 }
+
+#network-tab {
+    -fx-padding: 20px;
+    -fx-spacing: 20px;
+}
+
+.network-option {
+    -fx-spacing: 15px;
+}
+
+.network-option-details {
+    -fx-padding: 0 0 0 20px;
+    -fx-spacing: 15px;
+}
+
+.network-option-details > HBox {
+    -fx-spacing: 5px;
+    -fx-alignment: baseline-left;
+}
+
+.network-port {
+    -fx-pref-column-count: 5;
+    -fx-max-width: 60px;
+}

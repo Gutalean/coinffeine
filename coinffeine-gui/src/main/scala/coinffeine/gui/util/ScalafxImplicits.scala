@@ -42,6 +42,12 @@ object ScalafxImplicits {
       },
       observableValue)
 
+    def mapToInt(f: A => Int): IntegerBinding = Bindings.createIntegerBinding(
+      new Callable[java.lang.Integer] {
+        override def call() = f(observableValue.getValue)
+      },
+      observableValue)
+
     def bindToList[B](list: ObservableList[B])(f: A => Seq[B]): Unit = {
       observableValue.addListener(new ChangeListener[A] {
         override def changed(observable: ObservableValue[_ <: A], oldValue: A, newValue: A) = {
