@@ -168,4 +168,10 @@ object ScalafxImplicits {
       listeners -= listener
     }
   }
+
+  def createObjectBinding[A, B, C](a: ObservableValue[A], b: ObservableValue[B])
+                                  (map: (A, B) => C): ObjectBinding[C] =
+    Bindings.createObjectBinding(new Callable[C] {
+      override def call() = map(a.getValue, b.getValue)
+    }, a, b)
 }
