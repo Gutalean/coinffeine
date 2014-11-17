@@ -9,9 +9,7 @@ import coinffeine.peer.config.SettingsProvider
 
 class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {
 
-  text = "Network"
-
-  closable = false
+  override lazy val tabTitle = "Network"
 
   private val initialSettings = settingsProvider.messageGatewaySettings()
 

@@ -21,9 +21,7 @@ class OkPayTab(settingsProvider: SettingsProvider) extends PreferencesTab with I
     text = okPaySettings.seedToken.getOrElse("")
   }
 
-  text = "OK Pay"
-
-  closable = false
+  override lazy val tabTitle = "OK Pay"
 
   content = new GridPane() {
     styleClass += "root-pane"
