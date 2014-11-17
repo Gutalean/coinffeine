@@ -8,8 +8,8 @@ import akka.testkit.TestProbe
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.SampleExchange
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
@@ -46,7 +46,7 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   }
 
   trait Fixture {
-    private val wallet = new SmartWallet(createWallet(new KeyPair(), 100.BTC))
+    private val wallet = new SmartWallet(createWallet(100.BTC))
     requiredSignatures.foreach(wallet.delegate.importKey)
     val myDeposit = wallet.createMultisignTransaction(
       requiredSignatures,

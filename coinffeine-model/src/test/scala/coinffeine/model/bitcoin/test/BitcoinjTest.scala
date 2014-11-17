@@ -44,7 +44,6 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
     wallet
   }
 
-  @deprecated("Prefer createWallet() and use HD-generated keys")
   def createWallet(key: KeyPair): Wallet = {
     val wallet = createWallet()
     wallet.importKey(key)
@@ -52,7 +51,6 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  @deprecated("Prefer createWallet(amount: Bitcoin.Amount) and use HD-generated keys")
   def createWallet(key: KeyPair, amount: Bitcoin.Amount): Wallet = {
     val wallet = createWallet(key)
     sendMoneyToWallet(wallet, amount)

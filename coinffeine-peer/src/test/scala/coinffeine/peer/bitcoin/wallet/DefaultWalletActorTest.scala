@@ -45,7 +45,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     error.failure.getMessage should include ("Not enough funds")
   }
 
-  it must "create a deposit as a multisign transaction" in new Fixture {
+  it must "create a deposit as a multisig transaction" in new Fixture {
     val funds = givenBlockedFunds(1.1.BTC)
     val request = WalletActor.CreateDeposit(funds, requiredSignatures, 1.BTC, 0.1.BTC)
     instance ! request
@@ -129,9 +129,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
 
   trait Fixture {
     def useLastPersistenceId: Boolean = false
-    val keyPair = new KeyPair
-    val otherKeyPair = new KeyPair
-    val requiredSignatures = Both(keyPair, otherKeyPair)
+    val requiredSignatures = Both(new KeyPair, new KeyPair)
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
     private val persistenceId = {
       if (!useLastPersistenceId) {
@@ -139,7 +137,11 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
       }
       lastPersistenceId.toString
     }
-    protected def buildWallet() = new SmartWallet(createWallet(keyPair, initialBalance.amount))
+    protected def buildWallet() = {
+      val wallet = createWallet(initialBalance.amount)
+      wallet.importKey(requiredSignatures.buyer)
+      new SmartWallet(wallet)
+    }
     lazy val wallet = buildWallet()
     val properties = new MutableWalletProperties()
     val instance = system.actorOf(DefaultWalletActor.props(properties, wallet, persistenceId))
