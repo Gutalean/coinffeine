@@ -2,23 +2,22 @@ package coinffeine.peer.bitcoin.blockchain
 
 import scala.collection.JavaConversions._
 
-import akka.actor._
+import akka.actor.{Address => _, _}
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.exchange.Both
 
-private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkParameters)
+private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
   extends Actor with ActorLogging {
 
   import BlockchainActor._
 
-  private val wallet = new Wallet(network)
   private val notifier = new BlockchainNotifier(blockchain.getBestChainHeight)
 
   override def preStart(): Unit = {
     blockchain.addListener(notifier)
-    blockchain.addWallet(wallet)
   }
 
   override val receive: Receive = {
@@ -27,7 +26,8 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       wallet.importKey(key)
 
     case WatchMultisigKeys(keys) =>
-      wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
+      val script = ScriptBuilder.createMultiSigOutputScript(keys.toSeq.size, keys.toSeq)
+      wallet.addWatchedScripts(Seq(script))
 
     case req @ WatchTransactionConfirmation(txHash, confirmations) =>
       val confirmation = new ConfirmationListener(sender())
@@ -52,6 +52,9 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       notifier.watchHeight(height, new HeightListener(sender()))
 
     case WatchOutput(output) =>
+      val address = new Address(
+        wallet.getParams, output.getConnectedOutput.getScriptPubKey.getPubKeyHash)
+      wallet.addWatchedAddress(address)
       notifier.watchOutput(output, new OutputListener(sender()))
   }
 
@@ -90,8 +93,8 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   */
 object BlockchainActor {
 
-  private[bitcoin] def props(blockchain: AbstractBlockChain, network: NetworkParameters): Props =
-    Props(new BlockchainActor(blockchain, network))
+  private[bitcoin] def props(blockchain: AbstractBlockChain, wallet: Wallet): Props =
+    Props(new BlockchainActor(blockchain, wallet))
 
   /** A message sent to the blockchain actor requesting to watch for transactions on the given
     * public key.
@@ -108,7 +111,7 @@ object BlockchainActor {
   /** A message sent to the blockchain actor requesting to watch for transactions multisigned
     * for this combination of keys.
     */
-  case class WatchMultisigKeys(keys: Seq[PublicKey]) {
+  case class WatchMultisigKeys(keys: Both[PublicKey]) {
 
     /** We should override equals as [[PublicKey]] is taking key creation time in consideration */
     override def equals(obj: scala.Any): Boolean = obj match {

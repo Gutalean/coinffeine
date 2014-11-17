@@ -101,7 +101,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   private def onHandshakeStarted(event: HandshakeStarted[C]): Unit = {
     handshake = event.handshake
     collaborators.blockchain ! BlockchainActor.WatchMultisigKeys(
-      event.handshake.exchange.requiredSignatures.toSeq)
+      event.handshake.exchange.requiredSignatures)
     counterpartRefundSigner ! CounterpartRefundSigner.StartSigningRefunds(handshake)
     context.become(waitForRefundSignature)
   }

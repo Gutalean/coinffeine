@@ -264,7 +264,12 @@ object BitcoinPeerActor {
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
           override def walletActor(peerGroup: PeerGroup) =
             DefaultWalletActor.props(bitcoinProperties.wallet, wallet(peerGroup))
-          override val blockchainActor = BlockchainActor.props(blockchain, network)
+          override val blockchainActor = {
+            // TODO: use only one wallet
+            val w = new Wallet(network)
+            blockchain.addWallet(w)
+            BlockchainActor.props(blockchain, w)
+          }
         },
         blockchain,
         this,
