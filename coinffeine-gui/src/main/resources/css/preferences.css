@@ -5,12 +5,20 @@
     -fx-alignment: center;
 }
 
+#preferences-okpay-details {
+    -fx-hgap: 10px;
+    -fx-vgap: 15px;
+    -fx-alignment: center;
+}
+
 #preferences-okpay-userid-field {
     -fx-pref-column-count: 20;
+    -fx-min-width: 300px;
 }
 
 #preferences-okpay-token-field {
     -fx-pref-column-count: 20;
+    -fx-min-width: 300px;
 }
 
 #network-tab {
@@ -36,3 +44,10 @@
     -fx-pref-column-count: 5;
     -fx-max-width: 60px;
 }
+
+#okpay-tab {
+    -fx-padding: 20px;
+    -fx-spacing: 20px;
+    -fx-alignment: center;
+}
+

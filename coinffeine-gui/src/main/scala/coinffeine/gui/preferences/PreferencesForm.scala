@@ -22,7 +22,7 @@ class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
       new TabPane() {
         tabs = PreferencesForm.this.tabs
       },
-      new Button("Close") {
+      new Button("Apply") {
         onAction = { e: ActionEvent =>
           close()
         }
@@ -41,7 +41,7 @@ class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
   }
 
   private def close(): Unit = {
-    tabs.foreach(_.close())
+    tabs.foreach(_.apply())
     stage.close()
   }
 

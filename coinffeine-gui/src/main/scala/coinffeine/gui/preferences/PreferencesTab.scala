@@ -4,7 +4,7 @@ import scalafx.scene.control.Tab
 
 abstract class PreferencesTab extends Tab {
 
-  def close(): Unit
+  def apply(): Unit
 
   def tabTitle: String
 

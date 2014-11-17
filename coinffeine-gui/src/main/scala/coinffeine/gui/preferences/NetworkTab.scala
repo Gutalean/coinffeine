@@ -17,7 +17,7 @@ class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {
     !initialSettings.externalForwardedPort.isDefined)
 
   private val forwardedPorts = new IntegerProperty(this, "forwardedPorts",
-    initialSettings.externalForwardedPort.getOrElse(5460))
+    initialSettings.externalForwardedPort.getOrElse(NetworkTab.DefaultForwardedNetworkPorts))
 
   private val networkModeToggleGroup = new ToggleGroup()
 
@@ -57,7 +57,7 @@ class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {
         styleClass += "network-option-details"
         content = Seq(
           new Label("Coinffeine will autodetect your IP address, " +
-            "but you have to configure your ports manually"),
+            "but you have to configure your ports manually."),
           new HBox() {
             content = Seq(
               new Label("The TCP & UDP ports"),
@@ -67,7 +67,7 @@ class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {
                 forwardedPorts <== text.delegate.mapToInt(_.toInt)
                 disable <== isAutomatic
               },
-              new Label("are redirected to this computer")
+              new Label("are redirected to this computer.")
             )
           }
         )
@@ -78,17 +78,22 @@ class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {
   content = new VBox() {
     id = "network-tab"
     content = Seq(
-      new Label("Please select how Coinffeine is connected to the Internet"),
+      new Label("Please select how Coinffeine is connected to the Internet."),
       automaticWrapper,
       manualWrapper
     )
   }
 
-  override def close() = {
+  override def apply() = {
     val forwardedPort = if (isAutomatic.value) None else Some(forwardedPorts.value)
     val newSettings = initialSettings.copy(externalForwardedPort = forwardedPort)
     if (initialSettings != newSettings) {
       settingsProvider.saveUserSettings(newSettings)
     }
   }
+}
+
+object NetworkTab {
+
+  private val DefaultForwardedNetworkPorts = 5460
 }
