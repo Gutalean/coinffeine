@@ -3,7 +3,7 @@ package coinffeine.gui.preferences
 import scalafx.Includes
 import scalafx.geometry.HPos
 import scalafx.scene.control.{TextField, Label, Tab}
-import scalafx.scene.layout.{ColumnConstraints, GridPane}
+import scalafx.scene.layout.{VBox, ColumnConstraints, GridPane}
 
 import coinffeine.peer.config.SettingsProvider
 
@@ -21,12 +21,10 @@ class OkPayTab(settingsProvider: SettingsProvider) extends PreferencesTab with I
     text = okPaySettings.seedToken.getOrElse("")
   }
 
-  text = "OK Pay"
+  override lazy val tabTitle = "OK Pay"
 
-  closable = false
-
-  content = new GridPane() {
-    styleClass += "root-pane"
+  private val detailsPane = new GridPane() {
+    id = "preferences-okpay-details"
 
     columnConstraints = Seq(
       new ColumnConstraints() { halignment = HPos.Right},
@@ -39,7 +37,15 @@ class OkPayTab(settingsProvider: SettingsProvider) extends PreferencesTab with I
     add(seedTokenField, 1, 1)
   }
 
-  override def close(): Unit = {
+  content = new VBox() {
+    id = "okpay-tab"
+    content = Seq(
+      new Label("Please fill your OK Pay account details"),
+      detailsPane
+    )
+  }
+
+  override def apply(): Unit = {
     settingsProvider.saveUserSettings(
       okPaySettings.copy(
         userAccount = Some(walletIdField.text.value),

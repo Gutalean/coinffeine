@@ -11,7 +11,10 @@ import coinffeine.peer.config.SettingsProvider
 
 class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
 
-  private val tabs: Seq[PreferencesTab] = Seq(new OkPayTab(settingsProvider))
+  private val tabs: Seq[PreferencesTab] = Seq(
+    new NetworkTab(settingsProvider),
+    new OkPayTab(settingsProvider)
+  )
 
   private val content = new VBox() {
     id = "preferences-root-pane"
@@ -19,7 +22,7 @@ class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
       new TabPane() {
         tabs = PreferencesForm.this.tabs
       },
-      new Button("Close") {
+      new Button("Apply") {
         onAction = { e: ActionEvent =>
           close()
         }
@@ -38,7 +41,7 @@ class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
   }
 
   private def close(): Unit = {
-    tabs.foreach(_.close())
+    tabs.foreach(_.apply())
     stage.close()
   }
 
