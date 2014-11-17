@@ -13,7 +13,8 @@ import scalafx.stage.{Modality, Stage, Window}
 import org.controlsfx.dialog.{Dialog, Dialogs}
 
 import coinffeine.gui.control.CurrencyTextField
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
@@ -73,6 +74,14 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
       .otherwise("By no less than")
   }
 
+  private val totalFiat =
+    createObjectBinding(amountTextField.currencyValue, limitTextField.currencyValue) { (btcs, fiat) =>
+      try { Price(fiat).of(btcs) }
+      catch {
+        case e: IllegalArgumentException => 0.EUR
+      }
+    }
+
   amountTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
   limitTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
 
@@ -106,7 +115,12 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
                 new HBox {
                   styleClass += ("operations-submit-declaration-pane", "indented")
                   disable <== limitOrderSelectedProperty.not()
-                  content = Seq(limitLabel, limitTextField)
+                  content = Seq(
+                    limitLabel,
+                    limitTextField,
+                    new Label("per BTC (0.00 EUR total)") {
+                      text <== totalFiat.mapToString { f => s"per BTC ($f total)" }
+                    })
                 }
               )
             },
