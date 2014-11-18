@@ -147,7 +147,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
   it must "notify output expenditure" in new Fixture {
     sendToBlockChain(tx)
     val output = tx.getOutputs.asScala.find(_.getValue.value == 0.1.BTC.units).get
-    requester.send(instance, BlockchainActor.WatchOutput(output.getOutPointFor))
+    requester.send(instance, BlockchainActor.WatchOutput(output))
     expectNoMsg()
     val spendTx = ImmutableTransaction{
       val tx = new MutableTransaction(network)
@@ -157,8 +157,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
       tx
     }
     sendToBlockChain(spendTx.get)
-    requester.expectMsg(
-      BlockchainActor.OutputSpent(output.getOutPointFor, spendTx))
+    requester.expectMsg(BlockchainActor.OutputSpent(output, spendTx))
   }
 
   trait Fixture {

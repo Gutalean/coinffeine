@@ -52,10 +52,9 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
       notifier.watchHeight(height, new HeightListener(sender()))
 
     case WatchOutput(output) =>
-      val address = new Address(
-        wallet.getParams, output.getConnectedOutput.getScriptPubKey.getPubKeyHash)
+      val address = new Address(wallet.getParams, output.getScriptPubKey.getPubKeyHash)
       wallet.addWatchedAddress(address)
-      notifier.watchOutput(output, new OutputListener(sender()))
+      notifier.watchOutput(output.getOutPointFor, new OutputListener(output, sender()))
   }
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
@@ -79,8 +78,10 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
     }
   }
 
-  private class OutputListener(requester: ActorRef) extends BlockchainNotifier.OutputListener {
-    override def outputSpent(output: TransactionOutPoint, tx: ImmutableTransaction): Unit = {
+  private class OutputListener(output: MutableTransactionOutput, requester: ActorRef)
+    extends BlockchainNotifier.OutputListener {
+
+    override def outputSpent(tx: ImmutableTransaction): Unit = {
       requester ! OutputSpent(output, tx)
     }
   }
@@ -152,10 +153,25 @@ object BlockchainActor {
   case class BlockchainHeightReached(height: Long)
 
   /** Listen for an output to be notified with an [[OutputSpent]] whenever the output get spent. */
-  case class WatchOutput(output: TransactionOutPoint)
+  case class WatchOutput(output: MutableTransactionOutput) {
+    override def equals(other: Any): Boolean = other match {
+      case WatchOutput(otherOutput) => output.getOutPointFor == otherOutput.getOutPointFor
+      case _ => false
+    }
+    override def hashCode(): Int = output.getOutPointFor.hashCode()
+  }
 
   /** An output was spent by the given transaction */
-  case class OutputSpent(output: TransactionOutPoint, tx: ImmutableTransaction)
+  case class OutputSpent(output: MutableTransactionOutput, tx: ImmutableTransaction) {
+
+    override def equals(otherObject: Any): Boolean = otherObject match {
+      case other: OutputSpent =>
+        output.getOutPointFor == other.output.getOutPointFor && tx == other.tx
+      case _ => false
+    }
+
+    override def hashCode(): Int = output.getOutPointFor.hashCode() * 13 + tx.hashCode()
+  }
 
   /** A message sent to the blockchain actor to retrieve a transaction from its hash.
     *

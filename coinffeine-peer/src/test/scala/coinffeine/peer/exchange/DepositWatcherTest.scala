@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.ImmutableTransaction
@@ -52,7 +51,7 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
       requiredSignatures,
       100.BTC
     )
-    val output = new TransactionOutPoint(network, 0, myDeposit.get.getHash)
+    val output = myDeposit.get.getOutput(0)
     sendToBlockChain(myDeposit.get)
     val exchange = sellerHandshakingExchange
     val myRefund = spendDeposit(exchange.amounts.refunds.seller)

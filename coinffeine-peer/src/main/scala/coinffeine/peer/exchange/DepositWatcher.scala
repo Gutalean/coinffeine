@@ -3,7 +3,6 @@ package coinffeine.peer.exchange
 import scala.collection.JavaConverters._
 
 import akka.actor.{Actor, ActorRef}
-import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
@@ -16,13 +15,11 @@ class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
                      refundTx: ImmutableTransaction,
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
-  private val network = myDeposit.get.getParams
+  private val network = exchange.parameters.network
   private val userAddress = exchange.state.user.bitcoinKey.toAddress(network)
 
   override def preStart(): Unit = {
-    val tx = myDeposit.get
-    val output = new TransactionOutPoint(network, 0, tx.getHash)
-    collaborators.blockchain ! BlockchainActor.WatchOutput(output)
+    collaborators.blockchain ! BlockchainActor.WatchOutput(myDeposit.get.getOutput(0))
   }
 
   override def receive: Receive = {
