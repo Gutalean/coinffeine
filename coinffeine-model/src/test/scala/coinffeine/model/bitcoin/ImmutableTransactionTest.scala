@@ -6,14 +6,14 @@ import coinffeine.model.currency._
 class ImmutableTransactionTest extends BitcoinjTest {
 
   "Immutable transaction" must "produce the same transaction it was created with" in {
-    val wallet = createWallet(new KeyPair(), 1.BTC)
+    val wallet = createWallet(1.BTC)
     val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     tx.get should be (origTx)
   }
 
   it must "not be affected by changes in the original transaction" in {
-    val wallet = createWallet(new KeyPair(), 1.BTC)
+    val wallet = createWallet(1.BTC)
     val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     origTx.setLockTime(1000)
@@ -21,7 +21,7 @@ class ImmutableTransactionTest extends BitcoinjTest {
   }
 
   it must "produce independent copies" in {
-    val wallet = createWallet(new KeyPair(), 1.BTC)
+    val wallet = createWallet(1.BTC)
     val origTx = wallet.createSend(new KeyPair().toAddress(network), 0.1.BTC)
     val tx = new ImmutableTransaction(origTx)
     val copy1 = tx.get
@@ -31,13 +31,12 @@ class ImmutableTransactionTest extends BitcoinjTest {
   }
 
   it must "accept partial transaction" in {
-    val wallet = createWallet(new KeyPair(), 1.BTC)
     val origTx = new MutableTransaction(network)
     new ImmutableTransaction(origTx).get should be (origTx)
   }
 
   it must "support equality" in {
-    val wallet = createWallet(new KeyPair(), 1.BTC)
+    val wallet = createWallet(1.BTC)
     val origTx = new MutableTransaction(network)
     val immutableTx1 = new ImmutableTransaction(origTx)
     val immutableTx2 = new ImmutableTransaction(origTx)

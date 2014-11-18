@@ -57,6 +57,13 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
     wallet
   }
 
+  /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
+  def createWallet(amount: Bitcoin.Amount): Wallet = {
+    val wallet = createWallet()
+    sendMoneyToWallet(wallet, amount)
+    wallet
+  }
+
   /** Mine bitcoins into a wallet until having a minimum amount. */
   def sendMoneyToWallet(wallet: Wallet, amount: Bitcoin.Amount): Unit = {
     val miner = new KeyPair

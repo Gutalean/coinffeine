@@ -5,11 +5,10 @@ import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.testkit.TestProbe
-import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.SampleExchange
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
@@ -46,13 +45,13 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   }
 
   trait Fixture {
-    private val wallet = new SmartWallet(createWallet(new KeyPair(), 100.BTC))
+    private val wallet = new SmartWallet(createWallet(100.BTC))
     requiredSignatures.foreach(wallet.delegate.importKey)
     val myDeposit = wallet.createMultisignTransaction(
       requiredSignatures,
       100.BTC
     )
-    val output = new TransactionOutPoint(network, 0, myDeposit.get.getHash)
+    val output = myDeposit.get.getOutput(0)
     sendToBlockChain(myDeposit.get)
     val exchange = sellerHandshakingExchange
     val myRefund = spendDeposit(exchange.amounts.refunds.seller)

@@ -1,36 +1,23 @@
 package coinffeine.model.bitcoin.network
 
-import java.net.InetAddress
-
-import org.bitcoinj.core.PeerAddress
 import org.bitcoinj.params.TestNet3Params
 
 import coinffeine.model.bitcoin.NetworkComponent
+import coinffeine.model.network.NetworkEndpoint
 
-trait TestNetwork {
-  val Hostname: String
-  val Ports: Seq[Int]
-  val NetworkParams = new TestNet3Params() {
-    dnsSeeds = Array.empty
-  }
-
+trait TestNetwork extends TestNet3Params with NetworkComponent.SeedPeers {
   trait Component extends NetworkComponent {
-    override def network = NetworkParams
-    override def seedPeerAddresses() = testnetAddresses()
-
-    def testnetAddresses(): Seq[PeerAddress] = {
-      val address = InetAddress.getByName(Hostname)
-      for (port <- Ports) yield new PeerAddress(address, port)
-    }
+    override lazy val network = TestNetwork.this
   }
 }
 
 object IntegrationTestNetwork extends TestNetwork {
-  val Hostname = "testnet.test.coinffeine.com"
-  val Ports = Seq(19000)
+  dnsSeeds = Array.empty
+  override val seedPeers = Seq(NetworkEndpoint("testnet.test.coinffeine.com", 19000))
 }
 
 object PublicTestNetwork extends TestNetwork {
-  val Hostname = "testnet.trial.coinffeine.com"
-  val Ports = 19000 to 19004 toSeq
+  dnsSeeds = Array.empty
+  override val seedPeers =
+    for (port <- 19000 to 19004) yield NetworkEndpoint("testnet.trial.coinffeine.com", port)
 }

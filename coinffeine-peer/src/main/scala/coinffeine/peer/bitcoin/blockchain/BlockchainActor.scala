@@ -2,23 +2,22 @@ package coinffeine.peer.bitcoin.blockchain
 
 import scala.collection.JavaConversions._
 
-import akka.actor._
+import akka.actor.{Address => _, _}
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptBuilder
 
 import coinffeine.model.bitcoin._
+import coinffeine.model.exchange.Both
 
-private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkParameters)
+private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
   extends Actor with ActorLogging {
 
   import BlockchainActor._
 
-  private val wallet = new Wallet(network)
   private val notifier = new BlockchainNotifier(blockchain.getBestChainHeight)
 
   override def preStart(): Unit = {
     blockchain.addListener(notifier)
-    blockchain.addWallet(wallet)
   }
 
   override val receive: Receive = {
@@ -27,7 +26,8 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       wallet.importKey(key)
 
     case WatchMultisigKeys(keys) =>
-      wallet.addWatchedScripts(Seq(ScriptBuilder.createMultiSigOutputScript(keys.size, keys)))
+      val script = ScriptBuilder.createMultiSigOutputScript(keys.toSeq.size, keys.toSeq)
+      wallet.addWatchedScripts(Seq(script))
 
     case req @ WatchTransactionConfirmation(txHash, confirmations) =>
       val confirmation = new ConfirmationListener(sender())
@@ -52,11 +52,32 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
       notifier.watchHeight(height, new HeightListener(sender()))
 
     case WatchOutput(output) =>
-      notifier.watchOutput(output, new OutputListener(sender()))
+      val listener = new OutputListener(output, sender())
+      findTransactionSpending(output.getOutPointFor)
+        .fold(subscribeToOutput(output, listener)) { tx =>
+          listener.outputSpent(ImmutableTransaction(tx))
+        }
   }
+
+  private def findTransactionSpending(outPoint: TransactionOutPoint): Option[MutableTransaction] =
+    (for {
+      tx <- wallet.getTransactions(false)
+      input <- tx.getInputs
+      if input.getOutpoint == outPoint
+    } yield tx).headOption
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
+
+  private def subscribeToOutput(output: MutableTransactionOutput, listener: OutputListener) = {
+    addressesOf(output).foreach(wallet.addWatchedAddress)
+    notifier.watchOutput(output.getOutPointFor, listener)
+  }
+
+  private def addressesOf(output: MutableTransactionOutput): Seq[Address] = output match {
+    case MultiSigOutput(info) => info.possibleKeys.map(_.toAddress(wallet.getParams))
+    case _ => Seq(output.getScriptPubKey.getToAddress(wallet.getParams))
+  }
 
   private class ConfirmationListener(requester: ActorRef)
     extends BlockchainNotifier.ConfirmationListener {
@@ -76,8 +97,10 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
     }
   }
 
-  private class OutputListener(requester: ActorRef) extends BlockchainNotifier.OutputListener {
-    override def outputSpent(output: TransactionOutPoint, tx: ImmutableTransaction): Unit = {
+  private class OutputListener(output: MutableTransactionOutput, requester: ActorRef)
+    extends BlockchainNotifier.OutputListener {
+
+    override def outputSpent(tx: ImmutableTransaction): Unit = {
       requester ! OutputSpent(output, tx)
     }
   }
@@ -90,8 +113,8 @@ private class BlockchainActor(blockchain: AbstractBlockChain, network: NetworkPa
   */
 object BlockchainActor {
 
-  private[bitcoin] def props(blockchain: AbstractBlockChain, network: NetworkParameters): Props =
-    Props(new BlockchainActor(blockchain, network))
+  private[bitcoin] def props(blockchain: AbstractBlockChain, wallet: Wallet): Props =
+    Props(new BlockchainActor(blockchain, wallet))
 
   /** A message sent to the blockchain actor requesting to watch for transactions on the given
     * public key.
@@ -108,7 +131,7 @@ object BlockchainActor {
   /** A message sent to the blockchain actor requesting to watch for transactions multisigned
     * for this combination of keys.
     */
-  case class WatchMultisigKeys(keys: Seq[PublicKey]) {
+  case class WatchMultisigKeys(keys: Both[PublicKey]) {
 
     /** We should override equals as [[PublicKey]] is taking key creation time in consideration */
     override def equals(obj: scala.Any): Boolean = obj match {
@@ -149,10 +172,25 @@ object BlockchainActor {
   case class BlockchainHeightReached(height: Long)
 
   /** Listen for an output to be notified with an [[OutputSpent]] whenever the output get spent. */
-  case class WatchOutput(output: TransactionOutPoint)
+  case class WatchOutput(output: MutableTransactionOutput) {
+    override def equals(other: Any): Boolean = other match {
+      case WatchOutput(otherOutput) => output.getOutPointFor == otherOutput.getOutPointFor
+      case _ => false
+    }
+    override def hashCode(): Int = output.getOutPointFor.hashCode()
+  }
 
   /** An output was spent by the given transaction */
-  case class OutputSpent(output: TransactionOutPoint, tx: ImmutableTransaction)
+  case class OutputSpent(output: MutableTransactionOutput, tx: ImmutableTransaction) {
+
+    override def equals(otherObject: Any): Boolean = otherObject match {
+      case other: OutputSpent =>
+        output.getOutPointFor == other.output.getOutPointFor && tx == other.tx
+      case _ => false
+    }
+
+    override def hashCode(): Int = output.getOutPointFor.hashCode() * 13 + tx.hashCode()
+  }
 
   /** A message sent to the blockchain actor to retrieve a transaction from its hash.
     *

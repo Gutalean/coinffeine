@@ -4,15 +4,15 @@ import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit._
-import org.bitcoinj.core.{FullPrunedBlockChain, PeerGroup}
-import org.bitcoinj.store.MemoryFullPrunedBlockStore
+import org.bitcoinj.core.PeerGroup
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.peer.bitcoin.BitcoinPeerActor.{TransactionNotPublished, Delegates}
+import coinffeine.peer.bitcoin.BitcoinPeerActor.{Delegates, TransactionNotPublished}
+import coinffeine.peer.bitcoin.platform.{BitcoinPlatform, DefaultBitcoinPlatformBuilder}
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BitcoinPeerActorTest extends AkkaSpec with Eventually {
@@ -62,26 +62,21 @@ class BitcoinPeerActorTest extends AkkaSpec with Eventually {
   trait Fixture extends CoinffeineUnitTestNetwork.Component {
     def connectionRetryInterval = 1.minute
     val blockchainActor, walletActor, transactionPublisher = new MockSupervisedActor()
-    val wallet = new SmartWallet(network)
-    val blockchain = new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, 1000))
     val properties = new MutableNetworkProperties
 
-    blockchain.addWallet(wallet.delegate)
+    private val platformBuilder = new DefaultBitcoinPlatformBuilder().setNetwork(network)
 
     val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
       new Delegates {
-        override def transactionPublisher(peerGroup: PeerGroup,
-                                          tx: ImmutableTransaction,
-                                          listener: ActorRef): Props =
+        override def transactionPublisher(
+            peerGroup: PeerGroup, tx: ImmutableTransaction, listener: ActorRef): Props =
           Fixture.this.transactionPublisher.props(peerGroup, tx, listener)
-        override def walletActor(peerGroup: PeerGroup) = {
-          peerGroup.addWallet(wallet.delegate)
-          Fixture.this.walletActor.props(peerGroup)
-        }
-        override val blockchainActor = Fixture.this.blockchainActor.props()
+        override def walletActor(wallet: SmartWallet) = Fixture.this.walletActor.props(wallet)
+        override def blockchainActor(platform: BitcoinPlatform) =
+          Fixture.this.blockchainActor.props(platform)
       },
-      blockchain,
-      networkComponent = this,
+      platformBuilder,
+      this,
       connectionRetryInterval
     )))
     walletActor.expectCreation()

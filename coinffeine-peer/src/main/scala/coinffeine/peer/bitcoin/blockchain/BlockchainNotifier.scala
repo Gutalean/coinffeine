@@ -107,7 +107,7 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int) extends Abstrac
   private def notifySpentOutputs(tx: Transaction): Unit = {
     for (input <- tx.getInputs) {
       outputSubscriptions(input.getOutpoint).foreach { subscription =>
-        subscription.outputSpent(input.getOutpoint, ImmutableTransaction(tx))
+        subscription.outputSpent(ImmutableTransaction(tx))
       }
       outputSubscriptions -= input.getOutpoint
     }
@@ -158,6 +158,6 @@ private[blockchain] object BlockchainNotifier {
   }
 
   trait OutputListener {
-    def outputSpent(output: TransactionOutPoint, tx: ImmutableTransaction): Unit
+    def outputSpent(tx: ImmutableTransaction): Unit
   }
 }
