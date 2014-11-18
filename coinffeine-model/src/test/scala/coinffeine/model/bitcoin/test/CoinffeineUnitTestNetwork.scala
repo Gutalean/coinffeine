@@ -4,7 +4,7 @@ import org.bitcoinj.params.UnitTestParams
 
 import coinffeine.model.bitcoin.NetworkComponent
 
-case object CoinffeineUnitTestNetwork extends UnitTestParams {
+case object CoinffeineUnitTestNetwork extends UnitTestParams with NetworkComponent.SeedPeers {
   // Ensures difficulty stays at minimum level
   interval = Int.MaxValue
 
@@ -14,8 +14,10 @@ case object CoinffeineUnitTestNetwork extends UnitTestParams {
   // Ensures that the miner's reward for each block is constant
   subsidyDecreaseBlockCount = Int.MaxValue
 
+  // No need of seed peers as we don't communicate with the external world
+  override val seedPeers = Seq.empty
+
   trait Component extends NetworkComponent {
     override val network = CoinffeineUnitTestNetwork
-    override val seedPeerAddresses = Seq.empty
   }
 }

@@ -1,7 +1,7 @@
 package coinffeine.model.network
 
+import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress}
-
 import scala.concurrent.{ExecutionContext, Future}
 
 case class NetworkEndpoint(hostname: String, port: Int) {
@@ -10,7 +10,11 @@ case class NetworkEndpoint(hostname: String, port: Int) {
 
   override def toString = s"$hostname:$port"
 
-  def resolve()(implicit executor: ExecutionContext): Future[InetSocketAddress] = Future {
+  def resolveAsync()(implicit executor: ExecutionContext): Future[InetSocketAddress] =
+    Future { resolve() }
+
+  @throws[IOException]("When address cannot be resolved")
+  def resolve(): InetSocketAddress = {
     new InetSocketAddress(InetAddress.getByName(hostname), port)
   }
 }

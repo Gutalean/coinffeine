@@ -13,50 +13,51 @@ import org.bitcoinj.core._
 
 import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin._
+import coinffeine.model.network.NetworkEndpoint
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.bitcoin.wallet.DefaultWalletActor
+import coinffeine.peer.bitcoin.platform.BitcoinPlatform
+import coinffeine.peer.bitcoin.wallet.{SmartWallet, DefaultWalletActor}
 import coinffeine.peer.config.ConfigComponent
 
 class BitcoinPeerActor(properties: MutableNetworkProperties,
                        delegates: BitcoinPeerActor.Delegates,
-                       blockchain: AbstractBlockChain,
+                       platformBuilder: BitcoinPlatform.Builder,
                        networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceActor[Unit] with ActorLogging {
 
   import BitcoinPeerActor._
 
-  private val peerGroup = new PeerGroup(networkComponent.network, blockchain)
-  private val blockchainRef = context.actorOf(delegates.blockchainActor, "blockchain")
-  private val walletRef = context.actorOf(delegates.walletActor(peerGroup), "wallet")
+  private val platform = platformBuilder.build()
+  private val blockchainRef = context.actorOf(delegates.blockchainActor(platform), "blockchain")
+  private val walletRef = context.actorOf(delegates.walletActor(platform.wallet), "wallet")
   private var retryTimer: Option[Cancellable] = None
 
   override protected def starting(args: Unit): Receive = {
-    peerGroup.addEventListener(PeerGroupListener)
-    peerGroup.addListener(PeerGroupLifecycleListener, context.dispatcher)
-    peerGroup.setMinBroadcastConnections(1)
+    platform.peerGroup.addEventListener(PeerGroupListener)
+    platform.peerGroup.addListener(PeerGroupLifecycleListener, context.dispatcher)
     startConnecting()
     becomeStarted(joining orElse commonHandling)
   }
 
   override protected def stopping(): Receive = {
     clearRetryTimer()
-    if (peerGroup.isRunning) {
+    if (platform.peerGroup.isRunning) {
       log.info("Shutting down peer group")
-      peerGroup.stopAsync()
-      peerGroup.awaitTerminated()
+      platform.peerGroup.stopAsync()
+      platform.peerGroup.awaitTerminated()
       log.info("Peer group stopped")
     }
-    blockchain.getBlockStore.close()
-    FullPrunedBlockChainUtils.shutdown(blockchain.asInstanceOf[FullPrunedBlockChain])
+    platform.blockchain.getBlockStore.close()
+    FullPrunedBlockChainUtils.shutdown(platform.blockchain.asInstanceOf[FullPrunedBlockChain])
     becomeStopped()
   }
 
   private def joining: Receive = {
 
     case SeedPeers(addresses) =>
-      addresses.foreach(peerGroup.addAddress)
-      peerGroup.startAsync()
+      addresses.foreach(platform.peerGroup.addAddress)
+      platform.peerGroup.startAsync()
 
     case CannotResolveSeedPeers(cause) =>
       log.error(cause, "Cannot resolve seed peer addresses")
@@ -64,7 +65,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
 
     case PeerGroupStartResult(Success(_)) =>
       log.info("Connected to peer group, starting blockchain download")
-      peerGroup.startBlockChainDownload(PeerGroupListener)
+      platform.peerGroup.startBlockChainDownload(PeerGroupListener)
       become(connected orElse commonHandling)
 
     case PeerGroupStartResult(Failure(_)) =>
@@ -83,7 +84,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   private def connected: Receive = {
     case PublishTransaction(tx) =>
       val name = s"broadcast-${tx.get.getHash}-${System.currentTimeMillis()}"
-      context.actorOf(delegates.transactionPublisher(peerGroup, tx, sender()), name)
+      context.actorOf(delegates.transactionPublisher(platform.peerGroup, tx, sender()), name)
   }
 
   private def commonHandling: Receive = {
@@ -127,11 +128,13 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   private def startConnecting(): Unit = {
     import context.dispatcher
     log.info("Trying to join the bitcoin network")
-    Future {
-      SeedPeers(networkComponent.seedPeerAddresses())
-    }.recover {
-      case NonFatal(cause) => CannotResolveSeedPeers(cause)
-    }.pipeTo(self)
+
+    def resolvePeerAddress(peer: NetworkEndpoint) = peer.resolveAsync().map { new PeerAddress(_) }
+
+    Future.sequence(platform.seedPeers.map(resolvePeerAddress))
+      .map(SeedPeers.apply)
+      .recover { case NonFatal(cause) => CannotResolveSeedPeers(cause) }
+      .pipeTo(self)
   }
 
   private object PeerGroupListener extends AbstractPeerEventListener {
@@ -244,14 +247,14 @@ object BitcoinPeerActor {
     def transactionPublisher(peerGroup: PeerGroup,
                              tx: ImmutableTransaction,
                              listener: ActorRef): Props
-    def walletActor(peerGroup: PeerGroup): Props
-    val blockchainActor: Props
+    def walletActor(wallet: SmartWallet): Props
+    def blockchainActor(platform: BitcoinPlatform): Props
   }
 
   trait Component {
 
-    this: NetworkComponent with BlockchainComponent
-      with WalletComponent with ConfigComponent with MutableBitcoinProperties.Component =>
+    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent
+      with MutableBitcoinProperties.Component =>
 
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
@@ -262,16 +265,12 @@ object BitcoinPeerActor {
                                             tx: ImmutableTransaction,
                                             listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
-          override def walletActor(peerGroup: PeerGroup) =
-            DefaultWalletActor.props(bitcoinProperties.wallet, wallet(peerGroup))
-          override val blockchainActor = {
-            // TODO: use only one wallet
-            val w = new Wallet(network)
-            blockchain.addWallet(w)
-            BlockchainActor.props(blockchain, w)
-          }
+          override def walletActor(wallet: SmartWallet) =
+            DefaultWalletActor.props(bitcoinProperties.wallet, wallet)
+          override def blockchainActor(platform: BitcoinPlatform) =
+            BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
         },
-        blockchain,
+        bitcoinPlatformBuilder,
         this,
         settings.connectionRetryInterval
       ))

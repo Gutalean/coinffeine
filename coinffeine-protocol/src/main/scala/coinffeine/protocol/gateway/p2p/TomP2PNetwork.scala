@@ -26,7 +26,7 @@ object TomP2PNetwork extends P2PNetwork {
     def build(): Future[TomP2PSession] = for {
       bindings <- configureBindings()
       peer <- bindPeer(bindings)
-      brokerSocketAddress <- mode.brokerAddress.resolve()
+      brokerSocketAddress <- mode.brokerAddress.resolveAsync()
       brokerId <- {
         val bootstrap = bootstrapPeer(peer, brokerSocketAddress)
         bootstrap.onFailure { case NonFatal(_) => peer.shutdown() }
@@ -110,7 +110,7 @@ object TomP2PNetwork extends P2PNetwork {
     }
 
     private def bindingsToSpecificAddress(address: NetworkEndpoint): Future[Bindings] = {
-      address.resolve().map { socket =>
+      address.resolveAsync().map { socket =>
         new Bindings(socket.getAddress, socket.getPort, socket.getPort)
       }
     }

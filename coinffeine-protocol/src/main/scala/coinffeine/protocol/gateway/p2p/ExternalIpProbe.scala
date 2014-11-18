@@ -20,7 +20,7 @@ private class ExternalIpProbe(implicit ec: ExecutionContext) {
 
     def pingBroker(): Future[InetAddress] = {
       for {
-        inetSocketAddress <- broker.resolve()
+        inetSocketAddress <- broker.resolveAsync()
         brokerAddress = new PeerAddress(Number160.ZERO, inetSocketAddress)
         futureResponse <- withChannelCreator(1) { channelCreator =>
           probePeer.getHandshakeRPC.pingTCPDiscover(brokerAddress, channelCreator)
