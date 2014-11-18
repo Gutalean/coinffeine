@@ -52,13 +52,32 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
       notifier.watchHeight(height, new HeightListener(sender()))
 
     case WatchOutput(output) =>
-      val address = new Address(wallet.getParams, output.getScriptPubKey.getPubKeyHash)
-      wallet.addWatchedAddress(address)
-      notifier.watchOutput(output.getOutPointFor, new OutputListener(output, sender()))
+      val listener = new OutputListener(output, sender())
+      findTransactionSpending(output.getOutPointFor)
+        .fold(subscribeToOutput(output, listener)) { tx =>
+          listener.outputSpent(ImmutableTransaction(tx))
+        }
   }
+
+  private def findTransactionSpending(outPoint: TransactionOutPoint): Option[MutableTransaction] =
+    (for {
+      tx <- wallet.getTransactions(false)
+      input <- tx.getInputs
+      if input.getOutpoint == outPoint
+    } yield tx).headOption
 
   private def transactionFor(txHash: Sha256Hash): Option[MutableTransaction] =
     Option(wallet.getTransaction(txHash))
+
+  private def subscribeToOutput(output: MutableTransactionOutput, listener: OutputListener) = {
+    addressesOf(output).foreach(wallet.addWatchedAddress)
+    notifier.watchOutput(output.getOutPointFor, listener)
+  }
+
+  private def addressesOf(output: MutableTransactionOutput): Seq[Address] = output match {
+    case MultiSigOutput(info) => info.possibleKeys.map(_.toAddress(wallet.getParams))
+    case _ => Seq(output.getScriptPubKey.getToAddress(wallet.getParams))
+  }
 
   private class ConfirmationListener(requester: ActorRef)
     extends BlockchainNotifier.ConfirmationListener {
