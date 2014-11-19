@@ -29,6 +29,9 @@ class ConnectionActor(session: P2PNetwork.Session, receiverId: PeerId)
       connection = Some(conn)
       context.become(ready)
       unstashAll()
+
+    case Status.Failure(connectionError) => throw connectionError
+
     case _ => stash()
   }
 
@@ -46,6 +49,7 @@ class ConnectionActor(session: P2PNetwork.Session, receiverId: PeerId)
       unstashAll()
 
     case Status.Failure(cause) =>
+      log.error(cause, "Send failure. Connection being reset")
       closeConnection()
       startConnecting()
       context.become(connecting)

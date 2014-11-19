@@ -13,9 +13,10 @@ import coinffeine.protocol.gateway.p2p.P2PNetwork
 import coinffeine.protocol.gateway.p2p.P2PNetwork.Connection
 import coinffeine.protocol.gateway.proto.ConnectionActor.Message
 
-class ConnectionActorTest extends AkkaSpec {
+class ConnectionActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("connection")) {
 
   val idleTime = 100.millis.dilated
+  val receiverId = PeerId.hashOf("receiver")
   val message1 = Message(Array[Byte](1))
   val message2 = Message(Array[Byte](2))
 
@@ -51,15 +52,22 @@ class ConnectionActorTest extends AkkaSpec {
     goodConnection.expectSendRequest(message2)
   }
 
+  it should "rethrow connection exceptions" in new Fixture {
+    EventFilter[ConnectionException.type](occurrences = 1) intercept {
+      session.connectionFailure(0)
+    }
+  }
+
+  case object ConnectionException extends Exception("Injected connection exception") with NoStackTrace
+
   class MockSession extends P2PNetwork.Session {
     private val connectionPromises = Stream.continually(Promise[Connection]())
     private var nextConnection = 0
 
     override val brokerId = PeerId.hashOf("broker")
-    val receiverId = PeerId.hashOf("receiver")
 
     override def connect(peerId: PeerId): Future[Connection] =
-      if (peerId != receiverId) Future.failed(new Error("wrong id") with NoStackTrace)
+      if (peerId != receiverId) Future.failed(ConnectionException)
       else synchronized {
         val result = connectionPromises(nextConnection).future
         nextConnection += 1
@@ -72,8 +80,8 @@ class ConnectionActorTest extends AkkaSpec {
       connectionPromises(index).success(connection)
     }
 
-    def connectionFailure(index: Int, connection: Connection): Unit = {
-      connectionPromises(index).failure(new Error("failure") with NoStackTrace)
+    def connectionFailure(index: Int): Unit = {
+      connectionPromises(index).failure(ConnectionException)
     }
   }
 
@@ -105,6 +113,6 @@ class ConnectionActorTest extends AkkaSpec {
 
   trait Fixture {
     val session = new MockSession
-    val actor = system.actorOf(Props(new ConnectionActor(session, session.receiverId)))
+    val actor = system.actorOf(Props(new ConnectionActor(session, receiverId)))
   }
 }
