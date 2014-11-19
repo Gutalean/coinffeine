@@ -37,6 +37,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
   }
 
   it should "sign counterpart refund while waiting for our refund" in {
+    givenCounterpartSignatureRequest()
     shouldSignCounterpartRefund()
   }
 
@@ -51,6 +52,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
   }
 
   it should "sign counterpart refund after having our refund signed" in {
+    givenCounterpartSignatureRequest()
     shouldSignCounterpartRefund()
   }
 

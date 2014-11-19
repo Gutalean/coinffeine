@@ -71,6 +71,12 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     gateway.relayMessageFromBroker(notification)
   }
 
+  def givenCounterpartSignatureRequest(): Unit = {
+    val request =
+      RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
+    gateway.relayMessage(request, counterpartId)
+  }
+
   def shouldCreateDeposits(): Unit = {
     val request = wallet.expectMsgType[WalletActor.CreateDeposit]
     val depositAmounts = exchange.amounts.deposits.seller
@@ -92,8 +98,6 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   def shouldSignCounterpartRefund(): Unit = {
-    val request = RefundSignatureRequest(exchange.id, ImmutableTransaction(handshake.counterpartRefund))
-    gateway.relayMessage(request, counterpartId)
     gateway.fishForForwardingTo(counterpartId) {
       case RefundSignatureRequest(_, _) => false
       case RefundSignatureResponse(exchange.id, MockExchangeProtocol.CounterpartRefundSignature) =>
