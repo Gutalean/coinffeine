@@ -122,7 +122,7 @@ class SmartWallet(val delegate: Wallet) {
     inputs.foreach { outPoint =>
       tx.addInput(outPoint.getConnectedOutput)
     }
-    tx.addMultisignOutput(amount, requiredSignatures.toSeq)
+    tx.addMultisigOutput(amount, requiredSignatures.toSeq)
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
 
     delegate.signTransaction(SendRequest.forTx(tx))

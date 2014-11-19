@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.HandshakingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
@@ -39,7 +39,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
         expectedAmount = exchange.role.select(exchange.amounts.refunds))
       val buyerSignature = exchange.role.buyer(mySignature, herSignature)
       val sellerSignature = exchange.role.seller(mySignature, herSignature)
-      TransactionProcessor.setMultipleSignatures(tx, 0, buyerSignature, sellerSignature)
+      tx.getInput(0).setSignatures(buyerSignature, sellerSignature)
       tx
     }
   }
@@ -47,8 +47,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   private def signRefundTransaction(tx: MutableTransaction,
                                     expectedAmount: Bitcoin.Amount): TransactionSignature = {
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
-    TransactionProcessor.signMultiSignedOutput(
-      multiSignedDeposit = tx,
+    tx.signMultisigOutput(
       index = 0,
       signAs = exchange.state.user.bitcoinKey,
       exchange.requiredSignatures.toSeq
