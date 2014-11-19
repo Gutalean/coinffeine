@@ -31,6 +31,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent
     blockchain.expectMsgType[WatchMultisigKeys]
     shouldForwardPeerHandshakeAndRefundSignatureRequest()
     expectNoMsg(idleTime)
+    givenCounterpartSignatureRequest()
     shouldSignCounterpartRefund()
   }
 

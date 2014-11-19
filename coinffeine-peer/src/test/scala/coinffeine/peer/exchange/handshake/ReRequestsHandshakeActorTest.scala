@@ -23,11 +23,13 @@ class ReRequestsHandshakeActorTest extends DefaultHandshakeActorTest("retries") 
     givenCounterpartPeerHandshake()
     shouldCreateDeposits()
     shouldForwardRefundSignatureRequest()
+    givenCounterpartSignatureRequest()
     shouldSignCounterpartRefund()
-    shouldForwardRefundSignatureRequest()
   }
 
   it should "request it again after signing counterpart refund" in {
+    shouldForwardRefundSignatureRequest()
+    givenCounterpartSignatureRequest()
     shouldSignCounterpartRefund()
     shouldForwardRefundSignatureRequest()
   }
