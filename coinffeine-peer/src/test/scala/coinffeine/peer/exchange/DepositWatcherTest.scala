@@ -7,7 +7,7 @@ import akka.actor.Props
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
 import coinffeine.model.exchange.SampleExchange
@@ -65,13 +65,10 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
         outputs = Seq(participants.seller.bitcoinKey -> getBackAmount),
         network = network
       )
-      val signatures = Seq(
-        TransactionProcessor.signMultiSignedOutput(
-          tx, 0, participants.buyer.bitcoinKey, exchange.requiredSignatures.toSeq),
-        TransactionProcessor.signMultiSignedOutput(
-          tx, 0, participants.seller.bitcoinKey, exchange.requiredSignatures.toSeq)
+      tx.getInput(0).setSignatures(
+        tx.signMultisigOutput(0, participants.buyer.bitcoinKey, exchange.requiredSignatures.toSeq),
+        tx.signMultisigOutput(0, participants.seller.bitcoinKey, exchange.requiredSignatures.toSeq)
       )
-      TransactionProcessor.setMultipleSignatures(tx, 0, signatures: _*)
       ImmutableTransaction(tx)
     }
 

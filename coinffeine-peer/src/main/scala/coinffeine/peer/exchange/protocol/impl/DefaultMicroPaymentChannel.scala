@@ -3,7 +3,7 @@ package coinffeine.peer.exchange.protocol.impl
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.{Both, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
@@ -55,10 +55,10 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     val tx = currentUnsignedTransaction.get
     val signingKey = exchange.state.user.bitcoinKey
     Both(
-      buyer = TransactionProcessor.signMultiSignedOutput(
-        tx, BuyerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq),
-      seller = TransactionProcessor.signMultiSignedOutput(
-        tx, SellerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq)
+      buyer = tx.signMultisigOutput(
+        BuyerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq),
+      seller = tx.signMultisigOutput(
+        SellerDepositInputIndex, signingKey, exchange.requiredSignatures.toSeq)
     )
   }
 
@@ -68,10 +68,8 @@ private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
     validateCurrentTransactionSignatures(herSignatures).get
     val tx = currentUnsignedTransaction.get
     val signatures = Seq(signCurrentTransaction, herSignatures)
-    val buyerSignatures = signatures.map(_.buyer)
-    val sellerSignatures = signatures.map(_.seller)
-    TransactionProcessor.setMultipleSignatures(tx, BuyerDepositInputIndex, buyerSignatures: _*)
-    TransactionProcessor.setMultipleSignatures(tx, SellerDepositInputIndex, sellerSignatures: _*)
+    tx.getInput(BuyerDepositInputIndex).setSignatures(signatures.map(_.buyer): _*)
+    tx.getInput(SellerDepositInputIndex).setSignatures(signatures.map(_.seller): _*)
     ImmutableTransaction(tx)
   }
 }
