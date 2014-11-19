@@ -34,7 +34,8 @@ class ConnectionActorTest extends AkkaSpec {
   it should "close connection on stop" in new Fixture {
     val connection = new MockConnection
     session.completeConnection(Success(connection))
-    expectNoMsg(idleTime)
+    actor ! message1
+    connection.probe.expectMsg(message1.bytes)
     system.stop(actor)
     connection.probe.expectMsg("closed")
   }
