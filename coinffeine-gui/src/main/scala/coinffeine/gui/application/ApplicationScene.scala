@@ -56,7 +56,7 @@ class ApplicationScene(views: Seq[ApplicationView],
     )
   }
 
-  val currentView = new ObjectProperty[ApplicationView](this, "currentView", null)
+  val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
 
   private val viewSelector: Parent = {
     val selector = new SegmentedButton {
@@ -96,8 +96,6 @@ class ApplicationScene(views: Seq[ApplicationView],
     }
     mainPane
   }
-
-  currentView.value = views.head
 
   private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =
     widgets.flatMap(w => Seq(new Separator, w)).drop(1)
