@@ -4,7 +4,7 @@ import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control._
-import scalafx.scene.layout.BorderPane
+import scalafx.scene.layout.{VBox, BorderPane}
 import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
@@ -12,6 +12,7 @@ import org.controlsfx.control.SegmentedButton
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -82,13 +83,17 @@ class ApplicationScene(views: Seq[ApplicationView],
   }
 
   root = {
-    val mainPane = new BorderPane {
-      id = "main-root-pane"
-      top = toolbarPane
-      bottom = statusBarPane
-      children.add(menuBar)
+    val mainPane = new VBox() {
+      content = Seq(
+        menuBar,
+        new BorderPane {
+          id = "main-root-pane"
+          top = toolbarPane
+          bottom = statusBarPane
+          center <== currentView.delegate.map(_.centerPane.delegate)
+        }
+      )
     }
-    currentView.onChange { mainPane.center = currentView.value.centerPane }
     mainPane
   }
 
