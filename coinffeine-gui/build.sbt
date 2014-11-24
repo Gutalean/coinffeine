@@ -12,6 +12,19 @@ unmanagedJars in Compile += Attributed.blank(file(scala.util.Properties.javaHome
 
 fork := true
 
+// Generate an iss file with the current version interpolated. This should be upgraded to a
+// full-fledged sbt plugin if more files or variables are needed
+
+resourceGenerators in Compile <+= (sourceDirectory, crossTarget, version) map {
+  (sourceDir, targetDir, version) =>
+    def windowsDir(base: File): File = base / "deploy" / "package" / "windows"
+    val contents = IO.read(windowsDir(sourceDir) / "Coinffeine.iss.template")
+      .replaceAll("\\$\\{version\\}", version)
+    val targetFile = windowsDir(targetDir) / "Coinffeine.iss"
+    IO.write(targetFile, contents)
+    Seq(targetFile)
+  }
+
 // testOptions in Test += Tests.Argument("-l", "UITest")
 
 jfxSettings
@@ -30,6 +43,6 @@ JFX.title := "Coinffeine"
 
 JFX.nativeBundles := "all"
 
-JFX.pkgResourcesDir := baseDirectory.value + "/src/deploy"
+JFX.pkgResourcesDir := s"${baseDirectory.value}/src/deploy:${target.value}/deploy"
 
 JFX.verbose := true

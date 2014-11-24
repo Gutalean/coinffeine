@@ -3,8 +3,8 @@
 [Setup]
 AppId={{Coinffeine}}
 AppName=Coinffeine
-AppVersion=0.1
-AppVerName=Coinffeine 0.1
+AppVersion=${version}
+AppVerName=Coinffeine ${version}
 AppPublisher=Coinffeine S.L.
 AppComments=Coinffeine
 AppCopyright=
@@ -19,7 +19,7 @@ DefaultGroupName=Coinffeine
 ;Optional License
 LicenseFile=
 ;WinXP or above
-MinVersion=0,5.1 
+MinVersion=0,5.1
 OutputBaseFilename=Coinffeine-0.1
 Compression=lzma
 SolidCompression=yes
@@ -27,7 +27,7 @@ SetupIconFile=Coinffeine\Coinffeine.ico
 UninstallDisplayIcon={app}\Coinffeine.ico
 UninstallDisplayName=Coinffeine
 WizardImageStretch=No
-WizardSmallImageFile=Coinffeine-setup-icon.bmp   
+WizardSmallImageFile=Coinffeine-setup-icon.bmp
 ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
@@ -65,6 +65,6 @@ begin
 // Possible future improvements:
 //   if version less or same => just launch app
 //   if upgrade => check if same app is running and wait for it to exit
-//   Add pack200/unpack200 support? 
+//   Add pack200/unpack200 support?
   Result := True;
-end;  
+end;
