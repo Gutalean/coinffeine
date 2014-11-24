@@ -14,7 +14,7 @@ class ConfigVersionChecker(
       extractCurrent(config)
     }.recoverWith {
       case NonFatal(e) => Future.failed(new VersionChecker.VersionFetchingException(
-        "something went wrong while obtaining latest estable version from config", e))
+        "something went wrong while obtaining latest stable version from config", e))
     }
   }
 
@@ -24,7 +24,7 @@ class ConfigVersionChecker(
     major = config.getInt("latest-stable.major"),
     minor = config.getInt("latest-stable.minor"),
     revision = config.getInt("latest-stable.revision"),
-    build = Try(config.getString("latest-stable.build")).getOrElse("")
+    tag = Try(config.getString("latest-stable.build")).toOption
   )
 }
 
