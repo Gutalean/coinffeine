@@ -1,4 +1,5 @@
 resolvers in ThisBuild ++= Seq(
+  "coinffeine-releases" at "http://repository.coinffeine.com/nexus/content/repositories/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
   Resolver.sonatypeRepo("public"),
   Classpaths.sbtPluginReleases,
@@ -13,7 +14,9 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.11.2")
 // https://github.com/playframework/playframework/issues/2968
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.7.2-RC2")
 
-addSbtPlugin("no.vedaadata" % "sbt-javafx" % "0.6.1")
+// We are using a custom build because 0.6.1 doesn't use the right version on the packaged
+// artifacts
+addSbtPlugin("no.vedaadata" % "sbt-javafx" % "0.6.2-coinffeine")
 
 addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.2.1")
 
