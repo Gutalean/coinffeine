@@ -51,6 +51,9 @@ JFX.title := "Coinffeine"
 
 JFX.nativeBundles := "all"
 
-JFX.pkgResourcesDir := s"${baseDirectory.value}/src/deploy:${target.value}/deploy"
+JFX.pkgResourcesDir := Seq(
+  baseDirectory.value / "src" / "deploy",
+  crossTarget.value / "deploy"
+).mkString(":")
 
 JFX.verbose := true
