@@ -20,7 +20,7 @@ DefaultGroupName=Coinffeine
 LicenseFile=
 ;WinXP or above
 MinVersion=0,5.1
-OutputBaseFilename=Coinffeine-0.1
+OutputBaseFilename=Coinffeine-${version}
 Compression=lzma
 SolidCompression=yes
 SetupIconFile=Coinffeine\Coinffeine.ico
