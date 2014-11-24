@@ -4,10 +4,11 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
+import org.scalatest.OptionValues
 
 import coinffeine.common.test.{FutureMatchers, UnitTest}
 
-class ConfigVersionCheckerTest extends UnitTest with FutureMatchers {
+class ConfigVersionCheckerTest extends UnitTest with FutureMatchers with OptionValues {
 
   "Config version checker" should "process latest stable version from valid config" in {
     val factory = withConfigFactory(
@@ -21,7 +22,7 @@ class ConfigVersionCheckerTest extends UnitTest with FutureMatchers {
     stable.futureValue.major shouldBe 1
     stable.futureValue.minor shouldBe 2
     stable.futureValue.revision shouldBe 3
-    stable.futureValue.build shouldBe "SNAPSHOT"
+    stable.futureValue.tag.value shouldBe "SNAPSHOT"
   }
 
   it should "process latest stable version from config with missing build" in {
@@ -32,7 +33,7 @@ class ConfigVersionCheckerTest extends UnitTest with FutureMatchers {
     )
     val checker = new ConfigVersionChecker(factory)
     val stable = checker.latestStableVersion()
-    stable.futureValue.build shouldBe ""
+    stable.futureValue.tag shouldBe 'empty
   }
 
   it should "fail to process latest stable version from config with missing major version" in {
