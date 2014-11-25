@@ -85,7 +85,8 @@ class ShellTest extends UnitTest {
     def invocations = _invocations
     def executed = _invocations.nonEmpty
 
-    override def apply(args: String): Unit = synchronized { _invocations :+= args }
+    override def apply(output: PrintWriter, args: String): Unit =
+      synchronized { _invocations :+= args }
 
     override def toString = keyword
   }

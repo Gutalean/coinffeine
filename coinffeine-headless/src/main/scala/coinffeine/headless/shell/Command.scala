@@ -1,6 +1,8 @@
 package coinffeine.headless.shell
 
+import java.io.PrintWriter
+
 trait Command {
   val keyword: String
-  def apply(args: String): Unit
+  def apply(output: PrintWriter, args: String): Unit
 }

@@ -29,7 +29,7 @@ class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: 
 
       case CommandPattern(keyword, arguments) =>
         commandsByKeyword.get(keyword)
-          .fold(reportUnknownCommand(keyword))(_.apply(arguments))
+          .fold(reportUnknownCommand(keyword))(_.apply(formatter, arguments))
         interpreterLoop()
     }
   }
