@@ -24,6 +24,12 @@ class MutablePropertyTest extends UnitTest with Eventually with FutureMatchers {
     prop.get shouldBe 1234
   }
 
+  it should "update its value" in {
+    val prop = new MutableProperty(0)
+    prop.update(_ + 1)
+    prop.get shouldBe 1
+  }
+
   it should "invoke its handlers with the initial value when set" in {
     val prop = new MutableProperty(0)
     val newValue = Promise[Int]()
