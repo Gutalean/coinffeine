@@ -26,7 +26,6 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override val activity: Property[WalletActivity] =
       new MutableProperty[WalletActivity](WalletActivity(Seq.empty))
     override def transfer(amount: Bitcoin.Amount, address: Address) = ???
-    override def importPrivateKey(address: Address, key: KeyPair) = ???
   }
 
   override def marketStats: MarketStats = ???

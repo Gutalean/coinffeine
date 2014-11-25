@@ -1,12 +1,12 @@
 package coinffeine.peer.api.impl
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 import akka.actor.ActorRef
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.bitcoin.{WalletProperties, Address, Hash, KeyPair}
+import coinffeine.model.bitcoin.{Address, Hash, WalletProperties}
 import coinffeine.model.currency.Bitcoin
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.api.CoinffeineWallet
@@ -24,5 +24,4 @@ private[impl] class DefaultCoinffeineWallet(
       .withImmediateReply[CoinffeinePeerActor.WalletFundsWithdrawn]
       .map(_.tx.get.getHash)
   }
-  override def importPrivateKey(address: Address, key: KeyPair): Unit = ???
 }
