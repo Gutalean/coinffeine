@@ -2,12 +2,10 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.bitcoin.{WalletProperties, Address, Hash, KeyPair}
+import coinffeine.model.bitcoin.{Address, Hash, WalletProperties}
 import coinffeine.model.currency.Bitcoin
 
 trait CoinffeineWallet extends WalletProperties {
-
-  def importPrivateKey(address: Address, key: KeyPair): Unit
 
   /** Transfer a given amount of BTC to an address if possible.
     *

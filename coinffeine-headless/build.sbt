@@ -2,7 +2,10 @@ import AssemblyKeys._
 
 name := "coinffeine-headless"
 
-libraryDependencies += Dependencies.jline
+libraryDependencies ++= Seq(
+  Dependencies.janino,
+  Dependencies.jline
+)
 
 fork := true
 

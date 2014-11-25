@@ -1,10 +1,10 @@
 package coinffeine.headless.shell
 
-import java.io.{PrintWriter, InputStream, OutputStream}
-
+import java.io.{InputStream, OutputStream, PrintWriter}
 import scala.annotation.tailrec
 
 import jline.console.ConsoleReader
+import jline.console.completer.StringsCompleter
 
 class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: OutputStream) {
   import Shell._
@@ -14,6 +14,7 @@ class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: 
   private val console = new ConsoleReader(input, output)
   private val formatter = new PrintWriter(console.getOutput)
   private val commandsByKeyword: Map[String, Command] = commands.map(c => c.keyword -> c).toMap
+  console.addCompleter(new StringsCompleter(commandsByKeyword.keys.toSeq: _*))
 
   def run(): Unit = {
     interpreterLoop()
@@ -29,7 +30,7 @@ class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: 
 
       case CommandPattern(keyword, arguments) =>
         commandsByKeyword.get(keyword)
-          .fold(reportUnknownCommand(keyword))(_.apply(arguments))
+          .fold(reportUnknownCommand(keyword))(_.apply(formatter, arguments))
         interpreterLoop()
     }
   }
