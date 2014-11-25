@@ -17,8 +17,11 @@ class MutableProperty[A](initialValue: A) extends Property[A] {
 
   val readOnly: Property[A] = this
 
-  def set(newValue: A): Unit = synchronized {
+  def set(newValue: A): Unit = update(_ => newValue)
+
+  def update(f: A => A): Unit = synchronized {
     val oldValue = value
+    val newValue = f(oldValue)
     if (oldValue != newValue) {
       value = newValue
       listeners.invoke(handler => handler(oldValue, newValue))
