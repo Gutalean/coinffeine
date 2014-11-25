@@ -37,6 +37,7 @@ object Build extends sbt.Build {
     lazy val janino = "org.codehaus.janino" % "janino" % "2.6.1"
     lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
     lazy val jcommander = "com.beust" % "jcommander" % "1.35"
+    lazy val jline = "jline" % "jline" % "2.12"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
     lazy val jodaConvert = "org.joda" % "joda-convert" % "1.6"
     lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.1.2"
@@ -108,6 +109,11 @@ object Build extends sbt.Build {
   lazy val commonTest = (Project(id = "common-test", base = file("coinffeine-common-test"))
     settings(PB.protobufSettings: _*)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
+  )
+
+  lazy val headless = (Project(id = "headless", base = file("coinffeine-headless"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(peer % "compile->compile;test->test", commonTest)
   )
 
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
