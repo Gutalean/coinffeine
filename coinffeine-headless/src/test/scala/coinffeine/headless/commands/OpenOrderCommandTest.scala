@@ -4,7 +4,6 @@ import org.scalatest.Inside
 
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.peer.api.CoinffeineNetwork
 
 class OpenOrderCommandTest extends CommandTest with Inside {
 
@@ -35,7 +34,7 @@ class OpenOrderCommandTest extends CommandTest with Inside {
     protected val askCommand = new OpenOrderCommand(Ask, network)
   }
 
-  class CoinffeineNetworkSpy extends CoinffeineNetwork {
+  class CoinffeineNetworkSpy extends DummyCoinffeineNetwork {
     private var _submissions = Seq.empty[AnyCurrencyOrder]
 
     def submissions: Seq[AnyCurrencyOrder] = _submissions
@@ -44,9 +43,5 @@ class OpenOrderCommandTest extends CommandTest with Inside {
       _submissions :+= order
       order
     }
-    override def cancelOrder(order: OrderId, reason: String): Unit = {}
-    override val brokerId = null
-    override val activePeers = null
-    override val orders = null
   }
 }
