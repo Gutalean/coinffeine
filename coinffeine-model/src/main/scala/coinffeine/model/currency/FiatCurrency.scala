@@ -12,6 +12,8 @@ object FiatCurrency {
     case _ => throw new IllegalArgumentException(
       s"cannot convert $javaCurrency into a known Coinffeine fiat currency")
   }
+
+  val values: Set[FiatCurrency] = Set(Euro, UsDollar)
 }
 
 /** A fiat currency. */

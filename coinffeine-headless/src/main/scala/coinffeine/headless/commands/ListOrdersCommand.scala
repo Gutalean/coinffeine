@@ -8,6 +8,7 @@ import coinffeine.model.properties.PropertyMap
 
 class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
   override val keyword = "list-orders"
+  override val description = "lists all orders"
 
   override def apply(output: PrintWriter, args: String): Unit = {
     val currentOrders = ordersProperty.content.map(_._2).toList.sortBy(_.id.value)
