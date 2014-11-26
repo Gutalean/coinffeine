@@ -10,7 +10,7 @@ import scoverage.ScoverageSbtPlugin
 object Build extends sbt.Build {
 
   object Versions {
-    val akka = "2.3.4"
+    val akka = "2.3.7"
     val dispatch = "0.11.2"
   }
 
@@ -25,7 +25,7 @@ object Build extends sbt.Build {
     )
     lazy val akkaTest = Seq(
       "com.typesafe.akka" %% "akka-testkit" % Versions.akka,
-      "com.migesok" %% "akka-persistence-in-memory-snapshot-store" % "0.1.0",
+      "com.migesok" %% "akka-persistence-in-memory-snapshot-store" % "0.1.1",
       "com.github.michaelpisula" %% "akka-persistence-inmemory" % "0.2.1"
     )
     lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
@@ -38,8 +38,8 @@ object Build extends sbt.Build {
     lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
     lazy val jcommander = "com.beust" % "jcommander" % "1.35"
     lazy val jline = "jline" % "jline" % "2.12"
-    lazy val jodaTime = "joda-time" % "joda-time" % "2.3"
-    lazy val jodaConvert = "org.joda" % "joda-convert" % "1.6"
+    lazy val jodaTime = "joda-time" % "joda-time" % "2.5"
+    lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
     lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.1.2"
     lazy val logbackCore = "ch.qos.logback" % "logback-core" % "1.1.2"
     lazy val netty = "io.netty" % "netty" % "3.9.2.Final"
@@ -49,8 +49,8 @@ object Build extends sbt.Build {
       "org.scalafx" %% "scalafx" % "8.0.20-R6",
       "org.controlsfx" % "controlsfx" % "8.0.6"
     )
-    lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.11.3"
-    lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.7"
+    lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.12.0"
+    lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.2"
     lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
     lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
     lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.0.6"
