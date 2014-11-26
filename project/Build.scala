@@ -10,7 +10,7 @@ import scoverage.ScoverageSbtPlugin
 object Build extends sbt.Build {
 
   object Versions {
-    val akka = "2.3.4"
+    val akka = "2.3.7"
     val dispatch = "0.11.2"
   }
 
