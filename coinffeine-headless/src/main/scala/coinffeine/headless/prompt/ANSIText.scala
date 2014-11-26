@@ -8,7 +8,7 @@ object ANSIText {
 
     private def wrap(fragment: String): String = escape(code) + fragment + escape(0)
 
-    private def escape(code: Int) = s"\033[${code}m"
+    private def escape(code: Int) = s"\u001b[${code}m"
   }
 
   object Bold extends EscapedText(1)
