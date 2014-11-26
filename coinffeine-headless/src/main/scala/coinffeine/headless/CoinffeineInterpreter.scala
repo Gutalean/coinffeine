@@ -1,6 +1,6 @@
 package coinffeine.headless
 
-import coinffeine.headless.commands.{HelpCommand, ListOrdersCommand, OpenOrderCommand, StatusCommand}
+import coinffeine.headless.commands._
 import coinffeine.headless.prompt.ConnectionStatusPrompt
 import coinffeine.headless.shell.{Command, Shell}
 import coinffeine.model.market.{Ask, Bid}
@@ -15,7 +15,8 @@ object CoinffeineInterpreter {
       new StatusCommand(app),
       new ListOrdersCommand(app.network.orders),
       new OpenOrderCommand(Bid, app.network),
-      new OpenOrderCommand(Ask, app.network)
+      new OpenOrderCommand(Ask, app.network),
+      new CancelOrderCommand(app.network)
     )
     actions :+ new HelpCommand(actions)
   }
