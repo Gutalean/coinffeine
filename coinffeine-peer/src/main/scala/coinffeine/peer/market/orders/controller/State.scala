@@ -25,5 +25,5 @@ private[controller] trait State[C <: FiatCurrency] {
   def acceptedOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): Unit = {}
 
   /** Triggered when the order should be cancelled */
-  def cancel(ctx: Context, reason: String): Unit
+  def cancel(ctx: Context): Unit
 }

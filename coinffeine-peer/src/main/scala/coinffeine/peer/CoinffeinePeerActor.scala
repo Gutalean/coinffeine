@@ -97,7 +97,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
   }
 
   private val handleMessages: Receive = {
-    case message @ (OpenOrder(_) | CancelOrder(_, _)) =>
+    case message @ (OpenOrder(_) | CancelOrder(_)) =>
       orderSupervisorRef forward message
     case message @ WithdrawWalletFunds(amount, to) =>
       implicit val txBroadcastTimeout = new Timeout(WithdrawFundsTxBroadcastTimeout)
@@ -141,9 +141,8 @@ object CoinffeinePeerActor {
     * Note that this can cancel partially an existing order for a greater amount of bitcoin.
     *
     * @param order  Order to cancel
-    * @param reason A user friendly description of why the order is cancelled
     */
-  case class CancelOrder(order: OrderId, reason: String)
+  case class CancelOrder(order: OrderId)
 
   /** Ask for the currently open orders. To be replied with an [[brokerage.OpenOrders]]. */
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest

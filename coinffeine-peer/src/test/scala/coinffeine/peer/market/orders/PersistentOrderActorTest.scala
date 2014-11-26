@@ -47,7 +47,7 @@ class PersistentOrderActorTest extends OrderActorTest {
 
   it should "remember that the order was cancelled" in new Fixture {
     givenInMarketOrder()
-    actor ! OrderActor.CancelOrder("test cancellation")
+    actor ! OrderActor.CancelOrder
     submissionProbe.expectMsg(StopSubmitting(order.id))
 
     restartOrder()

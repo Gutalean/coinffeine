@@ -1,4 +1,4 @@
-package coinffeine.headless.commands
+package coinffeine.headless.parsing
 
 import org.scalatest.OptionValues
 

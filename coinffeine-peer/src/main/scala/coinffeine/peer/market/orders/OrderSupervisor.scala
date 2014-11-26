@@ -27,8 +27,8 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case OpenOrder(order) =>
       persist(OrderCreated(order))(onOrderCreated)
 
-    case CancelOrder(orderId, reason) =>
-      orders.get(orderId).foreach(_ ! OrderActor.CancelOrder(reason))
+    case CancelOrder(orderId) =>
+      orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
       orders = orders.filterNot(_._1 == orderId)
   }
 

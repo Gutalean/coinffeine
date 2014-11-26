@@ -60,11 +60,9 @@ case object CompletedOrder extends OrderStatus {
   *
   * This status indicates that the corresponding order has been cancelled. The funds that were
   * already transferred cannot be moved again.
-  *
-  * @param reason The reason why the order was cancelled
   */
-case class CancelledOrder(reason: String) extends OrderStatus {
-  override val name = s"cancelled ($reason)"
+case object CancelledOrder extends OrderStatus {
+  override val name = "cancelled"
   override val isActive = false
 }
 

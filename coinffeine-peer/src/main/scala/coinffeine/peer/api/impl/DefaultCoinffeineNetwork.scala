@@ -25,8 +25,8 @@ private[impl] class DefaultCoinffeineNetwork(
     order
   }
 
-  override def cancelOrder(order: OrderId, reason: String): Unit = {
-    peer ! CancelOrder(order, reason)
+  override def cancelOrder(order: OrderId): Unit = {
+    peer ! CancelOrder(order)
   }
 }
 

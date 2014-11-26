@@ -35,7 +35,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order cancellation" in new StartedFixture {
-    shouldForwardMessage(CancelOrder(OrderId.random(), "catastrophic failure"), orders)
+    shouldForwardMessage(CancelOrder(OrderId.random()), orders)
   }
 
   it must "delegate fiat balance requests" in new StartedFixture {

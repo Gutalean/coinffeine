@@ -37,8 +37,8 @@ class OrderSupervisorTest extends AkkaSpec {
   it should "cancel an order when requested" in new Fixture {
     shouldCreateActorForOrder(order1)
     val reason = "foo"
-    actor ! CancelOrder(order1.id, reason)
-    createdOrdersProbe.expectMsg(OrderActor.CancelOrder(reason))
+    actor ! CancelOrder(order1.id)
+    createdOrdersProbe.expectMsg(OrderActor.CancelOrder)
   }
 
   it should "remember created order actors" in new Fixture {

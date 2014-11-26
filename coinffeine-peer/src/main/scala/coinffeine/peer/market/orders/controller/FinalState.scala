@@ -11,14 +11,14 @@ private[controller] case class FinalState[C <: FiatCurrency](cause: FinalState.C
   override def enter(ctx: Context): Unit = {
     ctx.updateOrderStatus(cause match {
       case OrderCompletion => CompletedOrder
-      case OrderCancellation(reason) => CancelledOrder(reason)
+      case OrderCancellation => CancelledOrder
     })
   }
 
   override def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]) =
     MatchRejected("Order already finished")
 
-  override def cancel(ctx: Context, reason: String): Unit = {
+  override def cancel(ctx: Context): Unit = {
     throw new UnsupportedOperationException("Already finished order")
   }
 }
@@ -26,5 +26,5 @@ private[controller] case class FinalState[C <: FiatCurrency](cause: FinalState.C
 object FinalState {
   sealed trait Cause
   case object OrderCompletion extends Cause
-  case class OrderCancellation(reason: String) extends Cause
+  case object OrderCancellation extends Cause
 }

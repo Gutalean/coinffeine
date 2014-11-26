@@ -12,8 +12,8 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
   override val brokerId: MutableProperty[Option[PeerId]] = new MutableProperty(None)
   override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] = new MutablePropertyMap
 
-  override def cancelOrder(orderId: OrderId, reason: String): Unit = {
-    orders.get(orderId).foreach(o => orders.set(orderId, o.withStatus(CancelledOrder(reason))))
+  override def cancelOrder(orderId: OrderId): Unit = {
+    orders.get(orderId).foreach(o => orders.set(orderId, o.withStatus(CancelledOrder)))
   }
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
