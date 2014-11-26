@@ -2,7 +2,7 @@ package coinffeine.headless.commands
 
 import java.io.PrintWriter
 
-import coinffeine.headless.parsing.AmountsParser
+import coinffeine.headless.parsing.{AmountsParser, Tokenizer}
 import coinffeine.headless.prompt.ANSIText.Red
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
@@ -42,7 +42,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
   }
 
   private def parseArguments(args: String): Option[(Bitcoin.Amount, Price[_ <: FiatCurrency])] =
-    args.split("\\s+") match {
+    Tokenizer.splitWords(args) match {
       case Array(AmountsParser.BitcoinAmount(amount), AmountsParser.Price(price)) =>
         Some(amount, price)
       case _ => None
