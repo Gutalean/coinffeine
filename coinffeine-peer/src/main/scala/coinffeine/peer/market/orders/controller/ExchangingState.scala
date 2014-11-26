@@ -25,8 +25,8 @@ private[controller] class ExchangingState[C <: FiatCurrency](exchangeInProgress:
       MatchAlreadyAccepted[C](ctx.order.exchanges(exchangeInProgress))
     else MatchRejected[C]("Exchange already in progress")
 
-  override def cancel(ctx: Context, reason: String): Unit = {
+  override def cancel(ctx: Context): Unit = {
     // TODO: is this what we wanna do?
-    ctx.transitionTo(new FinalState(FinalState.OrderCancellation(reason)))
+    ctx.transitionTo(new FinalState(FinalState.OrderCancellation))
   }
 }

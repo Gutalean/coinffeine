@@ -42,8 +42,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
         .showConfirm()
       if (confirm == Actions.YES) {
         operationsTable.selected.value.foreach {
-          case order: OrderProperties =>
-            app.network.cancelOrder(order.orderIdProperty.value, "Cancelled by the user")
+          case order: OrderProperties => app.network.cancelOrder(order.orderIdProperty.value)
         }
       }
     }

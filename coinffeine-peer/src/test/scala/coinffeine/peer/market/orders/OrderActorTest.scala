@@ -8,7 +8,6 @@ import akka.testkit._
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -19,10 +18,10 @@ import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
-import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting}
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
 import coinffeine.peer.market.orders.funds.FundsBlockerActor
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting}
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
@@ -125,13 +124,5 @@ abstract class OrderActorTest extends AkkaSpec
         f(properties.orders(order.id))
       }
     }
-  }
-
-  protected val cancelled = new BeMatcher[OrderStatus] {
-    override def apply(left: OrderStatus) = MatchResult(
-      left.isInstanceOf[CancelledOrder],
-      s"$left is not cancelled",
-      s"$left is cancelled"
-    )
   }
 }

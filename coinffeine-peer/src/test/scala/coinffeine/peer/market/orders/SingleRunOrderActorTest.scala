@@ -16,14 +16,14 @@ class SingleRunOrderActorTest extends OrderActorTest {
     givenOfflineOrder()
     expectNoMsg(idleTime)
     val reason = "some reason"
-    actor ! OrderActor.CancelOrder(reason)
+    actor ! OrderActor.CancelOrder
     submissionProbe.expectMsg(StopSubmitting(order.id))
-    expectProperty { _.status shouldBe cancelled }
+    expectProperty { _.status shouldBe CancelledOrder }
   }
 
   it should "reject order matches after being cancelled" in new Fixture {
     givenOfflineOrder()
-    actor ! OrderActor.CancelOrder("got bored")
+    actor ! OrderActor.CancelOrder
     shouldRejectAnOrderMatch("Order already finished")
   }
 

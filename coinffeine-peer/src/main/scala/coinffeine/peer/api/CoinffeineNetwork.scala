@@ -31,9 +31,8 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
   /** Cancel an order
     *
     * @param order The order id to be cancelled
-    * @param reason A user friendly message that explains why the order is being cancelled
     */
-  def cancelOrder(order: OrderId, reason: String): Unit
+  def cancelOrder(order: OrderId): Unit
 }
 
 object CoinffeineNetwork {

@@ -41,7 +41,6 @@ class CancelOrderCommandTest extends CommandTest {
 
     def cancellations: Seq[OrderId] = _cancellations
 
-    override def cancelOrder(order: OrderId, reason: String): Unit =
-      synchronized { _cancellations :+= order }
+    override def cancelOrder(order: OrderId): Unit = synchronized { _cancellations :+= order }
   }
 }

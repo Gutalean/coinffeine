@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders.controller
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Amounts
-import coinffeine.model.exchange.{Exchange, Role}
+import coinffeine.model.exchange.Role
 import coinffeine.model.market._
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
@@ -35,9 +35,9 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
       orderMatch.fiatAmount.seller != amounts.netFiatExchanged
   }
 
-  override def cancel(ctx: Context, reason: String): Unit = {
+  override def cancel(ctx: Context): Unit = {
     ctx.keepOffMarket()
-    ctx.transitionTo(new FinalState(FinalState.OrderCancellation(reason)))
+    ctx.transitionTo(new FinalState(FinalState.OrderCancellation))
   }
 
   private def hasInvalidPrice(order: Order[C], orderMatch: OrderMatch[C]): Boolean = {

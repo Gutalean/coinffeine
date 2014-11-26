@@ -24,10 +24,9 @@ class CancelOrderCommand(network: CoinffeineNetwork) extends Command {
     def reportMissingId(): Unit = reportError("missing order id")
     def reportInvalidId(invalidId: String): Unit = reportError(s"invalid order id: '$invalidId'")
 
-    def cancelOrder(id: OrderId): Unit = {
+    def cancelOrder(id: OrderId): Unit =
       if (network.orders.get(id).isEmpty) reportError("order not found")
-      else network.cancelOrder(id, "user cancellation")
-    }
+      else network.cancelOrder(id)
 
     Tokenizer.splitWords(args) match {
       case Array() => reportMissingId()

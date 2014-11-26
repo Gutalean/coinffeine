@@ -25,23 +25,23 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   }
 
   "The operations view" must "show no orders when no orders was found" in new Fixture {
-    ordersTable.getRoot.getChildren should be ('empty)
+    ordersTable.getRoot.getChildren shouldBe 'empty
   }
 
   it must "show an order once submitted" in new Fixture {
     val sampleOrder = Order(OrderId.random(), Bid, 1.BTC, Price(561.EUR))
     app.network.orders.set(sampleOrder.id, sampleOrder)
     eventually {
-      find(sampleOrder.id) should be ('defined)
+      find(sampleOrder.id) shouldBe 'defined
     }
   }
 
   it must "update the order status in the table" in new UpdatingOrderFixture {
-    assertOnStatusChange(CancelledOrder("foobar"))
+    assertOnStatusChange(CancelledOrder)
   }
 
   it must "enable cancel button when a cancellable order is selected" in new OrderIsPresentFixture {
-    cancelButton should be ('disabled)
+    cancelButton shouldBe 'disabled
     eventually { click(ordersTableRow(0)) }
     cancelButton should not be 'disabled
   }
@@ -49,13 +49,13 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   it must "disable cancel button when a non-cancellable order is selected" in new OrderIsPresentFixture {
     cancelOrder()
     eventually { click(ordersTableRow(3)) }
-    cancelButton should be ('disabled)
+    cancelButton shouldBe 'disabled
   }
 
   it must "disable cancel button when already selected order is cancelled" in new OrderIsPresentFixture {
     eventually { click(ordersTableRow(4)) }
     cancelOrder()
-    eventually { cancelButton should be ('disabled) }
+    eventually { cancelButton shouldBe 'disabled }
   }
 
   private def cancelButton = find[Button]("#cancelOrderBtn")
@@ -97,12 +97,11 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
 
     app.network.orders.set(sampleOrder.id, sampleOrder)
     eventually {
-      find(sampleOrder.id) should be ('defined)
+      find(sampleOrder.id) shouldBe 'defined
     }
 
     def cancelOrder(): Unit = {
-      val newStatus = CancelledOrder("no reason")
-      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
+      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(CancelledOrder))
     }
   }
 
@@ -111,7 +110,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     def assertOnStatusChange(newStatus: OrderStatus): Unit = {
       app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
       eventually {
-        find(sampleOrder.id).get.statusProperty.get should be (newStatus.name.capitalize)
+        find(sampleOrder.id).get.statusProperty.get shouldBe newStatus.name.capitalize
       }
     }
   }
