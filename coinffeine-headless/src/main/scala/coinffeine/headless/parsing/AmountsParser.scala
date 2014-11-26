@@ -1,9 +1,8 @@
-package coinffeine.headless.commands
+package coinffeine.headless.parsing
 
 import scala.util.matching.Regex
 
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.currency._
+import coinffeine.model.currency.{Bitcoin, _}
 import coinffeine.model.market.{Price => AmountPrice}
 
 object AmountsParser {

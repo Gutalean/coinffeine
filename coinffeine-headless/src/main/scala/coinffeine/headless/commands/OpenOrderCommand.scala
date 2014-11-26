@@ -2,6 +2,7 @@ package coinffeine.headless.commands
 
 import java.io.PrintWriter
 
+import coinffeine.headless.parsing.AmountsParser
 import coinffeine.headless.prompt.ANSIText.Red
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
