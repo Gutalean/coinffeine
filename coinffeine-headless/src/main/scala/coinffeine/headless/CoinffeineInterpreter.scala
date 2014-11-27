@@ -14,6 +14,7 @@ object CoinffeineInterpreter {
     val actions = Seq(
       new StatusCommand(app),
       new ListOrdersCommand(app.network.orders),
+      new ShowOrderDetailsCommand(app.network),
       new OpenOrderCommand(Bid, app.network),
       new OpenOrderCommand(Ask, app.network),
       new CancelOrderCommand(app.network)
