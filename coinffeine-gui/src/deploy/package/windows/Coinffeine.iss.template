@@ -37,6 +37,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "Coinffeine\Coinffeine.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Coinffeine\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "C:\Windows\Temp\msvcp100.dll"; DestDir: "{app}"; Flags: ignoreversion allowunsafefiles
+Source: "C:\Windows\Temp\msvcr100.dll"; DestDir: "{app}"; Flags: ignoreversion allowunsafefiles
 
 [Icons]
 Name: "{group}\Coinffeine"; Filename: "{app}\Coinffeine.exe"; IconFilename: "{app}\Coinffeine.ico"; Check: returnTrue()
