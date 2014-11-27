@@ -165,7 +165,7 @@ object Exchange {
     override val isCompleted = false
   }
 
-  implicit class NonStartedTransitions[C <: FiatCurrency](val exchange: Exchange[C, NotStarted[C]])
+  implicit class NotStartedTransitions[C <: FiatCurrency](val exchange: Exchange[C, NotStarted[C]])
     extends AnyVal {
 
     def startHandshaking(user: Exchange.PeerInfo,

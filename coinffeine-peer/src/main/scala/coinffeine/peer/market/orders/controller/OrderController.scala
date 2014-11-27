@@ -82,7 +82,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
     context.state.shouldAcceptOrderMatch(context, orderMatch)
 
-  def acceptOrderMatch(orderMatch: OrderMatch[C]): NonStartedExchange[C] = {
+  def acceptOrderMatch(orderMatch: OrderMatch[C]): NotStartedExchange[C] = {
     val newExchange = Exchange.notStarted(
       id = orderMatch.exchangeId,
       Role.fromOrderType(view.orderType),

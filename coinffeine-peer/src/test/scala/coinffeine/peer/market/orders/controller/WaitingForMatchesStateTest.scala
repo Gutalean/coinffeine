@@ -15,8 +15,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 class WaitingForMatchesStateTest extends UnitTest with Inside with SampleExchange
   with DefaultAmountsComponent {
 
-  val nonStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
-  val partiallyCompletedOrder = nonStartedOrder
+  val notStartedOrder = Order(Bid, 100.BTC, Price(1.EUR))
+  val partiallyCompletedOrder = notStartedOrder
     .withExchange(buyerHandshakingExchange.startExchanging(DummyDeposits).complete)
 
   "When waiting for matches" should "be initially offline and trying to get to the market" in
@@ -74,7 +74,7 @@ class WaitingForMatchesStateTest extends UnitTest with Inside with SampleExchang
     override def keepOffMarket(): Unit = {}
   }
 
-  abstract class FreshInstance(val order: Order[Euro.type] = nonStartedOrder) {
+  abstract class FreshInstance(val order: Order[Euro.type] = notStartedOrder) {
     val state = new WaitingForMatchesState[Euro.type]
     val context = new StateContextMock(order, amountsCalculator)
 

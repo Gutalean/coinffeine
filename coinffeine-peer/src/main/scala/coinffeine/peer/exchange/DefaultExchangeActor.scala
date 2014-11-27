@@ -23,7 +23,7 @@ import coinffeine.peer.payment.PaymentProcessorActor
 
 class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
-    exchange: NonStartedExchange[C],
+    exchange: NotStartedExchange[C],
     peerInfoLookup: PeerInfoLookup,
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends PersistentActor with ActorLogging {
@@ -220,7 +220,7 @@ object DefaultExchangeActor {
   trait Component extends ExchangeActor.Component {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
-    override def exchangeActorProps(exchange: NonStartedExchange[_ <: FiatCurrency],
+    override def exchangeActorProps(exchange: NotStartedExchange[_ <: FiatCurrency],
                                     collaborators: ExchangeActor.Collaborators) = {
       import collaborators._
 
