@@ -1,10 +1,11 @@
 package coinffeine.headless.shell
 
-import java.io.{InputStream, OutputStream, PrintWriter}
+import java.io.{File, InputStream, OutputStream, PrintWriter}
 import scala.annotation.tailrec
 
 import jline.console.ConsoleReader
 import jline.console.completer.StringsCompleter
+import jline.console.history.FileHistory
 
 class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: OutputStream) {
   import Shell._
@@ -14,11 +15,24 @@ class Shell(prompt: Prompt, commands: Seq[Command], input: InputStream, output: 
   private val console = new ConsoleReader(input, output)
   private val formatter = new PrintWriter(console.getOutput)
   private val commandsByKeyword: Map[String, Command] = commands.map(c => c.keyword -> c).toMap
+  private var history: Option[FileHistory] = None
   console.addCompleter(new StringsCompleter(commandsByKeyword.keys.toSeq: _*))
 
-  def run(): Unit = {
+  def usePersistentHistory(file: File): Unit = {
+    val h = new FileHistory(file)
+    history = Some(h)
+    console.setHistory(h)
+  }
+
+  def run(): Unit = try {
     interpreterLoop()
+  } finally {
+    flush()
     console.shutdown()
+  }
+
+  def flush(): Unit = {
+    history.foreach(_.flush())
   }
 
   @tailrec

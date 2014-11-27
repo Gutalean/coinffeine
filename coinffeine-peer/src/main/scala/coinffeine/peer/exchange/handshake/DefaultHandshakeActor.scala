@@ -334,7 +334,7 @@ object DefaultHandshakeActor {
 
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
-  case class ExchangeToStart[C <: FiatCurrency](info: NonStartedExchange[C],
+  case class ExchangeToStart[C <: FiatCurrency](info: NotStartedExchange[C],
                                                 user: Exchange.PeerInfo)
 
   def props(exchange: ExchangeToStart[_ <: FiatCurrency],
