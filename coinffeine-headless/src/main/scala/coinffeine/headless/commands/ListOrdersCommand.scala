@@ -7,7 +7,7 @@ import coinffeine.model.market._
 import coinffeine.model.properties.PropertyMap
 
 class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
-  override val keyword = "list-orders"
+  override val keyword = "list"
   override val description = "lists all orders"
 
   override def apply(output: PrintWriter, args: String): Unit = {
