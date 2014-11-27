@@ -60,6 +60,19 @@ class ShellTest extends UnitTest {
     commandA.invocations shouldBe Seq("", "arg", "arg1 arg2")
   }
 
+  it should "save the command history" in new Fixture {
+    val history = File.createTempFile("temp", "history")
+    history.delete()
+    try {
+      shell.usePersistentHistory(history)
+      inputs("command1", "command2")
+      shell.run()
+      history shouldBe 'file
+    } finally {
+      history.delete()
+    }
+  }
+
   trait Fixture {
     private val pipeIn = new PipedWriter()
     private val pipeOut = new PipedReader(pipeIn)
