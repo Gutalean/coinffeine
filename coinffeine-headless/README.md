@@ -12,6 +12,27 @@ Configuration is performed using the same files at the same locations as with th
 It is recommended to run the graphical configuration wizard first and then, copy the configurations
 to the server in the case of wanting it to be used in a different host.
 
+Alternatively, you can create/edit a configuration file at the application user settings directory
+(`~/.coinffeine` in Linux, `~/Library/Application Support/Coinffeine` in OS X) with at least the
+following attributes:
+
+    coinffeine {
+        okpay {
+            id="your id here"
+            token="your token here"
+        }
+    }
+
+To configure manual port forwarding, you should add another configuration value after configuring
+your router.
+
+    coinffeine {
+        ...
+
+        peer.externalForwardedPort="the port you configured here"
+    }
+
+
 How to run it
 -------------
 

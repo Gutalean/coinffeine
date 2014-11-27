@@ -9,7 +9,7 @@ msvcp100.dll & msvcr100.dll libraries to be included in the bundle.
 Nevertheless, these libraries are required by the Java runtime, so the app
 will fail if they are not included in the bundle.
 
-This bug is known and will be fixed in JDK 8u40, which will be relased in
+This bug is known and will be fixed in JDK 8u40, which will be released in
 March 2015. Until then, the Inno Setup config file includes msvcp100.dll
 by following these steps.
 

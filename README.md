@@ -24,7 +24,7 @@ To run the peer from the sources:
     sbt gui/run
 
 The application can be natively packaged by the following command. Note that
-you should have installed the coresponding native tools such as RPM on Red Had
+you should have installed the corresponding native tools such as RPM on Red Had
 or the `fakeroot` package in Ubuntu/Debian.
 
     sbt gui/packageJavafx
