@@ -1,3 +1,4 @@
-v0.1.1:
+v0.2.0:
  - Add console UI (coinffeine-headless)
+v0.1.1:
  - Fix missing msvcr100.dll in Windows platform
