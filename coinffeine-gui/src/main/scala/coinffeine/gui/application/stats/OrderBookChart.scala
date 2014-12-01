@@ -74,6 +74,7 @@ object OrderBookChart {
 
   private def xAxis[C <: FiatCurrency](market: Market[C]) = new NumberAxis {
     autoRanging = true
+    forceZeroInRange = false
     label = s"Price (${market.currency}/BTC)"
     tickLabelFormatter = NumberAxis.DefaultFormatter(
       this, "", market.currency.javaCurrency.getSymbol)
