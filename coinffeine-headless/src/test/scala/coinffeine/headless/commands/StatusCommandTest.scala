@@ -3,10 +3,13 @@ package coinffeine.headless.commands
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
-import coinffeine.model.bitcoin.{Address, Hash}
+import org.bitcoinj.core.Address
+
+import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
+import coinffeine.model.bitcoin.{KeyPair, Address, Hash}
 import coinffeine.model.currency._
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.model.properties.{MutableProperty, MutablePropertyMap, PropertyMap}
+import coinffeine.model.properties.{Property, MutableProperty, MutablePropertyMap, PropertyMap}
 import coinffeine.peer.api._
 
 class StatusCommandTest extends CommandTest {
@@ -30,6 +33,13 @@ class StatusCommandTest extends CommandTest {
       "BTC: 10.00000000 BTC estimated, 8.00000000 BTC available (2.00000000 BTC blocked)")
   }
 
+  it should "print the current bitcoin wallet key" in new Fixture {
+    commandOutput() should include("Wallet address: --")
+    val address = new KeyPair().toAddress(CoinffeineUnitTestNetwork)
+    app.primaryAddress.set(Some(address))
+    commandOutput() should include("Wallet address: " + address)
+  }
+
   trait Fixture {
     val app = new MockCoinffeineApp
     val command = new StatusCommand(app)
@@ -39,6 +49,7 @@ class StatusCommandTest extends CommandTest {
   class MockCoinffeineApp extends CoinffeineApp {
     val fiatBalance = new MutableProperty[Option[CoinffeinePaymentProcessor.Balance]](None)
     val btcBalance = new MutableProperty[Option[BitcoinBalance]](None)
+    val primaryAddress = new MutableProperty[Option[Address]](None)
 
     override def network: CoinffeineNetwork = ???
     override def stop(timeout: FiniteDuration): Future[Unit] = ???
@@ -49,7 +60,7 @@ class StatusCommandTest extends CommandTest {
       override val balance = btcBalance
       override def transfer(amount: Bitcoin.Amount, address: Address): Future[Hash] = ???
       override val activity = null
-      override val primaryAddress = null
+      override val primaryAddress = MockCoinffeineApp.this.primaryAddress
     }
     override def paymentProcessor = new CoinffeinePaymentProcessor {
       override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] = fiatBalance.get

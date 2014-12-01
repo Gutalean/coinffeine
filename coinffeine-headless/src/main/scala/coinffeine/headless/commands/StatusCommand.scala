@@ -9,11 +9,20 @@ import coinffeine.peer.api.{CoinffeinePaymentProcessor, CoinffeineApp}
 class StatusCommand(app: CoinffeineApp) extends Command {
 
   override val keyword = "status"
-  override val description = "general status, i.e. bitcoin/fiat balances"
+  override val description = "general status, i.e. bitcoin/fiat balances and addresses"
 
   override def apply(output: PrintWriter, args: String): Unit = {
+    printBalances(output)
+    printWalletAddress(output)
+  }
+
+  private def printBalances(output: PrintWriter): Unit = {
     output.format("FIAT: %s%n", app.paymentProcessor.currentBalance().fold("--")(formatFiatBalance))
     output.format("BTC: %s%n", app.wallet.balance.get.fold("--")(formatBitcoinBalance))
+  }
+
+  private def printWalletAddress(output: PrintWriter) {
+    output.format("Wallet address: %s%n", app.wallet.primaryAddress.get.getOrElse("--"))
   }
 
   private def formatFiatBalance(balance: CoinffeinePaymentProcessor.Balance): String = {
