@@ -1,10 +1,10 @@
-package coinffeine.gui.util
+package coinffeine.gui.beans
 
 import javafx.collections.FXCollections
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.common.test.UnitTest
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 
 class ObservableBufferPimpTest extends UnitTest {
 

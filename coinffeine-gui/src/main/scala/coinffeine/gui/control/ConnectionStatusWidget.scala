@@ -4,7 +4,7 @@ import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
 import scalafx.scene.layout.HBox
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 
 class ConnectionStatusWidget(status: ReadOnlyObjectProperty[ConnectionStatus]) extends HBox(3) {
   content = Seq(

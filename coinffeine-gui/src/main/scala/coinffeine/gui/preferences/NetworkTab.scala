@@ -4,7 +4,7 @@ import scalafx.beans.property.{IntegerProperty, BooleanProperty}
 import scalafx.scene.control.{ToggleGroup, TextField, Label, RadioButton}
 import scalafx.scene.layout.{HBox, VBox}
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 import coinffeine.peer.config.SettingsProvider
 
 class NetworkTab(settingsProvider: SettingsProvider) extends PreferencesTab {

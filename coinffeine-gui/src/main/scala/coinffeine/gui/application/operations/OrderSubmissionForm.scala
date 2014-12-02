@@ -12,9 +12,9 @@ import scalafx.stage.{Modality, Stage, Window}
 
 import org.controlsfx.dialog.{Dialog, Dialogs}
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
-import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp

@@ -2,7 +2,7 @@ package coinffeine.gui.application.properties
 
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 import coinffeine.model.properties.{PropertyMap, Property}
 
 trait PropertyBindings {
