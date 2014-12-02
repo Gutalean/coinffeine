@@ -5,8 +5,8 @@ import scalafx.geometry.HPos
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{ColumnConstraints, GridPane, VBox}
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PopUpContent
-import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 
 class BitcoinBalanceWidget(balanceProperty: ReadOnlyObjectProperty[Option[BitcoinBalance]])

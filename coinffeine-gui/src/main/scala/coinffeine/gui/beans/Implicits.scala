@@ -1,19 +1,18 @@
-package coinffeine.gui.util
-
-import scala.collection.JavaConversions._
+package coinffeine.gui.beans
 
 import java.util.concurrent.Callable
 import javafx.beans.binding._
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.beans.{InvalidationListener, Observable}
 import javafx.collections.ObservableList
-
+import scala.collection.JavaConversions._
 import scalafx.beans.property._
 import scalafx.collections.ObservableBuffer
 
+import coinffeine.gui.util.FxExecutor
 import coinffeine.model.properties.{Cancellable, Property, PropertyMap}
 
-object ScalafxImplicits {
+object Implicits {
 
   import FxExecutor.asContext
 

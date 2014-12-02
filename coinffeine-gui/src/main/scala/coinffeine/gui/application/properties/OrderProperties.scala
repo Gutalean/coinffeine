@@ -3,7 +3,7 @@ package coinffeine.gui.application.properties
 import scalafx.beans.property._
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
