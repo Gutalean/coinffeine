@@ -12,14 +12,20 @@ import org.controlsfx.dialog.Dialogs
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.beans.ObservableConstants
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
 
   private val operationsTable = new OperationsTable(props.ordersProperty)
 
-  private val cancellableOperationProperty =
-    operationsTable.selected.delegate.mapToBool(_.exists(_.isCancellable.value)).toReadOnlyProperty
+  private val cancellableOperationProperty = operationsTable.selected.delegate
+    .flatMap {
+      case Some(op) => op.isCancellable
+      case None => ObservableConstants.False
+    }
+    .mapToBool(_.booleanValue())
+    .toReadOnlyProperty
 
   private val newOrderButton = new Button {
     id = "newOrderBtn"
