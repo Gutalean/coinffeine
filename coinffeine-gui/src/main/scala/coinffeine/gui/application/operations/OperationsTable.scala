@@ -17,7 +17,7 @@ import scalafx.scene.layout.{ColumnConstraints, GridPane, Priority, StackPane}
 import org.controlsfx.control.MasterDetailPane
 
 import coinffeine.gui.application.properties.{OperationProperties, PeerOrders}
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._

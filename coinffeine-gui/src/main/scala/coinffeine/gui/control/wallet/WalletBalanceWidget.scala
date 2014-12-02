@@ -11,8 +11,8 @@ import scalafx.scene.layout.HBox
 
 import org.controlsfx.control.PopOver
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PopUpContent
-import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.currency.{Balance, Currency}
 
 abstract class WalletBalanceWidget[C <: Currency, B <: Balance[C]](
