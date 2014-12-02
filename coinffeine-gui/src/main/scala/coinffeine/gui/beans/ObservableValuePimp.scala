@@ -18,6 +18,12 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     },
     observableValue)
 
+  def flatMap[S](f: A => ObservableValue[S]) = Bindings.createObjectBinding(
+    new Callable[S] {
+      override def call() = f(observableValue.getValue).getValue
+    },
+    new ObservableBeanProperty[A](observableValue, f))
+
   def mapToString(f: A => String): StringBinding = Bindings.createStringBinding(
     new Callable[String] {
       override def call() = f(observableValue.getValue)

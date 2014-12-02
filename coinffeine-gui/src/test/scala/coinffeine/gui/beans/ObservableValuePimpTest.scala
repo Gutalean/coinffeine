@@ -57,4 +57,24 @@ class ObservableValuePimpTest extends UnitTest {
     p1.set("This is SPARTA")
     list.toArray shouldBe Array("This", "is", "SPARTA")
   }
+
+  it must "flatMap as object binding" in {
+    class Foobar(val prop: ObjectProperty[String]) {
+      def this(s: String) = this(new ObjectProperty(this, "prop", s))
+    }
+
+    val p1: ObjectProperty[Foobar] = new ObjectProperty(this, "p1", new Foobar("Hello World"))
+    val p2: ObjectProperty[String] = new ObjectProperty(this, "p2")
+    p2 <== p1.delegate.flatMap(_.prop)
+
+    p2.value shouldBe "Hello World"
+
+    // Must propagate inner value change...
+    p1.value.prop.set("This is SPARTA")
+    p2.value shouldBe "This is SPARTA"
+
+    // ...and also bean replacement
+    p1.set(new Foobar("That is MOSTOLES"))
+    p2.value shouldBe "That is MOSTOLES"
+  }
 }
