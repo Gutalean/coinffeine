@@ -4,7 +4,7 @@ import javafx.beans.value.ObservableValue
 import scalafx.scene.paint._
 import scalafx.scene.shape.Circle
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 
 class StatusDisc(statusProperty: ObservableValue[ConnectionStatus.Color])
   extends Circle {

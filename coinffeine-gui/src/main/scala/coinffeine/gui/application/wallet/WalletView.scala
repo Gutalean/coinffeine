@@ -16,8 +16,8 @@ import org.joda.time.format.DateTimeFormat
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.qrcode.QRCode
-import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.{Address, Hash}
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.peer.api.CoinffeineApp

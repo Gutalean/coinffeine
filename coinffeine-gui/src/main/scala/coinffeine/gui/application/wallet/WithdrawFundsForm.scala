@@ -8,9 +8,9 @@ import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.layout._
 import scalafx.stage.{Modality, Stage, StageStyle}
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
-import coinffeine.gui.util.ScalafxImplicits._
 import coinffeine.model.bitcoin.{Address, WalletProperties}
 import coinffeine.model.currency._
 

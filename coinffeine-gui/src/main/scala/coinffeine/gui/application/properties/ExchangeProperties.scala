@@ -2,7 +2,7 @@ package coinffeine.gui.application.properties
 
 import scalafx.beans.property._
 
-import coinffeine.gui.util.ScalafxImplicits._
+import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{AnyExchange, Exchange, ExchangeId}
 import coinffeine.model.market.AnyPrice
