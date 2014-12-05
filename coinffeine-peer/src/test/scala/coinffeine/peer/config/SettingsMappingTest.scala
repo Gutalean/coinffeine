@@ -48,6 +48,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   }
 
   val messageGatewayBasicSettings = makeConfig(
+    "coinffeine.peer.id" -> "1234",
     "coinffeine.peer.port" -> 5000,
     "coinffeine.broker.hostname" -> "broker-host",
     "coinffeine.broker.port" -> 4000,
@@ -57,17 +58,12 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   "Message Gateway settings mapping" should "map basic settings from config" in {
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](messageGatewayBasicSettings)
-    settings.peerId shouldBe 'empty
+    settings.peerId shouldBe PeerId("1234")
     settings.peerPort shouldBe 5000
     settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
     settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
     settings.connectionRetryInterval shouldBe 10.seconds
     settings.externalForwardedPort shouldBe 'empty
-  }
-
-  it should "map peer ID from config when present" in {
-    val conf = amendConfig(messageGatewayBasicSettings, "coinffeine.peer.id" -> "1234")
-    SettingsMapping.fromConfig[MessageGatewaySettings](conf).peerId.value shouldBe PeerId("1234")
   }
 
   it should "map external endpoint from config when present" in {
@@ -79,7 +75,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   it should "map to config" in {
     val settings = MessageGatewaySettings(
-      peerId = Some(PeerId("1234")),
+      peerId = PeerId("1234"),
       peerPort = 5050,
       brokerEndpoint = NetworkEndpoint("andromeda", 5051),
       ignoredNetworkInterfaces = Seq(existingNetInterface()),
@@ -95,13 +91,11 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       seqAsJavaList(Seq(existingNetInterface().getName))
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
     cfg.getInt("coinffeine.peer.externalForwardedPort") shouldBe 8765
-
-    val cfg2 = SettingsMapping.toConfig(settings.copy(peerId = None))
-    cfg2.getString("coinffeine.peer.id") shouldBe 'empty
   }
 
   it should "ensure peer ID" in {
-    val cfg = SettingsMapping.MessageGateway.ensurePeerId(messageGatewayBasicSettings)
+    val settings = amendConfig(messageGatewayBasicSettings, "coinffeine.peer.id" -> null)
+    val cfg = SettingsMapping.MessageGateway.ensurePeerId(settings)
     cfg shouldBe 'defined
     Try(PeerId(cfg.get.getString("coinffeine.peer.id"))) shouldBe 'success
   }

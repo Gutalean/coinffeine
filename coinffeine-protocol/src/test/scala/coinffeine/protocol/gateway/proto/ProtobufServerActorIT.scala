@@ -52,7 +52,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       s"broker-$port"
     )
     val settings = MessageGatewaySettings(
-      peerId = Some(PeerId.random()),
+      peerId = PeerId.random(),
       peerPort = 0,
       brokerEndpoint = NetworkEndpoint(localhost, port),
       ignoredNetworkInterfaces,
@@ -72,7 +72,7 @@ class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingIntercept
       s"peer-$port"
     )
     val settings = MessageGatewaySettings(
-      peerId = Some(PeerId.random()),
+      peerId = PeerId.random(),
       peerPort = port,
       brokerEndpoint = connectTo,
       ignoredNetworkInterfaces,

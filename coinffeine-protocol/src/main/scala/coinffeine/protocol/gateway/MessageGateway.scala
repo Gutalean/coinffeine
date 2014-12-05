@@ -16,7 +16,7 @@ object MessageGateway {
   case object BrokerNode extends NodeRole
 
   case class Join(role: NodeRole, settings: MessageGatewaySettings) {
-    val id: PeerId = settings.peerId.get
+    val id: PeerId = settings.peerId
   }
 
   /** A message sent in order to forward a message to a given destination. */
