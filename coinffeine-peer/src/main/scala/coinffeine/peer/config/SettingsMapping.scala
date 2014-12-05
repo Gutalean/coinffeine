@@ -53,10 +53,10 @@ object SettingsMapping {
       .withValue("coinffeine.bitcoin.network", configValue(settings.network.toString))
   }
 
-  implicit val messageGateway = new SettingsMapping[MessageGatewaySettings] {
+  implicit object MessageGateway extends SettingsMapping[MessageGatewaySettings] {
 
     override def fromConfig(config: Config) = MessageGatewaySettings(
-      peerId = getOptionalString(config, "coinffeine.peer.id").map(PeerId.apply),
+      peerId = PeerId(config.getString("coinffeine.peer.id")),
       peerPort = config.getInt("coinffeine.peer.port"),
       brokerEndpoint = NetworkEndpoint(
         hostname = config.getString("coinffeine.broker.hostname"),
@@ -69,7 +69,7 @@ object SettingsMapping {
 
     /** Write settings to given config. */
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
-      .withValue("coinffeine.peer.id", configValue(settings.peerId.fold("")(_.value)))
+      .withValue("coinffeine.peer.id", configValue(settings.peerId.value))
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
       .withValue("coinffeine.broker.hostname", configValue(settings.brokerEndpoint.hostname))
       .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
@@ -79,6 +79,19 @@ object SettingsMapping {
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
       .withValue("coinffeine.peer.externalForwardedPort",
         configValue(settings.externalForwardedPort.map(_.toString).getOrElse("")))
+
+    /** Ensure that the given config has a peer ID.
+      *
+      * If the given config already has a peer id, `None` is returned. Otherwise, a new random
+      * peer ID is generated and stored in a copy of the config that is returned as `Some`.
+      */
+    def ensurePeerId(config: Config): Option[Config] = {
+      getOptionalString(config, "coinffeine.peer.id") match {
+        case Some(_) => None
+        case None => Some(
+          config.withValue("coinffeine.peer.id", configValue(PeerId.random().value)))
+      }
+    }
 
     private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
       config.getStringList("coinffeine.peer.ifaces.ignore")

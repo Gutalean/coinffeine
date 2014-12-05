@@ -6,7 +6,7 @@ import scala.concurrent.duration.FiniteDuration
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 
 case class MessageGatewaySettings(
-  peerId: Option[PeerId],
+  peerId: PeerId,
   peerPort: Int,
   brokerEndpoint: NetworkEndpoint,
   ignoredNetworkInterfaces: Seq[NetworkInterface],

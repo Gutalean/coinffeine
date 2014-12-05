@@ -130,7 +130,7 @@ class ProtoMessageGatewayTest
       val localPort = DefaultTcpPortAllocator.allocatePort()
       val ref = createMessageGateway(peerNetworkProperties)
       val settings = MessageGatewaySettings(
-        peerId = Some(PeerId.random()),
+        peerId = PeerId.random(),
         peerPort = localPort,
         brokerEndpoint = connectTo,
         ignoredNetworkInterfaces,
@@ -148,7 +148,7 @@ class ProtoMessageGatewayTest
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
       val settings = MessageGatewaySettings(
-        peerId = Some(PeerId.random()),
+        peerId = PeerId.random(),
         peerPort = localPort,
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
         ignoredNetworkInterfaces,

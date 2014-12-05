@@ -74,21 +74,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
       requester.expectMsgType[WalletFundsWithdrawFailure]
   }
-
-  it must "create a new peer id if undefined in the settings" in new Fixture {
-    configProvider.saveUserConfig(configProvider.userConfig.withoutPath("coinffeine.peer.id"))
-    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
-    requester.send(peer, ServiceActor.Start {})
-    shouldRequestStart(paymentProcessor, {})
-    shouldRequestStart(bitcoinPeer, {})
-    gateway.expectAskWithReply {
-      case ServiceActor.Start(MessageGateway.Join(PeerNode, updatedSettings)) =>
-        updatedSettings.peerId shouldBe 'defined
-        updatedSettings shouldBe configProvider.messageGatewaySettings()
-        ServiceActor.Started
-    }
-  }
-
+  
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
     val peerId = PeerId.random()

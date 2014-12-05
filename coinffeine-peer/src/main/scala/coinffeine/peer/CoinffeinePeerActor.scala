@@ -48,7 +48,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
   override def starting(arg: Unit) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
-    val settings = retrieveMessageGatewaySettings()
+    val settings = configProvider.messageGatewaySettings()
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
@@ -72,19 +72,6 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
         log.error(cause, "Coinffeine peer actor failed to start")
         cancelStart(cause)
     }
-  }
-
-  private def retrieveMessageGatewaySettings(): MessageGatewaySettings = {
-    val currentSettings = configProvider.messageGatewaySettings()
-    if (currentSettings.peerId.isDefined) currentSettings else chooseARandomPeerId(currentSettings)
-  }
-
-  private def chooseARandomPeerId(currentSettings: MessageGatewaySettings): MessageGatewaySettings = {
-    val id = PeerId.random()
-    log.info("{} chosen as peer id", id)
-    val updatedSettings = currentSettings.copy(peerId = Some(id))
-    configProvider.saveUserSettings(updatedSettings)
-    updatedSettings
   }
 
   override protected def stopping(): Receive = {
