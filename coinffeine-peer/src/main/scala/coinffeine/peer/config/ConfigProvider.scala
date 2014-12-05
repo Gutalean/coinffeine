@@ -39,7 +39,14 @@ trait ConfigProvider extends SettingsProvider {
 
   override def bitcoinSettings() = SettingsMapping.fromConfig[BitcoinSettings](config)
 
-  override def messageGatewaySettings() = SettingsMapping.fromConfig[MessageGatewaySettings](config)
+  override def messageGatewaySettings() = {
+    ensurePeerIdIsDefined()
+    SettingsMapping.fromConfig[MessageGatewaySettings](config)
+  }
+
+  private def ensurePeerIdIsDefined(): Unit = {
+    SettingsMapping.MessageGateway.ensurePeerId(config).foreach(saveUserConfig(_))
+  }
 
   override def okPaySettings() = SettingsMapping.fromConfig[OkPaySettings](config)
 

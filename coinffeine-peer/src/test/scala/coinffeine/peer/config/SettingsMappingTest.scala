@@ -5,6 +5,7 @@ import java.net.{NetworkInterface, URI}
 import java.util.concurrent.TimeUnit
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import scala.util.Try
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
@@ -97,6 +98,12 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
     val cfg2 = SettingsMapping.toConfig(settings.copy(peerId = None))
     cfg2.getString("coinffeine.peer.id") shouldBe 'empty
+  }
+
+  it should "ensure peer ID" in {
+    val cfg = SettingsMapping.MessageGateway.ensurePeerId(messageGatewayBasicSettings)
+    cfg shouldBe 'defined
+    Try(PeerId(cfg.get.getString("coinffeine.peer.id"))) shouldBe 'success
   }
 
   "OKPay settings mapping" should "map from config" in {
