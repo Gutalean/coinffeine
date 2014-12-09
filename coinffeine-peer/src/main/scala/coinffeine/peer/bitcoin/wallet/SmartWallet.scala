@@ -1,14 +1,14 @@
 package coinffeine.peer.bitcoin.wallet
 
-import java.io.{InputStream, File, FileInputStream}
+import java.io.{File, FileInputStream, InputStream}
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 
 import org.bitcoinj.core.Wallet.{BalanceType, SendRequest}
-import org.bitcoinj.core._
+import org.bitcoinj.core.{Wallet => _, _}
 import org.bitcoinj.wallet.WalletTransaction
 
-import coinffeine.model.bitcoin.{Address, Wallet, _}
+import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
 
@@ -39,6 +39,13 @@ class SmartWallet(val delegate: Wallet) {
   def removeListener(listener: Listener) = synchronized {
     listeners -= listener
   }
+
+  def findTransactionSpendingOutput(outPoint: TransactionOutPoint): Option[ImmutableTransaction] =
+    for {
+      tx <- Option(delegate.getTransaction(outPoint.getHash))
+      output <- Option(tx.getOutput(outPoint.getIndex.toInt))
+      input <- Option(output.getSpentBy)
+    } yield ImmutableTransaction(input.getParentTransaction)
 
   def currentReceiveAddress: Address = synchronized {
     delegate.currentReceiveAddress()

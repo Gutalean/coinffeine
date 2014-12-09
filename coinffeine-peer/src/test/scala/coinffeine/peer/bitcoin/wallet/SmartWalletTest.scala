@@ -1,8 +1,10 @@
 package coinffeine.peer.bitcoin.wallet
 
+import org.bitcoinj.core.TransactionOutPoint
+
 import coinffeine.common.test.UnitTest
-import coinffeine.model.bitcoin.{MutableTransaction, KeyPair}
 import coinffeine.model.bitcoin.test.BitcoinjTest
+import coinffeine.model.bitcoin.{Hash, KeyPair, MutableTransaction}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
@@ -46,6 +48,23 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     val tx = wallet.createMultisignTransaction(signatures, 1.BTC, 0.1.BTC)
     wallet.releaseTransaction(tx)
     wallet.estimatedBalance shouldBe initialFunds
+  }
+
+  it must "not find the spending transaction of unknown outputs" in new Fixture {
+    val unknownOutput = new TransactionOutPoint(wallet.delegate.getParams, 0,
+      new Hash("b7008522a94c2ee3c1f4612eec33e5483ed35ea1fb1ea52237cc7ae2f64d232e"))
+    wallet.findTransactionSpendingOutput(unknownOutput) shouldBe 'empty
+  }
+
+  it must "not find the spending transaction of unspent outputs" in new Fixture {
+    val unspentOutput = wallet.spendCandidates.head.getOutPointFor
+    wallet.findTransactionSpendingOutput(unspentOutput) shouldBe 'empty
+  }
+
+  it must "find the spending transaction of a spent output" in new Fixture {
+    val transaction = wallet.createTransaction(1.BTC, someAddress)
+    val spentOutput = transaction.get.getInput(0).getOutpoint
+    wallet.findTransactionSpendingOutput(spentOutput) shouldBe Some(transaction)
   }
 
   trait Fixture {
