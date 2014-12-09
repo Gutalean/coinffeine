@@ -19,7 +19,7 @@ object ExchangeActor {
                            listener: ActorRef)
 
   /** This is sent back to listener to indicate exchange progress. */
-  case class ExchangeUpdate(exchange: AnyStateExchange[_ <: FiatCurrency])
+  case class ExchangeUpdate(exchange: Exchange[_ <: FiatCurrency])
 
   sealed trait ExchangeResult
 

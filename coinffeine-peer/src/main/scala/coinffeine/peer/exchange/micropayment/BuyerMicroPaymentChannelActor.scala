@@ -47,8 +47,9 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
   private def subscribeToMessages(): Unit = {
     val counterpart = exchange.counterpartId
+    val id = exchange.id
     collaborators.gateway ! Subscribe {
-      case ReceiveMessage(StepSignatures(exchange.`id`, _, _), `counterpart`) =>
+      case ReceiveMessage(StepSignatures(`id`, _, _), `counterpart`) =>
     }
   }
 

@@ -5,7 +5,7 @@ import java.io.PrintWriter
 import coinffeine.headless.prompt.ANSIText._
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.AnyStateExchange
+import coinffeine.model.exchange.Exchange
 import coinffeine.model.exchange.Exchange.Amounts
 import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
 import coinffeine.peer.api.CoinffeineNetwork
@@ -56,7 +56,7 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
       }
     }
 
-    private def printExchangeDetails(exchange: AnyStateExchange[_ <: FiatCurrency]): Unit = {
+    private def printExchangeDetails(exchange: Exchange[_ <: FiatCurrency]): Unit = {
       output.println(Bold("\t" + exchange.id))
       printExchangeAmounts(exchange.amounts)
       printStatus(exchange.state)

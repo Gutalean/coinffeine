@@ -46,7 +46,7 @@ private[orders] class OrderController[C <: FiatCurrency](
       updateOrder(_.withStatus(newStatus))
     }
 
-    def updateExchange(exchange: AnyStateExchange[C]): Unit = {
+    def updateExchange(exchange: Exchange[C]): Unit = {
       updateOrder(_.withExchange(exchange))
     }
 
@@ -99,7 +99,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
   def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
   def cancel(): Unit = { context.state.cancel(context) }
-  def updateExchange(exchange: AnyStateExchange[C]): Unit = { context.updateExchange(exchange) }
+  def updateExchange(exchange: Exchange[C]): Unit = { context.updateExchange(exchange) }
   def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
 }
 

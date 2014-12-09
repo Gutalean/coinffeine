@@ -25,8 +25,9 @@ class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signat
   }
 
   it must "notify the broker that the exchange is rejected" in {
+    val id = exchange.id
     gateway.expectForwardingToPF(BrokerId) {
-      case ExchangeRejection(exchange.`id`, _) =>
+      case ExchangeRejection(`id`, _) =>
     }
   }
 }

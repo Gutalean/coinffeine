@@ -76,7 +76,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case Status.Failure(cause) =>
       log.error(cause, "Cannot start handshake of {}", exchange.id)
-      finishWith(ExchangeFailure(exchange.cancel(CannotStartHandshake(cause))))
+      finishWith(ExchangeFailure(exchange.cancel(CancellationCause.CannotStartHandshake(cause))))
   }
 
   private def inHandshake(user: Exchange.PeerInfo): Receive = propagatingNotifications orElse {
@@ -91,16 +91,19 @@ class DefaultExchangeActor[C <: FiatCurrency](
       if (validationResult.forall(_.isSuccess)) {
         startMicropaymentChannel(commitments, handshakingExchange)
       } else {
-        startAbortion(handshakingExchange.abort(InvalidCommitments(validationResult), refundTx))
+        startAbortion(
+          handshakingExchange.abort(AbortionCause.InvalidCommitments(validationResult), refundTx))
       }
 
     case HandshakeFailure(cause) =>
-      finishWith(ExchangeFailure(exchange.cancel(HandshakeFailed(cause), Some(user))))
+      finishWith(
+        ExchangeFailure(exchange.cancel(CancellationCause.HandshakeFailed(cause), Some(user))))
 
     case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
-      startAbortion(exchange.abort(HandshakeWithCommitmentFailed(cause), user, refundTx))
+      startAbortion(
+        exchange.abort(AbortionCause.HandshakeWithCommitmentFailed(cause), user, refundTx))
   }
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {

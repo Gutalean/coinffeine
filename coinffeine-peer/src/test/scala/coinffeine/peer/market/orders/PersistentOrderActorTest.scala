@@ -1,7 +1,7 @@
 package coinffeine.peer.market.orders
 
 import coinffeine.common.akka.test.MockActor.MockStopped
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.peer.market.submission.SubmissionSupervisor.StopSubmitting
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
@@ -37,7 +37,7 @@ class PersistentOrderActorTest extends OrderActorTest {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     givenSuccessfulFundsBlocking()
-    val Seq(exchange: Exchange[_, _]) = exchangeActor.expectCreation()
+    val Seq(exchange: AnyExchange) = exchangeActor.expectCreation()
     exchange.id shouldBe orderMatch.exchangeId
 
     restartOrder()

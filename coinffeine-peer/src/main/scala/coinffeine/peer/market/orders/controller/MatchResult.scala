@@ -10,5 +10,5 @@ case class MatchAccepted[C <: FiatCurrency](funds: RequiredFunds[C]) extends Mat
 
 case class MatchRejected[C <: FiatCurrency](reason: String) extends MatchResult[C]
 
-case class MatchAlreadyAccepted[C <: FiatCurrency](exchange: AnyStateExchange[C])
+case class MatchAlreadyAccepted[C <: FiatCurrency](exchange: Exchange[C])
   extends MatchResult[C]
