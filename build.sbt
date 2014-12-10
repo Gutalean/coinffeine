@@ -47,12 +47,9 @@ addCommandAlias("test", "test-only * -- -l UITest")
 
 addCommandAlias("test-gui", "test-only * -- -n UITest")
 
-libraryDependencies in ThisBuild ++= Seq(
+libraryDependencies in ThisBuild ++= Dependencies.loggingFacade ++ Dependencies.testLoggingBackend ++ Seq(
   Dependencies.jodaTime,
-  Dependencies.logbackClassic,
-  Dependencies.logbackCore,
-  Dependencies.scalatest % "test",
-  Dependencies.slf4j
+  Dependencies.scalatest % "test"
 )
 
 exportJars in ThisBuild := true

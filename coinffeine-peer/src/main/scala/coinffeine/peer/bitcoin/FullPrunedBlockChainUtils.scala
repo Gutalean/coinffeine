@@ -3,10 +3,10 @@ package coinffeine.peer.bitcoin
 import java.util.concurrent.ThreadPoolExecutor
 import scala.util.control.NonFatal
 
+import com.typesafe.scalalogging.LazyLogging
 import org.bitcoinj.core.FullPrunedBlockChain
-import org.slf4j.LoggerFactory
 
-private[bitcoin] object FullPrunedBlockChainUtils {
+private[bitcoin] object FullPrunedBlockChainUtils extends LazyLogging {
 
   /** Ugly hack to stop the thread pool at [[org.bitcoinj.core.FullPrunedBlockChain]] that
     * otherwise will prevent our application from closing.
@@ -16,8 +16,6 @@ private[bitcoin] object FullPrunedBlockChainUtils {
     field.setAccessible(true)
     field.get(blockchain).asInstanceOf[ThreadPoolExecutor].shutdown()
   } catch {
-    case NonFatal(ex) => Log.error("Cannot stop the thread pool at the blockchain object", ex)
+    case NonFatal(ex) => logger.error("Cannot stop the thread pool at the blockchain object", ex)
   }
-
-  private val Log = LoggerFactory.getLogger(FullPrunedBlockChainUtils.getClass)
 }

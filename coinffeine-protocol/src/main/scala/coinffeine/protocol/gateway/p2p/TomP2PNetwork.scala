@@ -5,17 +5,16 @@ import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
+import com.typesafe.scalalogging.StrictLogging
 import net.tomp2p.connection.Bindings
 import net.tomp2p.futures.{FutureBootstrap, FutureDHT}
 import net.tomp2p.p2p.{Peer, PeerMaker}
 import net.tomp2p.storage.Data
-import org.slf4j.LoggerFactory
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.protocol.gateway.p2p.P2PNetwork._
 
-object TomP2PNetwork extends P2PNetwork {
-  val Log = LoggerFactory.getLogger(getClass)
+object TomP2PNetwork extends P2PNetwork with StrictLogging {
 
   private class SessionFactory(id: PeerId,
                                mode: ConnectionMode,
@@ -75,15 +74,15 @@ object TomP2PNetwork extends P2PNetwork {
                                    bootstrap: FutureBootstrap,
                                    connectedWith: String): PeerId = {
       val brokerAddress = bootstrap.getBootstrapTo.asScala.head
-      Log.info("Successfully connected with {} as {} listening at {} using broker in {}",
-        Seq(connectedWith, id, peer.getPeerBean.getServerPeerAddress, brokerAddress): _*)
+      logger.info("Successfully connected with {} as {} listening at {} using broker in {}",
+        connectedWith, id, peer.getPeerBean.getServerPeerAddress, brokerAddress)
       Number160Util.toPeerId(brokerAddress)
     }
 
     private def isBehindFirewall(peer: Peer) = peer.getPeerBean.getServerPeerAddress.isFirewalledTCP
 
     private def publishAddress(peer: Peer): Future[FutureDHT] = {
-      Log.debug("Publishing that we are directly accessible at {}",
+      logger.debug("Publishing that we are directly accessible at {}",
         peer.getPeerBean.getServerPeerAddress)
       peer.put(peer.getPeerID)
         .setData(new Data(peer.getPeerAddress.toByteArray))
@@ -92,7 +91,7 @@ object TomP2PNetwork extends P2PNetwork {
 
     /** We don't need to wait nor need to succeed on unpublishing the address: fire and forget  */
     private def tryToUnpublishAddress(peer: Peer): Unit = {
-      Log.warn("This peer can't be accessed directly from others (listening at {})",
+      logger.warn("This peer can't be accessed directly from others (listening at {})",
         peer.getPeerBean.getServerPeerAddress)
       peer.remove(peer.getPeerID).start()
     }
@@ -120,7 +119,7 @@ object TomP2PNetwork extends P2PNetwork {
     private def whitelistInterfaces(bindings: Bindings): Bindings = {
       acceptedInterfaces.map(_.getName).foreach(bindings.addInterface)
       val ifaces = bindings.getInterfaces.asScala.mkString(",")
-      Log.info("Initiating a peer on interfaces [{}]", ifaces)
+      logger.info("Initiating a peer on interfaces [{}]", ifaces)
       bindings
     }
   }

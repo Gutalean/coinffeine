@@ -4,14 +4,14 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
-import org.bitcoinj.core.{AbstractBlockChain, PeerGroup, FullPrunedBlockChain}
+import com.typesafe.scalalogging.StrictLogging
+import org.bitcoinj.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
 import org.bitcoinj.store.MemoryFullPrunedBlockStore
-import org.slf4j.LoggerFactory
 
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
-class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder {
+class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictLogging {
 
   import DefaultBitcoinPlatformBuilder._
 
@@ -61,18 +61,17 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder {
   }
 
   private def loadFromFile(walletFile: File): SmartWallet = {
-    Log.info("Loading wallet from {}", walletFile)
+    logger.info("Loading wallet from {}", walletFile)
     SmartWallet.loadFromFile(walletFile)
   }
 
   private def emptyWalletAt(walletFile: File): SmartWallet = {
-    Log.warn("{} doesn't exists, starting with an empty wallet", walletFile)
+    logger.warn("{} doesn't exists, starting with an empty wallet", walletFile)
     new SmartWallet(network)
   }
 }
 
 private object DefaultBitcoinPlatformBuilder {
-  val Log = LoggerFactory.getLogger(classOf[DefaultBitcoinPlatformBuilder])
   val AutoSaveInterval = 250.millis
   val FullStoredDepth = 1000
   val MinBroadcastConnections = 1

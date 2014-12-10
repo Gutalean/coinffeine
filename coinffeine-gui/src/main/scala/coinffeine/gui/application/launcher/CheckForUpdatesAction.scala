@@ -2,24 +2,21 @@ package coinffeine.gui.application.launcher
 
 import java.awt.Desktop
 import java.net.URI
-import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
+import com.typesafe.scalalogging.LazyLogging
 import org.controlsfx.dialog.{Dialog, DialogStyle, Dialogs}
-import org.slf4j.LoggerFactory
 
-import coinffeine.gui.application.updates.{CoinffeineVersion, HttpConfigVersionChecker}
+import coinffeine.gui.application.updates.HttpConfigVersionChecker
 import coinffeine.gui.util.FxExecutor
 
-class CheckForUpdatesAction {
+class CheckForUpdatesAction extends LazyLogging {
 
   private implicit val executor = FxExecutor.asContext
 
-  private val log = LoggerFactory.getLogger(this.getClass)
-
   def apply() = Try {
     val checker = new HttpConfigVersionChecker()
-    log.info("Checking for new versions of Coinffeine app... ")
+    logger.info("Checking for new versions of Coinffeine app... ")
     val checking = checker.canUpdateTo()
     checking.onComplete {
       case Success(Some(version)) =>
@@ -33,9 +30,9 @@ class CheckForUpdatesAction {
           Desktop.getDesktop.browse(CheckForUpdatesAction.DownloadsUrl)
         }
       case Success(None) =>
-        log.info("Coinffeine app is up to date")
-      case Failure(e) =>
-        log.error("cannot retrieve information of newest versions", e)
+        logger.info("Coinffeine app is up to date")
+      case Failure(cause) =>
+        logger.error("cannot retrieve information of newest versions", cause)
     }
     checking.onComplete(_ => checker.shutdown())
   }

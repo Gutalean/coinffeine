@@ -1,6 +1,6 @@
 package coinffeine.model.market
 
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.StrictLogging
 
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
@@ -9,7 +9,6 @@ import coinffeine.model.network.PeerId
 case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
                                         asks: AskMap[C],
                                         handshakes: Set[Cross[C]]) {
-  import coinffeine.model.market.OrderBook._
   require(bids.currency == asks.currency)
 
   def userPositions(userId: PeerId): Seq[Position[_, C]] =
@@ -91,7 +90,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
       if (newEntry.amount > currentPosition.amount) Some("amount increased") else None
     ).flatten
     if (invalidChanges.nonEmpty) {
-      Log.warn("{} is an invalid update for {}: {}", newEntry, currentPosition,
+      OrderBook.Log.warn("{} is an invalid update for {}: {}", newEntry, currentPosition,
         invalidChanges.mkString(", "))
     }
   }
@@ -109,8 +108,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   }
 }
 
-object OrderBook {
-  private val Log = LoggerFactory.getLogger(classOf[OrderBook[_]])
+object OrderBook extends StrictLogging {
+  private val Log = logger
 
   def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
                                otherPositions: BidOrAskPosition[C]*): OrderBook[C] =
