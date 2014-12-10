@@ -3,8 +3,8 @@ package coinffeine.peer.payment.okpay.ws
 import java.net.URI
 import scalaxb.{HttpClientsAsync, Soap11ClientsAsync}
 
+import com.typesafe.scalalogging.StrictLogging
 import dispatch._
-import org.slf4j.LoggerFactory
 
 import coinffeine.peer.net.DaemonHttpClient
 import coinffeine.peer.payment.okpay.generated.BasicHttpBinding_I_OkPayAPIBindings
@@ -17,7 +17,8 @@ import coinffeine.peer.payment.okpay.generated.BasicHttpBinding_I_OkPayAPIBindin
 class OkPayWebService(baseAddressOverride: Option[URI])
   extends BasicHttpBinding_I_OkPayAPIBindings
   with Soap11ClientsAsync
-  with HttpClientsAsync {
+  with HttpClientsAsync
+  with StrictLogging {
 
   override val baseAddress: URI = baseAddressOverride.getOrElse(super.baseAddress)
 
@@ -33,7 +34,7 @@ class OkPayWebService(baseAddressOverride: Option[URI])
     }
 
     def shutdown(): Unit = {
-      OkPayWebService.Log.info("Shutting down OKPay WS client...")
+      logger.info("Shutting down OKPay WS client...")
       http.shutdown()
       daemonHttpClient.shutdown()
     }
@@ -42,5 +43,4 @@ class OkPayWebService(baseAddressOverride: Option[URI])
 
 object OkPayWebService {
   type Service = coinffeine.peer.payment.okpay.generated.I_OkPayAPI
-  private val Log = LoggerFactory.getLogger(classOf[OkPayWebService])
 }

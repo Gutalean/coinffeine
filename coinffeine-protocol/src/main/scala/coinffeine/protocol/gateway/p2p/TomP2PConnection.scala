@@ -1,19 +1,20 @@
 package coinffeine.protocol.gateway.p2p
 
 import java.util.concurrent.atomic.AtomicBoolean
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 
+import com.typesafe.scalalogging.LazyLogging
 import net.tomp2p.connection.PeerConnection
 import net.tomp2p.p2p.Peer
 import net.tomp2p.peers.PeerAddress
-import org.slf4j.LoggerFactory
 
 import coinffeine.model.network.PeerId
 
 private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
-                              (implicit ec: ExecutionContext) extends P2PNetwork.Connection {
+                              (implicit ec: ExecutionContext)
+  extends P2PNetwork.Connection with LazyLogging {
 
   import TomP2PConnection._
 
@@ -41,7 +42,7 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
         .setObject(payload)
         .start()
         .onFailure { case cause =>
-          Log.error("Cannot send direct message to peer {}", Seq(to, cause): _*)
+          logger.error(s"Cannot send direct message to peer $to", cause)
           hasFailed.set(true)
         }
     }
@@ -55,7 +56,7 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
         .setObject(payload)
         .start()
         .onFailure { case cause =>
-        Log.error("Cannot send message to peer {}", Seq(to, cause): _*)
+        logger.error("Cannot send message to peer {}", Seq(to, cause): _*)
       }
     }
 
@@ -98,7 +99,7 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
   private def updateCachedPeer(peer: CachedPeer): Unit = {
     clearConnection()
     cachedPeer = Some(peer)
-    Log.debug("Cached {} for peer {}", Seq(peer, receiverId): _*)
+    logger.debug(s"Cached $peer for peer $receiverId")
   }
 
   private def clearConnection(): Unit = {
@@ -108,8 +109,6 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
 }
 
 object TomP2PConnection {
-
-  private val Log = LoggerFactory.getLogger(classOf[TomP2PConnection])
 
   private val IdleTCPMillisTimeout = 6.minutes.toMillis.toInt
 

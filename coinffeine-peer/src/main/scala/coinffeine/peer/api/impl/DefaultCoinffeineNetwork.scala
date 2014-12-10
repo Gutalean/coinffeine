@@ -3,7 +3,6 @@ package coinffeine.peer.api.impl
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
-import org.slf4j.LoggerFactory
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{AnyCurrencyOrder, Order, OrderId}
@@ -32,5 +31,4 @@ private[impl] class DefaultCoinffeineNetwork(
 
 object DefaultCoinffeineNetwork {
   val ConnectionTimeout = 30.seconds
-  val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineNetwork])
 }

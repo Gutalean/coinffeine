@@ -4,9 +4,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 import akka.actor.ActorRef
 import akka.pattern._
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.LazyLogging
 
-import coinffeine.model.currency.{Euro, CurrencyAmount}
+import coinffeine.model.currency.{CurrencyAmount, Euro}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorActor._
@@ -15,8 +15,8 @@ import coinffeine.peer.payment.PaymentProcessorProperties
 private[impl] class DefaultCoinffeinePaymentProcessor(
     lookupAccountId: () => Option[AccountId],
     override val peer: ActorRef,
-    properties: PaymentProcessorProperties) extends CoinffeinePaymentProcessor with PeerActorWrapper {
-  import DefaultCoinffeinePaymentProcessor._
+    properties: PaymentProcessorProperties)
+  extends CoinffeinePaymentProcessor with PeerActorWrapper with LazyLogging {
 
   override val accountId: Option[AccountId] = lookupAccountId()
 
@@ -32,14 +32,10 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
           blockedFunds.asInstanceOf[Euro.Amount]
         ))
       case nonEurBalance @ BalanceRetrieved(_, _) =>
-        Log.error("Balance not in euro: {}", nonEurBalance)
+        logger.error("Balance not in euro: {}", nonEurBalance)
         None
       case BalanceRetrievalFailed(_, cause) =>
-        Log.error("Cannot retrieve current balance", cause)
+        logger.error("Cannot retrieve current balance", cause)
         None
     })
-}
-
-private object DefaultCoinffeinePaymentProcessor {
-  val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeinePaymentProcessor])
 }

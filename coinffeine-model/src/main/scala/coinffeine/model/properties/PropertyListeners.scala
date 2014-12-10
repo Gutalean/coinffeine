@@ -3,9 +3,9 @@ package coinffeine.model.properties
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.LazyLogging
 
-class PropertyListeners[Handler] {
+class PropertyListeners[Handler] extends LazyLogging {
 
   private case class Listener(handler: Handler, executor: ExecutionContext)
       extends Cancellable {
@@ -17,8 +17,7 @@ class PropertyListeners[Handler] {
 
   private var listeners: Set[Listener] = Set.empty
 
-  def add(handler: Handler)
-         (implicit executor: ExecutionContext): Cancellable = synchronized {
+  def add(handler: Handler)(implicit executor: ExecutionContext): Cancellable = synchronized {
     val listener = Listener(handler, executor)
     listeners += listener
     listener
@@ -40,16 +39,11 @@ class PropertyListeners[Handler] {
       l.executor.execute(new Runnable {
         override def run() = try {
           f(l.handler)
-        } catch  {
-          case NonFatal(e) => PropertyListeners.Log.warn(
+        } catch {
+          case NonFatal(e) => logger.warn(
             "Fail to execute handler for property listener: unexpected exception thrown", e)
         }
       })
     )
   }
-}
-
-object PropertyListeners {
-
-  private val Log = LoggerFactory.getLogger(classOf[PropertyListeners[_]])
 }

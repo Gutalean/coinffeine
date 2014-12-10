@@ -2,7 +2,7 @@ import AssemblyKeys._
 
 name := "coinffeine-headless"
 
-libraryDependencies ++= Seq(
+libraryDependencies ++= Dependencies.loggingBackend ++ Seq(
   Dependencies.janino,
   Dependencies.jline,
   Dependencies.scalaz

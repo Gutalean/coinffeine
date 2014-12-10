@@ -4,8 +4,6 @@ import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
-import org.slf4j.LoggerFactory
-
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayCredentials
 
@@ -64,8 +62,4 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
       case _ => None
     }
   }
-}
-
-private[setup] object OkPayCredentialsStepPane {
-  val Log = LoggerFactory.getLogger(classOf[OkPayCredentialsStepPane])
 }

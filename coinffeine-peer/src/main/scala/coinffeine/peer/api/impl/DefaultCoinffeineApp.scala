@@ -7,7 +7,7 @@ import scala.util.control.{NoStackTrace, NonFatal}
 
 import akka.actor._
 import akka.util.Timeout
-import org.slf4j.LoggerFactory
+import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.BitcoinProperties
@@ -26,7 +26,7 @@ class DefaultCoinffeineApp(name: String,
                            lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator,
-                           configProvider: ConfigProvider) extends CoinffeineApp {
+                           configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
 
   private val system = ActorSystem(name, configProvider.config)
   private val peerRef = system.actorOf(peerProps, "peer")
@@ -63,8 +63,7 @@ class DefaultCoinffeineApp(name: String,
     import system.dispatcher
     implicit val to = Timeout(timeout)
     ServiceActor.askStop(peerRef).recover {
-      case cause =>
-        DefaultCoinffeineApp.Log.error("cannot gracefully stop coinffeine app", cause)
+      case cause => logger.error("cannot gracefully stop coinffeine app", cause)
     }.map { _ =>
       system.shutdown()
       system.awaitTermination()
@@ -73,8 +72,6 @@ class DefaultCoinffeineApp(name: String,
 }
 
 object DefaultCoinffeineApp {
-  private val Log = LoggerFactory.getLogger(classOf[DefaultCoinffeineApp])
-
   case class Properties(bitcoin: BitcoinProperties,
                         network: CoinffeineNetworkProperties,
                         paymentProcessor: PaymentProcessorProperties)

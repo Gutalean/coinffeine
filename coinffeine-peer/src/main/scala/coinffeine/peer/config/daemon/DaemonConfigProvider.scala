@@ -2,13 +2,13 @@ package coinffeine.peer.config.daemon
 
 import java.io.File
 
-import com.typesafe.config.{ConfigFactory, Config}
-import org.slf4j.LoggerFactory
+import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.peer.config.ConfigProvider
 
-private[daemon] class DaemonConfigProvider(configFile: File) extends ConfigProvider {
-  import DaemonConfigProvider._
+private[daemon] class DaemonConfigProvider(configFile: File)
+  extends ConfigProvider with LazyLogging {
 
   /** Retrieve the user configuration. */
   override def userConfig: Config =
@@ -16,11 +16,7 @@ private[daemon] class DaemonConfigProvider(configFile: File) extends ConfigProvi
     else ConfigFactory.empty()
 
   override def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean): Unit = {
-    Log.error("Saving user config is not supported for daemon configurations")
+    logger.error("Saving user config is not supported for daemon configurations")
     throw new UnsupportedOperationException("Saving user configuration is unsupported")
   }
-}
-
-private object DaemonConfigProvider {
-  val Log = LoggerFactory.getLogger(classOf[DaemonConfigProvider])
 }

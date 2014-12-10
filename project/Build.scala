@@ -40,8 +40,14 @@ object Build extends sbt.Build {
     lazy val jline = "jline" % "jline" % "2.12"
     lazy val jodaTime = "joda-time" % "joda-time" % "2.5"
     lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
-    lazy val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.1.2"
-    lazy val logbackCore = "ch.qos.logback" % "logback-core" % "1.1.2"
+    lazy val loggingBackend = Seq(
+      "ch.qos.logback" % "logback-classic" % "1.1.2",
+      "ch.qos.logback" % "logback-core" % "1.1.2"
+    )
+    lazy val testLoggingBackend = loggingBackend.map(_ % "test")
+    lazy val loggingFacade = Seq(
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.1.0"
+    )
     lazy val netty = "io.netty" % "netty" % "3.9.2.Final"
     lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.5.0"
     lazy val reflections = "org.reflections" % "reflections" % "0.9.9-RC1"
@@ -54,7 +60,6 @@ object Build extends sbt.Build {
     lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
     lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
     lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.0.6"
-    lazy val slf4j = "org.slf4j" % "slf4j-api" % "1.7.7"
     lazy val tomp2p = "net.tomp2p" % "TomP2P" % "4.4"
     lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
   }

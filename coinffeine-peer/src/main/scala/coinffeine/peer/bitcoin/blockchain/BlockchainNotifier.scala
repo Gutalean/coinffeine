@@ -3,13 +3,14 @@ package coinffeine.peer.bitcoin.blockchain
 import java.util
 import scala.collection.JavaConversions._
 
+import com.typesafe.scalalogging.LazyLogging
 import org.bitcoinj.core.AbstractBlockChain.NewBlockType
 import org.bitcoinj.core._
-import org.slf4j.LoggerFactory
 
-import coinffeine.model.bitcoin.{ImmutableTransaction, Hash}
+import coinffeine.model.bitcoin.{Hash, ImmutableTransaction}
 
-private[blockchain] class BlockchainNotifier(initialHeight: Int) extends AbstractBlockChainListener {
+private[blockchain] class BlockchainNotifier(initialHeight: Int)
+  extends AbstractBlockChainListener with LazyLogging {
   import BlockchainNotifier._
 
   private case class BlockIdentity(hash: Hash, height: Int)
@@ -67,7 +68,7 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int) extends Abstrac
     val rejectedTransactions = seenTxs.filterNot(tx =>
       newBlocks.toSeq.exists(block => block.getHeader.getHash == tx.foundInBlock.get.hash))
     rejectedTransactions.foreach { subscription =>
-      Log.info("tx {} is lost in blockchain reorganization; reporting to the observer",
+      logger.info("tx {} is lost in blockchain reorganization; reporting to the observer",
         subscription.txHash)
       confirmationSubscriptions -= subscription.txHash
       subscription.listener.rejected(subscription.txHash)
@@ -97,7 +98,7 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int) extends Abstrac
 
   private def updateConfirmationSubscriptions(tx: Hash, block: StoredBlock): Unit = {
     confirmationSubscriptions.get(tx).foreach { subscription =>
-      Log.info(s"tx $tx found in block ${block.getHeight}: " +
+      logger.info(s"tx $tx found in block ${block.getHeight}: " +
         s"waiting for ${subscription.requiredConfirmations} confirmations")
       confirmationSubscriptions += tx -> subscription.copy(
         foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
@@ -125,11 +126,11 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int) extends Abstrac
           s"""after new chain head $currentHeight, tx $txHash have $confirmations
              |confirmations out of $reqConf required""".stripMargin
         if (confirmations >= reqConf) {
-          Log.info(s"{}: reporting to the observer", event)
+          logger.info("{}: reporting to the observer", event)
           confirmationSubscriptions -= txHash
           listener.confirmed(txHash, confirmations)
         } else {
-          Log.info("{}: still waiting for more blocks", event)
+          logger.info("{}: still waiting for more blocks", event)
         }
       case _ =>
     }
@@ -146,8 +147,6 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int) extends Abstrac
 }
 
 private[blockchain] object BlockchainNotifier {
-  private val Log = LoggerFactory.getLogger(classOf[BlockchainNotifier])
-
   trait ConfirmationListener {
     def rejected(tx: Hash): Unit
     def confirmed(tx: Hash, confirmations: Int): Unit
