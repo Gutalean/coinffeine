@@ -115,8 +115,9 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   private def onDepositCreated(event: DepositCreated): ImmutableTransaction = {
     import event.request._
     blockedOutputs.use(coinsId, event.outputs)
-    wallet.createMultisignTransaction(
-      toOutPoints(event.outputs), requiredSignatures, amount, transactionFee)
+    val outPoints = toOutPoints(event.outputs)
+    wallet.findTransactionSpendingOutput(outPoints.head).getOrElse(
+      wallet.createMultisignTransaction(outPoints, requiredSignatures, amount, transactionFee))
   }
 
   private def onDepositCancelled(event: DepositCancelled): Unit = {
