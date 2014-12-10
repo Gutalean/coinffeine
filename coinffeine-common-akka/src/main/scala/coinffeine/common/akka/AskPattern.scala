@@ -3,7 +3,7 @@ package coinffeine.common.akka
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
-import scala.util.control.NonFatal
+import scala.util.control.{NoStackTrace, NonFatal}
 
 import akka.actor.ActorRef
 import akka.pattern._
@@ -27,12 +27,9 @@ object AskPattern {
     def withReply[R]()(implicit timeout: Timeout,
                        resultType: ClassTag[R],
                        executor: ExecutionContext): Future[R] =
-      (to ? request).mapTo[R].recoverWith {
-        case NonFatal(cause) =>
-          Future.failed(new RuntimeException(errorMessage, cause))
-      }
+      wrapErrors((to ? request).mapTo[R])
 
-    def withImmediateReply[R]()(implicit resultType: ClassTag[R], 
+    def withImmediateReply[R]()(implicit resultType: ClassTag[R],
                                 executor: ExecutionContext): Future[R] =
       withReply()(ImmediateResponseTimeout, resultType, executor)
 
@@ -41,21 +38,26 @@ object AskPattern {
                                resultType: ClassTag[R],
                                errorType: ClassTag[E],
                                executor: ExecutionContext): Future[R] =
-      (to ? request).mapTo[Any]
-        .map {
-          case resultType(success) => success
-          case errorType(error) => throw causeExtractor(error)
-        }
-        .recoverWith {
-          case NonFatal(cause) =>
-            Future.failed(new RuntimeException(errorMessage, cause))
-        }
+      wrapErrors((to ? request).mapTo[Any].map {
+        case resultType(success) => success
+        case errorType(error) => throw causeExtractor(error)
+      })
 
     def withImmediateReplyOrError[R, E](causeExtractor: E => Throwable = defaultCauseExtractor _)
                                        (implicit resultType: ClassTag[R],
                                         errorType: ClassTag[E],
                                         executor: ExecutionContext): Future[R] =
       withReplyOrError(causeExtractor)(ImmediateResponseTimeout, resultType, errorType, executor)
+
+    /** Wrap errors to have a easier to diagnose message */
+    private def wrapErrors[R](f: Future[R])(implicit executor: ExecutionContext): Future[R] =
+      f.recoverWith {
+        case _: AskTimeoutException =>
+          Future.failed(new RuntimeException(
+            errorMessage + ": timeout waiting for response") with NoStackTrace)
+        case NonFatal(cause) =>
+          Future.failed(new RuntimeException(errorMessage, cause))
+      }
 
     private def defaultCauseExtractor(error: Any): Throwable = {
       new RuntimeException(s"actor replied with error message: $error")
