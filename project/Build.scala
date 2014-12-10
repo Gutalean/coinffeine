@@ -65,7 +65,7 @@ object Build extends sbt.Build {
   }
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(peer, protocol, model, commonTest, gui, server, okpaymock)
+    aggregate(headless, peer, protocol, model, commonTest, gui, server, okpaymock)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
