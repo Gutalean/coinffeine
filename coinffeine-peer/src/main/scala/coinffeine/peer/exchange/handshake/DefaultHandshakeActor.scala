@@ -66,7 +66,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       destination = exchange.info.counterpartId,
       retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
     ) {
-      case RefundSignatureRequest(exchange.info.`id`, _) =>
+      case RefundSignatureRequest(id, _) if exchange.info.id == id =>
     }
   }
 

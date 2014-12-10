@@ -49,11 +49,11 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private def subscribeToMessages(): Unit = {
+    val id = initialChannel.exchange.id
+    val counterpartId = initialChannel.exchange.counterpartId
     collaborators.gateway ! MessageGateway.Subscribe {
       case ReceiveMessage(
-        PaymentProof(initialChannel.exchange.id, _, _) |
-        MicropaymentChannelClosed(initialChannel.exchange.id),
-        initialChannel.exchange.counterpartId) =>
+        PaymentProof(`id`, _, _) | MicropaymentChannelClosed(`id`), `counterpartId`) =>
     }
   }
 

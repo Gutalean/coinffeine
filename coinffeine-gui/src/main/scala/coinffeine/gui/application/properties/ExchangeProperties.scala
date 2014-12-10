@@ -15,9 +15,6 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
   val exchangeIdProperty: ObjectProperty[ExchangeId] =
     new ObjectProperty(this, "id", exchange.id)
 
-  val exchangeStateProperty: ObjectProperty[Exchange.State[_]] =
-    new ObjectProperty(this, "state", exchange.state)
-
   val exchangeProgressProperty: DoubleProperty =
     new DoubleProperty(this, "progress", progressOf(exchange))
 
@@ -33,8 +30,8 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
   override val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
     new ObjectProperty(this, "amount", exchange.role.select(exchange.amounts.exchangedBitcoin))
 
-  override val statusProperty =
-    exchangeStateProperty.delegate.mapToString(_.toString.capitalize).toReadOnlyProperty
+  override val statusProperty: ReadOnlyStringProperty =
+    new StringProperty(this, "status", exchange.toString)
 
   override val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
@@ -43,15 +40,6 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
 
   override val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")
-
-  def update(exchange: AnyExchange): Unit = {
-    updateState(exchange)
-    updateProgress(exchange)
-  }
-
-  def updateState(exchange: AnyExchange): Unit = {
-    exchangeStateProperty.value = exchange.state
-  }
 
   def updateProgress(exchange: AnyExchange): Unit = {
     exchangeProgressProperty.value = progressOf(exchange)

@@ -16,7 +16,7 @@ class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
   private val network = exchange.parameters.network
-  private val userAddress = exchange.state.user.bitcoinKey.toAddress(network)
+  private val userAddress = exchange.user.bitcoinKey.toAddress(network)
 
   override def preStart(): Unit = {
     collaborators.blockchain ! BlockchainActor.WatchOutput(myDeposit.get.getOutput(0))

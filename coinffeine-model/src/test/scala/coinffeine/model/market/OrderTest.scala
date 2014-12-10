@@ -64,6 +64,6 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   }
 
   private def createRandomExchange(): NotStartedExchange[Euro.type] = {
-    buyerExchange.copy(id = ExchangeId.random())
+    buyerExchange.copy(metadata = buyerExchange.metadata.copy(id = ExchangeId.random()))
   }
 }

@@ -124,7 +124,7 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeUpdate(exchange) if exchange.currency == currency =>
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
-      order.updateExchange(exchange.asInstanceOf[AnyStateExchange[C]])
+      order.updateExchange(exchange.asInstanceOf[Exchange[C]])
 
     case ExchangeActor.ExchangeSuccess(exchange) if exchange.currency == currency =>
       completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])
@@ -200,8 +200,8 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def completeExchange(exchange: CompletedExchange[C]): Unit = {
-    val level = if (exchange.state.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
-    log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.state)
+    val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
+    log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
     order.completeExchange(exchange)
   }
 }

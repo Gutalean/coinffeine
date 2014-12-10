@@ -110,12 +110,12 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
       amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
     order.addListener(listener)
 
-    def complete(exchange: AnyStateExchange[Euro.type]): SuccessfulExchange[Euro.type] = {
-      val completedState = Exchange.Successful[Euro.type](
-        participants.buyer,
-        participants.seller,
-        MockExchangeProtocol.DummyDeposits)(exchange.amounts)
-      exchange.copy(state = completedState)
+    def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] = exchange match {
+      case runningExchange: RunningExchange[Euro.type] => runningExchange.complete
+      case notStarted: NotStartedExchange[Euro.type] =>
+        notStarted.startHandshaking(participants.buyer, participants.seller)
+          .startExchanging(MockExchangeProtocol.DummyDeposits)
+          .complete
     }
   }
 }

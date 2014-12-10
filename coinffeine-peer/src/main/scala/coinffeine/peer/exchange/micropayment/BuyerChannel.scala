@@ -49,7 +49,7 @@ class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) {
     case step: IntermediateStep =>
       Some(PaymentProcessorActor.Pay(
         fundsId = channel.exchange.id,
-        to = channel.exchange.state.counterpart.paymentProcessorAccount,
+        to = channel.exchange.counterpart.paymentProcessorAccount,
         amount = step.select(channel.exchange.amounts).fiatAmount,
         comment = PaymentDescription(channel.exchange.id, step)
       ))

@@ -27,7 +27,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
   protected val dummyTx = ImmutableTransaction(new MutableTransaction(network))
 
   protected trait Fixture {
-    protected val currentExchange = exchange.copy(id = ExchangeId.random())
+    protected val currentExchange = exchange.withId(ExchangeId.random())
     protected val listener, blockchain, peers, walletActor, paymentProcessor = TestProbe()
     protected val micropaymentChannelActor, depositWatcherActor = new MockSupervisedActor()
     private val peerInfoLookup = new PeerInfoLookupStub()

@@ -28,8 +28,8 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
 
     givenSuccessfulUserInfoLookup()
     startActor()
-    inside (listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
-      case Cancellation(CannotStartHandshake(_)) =>
+    inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
+      case FailureCause.Cancellation(CancellationCause.CannotStartHandshake(_)) =>
     }
     listener.expectTerminated(actor)
   }
@@ -41,8 +41,8 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     listener.expectTerminated(actor)
 
     startActor()
-    inside (listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
-      case Cancellation(HandshakeFailed(_)) =>
+    inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
+      case FailureCause.Cancellation(CancellationCause.HandshakeFailed(_)) =>
     }
     listener.expectTerminated(actor)
   }
@@ -56,8 +56,8 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     listener.expectTerminated(actor)
 
     startActor()
-    inside(listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
-      case StepFailed(1, _) =>
+    inside(listener.expectMsgType[ExchangeFailure].exchange.cause) {
+      case FailureCause.StepFailed(1, _) =>
     }
     listener.expectTerminated(actor)
   }
@@ -70,7 +70,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     listener.expectTerminated(actor)
 
     startActor()
-    listener.expectMsgType[ExchangeFailure].exchange.state.cause shouldBe Exchange.NoBroadcast
+    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
     listener.expectTerminated(actor)
   }
 
@@ -83,7 +83,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     listener.expectTerminated(actor)
 
     startActor()
-    listener.expectMsgType[ExchangeFailure].exchange.state.cause shouldBe Exchange.PanicBlockReached
+    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.PanicBlockReached
     listener.expectTerminated(actor)
   }
 }

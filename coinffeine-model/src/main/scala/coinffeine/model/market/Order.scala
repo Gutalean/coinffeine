@@ -22,19 +22,19 @@ case class Order[C <: FiatCurrency](
     status: OrderStatus,
     amount: Bitcoin.Amount,
     price: Price[C],
-    exchanges: Map[ExchangeId, AnyStateExchange[C]]) {
+    exchanges: Map[ExchangeId, Exchange[C]]) {
 
   val role = Role.fromOrderType(orderType)
 
   def amounts: Order.Amounts = {
-    def totalSum(exchanges: Iterable[AnyStateExchange[C]]): Bitcoin.Amount =
+    def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount =
       exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
 
-    val exchangeGroups = exchanges.values.groupBy(_.state match {
-      case _: Exchange.Successful[_] => 'exchanged
-      case _: Exchange.Exchanging[_] => 'exchanging
+    val exchangeGroups = exchanges.values.groupBy {
+      case _: SuccessfulExchange[_] => 'exchanged
+      case _: RunningExchange[_] => 'exchanging
       case _ => 'other
-    }).mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
+    }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
 
     Order.Amounts(
       exchanged = exchangeGroups('exchanged),
@@ -47,7 +47,7 @@ case class Order[C <: FiatCurrency](
   def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
 
   /** Create a new copy of this order with the given exchange. */
-  def withExchange(exchange: AnyStateExchange[C]): Order[C] =
+  def withExchange(exchange: Exchange[C]): Order[C] =
     copy(exchanges = exchanges + (exchange.id -> exchange))
 
   /** Retrieve the total amount of bitcoins that were already transferred.
@@ -71,7 +71,7 @@ case class Order[C <: FiatCurrency](
   def pendingOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id, orderType, amounts.pending, price)
 
   private def totalSum[A <: Currency](
-      zero: CurrencyAmount[A])(f: AnyStateExchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
+      zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)
 }
 

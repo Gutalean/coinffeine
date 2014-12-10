@@ -52,8 +52,8 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       listener.expectNoMsg()
       notifyDepositDestination(DepositRefund)
-      inside (listener.expectMsgType[ExchangeFailure].exchange.state.cause) {
-        case Exchange.Abortion(Exchange.InvalidCommitments(Both(Failure(_), Success(_)))) =>
+      inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
+        case FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(Failure(_), Success(_)))) =>
       }
       listener.expectTerminated(actor)
     }
@@ -75,7 +75,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenBroadcasterWillFail()
     startActor()
     givenMicropaymentChannelSuccess()
-    listener.expectMsgType[ExchangeFailure].exchange.state.cause shouldBe Exchange.NoBroadcast
+    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
     listener.expectTerminated(actor)
   }
 
@@ -90,8 +90,8 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
-      inside(listener.expectMsgType[ExchangeFailure].exchange.state) {
-        case Exchange.Failed(Exchange.UnexpectedBroadcast, _, _, Some(`unexpectedTx`)) =>
+      inside(listener.expectMsgType[ExchangeFailure].exchange) {
+        case FailedExchange(_, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
       }
       listener.expectTerminated(actor)
     }
@@ -107,8 +107,8 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelCreation()
       notifyDepositDestination(DepositRefund, midWayTx)
-      val failedState = listener.expectMsgType[ExchangeFailure].exchange.state
-      failedState.cause shouldBe Exchange.PanicBlockReached
+      val failedState = listener.expectMsgType[ExchangeFailure].exchange
+      failedState.cause shouldBe FailureCause.PanicBlockReached
       failedState.transaction.value shouldBe midWayTx
       listener.expectTerminated(actor)
     }

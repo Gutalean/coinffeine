@@ -12,7 +12,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,
-    outputKey = exchange.state.user.bitcoinKey,
+    outputKey = exchange.user.bitcoinKey,
     outputAmount = exchange.role.select(exchange.amounts.refunds),
     lockTime = exchange.parameters.lockTime,
     network = exchange.parameters.network
@@ -28,7 +28,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   override def signMyRefund(herSignature: TransactionSignature) = {
     if (!TransactionProcessor.isValidSignature(
         myUnsignedRefund.get, index = 0, herSignature,
-        signerKey = exchange.state.counterpart.bitcoinKey,
+        signerKey = exchange.counterpart.bitcoinKey,
         exchange.requiredSignatures.toSeq)) {
       throw InvalidRefundSignature(myUnsignedRefund, herSignature)
     }
@@ -49,7 +49,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
     tx.signMultisigOutput(
       index = 0,
-      signAs = exchange.state.user.bitcoinKey,
+      signAs = exchange.user.bitcoinKey,
       exchange.requiredSignatures.toSeq
     )
   }
