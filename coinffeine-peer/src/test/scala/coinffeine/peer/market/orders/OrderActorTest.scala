@@ -53,7 +53,7 @@ abstract class OrderActorTest extends AkkaSpec
       order,
       new OrderController(calculatorStub, network, order),
       new Delegates[Euro.type] {
-        override def exchangeActor(exchange: NotStartedExchange[Euro.type])
+        override def exchangeActor(exchange: HandshakingExchange[Euro.type])
                                   (implicit context: ActorContext) =
           Fixture.this.exchangeActor.props(exchange)
 

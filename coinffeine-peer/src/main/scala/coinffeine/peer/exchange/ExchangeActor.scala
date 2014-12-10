@@ -30,7 +30,7 @@ object ExchangeActor {
   case class ExchangeFailure(exchange: FailedExchange[_ <: FiatCurrency]) extends ExchangeResult
 
   trait Component {
-    def exchangeActorProps(exchange: NotStartedExchange[_ <: FiatCurrency],
+    def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
                            collaborators: Collaborators): Props
   }
 }

@@ -16,7 +16,7 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
   }
 
   it should "report information on existing orders" in {
-    val exchange = Exchange.notStarted(
+    val exchange = Exchange.handshaking(
       id = ExchangeId.random(),
       role = BuyerRole,
       counterpartId = PeerId.hashOf("counterpart"),

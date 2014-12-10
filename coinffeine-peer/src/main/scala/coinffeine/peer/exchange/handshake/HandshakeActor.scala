@@ -12,7 +12,7 @@ object HandshakeActor {
   sealed trait HandshakeResult
 
   /** Sent to the handshake listeners to notify success. */
-  case class HandshakeSuccess(exchange: HandshakingExchange[_ <: FiatCurrency],
+  case class HandshakeSuccess(exchange: DepositPendingExchange[_ <: FiatCurrency],
                               bothCommitments: Both[ImmutableTransaction],
                               refundTx: ImmutableTransaction) extends HandshakeResult
 
@@ -20,7 +20,7 @@ object HandshakeActor {
   case class HandshakeFailure(cause: Throwable) extends HandshakeResult
 
   /** Send to listeners to notify a handshake failure after having compromised funds */
-  case class HandshakeFailureWithCommitment(exchange: HandshakingExchange[_ <: FiatCurrency],
+  case class HandshakeFailureWithCommitment(exchange: DepositPendingExchange[_ <: FiatCurrency],
                                             cause: Throwable,
                                             commitment: ImmutableTransaction,
                                             refundTx: ImmutableTransaction) extends HandshakeResult

@@ -122,7 +122,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     context.stop(self)
   }
 
-  private def createDeposit(exchange: HandshakingExchange[C]): Future[ImmutableTransaction] = {
+  private def createDeposit(exchange: DepositPendingExchange[C]): Future[ImmutableTransaction] = {
     val requiredSignatures = exchange.participants.map(_.bitcoinKey)
     val depositAmounts = exchange.role.select(exchange.amounts.deposits)
     AskPattern(
@@ -334,7 +334,7 @@ object DefaultHandshakeActor {
 
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
-  case class ExchangeToStart[C <: FiatCurrency](info: NotStartedExchange[C],
+  case class ExchangeToStart[C <: FiatCurrency](info: HandshakingExchange[C],
                                                 user: Exchange.PeerInfo)
 
   def props(exchange: ExchangeToStart[_ <: FiatCurrency],

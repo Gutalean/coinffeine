@@ -2,12 +2,12 @@ package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.HandshakingExchange
+import coinffeine.model.exchange.DepositPendingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
 trait Handshake[C <: FiatCurrency] {
 
-  val exchange: HandshakingExchange[C]
+  val exchange: DepositPendingExchange[C]
 
   /** Ready to be broadcast deposit */
   def myDeposit: ImmutableTransaction

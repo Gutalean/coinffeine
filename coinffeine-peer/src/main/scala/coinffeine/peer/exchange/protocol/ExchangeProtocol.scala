@@ -4,7 +4,7 @@ import scala.util.Try
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{RunningExchange, HandshakingExchange, Exchange, Both}
+import coinffeine.model.exchange.{RunningExchange, DepositPendingExchange, Exchange, Both}
 
 trait ExchangeProtocol {
 
@@ -15,7 +15,7 @@ trait ExchangeProtocol {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when deposit funds are insufficient or incorrect")
-  def createHandshake[C <: FiatCurrency](exchange: HandshakingExchange[C],
+  def createHandshake[C <: FiatCurrency](exchange: DepositPendingExchange[C],
                                          deposit: ImmutableTransaction): Handshake[C]
 
   /** Validate buyer and seller deposit transactions. */

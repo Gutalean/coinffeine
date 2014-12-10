@@ -10,7 +10,7 @@ import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 
 /** Actor that monitors a multisig deposit to inform about its destination */
-class DepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+class DepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
                      myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
                      collaborators: DepositWatcher.Collaborators) extends Actor {

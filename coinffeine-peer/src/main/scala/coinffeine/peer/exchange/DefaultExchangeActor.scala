@@ -23,7 +23,7 @@ import coinffeine.peer.payment.PaymentProcessorActor
 
 class DefaultExchangeActor[C <: FiatCurrency](
     exchangeProtocol: ExchangeProtocol,
-    exchange: NotStartedExchange[C],
+    exchange: HandshakingExchange[C],
     peerInfoLookup: PeerInfoLookup,
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends PersistentActor with ActorLogging {
@@ -82,7 +82,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def inHandshake(user: Exchange.PeerInfo): Receive = propagatingNotifications orElse {
     case HandshakeSuccess(rawExchange, commitments, refundTx)
       if rawExchange.currency == exchange.currency =>
-      val handshakingExchange = rawExchange.asInstanceOf[HandshakingExchange[C]]
+      val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange[C]]
       spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
       spawnBroadcaster(refundTx)
       val validationResult = exchangeProtocol.validateDeposits(
@@ -111,14 +111,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
       context.actorOf(delegates.transactionBroadcaster(refund), TransactionBroadcastActorName)
   }
 
-  private def spawnDepositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+  private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
                                   deposit: ImmutableTransaction,
                                   refundTx: ImmutableTransaction): Unit = {
     context.actorOf(delegates.depositWatcher(exchange, deposit, refundTx), "depositWatcher")
   }
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
-                                       handshakingExchange: HandshakingExchange[C]): Unit = {
+                                       handshakingExchange: DepositPendingExchange[C]): Unit = {
     val runningExchange = handshakingExchange.startExchanging(commitments)
     val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val resultListeners = Set(self, txBroadcaster)
@@ -215,7 +215,7 @@ object DefaultExchangeActor {
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
-    def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+    def depositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
   }
@@ -223,7 +223,7 @@ object DefaultExchangeActor {
   trait Component extends ExchangeActor.Component {
     this: ExchangeProtocol.Component with ProtocolConstants.Component =>
 
-    override def exchangeActorProps(exchange: NotStartedExchange[_ <: FiatCurrency],
+    override def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
                                     collaborators: ExchangeActor.Collaborators) = {
       import collaborators._
 
@@ -250,7 +250,7 @@ object DefaultExchangeActor {
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners))
         }
 
-        def depositWatcher(exchange: HandshakingExchange[_ <: FiatCurrency],
+        def depositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
                            deposit: ImmutableTransaction,
                            refundTx: ImmutableTransaction)(implicit context: ActorContext) =
           Props(new DepositWatcher(exchange, deposit, refundTx,

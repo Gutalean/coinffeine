@@ -8,13 +8,13 @@ import coinffeine.peer.exchange.protocol._
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
-      exchange: HandshakingExchange[C],
+      exchange: DepositPendingExchange[C],
       deposit: ImmutableTransaction): Handshake[C] = {
     requireValidDeposit(exchange, deposit)
     new DefaultHandshake(exchange, deposit)
   }
 
-  private def requireValidDeposit[C <: FiatCurrency](exchange: HandshakingExchange[C],
+  private def requireValidDeposit[C <: FiatCurrency](exchange: DepositPendingExchange[C],
                                                      deposit: ImmutableTransaction): Unit = {
     val validator = new DepositValidator(
       exchange.amounts, exchange.participants.map(_.bitcoinKey), exchange.parameters.network)
