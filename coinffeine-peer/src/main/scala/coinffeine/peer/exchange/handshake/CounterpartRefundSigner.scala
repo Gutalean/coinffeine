@@ -38,7 +38,7 @@ private class CounterpartRefundSigner(gateway: ActorRef,
 }
 
 private[handshake] object CounterpartRefundSigner {
-  def props(gateway: ActorRef, exchange: NotStartedExchange[_ <: FiatCurrency]): Props =
+  def props(gateway: ActorRef, exchange: HandshakingExchange[_ <: FiatCurrency]): Props =
     Props(new CounterpartRefundSigner(gateway, exchange.id, exchange.counterpartId))
 
   case class StartSigningRefunds(exchange: Handshake[_ <: FiatCurrency])

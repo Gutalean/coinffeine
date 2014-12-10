@@ -4,7 +4,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 
 case class RunningExchange[C <: FiatCurrency](
-    prev: HandshakingExchange[C],
+    prev: DepositPendingExchange[C],
     deposits: Exchange.Deposits,
     progress: Exchange.Progress) extends AfterHandshakeExchange[C] {
 
@@ -36,7 +36,7 @@ case class RunningExchange[C <: FiatCurrency](
 
 object RunningExchange {
 
-  def apply[C <: FiatCurrency](prev: HandshakingExchange[C],
+  def apply[C <: FiatCurrency](prev: DepositPendingExchange[C],
                                deposits: Exchange.Deposits): RunningExchange[C] =
     RunningExchange(prev, deposits, prev.progress)
 }

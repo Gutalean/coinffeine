@@ -11,7 +11,7 @@ import coinffeine.model.exchange._
 class MockExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
-      exchange: HandshakingExchange[C],
+      exchange: DepositPendingExchange[C],
       deposit: ImmutableTransaction) = new MockHandshake(exchange)
 
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =

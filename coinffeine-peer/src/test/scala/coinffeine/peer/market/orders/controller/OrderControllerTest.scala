@@ -112,7 +112,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
     def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] = exchange match {
       case runningExchange: RunningExchange[Euro.type] => runningExchange.complete
-      case notStarted: NotStartedExchange[Euro.type] =>
+      case notStarted: HandshakingExchange[Euro.type] =>
         notStarted.startHandshaking(participants.buyer, participants.seller)
           .startExchanging(MockExchangeProtocol.DummyDeposits)
           .complete

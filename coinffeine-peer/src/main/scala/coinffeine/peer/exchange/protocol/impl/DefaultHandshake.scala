@@ -2,12 +2,12 @@ package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.model.exchange.HandshakingExchange
+import coinffeine.model.exchange.DepositPendingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 
 private[impl] class DefaultHandshake[C <: FiatCurrency](
-   override val exchange: HandshakingExchange[C],
+   override val exchange: DepositPendingExchange[C],
    override val myDeposit: ImmutableTransaction) extends Handshake[C] {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(

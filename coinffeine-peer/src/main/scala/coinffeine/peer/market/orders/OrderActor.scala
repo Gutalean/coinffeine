@@ -215,13 +215,13 @@ object OrderActor {
                            blockchain: ActorRef)
 
   trait Delegates[C <: FiatCurrency] {
-    def exchangeActor(exchange: NotStartedExchange[C])(implicit context: ActorContext): Props
+    def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext): Props
     def fundsBlocker(id: ExchangeId, funds: RequiredFunds[C])(implicit context: ActorContext): Props
   }
 
   case object CancelOrder
 
-  def props[C <: FiatCurrency](exchangeActorProps: (NotStartedExchange[C], ExchangeActor.Collaborators) => Props,
+  def props[C <: FiatCurrency](exchangeActorProps: (HandshakingExchange[C], ExchangeActor.Collaborators) => Props,
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
                                order: Order[C],
@@ -229,7 +229,7 @@ object OrderActor {
                                collaborators: Collaborators): Props = {
     import collaborators._
     val delegates = new Delegates[C] {
-      override def exchangeActor(exchange: NotStartedExchange[C])(implicit context: ActorContext) = {
+      override def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext) = {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
           wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }

@@ -63,7 +63,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .completeStep(stepsCompleted)
   }
 
-  private def createRandomExchange(): NotStartedExchange[Euro.type] = {
+  private def createRandomExchange(): HandshakingExchange[Euro.type] = {
     buyerExchange.copy(metadata = buyerExchange.metadata.copy(id = ExchangeId.random()))
   }
 }

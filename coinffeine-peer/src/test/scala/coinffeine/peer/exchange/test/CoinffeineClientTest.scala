@@ -17,7 +17,7 @@ abstract class CoinffeineClientTest(systemName: String)
 object CoinffeineClientTest {
 
   trait Perspective {
-    val exchange: NotStartedExchange[Euro.type]
+    val exchange: HandshakingExchange[Euro.type]
     def participants: Both[Exchange.PeerInfo]
     def handshakingExchange = exchange.startHandshaking(user, counterpart)
     def runningExchange = handshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
@@ -30,11 +30,11 @@ object CoinffeineClientTest {
 
   trait BuyerPerspective extends Perspective {
     override lazy val exchange = buyerExchange
-    def buyerExchange: NotStartedExchange[Euro.type]
+    def buyerExchange: HandshakingExchange[Euro.type]
   }
 
   trait SellerPerspective extends Perspective {
     override lazy val exchange = sellerExchange
-    def sellerExchange: NotStartedExchange[Euro.type]
+    def sellerExchange: HandshakingExchange[Euro.type]
   }
 }

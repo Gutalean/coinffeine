@@ -149,12 +149,12 @@ object Exchange {
 
   def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.Zero))
 
-  def notStarted[C <: FiatCurrency](id: ExchangeId,
-                                    role: Role,
-                                    counterpartId: PeerId,
-                                    amounts: Exchange.Amounts[C],
-                                    parameters: Exchange.Parameters) =
-      NotStartedExchange(ExchangeMetadata(id, role, counterpartId, amounts, parameters))
+  def handshaking[C <: FiatCurrency](id: ExchangeId,
+                                     role: Role,
+                                     counterpartId: PeerId,
+                                     amounts: Exchange.Amounts[C],
+                                     parameters: Exchange.Parameters) =
+      HandshakingExchange(ExchangeMetadata(id, role, counterpartId, amounts, parameters))
 
   sealed trait State[C <: FiatCurrency] {
     val progress: Exchange.Progress

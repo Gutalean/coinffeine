@@ -50,12 +50,12 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
   val parameters = Exchange.Parameters(lockTime = 25, network)
 
   val buyerExchange =
-    Exchange.notStarted(exchangeId, BuyerRole, peerIds.seller, amounts, parameters)
+    Exchange.handshaking(exchangeId, BuyerRole, peerIds.seller, amounts, parameters)
   val buyerHandshakingExchange =
     buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
 
   val sellerExchange =
-    Exchange.notStarted(exchangeId, SellerRole, peerIds.buyer, amounts, parameters)
+    Exchange.handshaking(exchangeId, SellerRole, peerIds.buyer, amounts, parameters)
   val sellerHandshakingExchange =
     sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
 }
