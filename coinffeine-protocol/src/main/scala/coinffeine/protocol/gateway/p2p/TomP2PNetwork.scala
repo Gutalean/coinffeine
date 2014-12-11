@@ -10,14 +10,14 @@ import net.tomp2p.connection.Bindings
 import net.tomp2p.futures.FutureBootstrap
 import net.tomp2p.p2p.{Peer, PeerMaker}
 
-import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.p2p.P2PNetwork._
 
 object TomP2PNetwork extends P2PNetwork with StrictLogging {
 
   private class SessionFactory(id: PeerId,
                                mode: ConnectionMode,
-                               acceptedInterfaces: Seq[NetworkInterface],
+                               bindingsBuilder: BindingsBuilder,
                                listener: Listener)
                               (implicit ec: ExecutionContext) {
 
@@ -93,31 +93,14 @@ object TomP2PNetwork extends P2PNetwork with StrictLogging {
       peer.remove(peer.getPeerID).start()
     }
 
-    private def configureBindings(): Future[Bindings] = {
-      val bindings = mode match {
-        case StandaloneNode(address) => bindingsToSpecificAddress(address)
-        case PortForwardedPeerNode(externalPort, brokerAddress) =>
-          new ExternalIpProbe().detect(id, brokerAddress).flatMap { externalIp =>
-            bindingsToSpecificAddress(NetworkEndpoint(externalIp.getCanonicalHostName, externalPort))
-          }
-        case _ => joiningPeerBindings()
-      }
-      bindings.map(whitelistInterfaces)
-    }
-
-    private def bindingsToSpecificAddress(address: NetworkEndpoint): Future[Bindings] = {
-      address.resolveAsync().map { socket =>
-        new Bindings(socket.getAddress, socket.getPort, socket.getPort)
-      }
-    }
-
-    private def joiningPeerBindings(): Future[Bindings] = Future.successful(new Bindings())
-
-    private def whitelistInterfaces(bindings: Bindings): Bindings = {
-      acceptedInterfaces.map(_.getName).foreach(bindings.addInterface)
-      val ifaces = bindings.getInterfaces.asScala.mkString(",")
-      logger.info("Initiating a peer on interfaces [{}]", ifaces)
-      bindings
+    private def configureBindings(): Future[Bindings] = mode match {
+      case StandaloneNode(address) =>
+        address.resolveAsync().map(bindingsBuilder.bindToAddress)
+      case PortForwardedPeerNode(externalPort, brokerAddress) =>
+        new ExternalIpProbe().detect(id, brokerAddress).map { externalIp =>
+          bindingsBuilder.bindToAddress(new InetSocketAddress(externalIp, externalPort))
+        }
+      case _ => Future.successful(bindingsBuilder.defaultBindings())
     }
   }
 
@@ -126,5 +109,5 @@ object TomP2PNetwork extends P2PNetwork with StrictLogging {
                     acceptedInterfaces: Seq[NetworkInterface],
                     listener: Listener)
                    (implicit ec: ExecutionContext): Future[P2PNetwork.Session] =
-    new SessionFactory(id, mode, acceptedInterfaces, listener).build()
+    new SessionFactory(id, mode, new BindingsBuilder(acceptedInterfaces), listener).build()
 }
