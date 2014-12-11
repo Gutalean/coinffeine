@@ -3,7 +3,6 @@ package coinffeine.protocol.gateway.p2p
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.control.NonFatal
 
 import com.typesafe.scalalogging.LazyLogging
 import net.tomp2p.connection.PeerConnection
@@ -78,18 +77,12 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
     .fold(resolvePeer())(Future.successful)
 
   private def resolvePeer(): Future[CachedPeer] = for {
-    maybePeerAddress <- tryToResolvePeerAddress(receiverId)
+    maybePeerAddress <- AddressDHT.recover(delegate, receiverId)
     peer = buildCachedPeer(maybePeerAddress)
   } yield {
     updateCachedPeer(peer)
     peer
   }
-
-  private def tryToResolvePeerAddress(peerId: PeerId): Future[Option[PeerAddress]] =
-    delegate.get(Number160Util.fromPeerId(peerId))
-      .start()
-      .map { dhtEntry => Some(new PeerAddress(dhtEntry.getData.getData)) }
-      .recover { case NonFatal(_) => None }
 
   private def buildCachedPeer(maybePeerAddress: Option[PeerAddress]): CachedPeer = (for {
     peerAddress <- maybePeerAddress

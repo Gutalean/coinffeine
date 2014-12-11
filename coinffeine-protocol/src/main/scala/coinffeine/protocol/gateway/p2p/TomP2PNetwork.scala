@@ -7,9 +7,8 @@ import scala.util.control.NonFatal
 
 import com.typesafe.scalalogging.StrictLogging
 import net.tomp2p.connection.Bindings
-import net.tomp2p.futures.{FutureBootstrap, FutureDHT}
+import net.tomp2p.futures.FutureBootstrap
 import net.tomp2p.p2p.{Peer, PeerMaker}
-import net.tomp2p.storage.Data
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.protocol.gateway.p2p.P2PNetwork._
@@ -81,12 +80,10 @@ object TomP2PNetwork extends P2PNetwork with StrictLogging {
 
     private def isBehindFirewall(peer: Peer) = peer.getPeerBean.getServerPeerAddress.isFirewalledTCP
 
-    private def publishAddress(peer: Peer): Future[FutureDHT] = {
+    private def publishAddress(peer: Peer): Future[Unit] = {
       logger.debug("Publishing that we are directly accessible at {}",
         peer.getPeerBean.getServerPeerAddress)
-      peer.put(peer.getPeerID)
-        .setData(new Data(peer.getPeerAddress.toByteArray))
-        .start()
+      AddressDHT.storeOwnAddress(peer)
     }
 
     /** We don't need to wait nor need to succeed on unpublishing the address: fire and forget  */
