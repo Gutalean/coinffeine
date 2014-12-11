@@ -10,7 +10,9 @@ import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.p2p.P2PNetwork.Listener
 
 /** Abstract peer factory to be refined depending on the type of the peer to build */
-private abstract class PeerFactory extends ScalaFutureImplicits with LazyLogging {
+private abstract class PeerFactory
+  extends ScalaFutureImplicits with TomP2PFutureImplicits with LazyLogging {
+
   implicit protected val ec: ExecutionContext
 
   def build(id: PeerId,

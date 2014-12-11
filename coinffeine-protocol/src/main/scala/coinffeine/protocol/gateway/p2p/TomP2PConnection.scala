@@ -13,7 +13,7 @@ import coinffeine.model.network.PeerId
 
 private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
                               (implicit ec: ExecutionContext)
-  extends P2PNetwork.Connection with LazyLogging {
+  extends P2PNetwork.Connection with TomP2PFutureImplicits with LazyLogging {
 
   import TomP2PConnection._
 

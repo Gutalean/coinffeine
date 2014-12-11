@@ -10,7 +10,7 @@ import coinffeine.common.ScalaFutureImplicits
 import coinffeine.model.network.PeerId
 
 /** Stores/recovers peer addresses from the DHT */
-private object AddressDHT extends ScalaFutureImplicits {
+private object AddressDHT extends ScalaFutureImplicits with TomP2PFutureImplicits {
 
   case class AddressPublicationException(address: PeerAddress, put: FutureDHT)
     extends Exception(s"Cannot publish $address: ${put.getFailedReason}")
