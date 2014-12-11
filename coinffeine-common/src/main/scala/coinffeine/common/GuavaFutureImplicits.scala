@@ -1,4 +1,4 @@
-package coinffeine.peer.utils
+package coinffeine.common
 
 import scala.language.implicitConversions
 

@@ -1,4 +1,4 @@
-package coinffeine.peer.utils
+package coinffeine.common
 
 import com.google.common.util.concurrent.SettableFuture
 

@@ -1,4 +1,4 @@
-package coinffeine.peer.utils
+package coinffeine.common
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal

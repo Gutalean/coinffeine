@@ -7,8 +7,8 @@ import akka.actor._
 import akka.pattern._
 import org.bitcoinj.core.TransactionBroadcaster
 
+import coinffeine.common.GuavaFutureImplicits
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.peer.utils.GuavaFutureImplicits
 
 private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
                            transactionBroadcaster: TransactionBroadcaster,

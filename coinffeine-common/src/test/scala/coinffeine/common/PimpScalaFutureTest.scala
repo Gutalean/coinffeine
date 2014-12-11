@@ -1,4 +1,4 @@
-package coinffeine.peer.utils
+package coinffeine.common
 
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.ExecutionContext.Implicits.global
