@@ -35,8 +35,8 @@
 #operations-submit-root-pane {
     -fx-min-width: 550px;
     -fx-max-width: 550px;
-    -fx-min-height: 250px;
-    -fx-max-height: 250px;
+    -fx-min-height: 300px;
+    -fx-max-height: 300px;
 }
 
 #operations-submit-content-pane {
