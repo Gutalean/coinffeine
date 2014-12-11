@@ -17,20 +17,13 @@ object P2PNetwork {
 
   sealed trait ConnectionMode {
     def brokerAddress: NetworkEndpoint
-    def localPort: Int
   }
 
-  case class StandaloneNode(override val brokerAddress: NetworkEndpoint) extends ConnectionMode {
-    override def localPort = brokerAddress.port
-  }
-
-  case class AutodetectPeerNode(override val localPort: Int,
-                                override val brokerAddress: NetworkEndpoint) extends ConnectionMode
-
-  case class PortForwardedPeerNode(
-      externalPort: Int, override val brokerAddress: NetworkEndpoint) extends ConnectionMode  {
-    override def localPort = externalPort
-  }
+  case class StandaloneNode(override val brokerAddress: NetworkEndpoint) extends ConnectionMode
+  case class AutodetectPeerNode(localPort: Int, override val brokerAddress: NetworkEndpoint)
+    extends ConnectionMode
+  case class PortForwardedPeerNode(externalPort: Int, override val brokerAddress: NetworkEndpoint)
+    extends ConnectionMode
 
   trait Session {
     def brokerId: PeerId

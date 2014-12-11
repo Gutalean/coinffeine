@@ -28,6 +28,9 @@ private object AddressDHT extends ScalaFutureImplicits {
     )
   }
 
+  def removeOwnAddress(dht: Peer)(implicit ec: ExecutionContext): Future[FutureDHT] =
+    dht.remove(dht.getPeerID).start()
+
   def recover(dht: Peer, peerId: PeerId)
              (implicit ec: ExecutionContext): Future[Option[PeerAddress]] =
     dht.get(Number160Util.fromPeerId(peerId)).start()
