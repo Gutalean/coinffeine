@@ -8,13 +8,13 @@ import akka.pattern._
 import org.bitcoinj.core.TransactionBroadcaster
 
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.peer.utils.FutureUtils
+import coinffeine.peer.utils.GuavaFutureImplicits
 
 private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
                            transactionBroadcaster: TransactionBroadcaster,
                            listener: ActorRef,
                            rebroadcastTimeout: FiniteDuration)
-  extends Actor with ActorLogging with FutureUtils {
+  extends Actor with ActorLogging with GuavaFutureImplicits {
 
   import context.dispatcher
   import TransactionPublisher.MaxAttempts
