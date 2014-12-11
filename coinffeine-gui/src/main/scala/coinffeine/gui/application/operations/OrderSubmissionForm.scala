@@ -22,6 +22,7 @@ import coinffeine.peer.api.CoinffeineApp
 class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
 
   private val amountsCalculator = app.utils.exchangeAmountsCalculator
+  private val maxFiatPerOrder = amountsCalculator.maxFiatPerExchange(Euro)
 
   private val operationChoiceBox = new ChoiceBox[OrderType] {
     items = ObservableBuffer(Seq(Bid, Ask))
@@ -70,8 +71,8 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
 
   private val limitLabel = new Label("Limit") {
     text <== when(operationChoiceBox.value.isEqualTo(Bid))
-      .choose("By no more than")
-      .otherwise("By no less than")
+      .choose("For no more than")
+      .otherwise("For no less than")
   }
 
   private val totalFiat =
@@ -121,6 +122,10 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
                     new Label("per BTC (0.00 EUR total)") {
                       text <== totalFiat.mapToString { f => s"per BTC ($f total)" }
                     })
+                },
+                new HBox() {
+                  styleClass += ("indented", "smalltext")
+                  content = new Label(s"Maximum allowed fiat per order is $maxFiatPerOrder")
                 }
               )
             },
@@ -210,12 +215,11 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
 
   private def checkFiatLimit(order: Order[Euro.type]): Boolean = {
     val requestedFiat = order.price.of(order.amount)
-    val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
-    if (requestedFiat > maxFiat) {
+    if (requestedFiat > maxFiatPerOrder) {
       Dialogs.create()
         .title("Invalid fiat amount")
         .message("Cannot submit your order: " +
-          s"maximum allowed fiat amount is $maxFiat, but you requested $requestedFiat")
+          s"maximum allowed fiat amount is $maxFiatPerOrder, but you requested $requestedFiat")
         .showInformation()
       false
     } else true
