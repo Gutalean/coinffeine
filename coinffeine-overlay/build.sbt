@@ -1,6 +1,8 @@
+import scoverage.ScoverageSbtPlugin.ScoverageKeys
+
 name := "coinffeine-overlay"
 
-ScoverageKeys.excludedPackages in ScoverageCompile := ".*generated.*;.*protobuf.*"
+ScoverageKeys.coverageExcludedPackages := ".*generated.*;.*protobuf.*"
 
 libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.scalacheck % "test"

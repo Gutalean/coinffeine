@@ -12,11 +12,9 @@ object Build extends sbt.Build {
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
     aggregate(headless, peer, protocol, model, overlay, common, commonAkka, commonTest, gui, server, okpaymock)
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
   lazy val server = (Project(id = "server", base = file("coinffeine-server"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     settings(Assembly.settings("coinffeine.server.main.Main"): _*)
     dependsOn(peer % "compile->compile;test->test", commonTest % "test->compile")
   )
@@ -29,7 +27,6 @@ object Build extends sbt.Build {
       dispatchVersion in (Compile, scalaxb) := Dependencies.Versions.dispatch,
       async in (Compile, scalaxb) := true
     )
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(
       model % "compile->compile;test->test",
       protocol % "compile->compile;test->test",
@@ -40,7 +37,6 @@ object Build extends sbt.Build {
 
   lazy val protocol = (Project(id = "protocol", base = file("coinffeine-protocol"))
     settings(PB.protobufSettings: _*)
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(
       common,
       model % "compile->compile;test->test",
@@ -52,32 +48,26 @@ object Build extends sbt.Build {
 
   lazy val overlay = (Project(id = "overlay", base = file("coinffeine-overlay"))
     settings(PB.protobufSettings: _*)
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(common, commonAkka % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val model = (Project(id = "model", base = file("coinffeine-model"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(commonTest % "test->compile")
   )
 
   lazy val common = (Project(id = "common", base = file("coinffeine-common"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn commonTest
   )
 
   lazy val commonAkka = (Project(id = "common-akka", base = file("coinffeine-common-akka"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn commonTest
   )
 
   lazy val commonTest = (Project(id = "common-test", base = file("coinffeine-common-test"))
     settings(PB.protobufSettings: _*)
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
   lazy val headless = (Project(id = "headless", base = file("coinffeine-headless"))
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     settings(Assembly.settings("coinffeine.headless.Main"): _*)
     dependsOn(peer % "compile->compile;test->test", commonTest)
   )
@@ -85,7 +75,6 @@ object Build extends sbt.Build {
   lazy val gui = (Project(id = "gui", base = file("coinffeine-gui"))
     configs IntegrationTest
     settings(Defaults.itSettings: _*)
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(peer % "compile->compile;test,it->test", commonTest)
   )
 
@@ -106,7 +95,6 @@ object Build extends sbt.Build {
         )
       )
     )
-    settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(
       model,
       peer,

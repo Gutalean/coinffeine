@@ -1,6 +1,8 @@
+import scoverage.ScoverageSbtPlugin.ScoverageKeys
+
 name := "coinffeine-peer"
 
-ScoverageKeys.excludedPackages in ScoverageCompile := "scalaxb;soapenvelope11;.*generated.*"
+ScoverageKeys.coverageExcludedPackages := "scalaxb;soapenvelope11;.*generated.*"
 
 libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.h2 % "test",
