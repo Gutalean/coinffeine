@@ -23,8 +23,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
   import context.dispatcher
   import ProtobufServerActor._
 
-  private val acceptedNetworkInterfaces = NetworkInterface.getNetworkInterfaces
-    .filterNot(ignoredNetworkInterfaces.contains)
+  private val acceptedNetworkInterfaces =
+    NetworkInterface.getNetworkInterfaces.filterNot(ignoredNetworkInterfaces.contains).toList
 
   private var session: Option[P2PNetwork.Session] = None
   private var connections: Map[PeerId, ActorRef] = Map.empty
