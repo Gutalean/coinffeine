@@ -11,7 +11,8 @@ import net.tomp2p.peers.{Number160, PeerAddress}
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 
-private class ExternalIpProbe(implicit ec: ExecutionContext) extends StrictLogging {
+private class ExternalIpProbe(implicit ec: ExecutionContext)
+  extends TomP2PFutureImplicits with StrictLogging {
 
   def detect(id: PeerId, broker: NetworkEndpoint): Future[InetAddress] = {
     val probePeer = new PeerMaker(Number160Util.fromPeerId(id))
