@@ -11,7 +11,7 @@ import coinffeine.common.akka.{AskPattern, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
-import coinffeine.model.network.{PeerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -23,7 +23,6 @@ import coinffeine.peer.market.submission.SubmissionSupervisor
 import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
-import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.PeerNode
 import coinffeine.protocol.messages.brokerage

@@ -20,7 +20,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.7.2-RC2")
 // artifacts
 addSbtPlugin("no.vedaadata" % "sbt-javafx" % "0.6.2-coinffeine")
 
-addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.2.1")
+addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.3.0")
 
 addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "0.99.5.1")
 

@@ -6,7 +6,7 @@ version in ThisBuild := "0.1-SNAPSHOT"
 
 organization in ThisBuild := "com.coinffeine"
 
-scalaVersion in ThisBuild := "2.11.1"
+scalaVersion in ThisBuild := "2.11.4"
 
 scalacOptions in ThisBuild ++= Seq(
   "-deprecation", "-feature", "-language:postfixOps", "-language:existentials")
@@ -22,7 +22,7 @@ javaOptions in ThisBuild ++= {
     .map(e => s"-D${e.getKey}=${e.getValue}")
 }
 
-javacOptions in ThisBuild ++= Seq("-source", "1.7")
+javacOptions in ThisBuild ++= Seq("-source", "1.8")
 
 // The following props are needed to avoid overriding max UDP sockets,
 // which by default is too low for TomP2P. We have to run tests in fork mode with
