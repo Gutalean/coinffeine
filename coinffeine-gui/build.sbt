@@ -1,6 +1,6 @@
 name := "Coinffeine"
 
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 
 libraryDependencies ++= Dependencies.loggingBackend ++ Dependencies.scalafx ++ Seq(
   Dependencies.janino,
