@@ -25,3 +25,5 @@ addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.3.0")
 addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "0.99.5.1")
 
 addSbtPlugin("com.ebiznext.sbt.plugins" % "sbt-cxf-wsdl2java" % "0.1.3")
+
+addSbtPlugin("io.gatling" % "sbt-plugin" % "1.0")
