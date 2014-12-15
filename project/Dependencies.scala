@@ -23,6 +23,10 @@ object Dependencies {
   lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.1"
   lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
+  lazy val gatling = Seq(
+    "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.1.0-SNAPSHOT",
+    "io.gatling" % "test-framework" % "1.0" % "test"
+  )
   lazy val h2 = "com.h2database" % "h2" % "1.3.175"
   lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
   lazy val guava = "com.google.guava" % "guava" % "16.0.1"

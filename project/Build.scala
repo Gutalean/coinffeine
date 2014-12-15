@@ -1,5 +1,6 @@
 import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin
 import com.ebiznext.sbt.plugins.CxfWsdl2JavaPlugin.cxf._
+import io.gatling.sbt.GatlingPlugin
 import sbt.Keys._
 import sbt._
 import sbtprotobuf.{ProtobufPlugin => PB}
@@ -100,5 +101,14 @@ object Build extends sbt.Build {
       commonAkka % "compile->compile;test->test",
       commonTest % "compile->compile;test->compile"
     )
+  )
+
+  lazy val benchmark = (Project(id = "benchmark", base = file("coinffeine-benchmark"))
+    dependsOn(
+      peer % "compile->compile;test->test",
+      commonAkka % "compile->compile;test->test",
+      commonTest % "compile->compile;test->compile"
+    )
+    enablePlugins GatlingPlugin
   )
 }
