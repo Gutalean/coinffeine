@@ -136,10 +136,8 @@ class OrderActor[C <: FiatCurrency](
   private def resumeOrder(): Unit = {
     requestPendingFunds()
     val currentOrder = order.view
-    if (order.shouldBeOnMarket) {
-      publisher.keepPublishing(currentOrder.pendingOrderBookEntry)
-    }
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
+    updatePublisher(currentOrder)
     if (!started) {
       persist(OrderStarted) { _ =>
         coinffeineProperties.orders.set(orderId, initialOrder)
@@ -175,21 +173,15 @@ class OrderActor[C <: FiatCurrency](
             log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
           }
           coinffeineProperties.orders.set(newOrder.id, newOrder)
-        }
-      }
-
-      override def keepInMarket(): Unit = {
-        if (recoveryFinished) {
-          publisher.keepPublishing(order.view.pendingOrderBookEntry)
-        }
-      }
-
-      override def keepOffMarket(): Unit = {
-        if (recoveryFinished) {
-          publisher.stopPublishing()
+          updatePublisher(newOrder)
         }
       }
     })
+  }
+
+  private def updatePublisher(order: Order[C]): Unit = {
+    if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
+    else publisher.stopPublishing()
   }
 
   private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[_]): Unit = {

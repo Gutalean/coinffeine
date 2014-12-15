@@ -75,18 +75,18 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   }
 
   it must "be in market when there is pending amount to be exchanged" in {
-    Order.random(Bid, 10.BTC, Price(1.EUR)) shouldBe 'shouldBeInMarket
+    Order.random(Bid, 10.BTC, Price(1.EUR)) shouldBe 'shouldBeOnMarket
   }
 
   it must "not be in market when the exchange is finished" in {
     val exchange = Order.random(Bid, 10.BTC, Price(1.EUR))
-    exchange.cancel should not be 'shouldBeInMarket
-    exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeInMarket
+    exchange.cancel should not be 'shouldBeOnMarket
+    exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 
   it must "not be in market while an exchange is running" in {
     Order.random(Bid, 20.BTC, Price(1.EUR)).withExchange(createExchangeInProgress(5)) should
-      not be 'shouldBeInMarket
+      not be 'shouldBeOnMarket
   }
 
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete

@@ -9,18 +9,9 @@ class MockOrderControllerListener[C <: FiatCurrency]
   extends OrderController.Listener[C] with Assertions {
 
   var currentOrder: Order[C] = _
-  var inMarket = false
 
   override def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit = {
     currentOrder = newOrder
-  }
-
-  override def keepOffMarket(): Unit = {
-    inMarket = false
-  }
-
-  override def keepInMarket(): Unit = {
-    inMarket = true
   }
 
   def lastStatus: OrderStatus = {
@@ -28,5 +19,5 @@ class MockOrderControllerListener[C <: FiatCurrency]
     currentOrder.status
   }
 
-  def isInMarket: Boolean = inMarket
+  def inMarket: Boolean = currentOrder.shouldBeOnMarket
 }
