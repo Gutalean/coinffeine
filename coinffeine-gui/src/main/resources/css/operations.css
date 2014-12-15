@@ -57,3 +57,11 @@
     -fx-alignment: center-left;
     -fx-spacing: 10px;
 }
+
+#operations-submit-root-pane #limit {
+    -fx-pref-column-count: 8;
+}
+
+#operations-submit-root-pane #amount {
+    -fx-pref-column-count: 8;
+}
