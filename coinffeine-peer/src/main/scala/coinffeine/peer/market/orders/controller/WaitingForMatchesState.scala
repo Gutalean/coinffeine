@@ -9,7 +9,6 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends State[C] {
 
   override def enter(ctx: Context): Unit = {
-    ctx.updateOrderStatus(OfflineOrder)
     ctx.keepInMarket()
   }
 
@@ -37,7 +36,7 @@ private[controller] class WaitingForMatchesState[C <: FiatCurrency] extends Stat
 
   override def cancel(ctx: Context): Unit = {
     ctx.keepOffMarket()
-    ctx.transitionTo(new FinalState(FinalState.OrderCancellation))
+    ctx.transitionTo(new FinalState)
   }
 
   private def hasInvalidPrice(order: Order[C], orderMatch: OrderMatch[C]): Boolean = {

@@ -16,7 +16,12 @@ private[controller] trait State[C <: FiatCurrency] {
   def enter(ctx: Context): Unit = {}
 
   /** An exchange just finished */
-  def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {}
+  def exchangeCompleted(ctx: Context, exchange: CompletedExchange[C]): Unit = {
+    ctx.transitionTo(
+      if (ctx.order.amounts.pending.isPositive) new WaitingForMatchesState()
+      else new FinalState()
+    )
+  }
 
   /** Whether to accept or not an order match */
   def shouldAcceptOrderMatch(ctx: Context, orderMatch: OrderMatch[C]): MatchResult[C]

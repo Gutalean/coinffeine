@@ -31,7 +31,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order placement" in new StartedFixture {
-    shouldForwardMessage(OpenOrder(Order(Bid, 10.BTC, Price(300.EUR))), orders)
+    shouldForwardMessage(OpenOrder(Order.random(Bid, 10.BTC, Price(300.EUR))), orders)
   }
 
   it must "delegate order cancellation" in new StartedFixture {
@@ -74,7 +74,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val WalletFundsWithdrawFailure(`amount`, `someAddress`, _) =
       requester.expectMsgType[WalletFundsWithdrawFailure]
   }
-  
+
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
     val peerId = PeerId.random()

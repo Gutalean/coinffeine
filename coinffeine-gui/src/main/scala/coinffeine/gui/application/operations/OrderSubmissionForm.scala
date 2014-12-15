@@ -189,7 +189,7 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   }
 
   private def submit(): Unit = {
-    val order = Order(
+    val order = Order.random(
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = Price(limitAmount.get))

@@ -33,7 +33,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
     }
 
     def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]) {
-      val order = Order(orderType, amount, price)
+      val order = Order.random(orderType, amount, price)
       network.submitOrder(order)
       output.format("Created order %s%n", order.id.value)
     }

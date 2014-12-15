@@ -42,10 +42,6 @@ private[orders] class OrderController[C <: FiatCurrency](
       listeners.foreach(_.keepOffMarket())
     }
 
-    override def updateOrderStatus(newStatus: OrderStatus): Unit = {
-      updateOrder(_.withStatus(newStatus))
-    }
-
     def updateExchange(exchange: Exchange[C]): Unit = {
       updateOrder(_.withExchange(exchange))
     }
@@ -55,7 +51,7 @@ private[orders] class OrderController[C <: FiatCurrency](
       context.state.exchangeCompleted(context, exchange)
     }
 
-    private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
+    def updateOrder(mutator: Order[C] => Order[C]): Unit = {
       val previousOrder = _order
       val newOrder = mutator(_order)
       if (previousOrder != newOrder) {
@@ -96,9 +92,12 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   def shouldBeOnMarket: Boolean = context.shouldBeOnMarket
-  def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
-  def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
-  def cancel(): Unit = { context.state.cancel(context) }
+  def becomeInMarket(): Unit = { context.updateOrder(_.becomeInMarket) }
+  def becomeOffline(): Unit = { context.updateOrder(_.becomeOffline) }
+  def cancel(): Unit = {
+    context.updateOrder(_.cancel)
+    context.state.cancel(context)
+  }
   def updateExchange(exchange: Exchange[C]): Unit = { context.updateExchange(exchange) }
   def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
 }

@@ -1,9 +1,9 @@
 package coinffeine.peer.api.mock
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{CancelledOrder, AnyCurrencyOrder, Order, OrderId}
+import coinffeine.model.market.{AnyCurrencyOrder, Order, OrderId}
 import coinffeine.model.network.PeerId
-import coinffeine.model.properties.{MutablePropertyMap, MutableProperty}
+import coinffeine.model.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.peer.api.CoinffeineNetwork
 
 class MockCoinffeineNetwork extends CoinffeineNetwork {
@@ -13,7 +13,7 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
   override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] = new MutablePropertyMap
 
   override def cancelOrder(orderId: OrderId): Unit = {
-    orders.get(orderId).foreach(o => orders.set(orderId, o.withStatus(CancelledOrder)))
+    orders.get(orderId).foreach(order => orders.set(orderId, order.cancel))
   }
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {

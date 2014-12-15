@@ -49,7 +49,7 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
     val expectedPrice = Price(100.EUR)
     eventually {
       app.network.orders.values.collect {
-        case Order(_, Bid, _, `expectedAmount`, `expectedPrice`, _) =>
+        case Order(_, Bid, `expectedAmount`, `expectedPrice`, _, _, _, _) =>
       } shouldBe 'nonEmpty
     }
   }

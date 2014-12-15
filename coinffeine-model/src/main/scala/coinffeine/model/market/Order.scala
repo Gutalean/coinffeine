@@ -11,44 +11,54 @@ import coinffeine.model.exchange._
   * an order. Objects of this class represent the state of an order.
   *
   * @param orderType  The type of order (bid or ask)
-  * @param status     The current status of the order
   * @param amount     The gross amount of bitcoins to bid or ask
   * @param price      The price per bitcoin
+  * @param notStarted Whether the order has actually started
+  * @param inMarket   Presence on the order book
+  * @param cancelled  Whether the order was cancelled
   * @param exchanges  The exchanges that have been initiated to complete this order
   */
 case class Order[C <: FiatCurrency](
     id: OrderId,
     orderType: OrderType,
-    status: OrderStatus,
     amount: Bitcoin.Amount,
     price: Price[C],
+    notStarted: Boolean,
+    inMarket: Boolean,
+    cancelled: Boolean,
     exchanges: Map[ExchangeId, Exchange[C]]) {
 
   val role = Role.fromOrderType(orderType)
 
-  def amounts: Order.Amounts = {
-    def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount =
-      exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
-
-    val exchangeGroups = exchanges.values.groupBy {
-      case _: SuccessfulExchange[_] => 'exchanged
-      case _: RunningExchange[_] => 'exchanging
-      case _ => 'other
-    }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
-
-    Order.Amounts(
-      exchanged = exchangeGroups('exchanged),
-      exchanging = exchangeGroups('exchanging),
-      pending = amount - exchangeGroups('exchanged) - exchangeGroups('exchanging)
-    )
+  def start: Order[C] = {
+    require(notStarted, s"$this has already started")
+    copy(notStarted = false)
   }
+  def cancel: Order[C] = copy(notStarted = false, inMarket = false, cancelled = true)
+  def becomeInMarket: Order[C] = copy(notStarted = false, inMarket = true)
+  def becomeOffline: Order[C] = copy(notStarted = false, inMarket = false)
 
-  /** Create a new copy of this order with the given status. */
-  def withStatus(newStatus: OrderStatus): Order[C] = copy(status = newStatus)
+  lazy val amounts: Order.Amounts = Order.Amounts.fromExchanges(amount, role, exchanges)
+  lazy val status: OrderStatus =
+    if (cancelled) CancelledOrder
+    else if (amounts.completed) CompletedOrder
+    else if (amounts.exchanging.isPositive) InProgressOrder
+    else if (inMarket) InMarketOrder
+    else if (notStarted && amounts.notStarted) NotStartedOrder
+    else OfflineOrder
 
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): Order[C] =
-    copy(exchanges = exchanges + (exchange.id -> exchange))
+    if (exchanges.get(exchange.id) == Some(exchange)) this
+    else {
+      val nextExchanges = exchanges + (exchange.id -> exchange)
+      val nextAmounts = Order.Amounts.fromExchanges(amount, role, nextExchanges)
+      copy(
+        notStarted = notStarted && nextAmounts.notStarted,
+        inMarket = false,
+        exchanges = nextExchanges
+      )
+    }
 
   /** Retrieve the total amount of bitcoins that were already transferred.
     *
@@ -76,16 +86,41 @@ case class Order[C <: FiatCurrency](
 }
 
 object Order {
-  case class Amounts(exchanged: Bitcoin.Amount, exchanging: Bitcoin.Amount, pending: Bitcoin.Amount)
+  case class Amounts(exchanged: Bitcoin.Amount, exchanging: Bitcoin.Amount, pending: Bitcoin.Amount) {
+    require((exchanged + exchanging + pending).isPositive)
+    def completed: Boolean = exchanging.isZero && pending.isZero
+    def notStarted: Boolean = exchanging.isZero && exchanged.isZero
+  }
+
+  object Amounts {
+    def fromExchanges[C <: FiatCurrency](amount: Bitcoin.Amount,
+                                         role: Role,
+                                         exchanges: Map[ExchangeId, Exchange[C]]): Amounts = {
+      def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount =
+        exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
+
+      val exchangeGroups = exchanges.values.groupBy {
+        case _: SuccessfulExchange[_] => 'exchanged
+        case _: FailedExchange[_] => 'other
+        case _ => 'exchanging
+      }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
+
+      Order.Amounts(
+        exchanged = exchangeGroups('exchanged),
+        exchanging = exchangeGroups('exchanging),
+        pending = amount - exchangeGroups('exchanged) - exchangeGroups('exchanging)
+      )
+    }
+  }
 
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: Price[C]): Order[C] =
-    Order(id, orderType, status = NotStartedOrder, amount, price, exchanges = Map.empty)
+    Order(id, orderType, amount, price, notStarted = true, inMarket = false, cancelled = false,
+      exchanges = Map.empty)
 
-  def apply[C <: FiatCurrency](orderType: OrderType,
-                               amount: Bitcoin.Amount,
-                               price: Price[C]): Order[C] =
+  /** Creates an order with a random identifier. */
+  def random[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) =
     Order(OrderId.random(), orderType, amount, price)
 }
