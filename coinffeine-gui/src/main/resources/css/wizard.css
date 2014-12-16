@@ -102,3 +102,16 @@
     -fx-alignment: center;
 
 }
+
+#wizard-license-agreement-pane {
+    -fx-padding: 5px 20px 0 20px;
+}
+
+#wizard-license-agreement-pane VBox {
+    -fx-spacing: 10px;
+}
+
+#wizard-license-agreement-pane .webview-wrapper {
+    -fx-border-color: lightgray;
+    -fx-border-radius: 2;
+}
