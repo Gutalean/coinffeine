@@ -36,8 +36,11 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     }
   }
 
-  it must "update the order status in the table" in new UpdatingOrderFixture {
-    assertOnStatusChange(CancelledOrder)
+  it must "update the order status in the table" in new OrderIsPresentFixture {
+    app.network.orders.set(sampleOrder.id, sampleOrder.cancel)
+    eventually {
+      find(sampleOrder.id).get.statusProperty.get shouldBe CancelledOrder.name.capitalize
+    }
   }
 
   it must "enable cancel button when a cancellable order is selected" in new OrderIsPresentFixture {
@@ -101,17 +104,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
     }
 
     def cancelOrder(): Unit = {
-      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(CancelledOrder))
-    }
-  }
-
-  trait UpdatingOrderFixture extends OrderIsPresentFixture {
-
-    def assertOnStatusChange(newStatus: OrderStatus): Unit = {
-      app.network.orders.set(sampleOrder.id, sampleOrder.withStatus(newStatus))
-      eventually {
-        find(sampleOrder.id).get.statusProperty.get shouldBe newStatus.name.capitalize
-      }
+      app.network.orders.set(sampleOrder.id, sampleOrder.cancel)
     }
   }
 }

@@ -19,68 +19,27 @@ private[orders] class OrderController[C <: FiatCurrency](
     network: Network,
     initialOrder: Order[C]) {
 
-  private class OrderControllerContext(
-      override val calculator: AmountsCalculator,
-      var _order: Order[C],
-      var shouldBeOnMarket: Boolean = true) extends StateContext[C] {
-
-    var state: State[C] = _
-
-    override def order = _order
-
-    override def transitionTo(newState: State[C]): Unit = {
-      state = newState
-      newState.enter(context)
-    }
-
-    override def keepInMarket(): Unit = {
-      shouldBeOnMarket = true
-      listeners.foreach(_.keepInMarket())
-    }
-    override def keepOffMarket(): Unit = {
-      shouldBeOnMarket = false
-      listeners.foreach(_.keepOffMarket())
-    }
-
-    override def updateOrderStatus(newStatus: OrderStatus): Unit = {
-      updateOrder(_.withStatus(newStatus))
-    }
-
-    def updateExchange(exchange: Exchange[C]): Unit = {
-      updateOrder(_.withExchange(exchange))
-    }
-
-    def completeExchange(exchange: CompletedExchange[C]): Unit = {
-      updateExchange(exchange)
-      context.state.exchangeCompleted(context, exchange)
-    }
-
-    private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
-      val previousOrder = _order
-      val newOrder = mutator(_order)
-      if (previousOrder != newOrder) {
-        _order = newOrder
-        listeners.foreach(_.onOrderChange(previousOrder, _order))
-      }
-    }
-  }
-
   private var listeners = Seq.empty[OrderController.Listener[C]]
-  private val context = new OrderControllerContext(amountsCalculator, initialOrder)
-  context.transitionTo(new WaitingForMatchesState[C])
+  private var _order = initialOrder
 
   /** Immutable snapshot of the order */
-  def view: Order[C] = context._order
+  def view: Order[C] = _order
+
+  def updateExchange(exchange: Exchange[C]): Unit = {
+    updateOrder(_.withExchange(exchange))
+  }
+
+  def completeExchange(exchange: CompletedExchange[C]): Unit = {
+    updateExchange(exchange)
+  }
 
   def addListener(listener: OrderController.Listener[C]): Unit = {
     listeners :+= listener
-    listener.onOrderChange(context._order, context._order)
-    if (shouldBeOnMarket) listener.keepInMarket()
-    else listener.keepOffMarket()
+    listener.onOrderChange(_order, _order)
   }
 
   def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
-    context.state.shouldAcceptOrderMatch(context, orderMatch)
+    new OrderMatchValidator(amountsCalculator).shouldAcceptOrderMatch(_order, orderMatch)
 
   def acceptOrderMatch(orderMatch: OrderMatch[C]): HandshakingExchange[C] = {
     val newExchange = Exchange.handshaking(
@@ -90,23 +49,30 @@ private[orders] class OrderController[C <: FiatCurrency](
       amountsCalculator.exchangeAmountsFor(orderMatch),
       Exchange.Parameters(orderMatch.lockTime, network)
     )
-    context.updateExchange(newExchange)
-    context.state.acceptedOrderMatch(context, orderMatch)
+    updateExchange(newExchange)
     newExchange
   }
 
-  def shouldBeOnMarket: Boolean = context.shouldBeOnMarket
-  def becomeInMarket(): Unit = { context.updateOrderStatus(InMarketOrder) }
-  def becomeOffline(): Unit = { context.updateOrderStatus(OfflineOrder) }
-  def cancel(): Unit = { context.state.cancel(context) }
-  def updateExchange(exchange: Exchange[C]): Unit = { context.updateExchange(exchange) }
-  def completeExchange(exchange: CompletedExchange[C]): Unit = { context.completeExchange(exchange) }
+  def start(): Unit = { updateOrder(_.start) }
+  def becomeInMarket(): Unit = { updateOrder(_.becomeInMarket) }
+  def becomeOffline(): Unit = { updateOrder(_.becomeOffline) }
+  def cancel(): Unit = {
+    // TODO: is this what we wanna do if an exchange is running?
+    updateOrder(_.cancel)
+  }
+
+  private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
+    val previousOrder = _order
+    val newOrder = mutator(_order)
+    if (previousOrder != newOrder) {
+      _order = newOrder
+      listeners.foreach(_.onOrderChange(previousOrder, _order))
+    }
+  }
 }
 
 private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
     def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit
-    def keepInMarket(): Unit
-    def keepOffMarket(): Unit
   }
 }

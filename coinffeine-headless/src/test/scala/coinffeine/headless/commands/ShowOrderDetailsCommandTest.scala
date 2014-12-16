@@ -23,7 +23,7 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
       amounts = amountsCalculator.exchangeAmountsFor(0.4.BTC, 50.EUR),
       parameters = Exchange.Parameters(lockTime = 1234, network = null)
     )
-    val order = Order(Bid, 1.BTC, Price(100.EUR)).withExchange(exchange)
+    val order = Order.random(Bid, 1.BTC, Price(100.EUR)).withExchange(exchange)
 
     network.givenOrderExists(order)
     executeCommand(command, order.id.value) should (

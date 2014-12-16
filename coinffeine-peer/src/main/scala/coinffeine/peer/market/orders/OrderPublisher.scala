@@ -11,20 +11,22 @@ private[orders] class OrderPublisher[C <: FiatCurrency](submissionActor: ActorRe
                                                        (implicit context: ActorContext) {
 
   private implicit val sender = context.self
-  private var pendingEntry: OrderBookEntry[C] = _
+  private var pendingEntry: Option[OrderBookEntry[C]] = None
 
   def keepPublishing(entry: OrderBookEntry[C]): Unit = {
-    pendingEntry = entry
-    submissionActor ! KeepSubmitting(pendingEntry)
+    pendingEntry = Some(entry)
+    submissionActor ! KeepSubmitting(entry)
   }
 
   def stopPublishing(): Unit = {
-    submissionActor ! StopSubmitting(pendingEntry.id)
+    pendingEntry.foreach { entry =>
+      submissionActor ! StopSubmitting(entry.id)
+    }
   }
 
   val receiveSubmissionEvents: Actor.Receive = {
-    case InMarket(entryInMarket) if entryInMarket == pendingEntry => listener.inMarket()
-    case Offline(entryInMarket) if entryInMarket == pendingEntry => listener.offline()
+    case InMarket(entryInMarket) if Some(entryInMarket) == pendingEntry => listener.inMarket()
+    case Offline(entryInMarket) if Some(entryInMarket) == pendingEntry => listener.offline()
   }
 }
 

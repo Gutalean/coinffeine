@@ -14,7 +14,7 @@ class ListOrdersCommandTest extends CommandTest {
   }
 
   it should "show order id, state and relevant amounts of existing orders" in {
-    val order = Order(Bid, 10.BTC, Price(500.EUR))
+    val order = Order.random(Bid, 10.BTC, Price(500.EUR))
     orderMap.set(order.id, order)
     executeCommand(command) should (
       include(order.id.value) and include(order.status.toString) and
@@ -23,7 +23,7 @@ class ListOrdersCommandTest extends CommandTest {
 
   it should "sort orders by the first field, the id" in {
     for (index <- 1 to 10) {
-      val order = Order(Bid, index.BTC, Price((500 - index).EUR))
+      val order = Order.random(Bid, index.BTC, Price((500 - index).EUR))
       orderMap.set(order.id, order)
     }
     val outputLines = executeCommand(command).lines.toList

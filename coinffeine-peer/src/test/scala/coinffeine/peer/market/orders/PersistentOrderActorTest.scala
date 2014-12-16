@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.exchange.AnyExchange
-import coinffeine.peer.market.submission.SubmissionSupervisor.StopSubmitting
+import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class PersistentOrderActorTest extends OrderActorTest {
@@ -47,6 +47,9 @@ class PersistentOrderActorTest extends OrderActorTest {
 
   it should "remember that the order was cancelled" in new Fixture {
     givenInMarketOrder()
+    submissionProbe.receiveWhile(idleTime) {
+      case KeepSubmitting(_) =>
+    }
     actor ! OrderActor.CancelOrder
     submissionProbe.expectMsg(StopSubmitting(order.id))
 

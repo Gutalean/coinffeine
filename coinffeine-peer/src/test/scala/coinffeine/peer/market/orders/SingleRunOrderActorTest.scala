@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import coinffeine.model.market._
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, InMarket, StopSubmitting}
 
 class SingleRunOrderActorTest extends OrderActorTest {
 
@@ -17,7 +17,10 @@ class SingleRunOrderActorTest extends OrderActorTest {
     expectNoMsg(idleTime)
     val reason = "some reason"
     actor ! OrderActor.CancelOrder
-    submissionProbe.expectMsg(StopSubmitting(order.id))
+    submissionProbe.fishForMessage() {
+      case KeepSubmitting(_) => false
+      case StopSubmitting(order.id) => true
+    }
     expectProperty { _.status shouldBe CancelledOrder }
   }
 

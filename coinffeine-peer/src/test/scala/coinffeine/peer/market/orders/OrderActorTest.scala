@@ -34,7 +34,7 @@ abstract class OrderActorTest extends AkkaSpec
   private implicit val patience = PatienceConfig(idleTime * 10, idleTime)
 
   protected trait Fixture {
-    val order = Order(Bid, 10.BTC, Price(2.EUR))
+    val order = Order.random(Bid, 10.BTC, Price(2.EUR))
     val orderMatch = OrderMatch(
       order.id,
       exchangeId,
@@ -85,7 +85,7 @@ abstract class OrderActorTest extends AkkaSpec
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      expectProperty { _.status shouldBe NotStartedOrder }
+      expectProperty { _.status shouldBe OfflineOrder }
       submissionProbe.expectMsg(KeepSubmitting(entry))
     }
 

@@ -38,7 +38,6 @@ class OrderActor[C <: FiatCurrency](
   private val currency = initialOrder.price.currency
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
   private var blockingInProgress: Option[BlockingInProgress] = None
-  private var started = false
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -58,7 +57,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def onOrderStarted(): Unit = {
-    started = true
+    order.start()
   }
 
   private def onAcceptedOrderMatch(event: AcceptedOrderMatch[C]): Unit = {
@@ -136,11 +135,9 @@ class OrderActor[C <: FiatCurrency](
   private def resumeOrder(): Unit = {
     requestPendingFunds()
     val currentOrder = order.view
-    if (order.shouldBeOnMarket) {
-      publisher.keepPublishing(currentOrder.pendingOrderBookEntry)
-    }
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
-    if (!started) {
+    updatePublisher(currentOrder)
+    if (!currentOrder.started) {
       persist(OrderStarted) { _ =>
         coinffeineProperties.orders.set(orderId, initialOrder)
         onOrderStarted()
@@ -175,21 +172,15 @@ class OrderActor[C <: FiatCurrency](
             log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
           }
           coinffeineProperties.orders.set(newOrder.id, newOrder)
-        }
-      }
-
-      override def keepInMarket(): Unit = {
-        if (recoveryFinished) {
-          publisher.keepPublishing(order.view.pendingOrderBookEntry)
-        }
-      }
-
-      override def keepOffMarket(): Unit = {
-        if (recoveryFinished) {
-          publisher.stopPublishing()
+          updatePublisher(newOrder)
         }
       }
     })
+  }
+
+  private def updatePublisher(order: Order[C]): Unit = {
+    if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
+    else publisher.stopPublishing()
   }
 
   private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[_]): Unit = {
