@@ -1,7 +1,7 @@
 package coinffeine.gui.wizard
 
 import scalafx.Includes._
-import scalafx.beans.property.{IntegerProperty, ObjectProperty}
+import scalafx.beans.property.{BooleanProperty, IntegerProperty, ObjectProperty}
 import scalafx.event.ActionEvent
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
@@ -19,6 +19,7 @@ import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: String)
     extends Stage(StageStyle.UTILITY) {
   private val data = new ObjectProperty[Data](this, "wizardData", initialData)
+  private val cancelled = new BooleanProperty(this, "cancelled", false)
   private val stepNumber = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
   private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
@@ -26,8 +27,11 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
   def run(): Data = {
     initializeSteps()
     showAndWait()
+    if (cancelled.value) { throw new Wizard.CancelledByUser("The wizard was cancelled by the user") }
     data.value
   }
+
+  def cancel(): Unit = { cancelled.set(true) }
 
   private val wizardHeader = {
     val progress = new ProgressIndicator(stepNumber, currentStep).pane
@@ -96,3 +100,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]], initialData: Data, wizardTitle: S
   }
 }
 
+object Wizard {
+
+  class CancelledByUser(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
+}
