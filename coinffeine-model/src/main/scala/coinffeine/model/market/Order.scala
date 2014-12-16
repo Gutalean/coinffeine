@@ -13,7 +13,7 @@ import coinffeine.model.exchange._
   * @param orderType  The type of order (bid or ask)
   * @param amount     The gross amount of bitcoins to bid or ask
   * @param price      The price per bitcoin
-  * @param notStarted Whether the order has actually started
+  * @param started    Whether the order has actually started
   * @param inMarket   Presence on the order book
   * @param cancelled  Whether the order was cancelled
   * @param exchanges  The exchanges that have been initiated to complete this order
@@ -23,7 +23,7 @@ case class Order[C <: FiatCurrency](
     orderType: OrderType,
     amount: Bitcoin.Amount,
     price: Price[C],
-    notStarted: Boolean,
+    started: Boolean,
     inMarket: Boolean,
     cancelled: Boolean,
     exchanges: Map[ExchangeId, Exchange[C]]) {
@@ -31,12 +31,12 @@ case class Order[C <: FiatCurrency](
   val role = Role.fromOrderType(orderType)
 
   def start: Order[C] = {
-    require(notStarted, s"$this has already started")
-    copy(notStarted = false)
+    require(!started, s"$this has already started")
+    copy(started = true)
   }
-  def cancel: Order[C] = copy(notStarted = false, inMarket = false, cancelled = true)
-  def becomeInMarket: Order[C] = copy(notStarted = false, inMarket = true)
-  def becomeOffline: Order[C] = copy(notStarted = false, inMarket = false)
+  def cancel: Order[C] = copy(started = true, cancelled = true)
+  def becomeInMarket: Order[C] = copy(inMarket = true)
+  def becomeOffline: Order[C] = copy(inMarket = false)
 
   lazy val amounts: Order.Amounts = Order.Amounts.fromExchanges(amount, role, exchanges)
   lazy val status: OrderStatus =
@@ -44,8 +44,11 @@ case class Order[C <: FiatCurrency](
     else if (amounts.completed) CompletedOrder
     else if (amounts.exchanging.isPositive) InProgressOrder
     else if (inMarket) InMarketOrder
-    else if (notStarted && amounts.notStarted) NotStartedOrder
-    else OfflineOrder
+    else if (started) OfflineOrder
+    else NotStartedOrder
+
+  require(started || !cancelled, "Cannot be cancelled and started")
+  require(!amounts.progressMade || started, "Cannot have progress and not be started")
 
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): Order[C] =
@@ -54,7 +57,7 @@ case class Order[C <: FiatCurrency](
       val nextExchanges = exchanges + (exchange.id -> exchange)
       val nextAmounts = Order.Amounts.fromExchanges(amount, role, nextExchanges)
       copy(
-        notStarted = notStarted && nextAmounts.notStarted,
+        started = started || nextAmounts.progressMade,
         inMarket = false,
         exchanges = nextExchanges
       )
@@ -92,7 +95,7 @@ object Order {
   case class Amounts(exchanged: Bitcoin.Amount, exchanging: Bitcoin.Amount, pending: Bitcoin.Amount) {
     require((exchanged + exchanging + pending).isPositive)
     def completed: Boolean = exchanging.isZero && pending.isZero
-    def notStarted: Boolean = exchanging.isZero && exchanged.isZero
+    def progressMade: Boolean = exchanging.isPositive || exchanged.isPositive
   }
 
   object Amounts {
@@ -120,7 +123,7 @@ object Order {
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: Price[C]): Order[C] =
-    Order(id, orderType, amount, price, notStarted = true, inMarket = false, cancelled = false,
+    Order(id, orderType, amount, price, started = false, inMarket = false, cancelled = false,
       exchanges = Map.empty)
 
   /** Creates an order with a random identifier. */

@@ -38,7 +38,6 @@ class OrderActor[C <: FiatCurrency](
   private val currency = initialOrder.price.currency
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
   private var blockingInProgress: Option[BlockingInProgress] = None
-  private var started = false
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -58,7 +57,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def onOrderStarted(): Unit = {
-    started = true
+    order.start()
   }
 
   private def onAcceptedOrderMatch(event: AcceptedOrderMatch[C]): Unit = {
@@ -138,7 +137,7 @@ class OrderActor[C <: FiatCurrency](
     val currentOrder = order.view
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
     updatePublisher(currentOrder)
-    if (!started) {
+    if (!currentOrder.started) {
       persist(OrderStarted) { _ =>
         coinffeineProperties.orders.set(orderId, initialOrder)
         onOrderStarted()

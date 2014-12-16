@@ -68,12 +68,6 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
     order should not be 'inMarket
   }
 
-  it must "become offline when cancelled" in {
-    val order = Order.random(Bid, 20.BTC, Price(1.EUR)).becomeInMarket.cancel
-    order shouldBe 'cancelled
-    order should not be 'inMarket
-  }
-
   it must "be in market when there is pending amount to be exchanged" in {
     Order.random(Bid, 10.BTC, Price(1.EUR)) shouldBe 'shouldBeOnMarket
   }
