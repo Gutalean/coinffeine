@@ -1,7 +1,7 @@
 package coinffeine.gui.application.launcher
 
 import java.io.File
-import scala.util.Success
+import scala.util.{Try, Success}
 
 import org.bitcoinj.core.Wallet
 
@@ -12,13 +12,13 @@ import coinffeine.peer.config.user.LocalAppDataDir
 
 class RunWizardAction(configProvider: ConfigProvider, network: Network) {
 
-  def apply() = Success(if (mustRunWizard) { runSetupWizard() })
+  def apply(): Try[Unit] = if (mustRunWizard) { runSetupWizard() } else Success {}
 
   private def mustRunWizard: Boolean =
     configProvider.okPaySettings().userAccount.isEmpty &&
     configProvider.okPaySettings().seedToken.isEmpty
 
-  private def runSetupWizard(): Unit = {
+  private def runSetupWizard() = Try {
     val keys = new KeyPair()
     val address = keys.toAddress(network)
     val setupConfig = new SetupWizard(address.toString).run()
