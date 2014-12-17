@@ -1,5 +1,11 @@
 v0.2.0:
  - Add console UI (coinffeine-headless)
+ - Broker load tests added (coinffeine-benchmark)
+ - Exchange status names changed to make them clearer
+ - Bug fixing
+   * Prevent orders to be cancelled twice
+   * Allow the app to start without network access
+   * Orders were not marked as completed when restored from disk
 
 v0.1.1:
  - Fix missing msvcr100.dll in Windows platform
