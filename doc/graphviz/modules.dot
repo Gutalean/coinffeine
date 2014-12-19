@@ -1,10 +1,13 @@
 digraph {
     server -> peer, commonTest;
     peer -> model, protocol, commonAkka, commonTest;
-    protocol -> model, commonAkka, commonTest;
+    protocol -> model, common, commonAkka, commonTest;
     model -> commonTest;
-    gui -> peer;
+    common -> commonTest;
+    headless -> peer, commonTest;
+    gui -> peer, commonTest;
     test -> peer, server, commonTest, okpaymock;
     okpaymock -> model, peer, commonAkka, commonTest;
     commonAkka -> commonTest;
+    benchmark -> peer, commonAkka, commonTest;
 }
