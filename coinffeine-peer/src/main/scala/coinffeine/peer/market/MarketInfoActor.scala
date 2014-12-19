@@ -14,7 +14,7 @@ import coinffeine.protocol.messages.brokerage._
   * It avoid unnecessary multiple concurrent requests and notify listeners.
   */
 private class MarketInfoActor(gateway: ActorRef) extends Actor {
-  import coinffeine.peer.market.MarketInfoActor._
+  import MarketInfoActor._
 
   private abstract class PendingRequest {
     private var listeners: Set[ActorRef] = Set.empty
@@ -31,7 +31,7 @@ private class MarketInfoActor(gateway: ActorRef) extends Actor {
     }
 
     def startForwarding(): Unit = {
-      MessageForwarder.Factory(gateway).forward(request, BrokerId, MarketInfoActor.RetryPolicy) {
+      MessageForwarder.Factory(gateway).forward(request, BrokerId, RetryPolicy) {
         case message if responseMatcher.isDefinedAt(message) => message
       }
     }

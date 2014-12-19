@@ -1,0 +1,136 @@
+digraph {
+    /*
+     * Legend:
+     *   Component nodes: concrete components
+     *   Dotted components: component interfaces
+     *   Shaded components: components that aggregate other components
+     *   Oval nodes: main classes / program entry points
+     *   Dotted arrows: use relationships
+     *   Solid arrows: aggregate relationships
+     *   Arrows with a triangle: implementation relationships
+     */
+
+    subgraph main {
+        BrokerLoadTest;
+        GuiMain[label="gui.Main"];
+        HeadlessMain[label="headless.Main"];
+    }
+
+    subgraph components {
+        node[shape="component"];
+        edge[arrowhead="empty"];
+
+        AppLauncher;
+
+        NetworkComponent[style="dotted"];
+        TestNetworkComponent[label="TestNetwork.Component"];
+        DefaultBitcoinPlatformComponent[label="DefaultBitcoinPlatform.Component"];
+        CoinffeineUnitTestNetworkComponent[label="CoinffeineUnitTestNetwork.Component"];
+        MainNetwork;
+        TestNetworkComponent, DefaultBitcoinPlatformComponent, CoinffeineUnitTestNetworkComponent,
+          MainNetwork -> NetworkComponent;
+
+        AmountsComponent[style="dotted"];
+        DefaultAmountsComponent -> AmountsComponent;
+
+        CoinffeineAppComponent[style="dotted"];
+        DefaultCoinffeineAppComponent[label="DefaultCoinffeineApp.Component"];
+        DefaultCoinffeineAppComponent -> CoinffeineAppComponent;
+
+        BitcoinPlatformComponent[style="dotted"];
+        DefaultBitcoinPlatformComponent -> BitcoinPlatformComponent;
+
+        ConfigComponent[style="dotted"];
+        UserFileConfigComponent -> ConfigComponent;
+        DaemonConfigComponent -> ConfigComponent;
+
+        ExchangeProtocolComponent[style="dotted"];
+        DefaultExchangeProtocolComponent[label="DefaultExchangeProtocol.Component"];
+        DefaultExchangeProtocolComponent -> ExchangeProtocolComponent;
+
+        ExchangeActorComponent[style="dotted", label="ExchangeActor.Component"];
+        DefaultExchangeActorComponent[label="DefaultExchangeActor.Component"];
+        DefaultExchangeActorComponent -> ExchangeActorComponent;
+
+        MutableBitcoinPropertiesComponent[label="MutableBitcoinProperties.Component"];
+        MutableCoinffeineNetworkPropertiesComponent[label="MutableCoinffeineNetworkProperties.Component"];
+        MutablePaymentProcessorPropertiesComponent[label="MutablePaymentProcessorProperties.Component"];
+
+        BitcoinPeerActorComponent[label="BitcoinPeerActor.Component"];
+
+        CoinffeinePeerActorComponent[label="CoinffeinePeerActor.Component"];
+
+        ProtocolConstantsComponent[style="dotted", label="ProtocolConstants.Component"];
+        DefaultProtocolConstantsComponent[label="ProtocolConstants.DefaultComponent"];
+        DefaultProtocolConstantsComponent -> ProtocolConstantsComponent;
+
+        MessageGatewayComponent[style="dotted", label="MessageGateway.Component"];
+        ProtoMessageGatewayComponent[label="ProtoMessageGateway.Component"];
+        ProtoMessageGatewayComponent -> MessageGatewayComponent;
+
+        ProtocolSerializationComponent[style="dotted"];
+        TestProtocolSerializationComponent, DefaultProtocolSerializationComponent ->
+            ProtocolSerializationComponent;
+
+        BrokerSupervisorActorComponent[label="BrokerSupervisorActor.Component"];
+
+        ProductionCoinffeineComponent[style="filled"];
+        TestCoinffeineComponent[style="filled"];
+        ServerMain[style="filled", label="server.Main"];
+        TestBrokerComponent[style="filled"];
+        DefaultCoinffeinePropertiesComponent[style="filled"];
+    }
+
+    subgraph uses {
+        edge[style="dotted"]
+        BrokerLoadTest -> ProductionCoinffeineComponent;
+        GuiMain -> ProductionCoinffeineComponent;
+        GuiMain -> AppLauncher -> ProductionCoinffeineComponent;
+        HeadlessMain -> ProductionCoinffeineComponent;
+
+        DefaultCoinffeineAppComponent -> CoinffeinePeerActorComponent, ConfigComponent,
+            DefaultAmountsComponent, DefaultCoinffeinePropertiesComponent;
+
+        DefaultExchangeActorComponent -> ExchangeProtocolComponent, ProtocolConstantsComponent;
+
+        BitcoinPeerActorComponent -> BitcoinPlatformComponent, NetworkComponent, ConfigComponent,
+            MutableBitcoinPropertiesComponent;
+
+        CoinffeinePeerActorComponent -> MessageGatewayComponent, BitcoinPeerActorComponent,
+            ExchangeActorComponent, ConfigComponent, NetworkComponent, ProtocolConstantsComponent,
+            MutablePaymentProcessorPropertiesComponent, MutableCoinffeineNetworkPropertiesComponent,
+            AmountsComponent;
+
+        ProtoMessageGatewayComponent ->
+            ProtocolSerializationComponent, NetworkComponent, MutableCoinffeineNetworkPropertiesComponent;
+
+        DefaultProtocolSerializationComponent -> NetworkComponent;
+
+        BrokerSupervisorActorComponent -> ExchangeProtocolComponent, MessageGatewayComponent,
+            BitcoinPeerActorComponent, ProtocolConstantsComponent, AmountsComponent,
+            ConfigComponent, NetworkComponent;
+    }
+
+    subgraph aggregations {
+        ServerMain, ProductionCoinffeineComponent, TestCoinffeineComponent, TestBrokerComponent ->
+            DefaultAmountsComponent, DefaultCoinffeineAppComponent, DefaultBitcoinPlatformComponent,
+            DefaultExchangeProtocolComponent, DefaultExchangeActorComponent,
+            DefaultCoinffeinePropertiesComponent, DefaultProtocolSerializationComponent;
+
+        TestCoinffeineComponent, TestBrokerComponent -> ConfigComponent;
+
+        ServerMain -> DaemonConfigComponent, ProtoMessageGatewayComponent,
+            BrokerSupervisorActorComponent;
+
+        ProductionCoinffeineComponent, TestCoinffeineComponent ->
+            CoinffeinePeerActorComponent, BitcoinPeerActorComponent,
+            DefaultProtocolConstantsComponent;
+
+        ProductionCoinffeineComponent -> UserFileConfigComponent, ProtoMessageGatewayComponent;
+
+        TestBrokerComponent -> BrokerSupervisorActorComponent;
+
+        DefaultCoinffeinePropertiesComponent -> MutableBitcoinPropertiesComponent,
+            MutableCoinffeineNetworkPropertiesComponent, MutablePaymentProcessorPropertiesComponent;
+    }
+}
