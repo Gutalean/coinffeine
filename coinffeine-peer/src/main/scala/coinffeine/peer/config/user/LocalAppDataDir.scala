@@ -1,7 +1,9 @@
 package coinffeine.peer.config.user
 
 import java.io.File
-import java.nio.file.{Paths, Path}
+import java.nio.file.Path
+
+import coinffeine.common.Platform
 
 object LocalAppDataDir {
 
@@ -10,13 +12,7 @@ object LocalAppDataDir {
     * The local data dir is created if it does not exist.
     */
   def apply(): Path = {
-    val path = osCodename match {
-      case "WIN" => windowsUserSettingsPath
-      case "MAC" => macUserSettingsPath
-      case "LIN" => linuxUserSettingsPath
-      case _ => throw new IllegalStateException(
-        s"cannot determine your operating system family from $osCodename")
-    }
+    val path = Platform.detect().userSettingsPath()
     ensureDirExists(path.toFile)
     path
   }
@@ -32,16 +28,6 @@ object LocalAppDataDir {
     }
     path
   }
-
-  private def osCodename = System.getProperty("os.name").take(3).toUpperCase
-
-  private def windowsUserSettingsPath: Path = Paths.get(System.getenv("APPDATA"), "Coinffeine")
-
-  private def macUserSettingsPath: Path =
-    Paths.get(System.getProperty("user.home"), "Library", "Application Support", "Coinffeine")
-
-  private def linuxUserSettingsPath: Path =
-    Paths.get(System.getProperty("user.home"), ".coinffeine")
 
   private def ensureDirExists(dir: File): Unit = {
     if (!dir.exists()) {
