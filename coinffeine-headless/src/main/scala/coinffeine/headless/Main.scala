@@ -1,7 +1,8 @@
 package coinffeine.headless
 
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
+import scala.util.Success
+import scala.util.control.NonFatal
 
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.core.status.NopStatusListener
@@ -13,6 +14,8 @@ import coinffeine.peer.pid.PidFile
 
 object Main extends ProductionCoinffeineComponent {
 
+  private val timeout = 20.seconds
+
   def main(args: Array[String]): Unit = {
     configureQuietLoggingInitialization()
     acquirePidFile()
@@ -20,14 +23,17 @@ object Main extends ProductionCoinffeineComponent {
       println("You should run the wizard or configure manually the application")
       System.exit(-1)
     }
-    val startupTimeout = 20.seconds
-    app.startAndWait(startupTimeout)
     try {
+      app.startAndWait(timeout)
       new CoinffeineInterpreter(app).run()
+      System.exit(-1)
+    } catch {
+      case NonFatal(ex) =>
+        ex.printStackTrace()
     } finally {
-      app.stopAndWait(startupTimeout)
+      app.stopAndWait(timeout)
     }
-    System.exit(0)
+    System.exit(-1)
   }
 
   private def configureQuietLoggingInitialization(): Unit = {
