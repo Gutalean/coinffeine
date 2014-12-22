@@ -24,7 +24,7 @@ object Dependencies {
   lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
   lazy val gatling = Seq(
-    "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.1.0-SNAPSHOT",
+    "io.gatling.highcharts" % "gatling-charts-highcharts" % "2.1.0",
     "io.gatling" % "test-framework" % "1.0" % "test"
   )
   lazy val h2 = "com.h2database" % "h2" % "1.3.175"
