@@ -8,6 +8,7 @@ import scalafx.scene.image.ImageView
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
 import coinffeine.gui.qrcode.QRCode
+import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
 private[setup] class TopUpStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
@@ -51,7 +52,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
   }
 
   private def openFAQ(): Unit = {
-    java.awt.Desktop.getDesktop.browse(TopUpStepPane.FaqUrl)
+    Browser.default.browse(TopUpStepPane.FaqUrl)
   }
 }
 
