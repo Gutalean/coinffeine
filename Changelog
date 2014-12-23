@@ -1,3 +1,5 @@
+v0.2.2:
+
 v0.2.1:
  - Bug fixing
    * Prevent multiple running instances of the application
