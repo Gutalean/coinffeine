@@ -1,16 +1,18 @@
 package coinffeine.gui.application.launcher
 
 import java.io.File
-import scala.util.{Try, Success}
+import scala.util.{Success, Try}
 
+import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core.Wallet
 
 import coinffeine.gui.setup.SetupWizard
-import coinffeine.model.bitcoin.{KeyPair, Network}
+import coinffeine.model.bitcoin.Network
+import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.config.user.LocalAppDataDir
 
-class RunWizardAction(configProvider: ConfigProvider, network: Network) {
+class RunWizardAction(configProvider: ConfigProvider, network: Network) extends StrictLogging {
 
   def apply(): Try[Unit] = if (mustRunWizard) { runSetupWizard() } else Success {}
 
@@ -19,12 +21,8 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) {
     configProvider.okPaySettings().seedToken.isEmpty
 
   private def runSetupWizard() = Try {
-    val keys = new KeyPair()
-    val address = keys.toAddress(network)
-    val setupConfig = new SetupWizard(address.toString).run()
-
-    configProvider.saveUserSettings(
-      configProvider.bitcoinSettings().copy(walletFile = createWallet(keys)))
+    val wallet = loadOrCreateWallet()
+    val setupConfig = new SetupWizard(wallet.delegate.freshReceiveAddress().toString).run()
 
     setupConfig.okPayWalletAccess.foreach { access =>
       val okPaySettings = configProvider.okPaySettings()
@@ -35,11 +33,18 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) {
     }
   }
 
-  private def createWallet(keys: KeyPair): File = {
-    val wallet = new Wallet(network)
-    wallet.importKey(keys)
+  private def loadOrCreateWallet(): SmartWallet = {
+    if (!configProvider.bitcoinSettings().walletFile.isFile) {
+      configProvider.saveUserSettings(
+        configProvider.bitcoinSettings().copy(walletFile = createWallet()))
+    }
+    SmartWallet.loadFromFile(configProvider.bitcoinSettings().walletFile)
+  }
+
+  private def createWallet(): File = {
     val walletFile = LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toFile
-    wallet.saveToFile(walletFile)
+    new Wallet(network).saveToFile(walletFile)
+    logger.info("Created new wallet at {}", walletFile)
     walletFile
   }
 }

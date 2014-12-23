@@ -1,4 +1,6 @@
 v0.2.2:
+ - Bug fixing
+   * Fix race condition on wallet initialization
 
 v0.2.1:
  - Bug fixing
