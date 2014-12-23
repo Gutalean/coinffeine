@@ -19,7 +19,7 @@ DefaultGroupName=Coinffeine
 ;Optional License
 LicenseFile=
 ;WinXP or above
-MinVersion=0,5.1
+MinVersion=0,6.0
 OutputBaseFilename=Coinffeine-${version}
 Compression=lzma
 SolidCompression=yes
