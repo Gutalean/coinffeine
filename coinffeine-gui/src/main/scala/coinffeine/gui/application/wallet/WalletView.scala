@@ -18,6 +18,7 @@ import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.qrcode.QRCode
+import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.{Address, Hash}
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.peer.api.CoinffeineApp
@@ -147,7 +148,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
                 },
                 new Button("More") {
                   onAction = { _: ActionEvent =>
-                    java.awt.Desktop.getDesktop.browse(WalletView.detailsOfTransaction(hashString))
+                    Browser.default.browse(WalletView.detailsOfTransaction(hashString))
                   }
                 }
               )
