@@ -15,6 +15,7 @@ import org.controlsfx.dialog.{Dialog, Dialogs}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.util.Browser
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
@@ -141,7 +142,7 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
             new Hyperlink("Know more.") {
               styleClass += "smalltext"
               onAction = { e: ActionEvent =>
-                java.awt.Desktop.getDesktop.browse(OrderSubmissionForm.OrderAmountsUrl)
+                Browser.default.browse(OrderSubmissionForm.OrderAmountsUrl)
               }
             }
           )

@@ -1,6 +1,5 @@
 package coinffeine.gui.application.launcher
 
-import java.awt.Desktop
 import java.net.URI
 import scala.util.{Failure, Success, Try}
 
@@ -8,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.controlsfx.dialog.{Dialog, DialogStyle, Dialogs}
 
 import coinffeine.gui.application.updates.HttpConfigVersionChecker
-import coinffeine.gui.util.FxExecutor
+import coinffeine.gui.util.{Browser, FxExecutor}
 
 class CheckForUpdatesAction extends LazyLogging {
 
@@ -27,7 +26,7 @@ class CheckForUpdatesAction extends LazyLogging {
           .actions(Dialog.Actions.NO, Dialog.Actions.YES)
           .showConfirm()
         if (answer == Dialog.Actions.YES) {
-          Desktop.getDesktop.browse(CheckForUpdatesAction.DownloadsUrl)
+          Browser.default.browse(CheckForUpdatesAction.DownloadsUrl)
         }
       case Success(None) =>
         logger.info("Coinffeine app is up to date")
