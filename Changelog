@@ -1,3 +1,8 @@
+v0.2.1:
+ - Bug fixing
+   * Prevent multiple running instances of the application
+   * Fix compilation issues on IntelliJ IDEA
+
 v0.2.0:
  - Add console UI (coinffeine-headless)
  - Broker load tests added (coinffeine-benchmark)
