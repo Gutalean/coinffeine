@@ -9,6 +9,8 @@ import coinffeine.peer.api.impl.ProductionCoinffeineComponent
 trait AppLauncher { this: ProductionCoinffeineComponent =>
 
   def launchApp(): Try[PrimaryStage] = {
+    // FIXME: the laziness provided by the comprehension is needed since the cake does not properly
+    //        manage the life cycle and race conditions arise
     for {
       _ <- new AcquirePidFileAction().apply()
       _ <- new RunWizardAction(configProvider, network).apply()
