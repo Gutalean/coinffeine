@@ -2,6 +2,7 @@ v0.2.1:
  - Bug fixing
    * Prevent multiple running instances of the application
    * Fix compilation issues on IntelliJ IDEA
+   * Fix opening of external links on Linux
 
 v0.2.0:
  - Add console UI (coinffeine-headless)
