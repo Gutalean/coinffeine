@@ -1,6 +1,8 @@
 package coinffeine.protocol.gateway.proto
 
-import akka.actor.{Status, Stash, Actor, ActorLogging}
+import scala.concurrent.Future
+
+import akka.actor._
 import akka.pattern._
 
 import coinffeine.model.network.PeerId
@@ -14,13 +16,8 @@ class ConnectionActor(session: P2PNetwork.Session, receiverId: PeerId)
 
   private var connection: Option[P2PNetwork.Connection] = None
 
-  override def preStart(): Unit = {
-    startConnecting()
-  }
-
-  override def postStop(): Unit = {
-    closeConnection()
-  }
+  override def preStart(): Unit = startConnecting()
+  override def postStop(): Unit = closeConnection()
 
   override def receive: Receive = connecting
 
@@ -36,11 +33,14 @@ class ConnectionActor(session: P2PNetwork.Session, receiverId: PeerId)
   }
 
   private def ready: Receive = {
-    case Message(bytes) =>
-      connection.get.send(bytes)
-        .map(_ => MessageDelivered)
-        .pipeTo(self)
-      context.become(sending)
+    case Message(bytes) => becomeSendingUntil(connection.get.send(bytes))
+    case Ping => becomeSendingUntil(connection.get.ping())
+    case PingBack => becomeSendingUntil(connection.get.pingBack())
+  }
+
+  private def becomeSendingUntil(future: Future[Unit]): Unit = {
+    future.map(_ => MessageDelivered).pipeTo(self)
+    context.become(sending)
   }
 
   private def sending: Receive = {
@@ -68,5 +68,7 @@ class ConnectionActor(session: P2PNetwork.Session, receiverId: PeerId)
 
 object ConnectionActor {
   case class Message(bytes: Array[Byte])
+  case object Ping
+  case object PingBack
   private case object MessageDelivered
 }

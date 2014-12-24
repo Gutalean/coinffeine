@@ -24,7 +24,11 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
 
     def canBeReused: Boolean = !hasExpired && isValid
     def close(): Unit = {}
-    def send(to: PeerId, payload: Array[Byte]): Unit
+    def send(to: PeerId, payload: Array[Byte]): Unit = sendObject(to, payload)
+    def ping(to: PeerId): Unit = sendObject(to, PingProtocol.Ping)
+    def pingBack(to: PeerId): Unit = sendObject(to, PingProtocol.Pong)
+
+    protected def sendObject(to: PeerId, payloadObject: Any): Unit
   }
 
   private class DirectPeer(connection: PeerConnection) extends CachedPeer {
@@ -36,9 +40,9 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
       connection.close()
     }
 
-    override def send(to: PeerId, payload: Array[Byte]): Unit = {
+    override protected def sendObject(to: PeerId, payloadObject: Any): Unit = {
       delegate.sendDirect(connection)
-        .setObject(payload)
+        .setObject(payloadObject)
         .start()
         .onFailure { case cause =>
           logger.error(s"Cannot send direct message to peer $to", cause)
@@ -50,13 +54,11 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
   }
 
   private class IndirectPeer extends CachedPeer {
-    override def send(to: PeerId, payload: Array[Byte]): Unit = {
+    override protected def sendObject(to: PeerId, payloadObject: Any): Unit = {
       delegate.send(Number160Util.fromPeerId(to))
-        .setObject(payload)
+        .setObject(payloadObject)
         .start()
-        .onFailure { case cause =>
-        logger.error("Cannot send message to peer {}", Seq(to, cause): _*)
-      }
+        .onFailure { case cause => logger.error(s"Cannot send message to peer $to", cause) }
     }
 
     override val toString = "IndirectPeer"
@@ -64,9 +66,9 @@ private class TomP2PConnection(receiverId: PeerId, delegate: Peer)
 
   private var cachedPeer: Option[CachedPeer] = None
 
-  override def send(payload: Array[Byte]): Future[Unit] = {
-    peer().map(_.send(receiverId, payload))
-  }
+  override def send(payload: Array[Byte]): Future[Unit] = peer().map(_.send(receiverId, payload))
+  override def ping(): Future[Unit] = peer().map(_.ping(receiverId))
+  override def pingBack(): Future[Unit] = peer().map(_.pingBack(receiverId))
 
   override def close(): Future[Unit] = Future {
     clearConnection()
