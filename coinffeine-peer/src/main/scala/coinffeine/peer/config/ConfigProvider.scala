@@ -37,6 +37,8 @@ trait ConfigProvider extends SettingsProvider {
   /** Retrieve the whole configuration, including reference and user config. */
   def config: Config = userConfig.withFallback(referenceConfig)
 
+  override def generalSettings() = SettingsMapping.fromConfig[GeneralSettings](config)
+
   override def bitcoinSettings() = SettingsMapping.fromConfig[BitcoinSettings](config)
 
   override def messageGatewaySettings() = {

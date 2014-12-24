@@ -33,6 +33,15 @@ object SettingsMapping {
   def toConfig[A](settings: A, config: Config = EmptyConfig)
                  (implicit mapping: SettingsMapping[A]): Config = mapping.toConfig(settings, config)
 
+  implicit val general = new SettingsMapping[GeneralSettings] {
+
+    override def fromConfig(config: Config) =
+      GeneralSettings(getBoolean(config, "coinffeine.licenseAccepted"))
+
+    override def toConfig(settings: GeneralSettings, config: Config) =
+      config.withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+  }
+
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(config: Config) = BitcoinSettings(
@@ -124,7 +133,14 @@ object SettingsMapping {
     val value = config.getString(key).trim
     if (value.isEmpty) None else Some(value)
   } catch {
-    case ex: ConfigException.Missing => None
+    case _: ConfigException.Missing => None
+  }
+
+  /** Get boolean key with missing-is-false semantics */
+  private def getBoolean(config: Config, key: String): Boolean = try {
+    config.getBoolean(key)
+  } catch {
+    case _: ConfigException.Missing => false
   }
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
