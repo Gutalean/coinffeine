@@ -37,19 +37,44 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     override def messageReceived(peer: PeerId, payload: Array[Byte]): Unit = {
       self ! ReceiveData(peer, payload)
     }
+
+    override def pingedFrom(peerId: PeerId): Unit = {
+      getOrSpawnConnectionActor(peerId) ! ConnectionActor.PingBack
+    }
+
+    override def pingedBackFrom(peerId: PeerId): Unit = {
+      self ! PingedBack
+    }
   }
+
+  override def postStop(): Unit = disconnect()
 
   override protected def starting(join: Join): Receive = {
     val listener = sender()
+    var pingTimeout: Option[Cancellable] = None
     connect(join)
+
+    def failToStart(cause: Throwable): Unit = {
+      log.error(cause, "Cannot connect as {}. Retrying in {}", join, connectionRetryInterval)
+      context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
+    }
+
     becomeStarted {
       case newSession: P2PNetwork.Session =>
         session = Some(newSession)
-        new InitializedServer(newSession.brokerId, listener).becomeStarted()
+        getOrSpawnConnectionActor(newSession.brokerId) ! ConnectionActor.Ping
+        pingTimeout = Some(context.system.scheduler.scheduleOnce(PingTimeout, self, PingBackTimedOut))
 
-      case Status.Failure(cause) =>
-        log.error(cause, "Cannot connect as {}. Retrying in {}", join, connectionRetryInterval)
-        context.system.scheduler.scheduleOnce(connectionRetryInterval, self, RetryConnection)
+      case PingedBack if session.isDefined =>
+        pingTimeout.foreach(_.cancel())
+        new InitializedServer(session.get.brokerId, listener).becomeStarted()
+
+      case PingBackTimedOut => failToStart(new Exception(
+        """Unidirectional connectivity with the network:
+          |our messages reach the network but the network does not reach us back.
+        """.stripMargin))
+
+      case Status.Failure(cause) => failToStart(cause)
 
       case RetryConnection =>
         disconnect()
@@ -90,13 +115,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
   private class InitializedServer(brokerId: PeerId, listener: ActorRef) {
 
-    def started(): Receive = {
-      updateConnectionStatus(Some(brokerId))
-      handlingMessages orElse manageConnectionStatus
-    }
-
     def becomeStarted(): Unit = {
-      become(started())
+      updateConnectionStatus(Some(brokerId))
+      become(handlingMessages orElse manageConnectionStatus)
     }
 
     private val handlingMessages: Receive = {
@@ -110,9 +131,12 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
 
     private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit = {
-      connections.getOrElse(to, spawnConnectionActor(to)) ! ConnectionActor.Message(msg.toByteArray)
+      getOrSpawnConnectionActor(to) ! ConnectionActor.Message(msg.toByteArray)
     }
   }
+
+  private def getOrSpawnConnectionActor(to: PeerId): ActorRef =
+    connections.getOrElse(to, spawnConnectionActor(to))
 
   private def spawnConnectionActor(to: PeerId): ActorRef = {
     val ref = context.actorOf(Props(new ConnectionActor(session.get, to)), to.value)
@@ -126,9 +150,13 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 }
 
 private[gateway] object ProtobufServerActor {
+  private val PingTimeout = 5.seconds
+
   private case class PeerCountUpdated(count: Int)
   private case class ReceiveData(from: PeerId, data: Array[Byte])
   private case object RetryConnection
+  private case object PingedBack
+  private case object PingBackTimedOut
 
   def props(properties: MutableCoinffeineNetworkProperties,
             ignoredNetworkInterfaces: Seq[NetworkInterface],
