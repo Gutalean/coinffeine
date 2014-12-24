@@ -6,7 +6,7 @@ import scala.util.{Success, Try}
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core.Wallet
 
-import coinffeine.gui.setup.SetupWizard
+import coinffeine.gui.setup.{SetupConfig, SetupWizard}
 import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
@@ -16,21 +16,11 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) extends 
 
   def apply(): Try[Unit] = if (mustRunWizard) { runSetupWizard() } else Success {}
 
-  private def mustRunWizard: Boolean =
-    configProvider.okPaySettings().userAccount.isEmpty &&
-    configProvider.okPaySettings().seedToken.isEmpty
+  private def mustRunWizard: Boolean = !configProvider.generalSettings().licenseAccepted
 
   private def runSetupWizard() = Try {
-    val wallet = loadOrCreateWallet()
-    val setupConfig = new SetupWizard(wallet.delegate.freshReceiveAddress().toString).run()
-
-    setupConfig.okPayWalletAccess.foreach { access =>
-      val okPaySettings = configProvider.okPaySettings()
-      configProvider.saveUserSettings(okPaySettings.copy(
-        userAccount = Some(access.walletId),
-        seedToken = Some(access.seedToken)
-      ))
-    }
+    val topUpAddress = loadOrCreateWallet().delegate.freshReceiveAddress()
+    persistSetupConfiguration(new SetupWizard(topUpAddress.toString).run())
   }
 
   private def loadOrCreateWallet(): SmartWallet = {
@@ -46,5 +36,18 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) extends 
     new Wallet(network).saveToFile(walletFile)
     logger.info("Created new wallet at {}", walletFile)
     walletFile
+  }
+
+  private def persistSetupConfiguration(setupConfig: SetupConfig): Unit = {
+    configProvider.saveUserSettings(
+      configProvider.generalSettings().copy(licenseAccepted = true))
+
+    setupConfig.okPayWalletAccess.foreach { access =>
+      val okPaySettings = configProvider.okPaySettings()
+      configProvider.saveUserSettings(okPaySettings.copy(
+        userAccount = Some(access.walletId),
+        seedToken = Some(access.seedToken)
+      ))
+    }
   }
 }
