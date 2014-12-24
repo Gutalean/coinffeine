@@ -25,7 +25,7 @@ class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
       .showConfirm()
     answer match {
       case Dialog.Actions.YES => cancel()
-      case _ =>  ev.consume()
+      case _ => ev.consume()
     }
   }
 

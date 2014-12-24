@@ -6,6 +6,9 @@ import coinffeine.protocol.MessageGatewaySettings
 
 trait SettingsProvider {
 
+  /** Retrieve application-wise settings. */
+  def generalSettings(): GeneralSettings
+
   /** Retrieve the settings of the Bitcoin network. */
   def bitcoinSettings(): BitcoinSettings
 
