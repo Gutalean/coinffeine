@@ -47,6 +47,8 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
   }
 
+  override def postStop(): Unit = disconnect()
+
   override protected def starting(join: Join): Receive = {
     val listener = sender()
     var pingTimeout: Option[Cancellable] = None
