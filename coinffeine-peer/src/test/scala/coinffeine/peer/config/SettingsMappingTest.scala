@@ -18,6 +18,18 @@ import coinffeine.protocol.MessageGatewaySettings
 
 class SettingsMappingTest extends UnitTest with OptionValues {
 
+  "General settings mapping" should "map from config" in {
+    val mapFromConfig = SettingsMapping.fromConfig[GeneralSettings] _
+    mapFromConfig(ConfigFactory.empty()).licenseAccepted shouldBe false
+    mapFromConfig(makeConfig("coinffeine.licenseAccepted" -> false)).licenseAccepted shouldBe false
+    mapFromConfig(makeConfig("coinffeine.licenseAccepted" -> true)).licenseAccepted shouldBe true
+  }
+
+  it should "map to config" in {
+    SettingsMapping.toConfig(GeneralSettings(licenseAccepted = false))
+      .getBoolean("coinffeine.licenseAccepted") shouldBe false
+  }
+
   "Bitcoins settings mapping" should "map from config" in {
     val conf = makeConfig(
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
