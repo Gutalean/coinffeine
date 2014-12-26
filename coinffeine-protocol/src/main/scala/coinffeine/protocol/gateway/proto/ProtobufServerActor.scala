@@ -3,6 +3,7 @@ package coinffeine.protocol.gateway.proto
 import java.net.NetworkInterface
 import scala.collection.JavaConversions._
 import scala.concurrent.duration._
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
@@ -11,7 +12,7 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.network._
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.P2PNetwork
-import coinffeine.protocol.gateway.p2p.P2PNetwork.{PortForwardedPeerNode, AutodetectPeerNode, StandaloneNode}
+import coinffeine.protocol.gateway.p2p.P2PNetwork.{AutodetectPeerNode, PortForwardedPeerNode, StandaloneNode}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 
 private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties,
@@ -131,7 +132,11 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     }
 
     private def sendMessage(to: PeerId, msg: CoinffeineMessage): Unit = {
-      getOrSpawnConnectionActor(to) ! ConnectionActor.Message(msg.toByteArray)
+      Try(msg.toByteArray) match {
+        case Success(serializedMessage) =>
+          getOrSpawnConnectionActor(to) ! ConnectionActor.Message(serializedMessage)
+        case Failure(ex) => log.error(ex, "Cannot serialize {}", msg)
+      }
     }
   }
 
