@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka = "2.3.7"
+    val akka = "2.3.8"
     val dispatch = "0.11.2"
   }
 
