@@ -33,11 +33,15 @@ object P2PNetwork {
 
   trait Connection {
     def send(payload: Array[Byte]): Future[Unit]
+    def ping(): Future[Unit]
+    def pingBack(): Future[Unit]
     def close(): Future[Unit]
   }
 
   trait Listener {
     def peerCountUpdated(peers: Int): Unit
     def messageReceived(peer: PeerId, payload: Array[Byte]): Unit
+    def pingedFrom(peerId: PeerId): Unit
+    def pingedBackFrom(peerId: PeerId): Unit
   }
 }

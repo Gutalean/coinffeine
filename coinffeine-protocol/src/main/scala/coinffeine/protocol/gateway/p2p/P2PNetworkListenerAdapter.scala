@@ -4,10 +4,8 @@ import net.tomp2p.p2p.Peer
 import net.tomp2p.peers.{PeerAddress, PeerMapChangeListener}
 import net.tomp2p.rpc.ObjectDataReply
 
-import coinffeine.protocol.gateway.p2p.P2PNetwork.Listener
-
 /** Bridges from what is offered by [[P2PNetwork.Listener]] to the listeners at [[Peer]] */
-private class P2PNetworkListenerAdapter(peer: Peer, adaptedListener: Listener)
+private class P2PNetworkListenerAdapter(peer: Peer, adaptedListener: P2PNetwork.Listener)
   extends PeerMapChangeListener with ObjectDataReply {
 
   updateCount()
@@ -21,8 +19,12 @@ private class P2PNetworkListenerAdapter(peer: Peer, adaptedListener: Listener)
   }
 
   override def reply(sender: PeerAddress, request: Any): AnyRef = {
-    adaptedListener.messageReceived(
-      Number160Util.toPeerId(sender), request.asInstanceOf[Array[Byte]])
+    val peerId = Number160Util.toPeerId(sender)
+    request match {
+      case PingProtocol.Ping => adaptedListener.pingedFrom(peerId)
+      case PingProtocol.Pong => adaptedListener.pingedBackFrom(peerId)
+      case payload: Array[Byte] => adaptedListener.messageReceived(peerId, payload)
+    }
     null
   }
 }

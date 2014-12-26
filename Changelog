@@ -2,6 +2,8 @@ v0.2.2:
  - Bug fixing
    * Fix race condition on wallet initialization
    * Avoid the wizard to be shown more than once
+   * Don't show a "green" network status if the network can reach us back
+   * Fix application not closing when trying to exit in the middle of a network connection attempt
 
 v0.2.1:
  - Bug fixing

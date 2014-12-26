@@ -11,7 +11,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.gateway.p2p.P2PNetwork
 import coinffeine.protocol.gateway.p2p.P2PNetwork.Connection
-import coinffeine.protocol.gateway.proto.ConnectionActor.Message
+import coinffeine.protocol.gateway.proto.ConnectionActor.{Message, Ping, PingBack}
 
 class ConnectionActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("connection")) {
 
@@ -58,6 +58,20 @@ class ConnectionActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterceptio
     }
   }
 
+  it should "ping when requested" in new Fixture {
+    val connection = new MockConnection
+    session.connectionSuccess(0, connection)
+    actor ! Ping
+    connection.expectPing()
+  }
+
+  it should "ping back when requested" in new Fixture {
+    val connection = new MockConnection
+    session.connectionSuccess(0, connection)
+    actor ! PingBack
+    connection.expectPingBack()
+  }
+
   case object ConnectionException extends Exception("Injected connection exception") with NoStackTrace
 
   class MockSession extends P2PNetwork.Session {
@@ -88,21 +102,15 @@ class ConnectionActorTest extends AkkaSpec(AkkaSpec.systemWithLoggingInterceptio
   class MockConnection extends P2PNetwork.Connection {
     private val probe = TestProbe()
 
-    override def send(payload: Array[Byte]) = Future.successful {
-      probe.ref ! payload
-    }
+    override def send(payload: Array[Byte]) = Future.successful { probe.ref ! payload }
+    override def ping() = Future.successful { probe.ref ! "ping!" }
+    override def pingBack() = Future.successful { probe.ref ! "pong!" }
+    override def close() = Future.successful { probe.ref ! "closed" }
 
-    override def close() = Future.successful {
-      probe.ref ! "closed"
-    }
-
-    def expectSendRequest(message: Message): Unit = {
-      probe.expectMsg(message.bytes)
-    }
-
-    def expectBeingClosed(): Unit = {
-      probe.expectMsg("closed")
-    }
+    def expectPing(): Unit = { probe.expectMsg("ping!") }
+    def expectPingBack(): Unit = { probe.expectMsg("pong!") }
+    def expectSendRequest(message: Message): Unit = { probe.expectMsg(message.bytes) }
+    def expectBeingClosed(): Unit = { probe.expectMsg("closed") }
   }
 
   class MockFaultyConnection extends MockConnection {
