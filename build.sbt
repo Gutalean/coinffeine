@@ -1,3 +1,4 @@
+import CoinffeineKeys._
 import scala.collection.JavaConversions._
 
 name := "coinffeine"
@@ -53,3 +54,21 @@ libraryDependencies in ThisBuild ++= Dependencies.loggingFacade ++ Dependencies.
 )
 
 exportJars in ThisBuild := true
+
+aggregate in release := false
+
+release := {
+  val moduleOutputs = Seq(
+    (release in Build.headless).value,
+    (release in Build.okpaymock).value,
+    (release in Build.server).value,
+    (release in Build.gui).value
+  )
+  val releaseDir = target.value / "release" / version.value
+  IO.createDirectory(releaseDir)
+  for (output <- moduleOutputs) {
+    if (output.isDirectory) IO.copyDirectory(output, releaseDir / output.name, overwrite = true)
+    else IO.copyFile(output, releaseDir / output.name)
+  }
+  releaseDir
+}

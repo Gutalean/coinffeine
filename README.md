@@ -34,7 +34,18 @@ Getting coverage metrics
 ------------------------
 
 To get coverage metrics just run `sbt scoverage:test` and loot at the
-directory `target/scala-2.10/scoverage-report` of every module.
+directory `target/scala-2.x/scoverage-report` of every module.
+
+
+Generating release binaries
+---------------------------
+
+To generate all module binaries that can be generated on the host platform (you wont generate Win-64 binaries from Mac)
+just run:
+
+    sbt release
+
+And you will find the binaries at `target/release/<version>`.
 
 
 Continuous Integration

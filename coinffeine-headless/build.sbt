@@ -1,4 +1,5 @@
 import AssemblyKeys._
+import CoinffeineKeys._
 
 name := "coinffeine-headless"
 
@@ -31,3 +32,5 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 }
 
 sources in (Compile, doc) := Seq.empty
+
+release := assembly.value
