@@ -17,6 +17,7 @@ object Build extends sbt.Build {
 
   lazy val server = (Project(id = "server", base = file("coinffeine-server"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    settings(Assembly.settings("coinffeine.server.main.Main"): _*)
     dependsOn(peer % "compile->compile;test->test", commonTest % "test->compile")
   )
 
@@ -70,6 +71,7 @@ object Build extends sbt.Build {
 
   lazy val headless = (Project(id = "headless", base = file("coinffeine-headless"))
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    settings(Assembly.settings("coinffeine.headless.Main"): _*)
     dependsOn(peer % "compile->compile;test->test", commonTest)
   )
 
@@ -85,6 +87,7 @@ object Build extends sbt.Build {
 
   lazy val okpaymock = (Project(id = "okpaymock", base = file("coinffeine-okpaymock"))
     settings(CxfWsdl2JavaPlugin.cxf.settings: _*)
+    settings(Assembly.settings("coinffeine.okpaymock.main.Main"): _*)
     settings(
       sourceGenerators in Compile <+= wsdl2java in Compile,
       wsdls := Seq(
