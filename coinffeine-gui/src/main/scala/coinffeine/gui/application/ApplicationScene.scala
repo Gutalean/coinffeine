@@ -4,7 +4,7 @@ import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control._
-import scalafx.scene.layout.{VBox, BorderPane}
+import scalafx.scene.layout.{Priority, VBox, BorderPane}
 import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
@@ -88,6 +88,7 @@ class ApplicationScene(views: Seq[ApplicationView],
         menuBar,
         new BorderPane {
           id = "main-root-pane"
+          vgrow = Priority.Always
           top = toolbarPane
           bottom = statusBarPane
           center <== currentView.delegate.map(_.centerPane.delegate)
