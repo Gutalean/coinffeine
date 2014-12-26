@@ -1,3 +1,5 @@
+import CoinffeineKeys._
+
 name := "Coinffeine"
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
@@ -57,3 +59,8 @@ JFX.pkgResourcesDir := Seq(
 ).mkString(":")
 
 JFX.verbose := true
+
+release <<= Def.task {
+  JFX.packageJavaFx.value
+  crossTarget.value / JFX.output.value.artifactBaseNameValue
+}

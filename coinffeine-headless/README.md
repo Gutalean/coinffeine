@@ -42,9 +42,11 @@ To run it from the sources:
 
 How to create a standalone JAR:
 
-    $ sbt headless/assembly
+    $ sbt headless/release
 
-Then you can find the JAR at `target/scala-2.x/coinffeine-headless.jar` and use it as:
+Then you can find the JAR at `target/scala-2.x/coinffeine-headless.jar` (other
+JARs with suffixes are not standalone so don't accept imitations) and use it
+as:
 
     java -jar <jar path>
 

@@ -9,7 +9,7 @@ You can run it from sources using sbt:
 
 To build installable bundles just run from the project root:
 
-    > sbt gui/package-javafx
+    > sbt gui/release
 
 This will generate all native bundles that can be generated from your OS (a
 DMG from OS X, exe/msi from Windows, etc) that you will find under
