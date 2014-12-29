@@ -44,10 +44,6 @@ resolvers in ThisBuild ++= Seq(
   "tomp2p" at "http://tomp2p.net/dev/mvn/"
 )
 
-addCommandAlias("test", "test-only * -- -l UITest")
-
-addCommandAlias("test-gui", "test-only * -- -n UITest")
-
 libraryDependencies in ThisBuild ++= Dependencies.loggingFacade ++ Dependencies.testLoggingBackend ++ Seq(
   Dependencies.jodaTime,
   Dependencies.scalatest % "test"
