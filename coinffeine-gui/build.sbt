@@ -35,8 +35,6 @@ resourceGenerators in Compile <+= (sourceDirectory, crossTarget, version) map {
     Seq(targetFile)
   }
 
-// testOptions in Test += Tests.Argument("-l", "UITest")
-
 jfxSettings
 
 JFX.vendor := "Coinffeine S.L."

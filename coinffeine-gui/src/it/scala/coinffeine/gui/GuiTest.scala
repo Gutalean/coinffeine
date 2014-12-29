@@ -26,13 +26,6 @@ abstract class GuiTest[TestObject <: Parent] extends UnitTest { self =>
     instance
   }
 
-  override def tags: Map[String, Set[String]] = {
-    val originalTags = super.tags
-    (for {
-      test <- testNames
-    } yield (test, originalTags.getOrElse(test, Set()) + UITestTag.name)).toMap
-  }
-
   def createRootNode(): TestObject
 
   // Forwards to static GuiTest methods
