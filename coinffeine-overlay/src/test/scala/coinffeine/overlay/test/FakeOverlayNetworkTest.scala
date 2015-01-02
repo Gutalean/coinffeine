@@ -84,6 +84,15 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     } should be < 5.seconds.dilated
   }
 
+  it should "randomly drop connections according to a distribution of times" in {
+    val network = FakeOverlayNetwork(
+      disconnectionDistribution = new FakeOverlayNetwork.ExponentialDelay(100.millis.dilated))
+    val client = system.actorOf(network.defaultClientProps)
+    client ! Join(OverlayId(1))
+    expectMsg(Joined(OverlayId(1)))
+    expectMsgType[Leaved](max = 1.second.dilated)
+  }
+
   private def measureTime(block: => Unit): FiniteDuration = {
     val startTime = System.currentTimeMillis()
     block

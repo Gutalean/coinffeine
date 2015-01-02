@@ -30,10 +30,7 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
       context.become(disconnected)
   }
 
-  private def connected(id: OverlayId, listener: ActorRef): Receive = {
-    case OverlayNetwork.Join(newId) =>
-      sender() ! OverlayNetwork.JoinFailed(newId, OverlayNetwork.AlreadyJoined)
-
+  private def connected(id: OverlayId, listener: ActorRef): Receive = alreadyJoined orElse {
     case OverlayNetwork.SendMessage(target, message) =>
       server ! ServerActor.SendMessage(target, message)
 
@@ -41,8 +38,25 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
       listener ! OverlayNetwork.ReceiveMessage(source, message)
 
     case OverlayNetwork.Leave =>
-      sender() ! OverlayNetwork.Leaved(id, OverlayNetwork.RequestedLeave)
+      server ! ServerActor.Disconnect
+      context.become(disconnecting(id, listener))
+
+    case ServerActor.Disconnected =>
+      val cause = OverlayNetwork.UnexpectedLeave(new Exception("Injected disconnection"))
+      listener ! OverlayNetwork.Leaved(id, cause)
       context.become(disconnected)
+  }
+
+  private def disconnecting(id: OverlayId, listener: ActorRef): Receive =
+    alreadyJoined orElse cannotSend orElse {
+      case ServerActor.Disconnected =>
+        listener ! OverlayNetwork.Leaved(id, OverlayNetwork.RequestedLeave)
+        context.become(disconnected)
+    }
+
+  private val alreadyJoined: Receive = {
+    case OverlayNetwork.Join(newId) =>
+      sender() ! OverlayNetwork.JoinFailed(newId, OverlayNetwork.AlreadyJoined)
   }
 
   private val cannotSend: Receive = {

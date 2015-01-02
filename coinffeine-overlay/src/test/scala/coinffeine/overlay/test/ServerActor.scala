@@ -10,29 +10,40 @@ import coinffeine.overlay.test.FakeOverlayNetwork.DelayDistribution
 
 private[this] class ServerActor(messageDropRate: Double,
                                 connectionFailureRate: Double,
-                                delayDistribution: DelayDistribution)
+                                delayDistribution: DelayDistribution,
+                                disconnectionDistribution: DelayDistribution)
     extends Actor with ActorLogging {
+  import context.dispatcher
+
+  private case class Connection(ref: ActorRef, dropTimer: Option[Cancellable])
+  private case class DropConnection(id: OverlayId)
 
   private val generator = new Random()
-  private var connections = Map.empty[OverlayId, ActorRef]
+  private var connections = Map.empty[OverlayId, Connection]
 
   override def receive: Receive = {
-    case ServerActor.Connect(id) => handleConnectionRequest(id, sender())
-    case ServerActor.Disconnect => connections = connections.filter(_._2 == sender())
+    case ServerActor.Connect(id) => connect(id, sender())
+    case ServerActor.Disconnect => disconnect(sender())
     case ServerActor.SendMessage(to, message) => sendMessage(sender(), to, message)
+    case DropConnection(id) => dropConnection(id)
   }
 
-  private def handleConnectionRequest(clientId: OverlayId, clientRef: ActorRef): Unit = {
+  private def connect(clientId: OverlayId, clientRef: ActorRef): Unit = {
     if (shouldRejectConnection()) {
       clientRef ! ServerActor.ConnectionRejected
     } else {
-      connections += clientId -> sender()
+      connections += clientId -> Connection(sender(), scheduleConnectionDrop(clientId))
       clientRef ! ServerActor.Connected
     }
   }
 
+  private def scheduleConnectionDrop(clientId: OverlayId): Option[Cancellable] =
+    disconnectionDistribution.nextDelay().map { delay =>
+      context.system.scheduler.scheduleOnce(delay, receiver = self, DropConnection(clientId))
+    }
+
   private def sendMessage(senderRef: ActorRef, receiverId: OverlayId, message: ByteString): Unit = {
-    (findIdFor(senderRef), connections.get(receiverId)) match {
+    (findIdFor(senderRef), connections.get(receiverId).map(_.ref)) match {
       case (None, _) =>
         log.warning("Dropping message from not connected source {}: {}", senderRef, message)
       case (_, None) =>
@@ -40,15 +51,33 @@ private[this] class ServerActor(messageDropRate: Double,
       case (Some(senderId), Some(_)) if shouldDropMessage() =>
         log.debug("Dropping message from {} to {}: {}", senderId, receiverId, message)
       case (Some(senderId), Some(receiverRef)) =>
-        import context.dispatcher
-        context.system.scheduler.scheduleOnce(delayDistribution.nextDelay()) {
-          receiverRef ! ServerActor.ReceiveMessage(senderId, message)
+        delayDistribution.nextDelay().foreach { delay =>
+          context.system.scheduler.scheduleOnce(delay) {
+            receiverRef ! ServerActor.ReceiveMessage(senderId, message)
+          }
         }
     }
   }
 
+  private def disconnect(clientRef: ActorRef): Unit = {
+    val maybeClientId = connections.collectFirst {
+      case (clientId, Connection(`clientRef`, scheduledDisconnection)) =>
+        scheduledDisconnection.foreach(_.cancel())
+        clientRef ! ServerActor.Disconnected
+        clientId
+    }
+    connections --= maybeClientId
+  }
+
+  private def dropConnection(id: OverlayId): Unit = {
+    connections.get(id).foreach { connection =>
+      connection.ref ! ServerActor.Disconnected
+    }
+    connections -= id
+  }
+
   private def findIdFor(ref: ActorRef): Option[OverlayId] = connections.collectFirst {
-    case (id, `ref`) => id
+    case (id, Connection(`ref`, _)) => id
   }
 
   private def shouldDropMessage(): Boolean = randomlyWithRate(messageDropRate)
@@ -59,13 +88,15 @@ private[this] class ServerActor(messageDropRate: Double,
 private object ServerActor {
   def props(messageDropRate: Double,
             connectionFailureRate: Double,
-            delayDistribution: DelayDistribution) =
-    Props(new ServerActor(messageDropRate, connectionFailureRate, delayDistribution))
+            delayDistribution: DelayDistribution,
+            disconnectionDistribution: DelayDistribution) = Props(new ServerActor(
+    messageDropRate, connectionFailureRate, delayDistribution, disconnectionDistribution))
 
   case class Connect(id: OverlayId)
   case object Connected
   case object ConnectionRejected
   case object Disconnect
+  case object Disconnected
   case class SendMessage(to: OverlayId, message: ByteString)
   case class ReceiveMessage(from: OverlayId, message: ByteString)
 }
