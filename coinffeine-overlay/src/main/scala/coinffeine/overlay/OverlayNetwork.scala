@@ -47,6 +47,7 @@ object OverlayNetwork {
   case class Leaved(id: OverlayId, cause: LeaveCause)
 
   sealed trait JoinFailureCause
+  case object AlreadyJoining extends JoinFailureCause
   case object AlreadyJoined extends JoinFailureCause
   case class UnderlyingNetworkFailure(error: IOException) extends JoinFailureCause
 

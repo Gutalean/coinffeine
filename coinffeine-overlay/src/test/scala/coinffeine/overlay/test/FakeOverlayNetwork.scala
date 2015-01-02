@@ -13,8 +13,10 @@ class FakeOverlayNetwork private (serverProps: Props, system: ActorSystem) exten
 
 object FakeOverlayNetwork {
 
-  def apply(messageDroppingRate: Double = 0)(implicit system: ActorSystem): FakeOverlayNetwork = {
-    new FakeOverlayNetwork(ServerActor.props(messageDroppingRate), system)
+  def apply(messageDroppingRate: Double = 0, connectionFailureRate: Double = 0)
+           (implicit system: ActorSystem): FakeOverlayNetwork = {
+    val serverProps = ServerActor.props(messageDroppingRate, connectionFailureRate)
+    new FakeOverlayNetwork(serverProps, system)
   }
 
   case object Config

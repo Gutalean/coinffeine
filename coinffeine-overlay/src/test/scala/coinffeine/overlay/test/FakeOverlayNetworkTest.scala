@@ -47,4 +47,22 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     }.size
     messageCount should (be > 5 and be < 95)
   }
+
+  it should "fail to connect according to a rate" in {
+    val network = FakeOverlayNetwork(connectionFailureRate = 0.5)
+    val client = system.actorOf(network.defaultClientProps)
+
+    var failedConnections = 0
+    for (i <- 1 to 100) {
+      client ! Join(OverlayId(1))
+      expectMsgAnyClassOf(classOf[Joined], classOf[JoinFailed]) match {
+        case _: Joined =>
+          client ! Leave
+          expectMsgType[Leaved]
+        case _: JoinFailed =>
+          failedConnections += 1
+      }
+    }
+    failedConnections should (be > 5 and be < 95)
+  }
 }
