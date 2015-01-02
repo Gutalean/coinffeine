@@ -2,6 +2,7 @@ package coinffeine.protocol.gateway.proto
 
 import java.net.NetworkInterface
 import scala.collection.JavaConversions._
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
 
@@ -28,6 +29,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
     NetworkInterface.getNetworkInterfaces.filterNot(ignoredNetworkInterfaces.contains).toList
 
   private var session: Option[P2PNetwork.Session] = None
+  private var sessionFuture: Option[Future[P2PNetwork.Session]] = None
   private var connections: Map[PeerId, ActorRef] = Map.empty
 
   private object ConnectionListener extends P2PNetwork.Listener {
@@ -62,6 +64,7 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
 
     becomeStarted {
       case newSession: P2PNetwork.Session =>
+        sessionFuture = None
         session = Some(newSession)
         getOrSpawnConnectionActor(newSession.brokerId) ! ConnectionActor.Ping
         pingTimeout = Some(context.system.scheduler.scheduleOnce(PingTimeout, self, PingBackTimedOut))
@@ -75,7 +78,9 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
           |our messages reach the network but the network does not reach us back.
         """.stripMargin))
 
-      case Status.Failure(cause) => failToStart(cause)
+      case Status.Failure(cause) =>
+        sessionFuture = None
+        failToStart(cause)
 
       case RetryConnection =>
         disconnect()
@@ -90,13 +95,26 @@ private class ProtobufServerActor(properties: MutableCoinffeineNetworkProperties
         PortForwardedPeerNode(join.settings.externalForwardedPort.get, join.settings.brokerEndpoint)
       case PeerNode => AutodetectPeerNode(join.settings.peerPort, join.settings.brokerEndpoint)
     }
-    p2pNetwork.join(join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener).pipeTo(self)
+    sessionFuture = Some(p2pNetwork.join(
+      join.id, mode, acceptedNetworkInterfaces.toSeq, ConnectionListener))
+    sessionFuture.get.pipeTo(self)
   }
 
   override protected def stopping(): Receive = {
     log.info("Shutting down the protobuf server")
+    if (sessionFuture.isEmpty) becomeStopped()
+    else handle {
+      case Status.Failure(cause) =>
+        becomeStopped()
+      case newSession: P2PNetwork.Session =>
+        session = Some(newSession)
+        becomeStopped()
+    }
+  }
+
+  override protected def becomeStopped(): Receive = {
     disconnect()
-    becomeStopped()
+    super.becomeStopped()
   }
 
   private def disconnect(): Unit = {

@@ -1,3 +1,7 @@
+v0.3.0:
+ - Bug fixing
+   * Wait for connection attempts to complete before shutting down the app
+
 v0.2.2:
  - Bug fixing
    * Fix race condition on wallet initialization
