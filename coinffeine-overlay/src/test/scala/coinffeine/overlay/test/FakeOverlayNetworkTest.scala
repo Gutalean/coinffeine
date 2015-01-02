@@ -65,4 +65,28 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     }
     failedConnections should (be > 5 and be < 95)
   }
+
+  it should "delay the messages according to a distribution of times" in {
+    val network = FakeOverlayNetwork(
+      delayDistribution = new FakeOverlayNetwork.ExponentialDelay(500.millis.dilated))
+    val sender, receiver = system.actorOf(network.defaultClientProps)
+    sender ! Join(OverlayId(1))
+    receiver ! Join(OverlayId(2))
+    expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
+
+    for (i <- 1 to 100) {
+      sender ! SendMessage(OverlayId(2), ByteString(i.toByte))
+    }
+    measureTime {
+      receiveWhile(messages = 100) {
+        case message: ReceiveMessage =>
+      }
+    } should be < 5.seconds.dilated
+  }
+
+  private def measureTime(block: => Unit): FiniteDuration = {
+    val startTime = System.currentTimeMillis()
+    block
+    (System.currentTimeMillis() - startTime).millis
+  }
 }

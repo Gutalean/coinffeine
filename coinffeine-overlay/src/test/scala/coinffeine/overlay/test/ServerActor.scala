@@ -6,9 +6,12 @@ import akka.actor._
 import akka.util.ByteString
 
 import coinffeine.overlay.OverlayId
+import coinffeine.overlay.test.FakeOverlayNetwork.DelayDistribution
 
-private[this] class ServerActor(messageDropRate: Double, connectionFailureRate: Double)
-  extends Actor with ActorLogging {
+private[this] class ServerActor(messageDropRate: Double,
+                                connectionFailureRate: Double,
+                                delayDistribution: DelayDistribution)
+    extends Actor with ActorLogging {
 
   private val generator = new Random()
   private var connections = Map.empty[OverlayId, ActorRef]
@@ -37,7 +40,10 @@ private[this] class ServerActor(messageDropRate: Double, connectionFailureRate: 
       case (Some(senderId), Some(_)) if shouldDropMessage() =>
         log.debug("Dropping message from {} to {}: {}", senderId, receiverId, message)
       case (Some(senderId), Some(receiverRef)) =>
-        receiverRef ! ServerActor.ReceiveMessage(senderId, message)
+        import context.dispatcher
+        context.system.scheduler.scheduleOnce(delayDistribution.nextDelay()) {
+          receiverRef ! ServerActor.ReceiveMessage(senderId, message)
+        }
     }
   }
 
@@ -51,8 +57,10 @@ private[this] class ServerActor(messageDropRate: Double, connectionFailureRate: 
 }
 
 private object ServerActor {
-  def props(messageDropRate: Double, connectionFailureRate: Double) =
-    Props(new ServerActor(messageDropRate, connectionFailureRate))
+  def props(messageDropRate: Double,
+            connectionFailureRate: Double,
+            delayDistribution: DelayDistribution) =
+    Props(new ServerActor(messageDropRate, connectionFailureRate, delayDistribution))
 
   case class Connect(id: OverlayId)
   case object Connected
