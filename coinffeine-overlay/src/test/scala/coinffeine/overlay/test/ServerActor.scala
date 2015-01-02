@@ -1,12 +1,15 @@
 package coinffeine.overlay.test
 
+import scala.util.Random
+
 import akka.actor._
 import akka.util.ByteString
 
 import coinffeine.overlay.OverlayId
 
-private[this] class ServerActor extends Actor with ActorLogging {
+private[this] class ServerActor(messageDropRate: Double) extends Actor with ActorLogging {
 
+  private val generator = new Random()
   private var connections = Map.empty[OverlayId, ActorRef]
 
   override def receive: Receive = {
@@ -21,6 +24,8 @@ private[this] class ServerActor extends Actor with ActorLogging {
         log.warning("Dropping message from not connected source {}: {}", senderRef, message)
       case (_, None) =>
         log.warning("Dropping message for not connected target {}: {}", receiverId, message)
+      case (Some(senderId), Some(_)) if dropMessage() =>
+        log.debug("Dropping message from {} to {}: {}", senderId, receiverId, message)
       case (Some(senderId), Some(receiverRef)) =>
         receiverRef ! ServerActor.ReceiveMessage(senderId, message)
     }
@@ -29,10 +34,13 @@ private[this] class ServerActor extends Actor with ActorLogging {
   private def findIdFor(ref: ActorRef): Option[OverlayId] = connections.collectFirst {
     case (id, `ref`) => id
   }
+
+  private def dropMessage(): Boolean = generator.nextDouble() < messageDropRate
 }
 
 private object ServerActor {
-  val props = Props[ServerActor]
+  def props(messageDropRate: Double) = Props(new ServerActor(messageDropRate))
+
   case class Connect(id: OverlayId)
   case object Disconnect
   case class SendMessage(to: OverlayId, message: ByteString)
