@@ -15,6 +15,8 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
 
   private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 
+  LogConfigurator.configure()
+
   launchApp() match {
     case Success(s) => stage = s
     case Failure(_: Wizard.CancelledByUser) =>
