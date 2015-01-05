@@ -1,4 +1,4 @@
-<configuration debug="true">
+<configuration scan="true">
     <if condition='property("os.name").toUpperCase().startsWith("WIN")'>
         <then>
             <property name="LOG_FILE" value="${APPDATA}\\Coinffeine\\Coinffeine.log" />
@@ -18,7 +18,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%.15thread] %.3level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -29,7 +29,7 @@
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
