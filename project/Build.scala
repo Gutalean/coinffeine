@@ -11,7 +11,7 @@ import scoverage.ScoverageSbtPlugin
 object Build extends sbt.Build {
 
   lazy val root = (Project(id = "coinffeine", base = file("."))
-    aggregate(headless, peer, protocol, model, common, commonAkka, commonTest, gui, server, okpaymock)
+    aggregate(headless, peer, protocol, model, overlay, common, commonAkka, commonTest, gui, server, okpaymock)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
   )
 
@@ -33,6 +33,7 @@ object Build extends sbt.Build {
     dependsOn(
       model % "compile->compile;test->test",
       protocol % "compile->compile;test->test",
+      overlay,
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile"
     )
@@ -47,6 +48,11 @@ object Build extends sbt.Build {
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile"
     )
+  )
+
+  lazy val overlay = (Project(id = "overlay", base = file("coinffeine-overlay"))
+    settings(ScoverageSbtPlugin.instrumentSettings: _*)
+    dependsOn(common, commonAkka % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val model = (Project(id = "model", base = file("coinffeine-model"))
