@@ -4,6 +4,7 @@ import java.net.URL
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.control.NonFatal
 
 import com.gargoylesoftware.htmlunit._
 import com.gargoylesoftware.htmlunit.html._
@@ -22,105 +23,141 @@ class OkPayProfileExtractor(username: String, password: String) {
   def configureProfile(): Future[OkPayProfile] = Future {
     login()
     configureBusinessMode()
-    val walletId = lookupWalletsIds().headOption
-      .getOrElse(throw new NoSuchElementException("No wallet was found"))
+    val walletId = lookupWalletId()
     enableAPI(walletId)
     OkPayProfile(configureSeedToken(walletId), walletId)
   }
 
-  private[okpay] def login(): Unit = {
-    val loginPage: HtmlPage = client.getPage("https://www.okpay.com/es/account/login.html")
-    val loginForm: HtmlForm = loginPage.getHtmlElementById("aspnetForm")
-    loginForm.getInputByName("ctl00$MainContent$txtLogin").asInstanceOf[HtmlInput]
-      .setValueAttribute(username)
-    loginForm.getInputByName[HtmlInput]("ctl00$MainContent$txtPassword")
-      .setValueAttribute(password)
-    val dashboardPage = loginForm.getInputByName("ctl00$MainContent$btnLogin")
-      .asInstanceOf[HtmlInput].click().asInstanceOf[HtmlPage]
-    Option(dashboardPage.getFirstByXPath("//div[@id='activity']")).getOrElse {
-      val errorText = Option(dashboardPage.getFirstByXPath[HtmlDivision]("//div[@class='strong-error-block']"))
-        .map(_.asText)
-        .getOrElse(dashboardPage.asText)
-      throw new LoginException("Login failed, the page returned was not the Dashboard: " +
-        s"$errorText")
+  private def login(): Unit = {
+    val loginForm = getForm(retrievePage(s"$OkPayBaseUrl/es/account/login.html"))
+    fillInField(loginForm, "ctl00$MainContent$txtLogin", username)
+    fillInField(loginForm, "ctl00$MainContent$txtPassword", password)
+    val dashboardPage = submitForm(loginForm, "ctl00$MainContent$btnLogin")
+    withWrappedExceptions(dashboardPage, "Login failed, the page returned is not the dashboard") {
+      require(dashboardPage.getFirstByXPath("//div[@id='activity']") != null)
     }
   }
 
-  private[okpay] def lookupWalletsIds(): Seq[String] = {
-    val walletsPage = retrievePage("wallets.html")
+  private def lookupWalletId(): String = lookupWalletsIds().headOption.getOrElse {
+    throw new ProfileConfigurationException("No wallet was found")
+  }
+
+  private def lookupWalletsIds(): Seq[String] = {
+    val walletsPage = retrieveProfilePage("wallets.html")
     for {
       table <- walletsPage.getBody.getHtmlElementsByTagName[HtmlTable]("table").headOption.toSeq
       row <- table.getRows
-      cell <- row.getCells if cell.asText().startsWith("OK")
-    } yield cell.asText()
+      cell <- row.getCells
+      cellContent = cell.asText
+      if cellContent.startsWith("OK")
+    } yield cellContent
   }
 
-  private def retrievePage(relativePath: String) =
-    client.getPage[HtmlPage](s"https://www.okpay.com/es/account/profile/$relativePath")
-
-  private[okpay] def configureBusinessMode(): Unit = {
-    val accountTypePage = retrievePage("general/account-type.html")
-    val accountTypeForm  = accountTypePage.getHtmlElementById[HtmlForm]("aspnetForm")
-    val radioButtonMerchant = accountTypeForm.
-      getRadioButtonsByName("ctl00$ctl00$MainContent$MainContent$client")(1)
-      .asInstanceOf[HtmlRadioButtonInput]
-    if(!radioButtonMerchant.isChecked) {
-      radioButtonMerchant.setChecked(true)
-      accountTypeForm.getInputByName[HtmlInput](
-        "ctl00$ctl00$MainContent$MainContent$Button_Continue").click()
+  private def configureBusinessMode(): Unit =
+    withWrappedExceptions("Cannot configure the business mode") {
+      val accountTypeForm = getForm(retrieveProfilePage("general/account-type.html"))
+      val radioButtonMerchant =
+        accountTypeForm.getRadioButtonsByName("ctl00$ctl00$MainContent$MainContent$client")(1)
+      if(!radioButtonMerchant.isChecked) {
+        radioButtonMerchant.setChecked(true)
+        submitForm(accountTypeForm, "ctl00$ctl00$MainContent$MainContent$Button_Continue")
+      }
     }
-  }
 
-  private[okpay] def enableAPI(walletId: String): Unit = {
-    val settingsPage = retrievePage(s"wallet/$walletId")
-    val settingsForm: HtmlForm = settingsPage.getHtmlElementById("aspnetForm")
-    val checkButtonApi = settingsForm
-      .getInputByName[HtmlCheckBoxInput](
-        "ctl00$ctl00$MainContent$MainContent$Integration_Settings_cbxEnableAPI")
-    checkButtonApi.setChecked(true)
-    val saveButton = settingsForm
-      .getInputByName[HtmlSubmitInput](
-        "ctl00$ctl00$MainContent$MainContent$IntegrationSettings_btnSave")
-    saveButton.click()
-  }
+  private def enableAPI(walletId: String): Unit =
+    withWrappedExceptions(s"Cannot enable API for wallet $walletId") {
+      val settingsPage = retrieveProfilePage(s"wallet/$walletId")
+      val settingsForm = getForm(settingsPage)
+      val checkButtonApi = settingsForm
+        .getInputByName[HtmlCheckBoxInput](
+          "ctl00$ctl00$MainContent$MainContent$Integration_Settings_cbxEnableAPI")
+      checkButtonApi.setChecked(true)
+      submitForm(settingsForm, "ctl00$ctl00$MainContent$MainContent$IntegrationSettings_btnSave")
+    }
 
-  private[okpay] def configureSeedToken(walletId: String): String = {
-    val settingsPage = retrievePage("wallet/" + walletId)
-    val settingsForm: HtmlForm = settingsPage.getHtmlElementById("aspnetForm")
-    val token = generateSeedToken()
-    settingsForm.getInputByName[HtmlHiddenInput](
-      "ctl00$ctl00$MainContent$MainContent$hidEnrPass").setValueAttribute(token)
-
-    val saveButton = settingsForm
-      .getInputByName[HtmlSubmitInput](
-        "ctl00$ctl00$MainContent$MainContent$IntegrationSettings_btnSave")
-    saveButton.click()
+  private def configureSeedToken(walletId: String): String = {
+    val settingsPage = retrieveProfilePage("wallet/" + walletId)
+    val settingsForm = getForm(settingsPage)
+    val token = generateSeedToken(settingsForm)
+    fillInField(settingsForm, "ctl00$ctl00$MainContent$MainContent$hidEnrPass", token)
+    submitForm(settingsForm, "ctl00$ctl00$MainContent$MainContent$IntegrationSettings_btnSave")
     token
   }
 
-  private[okpay] def generateSeedToken(): String = {
-    val request = new WebRequest(
-      new URL(
-        "https://www.okpay.com/WebService/OkPayWebService.asmx/GetApiPassword"),
-      HttpMethod.POST)
-    request.setAdditionalHeader("Content-Type", "application/json")
+  private def generateSeedToken(settingsForm: HtmlForm): String =
+    withWrappedExceptions("Cannot generate a seed token") {
+      val request = new WebRequest(
+        new URL(s"$OkPayBaseUrl/WebService/OkPayWebService.asmx/GetApiPassword"),
+        HttpMethod.POST)
+      request.setAdditionalHeader("Content-Type", "application/json")
+      request.setAdditionalHeader("__AntiXsrfToken",
+        getField(settingsForm, "ctl00$ctl00$__AntiXsrfToken").getValueAttribute)
 
-    val tokenResponse = client.getPage(request)
-      .asInstanceOf[Page].getWebResponse.getContentAsString
-    val tokenResponseMap = JSON.parse(tokenResponse).asInstanceOf[java.util.Map[String, String]]
-    tokenResponseMap.get("d")
+      val tokenResponse = client.getPage[Page](request).getWebResponse.getContentAsString
+      val tokenResponseMap = JSON.parse(tokenResponse).asInstanceOf[java.util.Map[String, String]]
+      tokenResponseMap("d")
+    }
+
+  private def retrieveProfilePage(relativePath: String): HtmlPage =
+    retrievePage(s"$OkPayBaseUrl/es/account/profile/$relativePath")
+
+  private def retrievePage(url: String): HtmlPage = withWrappedExceptions(s"Cannot load $url") {
+    client.getPage[HtmlPage](url)
   }
+
+  private def getForm(page: HtmlPage): HtmlForm =
+    withWrappedExceptions(s"No form found in page content: ${page.asText()}") {
+      page.getHtmlElementById[HtmlForm]("aspnetForm")
+    }
+
+  private def fillInField(form: HtmlForm, fieldName: String, value: String): Unit = {
+    val field = getField(form, fieldName)
+    withWrappedExceptions(
+      form, s"Cannot set form field $fieldName at ${form.getHtmlPageOrNull.getUrl}") {
+      field.setValueAttribute(value)
+    }
+  }
+
+  private def getField(form: HtmlForm, fieldName: String): HtmlInput =
+    withWrappedExceptions(form, s"Field $fieldName not found in ${form.getHtmlPageOrNull.getUrl}") {
+      form.getInputByName[HtmlInput](fieldName)
+    }
+
+  private def submitForm(form: HtmlForm, submitButton: String): HtmlPage =
+    withWrappedExceptions(
+      form, s"Cannot submit form with button $submitButton at ${form.getHtmlPageOrNull.getUrl}") {
+      form.getInputByName[HtmlSubmitInput](submitButton).click[HtmlPage]()
+    }
+
+  private def withWrappedExceptions[T](message: String)(block: => T): T = try {
+    block
+  } catch {
+    case NonFatal(ex) => throw ProfileConfigurationException(message, ex)
+  }
+
+  private def withWrappedExceptions[T](form: HtmlForm, message: String)(block: => T): T =
+    withWrappedExceptions(s"$message. Form content: ${form.asXml()}")(block)
+
+  private def withWrappedExceptions[T](page: HtmlPage, message: String)(block: => T): T =
+    withWrappedExceptions(s"$message. ${errorMessageOrFullPage(page)}")(block)
+
+  private def errorMessageOrFullPage(page: HtmlPage): String =
+    Option(page.getFirstByXPath[HtmlDivision]("//div[@class='strong-error-block']"))
+      .fold(s"Page content: ${page.asText()}") { errorBlock =>
+        s"Error block: ${errorBlock.asText()}"
+      }
 }
 
 object OkPayProfileExtractor {
 
-  val SeedTokenLength = 25
+  private val OkPayBaseUrl = "https://www.okpay.com"
+  private val SeedTokenLength = 25
 
   case class OkPayProfile(token: String, walletId: String) {
     require(token.length == SeedTokenLength,
       s"Received a token which size is not $SeedTokenLength: $token (size ${token.length}})")
   }
 
-  case class LoginException(message: String, cause: Throwable = null)
+  case class ProfileConfigurationException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
 }
