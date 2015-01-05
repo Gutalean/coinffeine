@@ -8,9 +8,11 @@ package coinffeine.overlay
   *
   * Protocol messages:
   *
-  *  * Identification message: just after the TCP channel is open, clients must send 20 bytes
-  *    containing their client id serialized (160 bit id = 20 bytes).
-  *  * Relay message: after the identification message clients can send or receive this message
+  *  * Join message: just after the TCP channel is open, clients must identify themselves with
+  *    their client id.
+  *  * Network status message: when the server accepts a client and periodically, this message
+  *    informs about the number of nodes in the overlay network.
+  *  * Relay message: after the join message clients can send or receive this message
   *    consisting on three fields:
   *
   *      * Overlay id: 20 bytes indicating the communicating counterpart.
