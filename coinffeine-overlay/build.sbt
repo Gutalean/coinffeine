@@ -1,3 +1,7 @@
 name := "coinffeine-overlay"
 
-libraryDependencies ++= Dependencies.akka
+ScoverageKeys.excludedPackages in ScoverageCompile := ".*generated.*;.*protobuf.*"
+
+libraryDependencies ++= Dependencies.akka ++ Seq(
+  Dependencies.scalacheck % "test"
+)

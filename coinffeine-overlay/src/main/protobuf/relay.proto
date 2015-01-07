@@ -1,0 +1,23 @@
+package coinffeine.overlay.relay;
+
+option java_package = "coinffeine.overlay.relay.protobuf";
+option java_outer_classname = "RelayProtobuf";
+
+message JoinMessage {
+    required bytes overlayId = 1;
+}
+
+message StatusMessage {
+    required int32 networkSize = 1;
+}
+
+message RelayMessage {
+    required bytes overlayId = 1;
+    required bytes payload = 2;
+}
+
+message Message {
+    optional JoinMessage joinMessage = 1;
+    optional RelayMessage relayMessage = 2;
+    optional StatusMessage statusMessage = 3;
+}
