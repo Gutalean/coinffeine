@@ -51,6 +51,7 @@ object Build extends sbt.Build {
   )
 
   lazy val overlay = (Project(id = "overlay", base = file("coinffeine-overlay"))
+    settings(PB.protobufSettings: _*)
     settings(ScoverageSbtPlugin.instrumentSettings: _*)
     dependsOn(common, commonAkka % "compile->compile;test->test", commonTest % "test->compile")
   )
