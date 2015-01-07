@@ -1,7 +1,7 @@
 package coinffeine.overlay
 
 case class OverlayId(value: BigInt) {
-  require(value >= OverlayId.MinValue && value <= OverlayId.MaxValue, "$value is out of range")
+  require(value >= OverlayId.MinValue && value <= OverlayId.MaxValue, s"$value is out of range")
 }
 
 object OverlayId {
