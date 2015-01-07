@@ -21,6 +21,10 @@ class IntSerializationTest extends UnitTest with PropertyChecks {
     }
   }
 
+  it should "serialize in big endian order" in {
+    serialize(0x12345678) shouldBe ByteString(0x12, 0x34, 0x56, 0x78)
+  }
+
   def serialize(value: Int): ByteString = {
     val output = new ByteStringBuilder
     IntSerialization.serialize(value, output)
