@@ -26,9 +26,9 @@ class MutablePropertyMapTest extends UnitTest with FutureMatchers {
     prop.set("foo", 1234)
     val notification = Promise[(String, Option[Int], Int)]()
     prop.onChange { (key, oldValue, newValue) =>
-      notification.success(key, oldValue, newValue)
+      notification.success((key, oldValue, newValue))
     }
-    notification.future.futureValue shouldBe ("foo", None, 1234)
+    notification.future.futureValue shouldBe(("foo", None, 1234))
   }
 
   it should "invoke its handlers when entry is set" in new HandlerFixture {

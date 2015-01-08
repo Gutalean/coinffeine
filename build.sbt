@@ -10,7 +10,17 @@ organization in ThisBuild := "com.coinffeine"
 scalaVersion in ThisBuild := "2.11.4"
 
 scalacOptions in ThisBuild ++= Seq(
-  "-deprecation", "-feature", "-language:postfixOps", "-language:existentials")
+  "-deprecation",
+  "-encoding", "UTF-8",
+  "-feature",
+  "-language:existentials",
+  "-language:postfixOps",
+  "-unchecked",
+  "-Xfuture",
+  "-Xlint:-infer-any",
+  "-Ywarn-dead-code",
+  "-Ywarn-unused-import"
+)
 
 javaOptions in ThisBuild ++= {
   def propertiesToCopy(property: Any): Boolean = property match {

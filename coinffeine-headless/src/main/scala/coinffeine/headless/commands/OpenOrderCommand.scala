@@ -32,7 +32,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
         s"ERROR: a bitcoin amount and a price were expected, invalid arguments '$args' given"))
     }
 
-    def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]) {
+    def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]): Unit = {
       val order = Order.random(orderType, amount, price)
       network.submitOrder(order)
       output.format("Created order %s%n", order.id.value)
@@ -44,7 +44,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
   private def parseArguments(args: String): Option[(Bitcoin.Amount, Price[_ <: FiatCurrency])] =
     Tokenizer.splitWords(args) match {
       case Array(AmountsParser.BitcoinAmount(amount), AmountsParser.Price(price)) =>
-        Some(amount, price)
+        Some(amount -> price)
       case _ => None
     }
 }
