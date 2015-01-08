@@ -11,6 +11,7 @@ import akka.io.{IO, Tcp}
 import akka.util.ByteString
 
 import coinffeine.overlay.relay.RelayNetwork._
+import coinffeine.overlay.relay.messages._
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)

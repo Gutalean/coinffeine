@@ -12,6 +12,7 @@ import org.scalatest.Inside
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayNetwork.UnexpectedLeave
 import coinffeine.overlay.relay.RelayNetwork.InvalidDataReceived
+import coinffeine.overlay.relay.messages._
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 class ClientActorTest extends AkkaSpec with Inside {

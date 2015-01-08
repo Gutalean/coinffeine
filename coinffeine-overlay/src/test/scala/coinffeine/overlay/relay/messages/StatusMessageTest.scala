@@ -1,4 +1,4 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.messages
 
 import coinffeine.common.test.UnitTest
 

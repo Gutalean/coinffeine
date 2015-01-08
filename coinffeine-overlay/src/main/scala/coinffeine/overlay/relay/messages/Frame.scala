@@ -1,9 +1,9 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.messages
 
 import akka.util.{ByteString, ByteStringBuilder}
 
 /** Wraps a variable-size binary payload to help with frame delimitation. */
-private case class Frame(payload: ByteString) {
+private[relay] case class Frame(payload: ByteString) {
 
   /** Serialize the variable-length payload using:
     *
@@ -20,7 +20,7 @@ private case class Frame(payload: ByteString) {
   }
 }
 
-private object Frame {
+private[relay] object Frame {
   val MagicByte: Byte = 1
   val HeaderSize = 5
 

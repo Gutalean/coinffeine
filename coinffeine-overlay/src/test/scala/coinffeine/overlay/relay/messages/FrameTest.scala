@@ -1,10 +1,10 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.messages
 
-import akka.util.{ByteStringBuilder, ByteString}
+import akka.util.{ByteString, ByteStringBuilder}
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
-import coinffeine.overlay.relay.Frame.{IncompleteInput, Parsed, FailedParsing}
+import coinffeine.overlay.relay.messages.Frame.{FailedParsing, IncompleteInput, Parsed}
 
 class FrameTest extends UnitTest with PropertyChecks {
 
