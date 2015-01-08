@@ -1,4 +1,4 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.client
 
 import scala.concurrent.duration._
 

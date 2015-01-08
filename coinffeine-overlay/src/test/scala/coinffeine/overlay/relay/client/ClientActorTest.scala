@@ -1,4 +1,4 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.client
 
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
@@ -11,7 +11,7 @@ import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayNetwork.UnexpectedLeave
-import coinffeine.overlay.relay.RelayNetwork.InvalidDataReceived
+import coinffeine.overlay.relay.client.RelayNetwork.InvalidDataReceived
 import coinffeine.overlay.relay.messages._
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 

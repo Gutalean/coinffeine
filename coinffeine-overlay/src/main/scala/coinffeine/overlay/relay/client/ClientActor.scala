@@ -1,8 +1,7 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.client
 
 import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress}
-
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
@@ -10,12 +9,12 @@ import akka.actor._
 import akka.io.{IO, Tcp}
 import akka.util.ByteString
 
-import coinffeine.overlay.relay.RelayNetwork._
+import coinffeine.overlay.relay.client.RelayNetwork._
 import coinffeine.overlay.relay.messages._
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
-  extends Actor with Stash with ActorLogging {
+  extends Actor with ActorLogging {
 
   override def receive: Receive = disconnected
 
