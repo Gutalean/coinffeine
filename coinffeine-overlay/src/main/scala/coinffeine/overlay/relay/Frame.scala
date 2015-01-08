@@ -22,6 +22,7 @@ private case class Frame(payload: ByteString) {
 
 private object Frame {
   val MagicByte: Byte = 1
+  val HeaderSize = 5
 
   sealed trait ParseResult
 
@@ -35,19 +36,20 @@ private object Frame {
   case class Parsed(frame: Frame, remainingBytes: ByteString) extends ParseResult
 
   /** Try to deserialize a frame in the format defined in [[Frame.serialize]] */
-  def deserialize(bytes: ByteString): ParseResult = {
+  def deserialize(bytes: ByteString, maxFrameSize: Int): ParseResult = {
     if (bytes.isEmpty) IncompleteInput
     else if (bytes.head != MagicByte)
       FailedParsing(s"Bad magic number: ${bytes.head} instead of $MagicByte")
-    else deserializeLengthAndPayload(bytes.drop(1))
+    else deserializeLengthAndPayload(bytes.drop(1), maxFrameSize)
   }
 
-  private def deserializeLengthAndPayload(bytes: ByteString): ParseResult =
+  private def deserializeLengthAndPayload(bytes: ByteString, maxFrameSize: Int): ParseResult =
     if (bytes.size < IntSerialization.Bytes) IncompleteInput
     else {
       val (lengthBytes, remainingBytes) = bytes.splitAt(IntSerialization.Bytes)
       val length = IntSerialization.deserialize(lengthBytes)
-      if (length < 0) FailedParsing(s"Invalid length of $length")
+      if (length < 0 || length + HeaderSize > maxFrameSize)
+        FailedParsing(s"Invalid length of $length")
       else deserializePayload(length, remainingBytes)
     }
 

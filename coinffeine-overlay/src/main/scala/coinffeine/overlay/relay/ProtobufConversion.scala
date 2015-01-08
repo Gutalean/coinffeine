@@ -66,6 +66,8 @@ private object ProtobufConversion {
     }
   }
 
+  def toByteString(message: Message): ByteString = ByteString(toProtobuf(message).toByteArray)
+
   def toProtobuf(message: Message): proto.Message = {
     val messageWrapper = proto.Message.newBuilder()
     message match {
