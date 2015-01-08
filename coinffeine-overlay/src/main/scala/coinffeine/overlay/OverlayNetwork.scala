@@ -38,6 +38,11 @@ object OverlayNetwork {
   /** Sent by the network client to its listener whenever a new message is received. */
   case class ReceiveMessage(source: OverlayId, message: ByteString)
 
+  /** Send to the listener any number of times while being connected to the overlay network. */
+  case class NetworkStatus(networkSize: Int) {
+    require(networkSize > 0, s"Negative network size: $networkSize")
+  }
+
   /** Either if the network client receives this message or the listener actor dies, the client
     * will start its disconnection from the overlay network. */
   case object Leave
@@ -49,10 +54,12 @@ object OverlayNetwork {
   sealed trait JoinFailureCause
   case object AlreadyJoining extends JoinFailureCause
   case object AlreadyJoined extends JoinFailureCause
-  case class UnderlyingNetworkFailure(error: IOException) extends JoinFailureCause
 
   sealed trait CannotSendCause
   case object UnavailableNetwork extends CannotSendCause
+
+  case class UnderlyingNetworkFailure(error: IOException)
+    extends JoinFailureCause with CannotSendCause
 
   sealed trait LeaveCause
   case object RequestedLeave extends LeaveCause
