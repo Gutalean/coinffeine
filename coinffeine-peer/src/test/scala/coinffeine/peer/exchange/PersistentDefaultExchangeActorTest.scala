@@ -1,6 +1,5 @@
 package coinffeine.peer.exchange
 
-import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
