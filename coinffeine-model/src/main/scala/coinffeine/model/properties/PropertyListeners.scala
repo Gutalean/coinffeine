@@ -23,7 +23,7 @@ class PropertyListeners[Handler] extends LazyLogging {
     listener
   }
 
-  def remove(listener: Listener): Unit = synchronized {
+  private def remove(listener: Listener): Unit = synchronized {
     listeners -= listener
   }
 

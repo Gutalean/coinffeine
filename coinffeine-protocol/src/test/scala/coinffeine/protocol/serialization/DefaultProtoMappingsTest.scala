@@ -25,8 +25,8 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
   val publicKey = new KeyPair().publicKey
   import testMappings._
 
-  def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
-                                             (implicit mapping: ProtoMapping[T, M]): Unit = {
+  final def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)
+                                                   (implicit mapping: ProtoMapping[T, M]): Unit = {
 
     it should "convert the case class into the protobuf message" in {
       ProtoMapping.toProtobuf(obj) shouldBe msg

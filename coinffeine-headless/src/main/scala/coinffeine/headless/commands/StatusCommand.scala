@@ -21,7 +21,7 @@ class StatusCommand(app: CoinffeineApp) extends Command {
     output.format("BTC: %s%n", app.wallet.balance.get.fold("--")(formatBitcoinBalance))
   }
 
-  private def printWalletAddress(output: PrintWriter) {
+  private def printWalletAddress(output: PrintWriter): Unit = {
     output.format("Wallet address: %s%n", app.wallet.primaryAddress.get.getOrElse("--"))
   }
 

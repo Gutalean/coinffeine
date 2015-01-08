@@ -5,7 +5,7 @@ import coinffeine.model.exchange.Exchange.Amounts
 
 class AmountsCalculatorStub[C <: FiatCurrency](cannedValue: Amounts[C]) extends AmountsCalculator {
 
-  override def maxFiatPerExchange[C <: FiatCurrency](currency: C): CurrencyAmount[C] =
+  override def maxFiatPerExchange[C2 <: FiatCurrency](currency: C2): CurrencyAmount[C2] =
     CurrencyAmount(50000, currency)
 
   override def exchangeAmountsFor[C2 <: FiatCurrency](

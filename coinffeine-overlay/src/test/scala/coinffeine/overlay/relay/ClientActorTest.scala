@@ -1,6 +1,6 @@
 package coinffeine.overlay.relay
 
-import java.net.{InetSocketAddress, UnknownHostException}
+import java.net.InetSocketAddress
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef

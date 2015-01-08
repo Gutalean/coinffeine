@@ -4,9 +4,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.bitcoin.{MutableNetworkProperties, WalletActivity, Address, KeyPair}
+import coinffeine.model.bitcoin.{Address, MutableNetworkProperties, WalletActivity}
 import coinffeine.model.currency._
-import coinffeine.model.properties.{MutablePropertyMap, MutableProperty, Property}
+import coinffeine.model.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._

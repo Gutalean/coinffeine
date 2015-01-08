@@ -51,7 +51,7 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
     }
 
     it must "divide amounts of its own currency" in {
-      currency(10) /% currency(3) shouldBe (3, currency(1))
+      currency(10) /% currency(3) shouldBe (3 -> currency(1))
     }
 
     it must "invert amounts of its own currency" in {

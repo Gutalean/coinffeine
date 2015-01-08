@@ -137,7 +137,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     ).withImmediateReplyOrError[DepositCreated, DepositCreationError](_.error).map(_.tx)
   }
 
-  private def waitForRefundSignature = {
+  private def waitForRefundSignature: Receive = {
 
     def validCounterpartSignature(signature: TransactionSignature): Boolean = {
       val signatureAttempt = Try(handshake.signMyRefund(signature))
@@ -177,7 +177,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     receiveRefundSignature orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
   }
 
-  private def waitForPublication = {
+  private def waitForPublication: Receive = {
     if (recoveryFinished) {
       forwardMyCommitment()
     }
