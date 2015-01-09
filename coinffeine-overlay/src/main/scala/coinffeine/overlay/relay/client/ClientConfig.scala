@@ -1,6 +1,8 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.client
 
 import scala.concurrent.duration._
+
+import coinffeine.overlay.relay.DefaultRelayConfig
 
 /** Client configuration
   *
@@ -12,13 +14,8 @@ import scala.concurrent.duration._
   */
 case class ClientConfig(host: String,
                         port: Int,
-                        connectionTimeout: FiniteDuration = ClientConfig.DefaultConnectionTimeout,
-                        maxFrameBytes: Int = ClientConfig.DefaultMaxFrameBytes) {
+                        connectionTimeout: FiniteDuration = DefaultRelayConfig.ConnectionTimeout,
+                        maxFrameBytes: Int = DefaultRelayConfig.MaxFrameBytes) {
   require(maxFrameBytes > 0, s"Invalid max frame bytes: $maxFrameBytes")
   require(connectionTimeout > 0.seconds, "The connection timeout cannot be zero")
-}
-
-object ClientConfig {
-  val DefaultConnectionTimeout = 5.seconds
-  val DefaultMaxFrameBytes = 8 * 1024 * 1024
 }

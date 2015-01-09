@@ -1,4 +1,4 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.messages
 
 import akka.util.ByteString
 import com.google.protobuf.{ByteString => ProtoByteString, InvalidProtocolBufferException}
@@ -7,7 +7,7 @@ import coinffeine.overlay.OverlayId
 import coinffeine.overlay.relay.protobuf.{RelayProtobuf => proto}
 
 /** Offers conversion of relay protocol messages from/to protocol buffers */
-private object ProtobufConversion {
+private[relay] object ProtobufConversion {
   private val OverlayIdBytes = 20
 
   case class ProtobufConversionException(message: String, cause: Throwable = null)

@@ -1,12 +1,12 @@
-package coinffeine.overlay.relay
+package coinffeine.overlay.relay.messages
 
 import akka.util.ByteString
+import com.google.protobuf.{ByteString => ProtoByteString}
 
 import coinffeine.common.test.UnitTest
 import coinffeine.overlay.OverlayId
-import coinffeine.overlay.relay.ProtobufConversion.ProtobufConversionException
+import coinffeine.overlay.relay.messages.ProtobufConversion.ProtobufConversionException
 import coinffeine.overlay.relay.protobuf.{RelayProtobuf => proto}
-import com.google.protobuf.{ByteString => ProtoByteString}
 
 class ProtobufConversionTest extends UnitTest {
 
