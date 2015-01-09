@@ -36,19 +36,19 @@ private[relay] object Frame {
   case class Parsed(frame: Frame, remainingBytes: ByteString) extends ParseResult
 
   /** Try to deserialize a frame in the format defined in [[Frame.serialize]] */
-  def deserialize(bytes: ByteString, maxFrameSize: Int): ParseResult = {
+  def deserialize(bytes: ByteString, maxFrameBytes: Int): ParseResult = {
     if (bytes.isEmpty) IncompleteInput
     else if (bytes.head != MagicByte)
       FailedParsing(s"Bad magic number: ${bytes.head} instead of $MagicByte")
-    else deserializeLengthAndPayload(bytes.drop(1), maxFrameSize)
+    else deserializeLengthAndPayload(bytes.drop(1), maxFrameBytes)
   }
 
-  private def deserializeLengthAndPayload(bytes: ByteString, maxFrameSize: Int): ParseResult =
+  private def deserializeLengthAndPayload(bytes: ByteString, maxFrameBytes: Int): ParseResult =
     if (bytes.size < IntSerialization.Bytes) IncompleteInput
     else {
       val (lengthBytes, remainingBytes) = bytes.splitAt(IntSerialization.Bytes)
       val length = IntSerialization.deserialize(lengthBytes)
-      if (length < 0 || length + HeaderSize > maxFrameSize)
+      if (length < 0 || length + HeaderSize > maxFrameBytes)
         FailedParsing(s"Invalid length of $length")
       else deserializePayload(length, remainingBytes)
     }
