@@ -45,6 +45,9 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
       val cause = OverlayNetwork.UnexpectedLeave(new Exception("Injected disconnection"))
       listener ! OverlayNetwork.Leaved(id, cause)
       context.become(disconnected)
+
+    case ServerActor.NetworkSize(networkSize) =>
+      listener ! OverlayNetwork.NetworkStatus(networkSize)
   }
 
   private def disconnecting(id: OverlayId, listener: ActorRef): Receive =
