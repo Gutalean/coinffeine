@@ -43,8 +43,6 @@ private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
 
       case Tcp.Connected(_, _) =>
         val connection = sender()
-        connection ! Tcp.Register(self)
-        connection ! Tcp.Write(ProtobufFrame.serialize(JoinMessage(id)))
         becomeConnected(id, connection, listener)
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
@@ -57,6 +55,10 @@ private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
   private def becomeConnected(id: OverlayId, connection: ActorRef, listener: ActorRef): Unit = {
 
     var buffer = ByteString.empty
+
+    connection ! Tcp.Register(self)
+    connection ! Tcp.Write(ProtobufFrame.serialize(JoinMessage(id)))
+    listener ! OverlayNetwork.Joined(id)
 
     @tailrec
     def decodeFrames(): Unit = {

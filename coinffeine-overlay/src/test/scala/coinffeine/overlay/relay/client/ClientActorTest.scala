@@ -183,6 +183,7 @@ class ClientActorTest extends AkkaSpec with Inside {
         new InetSocketAddress("localhost", 1234), new InetSocketAddress("localhost", 18734)))
       tcpProbe.expectMsg(Tcp.Register(client))
       tcpProbe.expectMsg(Tcp.Write(ProtobufFrame.serialize(JoinMessage(clientId))))
+      expectMsg(OverlayNetwork.Joined(clientId))
     }
 
     def expectLeavingAfterAnUnexpectedConnectionClose(): Unit = {
