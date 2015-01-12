@@ -15,6 +15,7 @@ private[this] class ServerActor(tcpManager: ActorRef)
   extends Actor with ServiceActor[ServerConfig] with ActorLogging {
 
   private var socket = ActorRef.noSender
+  private var workers = Set.empty[ActorRef]
   private var activeIds = Map.empty[OverlayId, ActorRef]
 
   override protected def starting(config: ServerConfig): Receive = {
@@ -33,6 +34,7 @@ private[this] class ServerActor(tcpManager: ActorRef)
     def spawnWorkerActor(remoteAddress: InetSocketAddress, connection: ActorRef): ActorRef = {
       val connectionWorker = context.actorOf(ServerWorkerActor.props(
         ServerWorkerActor.Connection(remoteAddress, connection), config))
+      workers += connectionWorker
       context.watch(connectionWorker)
       connectionWorker
     }
@@ -56,18 +58,30 @@ private[this] class ServerActor(tcpManager: ActorRef)
           ref ! RelayMessage(from, payload)
         }
 
-      case Terminated(terminatedRef) =>
-        findId(terminatedRef).foreach { id =>
+      case Terminated(terminatedWorker) =>
+        findId(terminatedWorker).foreach { id =>
           activeIds -= id
           notifyStatus()
         }
+        workers -= terminatedWorker
     }
   }
 
   override protected def stopping(): Receive = {
-    socket ! Tcp.Unbind
-    context.children.foreach(_ ! PoisonPill)
-    handle { case Tcp.Unbound => becomeStopped() }
+    activeIds = Map.empty
+    if (workers.isEmpty) {
+      socket ! Tcp.Unbind
+    } else {
+      workers.foreach(_ ! PoisonPill)
+    }
+    handle {
+      case Terminated(terminatedWorker) =>
+        workers -= terminatedWorker
+        if (workers.isEmpty) {
+          socket ! Tcp.Unbind
+        }
+      case Tcp.Unbound => becomeStopped()
+    }
   }
 
   private def droppingMessageFor(to: OverlayId): Unit = {

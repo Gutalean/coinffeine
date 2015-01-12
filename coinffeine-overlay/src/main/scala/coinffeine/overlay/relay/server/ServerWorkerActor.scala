@@ -61,7 +61,7 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
       case status: StatusMessage =>
         statusSender ! Tcp.Write(ProtobufFrame.serialize(status))
 
-      case _: Tcp.ConnectionClosed => context.stop(self)
+      case _: Tcp.ConnectionClosed => self ! PoisonPill
 
       case Tcp.Received(data) =>
         buffer = decodeFrames(buffer ++ data) {
@@ -109,7 +109,7 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
   private def disconnectBecauseOf(description: String, cause: Throwable = null): Unit = {
     log.error(cause, "Closing connection with {}: {}", connection.remoteAddress, description)
     connection.ref ! Tcp.Close
-    context.stop(self)
+    self ! PoisonPill
   }
 
   private def write(message: Message): Unit = {

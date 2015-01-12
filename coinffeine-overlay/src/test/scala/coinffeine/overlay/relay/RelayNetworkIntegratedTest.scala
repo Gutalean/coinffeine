@@ -14,6 +14,7 @@ import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 class RelayNetworkIntegratedTest extends AkkaSpec {
 
+  val connectionTimeout = 4.seconds.dilated
   val port = DefaultTcpPortAllocator.allocatePort()
   val server = system.actorOf(ServerActor.props, "server")
   val serverConfig = ServerConfig("localhost", port)
@@ -22,7 +23,7 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
 
   "A relay network" should "bind to a port" in {
     server ! ServiceActor.Start(serverConfig)
-    expectMsg(ServiceActor.Started)
+    expectMsg(connectionTimeout, ServiceActor.Started)
   }
 
   it should "send messages forth and back" in {
@@ -51,11 +52,11 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
 
   it should "shut down gracefully" in {
     server ! ServiceActor.Stop
-    expectMsg(4.seconds.dilated, ServiceActor.Stopped)
+    expectMsg(connectionTimeout, ServiceActor.Stopped)
   }
 
   it should "fail to bind to a non-existent address" in {
     server ! ServiceActor.Start(serverConfig.copy(bindAddress = "does.not.exist.example.com"))
-    expectMsgType[ServiceActor.StartFailure]
+    expectMsgType[ServiceActor.StartFailure](connectionTimeout)
   }
 }
