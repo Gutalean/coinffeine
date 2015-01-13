@@ -1,5 +1,6 @@
 package coinffeine.peer.config
 
+import coinffeine.overlay.relay.server.ServerConfig
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -14,6 +15,9 @@ trait SettingsProvider {
 
   /** Retrieve the message gateway settings. */
   def messageGatewaySettings(): MessageGatewaySettings
+
+  /** Retrieve the relay server settings. */
+  def relayServerSettings(): ServerConfig
 
   /** Retrieve the OKPay settings. */
   def okPaySettings(): OkPaySettings

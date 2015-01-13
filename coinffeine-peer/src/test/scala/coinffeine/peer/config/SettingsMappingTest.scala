@@ -12,6 +12,8 @@ import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.overlay.relay.DefaultRelayConfig
+import coinffeine.overlay.relay.server.ServerConfig
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -110,6 +112,56 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val cfg = SettingsMapping.MessageGateway.ensurePeerId(settings)
     cfg shouldBe 'defined
     Try(PeerId(cfg.get.getString("coinffeine.peer.id"))) shouldBe 'success
+  }
+
+  val relayServerBasicSettings = makeConfig(
+    "coinffeine.overlay.relay.server.address" -> "localhost",
+    "coinffeine.overlay.relay.server.port" -> 5000
+  )
+
+  "Relay server settings mapping" should "map basic settings from config" in {
+    val settings = SettingsMapping.fromConfig[ServerConfig](relayServerBasicSettings)
+    settings.bindAddress shouldBe "localhost"
+    settings.bindPort shouldBe 5000
+    settings.maxFrameBytes shouldBe DefaultRelayConfig.MaxFrameBytes
+    settings.identificationTimeout shouldBe DefaultRelayConfig.IdentificationTimeout
+    settings.minTimeBetweenStatusUpdates shouldBe DefaultRelayConfig.MinTimeBetweenStatusUpdates
+  }
+
+  it should "map optional settings from config" in {
+    val conf = amendConfig(relayServerBasicSettings,
+      "coinffeine.overlay.relay.server.maxFrameBytes" -> "1024",
+      "coinffeine.overlay.relay.server.identificationTimeout" -> "10s",
+      "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m")
+    val settings = SettingsMapping.fromConfig[ServerConfig](conf)
+    settings.maxFrameBytes shouldBe 1024
+    settings.identificationTimeout shouldBe 10.seconds
+    settings.minTimeBetweenStatusUpdates shouldBe 10.minutes
+  }
+
+  it should "map external endpoint from config when present" in {
+    val conf = amendConfig(messageGatewayBasicSettings,
+      "coinffeine.peer.externalForwardedPort" -> "8765")
+    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
+    settings.externalForwardedPort.value shouldBe 8765
+  }
+
+  it should "map to config" in {
+    val settings = ServerConfig(
+      bindAddress = "localhost",
+      bindPort = 5000,
+      maxFrameBytes = 1024,
+      identificationTimeout = 10.seconds,
+      minTimeBetweenStatusUpdates = 10.minutes
+    )
+    val cfg = SettingsMapping.toConfig(settings)
+    cfg.getString("coinffeine.overlay.relay.server.address") shouldBe "localhost"
+    cfg.getInt("coinffeine.overlay.relay.server.port") shouldBe 5000
+    cfg.getInt("coinffeine.overlay.relay.server.maxFrameBytes") shouldBe 1024
+    cfg.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
+      TimeUnit.SECONDS) shouldBe 10
+    cfg.getDuration("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
+      TimeUnit.MINUTES) shouldBe 10
   }
 
   "OKPay settings mapping" should "map from config" in {
