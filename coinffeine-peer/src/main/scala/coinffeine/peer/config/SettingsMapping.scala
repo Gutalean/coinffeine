@@ -78,7 +78,6 @@ object SettingsMapping {
       externalForwardedPort = Try(config.getInt("coinffeine.peer.externalForwardedPort")).toOption
     )
 
-    /** Write settings to given config. */
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
       .withValue("coinffeine.peer.id", configValue(settings.peerId.value))
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
@@ -127,7 +126,6 @@ object SettingsMapping {
           TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.MinTimeBetweenStatusUpdates)
     )
 
-    /** Write settings to given config. */
     override def toConfig(settings: ServerConfig, config: Config) = config
       .withValue("coinffeine.overlay.relay.server.address",
         configValue(settings.bindAddress))
@@ -150,7 +148,6 @@ object SettingsMapping {
         config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS).seconds
     )
 
-    /** Write settings to given config. */
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
       .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
