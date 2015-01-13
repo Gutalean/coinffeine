@@ -10,6 +10,8 @@ import scala.util.Try
 import com.typesafe.config._
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.overlay.relay.DefaultRelayConfig
+import coinffeine.overlay.relay.server.ServerConfig
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -108,6 +110,34 @@ object SettingsMapping {
     } catch {
       case _: ConfigException.Missing => Seq.empty
     }
+  }
+
+  implicit object RelayServer extends SettingsMapping[ServerConfig] {
+
+    override def fromConfig(config: Config) = ServerConfig(
+      bindAddress = config.getString("coinffeine.overlay.relay.server.address"),
+      bindPort = config.getInt("coinffeine.overlay.relay.server.port"),
+      maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.server.maxFrameBytes"))
+        .toOption.getOrElse(DefaultRelayConfig.MaxFrameBytes),
+      identificationTimeout =  Try(
+        config.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
+        TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.IdentificationTimeout),
+      minTimeBetweenStatusUpdates = Try(
+        config.getDuration("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
+          TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.MinTimeBetweenStatusUpdates)
+    )
+
+    /** Write settings to given config. */
+    override def toConfig(settings: ServerConfig, config: Config) = config
+      .withValue("coinffeine.overlay.relay.server.address",
+        configValue(settings.bindAddress))
+      .withValue("coinffeine.overlay.relay.server.port", configValue(settings.bindPort))
+      .withValue("coinffeine.overlay.relay.server.maxFrameBytes",
+        configValue(settings.maxFrameBytes))
+      .withValue("coinffeine.overlay.relay.server.identificationTimeout",
+        configValue(s"${settings.identificationTimeout.toSeconds}s"))
+      .withValue("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
+        configValue(s"${settings.minTimeBetweenStatusUpdates.toSeconds}s"))
   }
 
   implicit val okPay = new SettingsMapping[OkPaySettings] {
