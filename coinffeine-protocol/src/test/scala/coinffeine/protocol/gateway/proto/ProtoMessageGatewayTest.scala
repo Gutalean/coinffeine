@@ -13,7 +13,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.{NetworkEndpoint, BrokerId, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.MessageGatewaySettings
-import coinffeine.protocol.gateway.MessageGateway
+import coinffeine.protocol.gateway.{MessageGatewayAssertions, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.messages.brokerage.OrderMatch
@@ -21,7 +21,7 @@ import coinffeine.protocol.serialization._
 
 class ProtoMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
-  with ProtoServerAssertions {
+  with MessageGatewayAssertions {
 
   private val localhost = InetAddress.getLocalHost.getCanonicalHostName
   private val subscribeToOrderMatches = MessageGateway.Subscribe {
