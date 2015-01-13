@@ -12,12 +12,13 @@ import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces
 import coinffeine.model.network.{NetworkEndpoint, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway.MessageGatewayAssertions
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.{CoinffeineMessage, Payload, ProtocolVersion}
 
 class ProtobufServerActorIT extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("ServerSystem"))
-  with ProtoServerAssertions with IgnoredNetworkInterfaces {
+  with MessageGatewayAssertions with IgnoredNetworkInterfaces {
 
   private val localhost = InetAddress.getLocalHost.getCanonicalHostName
   private val connectionRetryInterval = 3.seconds.dilated

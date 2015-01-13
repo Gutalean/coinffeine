@@ -17,7 +17,10 @@ class FakeOverlayNetworkTest extends AkkaSpec {
 
     client1 ! Join(OverlayId(1))
     client2 ! Join(OverlayId(2))
-    expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
+    expectMsgAllOf(
+      Joined(OverlayId(1)), Joined(OverlayId(2)),
+      NetworkStatus(1), NetworkStatus(2), NetworkStatus(2)
+    )
 
     client1 ! SendMessage(OverlayId(2), ByteString("ping"))
     expectMsg(ReceiveMessage(OverlayId(1), ByteString("ping")))
@@ -30,9 +33,15 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     client1 ! Leave
     client2 ! Leave
     expectMsgAllOf(Leaved(OverlayId(1), RequestedLeave), Leaved(OverlayId(2), RequestedLeave))
+    receiveWhile(1.second.dilated) {
+      case NetworkStatus(_) =>
+    }
   }
 
   it should "drop messages according to a rate" in {
+    ignoreMsg {
+      case NetworkStatus(_) => true
+    }
     val network = FakeOverlayNetwork(messageDroppingRate = 0.5)
     val client1, client2 = system.actorOf(network.defaultClientProps)
     client1 ! Join(OverlayId(1))
@@ -88,9 +97,12 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     val network = FakeOverlayNetwork(
       disconnectionDistribution = new FakeOverlayNetwork.ExponentialDelay(100.millis.dilated))
     val client = system.actorOf(network.defaultClientProps)
-    client ! Join(OverlayId(1))
-    expectMsg(Joined(OverlayId(1)))
-    expectMsgType[Leaved](max = 1.second.dilated)
+    val id = OverlayId(1)
+    client ! Join(id)
+    expectMsg(Joined(id))
+    fishForMessage(max = 1.second.dilated) {
+      case Leaved(`id`, _) => true
+    }
   }
 
   private def measureTime(block: => Unit): FiniteDuration = {

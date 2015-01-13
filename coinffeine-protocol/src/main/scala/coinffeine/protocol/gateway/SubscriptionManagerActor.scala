@@ -1,4 +1,4 @@
-package coinffeine.protocol.gateway.proto
+package coinffeine.protocol.gateway
 
 import akka.actor._
 

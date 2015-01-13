@@ -1,25 +1,26 @@
-package coinffeine.protocol.gateway.proto
+package coinffeine.protocol.gateway.overlay
 
 import java.net.InetAddress
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
-import akka.testkit.TestProbe
+import akka.testkit._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{NetworkEndpoint, BrokerId, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, NetworkEndpoint, PeerId}
+import coinffeine.overlay.test.FakeOverlayNetwork
 import coinffeine.protocol.MessageGatewaySettings
-import coinffeine.protocol.gateway.{MessageGatewayAssertions, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.p2p.TomP2PNetwork
+import coinffeine.protocol.gateway.overlay.OverlayMessageGateway.OverlayNetworkAdapter
+import coinffeine.protocol.gateway.{MessageGateway, MessageGatewayAssertions}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 
-class ProtoMessageGatewayTest
+class OverlayMessageGatewayIT
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with MessageGatewayAssertions {
 
@@ -28,14 +29,14 @@ class ProtoMessageGatewayTest
     case ReceiveMessage(_: OrderMatch[_], _) =>
   }
 
-  "Protobuf RPC Message gateway" must "send a known message to a remote peer" in
+  "Overlay message gateway" must "send a message to a remote peer" in
     new FreshBrokerAndPeer {
       val msg = randomOrderMatch()
       peerGateway ! ForwardMessage(msg, BrokerId)
       brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
     }
 
-  it must "send a known message twice reusing the connection to the remote peer" in
+  it must "send a message twice reusing the connection to the remote peer" in
     new FreshBrokerAndPeer {
       val (msg1, msg2) = (randomOrderMatch(), randomOrderMatch())
       peerGateway ! ForwardMessage(msg1, BrokerId)
@@ -108,20 +109,24 @@ class ProtoMessageGatewayTest
     expectMsg(ServiceActor.Stopped)
   }
 
+  class FakeOverlayAdapter extends OverlayNetworkAdapter[FakeOverlayNetwork](
+    FakeOverlayNetwork(connectionFailureRate = 0.1)) {
+    override def config(join: Join) = FakeOverlayNetwork.Config
+  }
+
   trait Fixture extends TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component
       with IgnoredNetworkInterfaces {
 
     private val subscribeToAnything = Subscribe { case _ => }
+    private val overlay = new FakeOverlayAdapter
 
     val peerNetworkProperties = new MutableCoinffeineNetworkProperties
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
-    val connectionRetryInterval = 3.seconds
+    val connectionRetryInterval = 100.millis.dilated
 
-    def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties): Props = Props(
-      new ProtoMessageGateway(networkProperties, protocolSerialization,
-        ProtobufServerActor.props(networkProperties, ignoredNetworkInterfaces,
-          TomP2PNetwork, connectionRetryInterval)))
+    def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties) =
+      Props(new OverlayMessageGateway(overlay, protocolSerialization, networkProperties))
 
     def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
       system.actorOf(messageGatewayProps(networkProperties))
@@ -148,7 +153,7 @@ class ProtoMessageGatewayTest
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties)
       val settings = MessageGatewaySettings(
-        peerId = PeerId.random(),
+        peerId = PeerId("f" * 40),
         peerPort = localPort,
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
         ignoredNetworkInterfaces,

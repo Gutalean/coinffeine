@@ -33,7 +33,6 @@ object Build extends sbt.Build {
     dependsOn(
       model % "compile->compile;test->test",
       protocol % "compile->compile;test->test",
-      overlay,
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile"
     )
@@ -45,6 +44,7 @@ object Build extends sbt.Build {
     dependsOn(
       common,
       model % "compile->compile;test->test",
+      overlay % "compile->compile;test->test",
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile"
     )

@@ -9,10 +9,10 @@ import coinffeine.common.akka.ServiceActor
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.protocol.gateway.MessageGateway._
+import coinffeine.protocol.gateway.SubscriptionManagerActor.NotifySubscribers
 import coinffeine.protocol.gateway._
 import coinffeine.protocol.gateway.p2p.TomP2PNetwork
 import coinffeine.protocol.gateway.proto.ProtobufServerActor.{ReceiveProtoMessage, SendProtoMessage}
-import coinffeine.protocol.gateway.proto.SubscriptionManagerActor.NotifySubscribers
 import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
 private class ProtoMessageGateway(properties: MutableCoinffeineNetworkProperties,

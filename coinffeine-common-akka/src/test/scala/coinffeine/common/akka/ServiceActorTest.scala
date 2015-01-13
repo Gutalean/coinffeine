@@ -92,6 +92,24 @@ class ServiceActorTest extends AkkaSpec {
     expectMsg(ServiceActor.Stopped)
   }
 
+  it should "honor stopping behavior when not started" in {
+    val probe = TestProbe()
+    val service = sampleService(TestProbe())
+
+    probe.send(service, "idle?")
+    probe.expectMsg("true")
+
+    service ! ServiceActor.Start("Foo")
+    service ! "started"
+    expectMsg(ServiceActor.Started)
+    service ! ServiceActor.Stop
+    service ! "stopped"
+    expectMsg(ServiceActor.Stopped)
+
+    probe.send(service, "idle?")
+    probe.expectMsg("true")
+  }
+
   private class SampleService(probe: ActorRef) extends Actor with ServiceActor[String] {
 
     protected override def starting(args: String): Receive = {
@@ -107,6 +125,10 @@ class ServiceActorTest extends AkkaSpec {
       handle  {
         case "stopped" => becomeStopped()
       }
+    }
+
+    override protected def stopped: Receive = {
+      case "idle?" => sender ! "true"
     }
 
     private def alternativeStopping: Receive = {

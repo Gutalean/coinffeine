@@ -34,6 +34,7 @@ private[this] class ServerActor(messageDropRate: Double,
     } else {
       connections += clientId -> Connection(sender(), scheduleConnectionDrop(clientId))
       clientRef ! ServerActor.Connected
+      notifyNetworkSize()
     }
   }
 
@@ -66,18 +67,29 @@ private[this] class ServerActor(messageDropRate: Double,
         clientRef ! ServerActor.Disconnected
         clientId
     }
-    connections --= maybeClientId
+    maybeClientId.foreach { disconnectedId =>
+      connections -= disconnectedId
+      notifyNetworkSize()
+    }
   }
 
   private def dropConnection(id: OverlayId): Unit = {
     connections.get(id).foreach { connection =>
       connection.ref ! ServerActor.Disconnected
+      connections -= id
+      notifyNetworkSize()
     }
-    connections -= id
   }
 
   private def findIdFor(ref: ActorRef): Option[OverlayId] = connections.collectFirst {
     case (id, Connection(`ref`, _)) => id
+  }
+
+  private def notifyNetworkSize(): Unit = {
+    val notification = ServerActor.NetworkSize(connections.size)
+    for (connection <- connections.values) {
+      connection.ref ! notification
+    }
   }
 
   private def shouldDropMessage(): Boolean = randomlyWithRate(messageDropRate)
@@ -99,4 +111,5 @@ private object ServerActor {
   case object Disconnected
   case class SendMessage(to: OverlayId, message: ByteString)
   case class ReceiveMessage(from: OverlayId, message: ByteString)
+  case class NetworkSize(value: Int)
 }
