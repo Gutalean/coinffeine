@@ -26,7 +26,7 @@ trait ServiceActor[Args] { this: Actor =>
 
   override final def receive = receiveStart
 
-  private def receiveStart: Receive = {
+  private def receiveStart: Receive = stopped orElse {
     case Start(args) =>
       try {
         requester = sender()
@@ -156,6 +156,13 @@ trait ServiceActor[Args] { this: Actor =>
     become(receive)
     receive
   }
+
+  /** Behavior when stopped.
+    *
+    * This behavior is automatically used on the initial state and after an stop.
+    * Its initial implementation does nothing.
+    */
+  protected def stopped: Receive = Map.empty
 
   /** Cancel the service start process.
     *
