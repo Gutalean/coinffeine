@@ -98,7 +98,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
        """.stripMargin))
     val peer = system.actorOf(Props(new CoinffeinePeerActor(configProvider,
       PropsCatalogue(
-        gateway = gateway.props(),
+        gateway = system => gateway.props(system),
         marketInfo = market => marketInfo.props(market),
         orderSupervisor = collaborators => orders.props(collaborators),
         paymentProcessor = paymentProcessor.props(),

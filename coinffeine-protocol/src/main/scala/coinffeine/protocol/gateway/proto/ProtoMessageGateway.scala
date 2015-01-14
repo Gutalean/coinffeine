@@ -73,7 +73,8 @@ object ProtoMessageGateway {
       with MutableCoinffeineNetworkProperties.Component =>
 
     override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface],
-                                     connectionRetryInterval: FiniteDuration) = {
+                                     connectionRetryInterval: FiniteDuration)
+                                    (system: ActorSystem) = {
       val serverProps = ProtobufServerActor.props(
         coinffeineNetworkProperties,  ignoredNetworkInterfaces, TomP2PNetwork, connectionRetryInterval)
       Props(new ProtoMessageGateway(coinffeineNetworkProperties, protocolSerialization, serverProps))

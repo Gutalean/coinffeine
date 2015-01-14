@@ -53,7 +53,7 @@ case class CoinffeineProtocol(
 
     actorSystem = Some(ActorSystem("coinffeine-benchmark"))
     gatewayActor = Some(
-      actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings)))
+      actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings)(actorSystem.get)))
 
     val startCommand = ServiceActor.Start(Join(PeerNode, gatewaySettings))
     val gatewayStart = AskPattern(gatewayActor.get, startCommand)

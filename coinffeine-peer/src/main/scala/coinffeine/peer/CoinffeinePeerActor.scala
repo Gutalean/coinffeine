@@ -37,7 +37,7 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
   import CoinffeinePeerActor._
   import context.dispatcher
 
-  private val gatewayRef = context.actorOf(props.gateway, "gateway")
+  private val gatewayRef = context.actorOf(props.gateway(context.system), "gateway")
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
   private val marketInfoRef = context.actorOf(props.marketInfo(gatewayRef), "marketInfo")
@@ -152,7 +152,7 @@ object CoinffeinePeerActor {
                                           blockchain: ActorRef,
                                           wallet: ActorRef)
 
-  case class PropsCatalogue(gateway: Props,
+  case class PropsCatalogue(gateway: ActorSystem => Props,
                             marketInfo: ActorRef => Props,
                             orderSupervisor: OrderSupervisorCollaborators => Props,
                             bitcoinPeer: Props,
