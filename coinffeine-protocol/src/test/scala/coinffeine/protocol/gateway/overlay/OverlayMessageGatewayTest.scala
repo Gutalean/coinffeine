@@ -90,7 +90,7 @@ class OverlayMessageGatewayTest
       new OverlayMessageGateway(overlay.adapter, protocolSerialization, properties)))
 
     def expectSuccessfulStart(): Unit = {
-      gateway ! ServiceActor.Start(MessageGateway.Join(MessageGateway.PeerNode, settings))
+      gateway ! ServiceActor.Start(MessageGateway.Join(settings))
       expectMsg(ServiceActor.Started)
       overlay.expectClientSpawn()
     }

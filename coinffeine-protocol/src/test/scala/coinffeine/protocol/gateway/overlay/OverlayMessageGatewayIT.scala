@@ -142,7 +142,7 @@ class OverlayMessageGatewayIT
         connectionRetryInterval,
         externalForwardedPort = None
       )
-      ref ! ServiceActor.Start(Join(PeerNode, settings))
+      ref ! ServiceActor.Start(Join(settings))
       expectMsg(ServiceActor.Started)
       waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
@@ -160,7 +160,7 @@ class OverlayMessageGatewayIT
         connectionRetryInterval,
         externalForwardedPort = None
       )
-      ref ! ServiceActor.Start(Join(BrokerNode, settings))
+      ref ! ServiceActor.Start(Join(settings))
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()

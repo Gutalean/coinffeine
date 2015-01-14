@@ -11,11 +11,7 @@ import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
 
-  sealed trait NodeRole
-  case object PeerNode extends NodeRole
-  case object BrokerNode extends NodeRole
-
-  case class Join(role: NodeRole, settings: MessageGatewaySettings) {
+  case class Join(settings: MessageGatewaySettings) {
     val id: PeerId = settings.peerId
   }
 

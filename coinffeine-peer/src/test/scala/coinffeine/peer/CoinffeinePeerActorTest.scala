@@ -18,7 +18,6 @@ import coinffeine.peer.config.InMemoryConfigProvider
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.PeerNode
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
@@ -140,7 +139,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
-    shouldRequestStart(gateway, MessageGateway.Join(PeerNode, configProvider.messageGatewaySettings()))
+    shouldRequestStart(gateway, MessageGateway.Join(configProvider.messageGatewaySettings()))
 
     // Then request the wallet and blockchain actors from bitcoin actor
     bitcoinPeer.expectAskWithReply {

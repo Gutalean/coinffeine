@@ -55,7 +55,7 @@ case class CoinffeineProtocol(
     gatewayActor = Some(
       actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings)(actorSystem.get)))
 
-    val startCommand = ServiceActor.Start(Join(PeerNode, gatewaySettings))
+    val startCommand = ServiceActor.Start(Join(gatewaySettings))
     val gatewayStart = AskPattern(gatewayActor.get, startCommand)
       .withReply[ServiceActor.Started.type]
     Await.result(gatewayStart, 20.seconds)
