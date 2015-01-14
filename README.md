@@ -33,8 +33,8 @@ or the `fakeroot` package in Ubuntu/Debian.
 Getting coverage metrics
 ------------------------
 
-To get coverage metrics just run `sbt scoverage:test` and loot at the
-directory `target/scala-2.x/scoverage-report` of every module.
+To get coverage metrics just run `sbt clean coverage test coverageAggregate`
+and look at `target/scala-2.x/scoverage-report/scoverage-report/index.html`.
 
 
 Generating release binaries
