@@ -8,7 +8,7 @@ import akka.testkit._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.common.test.{DefaultTcpPortAllocator, IgnoredNetworkInterfaces}
+import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, NetworkEndpoint, PeerId}
@@ -115,8 +115,7 @@ class OverlayMessageGatewayIT
   }
 
   trait Fixture extends TestProtocolSerializationComponent
-      with CoinffeineUnitTestNetwork.Component
-      with IgnoredNetworkInterfaces {
+      with CoinffeineUnitTestNetwork.Component {
 
     private val subscribeToAnything = Subscribe { case _ => }
     private val overlay = new FakeOverlayAdapter
@@ -138,7 +137,6 @@ class OverlayMessageGatewayIT
         peerId = PeerId.random(),
         peerPort = localPort,
         brokerEndpoint = connectTo,
-        ignoredNetworkInterfaces,
         connectionRetryInterval,
         externalForwardedPort = None
       )
@@ -156,7 +154,6 @@ class OverlayMessageGatewayIT
         peerId = PeerId("f" * 40),
         peerPort = localPort,
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
-        ignoredNetworkInterfaces,
         connectionRetryInterval,
         externalForwardedPort = None
       )

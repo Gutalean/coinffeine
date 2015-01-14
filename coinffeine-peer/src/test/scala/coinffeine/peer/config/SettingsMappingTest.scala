@@ -1,9 +1,8 @@
 package coinffeine.peer.config
 
 import java.io.File
-import java.net.{NetworkInterface, URI}
+import java.net.URI
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -66,7 +65,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     "coinffeine.peer.port" -> 5000,
     "coinffeine.broker.hostname" -> "broker-host",
     "coinffeine.broker.port" -> 4000,
-    "coinffeine.peer.ifaces.ignore" -> asJavaIterable(Seq(existingNetInterface().getName)),
     "coinffeine.peer.connectionRetryInterval" -> "10s"
   )
 
@@ -75,7 +73,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.peerId shouldBe PeerId("1234")
     settings.peerPort shouldBe 5000
     settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
-    settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
     settings.connectionRetryInterval shouldBe 10.seconds
     settings.externalForwardedPort shouldBe 'empty
   }
@@ -92,7 +89,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       peerId = PeerId("1234"),
       peerPort = 5050,
       brokerEndpoint = NetworkEndpoint("andromeda", 5051),
-      ignoredNetworkInterfaces = Seq(existingNetInterface()),
       connectionRetryInterval = 10.seconds,
       externalForwardedPort = Some(8765)
     )
@@ -101,8 +97,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getInt("coinffeine.peer.port") shouldBe 5050
     cfg.getString("coinffeine.broker.hostname") shouldBe "andromeda"
     cfg.getInt("coinffeine.broker.port") shouldBe 5051
-    cfg.getStringList("coinffeine.peer.ifaces.ignore") shouldBe
-      seqAsJavaList(Seq(existingNetInterface().getName))
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
     cfg.getInt("coinffeine.peer.externalForwardedPort") shouldBe 8765
   }
@@ -211,7 +205,4 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       case (config, (configPath, configValue)) =>
         config.withValue(configPath, ConfigValueFactory.fromAnyRef(configValue))
     }
-
-  private def existingNetInterface(): NetworkInterface =
-    NetworkInterface.getNetworkInterfaces.nextElement()
 }

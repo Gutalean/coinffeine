@@ -51,9 +51,8 @@ object MessageGateway {
   trait Component {
 
     def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props =
-      messageGatewayProps(settings.ignoredNetworkInterfaces, settings.connectionRetryInterval)(system)
+      messageGatewayProps(settings.connectionRetryInterval)(system)
 
-    def messageGatewayProps(@deprecated ignoredNetworkInterfaces: Seq[NetworkInterface],
-                            connectionRetryInterval: FiniteDuration)(system: ActorSystem): Props
+    def messageGatewayProps(connectionRetryInterval: FiniteDuration)(system: ActorSystem): Props
   }
 }

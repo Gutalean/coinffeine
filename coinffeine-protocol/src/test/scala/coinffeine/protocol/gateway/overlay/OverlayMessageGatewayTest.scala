@@ -28,7 +28,6 @@ class OverlayMessageGatewayTest
     peerId = PeerId("0" * 19 + "1"),
     peerPort = 1111,
     brokerEndpoint = NetworkEndpoint("server", 2222),
-    ignoredNetworkInterfaces = Seq.empty,
     connectionRetryInterval = 1.second.dilated,
     externalForwardedPort = None
   )

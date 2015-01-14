@@ -72,7 +72,6 @@ object SettingsMapping {
       brokerEndpoint = NetworkEndpoint(
         hostname = config.getString("coinffeine.broker.hostname"),
         port = config.getInt("coinffeine.broker.port")),
-      ignoredNetworkInterfaces = ignoredNetworkInterfaces(config),
       connectionRetryInterval =
         config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds,
       externalForwardedPort = Try(config.getInt("coinffeine.peer.externalForwardedPort")).toOption
@@ -83,8 +82,6 @@ object SettingsMapping {
       .withValue("coinffeine.peer.port", configValue(settings.peerPort))
       .withValue("coinffeine.broker.hostname", configValue(settings.brokerEndpoint.hostname))
       .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
-      .withValue("coinffeine.peer.ifaces.ignore",
-        configValue(asJavaIterable(settings.ignoredNetworkInterfaces.map(_.getName))))
       .withValue("coinffeine.peer.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
       .withValue("coinffeine.peer.externalForwardedPort",
@@ -101,13 +98,6 @@ object SettingsMapping {
         case None => Some(
           config.withValue("coinffeine.peer.id", configValue(PeerId.random().value)))
       }
-    }
-
-    private def ignoredNetworkInterfaces(config: Config): Seq[NetworkInterface] = try {
-      config.getStringList("coinffeine.peer.ifaces.ignore")
-        .flatMap(name => Option(NetworkInterface.getByName(name)))
-    } catch {
-      case _: ConfigException.Missing => Seq.empty
     }
   }
 
