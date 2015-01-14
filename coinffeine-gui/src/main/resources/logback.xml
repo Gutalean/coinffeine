@@ -41,9 +41,7 @@
     <logger name="org.bitcoin" level="ERROR"/>
     <logger name="org.bitcoinj" level="ERROR"/>
 
-    <logger name="net.tomp2p" level="WARN"/>
     <logger name="com.romix.akka.serialization.kryo" level="WARN"/>
-
 
     <logger name="com.ning.http" level="WARN"/>
 
