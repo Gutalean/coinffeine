@@ -46,6 +46,6 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-    def messageGatewayProps(system: ActorSystem): Props
+    def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props
   }
 }

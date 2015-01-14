@@ -8,10 +8,8 @@ import akka.actor.{Props, ActorSystem}
 import coinffeine.overlay.OverlayNetwork
 
 class FakeOverlayNetwork private (serverProps: Props, system: ActorSystem) extends OverlayNetwork {
-  override type Config = FakeOverlayNetwork.Config.type
   private val server = system.actorOf(serverProps)
-  override def clientProps(config: Config) = ClientActor.props(server)
-  def defaultClientProps = clientProps(FakeOverlayNetwork.Config)
+  override val clientProps = ClientActor.props(server)
 }
 
 object FakeOverlayNetwork {

@@ -11,7 +11,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, NetworkEndpoint, PeerId}
+import coinffeine.model.network._
 import coinffeine.overlay.OverlayId
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
@@ -85,7 +85,7 @@ class OverlayMessageGatewayTest
     val overlay = new MockOverlayNetwork(protocolSerialization)
     val properties = new MutableCoinffeineNetworkProperties
     val gateway = system.actorOf(Props(
-      new OverlayMessageGateway(overlay.adapter, protocolSerialization, properties)))
+      new OverlayMessageGateway(overlay, protocolSerialization, properties)))
 
     def expectSuccessfulStart(): Unit = {
       gateway ! ServiceActor.Start(MessageGateway.Join(settings))

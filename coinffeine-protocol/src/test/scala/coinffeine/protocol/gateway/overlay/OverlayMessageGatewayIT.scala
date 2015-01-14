@@ -11,11 +11,10 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, NetworkEndpoint, PeerId}
+import coinffeine.model.network._
 import coinffeine.overlay.test.FakeOverlayNetwork
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.overlay.OverlayMessageGateway.OverlayNetworkAdapter
 import coinffeine.protocol.gateway.{MessageGateway, MessageGatewayAssertions}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
@@ -109,16 +108,11 @@ class OverlayMessageGatewayIT
     expectMsg(ServiceActor.Stopped)
   }
 
-  class FakeOverlayAdapter extends OverlayNetworkAdapter[FakeOverlayNetwork](
-    FakeOverlayNetwork(connectionFailureRate = 0.1)) {
-    override def config(join: Join) = FakeOverlayNetwork.Config
-  }
-
   trait Fixture extends TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component {
 
     private val subscribeToAnything = Subscribe { case _ => }
-    private val overlay = new FakeOverlayAdapter
+    private val overlay = FakeOverlayNetwork(connectionFailureRate = 0.1)
 
     val peerNetworkProperties = new MutableCoinffeineNetworkProperties
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties

@@ -8,8 +8,6 @@ import akka.util.ByteString
 import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
 import coinffeine.model.network.NodeId
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
-import coinffeine.protocol.gateway.MessageGateway.Join
-import coinffeine.protocol.gateway.overlay.OverlayMessageGateway.OverlayNetworkAdapter
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.serialization.TestProtocolSerialization
 
@@ -19,12 +17,7 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   private val mockClient = new MockSupervisedActor()
   private var listener = ActorRef.noSender
   private var overlayId: OverlayId = _
-  override type Config = Unit
-  override def clientProps(config: Config): Props = mockClient.props()
-
-  def adapter = new OverlayNetworkAdapter(this) {
-    override def config(join: Join) = ()
-  }
+  override val clientProps = mockClient.props()
 
   def expectClientSpawn(): Unit = {
     mockClient.expectCreation()

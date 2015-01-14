@@ -16,10 +16,9 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
 
   val connectionTimeout = 4.seconds.dilated
   val port = DefaultTcpPortAllocator.allocatePort()
-  val server = system.actorOf(ServerActor.props, "server")
   val serverConfig = ServerConfig("localhost", port)
-  val client = new RelayNetwork(system)
-  val clientConfig = ClientConfig("localhost", port)
+  val server = system.actorOf(ServerActor.props, "server")
+  val client = new RelayNetwork(ClientConfig("localhost", port), system)
 
   "A relay network" should "bind to a port" in {
     server ! ServiceActor.Start(serverConfig)
@@ -27,11 +26,11 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
   }
 
   it should "send messages forth and back" in {
-    val client1 = system.actorOf(client.clientProps(clientConfig), "client1")
+    val client1 = system.actorOf(client.clientProps, "client1")
     client1 ! OverlayNetwork.Join(OverlayId(1))
     expectMsgAllClassOf(classOf[OverlayNetwork.Joined], classOf[OverlayNetwork.NetworkStatus])
 
-    val client2 = system.actorOf(client.clientProps(clientConfig), "client2")
+    val client2 = system.actorOf(client.clientProps, "client2")
     client2 ! OverlayNetwork.Join(OverlayId(2))
     expectMsgAllClassOf(classOf[OverlayNetwork.Joined], classOf[OverlayNetwork.NetworkStatus])
 

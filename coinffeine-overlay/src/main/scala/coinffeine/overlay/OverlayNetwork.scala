@@ -6,10 +6,8 @@ import akka.actor.Props
 import akka.util.ByteString
 
 trait OverlayNetwork {
-  type Config
-
   /** Produce the props of an actor able to join the overlay network this trait represents. */
-  def clientProps(config: Config): Props
+  def clientProps: Props
 }
 
 object OverlayNetwork {
