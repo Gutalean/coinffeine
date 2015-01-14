@@ -1,6 +1,5 @@
 package coinffeine.protocol.gateway.overlay
 
-import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -167,10 +166,7 @@ object OverlayMessageGateway {
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with MutableCoinffeineNetworkProperties.Component =>
 
-    override def messageGatewayProps(connectionRetryInterval: FiniteDuration)
-                                    (system: ActorSystem): Props =
-      Props(new OverlayMessageGateway(new RelayNetworkAdapter(system),
-        protocolSerialization,
-        coinffeineNetworkProperties))
+    override def messageGatewayProps(system: ActorSystem) = Props(new OverlayMessageGateway(
+      new RelayNetworkAdapter(system), protocolSerialization, coinffeineNetworkProperties))
   }
 }

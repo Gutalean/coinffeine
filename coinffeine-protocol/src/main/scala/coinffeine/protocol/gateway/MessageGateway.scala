@@ -1,8 +1,5 @@
 package coinffeine.protocol.gateway
 
-import java.net.NetworkInterface
-import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.{ActorSystem, Props}
 
 import coinffeine.model.network.{BrokerId, NodeId, PeerId}
@@ -49,10 +46,6 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-
-    def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props =
-      messageGatewayProps(settings.connectionRetryInterval)(system)
-
-    def messageGatewayProps(connectionRetryInterval: FiniteDuration)(system: ActorSystem): Props
+    def messageGatewayProps(system: ActorSystem): Props
   }
 }
