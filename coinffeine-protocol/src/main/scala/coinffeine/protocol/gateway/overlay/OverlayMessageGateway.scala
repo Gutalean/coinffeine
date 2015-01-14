@@ -1,5 +1,7 @@
 package coinffeine.protocol.gateway.overlay
 
+import java.net.NetworkInterface
+import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -13,7 +15,7 @@ import coinffeine.protocol.gateway.{SubscriptionManagerActor, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway.{Join, Subscribe, Unsubscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
-import coinffeine.protocol.serialization.ProtocolSerialization
+import coinffeine.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
 
 /** Message gateway that uses an overlay network as transport */
 private class OverlayMessageGateway(
@@ -161,5 +163,16 @@ object OverlayMessageGateway {
       host = join.settings.brokerEndpoint.hostname,
       port = join.settings.brokerEndpoint.port
     )
+  }
+
+  trait Component extends MessageGateway.Component {
+    this: ProtocolSerializationComponent with MutableCoinffeineNetworkProperties.Component =>
+
+    override def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface],
+                                     connectionRetryInterval: FiniteDuration)
+                                    (system: ActorSystem): Props =
+      Props(new OverlayMessageGateway(new RelayNetworkAdapter(system),
+        protocolSerialization,
+        coinffeineNetworkProperties))
   }
 }
