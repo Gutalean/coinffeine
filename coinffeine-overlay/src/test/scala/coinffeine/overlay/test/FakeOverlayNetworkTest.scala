@@ -30,18 +30,15 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     expectMsg(ReceiveMessage(OverlayId(2), ByteString("pong")))
     lastSender shouldBe client1
 
-    client1 ! Leave
-    client2 ! Leave
-    expectMsgAllOf(Leaved(OverlayId(1), RequestedLeave), Leaved(OverlayId(2), RequestedLeave))
-    receiveWhile(1.second.dilated) {
-      case NetworkStatus(_) =>
-    }
-  }
-
-  it should "drop messages according to a rate" in {
     ignoreMsg {
       case NetworkStatus(_) => true
     }
+    client1 ! Leave
+    client2 ! Leave
+    expectMsgAllOf(Leaved(OverlayId(1), RequestedLeave), Leaved(OverlayId(2), RequestedLeave))
+  }
+
+  it should "drop messages according to a rate" in {
     val network = FakeOverlayNetwork(messageDroppingRate = 0.5)
     val client1, client2 = system.actorOf(network.defaultClientProps)
     client1 ! Join(OverlayId(1))
