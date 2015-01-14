@@ -10,7 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.model.network.PeerId
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
@@ -62,32 +62,22 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   val messageGatewayBasicSettings = makeConfig(
     "coinffeine.peer.id" -> "1234",
-    "coinffeine.peer.port" -> 5000,
-    "coinffeine.broker.hostname" -> "broker-host",
-    "coinffeine.broker.port" -> 4000,
     "coinffeine.peer.connectionRetryInterval" -> "10s"
   )
 
   "Message Gateway settings mapping" should "map basic settings from config" in {
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](messageGatewayBasicSettings)
     settings.peerId shouldBe PeerId("1234")
-    settings.peerPort shouldBe 5000
-    settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
     settings.connectionRetryInterval shouldBe 10.seconds
   }
 
   it should "map to config" in {
     val settings = MessageGatewaySettings(
       peerId = PeerId("1234"),
-      peerPort = 5050,
-      brokerEndpoint = NetworkEndpoint("andromeda", 5051),
       connectionRetryInterval = 10.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.peer.id") shouldBe "1234"
-    cfg.getInt("coinffeine.peer.port") shouldBe 5050
-    cfg.getString("coinffeine.broker.hostname") shouldBe "andromeda"
-    cfg.getInt("coinffeine.broker.port") shouldBe 5051
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
   }
 

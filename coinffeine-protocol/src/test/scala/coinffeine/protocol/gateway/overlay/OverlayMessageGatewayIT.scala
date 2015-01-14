@@ -1,6 +1,5 @@
 package coinffeine.protocol.gateway.overlay
 
-import java.net.InetAddress
 import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
@@ -8,7 +7,6 @@ import akka.testkit._
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
 import coinffeine.model.network._
@@ -23,7 +21,6 @@ class OverlayMessageGatewayIT
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
   with MessageGatewayAssertions {
 
-  private val localhost = InetAddress.getLocalHost.getCanonicalHostName
   private val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(_: OrderMatch[_], _) =>
   }
@@ -123,12 +120,9 @@ class OverlayMessageGatewayIT
       system.actorOf(Props(
         new OverlayMessageGateway(settings, overlay, protocolSerialization, networkProperties)))
 
-    def createPeerGateway(connectTo: NetworkEndpoint): (ActorRef, TestProbe) = {
-      val localPort = DefaultTcpPortAllocator.allocatePort()
+    def createPeerGateway(): (ActorRef, TestProbe) = {
       val ref = createMessageGateway(peerNetworkProperties, MessageGatewaySettings(
         peerId = PeerId.random(),
-        peerPort = localPort,
-        brokerEndpoint = connectTo,
         connectionRetryInterval
       ))
       ref ! ServiceActor.Start {}
@@ -139,11 +133,9 @@ class OverlayMessageGatewayIT
       (ref, probe)
     }
 
-    def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
+    def createBrokerGateway(): (ActorRef, TestProbe, PeerId) = {
       val ref = createMessageGateway(brokerNetworkProperties, MessageGatewaySettings(
         peerId = PeerId("f" * 40),
-        peerPort = localPort,
-        brokerEndpoint = NetworkEndpoint(localhost, localPort),
         connectionRetryInterval
       ))
       ref ! ServiceActor.Start {}
@@ -156,9 +148,8 @@ class OverlayMessageGatewayIT
   }
 
   trait FreshBrokerAndPeer extends Fixture {
-    val brokerAddress = NetworkEndpoint("localhost", DefaultTcpPortAllocator.allocatePort())
-    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway(localPort = brokerAddress.port)
-    val (peerGateway, peerProbe) = createPeerGateway(brokerAddress)
+    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway()
+    val (peerGateway, peerProbe) = createPeerGateway()
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
     peerGateway ! ForwardMessage(randomOrderMatch(), BrokerId)

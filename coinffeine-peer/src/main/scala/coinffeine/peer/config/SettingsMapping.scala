@@ -65,18 +65,11 @@ object SettingsMapping {
 
     override def fromConfig(config: Config) = MessageGatewaySettings(
       peerId = PeerId(config.getString("coinffeine.peer.id")),
-      peerPort = config.getInt("coinffeine.peer.port"),
-      brokerEndpoint = NetworkEndpoint(
-        hostname = config.getString("coinffeine.broker.hostname"),
-        port = config.getInt("coinffeine.broker.port")),
       connectionRetryInterval = getSeconds(config, "coinffeine.peer.connectionRetryInterval")
     )
 
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
       .withValue("coinffeine.peer.id", configValue(settings.peerId.value))
-      .withValue("coinffeine.peer.port", configValue(settings.peerPort))
-      .withValue("coinffeine.broker.hostname", configValue(settings.brokerEndpoint.hostname))
-      .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
       .withValue("coinffeine.peer.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
 

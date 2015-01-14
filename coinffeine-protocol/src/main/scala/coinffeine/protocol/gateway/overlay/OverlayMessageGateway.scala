@@ -11,11 +11,11 @@ import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
-import coinffeine.protocol.gateway.{SubscriptionManagerActor, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
+import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
-import coinffeine.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
+import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
 
 /** Message gateway that uses an overlay network as transport */
 private class OverlayMessageGateway(
@@ -156,13 +156,14 @@ object OverlayMessageGateway {
   trait Component extends MessageGateway.Component {
     this: ProtocolSerializationComponent with MutableCoinffeineNetworkProperties.Component =>
 
-    override def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem) = {
-      val overlay = new RelayNetwork(RelayClientSettings(
-        host = settings.brokerEndpoint.hostname,
-        port = settings.brokerEndpoint.port
-      ), system)
-      Props(new OverlayMessageGateway(settings, overlay, protocolSerialization,
-        coinffeineNetworkProperties))
-    }
+    override def messageGatewayProps(messageGatewaySettings: MessageGatewaySettings,
+                                     relayClientSettings: RelayClientSettings)
+                                    (system: ActorSystem) =
+      Props(new OverlayMessageGateway(
+        messageGatewaySettings,
+        new RelayNetwork(relayClientSettings, system),
+        protocolSerialization,
+        coinffeineNetworkProperties)
+      )
   }
 }

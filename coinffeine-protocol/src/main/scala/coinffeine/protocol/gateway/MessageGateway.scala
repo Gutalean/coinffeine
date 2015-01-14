@@ -3,6 +3,7 @@ package coinffeine.protocol.gateway
 import akka.actor.{ActorSystem, Props}
 
 import coinffeine.model.network.{BrokerId, NodeId}
+import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 
@@ -42,6 +43,8 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-    def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props
+    def messageGatewayProps(messageGatewaySettings: MessageGatewaySettings,
+                            relayClientSettings: RelayClientSettings)
+                           (system: ActorSystem): Props
   }
 }

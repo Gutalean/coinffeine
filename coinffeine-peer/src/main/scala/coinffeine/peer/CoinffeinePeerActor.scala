@@ -168,7 +168,8 @@ object CoinffeinePeerActor {
 
     lazy val peerProps: Props = {
       val props = PropsCatalogue(
-        messageGatewayProps(configProvider.messageGatewaySettings()),
+        messageGatewayProps(configProvider.messageGatewaySettings(),
+          configProvider.relaySettings().clientSettings),
         MarketInfoActor.props,
         orderSupervisorProps,
         bitcoinPeerProps,
