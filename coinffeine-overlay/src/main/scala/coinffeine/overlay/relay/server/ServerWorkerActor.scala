@@ -12,8 +12,9 @@ import akka.util.ByteString
 import coinffeine.common.akka.LimitedRateProxy
 import coinffeine.overlay.OverlayId
 import coinffeine.overlay.relay.messages._
+import coinffeine.overlay.relay.settings.RelayServerSettings
 
-private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config: ServerConfig)
+private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config: RelayServerSettings)
   extends Actor with ActorLogging {
 
   private case object IdentificationTimeout
@@ -123,6 +124,6 @@ private object ServerWorkerActor {
   case object CannotJoinWithIdentifierInUse
   case class Joined(status: StatusMessage)
 
-  def props(connection: Connection, config: ServerConfig): Props =
+  def props(connection: Connection, config: RelayServerSettings): Props =
     Props(new ServerWorkerActor(connection, config))
 }

@@ -2,7 +2,7 @@ package coinffeine.protocol.gateway
 
 import akka.actor.{ActorSystem, Props}
 
-import coinffeine.model.network.{BrokerId, NodeId, PeerId}
+import coinffeine.model.network.{BrokerId, NodeId}
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 

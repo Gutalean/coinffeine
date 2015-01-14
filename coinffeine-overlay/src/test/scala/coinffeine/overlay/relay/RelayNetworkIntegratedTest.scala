@@ -8,17 +8,18 @@ import akka.util.ByteString
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.DefaultTcpPortAllocator
-import coinffeine.overlay.relay.client.{ClientConfig, RelayNetwork}
-import coinffeine.overlay.relay.server.{ServerActor, ServerConfig}
+import coinffeine.overlay.relay.client.RelayNetwork
+import coinffeine.overlay.relay.server.ServerActor
+import coinffeine.overlay.relay.settings.{RelayServerSettings, RelayClientSettings}
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 class RelayNetworkIntegratedTest extends AkkaSpec {
 
   val connectionTimeout = 4.seconds.dilated
   val port = DefaultTcpPortAllocator.allocatePort()
-  val serverConfig = ServerConfig("localhost", port)
+  val serverConfig = RelayServerSettings("localhost", port)
   val server = system.actorOf(ServerActor.props, "server")
-  val client = new RelayNetwork(ClientConfig("localhost", port), system)
+  val client = new RelayNetwork(RelayClientSettings("localhost", port), system)
 
   "A relay network" should "bind to a port" in {
     server ! ServiceActor.Start(serverConfig)

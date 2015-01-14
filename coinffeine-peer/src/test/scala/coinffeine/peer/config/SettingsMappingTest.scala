@@ -12,7 +12,7 @@ import org.scalatest.OptionValues
 import coinffeine.common.test.UnitTest
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.overlay.relay.DefaultRelayConfig
-import coinffeine.overlay.relay.server.ServerConfig
+import coinffeine.overlay.relay.settings.RelayServerSettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -104,7 +104,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   )
 
   "Relay server settings mapping" should "map basic settings from config" in {
-    val settings = SettingsMapping.fromConfig[ServerConfig](relayServerBasicSettings)
+    val settings = SettingsMapping.fromConfig[RelayServerSettings](relayServerBasicSettings)
     settings.bindAddress shouldBe "localhost"
     settings.bindPort shouldBe 5000
     settings.maxFrameBytes shouldBe DefaultRelayConfig.MaxFrameBytes
@@ -117,14 +117,14 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       "coinffeine.overlay.relay.server.maxFrameBytes" -> "1024",
       "coinffeine.overlay.relay.server.identificationTimeout" -> "10s",
       "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m")
-    val settings = SettingsMapping.fromConfig[ServerConfig](conf)
+    val settings = SettingsMapping.fromConfig[RelayServerSettings](conf)
     settings.maxFrameBytes shouldBe 1024
     settings.identificationTimeout shouldBe 10.seconds
     settings.minTimeBetweenStatusUpdates shouldBe 10.minutes
   }
 
   it should "map to config" in {
-    val settings = ServerConfig(
+    val settings = RelayServerSettings(
       bindAddress = "localhost",
       bindPort = 5000,
       maxFrameBytes = 1024,

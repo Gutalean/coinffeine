@@ -10,7 +10,7 @@ import com.typesafe.config._
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
 import coinffeine.overlay.relay.DefaultRelayConfig
-import coinffeine.overlay.relay.server.ServerConfig
+import coinffeine.overlay.relay.settings.RelayServerSettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -97,9 +97,9 @@ object SettingsMapping {
     }
   }
 
-  implicit object RelayServer extends SettingsMapping[ServerConfig] {
+  implicit object RelayServer extends SettingsMapping[RelayServerSettings] {
 
-    override def fromConfig(config: Config) = ServerConfig(
+    override def fromConfig(config: Config) = RelayServerSettings(
       bindAddress = config.getString("coinffeine.overlay.relay.server.address"),
       bindPort = config.getInt("coinffeine.overlay.relay.server.port"),
       maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.server.maxFrameBytes"))
@@ -112,7 +112,7 @@ object SettingsMapping {
           TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.MinTimeBetweenStatusUpdates)
     )
 
-    override def toConfig(settings: ServerConfig, config: Config) = config
+    override def toConfig(settings: RelayServerSettings, config: Config) = config
       .withValue("coinffeine.overlay.relay.server.address",
         configValue(settings.bindAddress))
       .withValue("coinffeine.overlay.relay.server.port", configValue(settings.bindPort))

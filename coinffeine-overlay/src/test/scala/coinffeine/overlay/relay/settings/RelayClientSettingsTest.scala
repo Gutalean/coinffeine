@@ -1,19 +1,19 @@
-package coinffeine.overlay.relay.client
+package coinffeine.overlay.relay.settings
 
 import scala.concurrent.duration._
 
 import coinffeine.common.test.UnitTest
 
-class ClientConfigTest extends UnitTest {
+class RelayClientSettingsTest extends UnitTest {
   "Client config" should "require a positive connection timeout" in {
     an [IllegalArgumentException] shouldBe thrownBy {
-      ClientConfig("foo", 123, connectionTimeout = 0.seconds)
+      RelayClientSettings("foo", 123, connectionTimeout = 0.seconds)
     }
   }
 
   it should "require a positive max frame size" in {
     an [IllegalArgumentException] shouldBe thrownBy {
-      ClientConfig("foo", 123, maxFrameBytes = -3)
+      RelayClientSettings("foo", 123, maxFrameBytes = -3)
     }
   }
 }

@@ -1,4 +1,4 @@
-package coinffeine.overlay.relay.server
+package coinffeine.overlay.relay.settings
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -15,7 +15,7 @@ import coinffeine.overlay.relay.DefaultRelayConfig
   * @param minTimeBetweenStatusUpdates  Clients won't receive status updates in less time than
   *                                     this to limit its rate
   */
-case class ServerConfig(
+case class RelayServerSettings(
     bindAddress: String,
     bindPort: Int,
     maxFrameBytes: Int = DefaultRelayConfig.MaxFrameBytes,

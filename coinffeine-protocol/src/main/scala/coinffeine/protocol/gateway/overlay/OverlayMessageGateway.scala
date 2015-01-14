@@ -8,7 +8,8 @@ import akka.util.ByteString
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
-import coinffeine.overlay.relay.client.{ClientConfig, RelayNetwork}
+import coinffeine.overlay.relay.client.RelayNetwork
+import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.{SubscriptionManagerActor, MessageGateway}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
@@ -156,7 +157,7 @@ object OverlayMessageGateway {
     this: ProtocolSerializationComponent with MutableCoinffeineNetworkProperties.Component =>
 
     override def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem) = {
-      val overlay = new RelayNetwork(ClientConfig(
+      val overlay = new RelayNetwork(RelayClientSettings(
         host = settings.brokerEndpoint.hostname,
         port = settings.brokerEndpoint.port
       ), system)

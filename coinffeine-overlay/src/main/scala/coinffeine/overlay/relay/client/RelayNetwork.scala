@@ -7,8 +7,9 @@ import akka.actor.ActorSystem
 import akka.io.{IO, Tcp}
 
 import coinffeine.overlay.OverlayNetwork
+import coinffeine.overlay.relay.settings.RelayClientSettings
 
-class RelayNetwork(config: ClientConfig, system: ActorSystem) extends OverlayNetwork {
+class RelayNetwork(config: RelayClientSettings, system: ActorSystem) extends OverlayNetwork {
   override val clientProps = ClientActor.props(config, IO(Tcp)(system))
 }
 

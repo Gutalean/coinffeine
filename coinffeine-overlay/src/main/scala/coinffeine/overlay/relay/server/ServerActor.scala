@@ -8,32 +8,33 @@ import akka.io.{IO, Tcp}
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.overlay.OverlayId
-import coinffeine.overlay.relay.messages.{StatusMessage, RelayMessage}
+import coinffeine.overlay.relay.messages.{RelayMessage, StatusMessage}
+import coinffeine.overlay.relay.settings.RelayServerSettings
 
 /** Actor implementing the server-side of the relay protocol. */
 private[this] class ServerActor(tcpManager: ActorRef)
-  extends Actor with ServiceActor[ServerConfig] with ActorLogging {
+  extends Actor with ServiceActor[RelayServerSettings] with ActorLogging {
 
   private var socket = ActorRef.noSender
   private var workers = Set.empty[ActorRef]
   private var activeIds = Map.empty[OverlayId, ActorRef]
 
-  override protected def starting(config: ServerConfig): Receive = {
-    val localAddress = new InetSocketAddress(config.bindAddress, config.bindPort)
+  override protected def starting(settings: RelayServerSettings): Receive = {
+    val localAddress = new InetSocketAddress(settings.bindAddress, settings.bindPort)
     tcpManager ! Tcp.Bind(self, localAddress)
     handle {
       case Tcp.Bound(_) =>
         socket = sender()
-        becomeStarted(started(config))
+        becomeStarted(started(settings))
       case Tcp.CommandFailed(_: Tcp.Bind) => cancelStart(ServerActor.CannotBind(localAddress))
     }
   }
 
-  private def started(config: ServerConfig): Receive = {
+  private def started(settings: RelayServerSettings): Receive = {
 
     def spawnWorkerActor(remoteAddress: InetSocketAddress, connection: ActorRef): ActorRef = {
       val connectionWorker = context.actorOf(ServerWorkerActor.props(
-        ServerWorkerActor.Connection(remoteAddress, connection), config))
+        ServerWorkerActor.Connection(remoteAddress, connection), settings))
       workers += connectionWorker
       context.watch(connectionWorker)
       connectionWorker
