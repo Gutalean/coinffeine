@@ -4,6 +4,8 @@ import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
@@ -12,15 +14,15 @@ import coinffeine.model.market.OrderId
 import coinffeine.model.network._
 import coinffeine.overlay.test.FakeOverlayNetwork
 import coinffeine.protocol.MessageGatewaySettings
+import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
-import coinffeine.protocol.gateway.{MessageGateway, MessageGatewayAssertions}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 
 class OverlayMessageGatewayIT
-  extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem"))
-  with MessageGatewayAssertions {
+  extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem")) with Eventually {
 
+  private val connectionTimeout = 5.seconds.dilated
   private val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(_: OrderMatch[_], _) =>
   }
@@ -79,8 +81,8 @@ class OverlayMessageGatewayIT
 
   it must "set the connection status properties" in new FreshBrokerAndPeer {
     eventually {
-      peerNetworkProperties.activePeers.get should be (1)
-      peerNetworkProperties.brokerId.get should be (Some(brokerId))
+      peerNetworkProperties.activePeers.get shouldBe 1
+      peerNetworkProperties.brokerId.get shouldBe 'defined
     }
   }
 
@@ -120,35 +122,34 @@ class OverlayMessageGatewayIT
       system.actorOf(Props(
         new OverlayMessageGateway(settings, overlay, protocolSerialization, networkProperties)))
 
-    def createPeerGateway(): (ActorRef, TestProbe) = {
-      val ref = createMessageGateway(peerNetworkProperties, MessageGatewaySettings(
-        peerId = PeerId.random(),
-        connectionRetryInterval
-      ))
+    def createPeerGateway() =
+      createGateway(PeerId.random(), peerNetworkProperties, minConnections = 1)
+    def createBrokerGateway() =
+      createGateway(PeerId("f" * 40), brokerNetworkProperties, minConnections = 0)
+
+    def createGateway(peerId: PeerId,
+                      networkProperties: MutableCoinffeineNetworkProperties,
+                      minConnections: Int): (ActorRef, TestProbe) = {
+      val ref = createMessageGateway(
+        networkProperties, MessageGatewaySettings(peerId, connectionRetryInterval))
       ref ! ServiceActor.Start {}
       expectMsg(ServiceActor.Started)
-      waitForConnections(peerNetworkProperties, minConnections = 1)
+      waitForConnections(networkProperties, minConnections)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe)
     }
 
-    def createBrokerGateway(): (ActorRef, TestProbe, PeerId) = {
-      val ref = createMessageGateway(brokerNetworkProperties, MessageGatewaySettings(
-        peerId = PeerId("f" * 40),
-        connectionRetryInterval
-      ))
-      ref ! ServiceActor.Start {}
-      expectMsg(ServiceActor.Started)
-      val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
-      val probe = TestProbe()
-      probe.send(ref, subscribeToAnything)
-      (ref, probe, brokerId)
+    def waitForConnections(properties: CoinffeineNetworkProperties, minConnections: Int): Unit = {
+      eventually(timeout = Timeout(connectionTimeout)) {
+        properties.activePeers.get should be >= minConnections
+        properties.brokerId.get shouldBe 'defined
+      }
     }
   }
 
   trait FreshBrokerAndPeer extends Fixture {
-    val (brokerGateway, brokerProbe, brokerId) = createBrokerGateway()
+    val (brokerGateway, brokerProbe) = createBrokerGateway()
     val (peerGateway, peerProbe) = createPeerGateway()
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
