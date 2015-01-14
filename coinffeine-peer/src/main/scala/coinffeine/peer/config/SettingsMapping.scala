@@ -1,9 +1,8 @@
 package coinffeine.peer.config
 
 import java.io.File
-import java.net.{NetworkInterface, URI}
+import java.net.URI
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -73,8 +72,7 @@ object SettingsMapping {
         hostname = config.getString("coinffeine.broker.hostname"),
         port = config.getInt("coinffeine.broker.port")),
       connectionRetryInterval =
-        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds,
-      externalForwardedPort = Try(config.getInt("coinffeine.peer.externalForwardedPort")).toOption
+        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds
     )
 
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
@@ -84,8 +82,6 @@ object SettingsMapping {
       .withValue("coinffeine.broker.port", configValue(settings.brokerEndpoint.port))
       .withValue("coinffeine.peer.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
-      .withValue("coinffeine.peer.externalForwardedPort",
-        configValue(settings.externalForwardedPort.map(_.toString).getOrElse("")))
 
     /** Ensure that the given config has a peer ID.
       *

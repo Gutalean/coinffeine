@@ -24,12 +24,10 @@ case class CoinffeineProtocol(
     peerId: PeerId,
     peerPort: Int,
     ignoredNetworkInterfaces: Seq[NetworkInterface],
-    connectionRetryInterval: FiniteDuration,
-    externalForwardedPort: Option[Int]) extends Protocol with StrictLogging {
+    connectionRetryInterval: FiniteDuration) extends Protocol with StrictLogging {
 
   private val gatewaySettings = MessageGatewaySettings(
-    peerId, peerPort, brokerEndpoint, ignoredNetworkInterfaces,
-    connectionRetryInterval, externalForwardedPort)
+    peerId, peerPort, brokerEndpoint, ignoredNetworkInterfaces, connectionRetryInterval)
 
   private var actorSystem: Option[ActorSystem] = None
   private var gatewayActor: Option[ActorRef] = None
@@ -101,6 +99,5 @@ object CoinffeineProtocol {
     peerId = PeerId.random(),
     peerPort = DefaultTcpPortAllocator.allocatePort(),
     ignoredNetworkInterfaces = Seq.empty,
-    connectionRetryInterval = 30.seconds,
-    externalForwardedPort = None)
+    connectionRetryInterval = 30.seconds)
 }

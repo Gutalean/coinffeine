@@ -74,14 +74,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.peerPort shouldBe 5000
     settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
     settings.connectionRetryInterval shouldBe 10.seconds
-    settings.externalForwardedPort shouldBe 'empty
-  }
-
-  it should "map external endpoint from config when present" in {
-    val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalForwardedPort" -> "8765")
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalForwardedPort.value shouldBe 8765
   }
 
   it should "map to config" in {
@@ -89,8 +81,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       peerId = PeerId("1234"),
       peerPort = 5050,
       brokerEndpoint = NetworkEndpoint("andromeda", 5051),
-      connectionRetryInterval = 10.seconds,
-      externalForwardedPort = Some(8765)
+      connectionRetryInterval = 10.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.peer.id") shouldBe "1234"
@@ -98,7 +89,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getString("coinffeine.broker.hostname") shouldBe "andromeda"
     cfg.getInt("coinffeine.broker.port") shouldBe 5051
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
-    cfg.getInt("coinffeine.peer.externalForwardedPort") shouldBe 8765
   }
 
   it should "ensure peer ID" in {
@@ -131,13 +121,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.maxFrameBytes shouldBe 1024
     settings.identificationTimeout shouldBe 10.seconds
     settings.minTimeBetweenStatusUpdates shouldBe 10.minutes
-  }
-
-  it should "map external endpoint from config when present" in {
-    val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalForwardedPort" -> "8765")
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalForwardedPort.value shouldBe 8765
   }
 
   it should "map to config" in {

@@ -28,8 +28,7 @@ class OverlayMessageGatewayTest
     peerId = PeerId("0" * 19 + "1"),
     peerPort = 1111,
     brokerEndpoint = NetworkEndpoint("server", 2222),
-    connectionRetryInterval = 1.second.dilated,
-    externalForwardedPort = None
+    connectionRetryInterval = 1.second.dilated
   )
   val overlayId = OverlayId(1)
   val sampleOrderMatch = OrderMatch(OrderId.random(), ExchangeId.random(),

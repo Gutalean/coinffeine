@@ -8,6 +8,5 @@ case class MessageGatewaySettings(
   peerId: PeerId,
   peerPort: Int,
   brokerEndpoint: NetworkEndpoint,
-  connectionRetryInterval: FiniteDuration,
-  externalForwardedPort: Option[Int]
+  connectionRetryInterval: FiniteDuration
 )

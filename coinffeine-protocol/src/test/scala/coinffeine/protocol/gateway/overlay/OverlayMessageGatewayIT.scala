@@ -137,8 +137,7 @@ class OverlayMessageGatewayIT
         peerId = PeerId.random(),
         peerPort = localPort,
         brokerEndpoint = connectTo,
-        connectionRetryInterval,
-        externalForwardedPort = None
+        connectionRetryInterval
       )
       ref ! ServiceActor.Start(Join(settings))
       expectMsg(ServiceActor.Started)
@@ -154,8 +153,7 @@ class OverlayMessageGatewayIT
         peerId = PeerId("f" * 40),
         peerPort = localPort,
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
-        connectionRetryInterval,
-        externalForwardedPort = None
+        connectionRetryInterval
       )
       ref ! ServiceActor.Start(Join(settings))
       expectMsg(ServiceActor.Started)
