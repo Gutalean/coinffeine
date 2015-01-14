@@ -8,10 +8,6 @@ import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
 
-  case class Join(settings: MessageGatewaySettings) {
-    val id: PeerId = settings.peerId
-  }
-
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
 

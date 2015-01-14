@@ -11,17 +11,18 @@ import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.relay.client.{ClientConfig, RelayNetwork}
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.{SubscriptionManagerActor, MessageGateway}
-import coinffeine.protocol.gateway.MessageGateway.{Join, Subscribe, Unsubscribe}
+import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 import coinffeine.protocol.serialization.{ProtocolSerializationComponent, ProtocolSerialization}
 
 /** Message gateway that uses an overlay network as transport */
 private class OverlayMessageGateway(
+    settings: MessageGatewaySettings,
     overlay: OverlayNetwork,
     serialization: ProtocolSerialization,
     properties: MutableCoinffeineNetworkProperties)
-  extends Actor with ServiceActor[Join] with ActorLogging with IdConversions {
+  extends Actor with ServiceActor[Unit] with ActorLogging with IdConversions {
 
   import context.dispatcher
 
@@ -33,16 +34,16 @@ private class OverlayMessageGateway(
     properties.brokerId.set(Some(PeerId("f" * 40)))
   }
 
-  override protected def starting(join: Join): Receive = {
-    val newExecution = new ServiceExecution(join)
+  override protected def starting(args: Unit): Receive = {
+    val newExecution = new ServiceExecution()
     executionOpt = Some(newExecution)
     newExecution.start()
   }
 
   override protected def stopped = delegateSubscriptionManagement
 
-  private class ServiceExecution(join: Join) {
-    val overlayId = join.id.toOverlayId
+  private class ServiceExecution {
+    val overlayId = settings.peerId.toOverlayId
     val client = context.actorOf(overlay.clientProps)
 
     def start(): Receive = {
@@ -80,10 +81,10 @@ private class OverlayMessageGateway(
 
     private def receivingJoinResult: Receive = {
       case OverlayNetwork.JoinFailed(_, cause) =>
-        scheduleReconnection(s"Cannot join as ${join.id}: $cause")
+        scheduleReconnection(s"Cannot join as ${settings.peerId}: $cause")
 
       case OverlayNetwork.Joined(_) =>
-        log.info("Joined as {}", join.id)
+        log.info("Joined as {}", settings.peerId)
         become(joined)
     }
 
@@ -94,7 +95,7 @@ private class OverlayMessageGateway(
     }
 
     private def scheduleReconnection(cause: String): Unit = {
-      val delay = join.settings.connectionRetryInterval
+      val delay = settings.connectionRetryInterval
       log.error("{}. Next join attempt in {}", cause, delay)
       context.system.scheduler.scheduleOnce(delay, self, OverlayMessageGateway.Rejoin)
       context.become(waitingToRejoin)
@@ -159,7 +160,8 @@ object OverlayMessageGateway {
         host = settings.brokerEndpoint.hostname,
         port = settings.brokerEndpoint.port
       ), system)
-      Props(new OverlayMessageGateway(overlay, protocolSerialization, coinffeineNetworkProperties))
+      Props(new OverlayMessageGateway(settings, overlay, protocolSerialization,
+        coinffeineNetworkProperties))
     }
   }
 }

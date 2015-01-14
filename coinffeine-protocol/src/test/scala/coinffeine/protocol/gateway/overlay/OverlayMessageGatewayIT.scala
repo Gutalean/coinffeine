@@ -118,22 +118,20 @@ class OverlayMessageGatewayIT
     val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
     val connectionRetryInterval = 100.millis.dilated
 
-    def messageGatewayProps(networkProperties: MutableCoinffeineNetworkProperties) =
-      Props(new OverlayMessageGateway(overlay, protocolSerialization, networkProperties))
-
-    def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties): ActorRef =
-      system.actorOf(messageGatewayProps(networkProperties))
+    def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties,
+                             settings: MessageGatewaySettings): ActorRef =
+      system.actorOf(Props(
+        new OverlayMessageGateway(settings, overlay, protocolSerialization, networkProperties)))
 
     def createPeerGateway(connectTo: NetworkEndpoint): (ActorRef, TestProbe) = {
       val localPort = DefaultTcpPortAllocator.allocatePort()
-      val ref = createMessageGateway(peerNetworkProperties)
-      val settings = MessageGatewaySettings(
+      val ref = createMessageGateway(peerNetworkProperties, MessageGatewaySettings(
         peerId = PeerId.random(),
         peerPort = localPort,
         brokerEndpoint = connectTo,
         connectionRetryInterval
-      )
-      ref ! ServiceActor.Start(Join(settings))
+      ))
+      ref ! ServiceActor.Start {}
       expectMsg(ServiceActor.Started)
       waitForConnections(peerNetworkProperties, minConnections = 1)
       val probe = TestProbe()
@@ -142,14 +140,13 @@ class OverlayMessageGatewayIT
     }
 
     def createBrokerGateway(localPort: Int): (ActorRef, TestProbe, PeerId) = {
-      val ref = createMessageGateway(brokerNetworkProperties)
-      val settings = MessageGatewaySettings(
+      val ref = createMessageGateway(brokerNetworkProperties, MessageGatewaySettings(
         peerId = PeerId("f" * 40),
         peerPort = localPort,
         brokerEndpoint = NetworkEndpoint(localhost, localPort),
         connectionRetryInterval
-      )
-      ref ! ServiceActor.Start(Join(settings))
+      ))
+      ref ! ServiceActor.Start {}
       expectMsg(ServiceActor.Started)
       val brokerId = waitForConnections(brokerNetworkProperties, minConnections = 0)
       val probe = TestProbe()
