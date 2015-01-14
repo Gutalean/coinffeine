@@ -35,14 +35,6 @@ javaOptions in ThisBuild ++= {
 
 javacOptions in ThisBuild ++= Seq("-source", "1.8")
 
-// The following props are needed to avoid overriding max UDP sockets,
-// which by default is too low for TomP2P. We have to run tests in fork mode with
-// Java options merged from parent process and a custom one
-
-javaOptions in ThisBuild += "-Dsun.net.maxDatagramSockets=128"
-
-fork in ThisBuild := true
-
 compileOrder in ThisBuild := CompileOrder.JavaThenScala
 
 resolvers in ThisBuild ++= Seq(
