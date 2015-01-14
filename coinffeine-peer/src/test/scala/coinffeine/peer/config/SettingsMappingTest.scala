@@ -1,9 +1,8 @@
 package coinffeine.peer.config
 
 import java.io.File
-import java.net.{NetworkInterface, URI}
+import java.net.URI
 import java.util.concurrent.TimeUnit
-import scala.collection.JavaConversions._
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -11,9 +10,9 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.network.{NetworkEndpoint, PeerId}
-import coinffeine.overlay.relay.DefaultRelayConfig
-import coinffeine.overlay.relay.server.ServerConfig
+import coinffeine.model.network.PeerId
+import coinffeine.overlay.relay.DefaultRelaySettings
+import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -63,48 +62,23 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   val messageGatewayBasicSettings = makeConfig(
     "coinffeine.peer.id" -> "1234",
-    "coinffeine.peer.port" -> 5000,
-    "coinffeine.broker.hostname" -> "broker-host",
-    "coinffeine.broker.port" -> 4000,
-    "coinffeine.peer.ifaces.ignore" -> asJavaIterable(Seq(existingNetInterface().getName)),
     "coinffeine.peer.connectionRetryInterval" -> "10s"
   )
 
   "Message Gateway settings mapping" should "map basic settings from config" in {
     val settings = SettingsMapping.fromConfig[MessageGatewaySettings](messageGatewayBasicSettings)
     settings.peerId shouldBe PeerId("1234")
-    settings.peerPort shouldBe 5000
-    settings.brokerEndpoint shouldBe NetworkEndpoint("broker-host", 4000)
-    settings.ignoredNetworkInterfaces shouldBe Seq(existingNetInterface())
     settings.connectionRetryInterval shouldBe 10.seconds
-    settings.externalForwardedPort shouldBe 'empty
-  }
-
-  it should "map external endpoint from config when present" in {
-    val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalForwardedPort" -> "8765")
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalForwardedPort.value shouldBe 8765
   }
 
   it should "map to config" in {
     val settings = MessageGatewaySettings(
       peerId = PeerId("1234"),
-      peerPort = 5050,
-      brokerEndpoint = NetworkEndpoint("andromeda", 5051),
-      ignoredNetworkInterfaces = Seq(existingNetInterface()),
-      connectionRetryInterval = 10.seconds,
-      externalForwardedPort = Some(8765)
+      connectionRetryInterval = 10.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.peer.id") shouldBe "1234"
-    cfg.getInt("coinffeine.peer.port") shouldBe 5050
-    cfg.getString("coinffeine.broker.hostname") shouldBe "andromeda"
-    cfg.getInt("coinffeine.broker.port") shouldBe 5051
-    cfg.getStringList("coinffeine.peer.ifaces.ignore") shouldBe
-      seqAsJavaList(Seq(existingNetInterface().getName))
     cfg.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 10
-    cfg.getInt("coinffeine.peer.externalForwardedPort") shouldBe 8765
   }
 
   it should "ensure peer ID" in {
@@ -115,49 +89,46 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   }
 
   val relayServerBasicSettings = makeConfig(
-    "coinffeine.overlay.relay.server.address" -> "localhost",
-    "coinffeine.overlay.relay.server.port" -> 5000
+    "coinffeine.overlay.relay.address" -> "localhost",
+    "coinffeine.overlay.relay.port" -> 5000
   )
 
   "Relay server settings mapping" should "map basic settings from config" in {
-    val settings = SettingsMapping.fromConfig[ServerConfig](relayServerBasicSettings)
-    settings.bindAddress shouldBe "localhost"
-    settings.bindPort shouldBe 5000
-    settings.maxFrameBytes shouldBe DefaultRelayConfig.MaxFrameBytes
-    settings.identificationTimeout shouldBe DefaultRelayConfig.IdentificationTimeout
-    settings.minTimeBetweenStatusUpdates shouldBe DefaultRelayConfig.MinTimeBetweenStatusUpdates
+    val settings = SettingsMapping.fromConfig[RelaySettings](relayServerBasicSettings)
+    settings.serverAddress shouldBe "localhost"
+    settings.serverPort shouldBe 5000
+    settings.maxFrameBytes shouldBe DefaultRelaySettings.MaxFrameBytes
+    settings.identificationTimeout shouldBe DefaultRelaySettings.IdentificationTimeout
+    settings.minTimeBetweenStatusUpdates shouldBe DefaultRelaySettings.MinTimeBetweenStatusUpdates
+    settings.connectionTimeout shouldBe DefaultRelaySettings.ConnectionTimeout
   }
 
   it should "map optional settings from config" in {
     val conf = amendConfig(relayServerBasicSettings,
-      "coinffeine.overlay.relay.server.maxFrameBytes" -> "1024",
+      "coinffeine.overlay.relay.maxFrameBytes" -> "1024",
       "coinffeine.overlay.relay.server.identificationTimeout" -> "10s",
-      "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m")
-    val settings = SettingsMapping.fromConfig[ServerConfig](conf)
+      "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m",
+      "coinffeine.overlay.relay.client.connectionTimeout" -> "10s"
+    )
+    val settings = SettingsMapping.fromConfig[RelaySettings](conf)
     settings.maxFrameBytes shouldBe 1024
     settings.identificationTimeout shouldBe 10.seconds
     settings.minTimeBetweenStatusUpdates shouldBe 10.minutes
-  }
-
-  it should "map external endpoint from config when present" in {
-    val conf = amendConfig(messageGatewayBasicSettings,
-      "coinffeine.peer.externalForwardedPort" -> "8765")
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](conf)
-    settings.externalForwardedPort.value shouldBe 8765
+    settings.connectionTimeout shouldBe 10.seconds
   }
 
   it should "map to config" in {
-    val settings = ServerConfig(
-      bindAddress = "localhost",
-      bindPort = 5000,
+    val settings = RelaySettings(
+      serverAddress = "localhost",
+      serverPort = 5000,
       maxFrameBytes = 1024,
       identificationTimeout = 10.seconds,
       minTimeBetweenStatusUpdates = 10.minutes
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getString("coinffeine.overlay.relay.server.address") shouldBe "localhost"
-    cfg.getInt("coinffeine.overlay.relay.server.port") shouldBe 5000
-    cfg.getInt("coinffeine.overlay.relay.server.maxFrameBytes") shouldBe 1024
+    cfg.getString("coinffeine.overlay.relay.address") shouldBe "localhost"
+    cfg.getInt("coinffeine.overlay.relay.port") shouldBe 5000
+    cfg.getInt("coinffeine.overlay.relay.maxFrameBytes") shouldBe 1024
     cfg.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
       TimeUnit.SECONDS) shouldBe 10
     cfg.getDuration("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
@@ -211,7 +182,4 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       case (config, (configPath, configValue)) =>
         config.withValue(configPath, ConfigValueFactory.fromAnyRef(configValue))
     }
-
-  private def existingNetInterface(): NetworkInterface =
-    NetworkInterface.getNetworkInterfaces.nextElement()
 }

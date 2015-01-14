@@ -26,9 +26,6 @@ case class CoinffeineProtocolBuilder(protocol: CoinffeineProtocol) {
 
   def connectionRetryInterval(interval: FiniteDuration) =
     copy(protocol = protocol.copy(connectionRetryInterval = interval))
-
-  def externalForwardedPort(port: Int) =
-    copy(protocol = protocol.copy(externalForwardedPort = Some(port)))
 }
 
 object CoinffeineProtocolBuilder {

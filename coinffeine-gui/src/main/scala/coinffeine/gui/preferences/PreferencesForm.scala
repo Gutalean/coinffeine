@@ -12,7 +12,6 @@ import coinffeine.peer.config.SettingsProvider
 class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
 
   private val tabs: Seq[PreferencesTab] = Seq(
-    new NetworkTab(settingsProvider),
     new OkPayTab(settingsProvider)
   )
 

@@ -1,17 +1,15 @@
 package coinffeine.benchmark.config
 
-import java.net.NetworkInterface
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise}
-import scala.reflect.runtime.universe._
 
 import akka.actor._
 import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.config.Protocol
 
-import coinffeine.common.akka.{AskPattern, ServiceActor}
+import coinffeine.common.akka.ServiceActor
 import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.model.network.{NetworkEndpoint, NodeId, PeerId}
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
@@ -23,13 +21,10 @@ case class CoinffeineProtocol(
     brokerEndpoint: NetworkEndpoint,
     peerId: PeerId,
     peerPort: Int,
-    ignoredNetworkInterfaces: Seq[NetworkInterface],
-    connectionRetryInterval: FiniteDuration,
-    externalForwardedPort: Option[Int]) extends Protocol with StrictLogging {
+    connectionRetryInterval: FiniteDuration) extends Protocol with StrictLogging {
 
   private val gatewaySettings = MessageGatewaySettings(
-    peerId, peerPort, brokerEndpoint, ignoredNetworkInterfaces,
-    connectionRetryInterval, externalForwardedPort)
+    peerId, peerPort, brokerEndpoint, connectionRetryInterval)
 
   private var actorSystem: Option[ActorSystem] = None
   private var gatewayActor: Option[ActorRef] = None
@@ -55,10 +50,7 @@ case class CoinffeineProtocol(
     gatewayActor = Some(
       actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings)(actorSystem.get)))
 
-    val startCommand = ServiceActor.Start(Join(PeerNode, gatewaySettings))
-    val gatewayStart = AskPattern(gatewayActor.get, startCommand)
-      .withReply[ServiceActor.Started.type]
-    Await.result(gatewayStart, 20.seconds)
+    Await.result(ServiceActor.askStart(gatewayActor.get), 20.seconds)
 
     // This is not the code fragment I'm most proud of
     while (!GatewayComponent.coinffeineNetworkProperties.isConnected) {
@@ -100,7 +92,5 @@ object CoinffeineProtocol {
     brokerEndpoint = NetworkEndpoint("dev.coinffeine.pri", 9009),
     peerId = PeerId.random(),
     peerPort = DefaultTcpPortAllocator.allocatePort(),
-    ignoredNetworkInterfaces = Seq.empty,
-    connectionRetryInterval = 30.seconds,
-    externalForwardedPort = None)
+    connectionRetryInterval = 30.seconds)
 }

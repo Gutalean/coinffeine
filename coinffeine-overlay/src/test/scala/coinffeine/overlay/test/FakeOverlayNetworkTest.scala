@@ -13,7 +13,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
 
   "An overlay network" should "relay messages forth and back" in {
     val network = FakeOverlayNetwork()
-    val client1, client2 = system.actorOf(network.defaultClientProps)
+    val client1, client2 = system.actorOf(network.clientProps)
 
     client1 ! Join(OverlayId(1))
     client2 ! Join(OverlayId(2))
@@ -40,7 +40,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
 
   it should "drop messages according to a rate" in {
     val network = FakeOverlayNetwork(messageDroppingRate = 0.5)
-    val client1, client2 = system.actorOf(network.defaultClientProps)
+    val client1, client2 = system.actorOf(network.clientProps)
     client1 ! Join(OverlayId(1))
     client2 ! Join(OverlayId(2))
     expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
@@ -56,7 +56,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
 
   it should "fail to connect according to a rate" in {
     val network = FakeOverlayNetwork(connectionFailureRate = 0.5)
-    val client = system.actorOf(network.defaultClientProps)
+    val client = system.actorOf(network.clientProps)
 
     var failedConnections = 0
     for (i <- 1 to 100) {
@@ -75,7 +75,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
   it should "delay the messages according to a distribution of times" in {
     val network = FakeOverlayNetwork(
       delayDistribution = new FakeOverlayNetwork.ExponentialDelay(500.millis.dilated))
-    val sender, receiver = system.actorOf(network.defaultClientProps)
+    val sender, receiver = system.actorOf(network.clientProps)
     sender ! Join(OverlayId(1))
     receiver ! Join(OverlayId(2))
     expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
@@ -93,7 +93,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
   it should "randomly drop connections according to a distribution of times" in {
     val network = FakeOverlayNetwork(
       disconnectionDistribution = new FakeOverlayNetwork.ExponentialDelay(100.millis.dilated))
-    val client = system.actorOf(network.defaultClientProps)
+    val client = system.actorOf(network.clientProps)
     val id = OverlayId(1)
     client ! Join(id)
     expectMsg(Joined(id))

@@ -23,15 +23,6 @@ following attributes:
         }
     }
 
-To configure manual port forwarding, you should add another configuration value after configuring
-your router.
-
-    coinffeine {
-        ...
-
-        peer.externalForwardedPort="the port you configured here"
-    }
-
 
 How to run it
 -------------

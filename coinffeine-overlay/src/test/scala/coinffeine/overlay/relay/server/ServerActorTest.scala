@@ -11,11 +11,12 @@ import org.scalatest.OptionValues
 import coinffeine.common.akka.ServiceActor
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayId
+import coinffeine.overlay.relay.settings.RelayServerSettings
 
 class ServerActorTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("relay-server")) with OptionValues {
 
-  val config = ServerConfig(
+  val config = RelayServerSettings(
     bindAddress = "0.0.0.0",
     bindPort = 1234,
     identificationTimeout = 100.millis.dilated,

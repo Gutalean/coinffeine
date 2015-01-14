@@ -1,23 +1,13 @@
 package coinffeine.protocol.gateway
 
-import java.net.NetworkInterface
-import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.{ActorSystem, Props}
 
-import coinffeine.model.network.{BrokerId, NodeId, PeerId}
+import coinffeine.model.network.{BrokerId, NodeId}
+import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
-
-  sealed trait NodeRole
-  case object PeerNode extends NodeRole
-  case object BrokerNode extends NodeRole
-
-  case class Join(role: NodeRole, settings: MessageGatewaySettings) {
-    val id: PeerId = settings.peerId
-  }
 
   /** A message sent in order to forward a message to a given destination. */
   case class ForwardMessage[M <: PublicMessage](message: M, dest: NodeId)
@@ -53,11 +43,8 @@ object MessageGateway {
     extends RuntimeException(message, cause)
 
   trait Component {
-
-    def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props =
-      messageGatewayProps(settings.ignoredNetworkInterfaces, settings.connectionRetryInterval)(system)
-
-    def messageGatewayProps(@deprecated ignoredNetworkInterfaces: Seq[NetworkInterface],
-                            connectionRetryInterval: FiniteDuration)(system: ActorSystem): Props
+    def messageGatewayProps(messageGatewaySettings: MessageGatewaySettings,
+                            relayClientSettings: RelayClientSettings)
+                           (system: ActorSystem): Props
   }
 }

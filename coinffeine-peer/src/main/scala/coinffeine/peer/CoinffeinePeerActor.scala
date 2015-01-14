@@ -24,7 +24,6 @@ import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.PeerNode
 import coinffeine.protocol.messages.brokerage
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
@@ -47,11 +46,10 @@ class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerA
   override def starting(arg: Unit) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
-    val settings = configProvider.messageGatewaySettings()
     (for {
       _ <- ServiceActor.askStart(paymentProcessorRef)
       _ <- ServiceActor.askStart(bitcoinPeerRef)
-      _ <- ServiceActor.askStart(gatewayRef, MessageGateway.Join(PeerNode, settings))
+      _ <- ServiceActor.askStart(gatewayRef)
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
@@ -169,9 +167,9 @@ object CoinffeinePeerActor {
     with AmountsComponent =>
 
     lazy val peerProps: Props = {
-      val settings = configProvider.messageGatewaySettings()
       val props = PropsCatalogue(
-        messageGatewayProps(settings),
+        messageGatewayProps(configProvider.messageGatewaySettings(),
+          configProvider.relaySettings().clientSettings),
         MarketInfoActor.props,
         orderSupervisorProps,
         bitcoinPeerProps,

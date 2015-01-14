@@ -10,15 +10,13 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.InMemoryConfigProvider
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
-import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.PeerNode
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
@@ -79,7 +77,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     val requester, wallet, blockchain = TestProbe()
     val peerId = PeerId.random()
     val localPort = 8080
-    val brokerAddress = NetworkEndpoint("host", 8888)
 
     val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
     val configProvider = new InMemoryConfigProvider(ConfigFactory.parseString(
@@ -89,10 +86,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
          |    id = ${peerId.value}
          |    port = $localPort
          |    connectionRetryInterval = 3s
-         |  }
-         |  broker {
-         |    hostname = ${brokerAddress.hostname}
-         |    port = ${brokerAddress.port}
          |  }
          |}
        """.stripMargin))
@@ -140,7 +133,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldRequestStart(bitcoinPeer, {})
 
     // Then request to join to the Coinffeine network
-    shouldRequestStart(gateway, MessageGateway.Join(PeerNode, configProvider.messageGatewaySettings()))
+    shouldRequestStart(gateway, {})
 
     // Then request the wallet and blockchain actors from bitcoin actor
     bitcoinPeer.expectAskWithReply {

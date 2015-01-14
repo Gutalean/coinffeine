@@ -13,6 +13,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayNetwork.UnexpectedLeave
 import coinffeine.overlay.relay.client.RelayNetwork.InvalidDataReceived
 import coinffeine.overlay.relay.messages._
+import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 class ClientActorTest extends AkkaSpec with Inside {
@@ -20,7 +21,7 @@ class ClientActorTest extends AkkaSpec with Inside {
   val clientId = OverlayId(1)
   val otherId = OverlayId(2)
   val sampleMessage = ByteString("hello")
-  val config = ClientConfig(
+  val config = RelayClientSettings(
     host = "localhost",
     port = 1234,
     connectionTimeout = 100.millis.dilated,

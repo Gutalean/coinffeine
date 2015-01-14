@@ -11,7 +11,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, NetworkEndpoint, PeerId}
+import coinffeine.model.network._
 import coinffeine.overlay.OverlayId
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
@@ -24,14 +24,6 @@ class OverlayMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("overlayGateway")) with Eventually
   with TestProtocolSerializationComponent with IdConversions {
 
-  val settings = MessageGatewaySettings(
-    peerId = PeerId("0" * 19 + "1"),
-    peerPort = 1111,
-    brokerEndpoint = NetworkEndpoint("server", 2222),
-    ignoredNetworkInterfaces = Seq.empty,
-    connectionRetryInterval = 1.second.dilated,
-    externalForwardedPort = None
-  )
   val overlayId = OverlayId(1)
   val sampleOrderMatch = OrderMatch(OrderId.random(), ExchangeId.random(),
     Both.fill(1.BTC), Both.fill(300.EUR), lockTime = 42, counterpart = PeerId.random())
@@ -84,13 +76,17 @@ class OverlayMessageGatewayTest
   }
 
   trait FreshGateway {
+    private val settings = MessageGatewaySettings(
+      peerId = PeerId("0" * 19 + "1"),
+      connectionRetryInterval = 1.second.dilated
+    )
     val overlay = new MockOverlayNetwork(protocolSerialization)
     val properties = new MutableCoinffeineNetworkProperties
     val gateway = system.actorOf(Props(
-      new OverlayMessageGateway(overlay.adapter, protocolSerialization, properties)))
+      new OverlayMessageGateway(settings, overlay, protocolSerialization, properties)))
 
     def expectSuccessfulStart(): Unit = {
-      gateway ! ServiceActor.Start(MessageGateway.Join(MessageGateway.PeerNode, settings))
+      gateway ! ServiceActor.Start {}
       expectMsg(ServiceActor.Started)
       overlay.expectClientSpawn()
     }

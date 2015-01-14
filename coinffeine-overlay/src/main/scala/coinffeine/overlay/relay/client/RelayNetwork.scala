@@ -3,15 +3,14 @@ package coinffeine.overlay.relay.client
 import java.io.IOException
 import java.net.InetSocketAddress
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.ActorSystem
 import akka.io.{IO, Tcp}
 
 import coinffeine.overlay.OverlayNetwork
+import coinffeine.overlay.relay.settings.RelayClientSettings
 
-class RelayNetwork(system: ActorSystem) extends OverlayNetwork {
-  override type Config = ClientConfig
-
-  override def clientProps(config: Config): Props = ClientActor.props(config, IO(Tcp)(system))
+class RelayNetwork(config: RelayClientSettings, system: ActorSystem) extends OverlayNetwork {
+  override val clientProps = ClientActor.props(config, IO(Tcp)(system))
 }
 
 object RelayNetwork {
