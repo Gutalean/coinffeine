@@ -53,7 +53,7 @@ private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
   }
 
   private def becomeConnected(id: OverlayId, connection: ActorRef, listener: ActorRef): Unit = {
-
+    log.info("Connected as {} to {}:{}", id, config.host, config.port)
     var buffer = ByteString.empty
 
     connection ! Tcp.Register(self)
@@ -109,6 +109,8 @@ private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
         decodeFrames()
 
       case closed: Tcp.ConnectionClosed =>
+        log.error("Connection to {}:{} closed unexpectedly: {}", config.host, config.port,
+          closed.getErrorCause)
         val cause = OverlayNetwork.UnexpectedLeave(
           UnexpectedConnectionTermination(closed.getErrorCause))
         listener ! OverlayNetwork.Leaved(id, cause)
@@ -126,6 +128,7 @@ private[this] class ClientActor(config: ClientConfig, tcpManager: ActorRef)
     connection ! Tcp.Close
     context.become(alreadyJoined orElse notSendingMessages orElse {
       case _: Tcp.ConnectionClosed =>
+        log.info("Connection to {}:{} successfully closed", config.host, config.port)
         listener ! OverlayNetwork.Leaved(id, cause)
         context.become(disconnected)
     })
