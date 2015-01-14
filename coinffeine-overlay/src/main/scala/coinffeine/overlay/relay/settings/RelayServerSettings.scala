@@ -2,7 +2,7 @@ package coinffeine.overlay.relay.settings
 
 import scala.concurrent.duration.FiniteDuration
 
-import coinffeine.overlay.relay.DefaultRelayConfig
+import coinffeine.overlay.relay.DefaultRelaySettings
 
 /** Relay server configuration.
   *
@@ -18,6 +18,6 @@ import coinffeine.overlay.relay.DefaultRelayConfig
 case class RelayServerSettings(
     bindAddress: String,
     bindPort: Int,
-    maxFrameBytes: Int = DefaultRelayConfig.MaxFrameBytes,
-    identificationTimeout: FiniteDuration = DefaultRelayConfig.IdentificationTimeout,
-    minTimeBetweenStatusUpdates: FiniteDuration = DefaultRelayConfig.MinTimeBetweenStatusUpdates)
+    maxFrameBytes: Int = DefaultRelaySettings.MaxFrameBytes,
+    identificationTimeout: FiniteDuration = DefaultRelaySettings.IdentificationTimeout,
+    minTimeBetweenStatusUpdates: FiniteDuration = DefaultRelaySettings.MinTimeBetweenStatusUpdates)

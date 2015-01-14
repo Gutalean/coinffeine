@@ -3,7 +3,8 @@ package coinffeine.peer.config
 import scala.collection.JavaConverters._
 
 import com.typesafe.config.{Config, ConfigFactory}
-import coinffeine.overlay.relay.settings.RelayServerSettings
+
+import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.payment.okpay.OkPaySettings
@@ -46,7 +47,7 @@ trait ConfigProvider extends SettingsProvider {
     SettingsMapping.fromConfig[MessageGatewaySettings](config)
   }
 
-  override def relayServerSettings() = SettingsMapping.fromConfig[RelayServerSettings](config)
+  override def relaySettings() = SettingsMapping.fromConfig[RelaySettings](config)
 
   private def ensurePeerIdIsDefined(): Unit = {
     SettingsMapping.MessageGateway.ensurePeerId(config).foreach(saveUserConfig(_))

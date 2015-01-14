@@ -9,8 +9,8 @@ import scala.util.Try
 import com.typesafe.config._
 
 import coinffeine.model.network.{NetworkEndpoint, PeerId}
-import coinffeine.overlay.relay.DefaultRelayConfig
-import coinffeine.overlay.relay.settings.RelayServerSettings
+import coinffeine.overlay.relay.DefaultRelaySettings
+import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -46,11 +46,9 @@ object SettingsMapping {
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(config: Config) = BitcoinSettings(
-      connectionRetryInterval =
-        config.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS).seconds,
+      connectionRetryInterval = getSeconds(config, "coinffeine.bitcoin.connectionRetryInterval"),
       walletFile = new File(config.getString("coinffeine.bitcoin.walletFile")),
-      rebroadcastTimeout =
-        config.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS).seconds,
+      rebroadcastTimeout = getSeconds(config, "coinffeine.bitcoin.rebroadcastTimeout"),
       network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
     )
 
@@ -71,8 +69,7 @@ object SettingsMapping {
       brokerEndpoint = NetworkEndpoint(
         hostname = config.getString("coinffeine.broker.hostname"),
         port = config.getInt("coinffeine.broker.port")),
-      connectionRetryInterval =
-        config.getDuration("coinffeine.peer.connectionRetryInterval", TimeUnit.SECONDS).seconds
+      connectionRetryInterval = getSeconds(config, "coinffeine.peer.connectionRetryInterval")
     )
 
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
@@ -97,31 +94,36 @@ object SettingsMapping {
     }
   }
 
-  implicit object RelayServer extends SettingsMapping[RelayServerSettings] {
+  implicit object Relay extends SettingsMapping[RelaySettings] {
 
-    override def fromConfig(config: Config) = RelayServerSettings(
-      bindAddress = config.getString("coinffeine.overlay.relay.server.address"),
-      bindPort = config.getInt("coinffeine.overlay.relay.server.port"),
-      maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.server.maxFrameBytes"))
-        .toOption.getOrElse(DefaultRelayConfig.MaxFrameBytes),
+    override def fromConfig(config: Config) = RelaySettings(
+      serverAddress = config.getString("coinffeine.overlay.relay.address"),
+      serverPort = config.getInt("coinffeine.overlay.relay.port"),
+      maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.maxFrameBytes"))
+        .getOrElse(DefaultRelaySettings.MaxFrameBytes),
       identificationTimeout =  Try(
         config.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
-        TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.IdentificationTimeout),
-      minTimeBetweenStatusUpdates = Try(
-        config.getDuration("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
-          TimeUnit.SECONDS).seconds).toOption.getOrElse(DefaultRelayConfig.MinTimeBetweenStatusUpdates)
+        TimeUnit.SECONDS).seconds).getOrElse(DefaultRelaySettings.IdentificationTimeout),
+      minTimeBetweenStatusUpdates =
+        Try(getSeconds(config, "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates"))
+          .getOrElse(DefaultRelaySettings.MinTimeBetweenStatusUpdates),
+      connectionTimeout =
+        Try(getSeconds(config, "coinffeine.overlay.relay.client.connectionTimeout"))
+          .getOrElse(DefaultRelaySettings.ConnectionTimeout)
     )
 
-    override def toConfig(settings: RelayServerSettings, config: Config) = config
-      .withValue("coinffeine.overlay.relay.server.address",
-        configValue(settings.bindAddress))
-      .withValue("coinffeine.overlay.relay.server.port", configValue(settings.bindPort))
-      .withValue("coinffeine.overlay.relay.server.maxFrameBytes",
+    override def toConfig(settings: RelaySettings, config: Config) = config
+      .withValue("coinffeine.overlay.relay.address",
+        configValue(settings.serverAddress))
+      .withValue("coinffeine.overlay.relay.port", configValue(settings.serverPort))
+      .withValue("coinffeine.overlay.relay.maxFrameBytes",
         configValue(settings.maxFrameBytes))
       .withValue("coinffeine.overlay.relay.server.identificationTimeout",
         configValue(s"${settings.identificationTimeout.toSeconds}s"))
       .withValue("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
         configValue(s"${settings.minTimeBetweenStatusUpdates.toSeconds}s"))
+      .withValue("coinffeine.overlay.relay.client.connectionTimeout",
+        configValue(s"${settings.connectionTimeout.toSeconds}s"))
   }
 
   implicit val okPay = new SettingsMapping[OkPaySettings] {
@@ -130,8 +132,7 @@ object SettingsMapping {
       userAccount = getOptionalString(config, "coinffeine.okpay.id"),
       seedToken = getOptionalString(config, "coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
-      pollingInterval =
-        config.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS).seconds
+      pollingInterval = getSeconds(config, "coinffeine.okpay.pollingInterval")
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
@@ -148,6 +149,9 @@ object SettingsMapping {
   } catch {
     case _: ConfigException.Missing => None
   }
+
+  private def getSeconds(config: Config, key: String): FiniteDuration =
+    config.getDuration(key, TimeUnit.SECONDS).seconds
 
   /** Get boolean key with missing-is-false semantics */
   private def getBoolean(config: Config, key: String): Boolean = try {
