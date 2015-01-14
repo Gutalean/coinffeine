@@ -50,8 +50,7 @@ resolvers in ThisBuild ++= Seq(
   "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
   "Sonatype-repository" at "https://oss.sonatype.org/content/groups/public",
-  "typesafe" at "http://repo.typesafe.com/typesafe/releases/",
-  "tomp2p" at "http://tomp2p.net/dev/mvn/"
+  "typesafe" at "http://repo.typesafe.com/typesafe/releases/"
 )
 
 libraryDependencies in ThisBuild ++= Dependencies.loggingFacade ++ Dependencies.testLoggingBackend ++ Seq(

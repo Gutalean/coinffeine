@@ -16,8 +16,6 @@
     <logger name="org.bitcoinj" level="ERROR"/>
     <logger name="com.ning.http" level="ERROR"/>
 
-    <logger name="net.tomp2p" level="INFO"/>
-
     <logger name="com.esotericsoftware.kryo" level="WARN"/>
     <logger name="com.romix.akka.serialization.kryo" level="WARN"/>
     <logger name="akka.serialization" level="WARN"/>
