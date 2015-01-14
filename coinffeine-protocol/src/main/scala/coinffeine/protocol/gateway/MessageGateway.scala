@@ -3,7 +3,7 @@ package coinffeine.protocol.gateway
 import java.net.NetworkInterface
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.Props
+import akka.actor.{ActorSystem, Props}
 
 import coinffeine.model.network.{BrokerId, NodeId, PeerId}
 import coinffeine.protocol.MessageGatewaySettings
@@ -54,10 +54,10 @@ object MessageGateway {
 
   trait Component {
 
-    def messageGatewayProps(settings: MessageGatewaySettings): Props =
-      messageGatewayProps(settings.ignoredNetworkInterfaces, settings.connectionRetryInterval)
+    def messageGatewayProps(settings: MessageGatewaySettings)(system: ActorSystem): Props =
+      messageGatewayProps(settings.ignoredNetworkInterfaces, settings.connectionRetryInterval)(system)
 
-    def messageGatewayProps(ignoredNetworkInterfaces: Seq[NetworkInterface],
-                            connectionRetryInterval: FiniteDuration): Props
+    def messageGatewayProps(@deprecated ignoredNetworkInterfaces: Seq[NetworkInterface],
+                            connectionRetryInterval: FiniteDuration)(system: ActorSystem): Props
   }
 }
