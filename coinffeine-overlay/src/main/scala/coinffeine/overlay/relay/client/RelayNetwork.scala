@@ -20,6 +20,9 @@ object RelayNetwork {
   case class CannotStartConnection(address: InetSocketAddress)
     extends IOException(s"Cannot start TCP connection to $address")
 
+  case class HandshakeFailed(description: String)
+    extends IOException(s"Handshake failed: $description")
+
   case class InvalidDataReceived(message: String, cause: Throwable = null)
     extends IOException(message, cause)
 
