@@ -106,7 +106,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   it should "map optional settings from config" in {
     val conf = amendConfig(relayServerBasicSettings,
       "coinffeine.overlay.relay.maxFrameBytes" -> "1024",
-      "coinffeine.overlay.relay.server.identificationTimeout" -> "10s",
+      "coinffeine.overlay.relay.identificationTimeout" -> "10s",
       "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m",
       "coinffeine.overlay.relay.client.connectionTimeout" -> "10s"
     )
@@ -129,7 +129,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getString("coinffeine.overlay.relay.address") shouldBe "localhost"
     cfg.getInt("coinffeine.overlay.relay.port") shouldBe 5000
     cfg.getInt("coinffeine.overlay.relay.maxFrameBytes") shouldBe 1024
-    cfg.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
+    cfg.getDuration("coinffeine.overlay.relay.identificationTimeout",
       TimeUnit.SECONDS) shouldBe 10
     cfg.getDuration("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
       TimeUnit.MINUTES) shouldBe 10
