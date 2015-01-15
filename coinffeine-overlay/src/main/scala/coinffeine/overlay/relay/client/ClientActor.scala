@@ -17,6 +17,36 @@ import coinffeine.overlay.{OverlayId, OverlayNetwork}
 private[this] class ClientActor(settings: RelayClientSettings, tcpManager: ActorRef)
   extends Actor with ActorLogging {
 
+  private class Connection(
+      val id: OverlayId,
+      val socket: ActorRef,
+      val listener: ActorRef) {
+    var buffer = ByteString.empty
+
+    def append(data: ByteString): Unit = { buffer ++= data }
+
+    @tailrec
+    final def decodeFrames(onMessage: Message => Unit,
+                           onInvalidData: InvalidDataReceived => Unit): Unit = {
+      Frame.deserialize(buffer, settings.maxFrameBytes) match {
+        case Frame.IncompleteInput => // Stop for the moment
+
+        case Frame.Parsed(Frame(protobuf), remainingBuffer) =>
+          buffer = remainingBuffer
+          Try(ProtobufConversion.fromProtobuf(protobuf)) match {
+            case Success(message) =>
+              onMessage(message)
+              decodeFrames(onMessage, onInvalidData)
+            case Failure(ex) =>
+              onInvalidData(InvalidDataReceived("Cannot parse protobuf", ex))
+          }
+
+        case Frame.FailedParsing(message) =>
+          onInvalidData(InvalidDataReceived(s"Cannot delimit frame: $message"))
+      }
+    }
+  }
+
   override def receive: Receive = disconnected
 
   private def disconnected: Receive = notSendingMessages orElse {
@@ -45,8 +75,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
         sender() ! OverlayNetwork.JoinFailed(otherId, OverlayNetwork.AlreadyJoining)
 
       case Tcp.Connected(_, _) =>
-        val connection = sender()
-        becomeConnected(id, connection, listener)
+        becomeConnected(new Connection(id, socket = sender(), listener))
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
         val cause = OverlayNetwork.UnderlyingNetworkFailure(CannotStartConnection(remoteAddress))
@@ -55,45 +84,22 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
     })
   }
 
-  private def becomeConnected(id: OverlayId, connection: ActorRef, listener: ActorRef): Unit = {
-    log.info("Connected as {} to {}:{}", id, settings.host, settings.port)
-    var buffer = ByteString.empty
+  private def becomeConnected(connection: Connection): Unit = {
+    log.info("Connected as {} to {}:{}", connection.id, settings.host, settings.port)
 
-    connection ! Tcp.Register(self)
-    connection ! Tcp.Write(ProtobufFrame.serialize(JoinMessage(id)))
-    listener ! OverlayNetwork.Joined(id)
-
-    @tailrec
-    def decodeFrames(): Unit = {
-      Frame.deserialize(buffer, settings.maxFrameBytes) match {
-        case Frame.IncompleteInput => // Stop for the moment
-
-        case Frame.Parsed(Frame(protobuf), remainingBuffer) =>
-          buffer = remainingBuffer
-          Try(ProtobufConversion.fromProtobuf(protobuf)) match {
-            case Success(message) =>
-              handleMessage(message)
-              decodeFrames()
-            case Failure(ex) =>
-              val cause = InvalidDataReceived("Cannot parse protobuf", ex)
-              becomeDisconnecting(id, connection, listener, OverlayNetwork.UnexpectedLeave(cause))
-          }
-
-        case Frame.FailedParsing(message) =>
-          val cause = InvalidDataReceived(s"Cannot delimit frame: $message")
-          becomeDisconnecting(id, connection, listener, OverlayNetwork.UnexpectedLeave(cause))
-      }
-    }
+    connection.socket ! Tcp.Register(self)
+    connection.socket ! Tcp.Write(ProtobufFrame.serialize(JoinMessage(connection.id)))
+    connection.listener ! OverlayNetwork.Joined(connection.id)
 
     def handleMessage(message: Message): Unit = {
       message match {
         case StatusMessage(networkSize) =>
-          listener ! OverlayNetwork.NetworkStatus(networkSize)
+          connection.listener ! OverlayNetwork.NetworkStatus(networkSize)
         case RelayMessage(senderId, payload) =>
-          listener ! OverlayNetwork.ReceiveMessage(senderId, payload)
+          connection.listener ! OverlayNetwork.ReceiveMessage(senderId, payload)
         case joinMessage: JoinMessage =>
           val cause = InvalidDataReceived(s"Unexpected message received: $joinMessage")
-          becomeDisconnecting(id, connection, listener, OverlayNetwork.UnexpectedLeave(cause))
+          becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(cause))
       }
     }
 
@@ -102,37 +108,37 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
         val frameBytes = ProtobufFrame.serialize(RelayMessage(to, message))
         if (frameBytes.size > settings.maxFrameBytes) {
           val cause = MessageTooLarge(frameBytes.size, settings.maxFrameBytes - Frame.HeaderSize)
-          listener ! OverlayNetwork.CannotSend(request, OverlayNetwork.UnderlyingNetworkFailure(cause))
+          connection.listener ! OverlayNetwork.CannotSend(request, OverlayNetwork.UnderlyingNetworkFailure(cause))
         } else {
-          connection ! Tcp.Write(frameBytes)
+          connection.socket ! Tcp.Write(frameBytes)
         }
 
       case Tcp.Received(data) =>
-        buffer ++= data
-        decodeFrames()
+        connection.append(data)
+        connection.decodeFrames(
+          onMessage = handleMessage,
+          onInvalidData = error => becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(error))
+        )
 
       case closed: Tcp.ConnectionClosed =>
         log.error("Connection to {}:{} closed unexpectedly: {}", settings.host, settings.port,
           closed.getErrorCause)
         val cause = OverlayNetwork.UnexpectedLeave(
           UnexpectedConnectionTermination(closed.getErrorCause))
-        listener ! OverlayNetwork.Leaved(id, cause)
+        connection.listener ! OverlayNetwork.Leaved(connection.id, cause)
         context.become(disconnected)
 
       case OverlayNetwork.Leave =>
-        becomeDisconnecting(id, connection, listener, OverlayNetwork.RequestedLeave)
+        becomeDisconnecting(connection, OverlayNetwork.RequestedLeave)
     })
   }
 
-  private def becomeDisconnecting(id: OverlayId,
-                                  connection: ActorRef,
-                                  listener: ActorRef,
-                                  cause: OverlayNetwork.LeaveCause): Unit = {
-    connection ! Tcp.Close
+  private def becomeDisconnecting(connection: Connection, cause: OverlayNetwork.LeaveCause): Unit = {
+    connection.socket ! Tcp.Close
     context.become(alreadyJoined orElse notSendingMessages orElse {
       case _: Tcp.ConnectionClosed =>
         log.info("Connection to {}:{} successfully closed", settings.host, settings.port)
-        listener ! OverlayNetwork.Leaved(id, cause)
+        connection.listener ! OverlayNetwork.Leaved(connection.id, cause)
         context.become(disconnected)
     })
   }
