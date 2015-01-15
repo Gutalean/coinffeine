@@ -8,7 +8,7 @@ import scala.util.Try
 
 import com.typesafe.config._
 
-import coinffeine.model.network.{NetworkEndpoint, PeerId}
+import coinffeine.model.network.PeerId
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
@@ -95,7 +95,7 @@ object SettingsMapping {
       maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.maxFrameBytes"))
         .getOrElse(DefaultRelaySettings.MaxFrameBytes),
       identificationTimeout =  Try(
-        config.getDuration("coinffeine.overlay.relay.server.identificationTimeout",
+        config.getDuration("coinffeine.overlay.relay.identificationTimeout",
         TimeUnit.SECONDS).seconds).getOrElse(DefaultRelaySettings.IdentificationTimeout),
       minTimeBetweenStatusUpdates =
         Try(getSeconds(config, "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates"))
@@ -111,7 +111,7 @@ object SettingsMapping {
       .withValue("coinffeine.overlay.relay.port", configValue(settings.serverPort))
       .withValue("coinffeine.overlay.relay.maxFrameBytes",
         configValue(settings.maxFrameBytes))
-      .withValue("coinffeine.overlay.relay.server.identificationTimeout",
+      .withValue("coinffeine.overlay.relay.identificationTimeout",
         configValue(s"${settings.identificationTimeout.toSeconds}s"))
       .withValue("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
         configValue(s"${settings.minTimeBetweenStatusUpdates.toSeconds}s"))
