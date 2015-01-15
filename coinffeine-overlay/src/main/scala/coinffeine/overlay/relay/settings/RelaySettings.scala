@@ -14,8 +14,8 @@ case class RelaySettings(
   require(maxFrameBytes > 0, s"Invalid max frame bytes: $maxFrameBytes")
   require(connectionTimeout > 0.seconds, "The connection timeout cannot be zero")
 
-  def clientSettings: RelayClientSettings =
-    RelayClientSettings(serverAddress, serverPort, connectionTimeout, maxFrameBytes)
+  def clientSettings: RelayClientSettings = RelayClientSettings(
+    serverAddress, serverPort, connectionTimeout, identificationTimeout, maxFrameBytes)
 
   def serverSettings: RelayServerSettings = RelayServerSettings(
     serverAddress, serverPort, maxFrameBytes, identificationTimeout, minTimeBetweenStatusUpdates)

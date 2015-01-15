@@ -11,6 +11,12 @@ class RelayClientSettingsTest extends UnitTest {
     }
   }
 
+  it should "require a positive identification timeout" in {
+    an [IllegalArgumentException] shouldBe thrownBy {
+      RelayClientSettings("foo", 123, identificationTimeout = 0.seconds)
+    }
+  }
+
   it should "require a positive max frame size" in {
     an [IllegalArgumentException] shouldBe thrownBy {
       RelayClientSettings("foo", 123, maxFrameBytes = -3)
