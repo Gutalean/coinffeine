@@ -10,7 +10,6 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-actor" % Versions.akka,
     "com.typesafe.akka" %% "akka-slf4j" % Versions.akka,
     "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.akka,
-    "org.iq80.leveldb" % "leveldb" % "0.7",
     // Use custom build to having a fix for https://github.com/romix/akka-kryo-serialization/issues/35
     "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.3-20141023"
   )
