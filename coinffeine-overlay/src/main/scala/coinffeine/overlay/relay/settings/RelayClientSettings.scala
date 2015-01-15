@@ -2,6 +2,7 @@ package coinffeine.overlay.relay.settings
 
 import scala.concurrent.duration._
 
+import coinffeine.common.DurationUtils
 import coinffeine.overlay.relay.DefaultRelaySettings
 
 /** Client configuration
@@ -20,7 +21,7 @@ case class RelayClientSettings(
     connectionTimeout: FiniteDuration = DefaultRelaySettings.ConnectionTimeout,
     identificationTimeout: FiniteDuration = DefaultRelaySettings.IdentificationTimeout,
     maxFrameBytes: Int = DefaultRelaySettings.MaxFrameBytes) {
+  DurationUtils.requirePositive(connectionTimeout, "The connection timeout")
+  DurationUtils.requirePositive(identificationTimeout, "The identification timeout")
   require(maxFrameBytes > 0, s"Invalid max frame bytes: $maxFrameBytes")
-  require(connectionTimeout > 0.seconds, "The connection timeout cannot be zero")
-  require(identificationTimeout > 0.seconds, "The identification timeout cannot be zero")
 }

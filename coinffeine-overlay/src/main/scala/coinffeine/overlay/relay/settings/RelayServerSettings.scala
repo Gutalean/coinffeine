@@ -2,6 +2,7 @@ package coinffeine.overlay.relay.settings
 
 import scala.concurrent.duration.FiniteDuration
 
+import coinffeine.common.DurationUtils
 import coinffeine.overlay.relay.DefaultRelaySettings
 
 /** Relay server configuration.
@@ -20,4 +21,6 @@ case class RelayServerSettings(
     bindPort: Int,
     maxFrameBytes: Int = DefaultRelaySettings.MaxFrameBytes,
     identificationTimeout: FiniteDuration = DefaultRelaySettings.IdentificationTimeout,
-    minTimeBetweenStatusUpdates: FiniteDuration = DefaultRelaySettings.MinTimeBetweenStatusUpdates)
+    minTimeBetweenStatusUpdates: FiniteDuration = DefaultRelaySettings.MinTimeBetweenStatusUpdates) {
+  DurationUtils.requirePositive(identificationTimeout, "The identification timeout")
+}
