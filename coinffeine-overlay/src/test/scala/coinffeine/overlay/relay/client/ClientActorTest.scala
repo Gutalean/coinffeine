@@ -3,7 +3,6 @@ package coinffeine.overlay.relay.client
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
 import akka.io.Tcp
 import akka.testkit._
 import akka.util.ByteString
@@ -77,11 +76,11 @@ class ClientActorTest extends AkkaSpec with Inside {
 
   it should "notify server resolution failure" in {
     val invalidHost = "does.not.exist.example.com"
-    val client = system.actorOf(ClientActor.props(config.copy(host = invalidHost), ActorRef.noSender))
+    val client = system.actorOf(ClientActor.props(config.copy(host = invalidHost)))
     client ! OverlayNetwork.Join(clientId)
     inside (expectMsgType[OverlayNetwork.JoinFailed].cause) {
       case OverlayNetwork.UnderlyingNetworkFailure(ex) =>
-        ex.getMessage should include (s"Cannot resolve $invalidHost")
+        ex.getMessage should include (invalidHost)
     }
   }
 
