@@ -19,7 +19,7 @@ trait ReportingSupport { self: Action =>
     val start = System.currentTimeMillis()
       val result = try { runAction() } catch { case NonFatal(e) => Future.failed(e) }
       result.onComplete {
-        case Success((status, error)) => finalize(session, start, OK, None)
+        case Success(_) => finalize(session, start, OK, None)
         case Failure(ex) => finalize(session, start, KO, Some(s"unexpected exception: $ex"))
       }
   }
