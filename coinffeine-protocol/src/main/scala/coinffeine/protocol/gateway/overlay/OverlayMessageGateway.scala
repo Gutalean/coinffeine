@@ -8,6 +8,7 @@ import akka.util.ByteString
 import coinffeine.common.akka.ServiceActor
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
+import coinffeine.overlay.OverlayNetwork.NetworkStatus
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -84,8 +85,9 @@ private class OverlayMessageGateway(
       case OverlayNetwork.JoinFailed(_, cause) =>
         scheduleReconnection(s"Cannot join as ${settings.peerId}: $cause")
 
-      case OverlayNetwork.Joined(_) =>
-        log.info("Joined as {}", settings.peerId)
+      case OverlayNetwork.Joined(_, NetworkStatus(networkSize)) =>
+        log.info("Joined as {} to a network of size {}", settings.peerId, networkSize)
+        properties.activePeers.set(networkSize - 1)
         become(joined)
     }
 

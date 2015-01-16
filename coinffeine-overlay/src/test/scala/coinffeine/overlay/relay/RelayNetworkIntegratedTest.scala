@@ -29,7 +29,7 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
   it should "send messages forth and back" in {
     val client1 = system.actorOf(client.clientProps, "client1")
     client1 ! OverlayNetwork.Join(OverlayId(1))
-    expectMsgAllClassOf(classOf[OverlayNetwork.Joined], classOf[OverlayNetwork.NetworkStatus])
+    expectMsgType[OverlayNetwork.Joined]
 
     val client2 = system.actorOf(client.clientProps, "client2")
     client2 ! OverlayNetwork.Join(OverlayId(2))

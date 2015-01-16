@@ -10,7 +10,7 @@ import akka.util.ByteString
 import org.scalatest.Inside
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.overlay.OverlayNetwork.{JoinFailed, UnexpectedLeave}
+import coinffeine.overlay.OverlayNetwork.{JoinFailed, NetworkStatus, UnexpectedLeave}
 import coinffeine.overlay.relay.client.RelayNetwork.{HandshakeFailed, InvalidDataReceived}
 import coinffeine.overlay.relay.messages._
 import coinffeine.overlay.relay.settings.RelayClientSettings
@@ -213,8 +213,7 @@ class ClientActorTest extends AkkaSpec with Inside {
       tcpProbe.expectMsg(Tcp.Write(ProtobufFrame.serialize(JoinMessage(clientId))))
       tcpProbe.reply(Tcp.Received(ProtobufFrame.serialize(StatusMessage(1))))
 
-      expectMsg(OverlayNetwork.Joined(clientId))
-      expectMsgType[OverlayNetwork.NetworkStatus]
+      expectMsg(OverlayNetwork.Joined(clientId, NetworkStatus(1)))
     }
 
     def expectLeavingAfterAnUnexpectedConnectionClose(): Unit = {

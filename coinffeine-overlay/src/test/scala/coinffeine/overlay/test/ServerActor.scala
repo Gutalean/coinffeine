@@ -33,8 +33,8 @@ private[this] class ServerActor(messageDropRate: Double,
       clientRef ! ServerActor.ConnectionRejected
     } else {
       connections += clientId -> Connection(sender(), scheduleConnectionDrop(clientId))
-      clientRef ! ServerActor.Connected
-      notifyNetworkSize()
+      clientRef ! ServerActor.Connected(connections.size)
+      notifyNetworkSize(clientId)
     }
   }
 
@@ -85,9 +85,9 @@ private[this] class ServerActor(messageDropRate: Double,
     case (id, Connection(`ref`, _)) => id
   }
 
-  private def notifyNetworkSize(): Unit = {
+  private def notifyNetworkSize(exclusions: OverlayId*): Unit = {
     val notification = ServerActor.NetworkSize(connections.size)
-    for (connection <- connections.values) {
+    for (connection <- connections.values if !exclusions.contains(connection)) {
       connection.ref ! notification
     }
   }
@@ -105,7 +105,7 @@ private object ServerActor {
     messageDropRate, connectionFailureRate, delayDistribution, disconnectionDistribution))
 
   case class Connect(id: OverlayId)
-  case object Connected
+  case class Connected(networkSize: Int)
   case object ConnectionRejected
   case object Disconnect
   case object Disconnected

@@ -111,8 +111,8 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
     def onMessage(message: Message): Unit = message match {
       case StatusMessage(networkSize) =>
         timeout.cancel()
-        connection.listener ! OverlayNetwork.Joined(connection.id)
-        connection.listener ! OverlayNetwork.NetworkStatus(networkSize)
+        connection.listener ! OverlayNetwork.Joined(
+          connection.id, OverlayNetwork.NetworkStatus(networkSize))
         becomeJoined(connection)
 
       case unexpectedMessage =>
