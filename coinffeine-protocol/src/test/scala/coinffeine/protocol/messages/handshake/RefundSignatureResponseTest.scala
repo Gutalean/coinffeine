@@ -18,4 +18,9 @@ class RefundSignatureResponseTest extends UnitTest with EqualityBehaviors {
     Seq(RefundSignatureResponse(ExchangeId("id2"), sig1)),
     Seq(RefundSignatureResponse(ExchangeId("id1"), sig2))
   ))
+
+  it should "have a compact string representation" in {
+    RefundSignatureResponse(ExchangeId.random(), sig1).toString should
+      fullyMatch regex """RefundSignatureResponse\(exchange .*, Signature\(.*\)\)"""
+  }
 }
