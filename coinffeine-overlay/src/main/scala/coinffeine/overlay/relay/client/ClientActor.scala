@@ -30,7 +30,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
       * @param onInvalidData  Handler for invalid data received
       */
     def decodeFrames(onMessage: Message => Unit,
-                           onInvalidData: InvalidDataReceived => Unit): Unit = {
+                     onInvalidData: InvalidDataReceived => Unit): Unit = {
       while(decodeFrame(onMessage, onInvalidData)) {}
     }
 
