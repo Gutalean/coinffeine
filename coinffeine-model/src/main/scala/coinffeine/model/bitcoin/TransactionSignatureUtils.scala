@@ -14,6 +14,6 @@ object TransactionSignatureUtils {
   }
 
   def toString(signature: TransactionSignature): String = {
-    "Signature(r=%s, s=%s, flags=%X".format(signature.r, signature.s, signature.sighashFlags)
+    "Signature(r=%s, s=%s, flags=%X)".format(signature.r, signature.s, signature.sighashFlags)
   }
 }

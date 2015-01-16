@@ -3,6 +3,7 @@ package coinffeine.protocol.gateway
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
+import akka.testkit._
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.network.{NodeId, PeerId}
@@ -25,13 +26,13 @@ class MessageForwarderTest extends AkkaSpec {
   }
 
   it should "retry to forward when no response is received" in new Fixture {
-    val fw = forwarder(SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis)) {
+    val fw = forwarder(SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis.dilated)) {
       case SomeResponseMessage(data) => data
     }
 
     gw.expectSubscription()
     gw.expectForwarding(SomeRequestMessage, somePeerId)
-    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second)
+    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second.dilated)
 
     gw.relayMessage(SomeResponseMessage("Hello World!"), somePeerId)
 
@@ -40,14 +41,14 @@ class MessageForwarderTest extends AkkaSpec {
 
   it should "retry to forward until max retries" in new Fixture {
     val fw = forwarder(
-        SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis, maxRetries = 2)) {
+        SomeRequestMessage, somePeerId, RetrySettings(timeout = 500.millis.dilated, maxRetries = 2)) {
       case SomeResponseMessage(data) => data
     }
 
     gw.expectSubscription()
     gw.expectForwarding(SomeRequestMessage, somePeerId)
-    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second)
-    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second)
+    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second.dilated)
+    gw.expectForwarding(SomeRequestMessage, somePeerId, 1.second.dilated)
 
     expectMsg(MessageForwarder.ConfirmationFailed(SomeRequestMessage))
   }

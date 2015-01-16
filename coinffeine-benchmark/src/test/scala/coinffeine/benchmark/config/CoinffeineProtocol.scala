@@ -10,8 +10,8 @@ import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.config.Protocol
 
 import coinffeine.common.akka.ServiceActor
-import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.model.network.{NetworkEndpoint, NodeId, PeerId}
+import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway._
@@ -20,11 +20,10 @@ import coinffeine.protocol.messages.PublicMessage
 case class CoinffeineProtocol(
     brokerEndpoint: NetworkEndpoint,
     peerId: PeerId,
-    peerPort: Int,
     connectionRetryInterval: FiniteDuration) extends Protocol with StrictLogging {
 
-  private val gatewaySettings = MessageGatewaySettings(
-    peerId, peerPort, brokerEndpoint, connectionRetryInterval)
+  private val gatewaySettings = MessageGatewaySettings(peerId, connectionRetryInterval)
+  private val relaySettings = RelayClientSettings(brokerEndpoint.hostname, brokerEndpoint.port)
 
   private var actorSystem: Option[ActorSystem] = None
   private var gatewayActor: Option[ActorRef] = None
@@ -48,7 +47,7 @@ case class CoinffeineProtocol(
 
     actorSystem = Some(ActorSystem("coinffeine-benchmark"))
     gatewayActor = Some(
-      actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings)(actorSystem.get)))
+      actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings, relaySettings)(actorSystem.get)))
 
     Await.result(ServiceActor.askStart(gatewayActor.get), 20.seconds)
 
@@ -91,6 +90,5 @@ object CoinffeineProtocol {
   val DefaultCoinffeineProtocol = CoinffeineProtocol(
     brokerEndpoint = NetworkEndpoint("dev.coinffeine.pri", 9009),
     peerId = PeerId.random(),
-    peerPort = DefaultTcpPortAllocator.allocatePort(),
     connectionRetryInterval = 30.seconds)
 }

@@ -2,7 +2,7 @@ package coinffeine.protocol.gateway.overlay
 
 import java.io.IOException
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import akka.util.ByteString
 
 import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
@@ -31,8 +31,8 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   }
 
   def acceptJoin(networkSize: Int): Unit = {
-    mockClient.probe.send(listener, OverlayNetwork.Joined(overlayId))
-    mockClient.probe.send(listener, OverlayNetwork.NetworkStatus(networkSize))
+    mockClient.probe.send(listener,
+      OverlayNetwork.Joined(overlayId, OverlayNetwork.NetworkStatus(networkSize)))
   }
 
   def rejectJoin(): Unit = {

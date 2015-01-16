@@ -22,7 +22,7 @@ object OverlayNetwork {
 
   /** Response sent by the network client to signal that we have joined the overlay and we can now
     * send and receive messages. */
-  case class Joined(id: OverlayId)
+  case class Joined(id: OverlayId, networkStatus: NetworkStatus)
 
   /** Response sent by the network client when a join attempt has failed */
   case class JoinFailed(id: OverlayId, cause: JoinFailureCause)

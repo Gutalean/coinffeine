@@ -12,15 +12,17 @@ import coinffeine.overlay.OverlayNetwork._
 class FakeOverlayNetworkTest extends AkkaSpec {
 
   "An overlay network" should "relay messages forth and back" in {
+    ignoreMsg {
+      case NetworkStatus(_) => true
+    }
     val network = FakeOverlayNetwork()
     val client1, client2 = system.actorOf(network.clientProps)
 
     client1 ! Join(OverlayId(1))
+    expectMsg(Joined(OverlayId(1), NetworkStatus(1)))
+
     client2 ! Join(OverlayId(2))
-    expectMsgAllOf(
-      Joined(OverlayId(1)), Joined(OverlayId(2)),
-      NetworkStatus(1), NetworkStatus(2), NetworkStatus(2)
-    )
+    expectMsg(Joined(OverlayId(2), NetworkStatus(2)))
 
     client1 ! SendMessage(OverlayId(2), ByteString("ping"))
     expectMsg(ReceiveMessage(OverlayId(1), ByteString("ping")))
@@ -30,9 +32,6 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     expectMsg(ReceiveMessage(OverlayId(2), ByteString("pong")))
     lastSender shouldBe client1
 
-    ignoreMsg {
-      case NetworkStatus(_) => true
-    }
     client1 ! Leave
     client2 ! Leave
     expectMsgAllOf(Leaved(OverlayId(1), RequestedLeave), Leaved(OverlayId(2), RequestedLeave))
@@ -43,7 +42,8 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     val client1, client2 = system.actorOf(network.clientProps)
     client1 ! Join(OverlayId(1))
     client2 ! Join(OverlayId(2))
-    expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
+    expectMsgAllClassOf(classOf[Joined], classOf[Joined])
+
 
     for (i <- 1 to 100) {
       client1 ! SendMessage(OverlayId(2), ByteString("maybe"))
@@ -78,7 +78,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     val sender, receiver = system.actorOf(network.clientProps)
     sender ! Join(OverlayId(1))
     receiver ! Join(OverlayId(2))
-    expectMsgAllOf(Joined(OverlayId(1)), Joined(OverlayId(2)))
+    expectMsgAllClassOf(classOf[Joined], classOf[Joined])
 
     for (i <- 1 to 100) {
       sender ! SendMessage(OverlayId(2), ByteString(i.toByte))
@@ -96,7 +96,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     val client = system.actorOf(network.clientProps)
     val id = OverlayId(1)
     client ! Join(id)
-    expectMsg(Joined(id))
+    expectMsgType[Joined]
     fishForMessage(max = 1.second.dilated) {
       case Leaved(`id`, _) => true
     }

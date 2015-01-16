@@ -1,5 +1,6 @@
 v0.3.0:
  - Load logging configuration from an external file
+ - Replace TomP2P overlay by a more stable overlay network
  - Bug fixing
    * Wait for connection attempts to complete before shutting down the app
 

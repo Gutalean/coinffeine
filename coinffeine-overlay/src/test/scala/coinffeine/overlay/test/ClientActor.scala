@@ -20,8 +20,8 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
     case OverlayNetwork.Join(newId) =>
       sender() ! OverlayNetwork.JoinFailed(newId, OverlayNetwork.AlreadyJoining)
 
-    case ServerActor.Connected =>
-      listener ! OverlayNetwork.Joined(id)
+    case ServerActor.Connected(networkSize) =>
+      listener ! OverlayNetwork.Joined(id, OverlayNetwork.NetworkStatus(networkSize))
       context.become(connected(id, listener))
 
     case ServerActor.ConnectionRejected =>

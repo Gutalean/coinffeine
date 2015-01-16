@@ -2,7 +2,6 @@ package coinffeine.overlay.relay.client
 
 import java.io.IOException
 import java.net.{InetAddress, InetSocketAddress}
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 import akka.actor._
@@ -21,28 +20,43 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
       val id: OverlayId,
       val socket: ActorRef,
       val listener: ActorRef) {
-    var buffer = ByteString.empty
+    private var buffer = ByteString.empty
 
     def append(data: ByteString): Unit = { buffer ++= data }
 
-    @tailrec
-    final def decodeFrames(onMessage: Message => Unit,
-                           onInvalidData: InvalidDataReceived => Unit): Unit = {
-      Frame.deserialize(buffer, settings.maxFrameBytes) match {
-        case Frame.IncompleteInput => // Stop for the moment
+    /** Decode frames and stop if the buffer is consumed or an error happens.
+      *
+      * @param onMessage      Handler for received messages
+      * @param onInvalidData  Handler for invalid data received
+      */
+    def decodeFrames(onMessage: Message => Unit,
+                     onInvalidData: InvalidDataReceived => Unit): Unit = {
+      while(decodeFrame(onMessage, onInvalidData)) {}
+    }
 
+    /** Decode at most a frame.
+      *
+      * @param onMessage      Handler for received messages
+      * @param onInvalidData  Handler for invalid data received
+      * @return               True if there is more unprocessed buffer
+      */
+    def decodeFrame(onMessage: Message => Unit,
+                    onInvalidData: InvalidDataReceived => Unit): Boolean = {
+      Frame.deserialize(buffer, settings.maxFrameBytes) match {
+        case Frame.IncompleteInput => false
         case Frame.Parsed(Frame(protobuf), remainingBuffer) =>
           buffer = remainingBuffer
           Try(ProtobufConversion.fromProtobuf(protobuf)) match {
             case Success(message) =>
               onMessage(message)
-              decodeFrames(onMessage, onInvalidData)
+              true
             case Failure(ex) =>
               onInvalidData(InvalidDataReceived("Cannot parse protobuf", ex))
+              false
           }
-
         case Frame.FailedParsing(message) =>
           onInvalidData(InvalidDataReceived(s"Cannot delimit frame: $message"))
+          false
       }
     }
   }
@@ -75,7 +89,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
         sender() ! OverlayNetwork.JoinFailed(otherId, OverlayNetwork.AlreadyJoining)
 
       case Tcp.Connected(_, _) =>
-        becomeConnected(new Connection(id, socket = sender(), listener))
+        becomeHandshaking(new Connection(id, socket = sender(), listener))
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
         val cause = OverlayNetwork.UnderlyingNetworkFailure(CannotStartConnection(remoteAddress))
@@ -84,25 +98,69 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
     })
   }
 
-  private def becomeConnected(connection: Connection): Unit = {
-    log.info("Connected as {} to {}:{}", connection.id, settings.host, settings.port)
+  private def becomeHandshaking(connection: Connection): Unit = {
+    import context.dispatcher
+    object IdentificationTimeout
+    val timeout = context.system.scheduler.scheduleOnce(settings.identificationTimeout, self, IdentificationTimeout)
+
+    log.info("Connected to {}:{}, identifying as {}", settings.host, settings.port, connection.id)
 
     connection.socket ! Tcp.Register(self)
     connection.socket ! Tcp.Write(ProtobufFrame.serialize(JoinMessage(connection.id)))
-    connection.listener ! OverlayNetwork.Joined(connection.id)
 
-    def handleMessage(message: Message): Unit = {
-      message match {
-        case StatusMessage(networkSize) =>
-          connection.listener ! OverlayNetwork.NetworkStatus(networkSize)
-        case RelayMessage(senderId, payload) =>
-          connection.listener ! OverlayNetwork.ReceiveMessage(senderId, payload)
-        case joinMessage: JoinMessage =>
-          val cause = InvalidDataReceived(s"Unexpected message received: $joinMessage")
-          becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(cause))
-      }
+    def onMessage(message: Message): Unit = message match {
+      case StatusMessage(networkSize) =>
+        timeout.cancel()
+        connection.listener ! OverlayNetwork.Joined(
+          connection.id, OverlayNetwork.NetworkStatus(networkSize))
+        becomeJoined(connection)
+
+      case unexpectedMessage =>
+        timeout.cancel()
+        abortHandshake(s"invalid message of type ${unexpectedMessage.getClass}")
     }
 
+    def onInvalidData(invalidData: InvalidDataReceived): Unit = {
+      abortHandshake(invalidData.message)
+    }
+
+    def abortHandshake(errorMessage: String): Unit = {
+      log.error("Handshake failure: {}", errorMessage)
+      val cause = OverlayNetwork.UnderlyingNetworkFailure(HandshakeFailed(errorMessage))
+      connection.listener ! OverlayNetwork.JoinFailed(connection.id, cause)
+      connection.socket ! Tcp.Close
+      context.become(disconnected)
+    }
+
+    context.become(notSendingMessages orElse {
+      case IdentificationTimeout =>
+        abortHandshake(s"server didn't respond in ${settings.identificationTimeout}")
+
+      case Tcp.Received(data) =>
+        connection.append(data)
+        connection.decodeFrame(onMessage, onInvalidData)
+    })
+  }
+
+  private def becomeJoined(connection: Connection): Unit = {
+    def handleMessages(): Unit = {
+      connection.decodeFrames(
+        onMessage = {
+          case StatusMessage(networkSize) =>
+            connection.listener ! OverlayNetwork.NetworkStatus(networkSize)
+          case RelayMessage(senderId, payload) =>
+            connection.listener ! OverlayNetwork.ReceiveMessage(senderId, payload)
+          case joinMessage: JoinMessage =>
+            val cause = InvalidDataReceived(s"Unexpected message received: $joinMessage")
+            becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(cause))
+        },
+        onInvalidData = error =>
+          becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(error))
+      )
+    }
+
+    log.info("Joined as {} to {}:{}", connection.id, settings.host, settings.port)
+    handleMessages()
     context.become(alreadyJoined orElse {
       case request @ OverlayNetwork.SendMessage(to, message) =>
         val frameBytes = ProtobufFrame.serialize(RelayMessage(to, message))
@@ -115,10 +173,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
 
       case Tcp.Received(data) =>
         connection.append(data)
-        connection.decodeFrames(
-          onMessage = handleMessage,
-          onInvalidData = error => becomeDisconnecting(connection, OverlayNetwork.UnexpectedLeave(error))
-        )
+        handleMessages()
 
       case closed: Tcp.ConnectionClosed =>
         log.error("Connection to {}:{} closed unexpectedly: {}", settings.host, settings.port,

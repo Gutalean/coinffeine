@@ -1,5 +1,7 @@
 package coinffeine.protocol.messages.handshake
 
+import org.bitcoinj.core.Utils
+
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
@@ -12,6 +14,6 @@ case class ExchangeCommitment(
   require(!publicKey.canSign, "Just the public key is needed")
 
   override def toString =
-    s"""ExchangeCommitment($exchangeId,
-       |key=${publicKey.toString}}, tx=${commitmentTransaction.get.getHash}})""".stripMargin
+    "ExchangeCommitment(%s, key=%s, tx=%s)"
+      .format(exchangeId, Utils.HEX.encode(publicKey.getPubKey), commitmentTransaction.get.getHash)
 }

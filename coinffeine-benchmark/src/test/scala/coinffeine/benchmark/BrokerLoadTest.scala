@@ -25,7 +25,6 @@ class BrokerLoadTest extends Simulation {
 
   val coinffeineConf = coinffeineProtocol
     .brokerEndpoint("dev.coinffeine.com", 9009)
-    .ignoredNetworkInterfaceNames("utun0")
 
   val requestOpenOrders = exec(ask("RequestOpenOrders")
     .message(OpenOrdersRequest(market))

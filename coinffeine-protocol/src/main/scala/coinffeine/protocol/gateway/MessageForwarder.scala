@@ -101,10 +101,6 @@ object MessageForwarder {
                retry: RetrySettings = MessageForwarder.DefaultRetrySettings): Props =
     Props(new MessageForwarder(requester, messageGateway, msg, destination, confirmation, retry))
 
-  def cancel(forwarder: ActorRef)(implicit context: ActorContext): Unit = {
-    context.stop(forwarder)
-  }
-
   /** A factory of forward messages that operates with a fixed message gateway and actor context.
     *
     * It is specially useful instantiated once in an actor and used many times to forward

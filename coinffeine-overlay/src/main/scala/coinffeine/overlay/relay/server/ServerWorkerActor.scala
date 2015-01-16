@@ -54,9 +54,16 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
   }
 
   private def becomeIdentified(id: OverlayId, initialStatus: StatusMessage): Unit = {
+    def forwardReceivedMessages(data: ByteString): Unit = {
+      buffer = decodeFrames(buffer ++ data) {
+        case message: RelayMessage => context.parent ! message
+      }
+    }
+
     val statusSender = context.actorOf(LimitedRateProxy.props(
       connection.ref, config.minTimeBetweenStatusUpdates))
     statusSender ! Tcp.Write(ProtobufFrame.serialize(initialStatus))
+    forwardReceivedMessages(ByteString.empty)
 
     context.become {
       case status: StatusMessage =>
@@ -65,9 +72,7 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
       case _: Tcp.ConnectionClosed => self ! PoisonPill
 
       case Tcp.Received(data) =>
-        buffer = decodeFrames(buffer ++ data) {
-          case message: RelayMessage => context.parent ! message
-        }
+        forwardReceivedMessages(data)
 
       case message: RelayMessage => write(message)
     }
