@@ -11,9 +11,10 @@ To build Coinffeine you will need:
 
  * Java 8 (just Java 7 if you are not interested in `coinffeine-gui` module)
  * A working [SBT 0.13](http://www.scala-sbt.org/download.html)
- * Protobuf compiler 2.5.0. You can get it with your favourite package manager
-   (`protobuf` in brew, `protobuf-java` in apt-get and macports) or directly
-   from its [project page](https://code.google.com/p/protobuf/downloads/list).
+ * Protobuf compiler 2.5.0 or higher. You can get it with your favourite
+   package manager(`protobuf` in brew, `protobuf-compiler` in apt-get and
+   macports) or directly from its
+   [project page](https://code.google.com/p/protobuf/downloads/list).
 
 To compile all the modules and run their tests:
 
