@@ -45,11 +45,9 @@ private[this] class ServerActor(tcpManager: ActorRef)
         val connection = sender()
         connection ! Tcp.Register(spawnWorkerActor(remoteAddress, connection))
 
-      case ServerWorkerActor.JoinAs(idInUse) if activeIds.contains(idInUse) =>
-        sender() ! ServerWorkerActor.CannotJoinWithIdentifierInUse
-
-      case ServerWorkerActor.JoinAs(unusedId) =>
-        activeIds += unusedId -> sender()
+      case ServerWorkerActor.JoinAs(id) =>
+        activeIds.get(id).foreach(_ ! ServerWorkerActor.Terminate)
+        activeIds += id -> sender()
         notifyStatus()
         sender() ! ServerWorkerActor.Joined(StatusMessage(networkSize))
 
@@ -73,7 +71,7 @@ private[this] class ServerActor(tcpManager: ActorRef)
     if (workers.isEmpty) {
       socket ! Tcp.Unbind
     } else {
-      workers.foreach(_ ! PoisonPill)
+      workers.foreach(_ ! ServerWorkerActor.Terminate)
     }
     handle {
       case Terminated(terminatedWorker) =>

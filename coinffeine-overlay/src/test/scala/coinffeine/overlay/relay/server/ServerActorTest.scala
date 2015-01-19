@@ -125,10 +125,11 @@ class ServerActorTest
     client.expectDisconnection()
   }
 
-  it should "reject client identification if the overlay id is in use" in new BoundServer {
+  it should "guarantee that just one client is using a given overlay id" in new BoundServer {
     val client1, client2 = expectClientConnection()
     client1.identifyAs(OverlayId(1))
-    client2.unsuccessfullyIdentifyAs(OverlayId(1))
+    client2.identifyAs(OverlayId(1))
+    client1.expectDisconnection()
   }
 
   it should "send network status messages when the size of the network changes" in new BoundServer {

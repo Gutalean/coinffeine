@@ -1,3 +1,6 @@
+v0.4.0:
+ - Fix repeated overlay id conflict resolution
+
 v0.3.0:
  - Load logging configuration from an external file
  - Replace TomP2P overlay by a more stable overlay network
