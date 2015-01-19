@@ -37,6 +37,8 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
       case IdentificationTimeout =>
         disconnectBecauseOf(s"Client at ${connection.remoteAddress} has not identified " +
           s"itself after ${config.identificationTimeout}")
+
+      case ServerWorkerActor.Terminate => disconnectBecauseOf("cancelled handshake")
     }
     behavior
   }
@@ -44,12 +46,11 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
   private def becomeJoining(id: OverlayId): Unit = {
     context.parent ! ServerWorkerActor.JoinAs(id)
     context.become {
-      case ServerWorkerActor.CannotJoinWithIdentifierInUse =>
-        disconnectBecauseOf(s"$id is already in use")
-
       case ServerWorkerActor.Joined(status) =>
         log.info("{} connected as {}", connection.remoteAddress, id)
         becomeIdentified(id, status)
+
+      case ServerWorkerActor.Terminate => disconnectBecauseOf("terminating join")
     }
   }
 
@@ -69,12 +70,17 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
       case status: StatusMessage =>
         statusSender ! Tcp.Write(ProtobufFrame.serialize(status))
 
-      case _: Tcp.ConnectionClosed => self ! PoisonPill
+      case _: Tcp.ConnectionClosed =>
+        log.info("connection to {} closed", connection.remoteAddress)
+        self ! PoisonPill
 
       case Tcp.Received(data) =>
         forwardReceivedMessages(data)
 
       case message: RelayMessage => write(message)
+
+      case ServerWorkerActor.Terminate =>
+        disconnectBecauseOf("terminating connection")
     }
   }
 
@@ -125,8 +131,14 @@ private class ServerWorkerActor(connection: ServerWorkerActor.Connection, config
 
 private object ServerWorkerActor {
   case class Connection(remoteAddress: InetSocketAddress, ref: ActorRef)
+
+  /** When received by the worker actor it shuts down the connection and die */
+  case object Terminate
+
+  /** Sent by the worker to its parent to notify a valid client identification */
   case class JoinAs(id: OverlayId)
-  case object CannotJoinWithIdentifierInUse
+
+  /** Expected response to [[JoinAs]] */
   case class Joined(status: StatusMessage)
 
   def props(connection: Connection, config: RelayServerSettings): Props =

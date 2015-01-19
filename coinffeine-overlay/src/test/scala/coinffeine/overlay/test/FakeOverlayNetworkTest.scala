@@ -99,6 +99,7 @@ class FakeOverlayNetworkTest extends AkkaSpec {
     expectMsgType[Joined]
     fishForMessage(max = 1.second.dilated) {
       case Leaved(`id`, _) => true
+      case _ => false
     }
   }
 
