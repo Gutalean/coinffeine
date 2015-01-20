@@ -24,11 +24,13 @@ class StatusCommandTest extends CommandTest {
     commandOutput() should include("BTC: --")
     app.btcBalance.set(Some(BitcoinBalance(
       estimated = 10.BTC, available = 8.BTC, minOutput = Some(0.01.BTC))))
-    commandOutput() should include("BTC: 10.00000000 BTC estimated, 8.00000000 BTC available")
+    commandOutput() should include(
+      "BTC: 10.00000000 BTC estimated, 8.00000000 BTC available (min output of 0.01000000 BTC)")
     app.btcBalance.set(Some(BitcoinBalance(
       estimated = 10.BTC, available = 8.BTC, blocked = 2.BTC, minOutput = Some(0.01.BTC))))
     commandOutput() should include(
-      "BTC: 10.00000000 BTC estimated, 8.00000000 BTC available (2.00000000 BTC blocked)")
+      "BTC: 10.00000000 BTC estimated, 8.00000000 BTC available " +
+        "(2.00000000 BTC blocked, min output of 0.01000000 BTC)")
   }
 
   it should "print the current bitcoin wallet key" in new Fixture {

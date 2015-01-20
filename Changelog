@@ -1,5 +1,7 @@
 v0.4.0:
  - Fix repeated overlay id conflict resolution
+ - [headless] Tell apart bids and asks on list command
+ - [headless] Display the minimum output on status command
 
 v0.3.0:
  - Load logging configuration from an external file
