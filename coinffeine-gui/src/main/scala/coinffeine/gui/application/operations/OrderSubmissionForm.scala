@@ -26,7 +26,7 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   private val maxFiatPerOrder = amountsCalculator.maxFiatPerExchange(Euro)
 
   private val operationChoiceBox = new ChoiceBox[OrderType] {
-    items = ObservableBuffer(Seq(Bid, Ask))
+    items = ObservableBuffer(OrderType.values)
     value = Bid
     prefWidth = 90
   }
