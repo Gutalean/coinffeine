@@ -19,7 +19,7 @@ object Dependencies {
     "com.github.michaelpisula" %% "akka-persistence-inmemory" % "0.2.1"
   )
   lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
-  lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.1"
+  lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.2"
   lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
   lazy val gatling = Seq(
