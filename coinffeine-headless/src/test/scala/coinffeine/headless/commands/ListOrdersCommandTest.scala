@@ -1,5 +1,6 @@
 package coinffeine.headless.commands
 
+import coinffeine.headless.prompt.ANSIText.Bold
 import coinffeine.model.market._
 import coinffeine.model.currency._
 import coinffeine.model.properties.MutablePropertyMap
@@ -21,12 +22,18 @@ class ListOrdersCommandTest extends CommandTest {
         include(order.amount.toString) and include(order.price.toString))
   }
 
-  it should "sort orders by the first field, the id" in {
-    for (index <- 1 to 10) {
-      val order = Order.random(Bid, index.BTC, Price((500 - index).EUR))
-      orderMap.set(order.id, order)
-    }
+  it should "sort orders by type and the by id" in {
+    val orders = for {
+      index <- 1 to 10
+      orderType <- OrderType.values
+    } yield Order.random(orderType, index.BTC, Price((500 - index).EUR))
+
+    orders.foreach { order => orderMap.set(order.id, order) }
+
     val outputLines = executeCommand(command).lines.toList
-    outputLines.sorted shouldBe outputLines
+    val (bidHeader, afterBidHeader) = outputLines.span(_ == Bold("Bid orders"))
+    val (bids, askHeader :: asks) = afterBidHeader.span(_ != Bold("Ask orders"))
+    bids.sorted shouldBe bids
+    asks.sorted shouldBe asks
   }
 }
