@@ -65,6 +65,7 @@ private class OverlayMessageGateway(
 
     private def joined: Receive = countingActivePeers orElse delegateSubscriptionManagement orElse {
       case leave: OverlayNetwork.Leaved =>
+        properties.activePeers.set(0)
         scheduleReconnection(s"Unexpected disconnection: ${leave.cause}")
 
       case MessageGateway.ForwardMessage(message, dest) =>
