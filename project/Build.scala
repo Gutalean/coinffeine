@@ -60,7 +60,7 @@ object Build extends sbt.Build {
   )
 
   lazy val commonAkka = (Project(id = "common-akka", base = file("coinffeine-common-akka"))
-    dependsOn commonTest
+    dependsOn(commonTest % "compile->compile;test->test")
   )
 
   lazy val commonTest = (Project(id = "common-test", base = file("coinffeine-common-test"))

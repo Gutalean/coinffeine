@@ -2,8 +2,7 @@ resolvers in ThisBuild ++= Seq(
   "coinffeine-releases" at "http://repository.coinffeine.com/nexus/content/repositories/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
   Resolver.sonatypeRepo("public"),
-  Classpaths.sbtPluginReleases,
-  "migesok at bintray" at "http://dl.bintray.com/migesok/maven"
+  Classpaths.sbtPluginReleases
 )
 
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.3.3")
