@@ -11,10 +11,7 @@ import coinffeine.peer.api.CoinffeineNetwork
 
 class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends Command {
 
-  override val keyword = orderType match {
-    case Bid => "bid"
-    case Ask => "ask"
-  }
+  override val keyword = orderType.shortName
   override val description = "allows opening new orders"
   override val usage =
     s"""

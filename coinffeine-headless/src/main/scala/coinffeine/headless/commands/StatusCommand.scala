@@ -32,7 +32,12 @@ class StatusCommand(app: CoinffeineApp) extends Command {
   }
 
   private def formatBitcoinBalance(balance: BitcoinBalance): String = {
-    val blocked = if (balance.blocked.isPositive) s" (${balance.blocked} blocked)" else ""
-    "%s estimated, %s available%s".format(balance.estimated, balance.available, blocked)
+    val details =
+      (if (balance.blocked.isPositive) Some(s"${balance.blocked} blocked") else None) ++
+        balance.minOutput.map(value => s"min output of $value")
+    val formattedDetails =
+      if (details.isEmpty) ""
+      else details.mkString(" (", ", ", ")")
+    "%s estimated, %s available%s".format(balance.estimated, balance.available, formattedDetails)
   }
 }
