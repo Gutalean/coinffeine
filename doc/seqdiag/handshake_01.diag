@@ -1,0 +1,30 @@
+seqdiag {
+  activation = none;
+
+  === Happy path ===
+
+  Broker ->> Bob [label = "OrderMatch(order)"]
+  Broker ->> Sam [label = "OrderMatch(order)"]
+
+  Bob ->> Sam [label = "PeerHandshake"]
+  Sam ->> Bob [label = "PeerHandshake"]
+
+  Bob ->> Sam [label = "RefundSignatureRequest"]
+  Sam ->> Bob [label = "RefundSignatureRequest"]
+
+  Bob ->> Sam [label = "RefundSignatureResponse"]
+  Sam ->> Bob [label = "RefundSignatureResponse"]
+
+  Bob ->> Broker [label = "ExchangeCommitment"]
+  Sam ->> Broker [label = "ExchangeCommitment"]
+
+  Broker ->> "Bitcoin Network" [label = "Broadcast Sam & Bob TXs"]
+
+  Broker ->> Bob [label = "CommitmentNotification"]
+  Broker ->> Sam [label = "CommitmentNotification"]
+
+  Bob ->> Broker [label = "CommitmentNotificationAck"]
+  Sam ->> Broker [label = "CommitmentNotificationAck"]
+
+  Broker ->> Broker [label = "HandshakeSuccess"]
+}
