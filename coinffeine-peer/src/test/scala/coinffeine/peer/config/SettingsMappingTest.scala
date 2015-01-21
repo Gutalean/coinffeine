@@ -19,11 +19,16 @@ import coinffeine.protocol.MessageGatewaySettings
 
 class SettingsMappingTest extends UnitTest with OptionValues {
 
+  val basePath = new File("/home/foo/.coinffeine")
+  def fromConfig[T: SettingsMapping](config: Config): T =
+    SettingsMapping.fromConfig[T](basePath, config)
+
   "General settings mapping" should "map from config" in {
-    val mapFromConfig = SettingsMapping.fromConfig[GeneralSettings] _
-    mapFromConfig(ConfigFactory.empty()).licenseAccepted shouldBe false
-    mapFromConfig(makeConfig("coinffeine.licenseAccepted" -> false)).licenseAccepted shouldBe false
-    mapFromConfig(makeConfig("coinffeine.licenseAccepted" -> true)).licenseAccepted shouldBe true
+    fromConfig[GeneralSettings](ConfigFactory.empty()).licenseAccepted shouldBe false
+    fromConfig[GeneralSettings](makeConfig("coinffeine.licenseAccepted" -> false))
+      .licenseAccepted shouldBe false
+    fromConfig[GeneralSettings](makeConfig("coinffeine.licenseAccepted" -> true))
+      .licenseAccepted shouldBe true
   }
 
   it should "map to config" in {
@@ -34,13 +39,12 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   "Bitcoins settings mapping" should "map from config" in {
     val conf = makeConfig(
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
-      "coinffeine.bitcoin.walletFile" -> "user.wallet",
       "coinffeine.bitcoin.rebroadcastTimeout" -> "60s",
       "coinffeine.bitcoin.network" -> "mainnet"
     )
-    SettingsMapping.fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
+    fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
       connectionRetryInterval = 30.seconds,
-      walletFile = new File("user.wallet"),
+      walletFile = new File(basePath, "mainnet.wallet"),
       rebroadcastTimeout = 1.minute,
       network = BitcoinSettings.MainNet
     )
@@ -55,7 +59,6 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
-    cfg.getString("coinffeine.bitcoin.walletFile") shouldBe new File("/tmp/user.wallet").getPath
     cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
     cfg.getString("coinffeine.bitcoin.network") shouldBe "public-testnet"
   }
@@ -66,7 +69,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   )
 
   "Message Gateway settings mapping" should "map basic settings from config" in {
-    val settings = SettingsMapping.fromConfig[MessageGatewaySettings](messageGatewayBasicSettings)
+    val settings = fromConfig[MessageGatewaySettings](messageGatewayBasicSettings)
     settings.peerId shouldBe PeerId("1234")
     settings.connectionRetryInterval shouldBe 10.seconds
   }
@@ -94,7 +97,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   )
 
   "Relay server settings mapping" should "map basic settings from config" in {
-    val settings = SettingsMapping.fromConfig[RelaySettings](relayServerBasicSettings)
+    val settings = fromConfig[RelaySettings](relayServerBasicSettings)
     settings.serverAddress shouldBe "localhost"
     settings.serverPort shouldBe 5000
     settings.maxFrameBytes shouldBe DefaultRelaySettings.MaxFrameBytes
@@ -110,7 +113,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates" -> "10m",
       "coinffeine.overlay.relay.client.connectionTimeout" -> "10s"
     )
-    val settings = SettingsMapping.fromConfig[RelaySettings](conf)
+    val settings = fromConfig[RelaySettings](conf)
     settings.maxFrameBytes shouldBe 1024
     settings.identificationTimeout shouldBe 10.seconds
     settings.minTimeBetweenStatusUpdates shouldBe 10.minutes
@@ -142,13 +145,13 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       "coinffeine.okpay.endpoint" -> "http://example.com/death-star",
       "coinffeine.okpay.pollingInterval" -> "50s"
     )
-    val settings = SettingsMapping.fromConfig[OkPaySettings](conf)
+    val settings = fromConfig[OkPaySettings](conf)
     settings.userAccount shouldBe Some("id")
     settings.seedToken shouldBe Some("token")
     settings.serverEndpoint shouldBe new URI("http://example.com/death-star")
     settings.pollingInterval shouldBe 50.seconds
 
-    val settings2 = SettingsMapping.fromConfig[OkPaySettings](makeConfig(
+    val settings2 = fromConfig[OkPaySettings](makeConfig(
       "coinffeine.okpay.endpoint" -> "http://example.com/death-star",
       "coinffeine.okpay.pollingInterval" -> "50s"
     ))

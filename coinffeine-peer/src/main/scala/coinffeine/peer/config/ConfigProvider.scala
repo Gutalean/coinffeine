@@ -31,7 +31,6 @@ trait ConfigProvider extends SettingsProvider {
   def referenceConfig: Config = defaultPathConfiguration.withFallback(ConfigFactory.load())
 
   private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
-    "coinffeine.bitcoin.walletFile" -> configPath("user.wallet"),
     "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
     "akka.persistence.snapshot-store.local.dir" -> configPath("snapshots")
   ).asJava)
@@ -41,22 +40,26 @@ trait ConfigProvider extends SettingsProvider {
   /** Retrieve the whole configuration, including reference and user config. */
   def enrichedConfig: Config = userConfig.withFallback(referenceConfig)
 
-  override def generalSettings() = SettingsMapping.fromConfig[GeneralSettings](enrichedConfig)
+  override def generalSettings() =
+    SettingsMapping.fromConfig[GeneralSettings](dataPath, enrichedConfig)
 
-  override def bitcoinSettings() = SettingsMapping.fromConfig[BitcoinSettings](enrichedConfig)
+  override def bitcoinSettings() =
+    SettingsMapping.fromConfig[BitcoinSettings](dataPath, enrichedConfig)
 
   override def messageGatewaySettings() = {
     ensurePeerIdIsDefined()
-    SettingsMapping.fromConfig[MessageGatewaySettings](enrichedConfig)
+    SettingsMapping.fromConfig[MessageGatewaySettings](dataPath, enrichedConfig)
   }
 
-  override def relaySettings() = SettingsMapping.fromConfig[RelaySettings](enrichedConfig)
+  override def relaySettings() =
+    SettingsMapping.fromConfig[RelaySettings](dataPath, enrichedConfig)
 
   private def ensurePeerIdIsDefined(): Unit = {
     SettingsMapping.MessageGateway.ensurePeerId(enrichedConfig).foreach(saveUserConfig(_))
   }
 
-  override def okPaySettings() = SettingsMapping.fromConfig[OkPaySettings](enrichedConfig)
+  override def okPaySettings() =
+    SettingsMapping.fromConfig[OkPaySettings](dataPath, enrichedConfig)
 
   /** Save the given settings as part of user config using this provider.
     *

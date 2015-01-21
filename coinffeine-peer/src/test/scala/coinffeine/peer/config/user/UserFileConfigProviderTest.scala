@@ -71,7 +71,7 @@ class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
 
   implicit lazy val foobarSettingsMapping = new SettingsMapping[FoobarSettings] {
 
-    override def fromConfig(config: Config) = ???
+    override def fromConfig(configPath: File, config: Config) = ???
 
     override def toConfig(settings: FoobarSettings, config: Config) = config
       .withValue("foobar.potato", ConfigValueFactory.fromAnyRef(settings.potato))
