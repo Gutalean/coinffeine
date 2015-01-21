@@ -28,7 +28,7 @@ class DefaultCoinffeineApp(name: String,
                            amountsCalculator: AmountsCalculator,
                            configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
 
-  private val system = ActorSystem(name, configProvider.config)
+  private val system = ActorSystem(name, configProvider.enrichedConfig)
   private val peerRef = system.actorOf(peerProps, "peer")
 
   override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)

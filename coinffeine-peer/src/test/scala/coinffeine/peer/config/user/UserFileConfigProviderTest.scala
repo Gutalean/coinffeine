@@ -32,7 +32,7 @@ class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
   }
 
   it should "refresh config after save user settings" in {
-    provider.config.getInt("my.prop") shouldBe 7
+    provider.enrichedConfig.getInt("my.prop") shouldBe 7
   }
 
   it should "drop user config item while saving when it matches the reference one" in {
