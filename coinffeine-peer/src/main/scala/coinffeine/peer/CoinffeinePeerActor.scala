@@ -15,7 +15,7 @@ import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
+import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
 import coinffeine.peer.market.orders.{OrderActor, OrderSupervisor}
@@ -30,7 +30,7 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(configProvider: ConfigProvider, props: CoinffeinePeerActor.PropsCatalogue)
+class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   extends Actor with ActorLogging with ServiceActor[Unit] {
 
   import CoinffeinePeerActor._
@@ -175,7 +175,7 @@ object CoinffeinePeerActor {
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
-      Props(new CoinffeinePeerActor(configProvider, props))
+      Props(new CoinffeinePeerActor(props))
     }
 
     private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =
