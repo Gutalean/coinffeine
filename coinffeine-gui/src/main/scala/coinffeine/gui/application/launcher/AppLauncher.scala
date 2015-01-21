@@ -12,7 +12,7 @@ trait AppLauncher { this: ProductionCoinffeineComponent =>
     // FIXME: the laziness provided by the comprehension is needed since the cake does not properly
     //        manage the life cycle and race conditions arise
     for {
-      _ <- new AcquirePidFileAction().apply()
+      _ <- new AcquirePidFileAction(configProvider.dataPath).apply()
       _ <- new RunWizardAction(configProvider, network).apply()
       _ <- new AppStartAction(app).apply()
       _ <- new CheckForUpdatesAction().apply()
