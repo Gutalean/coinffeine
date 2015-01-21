@@ -10,7 +10,6 @@ import coinffeine.gui.setup.{SetupConfig, SetupWizard}
 import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
-import coinffeine.peer.config.user.LocalAppDataDir
 
 class RunWizardAction(configProvider: ConfigProvider, network: Network) extends StrictLogging {
 
@@ -24,18 +23,16 @@ class RunWizardAction(configProvider: ConfigProvider, network: Network) extends 
   }
 
   private def loadOrCreateWallet(): SmartWallet = {
-    if (!configProvider.bitcoinSettings().walletFile.isFile) {
-      configProvider.saveUserSettings(
-        configProvider.bitcoinSettings().copy(walletFile = createWallet()))
+    val walletFile = configProvider.bitcoinSettings().walletFile
+    if (!walletFile.isFile) {
+      createWallet(walletFile)
     }
-    SmartWallet.loadFromFile(configProvider.bitcoinSettings().walletFile)
+    SmartWallet.loadFromFile(walletFile)
   }
 
-  private def createWallet(): File = {
-    val walletFile = LocalAppDataDir.getFile("user.wallet", ensureCreated = false).toFile
+  private def createWallet(walletFile: File): Unit = {
     new Wallet(network).saveToFile(walletFile)
     logger.info("Created new wallet at {}", walletFile)
-    walletFile
   }
 
   private def persistSetupConfiguration(setupConfig: SetupConfig): Unit = {
