@@ -1,7 +1,8 @@
 package coinffeine.peer.config.user
 
-import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 
 trait UserFileConfigComponent extends ConfigComponent {
-  lazy val configProvider = UserFileConfigProvider()
+  lazy val configProvider: ConfigProvider =
+    new UserFileConfigProvider(LocalAppDataDir().toAbsolutePath.toFile)
 }
