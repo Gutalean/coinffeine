@@ -9,7 +9,7 @@ import org.bitcoinj.core.{FullPrunedBlockChain, StoredBlock}
 import org.bitcoinj.store.H2FullPrunedBlockStore
 import org.bitcoinj.utils.BriefLogFormatter
 
-import coinffeine.common.test.UnitTest
+import coinffeine.common.test.{TempDir, UnitTest}
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 
@@ -157,9 +157,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   }
 
   private def createH2BlockStore(): Unit = {
-    blockStorePath = File.createTempFile("temp", "blockStore")
-    blockStorePath.delete()
-    blockStorePath.mkdir()
+    blockStorePath = TempDir.create("blockStore")
     blockStore = new H2FullPrunedBlockStore(network, new File(blockStorePath, "db").toString, 1000)
     blockStore.resetStore()
   }
