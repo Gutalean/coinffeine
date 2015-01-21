@@ -12,26 +12,29 @@ import coinffeine.peer.api.impl.ProductionCoinffeineComponent
 import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.pid.PidFile
 
-object Main extends ProductionCoinffeineComponent {
+object Main {
 
   private val timeout = 20.seconds
 
   def main(args: Array[String]): Unit = {
+    val coinffeine = new ProductionCoinffeineComponent {
+      override def commandLineArgs = args.toList
+    }
     configureQuietLoggingInitialization()
     acquirePidFile()
-    if (configProvider.okPaySettings().userAccount.isEmpty) {
+    if (coinffeine.configProvider.okPaySettings().userAccount.isEmpty) {
       println("You should run the wizard or configure manually the application")
       System.exit(-1)
     }
     try {
-      app.startAndWait(timeout)
-      new CoinffeineInterpreter(app).run()
+      coinffeine.app.startAndWait(timeout)
+      new CoinffeineInterpreter(coinffeine.app).run()
       System.exit(-1)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()
     } finally {
-      app.stopAndWait(timeout)
+      coinffeine.app.stopAndWait(timeout)
     }
     System.exit(-1)
   }

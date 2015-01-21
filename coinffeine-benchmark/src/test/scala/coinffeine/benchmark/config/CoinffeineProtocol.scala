@@ -58,7 +58,9 @@ case class CoinffeineProtocol(
     }
   }
 
-  private object GatewayComponent extends ProductionCoinffeineComponent
+  private object GatewayComponent extends ProductionCoinffeineComponent {
+    override def commandLineArgs = List.empty
+  }
 
   private class ResponseReceiver(request: PublicMessage,
                                  destination: NodeId,
