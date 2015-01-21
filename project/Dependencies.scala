@@ -30,7 +30,6 @@ object Dependencies {
   lazy val guava = "com.google.guava" % "guava" % "16.0.1"
   lazy val janino = "org.codehaus.janino" % "janino" % "2.6.1"
   lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
-  lazy val jcommander = "com.beust" % "jcommander" % "1.35"
   lazy val jline = "jline" % "jline" % "2.12"
   lazy val jodaTime = "joda-time" % "joda-time" % "2.5"
   lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"

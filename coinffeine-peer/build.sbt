@@ -6,7 +6,6 @@ ScoverageKeys.coverageExcludedPackages := "scalaxb;soapenvelope11;.*generated.*"
 
 libraryDependencies ++= Dependencies.akka ++ Seq(
   Dependencies.h2 % "test",
-  Dependencies.jcommander,
   Dependencies.netty,
   Dependencies.scalacheck % "test",
   Dependencies.scalaz,
