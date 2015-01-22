@@ -5,8 +5,8 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
 import com.typesafe.scalalogging.StrictLogging
-import org.bitcoinj.core.{AbstractBlockChain, FullPrunedBlockChain, PeerGroup}
-import org.bitcoinj.store.MemoryFullPrunedBlockStore
+import org.bitcoinj.core._
+import org.bitcoinj.store.{SPVBlockStore, MemoryFullPrunedBlockStore}
 
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
@@ -17,6 +17,7 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
 
   private var network: Network with NetworkComponent.SeedPeers = _
   private var walletFile: Option[File] = None
+  private var blockchainFile: Option[File] = None
 
   def setNetwork(value: Network with NetworkComponent.SeedPeers) = {
     network = value
@@ -28,16 +29,28 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     this
   }
 
+  def setBlockchainFile(file: File) = {
+    blockchainFile = Some(file)
+    this
+  }
+
   override def build(): BitcoinPlatform = {
     require(network != null, "Network should be defined")
+    val shouldReplayWallet = exists(walletFile) && !exists(blockchainFile)
     val blockchain = buildBlockchain()
     val peerGroup = buildPeerGroup(blockchain)
-    val wallet = buildWallet(blockchain, peerGroup)
+    val wallet = buildWallet(blockchain, peerGroup, shouldReplayWallet)
     new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
   }
 
   private def buildBlockchain() =
+    blockchainFile.fold[AbstractBlockChain](buildInMemoryBlockchain())(buildFileBackedBlockchain)
+
+  private def buildInMemoryBlockchain() =
     new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, FullStoredDepth))
+
+  private def buildFileBackedBlockchain(file: File) =
+    new BlockChain(network, new SPVBlockStore(network, file))
 
   private def buildPeerGroup(blockchain: AbstractBlockChain) = {
     val pg = new PeerGroup(network, blockchain)
@@ -45,8 +58,13 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     pg
   }
 
-  private def buildWallet(blockchain: AbstractBlockChain, peerGroup: PeerGroup) = {
+  private def buildWallet(blockchain: AbstractBlockChain,
+                          peerGroup: PeerGroup,
+                          shouldReplayWallet: Boolean) = {
     val wallet = walletFile.fold(buildInMemoryWallet())(buildFileBackedWallet)
+    if (shouldReplayWallet) {
+      wallet.delegate.clearTransactions(0)
+    }
     blockchain.addWallet(wallet.delegate)
     peerGroup.addWallet(wallet.delegate)
     wallet
@@ -69,6 +87,8 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     logger.warn("{} doesn't exists, starting with an empty wallet", walletFile)
     new SmartWallet(network)
   }
+
+  private def exists(maybeFile: Option[File]): Boolean = maybeFile.fold(false)(_.exists())
 }
 
 private object DefaultBitcoinPlatformBuilder {
