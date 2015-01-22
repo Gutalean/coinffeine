@@ -24,9 +24,12 @@ object DefaultBitcoinPlatform {
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 
-    override def bitcoinPlatformBuilder: BitcoinPlatform.Builder =
+    override def bitcoinPlatformBuilder: BitcoinPlatform.Builder = {
+      val settings = configProvider.bitcoinSettings()
       new DefaultBitcoinPlatformBuilder()
         .setNetwork(network)
-        .setWalletFile(configProvider.bitcoinSettings().walletFile)
+        .setWalletFile(settings.walletFile)
+        .setBlockchainFile(settings.blockchainFile)
+    }
   }
 }

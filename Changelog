@@ -1,4 +1,5 @@
 v0.4.0:
+ - Persist block chain headers in disk
  - Allow overriding the data path on the command line
  - [headless] Tell apart bids and asks on list command
  - [headless] Display the minimum output on status command
