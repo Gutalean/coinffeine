@@ -4,6 +4,7 @@ v0.4.0:
  - [headless] Display the minimum output on status command
  - Bug fixing
    * Fix repeated overlay id conflict resolution
+   * DEB packages creates missing directories at /var
 
 v0.3.0:
  - Load logging configuration from an external file
