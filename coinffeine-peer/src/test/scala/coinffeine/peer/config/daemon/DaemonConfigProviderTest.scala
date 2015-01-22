@@ -11,20 +11,18 @@ class DaemonConfigProviderTest extends UnitTest {
 
   "A daemon config provider" should "load the configuration file if it exists" in
     withConfigFile("key = value") { configFile =>
-      val instance = new DaemonConfigProvider(configFile)
+      val instance = new DaemonConfigProvider(configFile, configFile.getParentFile)
       instance.userConfig.getString("key") shouldBe "value"
     }
 
-  it should "load an empty user configuration otherwise" in
-    withConfigFile("key = value") { configFile =>
-      configFile.delete()
-      val instance = new DaemonConfigProvider(configFile)
-      instance.userConfig.entrySet() shouldBe 'empty
-    }
+  it should "load an empty user configuration otherwise" in {
+    val instance = new DaemonConfigProvider(new File("/does/not/exists"), new File("/neither"))
+    instance.userConfig.entrySet() shouldBe 'empty
+  }
 
   it should "not support updating the user configuration" in
-    withConfigFile("key = value") { configFile =>
-      val instance = new DaemonConfigProvider(configFile)
+    withConfigFile("key = other_value") { configFile =>
+      val instance = new DaemonConfigProvider(configFile, configFile.getParentFile)
       an [UnsupportedOperationException] shouldBe thrownBy {
         instance.saveUserConfig(ConfigFactory.empty())
       }
@@ -33,7 +31,7 @@ class DaemonConfigProviderTest extends UnitTest {
   def withConfigFile(content: String)(block: File => Unit): Unit = {
     val file = File.createTempFile("config", "properties")
     try {
-      FileUtils.write(file, "key = value")
+      FileUtils.write(file, content)
       block(file)
     } finally {
       file.delete()

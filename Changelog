@@ -1,7 +1,9 @@
 v0.4.0:
- - Fix repeated overlay id conflict resolution
+ - Allow overriding the data path on the command line
  - [headless] Tell apart bids and asks on list command
  - [headless] Display the minimum output on status command
+ - Bug fixing
+   * Fix repeated overlay id conflict resolution
 
 v0.3.0:
  - Load logging configuration from an external file

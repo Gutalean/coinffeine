@@ -1,5 +1,6 @@
 package coinffeine.headless
 
+import java.io.File
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NonFatal
@@ -9,29 +10,32 @@ import ch.qos.logback.core.status.NopStatusListener
 import org.slf4j.LoggerFactory
 
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
-import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.pid.PidFile
 
-object Main extends ProductionCoinffeineComponent {
+object Main {
 
   private val timeout = 20.seconds
 
   def main(args: Array[String]): Unit = {
+    val coinffeine = new ProductionCoinffeineComponent {
+      override def commandLineArgs = args.toList
+    }
     configureQuietLoggingInitialization()
-    acquirePidFile()
-    if (configProvider.okPaySettings().userAccount.isEmpty) {
+    acquirePidFile(coinffeine.configProvider.dataPath)
+    if (!coinffeine.configProvider.generalSettings().licenseAccepted) {
       println("You should run the wizard or configure manually the application")
       System.exit(-1)
     }
     try {
-      app.startAndWait(timeout)
-      new CoinffeineInterpreter(app).run()
+      coinffeine.app.startAndWait(timeout)
+      val historyFile = new File(coinffeine.configProvider.dataPath, "history")
+      new CoinffeineInterpreter(coinffeine.app, historyFile).run()
       System.exit(-1)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()
     } finally {
-      app.stopAndWait(timeout)
+      coinffeine.app.stopAndWait(timeout)
     }
     System.exit(-1)
   }
@@ -41,8 +45,8 @@ object Main extends ProductionCoinffeineComponent {
     context.getStatusManager.add(new NopStatusListener)
   }
 
-  private def acquirePidFile(): Unit = {
-    val pidFile = new PidFile(LocalAppDataDir().toFile)
+  private def acquirePidFile(dataPath: File): Unit = {
+    val pidFile = new PidFile(dataPath)
     pidFile.acquire() match {
       case PidFile.Acquired => Success {
         Runtime.getRuntime.addShutdownHook(new Thread() {

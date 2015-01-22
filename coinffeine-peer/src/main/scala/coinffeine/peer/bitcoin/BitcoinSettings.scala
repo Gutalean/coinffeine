@@ -11,15 +11,19 @@ case class BitcoinSettings(
 )
 
 object BitcoinSettings {
-  sealed trait Network
+  sealed trait Network {
+    def name: String
+    override def toString = name
+  }
+
   case object PublicTestnet extends Network {
-    override def toString = "public-testnet"
+    override def name = "public-testnet"
   }
   case object IntegrationTestnet extends Network {
-    override def toString = "integration-testnet"
+    override def name = "integration-testnet"
   }
   case object MainNet extends Network {
-    override def toString = "mainnet"
+    override def name = "mainnet"
   }
 
   def parseNetwork(name: String): Network =

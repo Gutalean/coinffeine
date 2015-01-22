@@ -5,7 +5,7 @@ import java.io.File
 import org.apache.commons.io.FileUtils
 import org.scalatest.{Inside, Outcome}
 
-import coinffeine.common.test.FixtureUnitTest
+import coinffeine.common.test.{FixtureUnitTest, TempDir}
 
 class PidFileTest extends FixtureUnitTest with Inside {
 
@@ -57,12 +57,7 @@ class PidFileTest extends FixtureUnitTest with Inside {
   }
 
   class FixtureParam {
-    private val basePath = {
-      val f = File.createTempFile("test", "coinffeine")
-      f.delete()
-      f.mkdir()
-      f
-    }
+    private val basePath = TempDir.create("coinffeine")
     val file = new File(basePath, "coinffeine.pid")
     val utils = new PidUtilsStub
     val pidFile = new PidFile(file, utils)

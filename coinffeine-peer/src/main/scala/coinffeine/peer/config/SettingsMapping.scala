@@ -18,7 +18,7 @@ import coinffeine.protocol.MessageGatewaySettings
 trait SettingsMapping[A] {
 
   /** Read settings from given config. */
-  def fromConfig(config: Config): A
+  def fromConfig(configPath: File, config: Config): A
 
   /** Write settings to given config. */
   def toConfig(settings: A, config: Config): Config
@@ -28,15 +28,16 @@ object SettingsMapping {
 
   val EmptyConfig = ConfigFactory.empty()
 
-  def fromConfig[A](config: Config)
-                   (implicit mapping: SettingsMapping[A]): A = mapping.fromConfig(config)
+  def fromConfig[A](configPath: File, config: Config)(implicit mapping: SettingsMapping[A]): A =
+    mapping.fromConfig(configPath, config)
 
   def toConfig[A](settings: A, config: Config = EmptyConfig)
-                 (implicit mapping: SettingsMapping[A]): Config = mapping.toConfig(settings, config)
+                 (implicit mapping: SettingsMapping[A]): Config =
+    mapping.toConfig(settings, config)
 
   implicit val general = new SettingsMapping[GeneralSettings] {
 
-    override def fromConfig(config: Config) =
+    override def fromConfig(configPath: File, config: Config) =
       GeneralSettings(getBoolean(config, "coinffeine.licenseAccepted"))
 
     override def toConfig(settings: GeneralSettings, config: Config) =
@@ -45,17 +46,19 @@ object SettingsMapping {
 
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
-    override def fromConfig(config: Config) = BitcoinSettings(
-      connectionRetryInterval = getSeconds(config, "coinffeine.bitcoin.connectionRetryInterval"),
-      walletFile = new File(config.getString("coinffeine.bitcoin.walletFile")),
-      rebroadcastTimeout = getSeconds(config, "coinffeine.bitcoin.rebroadcastTimeout"),
-      network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
-    )
+    override def fromConfig(configPath: File, config: Config) = {
+      val network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
+      BitcoinSettings(
+        connectionRetryInterval = getSeconds(config, "coinffeine.bitcoin.connectionRetryInterval"),
+        walletFile = new File(configPath, s"${network.name}.wallet"),
+        rebroadcastTimeout = getSeconds(config, "coinffeine.bitcoin.rebroadcastTimeout"),
+        network = network
+      )
+    }
 
     override def toConfig(settings: BitcoinSettings, config: Config) = config
       .withValue("coinffeine.bitcoin.connectionRetryInterval",
         configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
-      .withValue("coinffeine.bitcoin.walletFile", configValue(settings.walletFile.toString))
       .withValue("coinffeine.bitcoin.rebroadcastTimeout",
         configValue(s"${settings.rebroadcastTimeout.toSeconds}s"))
       .withValue("coinffeine.bitcoin.network", configValue(settings.network.toString))
@@ -63,7 +66,7 @@ object SettingsMapping {
 
   implicit object MessageGateway extends SettingsMapping[MessageGatewaySettings] {
 
-    override def fromConfig(config: Config) = MessageGatewaySettings(
+    override def fromConfig(configPath: File, config: Config) = MessageGatewaySettings(
       peerId = PeerId(config.getString("coinffeine.peer.id")),
       connectionRetryInterval = getSeconds(config, "coinffeine.peer.connectionRetryInterval")
     )
@@ -89,7 +92,7 @@ object SettingsMapping {
 
   implicit object Relay extends SettingsMapping[RelaySettings] {
 
-    override def fromConfig(config: Config) = RelaySettings(
+    override def fromConfig(configPath: File, config: Config) = RelaySettings(
       serverAddress = config.getString("coinffeine.overlay.relay.address"),
       serverPort = config.getInt("coinffeine.overlay.relay.port"),
       maxFrameBytes = Try(config.getInt("coinffeine.overlay.relay.maxFrameBytes"))
@@ -121,7 +124,7 @@ object SettingsMapping {
 
   implicit val okPay = new SettingsMapping[OkPaySettings] {
 
-    override def fromConfig(config: Config) = OkPaySettings(
+    override def fromConfig(configPath: File, config: Config) = OkPaySettings(
       userAccount = getOptionalString(config, "coinffeine.okpay.id"),
       seedToken = getOptionalString(config, "coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),

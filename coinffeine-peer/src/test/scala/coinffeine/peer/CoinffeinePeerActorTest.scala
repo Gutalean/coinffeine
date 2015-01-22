@@ -2,7 +2,6 @@ package coinffeine.peer
 
 import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 import org.bitcoinj.params.TestNet3Params
 
 import coinffeine.common.akka.ServiceActor
@@ -10,11 +9,9 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.network.PeerId
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.config.InMemoryConfigProvider
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
@@ -75,27 +72,14 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
-    val peerId = PeerId.random()
-    val localPort = 8080
-
     val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
-    val configProvider = new InMemoryConfigProvider(ConfigFactory.parseString(
-      s"""
-         |coinffeine {
-         |  peer {
-         |    id = ${peerId.value}
-         |    port = $localPort
-         |    connectionRetryInterval = 3s
-         |  }
-         |}
-       """.stripMargin))
-    val peer = system.actorOf(Props(new CoinffeinePeerActor(configProvider,
-      PropsCatalogue(
-        gateway = system => gateway.props(system),
-        marketInfo = market => marketInfo.props(market),
-        orderSupervisor = collaborators => orders.props(collaborators),
-        paymentProcessor = paymentProcessor.props(),
-        bitcoinPeer = bitcoinPeer.props()))))
+    val peer = system.actorOf(Props(new CoinffeinePeerActor(PropsCatalogue(
+      gateway = system => gateway.props(system),
+      marketInfo = market => marketInfo.props(market),
+      orderSupervisor = collaborators => orders.props(collaborators),
+      paymentProcessor = paymentProcessor.props(),
+      bitcoinPeer = bitcoinPeer.props())
+    )))
 
     def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
       peer ! message

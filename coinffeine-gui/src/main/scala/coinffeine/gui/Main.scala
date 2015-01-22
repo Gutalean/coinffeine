@@ -13,6 +13,8 @@ import coinffeine.peer.api.impl.ProductionCoinffeineComponent
 
 object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher with LazyLogging {
 
+  override def commandLineArgs = parameters.raw.toList
+
   private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
 
   LogConfigurator.configure()

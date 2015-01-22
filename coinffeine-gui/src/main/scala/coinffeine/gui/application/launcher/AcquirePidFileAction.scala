@@ -1,12 +1,12 @@
 package coinffeine.gui.application.launcher
 
+import java.io.File
 import scala.util.{Failure, Success, Try}
 
-import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.pid.PidFile
 
-class AcquirePidFileAction {
-  private val pidFile = new PidFile(LocalAppDataDir().toFile)
+class AcquirePidFileAction(dataDir: File) {
+  private val pidFile = new PidFile(dataDir)
 
   def apply(): Try[Unit] = pidFile.acquire() match {
     case PidFile.Acquired => Success {

@@ -1,15 +1,16 @@
 package coinffeine.headless
 
+import java.io.File
+
 import coinffeine.headless.commands._
 import coinffeine.headless.prompt.ConnectionStatusPrompt
 import coinffeine.headless.shell.{Command, Shell}
 import coinffeine.model.market.{Ask, Bid}
 import coinffeine.peer.api.CoinffeineApp
-import coinffeine.peer.config.user.LocalAppDataDir
 
-class CoinffeineInterpreter(app: CoinffeineApp)
+class CoinffeineInterpreter(app: CoinffeineApp, historyFile: File)
   extends Shell(new ConnectionStatusPrompt(app), CoinffeineInterpreter.commands(app)) {
-  usePersistentHistory(LocalAppDataDir.getFile(CoinffeineInterpreter.HistoryFilename).toFile)
+  usePersistentHistory(historyFile)
 
   Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
     override def run(): Unit = {
@@ -19,8 +20,6 @@ class CoinffeineInterpreter(app: CoinffeineApp)
 }
 
 object CoinffeineInterpreter {
-  private val HistoryFilename = "history"
-
   private def commands(app: CoinffeineApp): Seq[Command] = {
     val actions = Seq(
       new StatusCommand(app),

@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.peer.config.ConfigProvider
 
-private[daemon] class DaemonConfigProvider(configFile: File)
+private[daemon] class DaemonConfigProvider(configFile: File, override val dataPath: File)
   extends ConfigProvider with LazyLogging {
 
   /** Retrieve the user configuration. */

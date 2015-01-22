@@ -31,6 +31,16 @@ or the `fakeroot` package in Ubuntu/Debian.
     sbt gui/packageJavafx
 
 
+Running several instances on one machine
+----------------------------------------
+
+The application locks the data directory (coinffeine at your default app
+config folder, `~/.coinffeine` for Linux) to prevent corrupting the
+transaction information so you cannot run two instances unless you use two
+different data folders.  To do so use `--data-path <path>` as command line
+arguments.
+
+
 Getting coverage metrics
 ------------------------
 

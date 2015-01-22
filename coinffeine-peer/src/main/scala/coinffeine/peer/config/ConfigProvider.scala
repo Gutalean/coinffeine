@@ -1,19 +1,23 @@
 package coinffeine.peer.config
 
+import java.io.File
 import scala.collection.JavaConverters._
 
 import com.typesafe.config.{Config, ConfigFactory}
 
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
-import coinffeine.peer.config.user.LocalAppDataDir
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
+/** Provide application settings based on a Typesafe Config source */
 trait ConfigProvider extends SettingsProvider {
 
-  /** Retrieve the user configuration. */
+  /** Retrieve the raw user configuration. */
   def userConfig: Config
+
+  /** Get the application configuration path. */
+  def dataPath: File
 
   /** Save the given user config using this provider.
     *
@@ -27,33 +31,35 @@ trait ConfigProvider extends SettingsProvider {
   def referenceConfig: Config = defaultPathConfiguration.withFallback(ConfigFactory.load())
 
   private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
-    "coinffeine.bitcoin.walletFile" -> configPath("user.wallet"),
     "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
     "akka.persistence.snapshot-store.local.dir" -> configPath("snapshots")
   ).asJava)
 
-  private def configPath(filename: String) =
-    LocalAppDataDir.getFile(filename, ensureCreated = false).toAbsolutePath.toString
+  private def configPath(filename: String) = new File(dataPath, filename).toString
 
   /** Retrieve the whole configuration, including reference and user config. */
-  def config: Config = userConfig.withFallback(referenceConfig)
+  def enrichedConfig: Config = userConfig.withFallback(referenceConfig)
 
-  override def generalSettings() = SettingsMapping.fromConfig[GeneralSettings](config)
+  override def generalSettings() =
+    SettingsMapping.fromConfig[GeneralSettings](dataPath, enrichedConfig)
 
-  override def bitcoinSettings() = SettingsMapping.fromConfig[BitcoinSettings](config)
+  override def bitcoinSettings() =
+    SettingsMapping.fromConfig[BitcoinSettings](dataPath, enrichedConfig)
 
   override def messageGatewaySettings() = {
     ensurePeerIdIsDefined()
-    SettingsMapping.fromConfig[MessageGatewaySettings](config)
+    SettingsMapping.fromConfig[MessageGatewaySettings](dataPath, enrichedConfig)
   }
 
-  override def relaySettings() = SettingsMapping.fromConfig[RelaySettings](config)
+  override def relaySettings() =
+    SettingsMapping.fromConfig[RelaySettings](dataPath, enrichedConfig)
 
   private def ensurePeerIdIsDefined(): Unit = {
-    SettingsMapping.MessageGateway.ensurePeerId(config).foreach(saveUserConfig(_))
+    SettingsMapping.MessageGateway.ensurePeerId(enrichedConfig).foreach(saveUserConfig(_))
   }
 
-  override def okPaySettings() = SettingsMapping.fromConfig[OkPaySettings](config)
+  override def okPaySettings() =
+    SettingsMapping.fromConfig[OkPaySettings](dataPath, enrichedConfig)
 
   /** Save the given settings as part of user config using this provider.
     *

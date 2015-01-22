@@ -1,27 +1,28 @@
-package coinffeine.peer.config
+package coinffeine.peer.config.user
 
+import java.io.File
 import scala.collection.JavaConversions._
 
-import com.typesafe.config.{Config, ConfigValueFactory, ConfigFactory}
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfterAll
 
-import coinffeine.common.test.UnitTest
-import coinffeine.peer.config.user.UserFileConfigProvider
+import coinffeine.common.test.{TempDir, UnitTest}
+import coinffeine.peer.config.SettingsMapping
 
 class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
 
-  val provider = UserFileConfigProvider("testing-file")
-  val configFile = provider.userConfigFile().toFile
-  val sampleRefConfigItem = provider.referenceConfig.root().entrySet().head
-  val otherSampleRefConfigItem = provider.referenceConfig.root().entrySet().last
+  private val dataPath = TempDir.create("dataDir")
+  private val provider = new UserFileConfigProvider(dataPath, "testing-file")
+  private val configFile = new File(dataPath, "testing-file")
+  private val sampleRefConfigItem = provider.referenceConfig.root().entrySet().head
+  private val otherSampleRefConfigItem = provider.referenceConfig.root().entrySet().last
 
   override def afterAll(): Unit = {
     configFile.delete()
   }
 
   "User file config provider" should "retrieve fresh user config file" in {
-    provider.userConfigFile().toFile should be ('file)
-    provider.userConfig should be (ConfigFactory.empty())
+    provider.userConfig shouldBe ConfigFactory.empty()
   }
 
   it should "save some user config" in {
@@ -31,7 +32,7 @@ class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
   }
 
   it should "refresh config after save user settings" in {
-    provider.config.getInt("my.prop") shouldBe 7
+    provider.enrichedConfig.getInt("my.prop") shouldBe 7
   }
 
   it should "drop user config item while saving when it matches the reference one" in {
@@ -70,7 +71,7 @@ class UserFileConfigProviderTest extends UnitTest with BeforeAndAfterAll {
 
   implicit lazy val foobarSettingsMapping = new SettingsMapping[FoobarSettings] {
 
-    override def fromConfig(config: Config) = ???
+    override def fromConfig(configPath: File, config: Config) = ???
 
     override def toConfig(settings: FoobarSettings, config: Config) = config
       .withValue("foobar.potato", ConfigValueFactory.fromAnyRef(settings.potato))
