@@ -81,6 +81,20 @@ class ServiceActorTest extends AkkaSpec {
     expectMsg("Goodbye Merkel")
   }
 
+  it should "call custom termination when requested in become started function" in {
+    val probe = TestProbe()
+    val service = sampleService(probe)
+    service ! ServiceActor.Start("foo")
+    probe.expectMsg("start")
+    probe.send(service, "alternative-started")
+    expectMsg(ServiceActor.Started)
+
+    service ! ServiceActor.Stop
+    probe.expectMsg("alternative-stop")
+    probe.send(service, "stopped")
+    expectMsg(ServiceActor.Stopped)
+  }
+
   it should "call custom termination when requested in become function" in {
     val probe = TestProbe()
     val service = startedSampleService("Satoshi", probe)
@@ -116,6 +130,7 @@ class ServiceActorTest extends AkkaSpec {
       probe ! "start"
       handle {
         case "started" => becomeStarted(sayingHello(args))
+        case "alternative-started" => becomeStarted(sayingHello(args), alternativeStopping)
         case "start-failed" => cancelStart(new RuntimeException("Oh no! More lemmings!"))
       }
     }

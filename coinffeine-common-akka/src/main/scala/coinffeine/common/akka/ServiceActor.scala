@@ -136,11 +136,25 @@ trait ServiceActor[Args] { this: Actor =>
     * indicate that the service has been successfully started. The [[Receive]] object passed
     * as argument indicates the new state the service must become. Invoking this function when
     * the service is not starting would have a undetermined behaviour.
+    *
+    * @param r The [[Receive]] partial function to process incoming messages
     */
-  protected def becomeStarted(r: Receive): Receive = {
+  protected def becomeStarted(r: Receive): Receive = becomeStarted(r, stopping())
+
+  /** Become the service in a started state.
+    *
+    * This function is meant to be called from the [[starting()]] message handler in order to
+    * indicate that the service has been successfully started. The [[Receive]] object passed
+    * as argument indicates the new state the service must become. Invoking this function when
+    * the service is not starting would have a undetermined behaviour.
+    *
+    * @param r            The [[Receive]] partial function to process incoming messages
+    * @param termination  The termination function to be invoked if service is requested to stop
+    */
+  protected def becomeStarted(r: Receive, termination: => Receive): Receive = {
     requester ! Started
     requester = ActorRef.noSender
-    become(r)
+    become(r, termination)
     r
   }
 
