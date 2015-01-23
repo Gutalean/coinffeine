@@ -29,7 +29,7 @@ private class OverlayMessageGateway(
   import context.dispatcher
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props)
-  private var executionOpt: Option[ServiceExecution] = None
+  private var stoppingBehavior: () => Receive = super.stopping
 
   override def preStart(): Unit = {
     properties.activePeers.set(0)
@@ -37,12 +37,11 @@ private class OverlayMessageGateway(
   }
 
   override protected def starting(args: Unit): Receive = {
-    val newExecution = new ServiceExecution()
-    executionOpt = Some(newExecution)
-    newExecution.start()
+    new ServiceExecution().start()
   }
 
   override protected def stopped = delegateSubscriptionManagement
+  override protected def stopping(): Receive = stoppingBehavior()
 
   private class ServiceExecution {
     val overlayId = settings.peerId.toOverlayId
@@ -50,18 +49,27 @@ private class OverlayMessageGateway(
 
     def start(): Receive = {
       client ! OverlayNetwork.Join(overlayId)
+      stoppingBehavior = stopWhenJoining _
       becomeStarted(joining)
-    }
-
-    def stop(): Receive = {
-      client ! OverlayNetwork.Leave
-      handle {
-        case OverlayNetwork.Leaved(_, _) => becomeStopped()
-      }
     }
 
     private def joining: Receive =
       countingActivePeers orElse delegateSubscriptionManagement orElse receivingJoinResult
+
+    private def stopWhenJoining: Receive = {
+      log.info("Waiting for the join result before stopping")
+      handle {
+        case OverlayNetwork.JoinFailed(_, cause) =>
+          log.info(s"Cannot join as ${settings.peerId}: $cause. Not retrying.")
+          becomeStopped()
+
+        case _: OverlayNetwork.Joined =>
+          log.info("Leaving the network before stopping")
+          client ! OverlayNetwork.Leave
+
+        case _: OverlayNetwork.Leaved => becomeStopped()
+      }
+    }
 
     private def joined: Receive = countingActivePeers orElse delegateSubscriptionManagement orElse {
       case leave: OverlayNetwork.Leaved =>
@@ -80,6 +88,14 @@ private class OverlayMessageGateway(
         log.error("Cannot send message to {}: cause", request.target, cause)
     }
 
+    private def stopWhenJoined: Receive = {
+      log.info("Leaving the network")
+      client ! OverlayNetwork.Leave
+      handle {
+        case OverlayNetwork.Leaved(_, _) => becomeStopped()
+      }
+    }
+
     private def waitingToRejoin = delegateSubscriptionManagement orElse rejoining
 
     private def receivingJoinResult: Receive = {
@@ -89,12 +105,14 @@ private class OverlayMessageGateway(
       case OverlayNetwork.Joined(_, NetworkStatus(networkSize)) =>
         log.info("Joined as {} to a network of size {}", settings.peerId, networkSize)
         properties.activePeers.set(networkSize - 1)
+        stoppingBehavior = stopWhenJoined _
         become(joined)
     }
 
     private def rejoining: Receive = {
       case OverlayMessageGateway.Rejoin =>
         client ! OverlayNetwork.Join(overlayId)
+        stoppingBehavior = stopWhenJoining _
         become(joining)
     }
 
@@ -102,14 +120,8 @@ private class OverlayMessageGateway(
       val delay = settings.connectionRetryInterval
       log.error("{}. Next join attempt in {}", cause, delay)
       context.system.scheduler.scheduleOnce(delay, self, OverlayMessageGateway.Rejoin)
-      context.become(waitingToRejoin)
-    }
-  }
-
-  override protected def stopping(): Receive = {
-    executionOpt.fold(becomeStopped()) { execution =>
-      executionOpt = None
-      execution.stop()
+      stoppingBehavior = OverlayMessageGateway.super.stopping
+      become(waitingToRejoin)
     }
   }
 
