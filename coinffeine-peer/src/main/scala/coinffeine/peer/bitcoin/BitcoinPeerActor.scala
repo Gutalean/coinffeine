@@ -49,7 +49,10 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
       log.info("Peer group stopped")
     }
     platform.blockchain.getBlockStore.close()
-    FullPrunedBlockChainUtils.shutdown(platform.blockchain.asInstanceOf[FullPrunedBlockChain])
+    platform.blockchain match {
+      case blockchain: FullPrunedBlockChain => FullPrunedBlockChainUtils.shutdown(blockchain)
+      case _ => // Do nothing
+    }
     becomeStopped()
   }
 
