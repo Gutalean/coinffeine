@@ -4,6 +4,7 @@ v0.4.0:
  - [headless] Tell apart bids and asks on list command
  - [headless] Display the minimum output on status command
  - Bug fixing
+   * Faster application stopping when retrying network connection
    * Fix repeated overlay id conflict resolution
    * DEB packages creates missing directories at /var
 

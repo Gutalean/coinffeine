@@ -27,6 +27,7 @@ class OverlayMessageGatewayTest
   val overlayId = OverlayId(1)
   val sampleOrderMatch = OrderMatch(OrderId.random(), ExchangeId.random(),
     Both.fill(1.BTC), Both.fill(300.EUR), lockTime = 42, counterpart = PeerId.random())
+  val idleTime = 100.millis.dilated
 
   "An overlay message gateway" should "try to join on start" in new FreshGateway {
     expectSuccessfulStart()
@@ -73,6 +74,47 @@ class OverlayMessageGatewayTest
     EventFilter[Exception](start = "Dropping invalid incoming message", occurrences = 1) intercept {
       overlay.receiveInvalidMessageFrom(BrokerId)
     }
+  }
+
+  it should "leave before stopping" in new JoinedGateway {
+    gateway ! ServiceActor.Stop
+    overlay.expectLeave()
+    overlay.acceptLeave()
+    expectMsg(ServiceActor.Stopped)
+  }
+
+  it should "wait for the join attempt and then leave before stopping" in new FreshGateway {
+    expectSuccessfulStart()
+    overlay.expectJoinAs(overlayId)
+
+    gateway ! ServiceActor.Stop
+    expectNoMsg(idleTime)
+
+    overlay.acceptJoin(5)
+    overlay.expectLeave()
+    overlay.acceptLeave()
+    expectMsg(ServiceActor.Stopped)
+  }
+
+  it should "wait for a failed join attempt and then stop right away" in new FreshGateway {
+    expectSuccessfulStart()
+    overlay.expectJoinAs(overlayId)
+
+    gateway ! ServiceActor.Stop
+    expectNoMsg(idleTime)
+
+    overlay.rejectJoin()
+    expectMsg(ServiceActor.Stopped)
+  }
+
+  it should "stop immediately when waiting to rejoin" in new FreshGateway {
+    expectSuccessfulStart()
+    overlay.expectJoinAs(overlayId)
+    overlay.rejectJoin()
+    expectNoMsg(idleTime)
+
+    gateway ! ServiceActor.Stop
+    expectMsg(ServiceActor.Stopped)
   }
 
   trait FreshGateway {

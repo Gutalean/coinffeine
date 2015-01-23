@@ -40,6 +40,16 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
     mockClient.probe.send(listener, OverlayNetwork.JoinFailed(overlayId, cause))
   }
 
+  def expectLeave(): Unit = {
+    listener = mockClient.probe.expectMsgPF() {
+      case MockActor.MockReceived(_, sender, OverlayNetwork.Leave) => sender
+    }
+  }
+
+  def acceptLeave(): Unit = {
+    mockClient.probe.send(listener, OverlayNetwork.Leaved(overlayId, OverlayNetwork.RequestedLeave))
+  }
+
   def givenRandomDisconnection(): Unit = {
     val cause = OverlayNetwork.UnexpectedLeave(new IOException("Injected error"))
     mockClient.probe.send(listener, OverlayNetwork.Leaved(overlayId, cause))
