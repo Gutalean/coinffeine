@@ -50,11 +50,12 @@ object AskPattern {
       withReplyOrError(causeExtractor)(ImmediateResponseTimeout, resultType, errorType, executor)
 
     /** Wrap errors to have a easier to diagnose message */
-    private def wrapErrors[R](f: Future[R])(implicit executor: ExecutionContext): Future[R] =
+    private def wrapErrors[R](f: Future[R])
+                             (implicit timeout: Timeout, executor: ExecutionContext): Future[R] =
       f.recoverWith {
         case _: AskTimeoutException =>
           Future.failed(new RuntimeException(
-            errorMessage + ": timeout waiting for response") with NoStackTrace)
+            errorMessage + s": timeout of ${timeout.duration} waiting for response") with NoStackTrace)
         case NonFatal(cause) =>
           Future.failed(new RuntimeException(errorMessage, cause))
       }
