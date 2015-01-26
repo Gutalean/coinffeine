@@ -1,0 +1,35 @@
+digraph {
+
+	fontname="Helvetica";
+	label="DefaultHandshakeActor state diagram\n\n";
+	labelloc=t;
+	node [fontname="Helvetica", shape="box", style="rounded"];
+	edge [fontname="Helvetica", fontsize=8];
+
+	Created [color="#777777", fontcolor="#777777"];
+	Failed [color="#aa0000", fontcolor="#aa0000"];
+
+	node [color="#00aa00", fontcolor="#00aa00"];
+	PeerHandshaking [label="Peer handshaking"];
+	CreatingDeposit [label="Creating deposit"];
+	WaitForRefundSignature [label="Wait for refund signature"];
+	WaitForPublication [label="Wait for publication"];
+	WaitForConfirmations [label="Wait for confirmations"];
+	Success;
+
+	Created -> PeerHandshaking [label=" start", color="#777777", fontcolor="#777777"];
+
+	edge [color="#00aa00", fontcolor="#00aa00"];
+	PeerHandshaking -> CreatingDeposit [label="   receive counterpart handshake"];
+	CreatingDeposit -> WaitForRefundSignature [label="   deposit created"];
+	WaitForRefundSignature -> WaitForPublication [label="   refund signature received"];
+	WaitForPublication -> WaitForConfirmations [label="   commitment notification received"];
+	WaitForConfirmations -> Success [label="   both txs confirmed"];
+
+	edge [color="#aa0000", fontcolor="#aa0000"];
+	PeerHandshaking -> Failed [label="   signature timeout |\n   broker cancellation"];
+	CreatingDeposit -> Failed [label="   deposit creation error |\n   broker cancellation"];
+	WaitForRefundSignature -> Failed [label="   signature timeout |\n   broker cancellation"];
+	WaitForPublication -> Failed [label="   broker cancellation"];
+	WaitForConfirmations -> Failed [label="   tx rejected"];
+}
