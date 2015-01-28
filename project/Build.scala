@@ -70,7 +70,8 @@ object Build extends sbt.Build {
 
   lazy val common = subModule("common").dependsOn(commonTest)
 
-  lazy val commonAkka = subModule("common-akka").dependsOn(commonTest % "compile->compile;test->test")
+  lazy val commonAkka = subModule("common-akka")
+    .dependsOn(common, commonTest % "compile->compile;test->test")
 
   lazy val commonTest = subModule("common-test").settings(PB.protobufSettings: _*)
 

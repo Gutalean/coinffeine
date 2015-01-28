@@ -10,6 +10,6 @@ digraph {
     common -> commonTest;
     headless -> peer, commonTest;
     okpaymock -> model, peer, commonAkka, commonTest;
-    commonAkka -> commonTest;
+    commonAkka -> common, commonTest;
     benchmark -> peer, commonAkka, commonTest;
 }
