@@ -214,9 +214,8 @@ object ServiceActor extends ScalaFutureImplicits {
     * with [[Started]] after a successful start, or [[StartFailure]] if something went wrong.
     *
     * @param args   The arguments passed to the [[ServiceActor.starting()]] function
-    * @tparam Args  The type of the arguments accepted by [[ServiceActor.starting()]] function
     */
-  case class Start[Args](args: Args)
+  case class Start(args: Any)
 
   /** A response message indicating the service actor was successfully started. */
   case object Started
