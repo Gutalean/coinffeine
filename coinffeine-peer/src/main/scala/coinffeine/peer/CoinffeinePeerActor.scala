@@ -73,9 +73,12 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
 
   override protected def stopping(): Receive = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
+    log.info("Stopping Coinffeine peer")
     ServiceActor.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
     handle {
-      case () => becomeStopped()
+      case () =>
+        becomeStopped()
+        log.info("Stopped Coinffeine peer")
       case Status.Failure(cause) => cancelStop(cause)
     }
   }
