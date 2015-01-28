@@ -53,9 +53,10 @@ object AskPattern {
     private def wrapErrors[R](f: Future[R])
                              (implicit timeout: Timeout, executor: ExecutionContext): Future[R] =
       f.recoverWith {
-        case _: AskTimeoutException =>
-          Future.failed(new RuntimeException(
-            errorMessage + s": timeout of ${timeout.duration} waiting for response") with NoStackTrace)
+        case cause: AskTimeoutException =>
+          val detailedMessage = errorMessage +
+            s": timeout of ${timeout.duration} waiting for response (${cause.getMessage})"
+          Future.failed(new RuntimeException(detailedMessage) with NoStackTrace)
         case NonFatal(cause) =>
           Future.failed(new RuntimeException(errorMessage, cause))
       }
