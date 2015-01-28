@@ -39,6 +39,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
   override def preStart(): Unit = {
     super.preStart()
+    log.info(s"Exchange {}: seller micropayment channel started", exchange.id)
     subscribeToMessages()
     resubmitTimer.start()
   }

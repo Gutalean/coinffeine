@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core._
-import org.bitcoinj.store.{SPVBlockStore, MemoryFullPrunedBlockStore}
+import org.bitcoinj.store.{FullPrunedBlockStore, H2FullPrunedBlockStore, MemoryFullPrunedBlockStore}
 
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
@@ -38,19 +38,22 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     require(network != null, "Network should be defined")
     val shouldReplayWallet = exists(walletFile) && !exists(blockchainFile)
     val blockchain = buildBlockchain()
+    blockchain.setRunScripts(false)
     val peerGroup = buildPeerGroup(blockchain)
     val wallet = buildWallet(blockchain, peerGroup, shouldReplayWallet)
     new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
   }
 
-  private def buildBlockchain() =
-    blockchainFile.fold[AbstractBlockChain](buildInMemoryBlockchain())(buildFileBackedBlockchain)
+  private def buildBlockchain() = {
+    val store = blockchainFile.fold[FullPrunedBlockStore](
+      buildInMemoryBlockStore())(buildFileBackedBlockStore)
+    new FullPrunedBlockChain(network, store)
+  }
 
-  private def buildInMemoryBlockchain() =
-    new FullPrunedBlockChain(network, new MemoryFullPrunedBlockStore(network, FullStoredDepth))
+  private def buildInMemoryBlockStore() = new MemoryFullPrunedBlockStore(network, FullStoredDepth)
 
-  private def buildFileBackedBlockchain(file: File) =
-    new BlockChain(network, new SPVBlockStore(network, file))
+  private def buildFileBackedBlockStore(file: File) =
+    new H2FullPrunedBlockStore(network, s"file:$file", FullStoredDepth)
 
   private def buildPeerGroup(blockchain: AbstractBlockChain) = {
     val pg = new PeerGroup(network, blockchain)

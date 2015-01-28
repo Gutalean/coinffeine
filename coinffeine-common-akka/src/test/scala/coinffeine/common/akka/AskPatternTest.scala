@@ -25,7 +25,7 @@ class AskPatternTest extends AkkaSpec {
       request = Request,
       errorMessage = "cannot perform request"
     ).withReply[Response])
-    ex.getMessage shouldBe "cannot perform request: timeout waiting for response"
+    ex.getMessage should startWith regex "cannot perform request: timeout of .* waiting for response"
   }
 
   it should "return a response of the expected type" in new Fixture {

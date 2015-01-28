@@ -1,10 +1,13 @@
 package coinffeine.common.akka
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Failure
 import scala.util.control.NonFatal
 
 import akka.actor.{Actor, ActorRef}
 import akka.util.Timeout
+
+import coinffeine.common.ScalaFutureImplicits
 
 /** An actor that can behave like a service.
   *
@@ -203,7 +206,7 @@ trait ServiceActor[Args] { this: Actor =>
   protected def handle(r: Receive): Receive = r
 }
 
-object ServiceActor {
+object ServiceActor extends ScalaFutureImplicits {
 
   /** A message requesting the service actor to start.
     *
@@ -267,6 +270,9 @@ object ServiceActor {
       .withReplyOrError[Stopped.type, StopFailure](_.cause)
       .map(ignoreResult)
 
+  case class ParallelServiceStopFailure(stopFailures: Map[ActorRef, Throwable])
+    extends Exception(s"Cannot stop some services: $stopFailures", stopFailures.values.head)
+
   /** Ask a number of services to stop in parallel.
     *
     * @param services  The service actors to stop
@@ -274,8 +280,19 @@ object ServiceActor {
     * @return          A future representing the services stop
     */
   def askStopAll(services: ActorRef*)
-                (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] =
-    Future.sequence(services.map(askStop)).map(ignoreResult)
+                (implicit timeout: Timeout, executor: ExecutionContext): Future[Unit] = {
+    val stopActions = services.map(askStop).map(_.materialize)
+    for {
+      results <- Future.sequence(stopActions)
+    } yield {
+      if (results.exists(_.isFailure)) {
+        val errors = services.zip(results).collect {
+          case (service, Failure(error)) => service -> error
+        }
+        throw new ParallelServiceStopFailure(errors.toMap)
+      }
+    }
+  }
 
   private def ignoreResult[T](ignored: T) = {}
 }

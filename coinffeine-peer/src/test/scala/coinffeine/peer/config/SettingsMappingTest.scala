@@ -45,7 +45,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
       connectionRetryInterval = 30.seconds,
       walletFile = new File(basePath, "mainnet.wallet"),
-      blockchainFile = new File(basePath, "mainnet.spvchain"),
+      blockchainFile = new File(basePath, "mainnet"),
       rebroadcastTimeout = 1.minute,
       network = BitcoinSettings.MainNet
     )
@@ -55,7 +55,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val settings = BitcoinSettings(
       connectionRetryInterval = 50.seconds,
       walletFile = new File("/tmp/user.wallet"),
-      blockchainFile = new File("/tmp/foo.spvchain"),
+      blockchainFile = new File("/tmp/foo"),
       rebroadcastTimeout = 60.seconds,
       network = BitcoinSettings.PublicTestnet
     )
