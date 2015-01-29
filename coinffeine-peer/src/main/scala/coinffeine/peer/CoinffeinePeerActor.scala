@@ -7,7 +7,7 @@ import akka.actor.{Address => _, _}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.{AskPattern, Service, ServiceActor}
+import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
@@ -31,7 +31,7 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
   * the peer actor and the message gateway and supervise them.
   */
 class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
-  extends Actor with ActorLogging with ServiceActor[Unit] {
+  extends Actor with ActorLogging with ServiceLifecycle[Unit] {
 
   import CoinffeinePeerActor._
   import context.dispatcher
@@ -43,7 +43,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   private var orderSupervisorRef: ActorRef = _
   private var walletRef: ActorRef = _
 
-  override def starting(arg: Unit) = {
+  override def onStart(arg: Unit) = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
     (for {
@@ -56,14 +56,14 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
         .withReply[BitcoinPeerActor.BlockchainActorRef]
     } yield (walletActorRef, blockchainActorRef)).pipeTo(self)
 
-    handle {
+    BecomeStarting {
       case (BitcoinPeerActor.WalletActorRef(retrievedWalletRef),
             BitcoinPeerActor.BlockchainActorRef(retrievedBlockchainRef)) =>
         walletRef = retrievedWalletRef
         val collaborators = OrderSupervisorCollaborators(
           gatewayRef, paymentProcessorRef, bitcoinPeerRef, retrievedBlockchainRef, walletRef)
         orderSupervisorRef = context.actorOf(props.orderSupervisor(collaborators), "orders")
-        becomeStarted(handleMessages)
+        completeStart(handleMessages)
         log.info("Coinffeine peer actor successfully started!")
       case Status.Failure(cause) =>
         log.error(cause, "Coinffeine peer actor failed to start")
@@ -71,13 +71,13 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
     }
   }
 
-  override protected def stopping(): Receive = {
+  override protected def onStop() = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Stopping Coinffeine peer")
     Service.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
-    handle {
+    BecomeStopping {
       case () =>
-        becomeStopped()
+        completeStop()
         log.info("Stopped Coinffeine peer")
       case Status.Failure(cause) => cancelStop(cause)
     }

@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.Service.State
 import com.google.common.util.concurrent._
 import org.bitcoinj.core._
 
-import coinffeine.common.akka.{AskPattern, ServiceActor}
+import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.bitcoin._
 import coinffeine.model.network.NetworkEndpoint
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
@@ -24,7 +24,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
                        platformBuilder: BitcoinPlatform.Builder,
                        networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
-  extends Actor with ServiceActor[Unit] with ActorLogging {
+  extends Actor with ServiceLifecycle[Unit] with ActorLogging {
 
   import BitcoinPeerActor._
 
@@ -33,14 +33,14 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   private val walletRef = context.actorOf(delegates.walletActor(platform.wallet), "wallet")
   private var retryTimer: Option[Cancellable] = None
 
-  override protected def starting(args: Unit): Receive = {
+  override protected def onStart(args: Unit) = {
     platform.peerGroup.addEventListener(ConnectedPeersListener)
     platform.peerGroup.addListener(PeerGroupLifecycleListener, context.dispatcher)
     startConnecting()
-    becomeStarted(joining orElse commonHandling)
+    BecomeStarted(joining orElse commonHandling)
   }
 
-  override protected def stopping(): Receive = {
+  override protected def onStop() = {
     clearRetryTimer()
     if (platform.peerGroup.isRunning) {
       log.info("Shutting down peer group")
@@ -53,7 +53,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
       case blockchain: FullPrunedBlockChain => FullPrunedBlockChainUtils.shutdown(blockchain)
       case _ => // Do nothing
     }
-    becomeStopped()
+    BecomeStopped
   }
 
   private def joining: Receive = {

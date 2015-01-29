@@ -8,7 +8,7 @@ import scala.util.{Failure, Success}
 import akka.actor._
 import akka.pattern._
 
-import coinffeine.common.akka.{AskPattern, ServiceActor}
+import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.payment.PaymentProcessor._
@@ -22,7 +22,7 @@ private class OkPayProcessorActor(
     registryProps: Props,
     pollingInterval: FiniteDuration,
     properties: MutablePaymentProcessorProperties)
-  extends Actor with ActorLogging with ServiceActor[Unit] {
+  extends Actor with ActorLogging with ServiceLifecycle[Unit] {
 
   import context.dispatcher
   import OkPayProcessorActor._
@@ -31,7 +31,7 @@ private class OkPayProcessorActor(
 
   private var timer: Cancellable = _
 
-  override def starting(args: Unit) = {
+  override def onStart(args: Unit) = {
     pollBalances()
     timer = context.system.scheduler.schedule(
       initialDelay = pollingInterval,
@@ -39,13 +39,13 @@ private class OkPayProcessorActor(
       receiver = self,
       message = PollBalances
     )
-    becomeStarted(started)
+    BecomeStarted(started)
   }
 
-  override def stopping() = {
+  override def onStop() = {
     Option(timer).foreach(_.cancel())
     clientFactory.shutdown()
-    becomeStopped()
+    BecomeStopped
   }
 
   private def started: Receive = {
