@@ -7,6 +7,7 @@ v0.4.0:
    * Faster application stopping when retrying network connection
    * Fix repeated overlay id conflict resolution
    * DEB packages creates missing directories at /var
+   * Fix duplicated bitcoin funds blocking on order match
 
 v0.3.0:
  - Load logging configuration from an external file
