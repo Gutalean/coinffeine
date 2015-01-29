@@ -28,7 +28,7 @@ trait ServiceActor[Args] { this: Actor =>
     case Start(args) =>
       try {
         requester = sender()
-        become(starting(args.asInstanceOf[Args]))
+        become(onStart(args.asInstanceOf[Args]))
       } catch {
         case ex: ClassCastException =>
           sender ! StartFailure(new IllegalArgumentException(s"Invalid start argument $args", ex))
@@ -56,7 +56,7 @@ trait ServiceActor[Args] { this: Actor =>
       * process incoming messages. This [[Receive]] handler is meant to be overridden with an
       * implementation that performs the actions needed in order to start the service, i.e. tell
       * or ask to other actors (perhaps start some other services). Once start process has been
-      * completed, the user code may invoke [[becomeStarted()]], which will fire a [[Started]]
+      * completed, the user code may invoke [[completeStart()]], which will fire a [[Started]]
       * message to the actor that requested the service to start, and then will set the
       * [[Receive]] object passed as argument as the new message handler.
       *
@@ -93,17 +93,17 @@ trait ServiceActor[Args] { this: Actor =>
       *
       * But, in such case, perhaps you don't need a service actor at all ;-)
       */
-  protected def starting(args: Args): Receive
+  protected def onStart(args: Args): Receive
 
   /** Stopping point of the service actor.
     *
-    * Similar to [[starting()]], this function may be used to handle messages while stopping the
+    * Similar to [[onStart()]], this function may be used to handle messages while stopping the
     * service. It's default implementation does nothing but pass immediately to the stopped state,
     * sending the [[Stopped]] message to the stop requester. It may be overridden to perform
     * a stopping process that involves telling or asking to other actors. Once the stop process
-    * is completed, the user code must call to [[becomeStopped()]].
+    * is completed, the user code must call to [[completeStop()]].
     */
-  protected def stopping(): Receive = becomeStopped()
+  protected def onStop(): Receive = completeStop()
 
   /** Set a new behavior for the service.
     *
@@ -113,7 +113,7 @@ trait ServiceActor[Args] { this: Actor =>
     *
     * @param r The [[Receive]] partial function to process incoming messages.
     */
-  protected def become(r: Receive): Unit = { become(r, stopping()) }
+  protected def become(r: Receive): Unit = { become(r, onStop()) }
 
   /** Set a new behavior for the service with a termination function.
     *
@@ -130,18 +130,18 @@ trait ServiceActor[Args] { this: Actor =>
 
   /** Become the service in a started state.
     *
-    * This function is meant to be called from the [[starting()]] message handler in order to
+    * This function is meant to be called from the [[onStart()]] message handler in order to
     * indicate that the service has been successfully started. The [[Receive]] object passed
     * as argument indicates the new state the service must become. Invoking this function when
     * the service is not starting would have a undetermined behaviour.
     *
     * @param r The [[Receive]] partial function to process incoming messages
     */
-  protected def becomeStarted(r: Receive): Receive = becomeStarted(r, stopping())
+  protected def completeStart(r: Receive): Receive = completeStart(r, onStop())
 
   /** Become the service in a started state.
     *
-    * This function is meant to be called from the [[starting()]] message handler in order to
+    * This function is meant to be called from the [[onStart()]] message handler in order to
     * indicate that the service has been successfully started. The [[Receive]] object passed
     * as argument indicates the new state the service must become. Invoking this function when
     * the service is not starting would have a undetermined behaviour.
@@ -149,7 +149,7 @@ trait ServiceActor[Args] { this: Actor =>
     * @param r            The [[Receive]] partial function to process incoming messages
     * @param termination  The termination function to be invoked if service is requested to stop
     */
-  protected def becomeStarted(r: Receive, termination: => Receive): Receive = {
+  protected def completeStart(r: Receive, termination: => Receive): Receive = {
     requester ! Started
     requester = ActorRef.noSender
     become(r, termination)
@@ -158,11 +158,11 @@ trait ServiceActor[Args] { this: Actor =>
 
   /** Become the service in a stopped state.
     *
-    * This function is meant to be called from the [[stopping()]] message handler in order to
+    * This function is meant to be called from the [[onStop()]] message handler in order to
     * indicate that the service has been successfully stopped. Invoking this function when
     * the service is not starting would have a undetermined behaviour.
     */
-  protected def becomeStopped(): Receive = {
+  protected def completeStop(): Receive = {
     requester ! Stopped
     requester = ActorRef.noSender
     become(receive)
@@ -179,7 +179,7 @@ trait ServiceActor[Args] { this: Actor =>
   /** Cancel the service start process.
     *
     * This will send a [[StartFailure]] to the actor that requested the service start. It's meant
-    * to be used to report a start failure from the [[starting()]] state.
+    * to be used to report a start failure from the [[onStart()]] state.
     */
   protected def cancelStart(cause: Throwable): Unit = {
     requester ! StartFailure(cause)
@@ -189,7 +189,7 @@ trait ServiceActor[Args] { this: Actor =>
   /** Cancel the service stop process.
     *
     * This will send a [[StopFailure]] to the actor that requested the service stop. It's meant
-    * to be used to report a stop failure from the [[stopping()]] state.
+    * to be used to report a stop failure from the [[onStop()]] state.
     */
   protected def cancelStop(cause: Throwable): Unit = {
     requester ! StopFailure(cause)

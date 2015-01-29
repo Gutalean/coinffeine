@@ -16,7 +16,7 @@ object Service extends ScalaFutureImplicits {
     * This message can be sent to a service actor in order to request it to start. It will respond
     * with [[Started]] after a successful start, or [[StartFailure]] if something went wrong.
     *
-    * @param args   The arguments passed to the [[ServiceActor.starting()]] function
+    * @param args   The arguments passed to the [[ServiceLifecycle.onStart()]] function
     */
   case class Start(args: Any)
 

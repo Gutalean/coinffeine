@@ -126,19 +126,19 @@ class ServiceActorTest extends AkkaSpec {
 
   private class SampleService(probe: ActorRef) extends Actor with ServiceActor[String] {
 
-    protected override def starting(args: String): Receive = {
+    protected override def onStart(args: String): Receive = {
       probe ! "start"
       handle {
-        case "started" => becomeStarted(sayingHello(args))
-        case "alternative-started" => becomeStarted(sayingHello(args), alternativeStopping)
+        case "started" => completeStart(sayingHello(args))
+        case "alternative-started" => completeStart(sayingHello(args), alternativeStopping)
         case "start-failed" => cancelStart(new RuntimeException("Oh no! More lemmings!"))
       }
     }
 
-    override protected def stopping() = {
+    override protected def onStop() = {
       probe ! "stop"
       handle  {
-        case "stopped" => becomeStopped()
+        case "stopped" => completeStop()
       }
     }
 
@@ -149,7 +149,7 @@ class ServiceActorTest extends AkkaSpec {
     private def alternativeStopping: Receive = {
       probe ! "alternative-stop"
       handle  {
-        case "stopped" => becomeStopped()
+        case "stopped" => completeStop()
       }
     }
 

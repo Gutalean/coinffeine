@@ -5,7 +5,7 @@ import scala.util.{Failure, Success, Try}
 import akka.actor._
 import akka.util.ByteString
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.OverlayNetwork.NetworkStatus
@@ -24,50 +24,45 @@ private class OverlayMessageGateway(
     overlay: OverlayNetwork,
     serialization: ProtocolSerialization,
     properties: MutableCoinffeineNetworkProperties)
-  extends Actor with ServiceActor[Unit] with ActorLogging with IdConversions {
+  extends Actor with ServiceLifecycle[Unit] with ActorLogging with IdConversions {
 
   import context.dispatcher
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props)
-  private var stoppingBehavior: () => Receive = super.stopping
 
   override def preStart(): Unit = {
     properties.activePeers.set(0)
     properties.brokerId.set(Some(PeerId("f" * 40)))
   }
 
-  override protected def starting(args: Unit): Receive = {
-    new ServiceExecution().start()
-  }
+  override protected def onStart(args: Unit) = new ServiceExecution().start()
 
   override protected def stopped = delegateSubscriptionManagement
-  override protected def stopping(): Receive = stoppingBehavior()
 
   private class ServiceExecution {
     val overlayId = settings.peerId.toOverlayId
     val client = context.actorOf(overlay.clientProps)
 
-    def start(): Receive = {
+    def start() = {
       client ! OverlayNetwork.Join(overlayId)
-      stoppingBehavior = stopWhenJoining _
-      becomeStarted(joining)
+      BecomeStarted(joining, stopWhenJoining _)
     }
 
     private def joining: Receive =
       countingActivePeers orElse delegateSubscriptionManagement orElse receivingJoinResult
 
-    private def stopWhenJoining: Receive = {
+    private def stopWhenJoining = {
       log.info("Waiting for the join result before stopping")
-      handle {
+      BecomeStopping {
         case OverlayNetwork.JoinFailed(_, cause) =>
           log.info(s"Cannot join as ${settings.peerId}: $cause. Not retrying.")
-          becomeStopped()
+          completeStop()
 
         case _: OverlayNetwork.Joined =>
           log.info("Leaving the network before stopping")
           client ! OverlayNetwork.Leave
 
-        case _: OverlayNetwork.Leaved => becomeStopped()
+        case _: OverlayNetwork.Leaved => completeStop()
       }
     }
 
@@ -88,11 +83,13 @@ private class OverlayMessageGateway(
         log.error("Cannot send message to {}: cause", request.target, cause)
     }
 
-    private def stopWhenJoined: Receive = {
+    private def stopWhenJoined = {
       log.info("Leaving the network")
       client ! OverlayNetwork.Leave
-      handle {
-        case OverlayNetwork.Leaved(_, _) => becomeStopped()
+      BecomeStopping {
+        case OverlayNetwork.Leaved(_, _) =>
+          properties.activePeers.set(0)
+          completeStop()
       }
     }
 
@@ -105,29 +102,21 @@ private class OverlayMessageGateway(
       case OverlayNetwork.Joined(_, NetworkStatus(networkSize)) =>
         log.info("Joined as {} to a network of size {}", settings.peerId, networkSize)
         properties.activePeers.set(networkSize - 1)
-        stoppingBehavior = stopWhenJoined _
-        become(joined)
+        become(joined, stopWhenJoined _)
     }
 
     private def rejoining: Receive = {
       case OverlayMessageGateway.Rejoin =>
         client ! OverlayNetwork.Join(overlayId)
-        stoppingBehavior = stopWhenJoining _
-        become(joining)
+        become(joining, stopWhenJoining _)
     }
 
     private def scheduleReconnection(cause: String): Unit = {
       val delay = settings.connectionRetryInterval
       log.error("{}. Next join attempt in {}", cause, delay)
       context.system.scheduler.scheduleOnce(delay, self, OverlayMessageGateway.Rejoin)
-      stoppingBehavior = OverlayMessageGateway.super.stopping
-      become(waitingToRejoin)
+      become(waitingToRejoin, () => BecomeStopped) // TODO: use super?
     }
-  }
-
-  override protected def becomeStopped() = {
-    properties.activePeers.set(0)
-    super.becomeStopped()
   }
 
   private def delegateSubscriptionManagement: Receive = {

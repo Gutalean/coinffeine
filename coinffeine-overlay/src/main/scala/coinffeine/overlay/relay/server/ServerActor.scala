@@ -6,80 +6,80 @@ import java.net.InetSocketAddress
 import akka.actor._
 import akka.io.{IO, Tcp}
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.overlay.OverlayId
 import coinffeine.overlay.relay.messages.{RelayMessage, StatusMessage}
 import coinffeine.overlay.relay.settings.RelayServerSettings
 
 /** Actor implementing the server-side of the relay protocol. */
 private[this] class ServerActor(tcpManager: ActorRef)
-  extends Actor with ServiceActor[RelayServerSettings] with ActorLogging {
+  extends Actor with ServiceLifecycle[RelayServerSettings] with ActorLogging {
 
   private var socket = ActorRef.noSender
   private var workers = Set.empty[ActorRef]
   private var activeIds = Map.empty[OverlayId, ActorRef]
 
-  override protected def starting(settings: RelayServerSettings): Receive = {
+  override protected def onStart(settings: RelayServerSettings) = {
     val localAddress = new InetSocketAddress(settings.bindAddress, settings.bindPort)
     tcpManager ! Tcp.Bind(self, localAddress)
-    handle {
+    BecomeStarting {
       case Tcp.Bound(_) =>
         socket = sender()
-        becomeStarted(started(settings))
+        completeStart(started(settings))
       case Tcp.CommandFailed(_: Tcp.Bind) => cancelStart(ServerActor.CannotBind(localAddress))
     }
   }
 
   private def started(settings: RelayServerSettings): Receive = {
+    case Tcp.Connected(remoteAddress, _) =>
+      val connection = sender()
+      connection ! Tcp.Register(spawnWorkerActor(remoteAddress, connection, settings))
 
-    def spawnWorkerActor(remoteAddress: InetSocketAddress, connection: ActorRef): ActorRef = {
-      val connectionWorker = context.actorOf(ServerWorkerActor.props(
-        ServerWorkerActor.Connection(remoteAddress, connection), settings))
-      workers += connectionWorker
-      context.watch(connectionWorker)
-      connectionWorker
-    }
+    case ServerWorkerActor.JoinAs(id) =>
+      activeIds.get(id).foreach(_ ! ServerWorkerActor.Terminate)
+      activeIds += id -> sender()
+      notifyStatus()
+      sender() ! ServerWorkerActor.Joined(StatusMessage(networkSize))
 
-    handle {
-      case Tcp.Connected(remoteAddress, _) =>
-        val connection = sender()
-        connection ! Tcp.Register(spawnWorkerActor(remoteAddress, connection))
+    case RelayMessage(to, payload) =>
+      val from = findId(sender()).get
+      activeIds.get(to).fold(droppingMessageFor(to)) { ref =>
+        ref ! RelayMessage(from, payload)
+      }
 
-      case ServerWorkerActor.JoinAs(id) =>
-        activeIds.get(id).foreach(_ ! ServerWorkerActor.Terminate)
-        activeIds += id -> sender()
+    case Terminated(terminatedWorker) =>
+      findId(terminatedWorker).foreach { id =>
+        activeIds -= id
         notifyStatus()
-        sender() ! ServerWorkerActor.Joined(StatusMessage(networkSize))
-
-      case RelayMessage(to, payload) =>
-        val from = findId(sender()).get
-        activeIds.get(to).fold(droppingMessageFor(to)) { ref =>
-          ref ! RelayMessage(from, payload)
-        }
-
-      case Terminated(terminatedWorker) =>
-        findId(terminatedWorker).foreach { id =>
-          activeIds -= id
-          notifyStatus()
-        }
-        workers -= terminatedWorker
-    }
+      }
+      workers -= terminatedWorker
   }
 
-  override protected def stopping(): Receive = {
+  private def spawnWorkerActor(remoteAddress: InetSocketAddress,
+                               connection: ActorRef,
+                               settings: RelayServerSettings): ActorRef = {
+    val connectionWorker = context.actorOf(ServerWorkerActor.props(
+      ServerWorkerActor.Connection(remoteAddress, connection), settings))
+    workers += connectionWorker
+    context.watch(connectionWorker)
+    connectionWorker
+  }
+
+  override protected def onStop() = {
     activeIds = Map.empty
     if (workers.isEmpty) {
       socket ! Tcp.Unbind
     } else {
       workers.foreach(_ ! ServerWorkerActor.Terminate)
     }
-    handle {
+
+    BecomeStopping {
       case Terminated(terminatedWorker) =>
         workers -= terminatedWorker
         if (workers.isEmpty) {
           socket ! Tcp.Unbind
         }
-      case Tcp.Unbound => becomeStopped()
+      case Tcp.Unbound => completeStop()
     }
   }
 
