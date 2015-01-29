@@ -121,7 +121,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     override def buildWallet() = SmartWallet.loadFromStream(
       new ByteArrayInputStream(serializedWallet.toByteArray))
     instance ! WalletActor.BlockBitcoins(funds2, 2.BTC)
-    expectMsg(WalletActor.CannotBlockBitcoins)
+    expectMsgType[WalletActor.CannotBlockBitcoins]
     wallet.estimatedBalance shouldBe 8.9.BTC
   }
 

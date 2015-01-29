@@ -88,7 +88,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def givenBitcoinFundsFailToBeBlocked(): Unit = {
-      walletProbe.reply(WalletActor.CannotBlockBitcoins)
+      walletProbe.reply(WalletActor.CannotBlockBitcoins("cannot block bitcoins"))
     }
 
     def givenFiatFundsAreCreated(): Unit = {

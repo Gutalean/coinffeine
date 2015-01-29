@@ -33,7 +33,7 @@ object WalletActor {
   case class BlockedBitcoins(id: ExchangeId) extends BlockBitcoinsResponse
 
   /** Cannot block the requested amount of bitcoins */
-  case object CannotBlockBitcoins extends BlockBitcoinsResponse
+  case class CannotBlockBitcoins(reason: String) extends BlockBitcoinsResponse
 
   /** A message sent to the wallet actor to release for general use the previously blocked
     * bitcoins.

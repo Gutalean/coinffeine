@@ -54,9 +54,9 @@ private[funds] class FundsBlockerActor(
       wallet ! WalletActor.UnblockBitcoins(id)
     }
   }
-  private case object FailedBitcoinBlocking extends BitcoinFunds {
+  private case class FailedBitcoinBlocking(reason: String) extends BitcoinFunds {
     override val finished = true
-    override val result = Failure(new Error(s"Cannot block ${requiredFunds.bitcoin}"))
+    override val result = Failure(new Error(s"Cannot block ${requiredFunds.bitcoin}: $reason"))
   }
 
   private var fiatFunds: FiatFunds = NoFiatFunds
@@ -89,8 +89,8 @@ private[funds] class FundsBlockerActor(
     case WalletActor.BlockedBitcoins(funds) =>
       bitcoinFunds = SuccessfullyBlockedBitcoins
 
-    case WalletActor.CannotBlockBitcoins =>
-      bitcoinFunds = FailedBitcoinBlocking
+    case WalletActor.CannotBlockBitcoins(reason) =>
+      bitcoinFunds = FailedBitcoinBlocking(reason)
 
     case PaymentProcessorActor.AvailableFunds(`id`) =>
       fiatFunds = BlockedFiatFunds(available = true)
