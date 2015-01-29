@@ -7,7 +7,7 @@ import akka.testkit._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.market.OrderId
@@ -103,8 +103,8 @@ class OverlayMessageGatewayIT
   }
 
   it must "stop successfully" in new FreshBrokerAndPeer {
-    peerGateway ! ServiceActor.Stop
-    expectMsg(ServiceActor.Stopped)
+    peerGateway ! Service.Stop
+    expectMsg(Service.Stopped)
   }
 
   trait Fixture extends TestProtocolSerializationComponent
@@ -132,8 +132,8 @@ class OverlayMessageGatewayIT
                       minConnections: Int): (ActorRef, TestProbe) = {
       val ref = createMessageGateway(
         networkProperties, MessageGatewaySettings(peerId, connectionRetryInterval))
-      ref ! ServiceActor.Start {}
-      expectMsg(ServiceActor.Started)
+      ref ! Service.Start {}
+      expectMsg(Service.Started)
       waitForConnections(networkProperties, minConnections)
       val probe = TestProbe()
       probe.send(ref, subscribeToAnything)

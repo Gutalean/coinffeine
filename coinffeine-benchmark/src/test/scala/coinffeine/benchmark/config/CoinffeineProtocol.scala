@@ -9,7 +9,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.StrictLogging
 import io.gatling.core.config.Protocol
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.model.network.{NetworkEndpoint, NodeId, PeerId}
 import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
@@ -49,7 +49,7 @@ case class CoinffeineProtocol(
     gatewayActor = Some(
       actorSystem.get.actorOf(GatewayComponent.messageGatewayProps(gatewaySettings, relaySettings)(actorSystem.get)))
 
-    Await.result(ServiceActor.askStart(gatewayActor.get), 20.seconds)
+    Await.result(Service.askStart(gatewayActor.get), 20.seconds)
 
     // This is not the code fragment I'm most proud of
     while (!GatewayComponent.coinffeineNetworkProperties.isConnected) {

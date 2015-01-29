@@ -11,10 +11,10 @@ class ServiceActorTest extends AkkaSpec {
     val probe = TestProbe()
     val service = sampleService(probe)
 
-    service ! ServiceActor.Start("Satoshi")
+    service ! Service.Start("Satoshi")
     probe.expectMsg("start")
     probe.send(service, "started")
-    expectMsg(ServiceActor.Started)
+    expectMsg(Service.Started)
   }
 
   it should "honour new behavior returned by start function" in {
@@ -29,17 +29,17 @@ class ServiceActorTest extends AkkaSpec {
     val probe = TestProbe()
     val service = startedSampleService("Satoshi", probe)
 
-    service ! ServiceActor.Start("Merkel")
-    expectMsgPF() { case ServiceActor.StartFailure(_) => }
+    service ! Service.Start("Merkel")
+    expectMsgPF() { case Service.StartFailure(_) => }
   }
 
   it should "fail to start when passed arguments of the wrong type" in  {
     val probe = TestProbe()
     val service = sampleService(probe)
 
-    service ! ServiceActor.Start(List(1, 2, 3))
+    service ! Service.Start(List(1, 2, 3))
     expectMsgPF() {
-      case ServiceActor.StartFailure(cause: IllegalArgumentException) =>
+      case Service.StartFailure(cause: IllegalArgumentException) =>
         cause.getMessage should include ("Invalid start argument List(1, 2, 3)")
     }
   }
@@ -48,28 +48,28 @@ class ServiceActorTest extends AkkaSpec {
     val probe = TestProbe()
     val service = sampleService(probe)
 
-    service ! ServiceActor.Start("Satoshi")
+    service ! Service.Start("Satoshi")
     probe.expectMsg("start")
     probe.send(service, "start-failed")
-    expectMsgPF() { case ServiceActor.StartFailure(_) => }
+    expectMsgPF() { case Service.StartFailure(_) => }
   }
 
   it should "invoke stop function on Stop message received" in {
     val probe = TestProbe()
     val service = startedSampleService("Satoshi", probe)
 
-    service ! ServiceActor.Stop
+    service ! Service.Stop
     probe.expectMsg("stop")
     probe.send(service, "stopped")
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "fail to stop a non started service" in {
     val probe = TestProbe()
     val service = sampleService(probe)
 
-    service ! ServiceActor.Stop
-    expectMsgPF() { case ServiceActor.StopFailure(_) => }
+    service ! Service.Stop
+    expectMsgPF() { case Service.StopFailure(_) => }
   }
 
   it should "honour become function" in {
@@ -84,15 +84,15 @@ class ServiceActorTest extends AkkaSpec {
   it should "call custom termination when requested in become started function" in {
     val probe = TestProbe()
     val service = sampleService(probe)
-    service ! ServiceActor.Start("foo")
+    service ! Service.Start("foo")
     probe.expectMsg("start")
     probe.send(service, "alternative-started")
-    expectMsg(ServiceActor.Started)
+    expectMsg(Service.Started)
 
-    service ! ServiceActor.Stop
+    service ! Service.Stop
     probe.expectMsg("alternative-stop")
     probe.send(service, "stopped")
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "call custom termination when requested in become function" in {
@@ -100,10 +100,10 @@ class ServiceActorTest extends AkkaSpec {
     val service = startedSampleService("Satoshi", probe)
 
     service ! "Become"
-    service ! ServiceActor.Stop
+    service ! Service.Stop
     probe.expectMsg("alternative-stop")
     probe.send(service, "stopped")
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "honor stopping behavior when not started" in {
@@ -113,12 +113,12 @@ class ServiceActorTest extends AkkaSpec {
     probe.send(service, "idle?")
     probe.expectMsg("true")
 
-    service ! ServiceActor.Start("Foo")
+    service ! Service.Start("Foo")
     service ! "started"
-    expectMsg(ServiceActor.Started)
-    service ! ServiceActor.Stop
+    expectMsg(Service.Started)
+    service ! Service.Stop
     service ! "stopped"
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
 
     probe.send(service, "idle?")
     probe.expectMsg("true")
@@ -168,10 +168,10 @@ class ServiceActorTest extends AkkaSpec {
 
   private def startedSampleService(name: String, probe: TestProbe): ActorRef = {
     val service = sampleService(probe)
-    service ! ServiceActor.Start(name)
+    service ! Service.Start(name)
     probe.expectMsg("start")
     probe.send(service, "started")
-    expectMsg(ServiceActor.Started)
+    expectMsg(Service.Started)
     service
   }
 }

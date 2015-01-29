@@ -9,14 +9,14 @@ import akka.actor._
 import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.model.bitcoin.BitcoinProperties
 import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.api._
-import coinffeine.peer.config.{ConfigProvider, ConfigComponent}
+import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 
@@ -48,7 +48,7 @@ class DefaultCoinffeineApp(name: String,
     import system.dispatcher
     implicit val to = Timeout(timeout)
     for {
-      _ <- ServiceActor.askStart(peerRef).recoverWith {
+      _ <- Service.askStart(peerRef).recoverWith {
         case NonFatal(cause) => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
       }
       _ <- system.actorSelection("/system/journal").resolveOne().recoverWith {
@@ -62,7 +62,7 @@ class DefaultCoinffeineApp(name: String,
   override def stop(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
     implicit val to = Timeout(timeout)
-    ServiceActor.askStop(peerRef).recover {
+    Service.askStop(peerRef).recover {
       case cause => logger.error("cannot gracefully stop coinffeine app", cause)
     }.map { _ =>
       system.shutdown()

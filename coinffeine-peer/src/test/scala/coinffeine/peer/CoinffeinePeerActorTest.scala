@@ -4,7 +4,7 @@ import akka.actor.{ActorSystem, Props}
 import akka.testkit.TestProbe
 import org.bitcoinj.params.TestNet3Params
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
@@ -38,10 +38,10 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "stop delegates on stop" in new StartedFixture {
-    peer ! ServiceActor.Stop
-    paymentProcessor.expectMsg(ServiceActor.Stop)
-    bitcoinPeer.expectMsg(ServiceActor.Stop)
-    gateway.expectMsg(ServiceActor.Stop)
+    peer ! Service.Stop
+    paymentProcessor.expectMsg(Service.Stop)
+    bitcoinPeer.expectMsg(Service.Stop)
+    gateway.expectMsg(Service.Stop)
   }
 
   it must "process wallet funds withdraw" in new StartedFixture with WithdrawParams {
@@ -98,7 +98,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
     def shouldRequestStart[Args](actor: MockSupervisedActor, args: Args): Unit = {
       actor.expectAskWithReply {
-        case ServiceActor.Start(`args`) => ServiceActor.Started
+        case Service.Start(`args`) => Service.Started
       }
     }
   }
@@ -108,7 +108,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
-    requester.send(peer, ServiceActor.Start {})
+    requester.send(peer, Service.Start {})
 
     // Then it must request the payment processor to start
     shouldRequestStart(paymentProcessor, {})
@@ -131,7 +131,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
     orders.expectCreation()
 
     // And finally indicate it succeed to start
-    requester.expectMsg(ServiceActor.Started)
+    requester.expectMsg(Service.Started)
   }
 
   trait WithdrawParams {

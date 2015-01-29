@@ -8,7 +8,7 @@ import akka.io.Tcp
 import akka.testkit._
 import org.scalatest.OptionValues
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayId
 import coinffeine.overlay.relay.settings.RelayServerSettings
@@ -30,17 +30,17 @@ class ServerActorTest
   }
 
   it should "stop listening when asked to stop" in new BoundServer {
-    server ! ServiceActor.Stop
+    server ! Service.Stop
     socketProbe.expectMsg(Tcp.Unbind)
     socketProbe.reply(Tcp.Unbound)
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "fail to start when cannot bind" in new FreshServer {
-    server ! ServiceActor.Start(config)
+    server ! Service.Start(config)
     val bindCommand = tcpProbe.expectMsgType[Tcp.Bind]
     tcpProbe.reply(Tcp.CommandFailed(bindCommand))
-    expectMsgType[ServiceActor.StartFailure].cause.getMessage should
+    expectMsgType[Service.StartFailure].cause.getMessage should
       include("Cannot bind to address")
   }
 
@@ -162,10 +162,10 @@ class ServerActorTest
     val server = system.actorOf(ServerActor.props(tcpProbe.ref))
 
     def expectSuccessfulBindOnStart(): Unit = {
-      server ! ServiceActor.Start(config)
+      server ! Service.Start(config)
       tcpProbe.expectMsg(Tcp.Bind(server, localAddress))
       socketProbe.send(tcpProbe.sender(), Tcp.Bound(localAddress))
-      expectMsg(ServiceActor.Started)
+      expectMsg(Service.Started)
     }
 
     def expectClientConnection(): MockClientConnection = {

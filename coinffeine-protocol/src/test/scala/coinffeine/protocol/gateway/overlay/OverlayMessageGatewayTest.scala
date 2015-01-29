@@ -6,7 +6,7 @@ import akka.actor._
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
@@ -77,34 +77,34 @@ class OverlayMessageGatewayTest
   }
 
   it should "leave before stopping" in new JoinedGateway {
-    gateway ! ServiceActor.Stop
+    gateway ! Service.Stop
     overlay.expectLeave()
     overlay.acceptLeave()
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "wait for the join attempt and then leave before stopping" in new FreshGateway {
     expectSuccessfulStart()
     overlay.expectJoinAs(overlayId)
 
-    gateway ! ServiceActor.Stop
+    gateway ! Service.Stop
     expectNoMsg(idleTime)
 
     overlay.acceptJoin(5)
     overlay.expectLeave()
     overlay.acceptLeave()
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "wait for a failed join attempt and then stop right away" in new FreshGateway {
     expectSuccessfulStart()
     overlay.expectJoinAs(overlayId)
 
-    gateway ! ServiceActor.Stop
+    gateway ! Service.Stop
     expectNoMsg(idleTime)
 
     overlay.rejectJoin()
-    expectMsg(ServiceActor.Stopped)
+    expectMsg(Service.Stopped)
   }
 
   it should "stop immediately when waiting to rejoin" in new FreshGateway {
@@ -113,8 +113,8 @@ class OverlayMessageGatewayTest
     overlay.rejectJoin()
     expectNoMsg(idleTime)
 
-    gateway ! ServiceActor.Stop
-    expectMsg(ServiceActor.Stopped)
+    gateway ! Service.Stop
+    expectMsg(Service.Stopped)
   }
 
   trait FreshGateway {
@@ -128,8 +128,8 @@ class OverlayMessageGatewayTest
       new OverlayMessageGateway(settings, overlay, protocolSerialization, properties)))
 
     def expectSuccessfulStart(): Unit = {
-      gateway ! ServiceActor.Start {}
-      expectMsg(ServiceActor.Started)
+      gateway ! Service.Start {}
+      expectMsg(Service.Started)
       overlay.expectClientSpawn()
     }
 
