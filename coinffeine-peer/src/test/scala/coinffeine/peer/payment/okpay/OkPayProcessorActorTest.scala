@@ -7,7 +7,7 @@ import akka.actor.{ActorRef, Props}
 import akka.testkit._
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
@@ -52,8 +52,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "report failure to get the current balance" in new WithOkPayProcessor {
     client.setBalances(Future.failed(cause))
     processor = system.actorOf(processorProps)
-    requester.send(processor, ServiceActor.Start {})
-    requester.expectMsg(ServiceActor.Started)
+    requester.send(processor, Service.Start {})
+    requester.expectMsg(Service.Started)
     requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
     requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
   }
@@ -183,8 +183,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       client.setBalances(balances)
       processor = system.actorOf(processorProps)
       fundsRegistry.expectCreation()
-      requester.send(processor, ServiceActor.Start({}))
-      requester.expectMsg(ServiceActor.Started)
+      requester.send(processor, Service.Start({}))
+      requester.expectMsg(Service.Started)
       fundsRegistry.expectMsgType[BlockedFiatRegistry.BalancesUpdate]
     }
 

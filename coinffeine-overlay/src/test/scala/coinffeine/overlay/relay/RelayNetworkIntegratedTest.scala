@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import akka.testkit._
 import akka.util.ByteString
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.overlay.relay.client.RelayNetwork
@@ -22,8 +22,8 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
   val client = new RelayNetwork(RelayClientSettings("localhost", port), system)
 
   "A relay network" should "bind to a port" in {
-    server ! ServiceActor.Start(serverConfig)
-    expectMsg(connectionTimeout, ServiceActor.Started)
+    server ! Service.Start(serverConfig)
+    expectMsg(connectionTimeout, Service.Started)
   }
 
   it should "send messages forth and back" in {
@@ -51,12 +51,12 @@ class RelayNetworkIntegratedTest extends AkkaSpec {
   }
 
   it should "shut down gracefully" in {
-    server ! ServiceActor.Stop
-    expectMsg(connectionTimeout, ServiceActor.Stopped)
+    server ! Service.Stop
+    expectMsg(connectionTimeout, Service.Stopped)
   }
 
   it should "fail to bind to a non-existent address" in {
-    server ! ServiceActor.Start(serverConfig.copy(bindAddress = "does.not.exist.example.com"))
-    expectMsgType[ServiceActor.StartFailure](connectionTimeout)
+    server ! Service.Start(serverConfig.copy(bindAddress = "does.not.exist.example.com"))
+    expectMsgType[Service.StartFailure](connectionTimeout)
   }
 }

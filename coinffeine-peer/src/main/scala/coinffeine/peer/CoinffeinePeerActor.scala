@@ -7,7 +7,7 @@ import akka.actor.{Address => _, _}
 import akka.pattern._
 import akka.util.Timeout
 
-import coinffeine.common.akka.{AskPattern, ServiceActor}
+import coinffeine.common.akka.{AskPattern, Service, ServiceActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
@@ -47,9 +47,9 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
     (for {
-      _ <- ServiceActor.askStart(paymentProcessorRef)
-      _ <- ServiceActor.askStart(bitcoinPeerRef)
-      _ <- ServiceActor.askStart(gatewayRef)
+      _ <- Service.askStart(paymentProcessorRef)
+      _ <- Service.askStart(bitcoinPeerRef)
+      _ <- Service.askStart(gatewayRef)
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
         .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
@@ -74,7 +74,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   override protected def stopping(): Receive = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Stopping Coinffeine peer")
-    ServiceActor.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
+    Service.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
     handle {
       case () =>
         becomeStopped()

@@ -7,7 +7,7 @@ import akka.testkit._
 import org.bitcoinj.core.PeerGroup
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.common.akka.ServiceActor
+import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -18,36 +18,36 @@ import coinffeine.peer.bitcoin.wallet.SmartWallet
 class BitcoinPeerActorTest extends AkkaSpec with Eventually {
 
   "The bitcoin peer actor" should "join the bitcoin network" in new Fixture {
-    actor ! ServiceActor.Start {}
-    expectMsg(ServiceActor.Started)
+    actor ! Service.Start {}
+    expectMsg(Service.Started)
   }
 
   it should "retrieve the blockchain actor" in new Fixture {
-    actor ! ServiceActor.Start {}
+    actor ! Service.Start {}
     actor ! BitcoinPeerActor.RetrieveBlockchainActor
-    expectMsg(ServiceActor.Started)
+    expectMsg(Service.Started)
     expectMsg(BitcoinPeerActor.BlockchainActorRef(blockchainActor.ref))
   }
 
   it should "retrieve the wallet actor" in new Fixture {
-    actor ! ServiceActor.Start {}
+    actor ! Service.Start {}
     actor ! BitcoinPeerActor.RetrieveWalletActor
-    expectMsg(ServiceActor.Started)
+    expectMsg(Service.Started)
     expectMsg(BitcoinPeerActor.WalletActorRef(walletActor.ref))
   }
 
   it should "be stopped" in new Fixture {
-    actor ! ServiceActor.Start {}
-    actor ! ServiceActor.Stop
+    actor ! Service.Start {}
+    actor ! Service.Stop
     fishForMessage(hint = "should actually stop") {
-      case ServiceActor.Stopped => true
+      case Service.Stopped => true
       case _ => false
     }
   }
 
   it should "delegate transaction publication" in new Fixture {
-    actor ! ServiceActor.Start {}
-    expectMsg(ServiceActor.Started)
+    actor ! Service.Start {}
+    expectMsg(Service.Started)
     val dummyTx = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
     actor ! BitcoinPeerActor.PublishTransaction(dummyTx)
     val notYetConnected = receiveWhile(max = 1.second.dilated) {
