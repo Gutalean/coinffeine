@@ -100,7 +100,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     expectNoMsg(1.second)
   }
 
-  val funds1, funds2 = ExchangeId.random()
+  val funds1, funds2, funds3 = ExchangeId.random()
   val serializedWallet = new ByteArrayOutputStream()
   var tx: ImmutableTransaction = _
 
@@ -116,12 +116,20 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     wallet.delegate.saveToFileStream(serializedWallet)
   }
 
+  it must "manage bitcoins blocking with idempotency" in new Fixture {
+    instance ! WalletActor.BlockBitcoins(funds3, 3.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds3))
+    instance ! WalletActor.BlockBitcoins(funds3, 3.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds3))
+    instance ! WalletActor.UnblockBitcoins(funds3)
+  }
+
   it must "recover its previous state" in new Fixture {
     override def useLastPersistenceId = true
     override def buildWallet() = SmartWallet.loadFromStream(
       new ByteArrayInputStream(serializedWallet.toByteArray))
-    instance ! WalletActor.BlockBitcoins(funds2, 2.BTC)
-    expectMsg(WalletActor.CannotBlockBitcoins)
+    instance ! WalletActor.BlockBitcoins(funds2, 1.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds2))
     wallet.estimatedBalance shouldBe 8.9.BTC
   }
 

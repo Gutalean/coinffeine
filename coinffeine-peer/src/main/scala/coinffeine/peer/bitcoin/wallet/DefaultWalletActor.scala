@@ -76,7 +76,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
       notifyListeners()
 
     case BlockBitcoins(fundsId, _) if blockedOutputs.areBlocked(fundsId) =>
-      sender() ! CannotBlockBitcoins
+      sender() ! BlockedBitcoins(fundsId)
 
     case BlockBitcoins(fundsId, amount) =>
       blockedOutputs.collectFunds(amount) match {
@@ -86,7 +86,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
             sender() ! BlockedBitcoins(fundsId)
           }
         case None =>
-          sender() ! CannotBlockBitcoins
+          sender() ! CannotBlockBitcoins(s"cannot collect funds to block $amount")
       }
 
     case UnblockBitcoins(fundsId) if blockedOutputs.areBlocked(fundsId) =>
