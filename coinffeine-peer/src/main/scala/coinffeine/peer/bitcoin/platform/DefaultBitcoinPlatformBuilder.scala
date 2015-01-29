@@ -53,7 +53,12 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
   private def buildInMemoryBlockStore() = new MemoryFullPrunedBlockStore(network, FullStoredDepth)
 
   private def buildFileBackedBlockStore(file: File) =
-    new H2FullPrunedBlockStore(network, s"file:$file", FullStoredDepth)
+    new H2FullPrunedBlockStore(network, toH2Scheme(file), FullStoredDepth)
+
+  private def toH2Scheme(file: File): String = file.toString match {
+    case H2FileName(prefix) => s"file:$prefix"
+    case other => throw new scala.IllegalArgumentException(s"Invalid H2 filename: $other")
+  }
 
   private def buildPeerGroup(blockchain: AbstractBlockChain) = {
     val pg = new PeerGroup(network, blockchain)
@@ -98,4 +103,5 @@ private object DefaultBitcoinPlatformBuilder {
   val AutoSaveInterval = 250.millis
   val FullStoredDepth = 1000
   val MinBroadcastConnections = 1
+  private val H2FileName = """(.*)\.h2\.db""".r
 }
