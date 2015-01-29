@@ -51,7 +51,7 @@ object SettingsMapping {
       BitcoinSettings(
         connectionRetryInterval = getSeconds(config, "coinffeine.bitcoin.connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
-        blockchainFile = new File(configPath, network.name),
+        blockchainFile = new File(configPath, s"${network.name}.h2.db"),
         rebroadcastTimeout = getSeconds(config, "coinffeine.bitcoin.rebroadcastTimeout"),
         network = network
       )
