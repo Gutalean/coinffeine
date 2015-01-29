@@ -17,6 +17,7 @@ import coinffeine.common.akka.Service._
   *
   * @tparam Args The type of the arguments passed to the service in the [[Service.Start]] message.
   */
+@deprecated("Use ServiceLifecycle instead")
 trait ServiceActor[Args] { this: Actor =>
 
   private var requester: ActorRef = ActorRef.noSender
