@@ -138,14 +138,15 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       case _: FinalStep => throw new IllegalArgumentException("No payment is expected at the final step")
       case step: IntermediateStep =>
         val participants = channel.exchange.participants
+        val expectedDescription = PaymentDescription(channel.exchange.id, step)
         require(payment.amount == step.select(channel.exchange.amounts).fiatAmount,
           s"Payment $step amount does not match expected amount")
         require(payment.receiverId == participants.seller.paymentProcessorAccount,
           s"Payment $step is not being sent to the seller")
         require(payment.senderId == participants.buyer.paymentProcessorAccount,
           s"Payment $step is not coming from the buyer")
-        require(payment.description == PaymentDescription(channel.exchange.id, step),
-          s"Payment $step does not have the required description")
+        require(payment.description == expectedDescription,
+          s"Payment $step description (${payment.description}) does not match expected ($expectedDescription)")
         require(payment.completed, s"Payment $step is not complete")
     }
   }
