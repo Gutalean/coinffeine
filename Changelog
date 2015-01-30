@@ -1,8 +1,10 @@
 Changelog
 =========
 
-Notes to update from the previous version (0.4.0): you should clean your
-$(CONFIG_DIR)/journal directory as the format has changed.
+Notes to update from the previous version (0.4.0):
+ * You should clean your $(CONFIG_DIR)/journal directory as the format has
+   changed.
+ * The wire protocol is incompatible with earlier ones.
 
 v0.5.0:
 

@@ -15,9 +15,8 @@ message FiatAmount {
 }
 
 message Price {
-    required int64 value = 1;
-    required int32 scale = 2;
-    required string currency = 3;
+    required string currency = 1;
+    optional DecimalNumber limit = 2;
 }
 
 message Market {
@@ -32,7 +31,7 @@ message OrderBookEntry {
     required string id = 1;
     required OrderType orderType = 2;
     required DecimalNumber amount = 3;
-    required Price price = 4;
+    optional Price price = 4;
 }
 
 message PeerPositions {

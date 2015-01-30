@@ -5,5 +5,5 @@ case class Version(major: Int, minor: Int) {
 }
 
 object Version {
-  val Current = Version(major = 0, minor = 1)
+  val Current = Version(major = 0, minor = 2)
 }
