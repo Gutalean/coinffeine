@@ -113,17 +113,21 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         .build
   }
 
-  implicit val priceMapping = new ProtoMapping[Price[_ <: FiatCurrency], msg.Price] {
+  implicit val priceMapping = new ProtoMapping[OrderPrice[_ <: FiatCurrency], msg.Price] {
 
-    override def fromProtobuf(amount: msg.Price) =
-      Price(BigDecimal(amount.getValue, amount.getScale), FiatCurrency(amount.getCurrency))
+    override def fromProtobuf(price: msg.Price) = {
+      val currency = FiatCurrency(price.getCurrency)
+      if (price.hasLimit) LimitPrice(Price(ProtoMapping.fromProtobuf(price.getLimit), currency))
+      else MarketPrice(currency)
+    }
 
-    override def toProtobuf(amount: Price[_ <: FiatCurrency]): msg.Price =
-      msg.Price.newBuilder
-        .setValue(amount.value.underlying().unscaledValue.longValue)
-        .setScale(amount.value.scale)
-        .setCurrency(amount.currency.javaCurrency.getCurrencyCode)
-        .build
+    override def toProtobuf(price: OrderPrice[_ <: FiatCurrency]): msg.Price = {
+      val builder = msg.Price.newBuilder.setCurrency(price.currency.javaCurrency.getCurrencyCode)
+      price.toOption.foreach { limit =>
+        builder.setLimit(ProtoMapping.toProtobuf(limit.value))
+      }
+      builder.build
+    }
   }
 
   implicit val marketMapping = new ProtoMapping[Market[_ <: FiatCurrency], msg.Market] {
@@ -145,7 +149,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         case msg.OrderBookEntry.OrderType.ASK => Ask
       },
       amount = Bitcoin(decimalNumberMapping.fromProtobuf(entry.getAmount)),
-      limit = ProtoMapping.fromProtobuf(entry.getPrice)
+      price = priceMapping.fromProtobuf(entry.getPrice)
     )
 
     override def toProtobuf(entry: OrderBookEntry[_ <: FiatCurrency]) = msg.OrderBookEntry.newBuilder
@@ -155,9 +159,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         case Ask => msg.OrderBookEntry.OrderType.ASK
       })
       .setAmount(decimalNumberMapping.toProtobuf(entry.amount.value))
-      .setPrice(priceMapping.toProtobuf(entry.price.toOption.getOrElse(
-        throw new IllegalArgumentException("Unsupported price type"))))
-      .build
+      .setPrice(priceMapping.toProtobuf(entry.price))
+      .build()
   }
 
   implicit val peerPositionsMapping = new ProtoMapping[PeerPositions[_ <: FiatCurrency],

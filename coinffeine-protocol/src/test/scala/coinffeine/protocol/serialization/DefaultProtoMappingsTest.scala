@@ -59,22 +59,33 @@ class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.C
       .build
     )
 
-  val orderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, Price(400.EUR))
-  val orderBookEntryMessage = msg.OrderBookEntry.newBuilder
+  val limitOrderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, Price(400.EUR))
+  val limitOrderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
     .setOrderType(msg.OrderBookEntry.OrderType.BID)
     .setAmount(msg.DecimalNumber.newBuilder.setValue(10).setScale(0))
-    .setPrice(msg.Price.newBuilder.setValue(400).setScale(0).setCurrency("EUR"))
+    .setPrice(msg.Price.newBuilder
+      .setCurrency("EUR")
+      .setLimit(msg.DecimalNumber.newBuilder.setValue(400).setScale(0)))
     .build
+  val marketOrderBookEntry = limitOrderBookEntry.copy(price = MarketPrice(Euro))
+  val marketOrderBookEntryMessage = limitOrderBookEntryMessage.toBuilder
+    .setPrice(msg.Price.newBuilder.setCurrency("EUR"))
+    .build()
 
-  "Order" should behave like thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
-    orderBookEntry, orderBookEntryMessage)
+  "Limit-price order" should behave like
+    thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
+      limitOrderBookEntry, limitOrderBookEntryMessage)
 
-  val positions = PeerPositions(Market(Euro), Seq(orderBookEntry), "nonce-1234567890")
+  "Market-price order" should behave like
+    thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
+      marketOrderBookEntry, marketOrderBookEntryMessage)
+
+  val positions = PeerPositions(Market(Euro), Seq(limitOrderBookEntry), "nonce-1234567890")
   val positionsMessage = msg.PeerPositions.newBuilder
-    .setMarket(msg.Market.newBuilder.setCurrency("EUR").build)
+    .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
     .setNonce("nonce-1234567890")
-    .addEntries(orderBookEntryMessage)
+    .addEntries(limitOrderBookEntryMessage)
     .build
 
   "Peer positions" should behave like
