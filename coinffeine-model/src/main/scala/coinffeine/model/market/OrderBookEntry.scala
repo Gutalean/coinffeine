@@ -14,13 +14,25 @@ case class OrderBookEntry[C <: FiatCurrency](
 object OrderBookEntry {
 
   /** Gets the natural order for entries on a given currency. */
-  def ordering[C <: FiatCurrency](currency: C): Ordering[OrderBookEntry[C]] =
-    Ordering.by[OrderBookEntry[C], BigDecimal] {
-      case OrderBookEntry(_, Bid, _, LimitPrice(price)) => -price.value
-      case OrderBookEntry(_, Ask, _, LimitPrice(price)) => price.value
-      case OrderBookEntry(_, Bid, _, MarketPrice(_)) => throw new UnsupportedOperationException()
-      case OrderBookEntry(_, Ask, _, MarketPrice(_)) => throw new UnsupportedOperationException()
+  def ordering[C <: FiatCurrency](currency: C): Ordering[OrderBookEntry[C]] = {
+    def lessPriceThan(left: Option[BigDecimal], right: Option[BigDecimal]): Boolean =
+      (left, right) match {
+        case (_, None) => false
+        case (None, _) => true
+        case (Some(leftPrice), Some(rightPrice)) => leftPrice < rightPrice
+      }
+
+    Ordering.fromLessThan[OrderBookEntry[C]] { (leftEntry, rightEntry) =>
+      (leftEntry.orderType, rightEntry.orderType) match {
+        case (Bid, Ask) => true
+        case (Ask, Bid) => false
+        case (Ask, Ask) =>
+          lessPriceThan(leftEntry.price.toOption.map(_.value), rightEntry.price.toOption.map(_.value))
+        case (Bid, Bid) =>
+          lessPriceThan(leftEntry.price.toOption.map(-_.value), rightEntry.price.toOption.map(-_.value))
+      }
     }
+  }
 
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
@@ -37,7 +49,7 @@ object OrderBookEntry {
   /** Creates an entry with a random identifier */
   def random[C <: FiatCurrency](orderType: OrderType,
                                 amount: Bitcoin.Amount,
-                                price: LimitPrice[C]): OrderBookEntry[C] =
+                                price: OrderPrice[C]): OrderBookEntry[C] =
     OrderBookEntry(OrderId.random(), orderType, amount, price)
 
   def fromOrder[C <: FiatCurrency](order: Order[C]): OrderBookEntry[C] =
