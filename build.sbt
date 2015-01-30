@@ -70,3 +70,6 @@ release := {
   }
   releaseDir
 }
+
+addCommandAlias("compile-all", ";coinffeine/test:compile ;test/test:compile ;benchmark/test:compile")
+
