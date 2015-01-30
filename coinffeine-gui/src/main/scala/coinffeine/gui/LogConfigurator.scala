@@ -12,6 +12,7 @@ import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 
 import coinffeine.common.Platform
+import coinffeine.peer.config.ConfigProvider
 
 /** Configures logging using an external file in the user configuration directory (and automatically
   * creates it with a default configuration if missing). If there are problems, it tries to go with
@@ -21,47 +22,53 @@ object LogConfigurator {
 
   private val Context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
   private val ConfigFilename = "logging.xml"
-  private val ConfigFile = new File(Platform.detect().userSettingsPath().toFile, ConfigFilename)
   private val DefaultConfig = Option(getClass.getResource("/logback.xml")).getOrElse(
     throw new NoSuchElementException("Missing default logging configuration"))
+  private val DataDirProperty = "COINFFEINE_DATA_DIR"
 
-  def configure(): Unit = {
+  def configure(configProvider: ConfigProvider): Unit = {
+    val configFile = new File(configProvider.dataPath, ConfigFilename)
+
     ensureExistenceOfExternalConfiguration()
-    fallbackToInternalConfig(tryToConfigureLogging(ConfigFile.toURI.toURL)).get
-  }
+    fallbackToInternalConfig(tryToConfigureLogging(configFile.toURI.toURL)).get
 
-  private def ensureExistenceOfExternalConfiguration(): Unit = {
-    if (!ConfigFile.exists()) {
-      createExternalConfiguration()
-    }
-  }
-
-  /** Create the external logging configuration by copying the default one bundled with the app */
-  private def createExternalConfiguration(): Unit = {
-    try {
-      ConfigFile.getParentFile.mkdirs()
-      FileUtils.copyURLToFile(DefaultConfig, ConfigFile)
-    } catch {
-      case ex: IOException =>
-        println(s"LOGGING WARNING: cannot create $ConfigFile")
-        ex.printStackTrace()
-    }
-  }
-
-  private def fallbackToInternalConfig(configurationAttempt: Try[Unit]): Try[Unit] =
-    configurationAttempt.recoverWith {
-      case ex: JoranException => tryToConfigureLogging(DefaultConfig)
+    def ensureExistenceOfExternalConfiguration(): Unit = {
+      if (!configFile.exists()) {
+        createExternalConfiguration()
+      }
     }
 
-  private def tryToConfigureLogging(configuration: URL): Try[Unit] = Try {
-    val configurator = new JoranConfigurator()
-    configurator.setContext(Context)
-    Context.reset()
-    configurator.doConfigure(configuration)
-  }.recover {
-    case ex: JoranException =>
-      // This pretty-prints the errors in the JoranException
-      StatusPrinter.printInCaseOfErrorsOrWarnings(Context)
-      throw ex
+    /** Create the external logging configuration by copying the default one bundled with the app */
+    def createExternalConfiguration(): Unit = {
+      try {
+        configFile.getParentFile.mkdirs()
+        FileUtils.copyURLToFile(DefaultConfig, configFile)
+      } catch {
+        case ex: IOException =>
+          println(s"LOGGING WARNING: cannot create $configFile")
+          ex.printStackTrace()
+      }
+    }
+
+    def fallbackToInternalConfig(configurationAttempt: Try[Unit]): Try[Unit] =
+      configurationAttempt.recoverWith {
+        case ex: JoranException => tryToConfigureLogging(DefaultConfig)
+      }
+
+    def tryToConfigureLogging(configuration: URL): Try[Unit] = Try {
+      // Log config files expect this property to be defined so the log
+      // file may know what's the data dir
+      System.setProperty(DataDirProperty, configProvider.dataPath.toString)
+
+      val configurator = new JoranConfigurator()
+      configurator.setContext(Context)
+      Context.reset()
+      configurator.doConfigure(configuration)
+    }.recover {
+      case ex: JoranException =>
+        // This pretty-prints the errors in the JoranException
+        StatusPrinter.printInCaseOfErrorsOrWarnings(Context)
+        throw ex
+    }
   }
 }

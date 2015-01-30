@@ -1,20 +1,5 @@
 <configuration scan="true">
-    <if condition='property("os.name").toUpperCase().startsWith("WIN")'>
-        <then>
-            <property name="LOG_FILE" value="${APPDATA}\\Coinffeine\\Coinffeine.log" />
-        </then>
-    </if>
-    <if condition='property("os.name").toUpperCase().startsWith("MAC")'>
-        <then>
-            <property name="LOG_FILE"
-                      value="${user.home}/Library/Application Support/Coinffeine/Coinffeine.log"/>
-        </then>
-    </if>
-    <if condition='property("os.name").toUpperCase().startsWith("LIN")'>
-        <then>
-            <property name="LOG_FILE" value="${user.home}/.coinffeine/Coinffeine.log" />
-        </then>
-    </if>
+    <property name="LOG_FILE" value="${COINFFEINE_DATA_DIR}/Coinffeine.log" />
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
