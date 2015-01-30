@@ -15,12 +15,12 @@ class BrokerLoadTest extends Simulation {
   val market = Market(Euro)
 
   val orderBookEntries = Seq(
-    OrderBookEntry(Bid, 10.BTC, Price(200.EUR)),
-    OrderBookEntry(Bid, 5.BTC, Price(250.EUR)),
-    OrderBookEntry(Bid, 1.BTC, Price(300.EUR)),
-    OrderBookEntry(Ask, 1.BTC, Price(400.EUR)),
-    OrderBookEntry(Ask, 5.BTC, Price(450.EUR)),
-    OrderBookEntry(Ask, 10.BTC, Price(500.EUR))
+    OrderBookEntry.random(Bid, 10.BTC, Price(200.EUR)),
+    OrderBookEntry.random(Bid, 5.BTC, Price(250.EUR)),
+    OrderBookEntry.random(Bid, 1.BTC, Price(300.EUR)),
+    OrderBookEntry.random(Ask, 1.BTC, Price(400.EUR)),
+    OrderBookEntry.random(Ask, 5.BTC, Price(450.EUR)),
+    OrderBookEntry.random(Ask, 10.BTC, Price(500.EUR))
   )
 
   val coinffeineConf = coinffeineProtocol

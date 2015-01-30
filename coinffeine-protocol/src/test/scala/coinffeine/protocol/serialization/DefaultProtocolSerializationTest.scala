@@ -99,8 +99,8 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
     val sampleMessages = {
       val market = Market(UsDollar)
       val peerPositions = PeerPositions(market, Seq(
-        OrderBookEntry(Bid, 1.BTC, Price(400.USD)),
-        OrderBookEntry(Ask, 0.4.BTC, Price(600.USD))
+        OrderBookEntry.random(Bid, 1.BTC, Price(400.USD)),
+        OrderBookEntry.random(Ask, 0.4.BTC, Price(600.USD))
       ))
       val publicKey = new KeyPair().publicKey
       Seq(

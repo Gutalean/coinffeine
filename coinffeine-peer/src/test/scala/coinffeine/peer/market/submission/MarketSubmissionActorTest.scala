@@ -13,7 +13,7 @@ class MarketSubmissionActorTest extends AkkaSpec {
 
   val market = Market(Euro)
   val resubmitInterval = 1.second.dilated
-  val entry = OrderBookEntry(Bid, 1.BTC, Price(1000.EUR))
+  val entry = OrderBookEntry.random(Bid, 1.BTC, Price(1000.EUR))
 
   "A market submission actor" should "resubmit orders at regular intervals" in new Fixture {
     actor ! KeepSubmitting(entry)

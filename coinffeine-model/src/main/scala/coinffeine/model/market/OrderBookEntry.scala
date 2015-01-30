@@ -21,9 +21,9 @@ object OrderBookEntry {
     }
 
   /** Creates an entry with a random identifier */
-  def apply[C <: FiatCurrency](orderType: OrderType,
-                               amount: Bitcoin.Amount,
-                               price: Price[C]): OrderBookEntry[C] =
+  def random[C <: FiatCurrency](orderType: OrderType,
+                                amount: Bitcoin.Amount,
+                                price: Price[C]): OrderBookEntry[C] =
     OrderBookEntry(OrderId.random(), orderType, amount, price)
 
   def fromOrder[C <: FiatCurrency](order: Order[C]): OrderBookEntry[C] =
