@@ -15,8 +15,11 @@ trait AmountsCalculator {
       bitcoinAmount: Bitcoin.Amount,
       fiatAmount: CurrencyAmount[C]): Exchange.Amounts[C]
 
-  def exchangeAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] =
-    exchangeAmountsFor(order.amount, order.price.of(order.amount))
+  def exchangeAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] = {
+    val limitPrice = order.price.toOption.getOrElse(
+      throw new IllegalArgumentException("Impossible to calculate without a limit price"))
+    exchangeAmountsFor(order.amount, limitPrice.of(order.amount))
+  }
 
   def exchangeAmountsFor[C <: FiatCurrency](orderMatch: OrderMatch[C]): Exchange.Amounts[C] =
     exchangeAmountsFor(orderMatch.bitcoinAmount.seller, orderMatch.fiatAmount.buyer)

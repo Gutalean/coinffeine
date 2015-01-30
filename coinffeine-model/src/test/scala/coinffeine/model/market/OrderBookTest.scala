@@ -108,10 +108,11 @@ class OrderBookTest extends UnitTest with OptionValues {
   }
 
   it should "ignore position changes other than decreasing the amount when updating user positions" in {
-    val entry = OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR))
+    val originalPrice = Price(100.EUR)
+    val entry = OrderBookEntry(OrderId("1"), Bid, 1.BTC, originalPrice)
     shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount * 2))
     shouldIgnorePositionChange(entry, entry.copy(orderType = Ask))
-    shouldIgnorePositionChange(entry, entry.copy(price = entry.price.scaleBy(2)))
+    shouldIgnorePositionChange(entry, entry.copy(price = LimitPrice(originalPrice.scaleBy(2))))
   }
 
   private def shouldIgnorePositionChange(originalEntry: OrderBookEntry[Euro.type],

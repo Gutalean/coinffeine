@@ -19,7 +19,7 @@ class OpenOrderCommandTest extends CommandTest with Inside {
     val order = network.submissions.head
     order.orderType shouldBe Bid
     order.amount shouldBe 10.BTC
-    order.price shouldBe Price(50.EUR)
+    order.price shouldBe LimitPrice(Price(50.EUR))
     output should include(s"Created order ${order.id.value}")
   }
 

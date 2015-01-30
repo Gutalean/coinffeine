@@ -145,7 +145,7 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         case msg.OrderBookEntry.OrderType.ASK => Ask
       },
       amount = Bitcoin(decimalNumberMapping.fromProtobuf(entry.getAmount)),
-      price = ProtoMapping.fromProtobuf(entry.getPrice)
+      limit = ProtoMapping.fromProtobuf(entry.getPrice)
     )
 
     override def toProtobuf(entry: OrderBookEntry[_ <: FiatCurrency]) = msg.OrderBookEntry.newBuilder
@@ -155,7 +155,8 @@ private[serialization] class DefaultProtoMappings(txSerialization: TransactionSe
         case Ask => msg.OrderBookEntry.OrderType.ASK
       })
       .setAmount(decimalNumberMapping.toProtobuf(entry.amount.value))
-      .setPrice(priceMapping.toProtobuf(entry.price))
+      .setPrice(priceMapping.toProtobuf(entry.price.toOption.getOrElse(
+        throw new IllegalArgumentException("Unsupported price type"))))
       .build
   }
 

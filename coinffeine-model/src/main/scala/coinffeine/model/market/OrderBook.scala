@@ -69,8 +69,11 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
     entries.foldLeft(this) { (book, entry) =>
       val positionId = PositionId(userId, entry.id)
 
-      def bookWithPosition = book.addPosition(
-        Position(entry.orderType, entry.amount, entry.price, positionId))
+      def bookWithPosition = {
+        val limitPrice = entry.price.toOption.getOrElse(
+          throw new IllegalArgumentException(s"Unsupported price: ${entry.price}"))
+        book.addPosition(Position(entry.orderType, entry.amount, limitPrice, positionId))
+      }
 
       def updatePosition(currentPosition: BidOrAskPosition[C]) = {
         logInvalidPositionChanges(entry, currentPosition)
@@ -86,7 +89,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
                                         currentPosition: BidOrAskPosition[C]): Unit = {
     val invalidChanges = Seq(
       if (newEntry.orderType != currentPosition.orderType) Some("different order type") else None,
-      if (newEntry.price != currentPosition.price) Some("different price") else None,
+      if (newEntry.price != LimitPrice(currentPosition.price)) Some("different price") else None,
       if (newEntry.amount > currentPosition.amount) Some("amount increased") else None
     ).flatten
     if (invalidChanges.nonEmpty) {

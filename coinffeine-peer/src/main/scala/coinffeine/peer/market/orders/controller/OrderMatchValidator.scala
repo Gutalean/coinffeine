@@ -11,6 +11,8 @@ private class OrderMatchValidator(calculator: AmountsCalculator) {
   def shouldAcceptOrderMatch[C <: FiatCurrency](order: Order[C],
                                                 orderMatch: OrderMatch[C]): MatchResult[C] = {
 
+    val limitPrice = order.price.toOption.getOrElse(
+      throw new IllegalArgumentException("Unsupported market price orders"))
     lazy val amounts = calculator.exchangeAmountsFor(orderMatch)
 
     def isFinished: Boolean = Seq(CancelledOrder, CompletedOrder).contains(order.status)
@@ -33,8 +35,8 @@ private class OrderMatchValidator(calculator: AmountsCalculator) {
       val matchPrice = Price.whenExchanging(
         role.select(orderMatch.bitcoinAmount), role.select(orderMatch.fiatAmount))
       order.orderType match {
-        case Bid => order.price.underbids(matchPrice)
-        case Ask => matchPrice.underbids(order.price)
+        case Bid => limitPrice.underbids(matchPrice)
+        case Ask => matchPrice.underbids(limitPrice)
       }
     }
 

@@ -22,7 +22,7 @@ case class Order[C <: FiatCurrency](
     id: OrderId,
     orderType: OrderType,
     amount: Bitcoin.Amount,
-    price: Price[C],
+    price: OrderPrice[C],
     started: Boolean,
     inMarket: Boolean,
     cancelled: Boolean,
@@ -123,6 +123,12 @@ object Order {
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: Price[C]): Order[C] =
+    apply(id, orderType, amount, LimitPrice(price))
+
+  def apply[C <: FiatCurrency](id: OrderId,
+                               orderType: OrderType,
+                               amount: Bitcoin.Amount,
+                               price: OrderPrice[C]): Order[C] =
     Order(id, orderType, amount, price, started = false, inMarket = false, cancelled = false,
       exchanges = Map.empty)
 
