@@ -5,6 +5,9 @@ Notes to update from the previous version (0.4.0): you should clean your
 $(CONFIG_DIR)/journal directory as the format has changed.
 
 v0.5.0:
+ - Bug fixing
+   * Save logging config file & log file itself in data dir specified
+     with `--data-dir` command argument.
 
 v0.4.0:
  - Persist block chain headers in disk
