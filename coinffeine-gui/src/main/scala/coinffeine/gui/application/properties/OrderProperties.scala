@@ -4,7 +4,7 @@ import scalafx.beans.property._
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
 
@@ -33,7 +33,7 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
     orderStatusProperty.delegate.mapToBool(_.isActive).toReadOnlyProperty
 
   override val amountProperty = new ObjectProperty[Bitcoin.Amount](this, "amount", order.amount)
-  override val priceProperty = new ObjectProperty[Price[_ <: FiatCurrency]](this, "price", order.price)
+  override val priceProperty = new ObjectProperty[AnyOrderPrice](this, "price", order.price)
   override val progressProperty = new DoubleProperty(this, "progress", order.progress)
 
   def update(order: AnyCurrencyOrder): Unit = {

@@ -215,15 +215,18 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
   )
 
   private def checkFiatLimit(order: Order[Euro.type]): Boolean = {
-    val requestedFiat = order.price.of(order.amount)
-    if (requestedFiat > maxFiatPerOrder) {
+    (for {
+      price <- order.price.toOption
+      requestedFiat = price.of(order.amount)
+      if requestedFiat > maxFiatPerOrder
+    } yield {
       Dialogs.create()
         .title("Invalid fiat amount")
         .message("Cannot submit your order: " +
           s"maximum allowed fiat amount is $maxFiatPerOrder, but you requested $requestedFiat")
         .showInformation()
       false
-    } else true
+    }).getOrElse(true)
   }
 
   private def checkFunds[Amount <: CurrencyAmount[_]](
@@ -260,10 +263,10 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
     order.orderType match {
       case Bid =>
         val askOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Ask))
-        isSelfCrossed(order, askOrders)(_.value <= order.price.value)
+        isSelfCrossed(order, askOrders)(_.value <= order.price.toOption.get.value)
       case Ask =>
         val bidOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Bid))
-        isSelfCrossed(order, bidOrders)(_.value >= order.price.value)
+        isSelfCrossed(order, bidOrders)(_.value >= order.price.toOption.get.value)
     }
   }
 
@@ -272,7 +275,7 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
 
   private def isSelfCrossed(order: Order[Euro.type], counterparts: Iterable[AnyCurrencyOrder])
                            (condition: Price[_ <: FiatCurrency] => Boolean): Boolean = {
-    counterparts.find(c => condition(c.price)) match {
+    counterparts.find(c => condition(c.price.toOption.get)) match {
       case Some(selfCross) =>
         Dialogs.create()
           .title("Self cross detected")

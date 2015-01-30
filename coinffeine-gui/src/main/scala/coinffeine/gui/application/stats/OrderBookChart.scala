@@ -53,8 +53,8 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
       name = orderType.toString
     }
     val seriesData = data.toSeq
-      .filter(_.orderType == orderType)
-      .groupBy(_.price.value.toDouble)
+      .filter(entry => entry.orderType == orderType && entry.price.isLimited)
+      .groupBy(_.price.toOption.get.value.toDouble)
       .mapValues(sumCurrencyAmount)
     series.data = seriesData.toSeq.sortBy(_._1).map(toChartData)
     series

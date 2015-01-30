@@ -4,7 +4,7 @@ import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 
 /** Request for an interchange. */
 case class OrderBookEntry[C <: FiatCurrency](
-    id: OrderId, orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) {
+    id: OrderId, orderType: OrderType, amount: Bitcoin.Amount, price: OrderPrice[C]) {
   require(amount.isPositive, "Amount ordered must be strictly positive")
 
   override def toString = "%s(%s, %s at %s)".format(
@@ -14,16 +14,42 @@ case class OrderBookEntry[C <: FiatCurrency](
 object OrderBookEntry {
 
   /** Gets the natural order for entries on a given currency. */
-  def ordering[C <: FiatCurrency](currency: C): Ordering[OrderBookEntry[C]] =
-    Ordering.by[OrderBookEntry[C], BigDecimal] {
-      case OrderBookEntry(_, Bid, _, price) => -price.value
-      case OrderBookEntry(_, Ask, _, price) => price.value
+  def ordering[C <: FiatCurrency](currency: C): Ordering[OrderBookEntry[C]] = {
+    def lessPriceThan(left: Option[BigDecimal], right: Option[BigDecimal]): Boolean =
+      (left, right) match {
+        case (_, None) => false
+        case (None, _) => true
+        case (Some(leftPrice), Some(rightPrice)) => leftPrice < rightPrice
+      }
+
+    Ordering.fromLessThan[OrderBookEntry[C]] { (leftEntry, rightEntry) =>
+      (leftEntry.orderType, rightEntry.orderType) match {
+        case (Bid, Ask) => true
+        case (Ask, Bid) => false
+        case (Ask, Ask) =>
+          lessPriceThan(leftEntry.price.toOption.map(_.value), rightEntry.price.toOption.map(_.value))
+        case (Bid, Bid) =>
+          lessPriceThan(leftEntry.price.toOption.map(-_.value), rightEntry.price.toOption.map(-_.value))
+      }
     }
+  }
+
+  def apply[C <: FiatCurrency](id: OrderId,
+                               orderType: OrderType,
+                               amount: Bitcoin.Amount,
+                               limit: Price[C]): OrderBookEntry[C] =
+    OrderBookEntry(id, orderType, amount, LimitPrice(limit))
 
   /** Creates an entry with a random identifier */
-  def apply[C <: FiatCurrency](orderType: OrderType,
-                               amount: Bitcoin.Amount,
-                               price: Price[C]): OrderBookEntry[C] =
+  def random[C <: FiatCurrency](orderType: OrderType,
+                                amount: Bitcoin.Amount,
+                                limit: Price[C]): OrderBookEntry[C] =
+    random(orderType, amount, LimitPrice(limit))
+
+  /** Creates an entry with a random identifier */
+  def random[C <: FiatCurrency](orderType: OrderType,
+                                amount: Bitcoin.Amount,
+                                price: OrderPrice[C]): OrderBookEntry[C] =
     OrderBookEntry(OrderId.random(), orderType, amount, price)
 
   def fromOrder[C <: FiatCurrency](order: Order[C]): OrderBookEntry[C] =

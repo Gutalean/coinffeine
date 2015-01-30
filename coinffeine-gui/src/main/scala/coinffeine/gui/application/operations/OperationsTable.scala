@@ -75,10 +75,13 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
           props.amountProperty
         })
       },
-      new TreeTableColumn[OperationProperties, AnyPrice] {
+      new TreeTableColumn[OperationProperties, String] {
         setText("Price")
-        setCellValueFactory(listen[OperationProperties, AnyPrice] { props =>
-          props.priceProperty
+        setCellValueFactory(listen[OperationProperties, String] { props =>
+          props.priceProperty.delegate.map {
+            case MarketPrice(_) => "Market price"
+            case LimitPrice(limit) => limit.toString
+          }
         })
       },
       new TreeTableColumn[OperationProperties, String] {
