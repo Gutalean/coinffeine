@@ -18,7 +18,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
 
   it must "create a new transaction with chosen inputs" in new Fixture {
     withFees {
-      val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor)
+      val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor).toSet
       val amount = 1.BTC
       val tx = wallet.createTransaction(inputs, amount, someAddress)
       val amountPlusFee = amount + MutableTransaction.ReferenceDefaultMinTxFee
@@ -27,7 +27,7 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
   }
 
   it must "fail to create a new transaction when insufficient balance" in new Fixture {
-    an[NotEnoughFunds] shouldBe thrownBy {
+    a [NotEnoughFunds] shouldBe thrownBy {
       wallet.createTransaction(20.BTC, someAddress)
     }
   }
