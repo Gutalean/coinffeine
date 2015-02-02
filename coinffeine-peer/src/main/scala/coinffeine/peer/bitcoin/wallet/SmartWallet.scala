@@ -16,7 +16,7 @@ class SmartWallet(val delegate: Wallet) {
 
   import SmartWallet._
 
-  type Inputs = Traversable[TransactionOutPoint]
+  type Inputs = Set[TransactionOutPoint]
 
   def this(network: Network) = this(new Wallet(network))
 
@@ -73,7 +73,7 @@ class SmartWallet(val delegate: Wallet) {
                         amount: Bitcoin.Amount,
                         to: Address): ImmutableTransaction = synchronized {
     val request = SendRequest.to(to, amount)
-    request.coinSelector = new HandpickedCoinSelector(inputs.toSet)
+    request.coinSelector = new HandpickedCoinSelector(inputs)
     createTransaction(request)
   }
 
@@ -166,7 +166,7 @@ class SmartWallet(val delegate: Wallet) {
 
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
-  private def valueOf(inputs: Inputs): Bitcoin.Amount = inputs.map(valueOf).sum
+  private def valueOf(inputs: Inputs): Bitcoin.Amount = inputs.toSeq.map(valueOf).sum
 
   private def valueOf(input: TransactionOutPoint): Bitcoin.Amount =
     Option(input.getConnectedOutput)
