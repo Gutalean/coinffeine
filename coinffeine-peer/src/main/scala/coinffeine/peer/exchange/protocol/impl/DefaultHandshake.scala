@@ -56,17 +56,9 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,
                                            expectedAmount: Bitcoin.Amount) = {
-    def requireProperty(cond: MutableTransaction => Boolean, cause: String): Unit = {
-      if (!cond(tx.get)) throw new InvalidRefundTransaction(tx, cause)
+    val validator = new RefundTransactionValidation(exchange.parameters, expectedAmount)
+    validator(tx).swap.foreach { errors =>
+      throw new InvalidRefundTransaction(tx, errors.list.mkString(", "))
     }
-    def validateAmount(tx: MutableTransaction): Boolean = {
-      val amount: Bitcoin.Amount = tx.getOutput(0).getValue
-      amount == expectedAmount
-    }
-    // TODO: Is this enough to ensure we can sign?
-    requireProperty(_.isTimeLocked, "lack a time lock")
-    requireProperty(_.getLockTime == exchange.parameters.lockTime, "wrong time lock")
-    requireProperty(_.getInputs.size == 1, "should have one input")
-    requireProperty(validateAmount, "wrong refund amount")
   }
 }

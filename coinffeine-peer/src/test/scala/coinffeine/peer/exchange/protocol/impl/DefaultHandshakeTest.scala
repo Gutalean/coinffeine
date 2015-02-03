@@ -47,39 +47,15 @@ class DefaultHandshakeTest extends ExchangeTest {
       buyerWallet.estimatedBalance should be (1.BTC)
     }
 
-  "A handshake" should "reject signing counterpart deposit with a different lock time" in
+  "A handshake" should "reject signing invalid counterpart deposits" in
     new BuyerHandshake with SellerHandshake {
       val depositWithWrongLockTime = ImmutableTransaction {
-        val tx = buyerHandshake.myUnsignedRefund.get
-        tx.setLockTime(parameters.lockTime - 10)
-        tx
-      }
-      an [InvalidRefundTransaction] should be thrownBy {
-        sellerHandshake.signHerRefund(depositWithWrongLockTime)
-      }
-    }
-
-  it should "reject signing counterpart deposit with no lock time" in
-    new BuyerHandshake with SellerHandshake {
-      val depositWithNoLockTime = ImmutableTransaction {
-        val tx = buyerHandshake.myUnsignedRefund.get
-        tx.setLockTime(0)
-        tx
-      }
-      an [InvalidRefundTransaction] should be thrownBy {
-        sellerHandshake.signHerRefund(depositWithNoLockTime)
-      }
-    }
-
-  it should "reject signing counterpart deposit with other than one input" in
-    new BuyerHandshake with SellerHandshake {
-      val depositWithoutInputs = ImmutableTransaction {
         val tx = buyerHandshake.myUnsignedRefund.get
         tx.clearInputs()
         tx
       }
       an [InvalidRefundTransaction] should be thrownBy {
-        sellerHandshake.signHerRefund(depositWithoutInputs)
+        sellerHandshake.signHerRefund(depositWithWrongLockTime)
       }
     }
 }
