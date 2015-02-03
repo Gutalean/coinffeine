@@ -1,3 +1,12 @@
+Changelog
+=========
+
+v0.4.1:
+ - Bug fixing
+   * Fixed boundary condition when checking limit prices
+   * Fixed minimum funds checking when several outputs of the same amount are
+     used
+
 v0.4.0:
  - Persist block chain headers in disk
  - Allow overriding the data path on the command line
