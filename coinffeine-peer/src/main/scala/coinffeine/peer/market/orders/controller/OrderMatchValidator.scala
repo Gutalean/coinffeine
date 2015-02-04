@@ -5,10 +5,11 @@ import scalaz.{Validation, Scalaz}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Role
 import coinffeine.model.market._
+import coinffeine.model.network.PeerId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-private class OrderMatchValidator(calculator: AmountsCalculator) {
+private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator) {
 
   import Scalaz._
 
@@ -20,6 +21,9 @@ private class OrderMatchValidator(calculator: AmountsCalculator) {
     val limitPrice = order.price.toOption.getOrElse(
       throw new IllegalArgumentException("Unsupported market price orders"))
     lazy val amounts = calculator.exchangeAmountsFor(orderMatch)
+
+    def requireNoSelfCrossing: MatchValidation =
+      require(orderMatch.counterpart != peerId, MatchRejected("Self-cross"))
 
     def requireUnfinishedOrder: MatchValidation = {
       val isFinished = Seq(CancelledOrder, CompletedOrder).contains(order.status)
@@ -63,6 +67,7 @@ private class OrderMatchValidator(calculator: AmountsCalculator) {
       if (predicate) ().success else result.failure
 
     (for {
+      _ <- requireNoSelfCrossing
       _ <- requireUnfinishedOrder
       _ <- requireNotAcceptedPreviously
       _ <- requireNoExchangeInProgress

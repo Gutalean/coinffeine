@@ -4,21 +4,25 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.network.PeerId
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 /** Runs and order deciding when to accept/reject order matches and notifying order changes.
   *
   * @constructor
+  * @param peerId             Own peer id
   * @param amountsCalculator  Used to compute amounts of fiat/bitcoin involved
   * @param network            Which network the order is running on
   * @param initialOrder       Order to run
   */
 private[orders] class OrderController[C <: FiatCurrency](
+    peerId: PeerId,
     amountsCalculator: AmountsCalculator,
     network: Network,
     initialOrder: Order[C]) {
 
+  private val orderMatchValidator = new OrderMatchValidator(peerId, amountsCalculator)
   private var listeners = Seq.empty[OrderController.Listener[C]]
   private var _order = initialOrder
 
@@ -39,7 +43,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
-    new OrderMatchValidator(amountsCalculator).shouldAcceptOrderMatch(_order, orderMatch)
+    orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch)
 
   def acceptOrderMatch(orderMatch: OrderMatch[C]): HandshakingExchange[C] = {
     val newExchange = Exchange.handshaking(

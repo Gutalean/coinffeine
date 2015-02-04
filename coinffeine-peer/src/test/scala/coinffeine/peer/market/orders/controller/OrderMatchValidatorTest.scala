@@ -14,7 +14,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsComponent {
 
-  private val validator = new OrderMatchValidator(amountsCalculator)
+  private val ownId = PeerId.random()
+  private val validator = new OrderMatchValidator(ownId, amountsCalculator)
   private val order = Order.random(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
   private val orderMatch = OrderMatch(
     orderId = order.id,
@@ -41,6 +42,10 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch)) {
       case MatchAlreadyAccepted(_) =>
     }
+  }
+
+  it should "reject self-matches" in {
+    expectRejectionWithMessage(order, orderMatch.copy(counterpart = ownId), "Self-cross")
   }
 
   it should "reject matches when having a running exchange" in {

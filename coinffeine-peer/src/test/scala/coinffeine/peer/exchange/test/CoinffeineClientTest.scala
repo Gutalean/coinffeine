@@ -18,6 +18,7 @@ object CoinffeineClientTest {
 
   trait Perspective {
     val exchange: HandshakingExchange[Euro.type]
+    def myRole: Role
     def participants: Both[Exchange.PeerInfo]
     def handshakingExchange = exchange.startHandshaking(user, counterpart)
     def runningExchange = handshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
@@ -30,11 +31,13 @@ object CoinffeineClientTest {
 
   trait BuyerPerspective extends Perspective {
     override lazy val exchange = buyerExchange
+    override def myRole = BuyerRole
     def buyerExchange: HandshakingExchange[Euro.type]
   }
 
   trait SellerPerspective extends Perspective {
     override lazy val exchange = sellerExchange
+    override def myRole = SellerRole
     def sellerExchange: HandshakingExchange[Euro.type]
   }
 }
