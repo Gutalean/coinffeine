@@ -4,6 +4,7 @@ Changelog
 v0.4.2:
  - Bug fixing
    * Avoid self-crossing orders when clearing the order book
+   * Fix a bug that caused unconfirmed outputs to be spent
 
 v0.4.1:
  - Bug fixing

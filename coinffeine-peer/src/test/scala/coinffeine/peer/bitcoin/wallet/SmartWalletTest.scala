@@ -44,6 +44,13 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     }
   }
 
+  it must "fail to create a deposit when available outputs are unconfirmed" in new Fixture {
+    wallet.createTransaction(1.BTC, wallet.currentReceiveAddress)
+    a [NotEnoughFunds] shouldBe thrownBy {
+      wallet.createMultisignTransaction(signatures, 1.BTC, 0.BTC)
+    }
+  }
+
   it must "release unpublished deposit funds" in new Fixture {
     val tx = wallet.createMultisignTransaction(signatures, 1.BTC, 0.1.BTC)
     wallet.releaseTransaction(tx)

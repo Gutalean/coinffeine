@@ -105,6 +105,7 @@ class SmartWallet(val delegate: Wallet) {
       }
     }
     moveToPool(walletTx, WalletTransaction.Pool.DEAD)
+    update()
   }
 
   def createMultisignTransaction(requiredSignatures: Both[PublicKey],
@@ -139,6 +140,7 @@ class SmartWallet(val delegate: Wallet) {
 
   def spendCandidates: Seq[MutableTransactionOutput] = synchronized {
     delegate.calculateAllSpendCandidates(ExcludeImmatureCoinBases)
+      .filter(!_.getParentTransaction.isPending)
   }
 
   private def update(): Unit = synchronized {

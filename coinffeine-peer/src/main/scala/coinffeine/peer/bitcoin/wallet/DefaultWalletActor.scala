@@ -86,7 +86,8 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
             sender() ! BlockedBitcoins(fundsId)
           }
         case None =>
-          sender() ! CannotBlockBitcoins(s"cannot collect funds to block $amount")
+          sender() ! CannotBlockBitcoins(
+              s"cannot collect funds to block $amount: ${blockedOutputs.available} available")
       }
 
     case UnblockBitcoins(fundsId) if blockedOutputs.areBlocked(fundsId) =>
