@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.4.2:
+ - Bug fixing
+   * Avoid self-crossing orders when clearing the order book
+
 v0.4.1:
  - Bug fixing
    * Fixed boundary condition when checking limit prices
