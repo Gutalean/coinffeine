@@ -11,7 +11,7 @@ import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.network.{PeerId, BrokerId, MutableCoinffeineNetworkProperties}
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.orders.controller._
@@ -217,7 +217,8 @@ object OrderActor {
                                amountsCalculator: AmountsCalculator,
                                order: Order[C],
                                coinffeineProperties: MutableCoinffeineNetworkProperties,
-                               collaborators: Collaborators): Props = {
+                               collaborators: Collaborators,
+                               peerId: PeerId): Props = {
     import collaborators._
     val delegates = new Delegates[C] {
       override def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext) = {
@@ -230,7 +231,7 @@ object OrderActor {
     }
     Props(new OrderActor[C](
       order,
-      new OrderController(amountsCalculator, network, order),
+      new OrderController(peerId, amountsCalculator, network, order),
       delegates,
       coinffeineProperties,
       collaborators

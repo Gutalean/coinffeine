@@ -108,7 +108,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   trait Fixture extends DefaultAmountsComponent {
     val listener = new MockOrderControllerListener[Euro.type]
     val order = new OrderController[Euro.type](
-      amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
+      peerIds.buyer, amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
     order.addListener(listener)
 
     def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] = exchange match {
