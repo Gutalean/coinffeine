@@ -1,6 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
-import scalaz.{Validation, Scalaz}
+import scalaz.{Scalaz, Validation}
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Role
@@ -33,9 +33,6 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
     def requireNotAcceptedPreviously: MatchValidation =
       require(!order.exchanges.contains(orderMatch.exchangeId),
         MatchAlreadyAccepted(order.exchanges(orderMatch.exchangeId)))
-
-    def requireNoExchangeInProgress: MatchValidation =
-      require(order.status != InProgressOrder, MatchRejected("Exchange already in progress"))
 
     def requireValidAmount: MatchValidation = {
       val role = Role.fromOrderType(order.orderType)
@@ -70,7 +67,6 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       _ <- requireNoSelfCrossing
       _ <- requireUnfinishedOrder
       _ <- requireNotAcceptedPreviously
-      _ <- requireNoExchangeInProgress
       _ <- requireValidAmount
       _ <- requireValidPrice
       _ <- requireConsistentAmounts

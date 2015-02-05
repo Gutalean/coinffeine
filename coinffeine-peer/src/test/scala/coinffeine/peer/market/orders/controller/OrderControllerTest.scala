@@ -15,14 +15,19 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
-  val initialOrder = Order.random(Bid, 10.BTC, Price(1.EUR))
-  val orderMatch = OrderMatch(
+  private val initialOrder = Order.random(Bid, 10.BTC, Price(1.EUR))
+  private val orderMatch = OrderMatch(
     orderId = initialOrder.id,
     exchangeId = ExchangeId.random(),
     bitcoinAmount = Both(buyer = 10.BTC, seller = 10.0003.BTC),
     fiatAmount = Both(buyer = 10.EUR, seller = OkPayPaymentProcessor.amountMinusFee(10.EUR)),
     lockTime = 80L,
     counterpart = PeerId.hashOf("counterpart")
+  )
+  private val firstHalfMatch, secondHalfMatch = orderMatch.copy(
+    exchangeId = ExchangeId.random(),
+    bitcoinAmount = Both(buyer = 5.BTC, seller = 5.0003.BTC),
+    fiatAmount = Both(buyer = 5.EUR, seller = OkPayPaymentProcessor.amountMinusFee(5.EUR))
   )
 
   "An order controller" should "start new exchanges" in new Fixture {
@@ -65,10 +70,9 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     listener.lastStatus shouldBe CancelledOrder
   }
 
-  it should "reject order matches during other exchange" in new Fixture {
-    order.acceptOrderMatch(orderMatch)
-    order.shouldAcceptOrderMatch(orderMatch.copy(exchangeId = ExchangeId("other"))) shouldBe
-      MatchRejected("Exchange already in progress")
+  it should "accept order matches during other exchange" in new Fixture {
+    order.acceptOrderMatch(firstHalfMatch)
+    order.acceptOrderMatch(secondHalfMatch)
   }
 
   it should "recognize already accepted matches" in new Fixture {
@@ -82,11 +86,6 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   }
 
   it should "support partial matching" in new Fixture {
-    val firstHalfMatch, secondHalfMatch = orderMatch.copy(
-      exchangeId = ExchangeId.random(),
-      bitcoinAmount = Both(buyer = 5.BTC, seller = 5.0003.BTC),
-      fiatAmount = Both(buyer = 5.EUR, seller = OkPayPaymentProcessor.amountMinusFee(5.EUR))
-    )
     order.view.amounts.pending shouldBe initialOrder.amount
     order.becomeInMarket()
 

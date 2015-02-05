@@ -48,17 +48,6 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     expectRejectionWithMessage(order, orderMatch.copy(counterpart = ownId), "Self-cross")
   }
 
-  it should "reject matches when having a running exchange" in {
-    val runningExchange = exchange.copy[Euro.type](
-      metadata = exchange.metadata.copy(id = ExchangeId.random())
-    ).startHandshaking(
-      user = Exchange.PeerInfo("account1", new KeyPair),
-      counterpart = Exchange.PeerInfo("account2", new KeyPair)
-    )
-    val exchangingOrder = order.start.copy(exchanges = Map(runningExchange.id -> runningExchange))
-    expectRejectionWithMessage(exchangingOrder, orderMatch, "Exchange already in progress")
-  }
-
   it should "reject matches of more amount than the pending one" in {
     val tooLargeOrderMatch = orderMatch.copy[Euro.type](bitcoinAmount = Both(1.9997.BTC, 2.BTC))
     expectRejectionWithMessage(order, tooLargeOrderMatch, "Invalid amount")
@@ -96,6 +85,22 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   it should "take rounding into account when checking the price limit" in {
     val boundaryOrderMatch = orderMatch.copy(fiatAmount = Both(110.23 EUR,109.68 EUR))
     inside(validator.shouldAcceptOrderMatch(order, boundaryOrderMatch)) {
+      case MatchAccepted(_) =>
+    }
+  }
+
+  it should "accept matches when having a running exchange" in {
+    val runningExchange = exchange.copy[Euro.type](
+      metadata = exchange.metadata.copy(id = ExchangeId.random())
+    ).startHandshaking(
+      user = Exchange.PeerInfo("account1", new KeyPair),
+      counterpart = Exchange.PeerInfo("account2", new KeyPair)
+    )
+    val exchangingOrder = order.start.copy(
+      amount = 10.BTC,
+      exchanges = Map(runningExchange.id -> runningExchange)
+    )
+    inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch)) {
       case MatchAccepted(_) =>
     }
   }
