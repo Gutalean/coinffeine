@@ -21,14 +21,16 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
   /** Sorted client positions */
   def positions: Iterable[Pos] = tree.values.flatMap(_.positions)
 
-  def positionsNotInHandshake: Iterable[Pos] = positions.filterNot(_.inHandshake)
+  def positionsNotCompletelyInHandshake: Iterable[Pos] = positions.filter { pos =>
+    pos.amount > pos.handshakingAmount
+  }
 
   def userPositions(userId: PeerId): Seq[Pos] =
     positions.filter(_.id.peerId == userId).toSeq
 
   def get(positionId: PositionId): Option[Pos] = positions.find(_.id == positionId)
 
-  def bestPrice: Option[Price[C]] = positionsNotInHandshake.headOption.map(_.price)
+  def bestPrice: Option[Price[C]] = positionsNotCompletelyInHandshake.headOption.map(_.price)
 
   def decreaseAmount(id: PositionId, amount: Bitcoin.Amount): OrderMap[T, C] =
     get(id).fold(this) { position =>
@@ -40,11 +42,11 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
 
   def cancelPositions(peerId: PeerId): OrderMap[T, C] = mapQueues(_.removeByPeerId(peerId))
 
-  def startHandshake(positionId: PositionId): OrderMap[T, C] =
-    mapQueues(_.startHandshake(positionId))
+  def startHandshake(positionId: PositionId, crossedAmount: Bitcoin.Amount): OrderMap[T, C] =
+    mapQueues(_.startHandshake(positionId, crossedAmount))
 
-  def clearHandshake(positionId: PositionId): OrderMap[T, C] =
-    mapQueues(_.clearHandshake(positionId))
+  def clearHandshake(positionId: PositionId, crossedAmount: Bitcoin.Amount): OrderMap[T, C] =
+    mapQueues(_.clearHandshake(positionId, crossedAmount))
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] = for {
     queue <- tree.values.toSeq

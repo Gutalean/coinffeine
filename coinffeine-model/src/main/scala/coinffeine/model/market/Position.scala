@@ -3,19 +3,27 @@ package coinffeine.model.market
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 
 /** Bidding or asking position taken by a requester */
-case class Position[T <: OrderType, C <: FiatCurrency](orderType: T,
-                                                       amount: Bitcoin.Amount,
-                                                       price: Price[C],
-                                                       id: PositionId,
-                                                       inHandshake: Boolean = false) {
+case class Position[T <: OrderType, C <: FiatCurrency](
+    orderType: T,
+    amount: Bitcoin.Amount,
+    price: Price[C],
+    id: PositionId,
+    handshakingAmount: Bitcoin.Amount = Bitcoin.Zero) {
+  require(amount.isPositive && !handshakingAmount.isNegative && amount >= handshakingAmount,
+    s"Invalid position amounts: $this")
+
+  /** Amount not involved in handshaking and thus available for crossing */
+  def availableAmount: Bitcoin.Amount = amount - handshakingAmount
 
   def decreaseAmount(decrease: Bitcoin.Amount): Position[T, C] = {
     require(decrease < amount)
     copy(amount = amount - decrease)
   }
 
-  def clearHandshake: Position[T, C] = copy(inHandshake = false)
-  def startHandshake: Position[T, C] = copy(inHandshake = true)
+  def clearHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
+    copy(handshakingAmount = handshakingAmount - crossedAmount)
+  def startHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
+    copy(handshakingAmount = handshakingAmount + crossedAmount)
 
   /** Folds any Position type into a value of type T.
     *
