@@ -48,8 +48,7 @@ class OrderActor[C <: FiatCurrency](
 
   override def receiveRecover: Receive = {
     case OrderStarted => onOrderStarted()
-    case event: AcceptedOrderMatch[_] =>
-      onAcceptedOrderMatch(event.asInstanceOf[AcceptedOrderMatch[C]])
+    case event: FundsRequested[_] => onFundsRequested(event.asInstanceOf[FundsRequested[C]])
     case FundsBlocked => onFundsBlocked()
     case CannotBlockFunds => onCannotBlockFunds()
     case CancelledOrder => onCancelledOrder()
@@ -60,7 +59,7 @@ class OrderActor[C <: FiatCurrency](
     order.start()
   }
 
-  private def onAcceptedOrderMatch(event: AcceptedOrderMatch[C]): Unit = {
+  private def onFundsRequested(event: FundsRequested[C]): Unit = {
     blockingInProgress = Some(BlockingInProgress(event.orderMatch, event.requiredFunds))
   }
 
@@ -88,9 +87,9 @@ class OrderActor[C <: FiatCurrency](
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.shouldAcceptOrderMatch(orderMatch) match {
         case MatchAccepted(requiredFunds) =>
-          persist(AcceptedOrderMatch(orderMatch, requiredFunds)) { event =>
+          persist(FundsRequested(orderMatch, requiredFunds)) { event =>
             log.info("Blocking funds for {}", orderMatch)
-            onAcceptedOrderMatch(event)
+            onFundsRequested(event)
             requestPendingFunds()
           }
         case MatchRejected(cause) =>
@@ -240,7 +239,7 @@ object OrderActor {
 
   private case object ResumeOrder
   private case object OrderStarted extends PersistentEvent
-  private case class AcceptedOrderMatch[C <: FiatCurrency](
+  private case class FundsRequested[C <: FiatCurrency](
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
   private case object FundsBlocked extends PersistentEvent
   private case object CannotBlockFunds extends PersistentEvent
