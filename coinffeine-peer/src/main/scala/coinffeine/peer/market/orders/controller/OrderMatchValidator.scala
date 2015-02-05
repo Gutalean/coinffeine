@@ -1,8 +1,8 @@
 package coinffeine.peer.market.orders.controller
 
-import scalaz.{Validation, Scalaz}
+import scalaz.{Scalaz, Validation}
 
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.Role
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -14,7 +14,8 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
   import Scalaz._
 
   def shouldAcceptOrderMatch[C <: FiatCurrency](order: Order[C],
-                                                orderMatch: OrderMatch[C]): MatchResult[C] = {
+                                                orderMatch: OrderMatch[C],
+                                                alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
 
     type MatchValidation = Validation[MatchResult[C], Unit]
 
@@ -34,13 +35,10 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       require(!order.exchanges.contains(orderMatch.exchangeId),
         MatchAlreadyAccepted(order.exchanges(orderMatch.exchangeId)))
 
-    def requireNoExchangeInProgress: MatchValidation =
-      require(order.status != InProgressOrder, MatchRejected("Exchange already in progress"))
-
     def requireValidAmount: MatchValidation = {
       val role = Role.fromOrderType(order.orderType)
-      val remainingAmount = order.amounts.pending.value
-      val matchedAmount = role.select(orderMatch.bitcoinAmount).value
+      val remainingAmount = order.amounts.pending - alreadyBlocking
+      val matchedAmount = role.select(orderMatch.bitcoinAmount)
       require(remainingAmount >= matchedAmount,
         MatchRejected(s"Invalid amount: $remainingAmount remaining, $matchedAmount offered"))
     }
@@ -70,7 +68,6 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       _ <- requireNoSelfCrossing
       _ <- requireUnfinishedOrder
       _ <- requireNotAcceptedPreviously
-      _ <- requireNoExchangeInProgress
       _ <- requireValidAmount
       _ <- requireValidPrice
       _ <- requireConsistentAmounts

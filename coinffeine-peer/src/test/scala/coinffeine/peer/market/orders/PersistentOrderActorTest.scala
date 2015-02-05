@@ -7,36 +7,26 @@ import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class PersistentOrderActorTest extends OrderActorTest {
 
-  "A persistent order actor" should "remember order matches that were being accepted" in new Fixture {
-    givenInMarketOrder()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    fundsBlocker.expectCreation()
-    expectNoMsg(idleTime)
+  "A persistent order actor" should "remember that a match couldn't start because of funds shortage" in
+    new Fixture {
+      givenInMarketOrder()
+      gatewayProbe.relayMessageFromBroker(orderMatch)
+      givenFailedFundsBlocking()
+      gatewayProbe.expectForwardingToBroker(
+        ExchangeRejection(orderMatch.exchangeId, "Cannot block funds"))
 
-    restartOrder()
-    expectNoMsg(idleTime)
-    shouldRejectAnOrderMatch("Accepting other match")
-  }
+      restartOrder()
+      fundsBlocker.expectStop()
 
-  it should "remember that a match couldn't start because of funds shortage" in new Fixture {
-    givenInMarketOrder()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenFailedFundsBlocking()
-    gatewayProbe.expectForwardingToBroker(
-      ExchangeRejection(orderMatch.exchangeId, "Cannot block funds"))
-
-    restartOrder()
-    fundsBlocker.expectStop()
-
-    expectNoMsg(idleTime)
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    fundsBlocker.expectCreation()
-  }
+      expectNoMsg(idleTime)
+      gatewayProbe.relayMessageFromBroker(orderMatch)
+      fundsBlocker.expectCreation()
+    }
 
   it should "remember that an exchange was started" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking()
+    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
     val Seq(exchange: AnyExchange) = exchangeActor.expectCreation()
     exchange.id shouldBe orderMatch.exchangeId
 
