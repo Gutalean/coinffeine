@@ -31,17 +31,10 @@ class OrderActor[C <: FiatCurrency](
 
   import OrderActor._
 
-  private case class FundRequest(orderMatch: OrderMatch[C], funds: RequiredFunds[C]) {
-    def start(): Unit = {
-      context.actorOf(delegates.fundsBlocker(orderMatch.exchangeId, funds))
-    }
-  }
-
   private val orderId = initialOrder.id
   override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
-  private var pendingFundRequests = Map.empty[ExchangeId, FundRequest]
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -64,19 +57,16 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def onFundsRequested(event: FundsRequested[C]): Unit = {
-    pendingFundRequests +=
-      event.orderMatch.exchangeId -> FundRequest(event.orderMatch, event.requiredFunds)
+    order.fundsRequested(event.orderMatch, event.requiredFunds)
   }
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {
-    val blockingInProgress = pendingFundRequests(event.exchangeId)
-    val exchange = order.acceptOrderMatch(blockingInProgress.orderMatch)
-    pendingFundRequests -= event.exchangeId
+    val exchange = order.startExchange(event.exchangeId)
     context.actorOf(delegates.exchangeActor(exchange), exchange.id.value)
   }
 
   private def onCannotBlockFunds(event: CannotBlockFunds): Unit = {
-    pendingFundRequests -= event.exchangeId
+    order.fundsRequestFailed(event.exchangeId)
   }
 
   private def onCancelledOrder(): Unit = {
@@ -88,35 +78,32 @@ class OrderActor[C <: FiatCurrency](
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
-      order.shouldAcceptOrderMatch(orderMatch, amountWithPendingFundRequests) match {
+      order.shouldAcceptOrderMatch(orderMatch) match {
         case MatchAccepted(requiredFunds) =>
           persist(FundsRequested(orderMatch, requiredFunds)) { event =>
             log.info("Blocking funds for {}", orderMatch)
+            spawnFundsBlocker(orderMatch.exchangeId, requiredFunds)
             onFundsRequested(event)
-            pendingFundRequests(event.orderMatch.exchangeId).start()
           }
         case MatchRejected(cause) =>
-          rejectOrderMatch(cause, orderMatch)
+          rejectOrderMatch(cause, orderMatch.exchangeId)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
       }
 
-    case FundsBlockerActor.BlockingResult(exchangeId, result)
-      if !pendingFundRequests.contains(exchangeId) =>
+    case FundsBlockerActor.BlockingResult(exchangeId, result) if !order.hasPendingFunds(exchangeId) =>
       log.warning("Unexpected blocking result {} for {}", result, exchangeId)
 
     case FundsBlockerActor.BlockingResult(exchangeId, Success(_)) =>
-      val orderMatch = pendingFundRequests(exchangeId).orderMatch
       persist(FundsBlocked(exchangeId)) { event =>
-        log.info("Accepting match for {} against counterpart {} identified as {}",
-          orderId, orderMatch.counterpart, orderMatch.exchangeId)
+        log.info("Accepting {}, funds just got blocked", exchangeId)
         onFundsBlocked(event)
       }
 
     case FundsBlockerActor.BlockingResult(exchangeId, Failure(cause)) =>
       persist(CannotBlockFunds(exchangeId)) { event =>
-        log.error(cause, "Cannot block funds")
-        rejectOrderMatch("Cannot block funds", pendingFundRequests(exchangeId).orderMatch)
+        log.error(cause, "Cannot block funds for {}", exchangeId)
+        rejectOrderMatch("Cannot block funds", exchangeId)
         onCannotBlockFunds(event)
       }
 
@@ -152,7 +139,9 @@ class OrderActor[C <: FiatCurrency](
   override def offline(): Unit = { order.becomeOffline() }
 
   private def reRequestPendingFunds(): Unit = {
-    pendingFundRequests.values.foreach(_.start())
+    order.pendingFunds.foreach { case (exchangeId, requiredFunds) =>
+      spawnFundsBlocker(exchangeId, requiredFunds)
+    }
   }
 
   private def subscribeToOrderMatches(): Unit = {
@@ -184,10 +173,9 @@ class OrderActor[C <: FiatCurrency](
     else publisher.stopPublishing()
   }
 
-  private def rejectOrderMatch(cause: String, rejectedMatch: OrderMatch[_]): Unit = {
-    log.info("Rejecting match for {} against counterpart {}: {}",
-      orderId, rejectedMatch.counterpart, cause)
-    val rejection = ExchangeRejection(rejectedMatch.exchangeId, cause)
+  private def rejectOrderMatch(cause: String, exchangeId: ExchangeId): Unit = {
+    log.info("Rejecting match for {}: {}", orderId, exchangeId, cause)
+    val rejection = ExchangeRejection(exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
 
@@ -197,9 +185,8 @@ class OrderActor[C <: FiatCurrency](
     order.completeExchange(exchange)
   }
 
-  private def amountWithPendingFundRequests: Bitcoin.Amount = {
-    val role = Role.fromOrderType(order.view.orderType)
-    pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
+  private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
+    context.actorOf(delegates.fundsBlocker(exchangeId, funds))
   }
 }
 

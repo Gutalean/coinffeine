@@ -22,9 +22,12 @@ private[orders] class OrderController[C <: FiatCurrency](
     network: Network,
     initialOrder: Order[C]) {
 
+  private case class FundsRequest(orderMatch: OrderMatch[C], funds: RequiredFunds[C])
+
   private val orderMatchValidator = new OrderMatchValidator(peerId, amountsCalculator)
   private var listeners = Seq.empty[OrderController.Listener[C]]
   private var _order = initialOrder
+  private var pendingFundRequests = Map.empty[ExchangeId, FundsRequest]
 
   /** Immutable snapshot of the order */
   def view: Order[C] = _order
@@ -42,17 +45,39 @@ private[orders] class OrderController[C <: FiatCurrency](
     listener.onOrderChange(_order, _order)
   }
 
-  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C],
-                             alreadyBlocking: Bitcoin.Amount = Bitcoin.Zero): MatchResult[C] =
-    orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch, alreadyBlocking)
+  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
+    orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch, totalPendingFundsAmount)
 
-  def acceptOrderMatch(orderMatch: OrderMatch[C]): HandshakingExchange[C] = {
+  private def totalPendingFundsAmount: Bitcoin.Amount = {
+    val role = Role.fromOrderType(_order.orderType)
+    pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
+  }
+
+  def pendingFunds: Map[ExchangeId, RequiredFunds[C]] = pendingFundRequests.mapValues(_.funds)
+
+  def hasPendingFunds(exchangeId: ExchangeId): Boolean = pendingFundRequests.contains(exchangeId)
+
+  /** Mark exchange required funds as being requested */
+  def fundsRequested(orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]): Unit = {
+    pendingFundRequests += orderMatch.exchangeId -> FundsRequest(orderMatch, requiredFunds)
+  }
+
+  /** Resolve as failed the funds for an exchange */
+  def fundsRequestFailed(exchangeId: ExchangeId): Unit = {
+    pendingFundRequests -= exchangeId
+  }
+
+  /** Start an exchange. You should have called [[fundsRequested()]] previously. */
+  def startExchange(exchangeId: ExchangeId): HandshakingExchange[C] = {
+    val request = pendingFundRequests.getOrElse(exchangeId,
+      throw new IllegalArgumentException(s"Cannot accept $exchangeId: no funds were blocked"))
+    pendingFundRequests -= exchangeId
     val newExchange = Exchange.handshaking(
-      id = orderMatch.exchangeId,
+      id = request.orderMatch.exchangeId,
       Role.fromOrderType(view.orderType),
-      counterpartId = orderMatch.counterpart,
-      amountsCalculator.exchangeAmountsFor(orderMatch),
-      Exchange.Parameters(orderMatch.lockTime, network)
+      counterpartId = request.orderMatch.counterpart,
+      amountsCalculator.exchangeAmountsFor(request.orderMatch),
+      Exchange.Parameters(request.orderMatch.lockTime, network)
     )
     updateExchange(newExchange)
     newExchange
