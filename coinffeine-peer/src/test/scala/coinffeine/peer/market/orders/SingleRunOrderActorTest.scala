@@ -72,4 +72,12 @@ class SingleRunOrderActorTest extends OrderActorTest {
     gatewayProbe.relayMessageFromBroker(orderMatch)
     gatewayProbe.expectNoMsg(idleTime)
   }
+
+  it should "accept multiple order matches while confirming funds" in new Fixture {
+    givenInMarketOrder()
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    gatewayProbe.expectNoMsg(idleTime)
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    gatewayProbe.expectNoMsg(idleTime)
+  }
 }

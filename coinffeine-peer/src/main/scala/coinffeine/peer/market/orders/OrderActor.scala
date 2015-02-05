@@ -86,9 +86,6 @@ class OrderActor[C <: FiatCurrency](
   override def receiveCommand = publisher.receiveSubmissionEvents orElse {
     case ResumeOrder => resumeOrder()
 
-    case ReceiveMessage(orderMatch: OrderMatch[_], _) if pendingFundRequests.nonEmpty =>
-      rejectOrderMatch("Accepting other match", orderMatch)
-
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.shouldAcceptOrderMatch(orderMatch) match {
