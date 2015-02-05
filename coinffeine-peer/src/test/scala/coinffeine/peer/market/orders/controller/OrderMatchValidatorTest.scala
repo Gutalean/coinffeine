@@ -39,9 +39,10 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
 
   it should "reject already accepted matches" in {
     val exchangingOrder = order.start.copy(exchanges = Map(exchange.id -> exchange))
-    inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch)) {
-      case MatchAlreadyAccepted(_) =>
-    }
+    inside(validator.shouldAcceptOrderMatch(
+      exchangingOrder, orderMatch, orderMatch.bitcoinAmount.buyer)) {
+        case MatchAlreadyAccepted(_) =>
+      }
   }
 
   it should "reject self-matches" in {
@@ -77,16 +78,20 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   }
 
   it should "accept valid order matches" in {
-    inside(validator.shouldAcceptOrderMatch(order, orderMatch)) {
+    inside(validator.shouldAcceptOrderMatch(order, orderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
   }
 
   it should "take rounding into account when checking the price limit" in {
-    val boundaryOrderMatch = orderMatch.copy(fiatAmount = Both(110.23 EUR,109.68 EUR))
-    inside(validator.shouldAcceptOrderMatch(order, boundaryOrderMatch)) {
+    val boundaryOrderMatch = orderMatch.copy(fiatAmount = Both(110.23.EUR,109.68.EUR))
+    inside(validator.shouldAcceptOrderMatch(order, boundaryOrderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
+  }
+
+  it should "take pending funds requests into account" in {
+    expectRejectionWithMessage(order, orderMatch, "Invalid amount", alreadyBlocking = 0.5.BTC)
   }
 
   it should "accept matches when having a running exchange" in {
@@ -100,15 +105,16 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
       amount = 10.BTC,
       exchanges = Map(runningExchange.id -> runningExchange)
     )
-    inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch)) {
+    inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
   }
 
   private def expectRejectionWithMessage(order: Order[Euro.type],
                                          orderMatch: OrderMatch[Euro.type],
-                                         message: String): Unit = {
-    inside(validator.shouldAcceptOrderMatch(order, orderMatch)) {
+                                         message: String,
+                                         alreadyBlocking: Bitcoin.Amount = 0.BTC): Unit = {
+    inside(validator.shouldAcceptOrderMatch(order, orderMatch, alreadyBlocking)) {
       case MatchRejected(completeMessage) =>
         completeMessage should include(message)
     }

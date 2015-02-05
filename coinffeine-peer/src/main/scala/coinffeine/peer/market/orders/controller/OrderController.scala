@@ -1,7 +1,7 @@
 package coinffeine.peer.market.orders.controller
 
 import coinffeine.model.bitcoin.Network
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -42,8 +42,9 @@ private[orders] class OrderController[C <: FiatCurrency](
     listener.onOrderChange(_order, _order)
   }
 
-  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
-    orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch)
+  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C],
+                             alreadyBlocking: Bitcoin.Amount = Bitcoin.Zero): MatchResult[C] =
+    orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch, alreadyBlocking)
 
   def acceptOrderMatch(orderMatch: OrderMatch[C]): HandshakingExchange[C] = {
     val newExchange = Exchange.handshaking(

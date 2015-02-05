@@ -88,7 +88,7 @@ class OrderActor[C <: FiatCurrency](
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
-      order.shouldAcceptOrderMatch(orderMatch) match {
+      order.shouldAcceptOrderMatch(orderMatch, amountWithPendingFundRequests) match {
         case MatchAccepted(requiredFunds) =>
           persist(FundsRequested(orderMatch, requiredFunds)) { event =>
             log.info("Blocking funds for {}", orderMatch)
@@ -195,6 +195,11 @@ class OrderActor[C <: FiatCurrency](
     val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
     log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
     order.completeExchange(exchange)
+  }
+
+  private def amountWithPendingFundRequests: Bitcoin.Amount = {
+    val role = Role.fromOrderType(order.view.orderType)
+    pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
   }
 }
 

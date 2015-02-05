@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders.controller
 
 import scalaz.{Scalaz, Validation}
 
-import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.Role
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -14,7 +14,8 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
   import Scalaz._
 
   def shouldAcceptOrderMatch[C <: FiatCurrency](order: Order[C],
-                                                orderMatch: OrderMatch[C]): MatchResult[C] = {
+                                                orderMatch: OrderMatch[C],
+                                                alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
 
     type MatchValidation = Validation[MatchResult[C], Unit]
 
@@ -36,8 +37,8 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
 
     def requireValidAmount: MatchValidation = {
       val role = Role.fromOrderType(order.orderType)
-      val remainingAmount = order.amounts.pending.value
-      val matchedAmount = role.select(orderMatch.bitcoinAmount).value
+      val remainingAmount = order.amounts.pending - alreadyBlocking
+      val matchedAmount = role.select(orderMatch.bitcoinAmount)
       require(remainingAmount >= matchedAmount,
         MatchRejected(s"Invalid amount: $remainingAmount remaining, $matchedAmount offered"))
     }
