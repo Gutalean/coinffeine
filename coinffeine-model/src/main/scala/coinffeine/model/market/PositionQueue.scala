@@ -11,7 +11,7 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
   def contains(positionId: PositionId): Boolean = positions.exists(_.id == positionId)
 
   def enqueue(position: Position[T, C]): PositionQueue[T, C] = {
-    require(!contains(position.id), s"Position ${position.id} already enqueued")
+    require(!contains(position.id), s"Position ${position.id} already queued")
     copy(positions :+ position)
   }
 
@@ -21,16 +21,17 @@ private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
   def removeByPeerId(peerId: PeerId): PositionQueue[T, C] =
     copy(positions.filterNot(_.id.peerId == peerId))
 
-  def startHandshake(positionId: PositionId): PositionQueue[T, C] =
+  def startHandshake(positionId: PositionId, crossedAmount: Bitcoin.Amount): PositionQueue[T, C] =
     copy(positions.collect {
-      case position if position.id == positionId => position.startHandshake
+      case position if position.id == positionId => position.startHandshake(crossedAmount)
       case otherPosition => otherPosition
     })
 
-  def clearHandshake(positionId: PositionId): PositionQueue[T, C] = copy(positions.collect {
-    case position if position.id == positionId => position.clearHandshake
-    case otherPositions => otherPositions
-  })
+  def clearHandshake(positionId: PositionId, crossedAmount: Bitcoin.Amount): PositionQueue[T, C] =
+    copy(positions.collect {
+      case position if position.id == positionId => position.clearHandshake(crossedAmount)
+      case otherPositions => otherPositions
+    })
 
   def decreaseAmount(id: PositionId, amount: Bitcoin.Amount): PositionQueue[T, C] =
     copy(positions.collect {

@@ -6,9 +6,7 @@ import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
 /** Represents a snapshot of a continuous double auction (CDA) */
-case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
-                                        asks: AskMap[C],
-                                        handshakes: Set[Cross[C]]) {
+case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
   require(bids.currency == asks.currency)
 
   def userPositions(userId: PeerId): Seq[Position[_, C]] =
@@ -22,9 +20,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   private def lowestAsk: Option[Price[C]] = asks.bestPrice
 
   def startHandshake(cross: Cross[C]): OrderBook[C] = copy(
-    bids = bids.startHandshake(cross.positions.buyer),
-    asks = asks.startHandshake(cross.positions.seller),
-    handshakes = handshakes + cross
+    bids = bids.startHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
+    asks = asks.startHandshake(cross.positions.seller, cross.bitcoinAmounts.seller)
   )
 
   /** Add a new position
@@ -101,12 +98,13 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C],
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
 
+  /** Clear a previously started cross.
+    * Note: Undefined behavior for a non-started cross.
+    */
   def clearHandshake(cross: Cross[C]): OrderBook[C] = {
-    require(handshakes.contains(cross))
     copy(
-      bids = bids.clearHandshake(cross.positions.buyer),
-      asks = asks.clearHandshake(cross.positions.seller),
-      handshakes = handshakes - cross
+      bids = bids.clearHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
+      asks = asks.clearHandshake(cross.positions.seller, cross.bitcoinAmounts.seller)
     )
   }
 }
@@ -120,7 +118,6 @@ object OrderBook extends StrictLogging {
 
   def empty[C <: FiatCurrency](currency: C): OrderBook[C] = OrderBook(
     bids = OrderMap.empty(Bid, currency),
-    asks = OrderMap.empty(Ask, currency),
-    handshakes = Set.empty[Cross[C]]
+    asks = OrderMap.empty(Ask, currency)
   )
 }

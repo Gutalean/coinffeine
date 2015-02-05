@@ -19,11 +19,11 @@ class PositionQueueTest extends UnitTest {
     queue.positions.map(_.id.orderId.value) should be (Seq("A1", "B", "A2"))
   }
 
-  it should "reject already enqueued positions" in {
+  it should "reject already queued positions" in {
     val modifiedA1 = posA1.decreaseAmount(0.2.BTC)
     the [IllegalArgumentException] thrownBy {
       queue.enqueue(modifiedA1)
-    } should have message s"requirement failed: Position ${posA1.id} already enqueued"
+    } should have message s"requirement failed: Position ${posA1.id} already queued"
   }
 
   it should "remove a position by position id" in new {

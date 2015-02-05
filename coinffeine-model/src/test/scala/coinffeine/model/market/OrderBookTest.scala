@@ -140,11 +140,11 @@ class OrderBookTest extends UnitTest with OptionValues {
     val cross = Cross(Both.fill(1.BTC), Both.fill(20.EUR), Both(bidPosition.id, askPosition.id))
 
     var book = OrderBook(bidPosition, askPosition).startHandshake(cross)
-    book.get(bidPosition.id).value shouldBe 'inHandshake
-    book.get(askPosition.id).value shouldBe 'inHandshake
+    book.get(bidPosition.id).value.handshakingAmount shouldBe 'positive
+    book.get(askPosition.id).value.handshakingAmount shouldBe 'positive
 
     book = book.clearHandshake(cross)
-    book.get(bidPosition.id).value should not be 'inHandshake
-    book.get(askPosition.id).value should not be 'inHandshake
+    book.get(bidPosition.id).value.handshakingAmount should not be 'positive
+    book.get(askPosition.id).value.handshakingAmount should not be 'positive
   }
 }
