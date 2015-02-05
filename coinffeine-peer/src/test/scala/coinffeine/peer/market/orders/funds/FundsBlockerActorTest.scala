@@ -116,12 +116,12 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
     def expectSuccessfulBlocking(): Unit = {
-      expectMsg(FundsBlockerActor.BlockingResult(Success {}))
+      expectMsg(FundsBlockerActor.BlockingResult(exchangeId, Success {}))
     }
 
     def expectFailedBlocking(message: String): Unit = {
       inside(expectMsgType[FundsBlockerActor.BlockingResult]) {
-        case FundsBlockerActor.BlockingResult(Failure(cause)) =>
+        case FundsBlockerActor.BlockingResult(`exchangeId`, Failure(cause)) =>
           cause.getMessage should include (message)
       }
     }

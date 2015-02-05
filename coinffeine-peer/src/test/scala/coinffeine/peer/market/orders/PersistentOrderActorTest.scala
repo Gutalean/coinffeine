@@ -36,7 +36,7 @@ class PersistentOrderActorTest extends OrderActorTest {
   it should "remember that an exchange was started" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking()
+    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
     val Seq(exchange: AnyExchange) = exchangeActor.expectCreation()
     exchange.id shouldBe orderMatch.exchangeId
 

@@ -1,7 +1,6 @@
 package coinffeine.peer.market.orders
 
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, InMarket, StopSubmitting}
@@ -36,7 +35,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
     new Fixture {
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
-      givenSuccessfulFundsBlocking()
+      givenSuccessfulFundsBlocking(orderMatch.exchangeId)
       submissionProbe.fishForMessage() {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
@@ -50,14 +49,14 @@ class SingleRunOrderActorTest extends OrderActorTest {
   it should "spawn an exchange upon matching" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking()
+    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
     exchangeActor.expectCreation()
   }
 
   it should "accept new order matches if an exchange is active" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(halfOrderMatch)
-    givenSuccessfulFundsBlocking()
+    givenSuccessfulFundsBlocking(halfOrderMatch.exchangeId)
     exchangeActor.expectCreation()
 
     gatewayProbe.relayMessageFromBroker(halfOrderMatch.copy(exchangeId = ExchangeId.random()))
@@ -67,7 +66,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
   it should "not reject resubmissions of already accepted order matches" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking()
+    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
     exchangeActor.expectCreation()
 
     gatewayProbe.relayMessageFromBroker(orderMatch)

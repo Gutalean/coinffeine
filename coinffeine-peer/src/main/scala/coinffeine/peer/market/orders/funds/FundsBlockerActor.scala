@@ -116,7 +116,7 @@ private[funds] class FundsBlockerActor(
       fiatFunds.unblock()
     }
 
-    listener ! FundsBlockerActor.BlockingResult(overallResult)
+    listener ! FundsBlockerActor.BlockingResult(id, overallResult)
     context.stop(self)
   }
 }
@@ -131,5 +131,5 @@ object FundsBlockerActor {
     Props(new FundsBlockerActor(id, wallet, paymentProcessor, requiredFunds, listener))
 
   /** Message sent to the listener when blocking has finished either successfully or with failure */
-  case class BlockingResult(maybeFunds: Try[Unit])
+  case class BlockingResult(id: ExchangeId, maybeFunds: Try[Unit])
 }

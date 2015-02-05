@@ -142,14 +142,14 @@ abstract class OrderActorTest extends AkkaSpec
         ExchangeRejection(otherExchangeId, errorMessage))
     }
 
-    def givenSuccessfulFundsBlocking(): Unit = {
+    def givenSuccessfulFundsBlocking(exchangeId: ExchangeId): Unit = {
       fundsBlocker.expectCreation()
-      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(Success {}))
+      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(exchangeId, Success {}))
     }
 
     def givenFailedFundsBlocking(): Unit = {
       fundsBlocker.expectCreation()
-      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(
+      fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(exchangeId,
         Failure(new Exception("intended lack of funds"))))
     }
 
