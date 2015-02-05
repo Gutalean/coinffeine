@@ -12,6 +12,7 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
+import coinffeine.model.exchange.Exchange.{Progress, DepositAmounts}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
@@ -43,11 +44,44 @@ abstract class OrderActorTest extends AkkaSpec
       lockTime = 400000L,
       exchange.counterpartId
     )
+    val halfOrderAmounts = Exchange.Amounts(
+      grossBitcoinExchanged = 5.006.BTC,
+      grossFiatExchanged = 5.25.EUR,
+      deposits = Both(
+        buyer = DepositAmounts(input = 2.002.BTC, output = 2.BTC),
+        seller = DepositAmounts(input = 11.006.BTC, output = 11.004.BTC)
+      ),
+      refunds = Both(buyer = 1.BTC, seller = 5.BTC),
+      intermediateSteps = Seq.tabulate(5) { index =>
+        val step = index + 1
+        Exchange.IntermediateStepAmounts(
+          depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
+          fiatAmount = 1.EUR,
+          fiatFee = 0.05.EUR,
+          progress = Progress(Both(buyer = 1.BTC * step, seller = 1.BTC * step + 0.006.BTC))
+        )
+      },
+      finalStep = Exchange.FinalStepAmounts(
+        depositSplit = Both(buyer = 7.002.BTC, seller = 1.BTC),
+        progress = Progress(Both(buyer = 5.BTC, seller = 5.006.BTC))
+      )
+    )
+    val halfOrderMatch = orderMatch.copy(
+      exchangeId = ExchangeId.random(),
+      bitcoinAmount = Both(
+        buyer = halfOrderAmounts.netBitcoinExchanged,
+        seller = halfOrderAmounts.grossBitcoinExchanged
+      ),
+      fiatAmount = Both(
+        buyer = halfOrderAmounts.grossFiatExchanged,
+        seller = halfOrderAmounts.netFiatExchanged
+      )
+    )
     val gatewayProbe = new MockGateway()
     val fundsBlocker, exchangeActor = new MockSupervisedActor()
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)
-    private val calculatorStub = new AmountsCalculatorStub(amounts)
+    private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
     val properties = new MutableCoinffeineNetworkProperties
     private val props = Props(new OrderActor[Euro.type](
       order,
