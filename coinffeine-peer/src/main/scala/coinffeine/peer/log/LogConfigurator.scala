@@ -1,4 +1,4 @@
-package coinffeine.gui
+package coinffeine.peer.log
 
 import java.io.{File, IOException}
 import java.net.URL
@@ -11,7 +11,6 @@ import ch.qos.logback.core.util.StatusPrinter
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 
-import coinffeine.common.Platform
 import coinffeine.peer.config.ConfigProvider
 
 /** Configures logging using an external file in the user configuration directory (and automatically

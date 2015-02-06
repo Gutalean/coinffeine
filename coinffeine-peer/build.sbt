@@ -4,7 +4,7 @@ name := "coinffeine-peer"
 
 ScoverageKeys.coverageExcludedPackages := "scalaxb;soapenvelope11;.*generated.*"
 
-libraryDependencies ++= Dependencies.akka ++ Seq(
+libraryDependencies ++= Dependencies.loggingBackend ++ Dependencies.akka ++ Seq(
   Dependencies.h2,
   Dependencies.netty,
   Dependencies.scalacheck % "test",

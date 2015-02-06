@@ -3,7 +3,7 @@ import CoinffeineKeys._
 
 name := "coinffeine-headless"
 
-libraryDependencies ++= Dependencies.loggingBackend ++ Seq(
+libraryDependencies ++= Seq(
   Dependencies.janino,
   Dependencies.jline,
   Dependencies.scalaz
