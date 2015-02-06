@@ -83,8 +83,7 @@ case class Order[C <: FiatCurrency](
 
   def pendingOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id, orderType, amounts.pending, price)
 
-  def shouldBeOnMarket: Boolean =
-    !cancelled && amounts.pending.isPositive && amounts.exchanging.isZero
+  def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
 
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =

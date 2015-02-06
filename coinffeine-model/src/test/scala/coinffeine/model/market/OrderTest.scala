@@ -78,9 +78,9 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
     exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 
-  it must "not be in market while an exchange is running" in {
-    Order.random(Bid, 20.BTC, Price(1.EUR)).withExchange(createExchangeInProgress(5)) should
-      not be 'shouldBeOnMarket
+  it must "be in market despite an exchange is running" in {
+    Order.random(Bid, 20.BTC, Price(1.EUR))
+      .withExchange(createExchangeInProgress(5)) shouldBe 'shouldBeOnMarket
   }
 
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete
