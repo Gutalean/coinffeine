@@ -174,7 +174,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def rejectOrderMatch(cause: String, exchangeId: ExchangeId): Unit = {
-    log.info("Rejecting match for {}: {}", orderId, exchangeId, cause)
+    log.info("Rejecting match for {}: {}", exchangeId, cause)
     val rejection = ExchangeRejection(exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
