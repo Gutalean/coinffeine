@@ -5,11 +5,8 @@ import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NonFatal
 
-import ch.qos.logback.classic.LoggerContext
-import ch.qos.logback.core.status.NopStatusListener
-import org.slf4j.LoggerFactory
-
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
+import coinffeine.peer.log.LogConfigurator
 import coinffeine.peer.pid.PidFile
 
 object Main {
@@ -20,7 +17,7 @@ object Main {
     val coinffeine = new ProductionCoinffeineComponent {
       override def commandLineArgs = args.toList
     }
-    configureQuietLoggingInitialization()
+    LogConfigurator.configure(coinffeine.configProvider)
     acquirePidFile(coinffeine.configProvider.dataPath)
     if (!coinffeine.configProvider.generalSettings().licenseAccepted) {
       println("You should run the wizard or configure manually the application")
@@ -38,11 +35,6 @@ object Main {
       coinffeine.app.stopAndWait(timeout)
     }
     System.exit(-1)
-  }
-
-  private def configureQuietLoggingInitialization(): Unit = {
-    val context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
-    context.getStatusManager.add(new NopStatusListener)
   }
 
   private def acquirePidFile(dataPath: File): Unit = {
