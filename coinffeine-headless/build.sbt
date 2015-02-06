@@ -11,4 +11,6 @@ libraryDependencies ++= Seq(
 
 fork := true
 
+jarName in assembly := { s"${name.value}-standalone-${version.value}" }
+
 release := assembly.value
