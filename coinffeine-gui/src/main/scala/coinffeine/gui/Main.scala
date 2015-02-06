@@ -10,6 +10,7 @@ import org.controlsfx.dialog.{DialogStyle, Dialogs}
 import coinffeine.gui.application.launcher.{AcquirePidFileAction, AppLauncher}
 import coinffeine.gui.wizard.Wizard
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
+import coinffeine.peer.log.LogConfigurator
 
 object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher with LazyLogging {
 

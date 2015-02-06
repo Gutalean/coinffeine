@@ -1,4 +1,4 @@
-package coinffeine.gui
+package coinffeine.peer.log
 
 import java.io.{File, IOException}
 import java.net.URL
@@ -7,11 +7,11 @@ import scala.util.Try
 import ch.qos.logback.classic.LoggerContext
 import ch.qos.logback.classic.joran.JoranConfigurator
 import ch.qos.logback.core.joran.spi.JoranException
+import ch.qos.logback.core.status.NopStatusListener
 import ch.qos.logback.core.util.StatusPrinter
 import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 
-import coinffeine.common.Platform
 import coinffeine.peer.config.ConfigProvider
 
 /** Configures logging using an external file in the user configuration directory (and automatically
@@ -29,8 +29,13 @@ object LogConfigurator {
   def configure(configProvider: ConfigProvider): Unit = {
     val configFile = new File(configProvider.dataPath, ConfigFilename)
 
+    configureQuietLoggingInitialization()
     ensureExistenceOfExternalConfiguration()
     fallbackToInternalConfig(tryToConfigureLogging(configFile.toURI.toURL)).get
+
+    def configureQuietLoggingInitialization(): Unit = {
+      Context.getStatusManager.add(new NopStatusListener)
+    }
 
     def ensureExistenceOfExternalConfiguration(): Unit = {
       if (!configFile.exists()) {
