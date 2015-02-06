@@ -10,8 +10,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-actor" % Versions.akka,
     "com.typesafe.akka" %% "akka-slf4j" % Versions.akka,
     "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.akka,
-    // Use custom build to having a fix for https://github.com/romix/akka-kryo-serialization/issues/35
-    "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.3-20141023"
+    "com.github.romix.akka" %% "akka-kryo-serialization" % "0.3.3"
   )
   lazy val akkaTest = Seq(
     "com.typesafe.akka" %% "akka-testkit" % Versions.akka,
@@ -28,7 +27,7 @@ object Dependencies {
   lazy val h2 = "com.h2database" % "h2" % "1.3.176"
   lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
   lazy val guava = "com.google.guava" % "guava" % "16.0.1"
-  lazy val janino = "org.codehaus.janino" % "janino" % "2.6.1"
+  lazy val janino = "org.codehaus.janino" % "janino" % "2.7.8"
   lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
   lazy val jline = "jline" % "jline" % "2.12"
   lazy val jodaTime = "joda-time" % "joda-time" % "2.7"
@@ -52,6 +51,6 @@ object Dependencies {
   lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.4"
   lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
   lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
-  lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.0.6"
+  lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.1.0"
   lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
 }
