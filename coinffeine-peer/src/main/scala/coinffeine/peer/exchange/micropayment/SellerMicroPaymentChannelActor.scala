@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.micropayment
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success, Try}
+import scalaz.NonEmptyList
 
 import akka.actor._
 import akka.pattern._
@@ -16,7 +16,6 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
-import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.protocol.gateway.MessageGateway
@@ -36,6 +35,11 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
   private var exchange = initialChannel.exchange.completeStep(1)
   override val persistenceId = "micropayment-channel-" + exchange.id.value
   private val resubmitTimer = new ResubmitTimer(context, constants.microPaymentChannelResubmitTimeout)
+  private val validatePayment = new PaymentValidation(
+    exchangeId = exchange.id,
+    amounts = exchange.amounts.intermediateSteps,
+    participants = exchange.participants.map(_.paymentProcessorAccount)
+  )
 
   override def preStart(): Unit = {
     super.preStart()
@@ -76,24 +80,28 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       log.warning("Exchange {}: received unexpected {}", exchange.id, proof)
 
     case PaymentFound(payment) =>
-      validatePayment(payment) match {
-        case Failure(cause) =>
-          log.error(cause, "Exchange {}: invalid payment {}", exchange.id, payment.id)
-
-        case Success(_) =>
-          log.info("")
-          resubmitTimer.reset()
-          persist(AcceptedPayment){ _ =>
-            onAcceptedPayment()
-            self ! ResubmitTimeout
-          }
-      }
+      validatePayment(channel.currentStep, payment.asInstanceOf[Payment[C]])
+        .fold(fail = rejectPayment, succ = _ => acceptPayment(payment))
 
     case PaymentNotFound(paymentId) =>
       log.error("Exchange {}: no payment with id {} found", exchange.id, paymentId)
 
     case FindPaymentFailed(paymentId, error) =>
       log.error(error, "Exchange {}: cannot look up payment {}", exchange.id, paymentId)
+  }
+
+  private def rejectPayment(errors: NonEmptyList[PaymentValidation.Error]): Unit = {
+    log.error("Exchange {}: invalid payment at {}: {}",
+      exchange.id, channel.currentStep, errors.list.mkString("; "))
+  }
+
+  private def acceptPayment(payment: Payment[_ <: FiatCurrency]): Unit = {
+    log.info("Exchange {}: payment {} accepted", exchange.id, payment.id)
+    resubmitTimer.reset()
+    persist(AcceptedPayment){ _ =>
+      onAcceptedPayment()
+      self ! ResubmitTimeout
+    }
   }
 
   private val closingChannel: Receive = submittingSignatures orElse {
@@ -131,24 +139,6 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       request = FindPayment(paymentId),
       errorMessage = s"cannot find payment $paymentId"
     ).withReply[FindPaymentResponse]
-  }
-
-  def validatePayment(payment: Payment[_ <: FiatCurrency]): Try[Unit] = Try {
-    channel.currentStep match {
-      case _: FinalStep => throw new IllegalArgumentException("No payment is expected at the final step")
-      case step: IntermediateStep =>
-        val participants = channel.exchange.participants
-        val expectedDescription = PaymentDescription(channel.exchange.id, step)
-        require(payment.amount == step.select(channel.exchange.amounts).fiatAmount,
-          s"Payment $step amount does not match expected amount")
-        require(payment.receiverId == participants.seller.paymentProcessorAccount,
-          s"Payment $step is not being sent to the seller")
-        require(payment.senderId == participants.buyer.paymentProcessorAccount,
-          s"Payment $step is not coming from the buyer")
-        require(payment.description == expectedDescription,
-          s"Payment $step description (${payment.description}) does not match expected ($expectedDescription)")
-        require(payment.completed, s"Payment $step is not complete")
-    }
   }
 
   private def notifyProgress(): Unit = {
