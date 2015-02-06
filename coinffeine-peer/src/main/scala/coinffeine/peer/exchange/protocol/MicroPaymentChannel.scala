@@ -69,7 +69,11 @@ object MicroPaymentChannel {
 
     override def select[C <: FiatCurrency](
         amounts: Exchange.Amounts[C]): Exchange.IntermediateStepAmounts[C] =
-      amounts.intermediateSteps(value - 1)
+      select(amounts.intermediateSteps)
+
+    def select[C <: FiatCurrency](
+        amounts: Seq[Exchange.IntermediateStepAmounts[C]]): Exchange.IntermediateStepAmounts[C] =
+      amounts(value - 1)
   }
 
   case class FinalStep(breakdown: StepBreakdown) extends Step {
