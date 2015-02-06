@@ -7,6 +7,7 @@ Notes to update from the previous version (0.4.2):
  * The wire protocol is incompatible with earlier ones.
 
 v0.5.0:
+ - Support concurrent exchanges for a single order
  - Bug fixing
    * Save logging config file & log file itself in data dir specified
      with `--data-dir` command argument.
