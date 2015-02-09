@@ -50,7 +50,25 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
   def get(positionId: PositionId): Option[Position[_ <: OrderType, C]] =
     bids.get(positionId) orElse asks.get(positionId)
 
-  def decreaseAmount(positionId: PositionId, amount: Bitcoin.Amount): OrderBook[C] = copy(
+  /** Clear handshake and decrement pending positions amount */
+  def completeSuccessfulHandshake(cross: Cross[C]): OrderBook[C] = clearHandshake(cross)
+    .decreaseAmount(cross.positions.buyer, cross.bitcoinAmounts.buyer)
+    .decreaseAmount(cross.positions.seller, cross.bitcoinAmounts.seller)
+
+  /** Clear handshake and drop culprit positions */
+  def completeFailedHandshake(cross: Cross[C], culprits: Set[PeerId]): OrderBook[C] = {
+    val positionsToDrop = cross.positions.toSeq.filter { position =>
+      culprits.contains(position.peerId)
+    }
+    clearHandshake(cross).cancelPositions(positionsToDrop)
+  }
+
+  private def clearHandshake(cross: Cross[C]): OrderBook[C] = copy(
+    bids = bids.clearHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
+    asks = asks.clearHandshake(cross.positions.seller, cross.bitcoinAmounts.seller)
+  )
+
+  private def decreaseAmount(positionId: PositionId, amount: Bitcoin.Amount): OrderBook[C] = copy(
     bids = bids.decreaseAmount(positionId, amount),
     asks = asks.decreaseAmount(positionId, amount)
   )
@@ -97,16 +115,6 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
-
-  /** Clear a previously started cross.
-    * Note: Undefined behavior for a non-started cross.
-    */
-  def clearHandshake(cross: Cross[C]): OrderBook[C] = {
-    copy(
-      bids = bids.clearHandshake(cross.positions.buyer, cross.bitcoinAmounts.buyer),
-      asks = asks.clearHandshake(cross.positions.seller, cross.bitcoinAmounts.seller)
-    )
-  }
 }
 
 object OrderBook extends StrictLogging {
