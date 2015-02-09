@@ -154,7 +154,8 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         destination = exchange.info.counterpartId,
         retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
       ) {
-        case RefundSignatureResponse(_, herSignature) if validCounterpartSignature(herSignature) =>
+        case RefundSignatureResponse(id, herSignature) if id == exchange.info.id &&
+            validCounterpartSignature(herSignature) =>
           handshake.signMyRefund(herSignature)
       }
     }
