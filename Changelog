@@ -9,6 +9,7 @@ Notes to update from the previous version (0.4.2):
 v0.5.0:
  - Support concurrent exchanges for a single order
  - New `list` command in OKPay Mock Console lists the known wallets
+ - Add support to H2 database in OKPay Mock
  - Bug fixing
    * Save logging config file & log file itself in data dir specified
      with `--data-dir` command argument.
