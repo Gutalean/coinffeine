@@ -75,42 +75,26 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
 
   def updateUserPositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
     val previousPositionIds = userPositions(userId).map(_.id).toSet
-    val newPositionIds = entries.map(entryId => PositionId(userId, entryId.id))
-    val positionsToRemove = previousPositionIds -- newPositionIds
-    addOrUpdatePositions(entries, userId).cancelPositions(positionsToRemove.toSeq)
+    val newPositionIds = entries.map(entryId => PositionId(userId, entryId.id)).toSet
+    val idsToRemove = previousPositionIds -- newPositionIds
+    val entriesToAdd = entries.filterNot { entry =>
+      previousPositionIds.contains(PositionId(userId, entry.id))
+    }
+    addPositions(entriesToAdd, userId).cancelPositions(idsToRemove.toSeq)
   }
 
-  private def addOrUpdatePositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
+  private def addPositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
     entries.foldLeft(this) { (book, entry) =>
       val positionId = PositionId(userId, entry.id)
-
-      def bookWithPosition = {
-        val limitPrice = entry.price.toOption.getOrElse(
-          throw new IllegalArgumentException(s"Unsupported price: ${entry.price}"))
-        book.addPosition(Position(entry.orderType, entry.amount, limitPrice, positionId))
-      }
-
-      def updatePosition(currentPosition: BidOrAskPosition[C]) = {
-        logInvalidPositionChanges(entry, currentPosition)
-        if (currentPosition.amount <= entry.amount) book
-        else book.decreaseAmount(currentPosition.id, currentPosition.amount - entry.amount)
-      }
-
-      book.get(positionId).fold(bookWithPosition)(updatePosition)
+      require(book.get(positionId).isEmpty, s"Cannot add position $positionId: already existing")
+      book.addPosition(toPosition(userId, entry))
     }
   }
 
-  private def logInvalidPositionChanges(newEntry: OrderBookEntry[C],
-                                        currentPosition: BidOrAskPosition[C]): Unit = {
-    val invalidChanges = Seq(
-      if (newEntry.orderType != currentPosition.orderType) Some("different order type") else None,
-      if (newEntry.price != LimitPrice(currentPosition.price)) Some("different price") else None,
-      if (newEntry.amount > currentPosition.amount) Some("amount increased") else None
-    ).flatten
-    if (invalidChanges.nonEmpty) {
-      OrderBook.Log.warn("{} is an invalid update for {}: {}", newEntry, currentPosition,
-        invalidChanges.mkString(", "))
-    }
+  private def toPosition(userId: PeerId, entry: OrderBookEntry[C]): Position[_ <: OrderType, C] = {
+    val limitPrice = entry.price.toOption.getOrElse(
+      throw new IllegalArgumentException(s"Unsupported price: ${entry.price}"))
+    Position(entry.orderType, entry.amount, limitPrice, PositionId(userId, entry.id))
   }
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] =

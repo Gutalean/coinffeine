@@ -92,25 +92,20 @@ class OrderBookTest extends UnitTest with OptionValues {
     finalBook.userPositions(user).toSet shouldBe positions.tail.toSet
   }
 
-  it should "update modified position amounts when updating user positions as a whole" in {
-    val originalEntries = Seq(
-      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
-      OrderBookEntry(OrderId("2"), Bid, 1.BTC, Price(200.EUR))
-    )
-    val modifiedEntries = Seq(
-      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
-      OrderBookEntry(OrderId("2"), Bid, 0.5.BTC, Price(200.EUR))
-    )
-    OrderBook.empty(Euro)
-      .updateUserPositions(originalEntries, user)
-      .updateUserPositions(modifiedEntries, user)
-      .get(PositionId(user, OrderId("2"))).value.amount shouldBe 0.5.BTC
+  it should "avoid adding a position twice" in {
+    val originalPos = Position.bid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1")))
+    val modifiedPos = originalPos.copy(amount = 0.5.BTC)
+    val emptyBook = OrderBook.empty(Euro)
+    an [IllegalArgumentException] shouldBe thrownBy {
+      emptyBook.addPosition(originalPos).addPosition(modifiedPos)
+    }
   }
 
-  it should "ignore position changes other than decreasing the amount when updating user positions" in {
+  it should "ignore position changes when updating user positions" in {
     val originalPrice = Price(100.EUR)
     val entry = OrderBookEntry(OrderId("1"), Bid, 1.BTC, originalPrice)
     shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount * 2))
+    shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount / 2))
     shouldIgnorePositionChange(entry, entry.copy(orderType = Ask))
     shouldIgnorePositionChange(entry, entry.copy(price = LimitPrice(originalPrice.scaleBy(2))))
   }
