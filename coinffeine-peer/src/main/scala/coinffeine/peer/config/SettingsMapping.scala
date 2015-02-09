@@ -8,6 +8,7 @@ import scala.util.Try
 
 import com.typesafe.config._
 
+import coinffeine.common.TypesafeConfigImplicits
 import coinffeine.model.network.PeerId
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
@@ -24,7 +25,7 @@ trait SettingsMapping[A] {
   def toConfig(settings: A, config: Config): Config
 }
 
-object SettingsMapping {
+object SettingsMapping extends TypesafeConfigImplicits {
 
   val EmptyConfig = ConfigFactory.empty()
 
@@ -38,7 +39,7 @@ object SettingsMapping {
   implicit val general = new SettingsMapping[GeneralSettings] {
 
     override def fromConfig(configPath: File, config: Config) =
-      GeneralSettings(getBoolean(config, "coinffeine.licenseAccepted"))
+      GeneralSettings(config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false))
 
     override def toConfig(settings: GeneralSettings, config: Config) =
       config.withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
@@ -49,10 +50,11 @@ object SettingsMapping {
     override def fromConfig(configPath: File, config: Config) = {
       val network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
       BitcoinSettings(
-        connectionRetryInterval = getSeconds(config, "coinffeine.bitcoin.connectionRetryInterval"),
+        connectionRetryInterval =
+          config.getSecondsOpt("coinffeine.bitcoin.connectionRetryInterval").get,
         walletFile = new File(configPath, s"${network.name}.wallet"),
         blockchainFile = new File(configPath, s"${network.name}.h2.db"),
-        rebroadcastTimeout = getSeconds(config, "coinffeine.bitcoin.rebroadcastTimeout"),
+        rebroadcastTimeout = config.getSecondsOpt("coinffeine.bitcoin.rebroadcastTimeout").get,
         network = network
       )
     }
@@ -69,7 +71,7 @@ object SettingsMapping {
 
     override def fromConfig(configPath: File, config: Config) = MessageGatewaySettings(
       peerId = PeerId(config.getString("coinffeine.peer.id")),
-      connectionRetryInterval = getSeconds(config, "coinffeine.peer.connectionRetryInterval")
+      connectionRetryInterval = config.getSecondsOpt("coinffeine.peer.connectionRetryInterval").get
     )
 
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
@@ -83,7 +85,7 @@ object SettingsMapping {
       * peer ID is generated and stored in a copy of the config that is returned as `Some`.
       */
     def ensurePeerId(config: Config): Option[Config] = {
-      getOptionalString(config, "coinffeine.peer.id") match {
+      config.getStringOpt("coinffeine.peer.id") match {
         case Some(_) => None
         case None => Some(
           config.withValue("coinffeine.peer.id", configValue(PeerId.random().value)))
@@ -102,10 +104,10 @@ object SettingsMapping {
         config.getDuration("coinffeine.overlay.relay.identificationTimeout",
         TimeUnit.SECONDS).seconds).getOrElse(DefaultRelaySettings.IdentificationTimeout),
       minTimeBetweenStatusUpdates =
-        Try(getSeconds(config, "coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates"))
+        config.getSecondsOpt("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates")
           .getOrElse(DefaultRelaySettings.MinTimeBetweenStatusUpdates),
       connectionTimeout =
-        Try(getSeconds(config, "coinffeine.overlay.relay.client.connectionTimeout"))
+        config.getSecondsOpt("coinffeine.overlay.relay.client.connectionTimeout")
           .getOrElse(DefaultRelaySettings.ConnectionTimeout)
     )
 
@@ -126,10 +128,10 @@ object SettingsMapping {
   implicit val okPay = new SettingsMapping[OkPaySettings] {
 
     override def fromConfig(configPath: File, config: Config) = OkPaySettings(
-      userAccount = getOptionalString(config, "coinffeine.okpay.id"),
-      seedToken = getOptionalString(config, "coinffeine.okpay.token"),
+      userAccount = config.getStringOpt("coinffeine.okpay.id"),
+      seedToken = config.getStringOpt("coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
-      pollingInterval = getSeconds(config, "coinffeine.okpay.pollingInterval")
+      pollingInterval = config.getSecondsOpt("coinffeine.okpay.pollingInterval").get
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
@@ -138,23 +140,6 @@ object SettingsMapping {
       .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
       .withValue("coinffeine.okpay.pollingInterval",
         configValue(s"${settings.pollingInterval.toSeconds}s"))
-  }
-
-  private def getOptionalString(config: Config, key: String): Option[String] = try {
-    val value = config.getString(key).trim
-    if (value.isEmpty) None else Some(value)
-  } catch {
-    case _: ConfigException.Missing => None
-  }
-
-  private def getSeconds(config: Config, key: String): FiniteDuration =
-    config.getDuration(key, TimeUnit.SECONDS).seconds
-
-  /** Get boolean key with missing-is-false semantics */
-  private def getBoolean(config: Config, key: String): Boolean = try {
-    config.getBoolean(key)
-  } catch {
-    case _: ConfigException.Missing => false
   }
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
