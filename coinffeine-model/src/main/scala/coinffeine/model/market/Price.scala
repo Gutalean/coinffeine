@@ -12,9 +12,11 @@ import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
 case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
   require(value > 0, "Price must be strictly positive")
 
+  def outbids(otherPrice: Price[C]): Boolean = value > otherPrice.value
   def outbidsOrMatches(otherPrice: Price[C]): Boolean = value >= otherPrice.value
 
   def underbids(otherPrice: Price[C]): Boolean = value < otherPrice.value
+  def underbidsOrMatches(otherPrice: Price[C]): Boolean = value <= otherPrice.value
 
   def averageWith(otherPrice: Price[C]): Price[C] = copy(value = (value + otherPrice.value) / 2)
 
