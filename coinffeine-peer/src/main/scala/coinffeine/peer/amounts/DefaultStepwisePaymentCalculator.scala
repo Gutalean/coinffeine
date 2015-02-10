@@ -17,7 +17,7 @@ private[amounts] class DefaultStepwisePaymentCalculator(processor: PaymentProces
   }
 
   override def maximumBreakableFiatAmount[C <: FiatCurrency](currency: C) =
-    processor.bestStepSize(currency) * DefaultStepwisePaymentCalculator.MaxStepsPerOrder
+    processor.bestStepSize(currency) * DefaultStepwisePaymentCalculator.MaxStepsPerExchange
 
   private def maximumRemainingPayment[C <: FiatCurrency](grossRemainder: CurrencyAmount[C]) =
     if (grossRemainder.isPositive) processor.amountMinusFee(grossRemainder)
@@ -36,6 +36,5 @@ private[amounts] class DefaultStepwisePaymentCalculator(processor: PaymentProces
 }
 
 object DefaultStepwisePaymentCalculator {
-
-  private val MaxStepsPerOrder = 250
+  private val MaxStepsPerExchange = 750
 }
