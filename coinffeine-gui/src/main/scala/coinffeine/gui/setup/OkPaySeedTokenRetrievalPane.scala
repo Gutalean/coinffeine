@@ -9,7 +9,7 @@ import scalafx.geometry.HPos
 import scalafx.scene.control.{Button, Label, ProgressBar}
 import scalafx.scene.layout._
 
-import org.controlsfx.dialog.Dialogs
+import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.StepPane
@@ -36,6 +36,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
     add(new Button("Details") {
       onAction = { (_: ActionEvent) =>
         Dialogs.create()
+          .style(DialogStyle.NATIVE)
           .title("Token retrieval error")
           .showException(retrievalError.value)
       }

@@ -3,7 +3,7 @@ package coinffeine.gui.setup
 import scalafx.Includes._
 import scalafx.stage.WindowEvent
 
-import org.controlsfx.dialog.{Dialog, Dialogs}
+import org.controlsfx.dialog.{DialogStyle, Dialog, Dialogs}
 
 import coinffeine.gui.wizard.Wizard
 
@@ -19,6 +19,7 @@ class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
 
   private def onCloseAction(ev: WindowEvent): Unit = {
     val answer = Dialogs.create()
+      .style(DialogStyle.NATIVE)
       .title("Quit Coinffeine")
       .message("You will exit Coinffeine. Are you sure?")
       .actions(Dialog.Actions.NO, Dialog.Actions.YES)

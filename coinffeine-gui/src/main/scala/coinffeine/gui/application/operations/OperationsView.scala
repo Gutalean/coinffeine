@@ -7,15 +7,18 @@ import scalafx.scene.control._
 import scalafx.scene.layout._
 
 import org.controlsfx.dialog.Dialog.Actions
-import org.controlsfx.dialog.Dialogs
+import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
+import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.ObservableConstants
 import coinffeine.peer.api.CoinffeineApp
 
-class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends ApplicationView {
+class OperationsView(app: CoinffeineApp,
+                     props: ApplicationProperties,
+                     orderValidation: OrderValidation) extends ApplicationView {
 
   private val operationsTable = new OperationsTable(props.ordersProperty)
 
@@ -31,7 +34,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     id = "newOrderBtn"
     text = "New order"
     handleEvent(ActionEvent.Action) { () =>
-      val form = new OrderSubmissionForm(app)
+      val form = new OrderSubmissionForm(app, orderValidation)
       form.show(delegate.getScene.getWindow)
     }
   }
@@ -42,6 +45,7 @@ class OperationsView(app: CoinffeineApp, props: ApplicationProperties) extends A
     disable <== Bindings.not(cancellableOperationProperty)
     handleEvent(ActionEvent.Action) { () =>
       val confirm = Dialogs.create()
+        .style(DialogStyle.NATIVE)
         .title("Order cancellation")
         .message("You are about to cancel the selected operation. Are you sure?")
         .actions(Actions.YES, Actions.NO)

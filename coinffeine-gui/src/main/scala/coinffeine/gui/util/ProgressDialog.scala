@@ -2,7 +2,7 @@ package coinffeine.gui.util
 
 import javafx.concurrent.Task
 
-import org.controlsfx.dialog.Dialogs
+import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
 class ProgressDialog(title: String, message: String, actions: (() => Unit)*) {
 
@@ -27,6 +27,7 @@ class ProgressDialog(title: String, message: String, actions: (() => Unit)*) {
     thread.setDaemon(true)
     thread.start()
     Dialogs.create()
+      .style(DialogStyle.NATIVE)
       .title(title)
       .message(message)
       .showWorkerProgress(task)
