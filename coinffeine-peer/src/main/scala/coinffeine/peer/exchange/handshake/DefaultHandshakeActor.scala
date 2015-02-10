@@ -204,7 +204,8 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       destination = BrokerId,
       retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
     ) {
-      case commitments: CommitmentNotification => commitments
+      case commitments: CommitmentNotification if commitments.exchangeId == exchange.info.id =>
+        commitments
     }
   }
 
