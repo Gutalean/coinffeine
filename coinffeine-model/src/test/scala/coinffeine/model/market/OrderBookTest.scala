@@ -92,25 +92,20 @@ class OrderBookTest extends UnitTest with OptionValues {
     finalBook.userPositions(user).toSet shouldBe positions.tail.toSet
   }
 
-  it should "update modified position amounts when updating user positions as a whole" in {
-    val originalEntries = Seq(
-      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
-      OrderBookEntry(OrderId("2"), Bid, 1.BTC, Price(200.EUR))
-    )
-    val modifiedEntries = Seq(
-      OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
-      OrderBookEntry(OrderId("2"), Bid, 0.5.BTC, Price(200.EUR))
-    )
-    OrderBook.empty(Euro)
-      .updateUserPositions(originalEntries, user)
-      .updateUserPositions(modifiedEntries, user)
-      .get(PositionId(user, OrderId("2"))).value.amount shouldBe 0.5.BTC
+  it should "avoid adding a position twice" in {
+    val originalPos = Position.bid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1")))
+    val modifiedPos = originalPos.copy(amount = 0.5.BTC)
+    val emptyBook = OrderBook.empty(Euro)
+    an [IllegalArgumentException] shouldBe thrownBy {
+      emptyBook.addPosition(originalPos).addPosition(modifiedPos)
+    }
   }
 
-  it should "ignore position changes other than decreasing the amount when updating user positions" in {
+  it should "ignore position changes when updating user positions" in {
     val originalPrice = Price(100.EUR)
     val entry = OrderBookEntry(OrderId("1"), Bid, 1.BTC, originalPrice)
     shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount * 2))
+    shouldIgnorePositionChange(entry, entry.copy(amount = entry.amount / 2))
     shouldIgnorePositionChange(entry, entry.copy(orderType = Ask))
     shouldIgnorePositionChange(entry, entry.copy(price = LimitPrice(originalPrice.scaleBy(2))))
   }
@@ -121,30 +116,30 @@ class OrderBookTest extends UnitTest with OptionValues {
     originalBook.updateUserPositions(Seq(modifiedEntry), user) shouldBe originalBook
   }
 
-  it should "decrease the amount of a position" in {
-    val unchangedOrder = ask(btc = 2, eur = 25, by = "seller")
-    val book = OrderBook(bid(btc = 1, eur = 20, by = "buyer"), unchangedOrder)
-    book.decreaseAmount(PositionId(buyer, OrderId("1")), 0.8.BTC) should be (
-      OrderBook(bid(btc = 0.2, eur = 20, by = "buyer"), unchangedOrder))
+  it should "decrease position amounts on completed handshake" in {
+    val bidPosition = bid(btc = 1, eur = 20, by = "buyer")
+    val askPosition = ask(btc = 0.5, eur = 20, by = "seller")
+
+    val cross = Cross(Both.fill(0.5.BTC), Both.fill(20.EUR), Both(bidPosition.id, askPosition.id))
+    val book = OrderBook(bidPosition, askPosition)
+      .startHandshake(cross)
+      .completeSuccessfulHandshake(cross)
+
+    book.get(bidPosition.id).value.handshakingAmount shouldBe 0.BTC
+    book.get(bidPosition.id).value.amount shouldBe 0.5.BTC
+    book.get(askPosition.id) shouldBe 'empty
   }
 
-  it should "decrease the amount of a position to cancel it completely" in {
-    val unchangedOrder = ask(btc = 2, eur = 25, by = "seller")
-    val book = OrderBook(bid(btc = 1, eur = 20, by = "buyer"), unchangedOrder)
-    book.decreaseAmount(PositionId(buyer, OrderId("1")), 1.BTC) should be (OrderBook(unchangedOrder))
-  }
-
-  it should "mark and clear positions as handshaking" in {
+  it should "drop the positions of the culprits of a failed handshake" in {
     val bidPosition = bid(btc = 1, eur = 20, by = "buyer")
     val askPosition = ask(btc = 1, eur = 20, by = "seller")
+
     val cross = Cross(Both.fill(1.BTC), Both.fill(20.EUR), Both(bidPosition.id, askPosition.id))
+    val book = OrderBook(bidPosition, askPosition)
+      .startHandshake(cross)
+      .completeFailedHandshake(cross, Set(buyer))
 
-    var book = OrderBook(bidPosition, askPosition).startHandshake(cross)
-    book.get(bidPosition.id).value.handshakingAmount shouldBe 'positive
-    book.get(askPosition.id).value.handshakingAmount shouldBe 'positive
-
-    book = book.clearHandshake(cross)
-    book.get(bidPosition.id).value.handshakingAmount should not be 'positive
-    book.get(askPosition.id).value.handshakingAmount should not be 'positive
+    book.userPositions(buyer) shouldBe 'empty
+    book.userPositions(seller).head.amount shouldBe 1.BTC
   }
 }
