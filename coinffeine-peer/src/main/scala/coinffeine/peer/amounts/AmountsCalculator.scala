@@ -2,7 +2,7 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.market.Order
+import coinffeine.model.market.{Ask, Bid, Order}
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 trait AmountsCalculator {
@@ -15,12 +15,9 @@ trait AmountsCalculator {
       bitcoinAmount: Bitcoin.Amount,
       fiatAmount: CurrencyAmount[C]): Exchange.Amounts[C]
 
-  def exchangeAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] = {
-    val limitPrice = order.price.toOption.getOrElse(
-      throw new IllegalArgumentException("Impossible to calculate without a limit price"))
-    exchangeAmountsFor(order.amount, limitPrice.of(order.amount))
-  }
-
   def exchangeAmountsFor[C <: FiatCurrency](orderMatch: OrderMatch[C]): Exchange.Amounts[C] =
     exchangeAmountsFor(orderMatch.bitcoinAmount.seller, orderMatch.fiatAmount.buyer)
+
+  /** Estimate order amounts by assuming a single perfect match exchange */
+  def estimateAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C]
 }

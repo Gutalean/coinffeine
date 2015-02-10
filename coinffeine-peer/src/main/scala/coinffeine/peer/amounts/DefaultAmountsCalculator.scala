@@ -4,6 +4,7 @@ import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
+import coinffeine.model.market.{Ask, Bid, Order}
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 private[amounts] class DefaultAmountsCalculator(
@@ -82,6 +83,22 @@ private[amounts] class DefaultAmountsCalculator(
 
     Exchange.Amounts(
       grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
+  }
+
+  override def estimateAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] = {
+    val limitPrice = order.price.toOption.getOrElse(
+      throw new IllegalArgumentException("Impossible to calculate without a limit price"))
+    order.orderType match {
+      case Bid => exchangeAmountsFor(
+        grossBitcoinAmount =
+          order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions,
+        grossFiatAmount = limitPrice.of(order.amount)
+      )
+      case Ask => exchangeAmountsFor(
+        grossBitcoinAmount = order.amount,
+        grossFiatAmount = stepwiseCalculator.requiredAmountToPay(limitPrice.of(order.amount))
+      )
+    }
   }
 
   private def cumulative[D <: Currency](amounts: Seq[CurrencyAmount[D]]): Seq[CurrencyAmount[D]] =

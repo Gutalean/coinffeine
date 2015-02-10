@@ -25,7 +25,7 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   it must "reject fiat amounts exceeding the maximum per exchange" in new Fixture {
     an [IllegalArgumentException] shouldBe thrownBy {
-      instance.exchangeAmountsFor(1.BTC, 3000.EUR)
+      instance.exchangeAmountsFor(1.BTC, 30000.EUR)
     }
   }
 

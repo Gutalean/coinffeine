@@ -2,6 +2,7 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange.Amounts
+import coinffeine.model.market.Order
 
 class AmountsCalculatorStub[C <: FiatCurrency](cannedValues: Amounts[C]*) extends AmountsCalculator {
 
@@ -12,6 +13,8 @@ class AmountsCalculatorStub[C <: FiatCurrency](cannedValues: Amounts[C]*) extend
       bitcoinAmount: Bitcoin.Amount, fiatAmount: CurrencyAmount[C2]): Amounts[C2] =
     cannedValues.find { value =>
       value.grossBitcoinExchanged == bitcoinAmount && value.grossFiatExchanged == fiatAmount
-    }.getOrElse(new UnsupportedOperationException(s"No canned value for ($bitcoinAmount, $fiatAmount)"))
+    }.getOrElse(throw new UnsupportedOperationException(s"No canned value for ($bitcoinAmount, $fiatAmount)"))
       .asInstanceOf[Amounts[C2]]
+
+  override def estimateAmountsFor[C2 <: FiatCurrency](order: Order[C2]) = ???
 }

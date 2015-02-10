@@ -3,6 +3,7 @@ package coinffeine.gui.application.main
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.image.Image
 
+import coinffeine.gui.application.operations.validation.DefaultOrderValidation
 import coinffeine.gui.application.stats.StatsView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.application.operations.OperationsView
@@ -17,11 +18,12 @@ class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider)
 
   private val manager = new NotificationManager(app)
   private val properties = new ApplicationProperties(app)
+  private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
   scene = new ApplicationScene(
     views = Seq(
-      new OperationsView(app, properties),
+      new OperationsView(app, properties, orderValidator),
       new StatsView(app),
       new WalletView(app, properties.wallet)
     ),

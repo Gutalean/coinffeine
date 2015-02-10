@@ -1,20 +1,22 @@
 package coinffeine.gui.application.operations
 
 import javafx.scene.Node
+import scala.concurrent.duration._
 import scalafx.scene.layout.Pane
 
 import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import coinffeine.gui.GuiTest
 import coinffeine.model.currency._
-import coinffeine.model.market.{Bid, Order, Price}
+import coinffeine.model.market._
 import coinffeine.peer.api.impl.MockCoinffeineApp
 
 class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
 
   val app = new MockCoinffeineApp
 
-  override def createRootNode(): Pane = new OrderSubmissionForm(app).root
+  override def createRootNode(): Pane = new OrderSubmissionForm(app, DummyOrderValidation).root
 
   "The order submission form" should "forbid submission if the BTC amount is zero" in new Fixture {
     doubleClick("#limit").`type`("100")
@@ -46,9 +48,9 @@ class OrderSubmissionFormTest extends GuiTest[Pane] with Eventually {
     click("#submit")
 
     val expectedAmount = 0.1.BTC
-    val expectedPrice = Price(100.EUR)
-    eventually {
-      app.network.orders.values.collect {
+    val expectedPrice = LimitPrice(Price(100.EUR))
+    eventually(Timeout(2.seconds)) {
+      app.network.orders.values.toList.collect {
         case Order(_, Bid, `expectedAmount`, `expectedPrice`, _, _, _, _) =>
       } shouldBe 'nonEmpty
     }

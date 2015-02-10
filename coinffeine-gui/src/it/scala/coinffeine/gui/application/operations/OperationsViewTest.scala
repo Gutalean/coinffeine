@@ -10,6 +10,7 @@ import org.scalatest.concurrent.Eventually
 
 import coinffeine.gui.GuiTest
 import coinffeine.gui.application.ApplicationProperties
+import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OperationProperties
 import coinffeine.model.currency._
 import coinffeine.model.market._
@@ -20,7 +21,7 @@ class OperationsViewTest extends GuiTest[Pane] with Eventually {
   val app = new MockCoinffeineApp
 
   override def createRootNode(): Pane = {
-    val view = new OperationsView(app, new ApplicationProperties(app))
+    val view = new OperationsView(app, new ApplicationProperties(app), DummyOrderValidation)
     view.centerPane
   }
 

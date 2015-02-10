@@ -9,9 +9,12 @@ import scalafx.event.{ActionEvent, Event}
 import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
+import scalaz.NonEmptyList
 
-import org.controlsfx.dialog.{Dialog, Dialogs}
+import org.controlsfx.dialog.Dialog.Actions
+import org.controlsfx.dialog.{Dialog, DialogStyle, Dialogs}
 
+import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
@@ -20,7 +23,7 @@ import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
-class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
+class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) extends Includes {
 
   private val amountsCalculator = app.utils.exchangeAmountsCalculator
   private val maxFiatPerOrder = amountsCalculator.maxFiatPerExchange(Euro)
@@ -194,97 +197,49 @@ class OrderSubmissionForm(app: CoinffeineApp) extends Includes {
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get,
       price = Price(limitAmount.get))
-    if (checkPrerequisites(order)) {
+    if (shouldSubmit(order)) {
       app.network.submitOrder(order)
       closeForm()
     }
   }
 
-  private def checkPrerequisites(order: Order[Euro.type]): Boolean =
-    checkFiatLimit(order) && checkNoSelfCross(order) &&
-      checkEnoughFiatFunds(order) && checkEnoughBitcoinFunds(order)
+  private def shouldSubmit(order: Order[Euro.type]): Boolean =
+    validation.apply(order) match {
+      case OrderValidation.OK => true
 
-  private def checkEnoughFiatFunds(order: Order[Euro.type]): Boolean = checkFunds(
-    required = amountsCalculator.exchangeAmountsFor(order).fiatRequired(order.orderType),
-    available = app.paymentProcessor.currentBalance().map(_.availableFunds)
-  )
+      case OrderValidation.Warning(unmetRequirements) =>
+        askOrderSubmissionConfirmation(unmetRequirements)
 
-  private def checkEnoughBitcoinFunds(order: Order[Euro.type]): Boolean = checkFunds(
-    required = amountsCalculator.exchangeAmountsFor(order).bitcoinRequired(order.orderType),
-    available = app.wallet.balance.get.map(_.amount)
-  )
-
-  private def checkFiatLimit(order: Order[Euro.type]): Boolean = {
-    (for {
-      price <- order.price.toOption
-      requestedFiat = price.of(order.amount)
-      if requestedFiat > maxFiatPerOrder
-    } yield {
-      Dialogs.create()
-        .title("Invalid fiat amount")
-        .message("Cannot submit your order: " +
-          s"maximum allowed fiat amount is $maxFiatPerOrder, but you requested $requestedFiat")
-        .showInformation()
-      false
-    }).getOrElse(true)
-  }
-
-  private def checkFunds[Amount <: CurrencyAmount[_]](
-      required: Amount, available: Option[Amount]): Boolean = {
-    val currency = required.currency
-    available match {
-      case Some(balance) if required <= balance => true
-      case Some(balance) =>
-        val response = Dialogs.create()
-          .title(s"Insufficient $currency funds")
-          .message(
-            s"""Your $balance balance is insufficient to submit this order (at least $required required).
-               |
-               |You may proceed, but your order will be stalled until enough funds are available.
-               |
-               |Do you want to proceed with the order submission?""".stripMargin)
-          .showConfirm()
-        response == Dialog.Actions.YES
-      case None =>
-        val response = Dialogs.create()
-          .title(s"Unavailable $currency funds")
-          .message(
-            s"""It's not possible to check your $currency balance. Therefore it cannot be checked to verify the correctness of this order.
-              |
-              |It can be submitted anyway, but it might be stalled until your balance is available again and it has enough funds to satisfy the order.
-              |
-              |Do you want to proceed with the order submission?""".stripMargin)
-          .showConfirm()
-        response == Dialog.Actions.YES
-    }
-  }
-
-  private def checkNoSelfCross(order: Order[Euro.type]): Boolean = {
-    order.orderType match {
-      case Bid =>
-        val askOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Ask))
-        isSelfCrossed(order, askOrders)(_.value <= order.price.toOption.get.value)
-      case Ask =>
-        val bidOrders = app.network.orders.values.filter(o => suitableForSelfCross(o, Bid))
-        isSelfCrossed(order, bidOrders)(_.value >= order.price.toOption.get.value)
-    }
-  }
-
-  private def suitableForSelfCross(order: AnyCurrencyOrder, orderType: OrderType) =
-    order.status.isActive && order.orderType == orderType
-
-  private def isSelfCrossed(order: Order[Euro.type], counterparts: Iterable[AnyCurrencyOrder])
-                           (condition: Price[_ <: FiatCurrency] => Boolean): Boolean = {
-    counterparts.find(c => condition(c.price.toOption.get)) match {
-      case Some(selfCross) =>
-        Dialogs.create()
-          .title("Self cross detected")
-          .message("This order would be self-crossing a previously submitted " +
-            s"order of ${selfCross.price}")
-          .showInformation()
+      case OrderValidation.Error(unmetRequirements) =>
+        informAboutRequirementsUnmet(unmetRequirements)
         false
-      case None => true
     }
+
+  private def informAboutRequirementsUnmet(
+      violations: NonEmptyList[OrderValidation.Violation]): Unit = {
+    val (title, message) =
+      if (violations.size == 1)
+        ("Cannot submit your order: " + violations.head.title, violations.head.description)
+      else ("Cannot submit your order", violations.list.mkString("\n\n"))
+    Dialogs.create()
+      .style(DialogStyle.NATIVE)
+      .title(title)
+      .message(message.capitalize)
+      .showInformation()
+  }
+
+  private def askOrderSubmissionConfirmation(
+      violations: NonEmptyList[OrderValidation.Violation]): Boolean = {
+    val title = violations.map(_.title).list.mkString(", ")
+    val message = (violations.map(_.description).list :+
+      "Do you want to proceed with the order submission?").mkString("\n\n")
+    val result = Dialogs.create()
+      .style(DialogStyle.NATIVE)
+      .title(title)
+      .message(message.capitalize)
+      .actions(Actions.YES, Actions.NO)
+      .showConfirm()
+    result == Actions.YES
   }
 }
 
