@@ -133,5 +133,13 @@ object Order {
 
   /** Creates a limit order with a random identifier. */
   def randomLimit[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) =
+    random(orderType, amount, LimitPrice(price))
+
+  /** Creates a market price order with a random identifier. */
+  def randomMarketPrice[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, currency: C) =
+    random(orderType, amount, MarketPrice(currency))
+
+  /** Creates a market price order with a random identifier. */
+  def random[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, price: OrderPrice[C]) =
     Order(OrderId.random(), orderType, amount, price)
 }
