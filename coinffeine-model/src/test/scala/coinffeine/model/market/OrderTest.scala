@@ -12,74 +12,74 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   val dummyDeposits = Both.fill(ImmutableTransaction(new MutableTransaction(network)))
 
   "An order" must "report no progress with no exchanges" in {
-    Order.random(Bid, 10.BTC, Price(10.EUR)).progress shouldBe 0.0
+    Order.randomLimit(Bid, 10.BTC, Price(10.EUR)).progress shouldBe 0.0
   }
 
   it must "report progress with one incomplete exchange" in {
-    val order = Order.random(Bid, 10.BTC, Price(10.EUR)).withExchange(createExchangeInProgress(5))
+    val order = Order.randomLimit(Bid, 10.BTC, Price(10.EUR)).withExchange(createExchangeInProgress(5))
     order.progress shouldBe 0.5
   }
 
   it must "report progress with one incomplete exchange that overwrites itself" in {
     val exchange = createExchangeInProgress(5)
-    val order = Order.random(Bid, 10.BTC, Price(10.EUR))
+    val order = Order.randomLimit(Bid, 10.BTC, Price(10.EUR))
       .withExchange(exchange)
       .withExchange(exchange.completeStep(6))
     order.progress shouldBe 0.6
   }
 
   it must "report progress with a mixture of completed and incomplete exchanges" in {
-    val order = Order.random(Bid, 20.BTC, Price(10.EUR))
+    val order = Order.randomLimit(Bid, 20.BTC, Price(10.EUR))
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5))
     order.progress shouldBe 0.75
   }
 
   it must "have its amount pending at the start" in {
-    val order = Order.random(Bid, 10.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
     order.amounts shouldBe Order.Amounts(exchanged = 0.BTC, exchanging = 0.BTC, pending = 10.BTC)
   }
 
   it must "consider successfully exchanged amounts" in {
-    val order = Order.random(Bid, 100.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 100.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())
       .withExchange(createSuccessfulExchange())
     order.amounts shouldBe Order.Amounts(exchanged = 20.BTC, exchanging = 0.BTC, pending = 80.BTC)
   }
 
   it must "consider in-progress exchange amounts" in {
-    val order = Order.random(Bid, 100.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 100.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5))
     order.amounts shouldBe Order.Amounts(exchanged = 10.BTC, exchanging = 10.BTC, pending = 80.BTC)
   }
 
   it must "detect completion when exchanges complete the order" in {
-    val order = Order.random(Bid, 20.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 20.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())
       .withExchange(createSuccessfulExchange())
     order.status shouldBe CompletedOrder
   }
 
   it must "become offline when the pending amount changes" in {
-    val order = Order.random(Bid, 20.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 20.BTC, Price(1.EUR))
       .becomeInMarket
       .withExchange(createSuccessfulExchange())
     order should not be 'inMarket
   }
 
   it must "be in market when there is pending amount to be exchanged" in {
-    Order.random(Bid, 10.BTC, Price(1.EUR)) shouldBe 'shouldBeOnMarket
+    Order.randomLimit(Bid, 10.BTC, Price(1.EUR)) shouldBe 'shouldBeOnMarket
   }
 
   it must "not be in market when the exchange is finished" in {
-    val exchange = Order.random(Bid, 10.BTC, Price(1.EUR))
+    val exchange = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
     exchange.cancel should not be 'shouldBeOnMarket
     exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 
   it must "be in market despite an exchange is running" in {
-    Order.random(Bid, 20.BTC, Price(1.EUR))
+    Order.randomLimit(Bid, 20.BTC, Price(1.EUR))
       .withExchange(createExchangeInProgress(5)) shouldBe 'shouldBeOnMarket
   }
 

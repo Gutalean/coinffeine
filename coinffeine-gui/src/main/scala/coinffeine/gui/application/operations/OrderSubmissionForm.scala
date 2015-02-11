@@ -184,7 +184,7 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   }
 
   private def submit(): Unit = {
-    val order = Order.random(
+    val order = Order.randomLimit(
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get.get,
       price = Price(limitAmount.get.get))

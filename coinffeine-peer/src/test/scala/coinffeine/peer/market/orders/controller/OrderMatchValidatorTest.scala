@@ -16,7 +16,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
 
   private val ownId = PeerId.random()
   private val validator = new OrderMatchValidator(ownId, amountsCalculator)
-  private val order = Order.random(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
+  private val order = Order.randomLimit(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
   private val orderMatch = OrderMatch(
     orderId = order.id,
     exchangeId = ExchangeId.random(),

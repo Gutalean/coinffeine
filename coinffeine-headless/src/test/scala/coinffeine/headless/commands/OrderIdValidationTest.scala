@@ -26,7 +26,7 @@ class OrderIdValidationTest extends UnitTest {
   }
 
   it should "accept well-formed ids of existing orders" in {
-    val order = Order.random(Bid, 1.BTC, Price(1.EUR))
+    val order = Order.randomLimit(Bid, 1.BTC, Price(1.EUR))
     network.givenOrderExists(order)
     val input = order.id.value
     validator.requireExistingOrderId(input) shouldBe order.id.success

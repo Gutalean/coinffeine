@@ -15,7 +15,7 @@ class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmounts
   private val instance = new MaximumFiatValidation(amountsCalculator)
 
   "Maximum fiat requirement" should "reject orders above the limit" in {
-    val tooBigBid = Order.random(Bid, 1.1.BTC, Price(amountsCalculator.maxFiatPerExchange(Euro)))
+    val tooBigBid = Order.randomLimit(Bid, 1.1.BTC, Price(amountsCalculator.maxFiatPerExchange(Euro)))
     inside(instance.apply(tooBigBid)) {
       case Error(NonEmptyList(requirement)) =>
         requirement.description should include ("Maximum allowed fiat amount")
@@ -23,7 +23,7 @@ class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmounts
   }
 
   it should "accept orders up to the limit" in {
-    val newBid = Order.random(Bid, 0.5.BTC, Price(300.EUR))
+    val newBid = Order.randomLimit(Bid, 0.5.BTC, Price(300.EUR))
     instance.apply(newBid) shouldBe OK
   }
 }
