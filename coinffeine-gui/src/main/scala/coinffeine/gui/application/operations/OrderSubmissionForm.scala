@@ -1,18 +1,18 @@
 package coinffeine.gui.application.operations
 
 import java.net.URI
+import javafx.beans.binding.{BooleanBinding, ObjectBinding}
 import scala.util.Try
 import scalafx.Includes
-import scalafx.beans.property.BooleanProperty
 import scalafx.collections.ObservableBuffer
-import scalafx.event.{ActionEvent, Event}
+import scalafx.event.ActionEvent
 import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.stage.{Modality, Stage, Window}
 import scalaz.NonEmptyList
 
 import org.controlsfx.dialog.Dialog.Actions
-import org.controlsfx.dialog.{Dialog, DialogStyle, Dialogs}
+import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.beans.Implicits._
@@ -35,17 +35,6 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   }
 
   private val amountTextField = new CurrencyTextField(0.BTC) { id = "amount" }
-
-  private def bitcoinAmount: Try[Bitcoin.Amount] = Try {
-    Bitcoin(BigDecimal(amountTextField.text.getValueSafe))
-  }
-
-  private def limitAmount: Try[Euro.Amount] = Try {
-    Euro(BigDecimal(limitTextField.text.getValueSafe))
-  }
-
-  private val amountIsValid = new BooleanProperty(this, "AmountIsValid", false)
-  private val limitIsValid = new BooleanProperty(this, "LimitIsValid", false)
 
   private val paymentProcessorChoiceBox = new ChoiceBox[String] {
     items = ObservableBuffer(Seq("OK Pay"))
@@ -73,6 +62,16 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
 
   private val limitOrderSelectedProperty = limitOrderRadioButton.selected
 
+  private val bitcoinAmount: ObjectBinding[Option[Bitcoin.Amount]] =
+    amountTextField.text.delegate.map(txt => Try(Bitcoin(BigDecimal(txt))).toOption)
+
+  private val limitAmount : ObjectBinding[Option[Euro.Amount]] =
+    limitTextField.text.delegate.map(txt => Try(Euro(BigDecimal(txt))).toOption)
+
+  private val amountIsValid: BooleanBinding = bitcoinAmount.mapToBool(_.fold(false)(_.isPositive))
+
+  private val limitIsValid: BooleanBinding = limitAmount.mapToBool(_.fold(false)(_.isPositive))
+
   private val limitLabel = new Label("Limit") {
     text <== when(operationChoiceBox.value.isEqualTo(Bid))
       .choose("For no more than")
@@ -86,14 +85,6 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
         case e: IllegalArgumentException => 0.EUR
       }
     }
-
-  amountTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
-  limitTextField.handleEvent(Event.ANY) { () => handleSubmitButtonEnabled() }
-
-  private def handleSubmitButtonEnabled(): Unit = {
-    amountIsValid.value = bitcoinAmount.map(_.isPositive).getOrElse(false)
-    limitIsValid.value = limitAmount.map(_.isPositive).getOrElse(false)
-  }
 
   val root = new StackPane {
     id = "operations-submit-root-pane"
@@ -195,8 +186,8 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   private def submit(): Unit = {
     val order = Order.random(
       orderType = operationChoiceBox.value.value,
-      amount = bitcoinAmount.get,
-      price = Price(limitAmount.get))
+      amount = bitcoinAmount.get.get,
+      price = Price(limitAmount.get.get))
     if (shouldSubmit(order)) {
       app.network.submitOrder(order)
       closeForm()
