@@ -18,7 +18,7 @@ class OrderBookTest extends UnitTest with OptionValues {
   def cross(bid: Position[Bid.type, Euro.type],
             ask: Position[Ask.type, Euro.type],
             amount: Bitcoin.Amount) = {
-    val averagePrice = bid.price.averageWith(ask.price)
+    val averagePrice = bid.price.toOption.get.averageWith(ask.price.toOption.get)
     Cross(
       Both.fill(amount),
       Both.fill(averagePrice.of(amount)),
@@ -70,8 +70,8 @@ class OrderBookTest extends UnitTest with OptionValues {
       OrderBookEntry(OrderId("2"), Bid, 2.BTC, Price(200.EUR))
     ), userId)
     book.userPositions(userId).toSet shouldBe Set(
-      Position(Bid, 1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
-      Position(Bid, 2.BTC, Price(200.EUR), PositionId(userId, OrderId("2")))
+      Position.bid(1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
+      Position.bid(2.BTC, Price(200.EUR), PositionId(userId, OrderId("2")))
     )
   }
 
@@ -82,9 +82,9 @@ class OrderBookTest extends UnitTest with OptionValues {
       OrderBookEntry(OrderId("3"), Bid, 0.5.BTC, Price(230.EUR))
     )
     val positions = Seq(
-      Position(Bid, 1.BTC, Price(100.EUR), PositionId(user, OrderId("1"))),
-      Position(Bid, 1.BTC, Price(200.EUR), PositionId(user, OrderId("2"))),
-      Position(Bid, 0.5.BTC, Price(230.EUR), PositionId(user, OrderId("3")))
+      Position.bid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1"))),
+      Position.bid(1.BTC, Price(200.EUR), PositionId(user, OrderId("2"))),
+      Position.bid(0.5.BTC, Price(230.EUR), PositionId(user, OrderId("3")))
     )
     val initialBook = OrderBook.empty(Euro).updateUserPositions(entries, user)
     initialBook.userPositions(user).toSet shouldBe positions.toSet

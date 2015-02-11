@@ -21,11 +21,11 @@ class OrderMapTest extends UnitTest {
       Position.bid(2.BTC, Price(3.EUR), posA1),
       Position.bid(1.BTC, Price(5.EUR), posB),
       Position.bid(1.BTC, Price(3.EUR), posA2)
-    ).positions should be (Seq(
+    ).positions shouldBe Seq(
       Position.bid(1.BTC, Price(5.EUR), posB),
       Position.bid(2.BTC, Price(3.EUR), posA1),
       Position.bid(1.BTC, Price(3.EUR), posA2)
-    ))
+    )
   }
 
   it should "order ask positions by ascending price and insertion order" in {
@@ -33,26 +33,26 @@ class OrderMapTest extends UnitTest {
       Position.ask(2.BTC, Price(3.EUR), posA1),
       Position.ask(1.BTC, Price(5.EUR), posB),
       Position.ask(1.BTC, Price(3.EUR), posA2)
-    ).positions should be (Seq(
+    ).positions shouldBe Seq(
       Position.ask(2.BTC, Price(3.EUR), posA1),
       Position.ask(1.BTC, Price(3.EUR), posA2),
       Position.ask(1.BTC, Price(5.EUR), posB)
-    ))
+    )
   }
 
   it should "cancel a position by position id" in {
-    sampleMap.cancelPosition(posB) should be (OrderMap(
+    sampleMap.cancelPosition(posB) shouldBe OrderMap(
       Position.bid(2.BTC, Price(3.EUR), posA1),
       Position.bid(1.BTC, Price(3.EUR), posA2)
-    ))
+    )
   }
 
   it should "decrease a position amount" in {
     val updatedMap = sampleMap.decreaseAmount(posA1, 1.BTC)
-    updatedMap should be (OrderMap(
+    updatedMap shouldBe OrderMap(
       Position.bid(1.BTC, Price(3.EUR), posA1),
       Position.bid(1.BTC, Price(5.EUR), posB),
       Position.bid(1.BTC, Price(3.EUR), posA2)
-    ))
+    )
   }
 }

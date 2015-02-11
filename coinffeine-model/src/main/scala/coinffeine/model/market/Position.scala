@@ -6,7 +6,7 @@ import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 case class Position[T <: OrderType, C <: FiatCurrency](
     orderType: T,
     amount: Bitcoin.Amount,
-    price: Price[C],
+    price: OrderPrice[C],
     id: PositionId,
     handshakingAmount: Bitcoin.Amount = Bitcoin.Zero) {
   require(amount.isPositive && !handshakingAmount.isNegative && amount >= handshakingAmount,
@@ -38,20 +38,37 @@ case class Position[T <: OrderType, C <: FiatCurrency](
       case _: Ask.type => ask(this.asInstanceOf[AskPosition[C]])
     }
 
-  def toOrderBookEntry: OrderBookEntry[C] =
-    OrderBookEntry(id.orderId, orderType, amount, LimitPrice(price))
+  def toOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id.orderId, orderType, amount, price)
 }
 
 object Position {
 
   def bid[C <: FiatCurrency](
       amount: Bitcoin.Amount,
+      currency: C,
+      requester: PositionId,
+      handshakingAmount: Bitcoin.Amount): BidPosition[C] =
+    Position(Bid, amount, MarketPrice(currency), requester, handshakingAmount)
+
+  def bid[C <: FiatCurrency](
+      amount: Bitcoin.Amount,
       price: Price[C],
-      requester: PositionId): BidPosition[C] = Position(Bid, amount, price, requester)
+      requester: PositionId,
+      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): BidPosition[C] =
+    Position(Bid, amount, LimitPrice(price), requester, handshakingAmount)
+
+  def ask[C <: FiatCurrency](
+      amount: Bitcoin.Amount,
+      currency: C,
+      requester: PositionId,
+      handshakingAmount: Bitcoin.Amount): AskPosition[C] =
+    Position(Ask, amount, MarketPrice(currency), requester, handshakingAmount)
 
   def ask[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       price: Price[C],
-      requester: PositionId): AskPosition[C] = Position(Ask, amount, price, requester)
+      requester: PositionId,
+      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): AskPosition[C] =
+    Position(Ask, amount, LimitPrice(price), requester, handshakingAmount)
 }
 

@@ -8,13 +8,13 @@ import coinffeine.model.network.PeerId
 /** Data structure that holds orders sorted by price and, within a given price, keep
   * them sorted with a FIFO policy. */
 case class OrderMap[T <: OrderType, C <: FiatCurrency] (
-    orderType: T, currency: C, tree: SortedMap[Price[C], PositionQueue[T, C]]) {
+    orderType: T, currency: C, tree: SortedMap[OrderPrice[C], PositionQueue[T, C]]) {
 
   type Queue = PositionQueue[T, C]
   type Pos = Position[T, C]
 
   def enqueuePosition(position: Pos): OrderMap[T, C] = {
-    require(get(position.id).isEmpty, s"Position ${position.id} already enqueued")
+    require(get(position.id).isEmpty, s"Position ${position.id} already queued")
     updateQueue(position.price, queue => queue.enqueue(position))
   }
 
@@ -30,7 +30,9 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
 
   def get(positionId: PositionId): Option[Pos] = positions.find(_.id == positionId)
 
-  def bestPrice: Option[Price[C]] = positionsNotCompletelyInHandshake.headOption.map(_.price)
+  def bestPrice: Option[Price[C]] = positionsNotCompletelyInHandshake.collectFirst {
+    case Position(_, _, LimitPrice(price), _, _) => price
+  }
 
   def decreaseAmount(id: PositionId, amount: Bitcoin.Amount): OrderMap[T, C] =
     get(id).fold(this) { position =>
@@ -53,7 +55,7 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
     position <- queue.positions
   } yield position.toOrderBookEntry
 
-  private def updateQueue(price: Price[C], f: Queue => Queue): OrderMap[T, C] = {
+  private def updateQueue(price: OrderPrice[C], f: Queue => Queue): OrderMap[T, C] = {
     val modifiedQueue = f(tree.getOrElse(price, PositionQueue.empty[T, C]))
     if (modifiedQueue.isEmpty) copy(tree = tree - price)
     else copy(tree = tree.updated(price, modifiedQueue))
@@ -62,7 +64,7 @@ case class OrderMap[T <: OrderType, C <: FiatCurrency] (
   private def mapQueues(f: Queue => Queue): OrderMap[T, C] =
     copy(tree = removeEmptyQueues(tree.mapValues(f)))
 
-  private def removeEmptyQueues(tree: SortedMap[Price[C], Queue]) = tree.filter {
+  private def removeEmptyQueues(tree: SortedMap[OrderPrice[C], Queue]) = tree.filter {
     case (_, queue) => queue.positions.nonEmpty
   }
 }
