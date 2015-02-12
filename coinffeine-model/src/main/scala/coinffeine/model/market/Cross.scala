@@ -1,7 +1,9 @@
 package coinffeine.model.market
 
+import scalaz.Scalaz._
+
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
+import coinffeine.model.exchange.{Both, Role}
 
 /** Total or partial cross between a bidding and an asking position.
   *
@@ -12,5 +14,16 @@ import coinffeine.model.exchange.Both
   */
 case class Cross[C <: FiatCurrency](bitcoinAmounts: Both[Bitcoin.Amount],
                                     fiatAmounts: Both[CurrencyAmount[C]],
-                                    positions: Both[PositionId])
+                                    positions: Both[PositionId]) {
+
+  /** Decrease the available amount of a position by the amount in this cross.
+    * Return [[None]] for perfect matches
+    */
+  def decreasePosition[T <: OrderType](position: Position[T, C]): Option[Position[T, C]] = {
+    val role = Role.fromOrderType(position.orderType)
+    val crossedAmount = role.select(bitcoinAmounts)
+    (position.availableAmount > crossedAmount)
+      .option(position.startHandshake(crossedAmount))
+  }
+}
 
