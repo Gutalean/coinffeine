@@ -36,7 +36,7 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
   override val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
   override val priceProperty: ReadOnlyObjectProperty[AnyOrderPrice] =
-    new ObjectProperty(this, "price", LimitPrice(exchange.amounts.price))
+    new ObjectProperty(this, "price", LimitPrice(exchange.amounts.price(exchange.role)))
 
   override val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")

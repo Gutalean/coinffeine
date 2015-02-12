@@ -126,7 +126,11 @@ object Exchange {
 
     val steps: Seq[StepAmounts[C]] = intermediateSteps :+ finalStep
 
-    val price: Price[C] = Price.whenExchanging(netBitcoinExchanged, netFiatExchanged)
+    /** Price is subjective because of the different fees supported by buyer and seller */
+    def price(role: Role): Price[C] = role match {
+      case BuyerRole => Price.whenExchanging(netBitcoinExchanged, grossFiatExchanged)
+      case SellerRole => Price.whenExchanging(grossBitcoinExchanged, netFiatExchanged)
+    }
 
     val bitcoinRequired = deposits.map(_.input)
     val fiatRequired = Both(buyer = grossFiatExchanged, seller = CurrencyAmount.zero(currency))
