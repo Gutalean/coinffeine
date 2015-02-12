@@ -19,8 +19,6 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
 
     type MatchValidation = Validation[MatchResult[C], Unit]
 
-    val limitPrice = order.price.toOption.getOrElse(
-      throw new IllegalArgumentException("Unsupported market price orders"))
     lazy val amounts = calculator.exchangeAmountsFor(orderMatch)
 
     def requireNoSelfCrossing: MatchValidation =
@@ -43,9 +41,14 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
         MatchRejected(s"Invalid amount: $remainingAmount remaining, $matchedAmount offered"))
     }
 
-    def requireValidPrice: MatchValidation = {
+    def requireValidPrice: MatchValidation = order.price match {
+      case LimitPrice(price) => requireValidLimitPrice(price)
+      case MarketPrice(_) => ().success
+    }
+
+    def requireValidLimitPrice(price: Price[C]): MatchValidation = {
       val role = Role.fromOrderType(order.orderType)
-      val limitFiat = limitPrice.of(role.select(orderMatch.bitcoinAmount))
+      val limitFiat = price.of(role.select(orderMatch.bitcoinAmount))
       val actualFiat = role.select(orderMatch.fiatAmount)
       val isOffLimit = order.orderType match {
         case Bid => actualFiat > limitFiat
