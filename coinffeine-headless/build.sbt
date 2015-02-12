@@ -5,8 +5,7 @@ name := "coinffeine-headless"
 
 libraryDependencies ++= Seq(
   Dependencies.janino,
-  Dependencies.jline,
-  Dependencies.scalaz
+  Dependencies.jline
 )
 
 fork := true
