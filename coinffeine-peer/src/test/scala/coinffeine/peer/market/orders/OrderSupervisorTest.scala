@@ -50,8 +50,8 @@ class OrderSupervisorTest extends AkkaSpec {
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
     val id = Random.nextInt().toHexString
-    val order1 = Order.random(Bid, 5.BTC, Price(500.EUR))
-    val order2 = Order.random(Ask, 2.BTC, Price(800.EUR))
+    val order1 = Order.randomLimit(Bid, 5.BTC, Price(500.EUR))
+    val order2 = Order.randomLimit(Ask, 2.BTC, Price(800.EUR))
     val createdOrdersProbe = TestProbe()
     val submissionProbe = new MockSupervisedActor()
     private val delegates = new Delegates {

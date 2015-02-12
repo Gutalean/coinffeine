@@ -15,7 +15,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
-  private val initialOrder = Order.random(Bid, 10.BTC, Price(1.EUR))
+  private val initialOrder = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
   private val orderMatch = OrderMatch(
     orderId = initialOrder.id,
     exchangeId = ExchangeId.random(),
