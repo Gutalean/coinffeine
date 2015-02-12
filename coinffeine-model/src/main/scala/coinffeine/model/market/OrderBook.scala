@@ -91,11 +91,8 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     }
   }
 
-  private def toPosition(userId: PeerId, entry: OrderBookEntry[C]): Position[_ <: OrderType, C] = {
-    val limitPrice = entry.price.toOption.getOrElse(
-      throw new IllegalArgumentException(s"Unsupported price: ${entry.price}"))
-    Position(entry.orderType, entry.amount, limitPrice, PositionId(userId, entry.id))
-  }
+  private def toPosition(userId: PeerId, entry: OrderBookEntry[C]): Position[_ <: OrderType, C] =
+    Position(entry.orderType, entry.amount, entry.price, PositionId(userId, entry.id))
 
   def anonymizedEntries: Seq[OrderBookEntry[C]] =
     bids.anonymizedEntries ++ asks.anonymizedEntries
