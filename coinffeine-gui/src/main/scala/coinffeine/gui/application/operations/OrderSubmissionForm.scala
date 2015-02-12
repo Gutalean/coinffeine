@@ -46,9 +46,8 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   private val priceRadioButtonGroup = new ToggleGroup()
 
   private val marketPriceRadioButton = new RadioButton {
-    text = "Market price order (not supported yet)"
+    text = "Market price order"
     selected = false
-    disable = true // disabled until market price is supported
     toggleGroup = priceRadioButtonGroup
   }
 
@@ -65,12 +64,13 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   private val bitcoinAmount: ObjectBinding[Option[Bitcoin.Amount]] =
     amountTextField.text.delegate.map(txt => Try(Bitcoin(BigDecimal(txt))).toOption)
 
-  private val limitAmount : ObjectBinding[Option[Euro.Amount]] =
+  private val limitAmount: ObjectBinding[Option[Euro.Amount]] =
     limitTextField.text.delegate.map(txt => Try(Euro(BigDecimal(txt))).toOption)
 
   private val amountIsValid: BooleanBinding = bitcoinAmount.mapToBool(_.fold(false)(_.isPositive))
 
-  private val limitIsValid: BooleanBinding = limitAmount.mapToBool(_.fold(false)(_.isPositive))
+  private val limitIsValid: BooleanBinding =
+    marketPriceRadioButton.selected or limitAmount.mapToBool(_.fold(false)(_.isPositive))
 
   private val limitLabel = new Label("Limit") {
     text <== when(operationChoiceBox.value.isEqualTo(Bid))
@@ -184,10 +184,14 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   }
 
   private def submit(): Unit = {
-    val order = Order.randomLimit(
+    val price = priceRadioButtonGroup.selectedToggle.value match {
+      case `limitOrderRadioButton` => LimitPrice(limitAmount.get.get)
+      case `marketPriceRadioButton` => MarketPrice(Euro)
+    }
+    val order = Order.random(
       orderType = operationChoiceBox.value.value,
       amount = bitcoinAmount.get.get,
-      price = Price(limitAmount.get.get))
+      price)
     if (shouldSubmit(order)) {
       app.network.submitOrder(order)
       closeForm()
