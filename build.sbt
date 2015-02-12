@@ -48,7 +48,8 @@ resolvers in ThisBuild ++= Seq(
 
 libraryDependencies in ThisBuild ++= Dependencies.loggingFacade ++ Dependencies.testLoggingBackend ++ Seq(
   Dependencies.jodaTime,
-  Dependencies.scalatest % "test"
+  Dependencies.scalatest % "test",
+  Dependencies.scalaz
 )
 
 exportJars in ThisBuild := true
