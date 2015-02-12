@@ -7,6 +7,7 @@ Notes to update from the previous version (0.4.2):
  * The wire protocol is incompatible with earlier ones.
 
 v0.5.0:
+ - Support for market-price orders
  - Support concurrent exchanges for a single order
  - New `list` command in OKPay Mock Console lists the known wallets
  - Add support to H2 database in OKPay Mock
