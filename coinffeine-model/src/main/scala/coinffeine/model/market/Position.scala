@@ -43,28 +43,28 @@ case class Position[T <: OrderType, C <: FiatCurrency](
 
 object Position {
 
-  def limitBid[C <: FiatCurrency](
+  def marketBid[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       currency: C,
       requester: PositionId,
       handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): BidPosition[C] =
     Position(Bid, amount, MarketPrice(currency), requester, handshakingAmount)
 
-  def bid[C <: FiatCurrency](
+  def limitBid[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId,
       handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): BidPosition[C] =
     Position(Bid, amount, LimitPrice(price), requester, handshakingAmount)
 
-  def limitAsk[C <: FiatCurrency](
+  def marketAsk[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       currency: C,
       requester: PositionId,
       handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): AskPosition[C] =
     Position(Ask, amount, MarketPrice(currency), requester, handshakingAmount)
 
-  def ask[C <: FiatCurrency](
+  def limitAsk[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId,
