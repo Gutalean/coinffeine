@@ -20,13 +20,16 @@ import coinffeine.peer.config.ConfigProvider
   */
 object LogConfigurator {
 
-  private val Context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
   private val ConfigFilename = "logging.xml"
   private val DefaultConfig = Option(getClass.getResource("/logback.xml")).getOrElse(
     throw new NoSuchElementException("Missing default logging configuration"))
   private val DataDirProperty = "COINFFEINE_DATA_DIR"
 
   def configure(configProvider: ConfigProvider): Unit = {
+    // Log config files expect this property to be defined so the log
+    // file may know what's the data dir
+    System.setProperty(DataDirProperty, configProvider.dataPath.toString)
+
     val configFile = new File(configProvider.dataPath, ConfigFilename)
 
     configureQuietLoggingInitialization()
@@ -34,7 +37,7 @@ object LogConfigurator {
     fallbackToInternalConfig(tryToConfigureLogging(configFile.toURI.toURL)).get
 
     def configureQuietLoggingInitialization(): Unit = {
-      Context.getStatusManager.add(new NopStatusListener)
+      context.getStatusManager.add(new NopStatusListener)
     }
 
     def ensureExistenceOfExternalConfiguration(): Unit = {
@@ -61,19 +64,17 @@ object LogConfigurator {
       }
 
     def tryToConfigureLogging(configuration: URL): Try[Unit] = Try {
-      // Log config files expect this property to be defined so the log
-      // file may know what's the data dir
-      System.setProperty(DataDirProperty, configProvider.dataPath.toString)
-
       val configurator = new JoranConfigurator()
-      configurator.setContext(Context)
-      Context.reset()
+      configurator.setContext(context)
+      context.reset()
       configurator.doConfigure(configuration)
     }.recover {
       case ex: JoranException =>
         // This pretty-prints the errors in the JoranException
-        StatusPrinter.printInCaseOfErrorsOrWarnings(Context)
+        StatusPrinter.printInCaseOfErrorsOrWarnings(context)
         throw ex
     }
   }
+
+  private def context = LoggerFactory.getILoggerFactory.asInstanceOf[LoggerContext]
 }
