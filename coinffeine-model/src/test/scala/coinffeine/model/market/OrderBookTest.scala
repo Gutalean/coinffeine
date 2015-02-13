@@ -10,10 +10,10 @@ import coinffeine.model.network.PeerId
 class OrderBookTest extends UnitTest with OptionValues {
 
   def bid(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
-    Position.bid(btc.BTC, Price(eur, Euro), PositionId(PeerId.hashOf(by), OrderId(orderId)))
+    Position.limitBid(btc.BTC, Price(eur, Euro), PositionId(PeerId.hashOf(by), OrderId(orderId)))
 
   def ask(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
-    Position.ask(btc.BTC, Price(eur, Euro), PositionId(PeerId.hashOf(by), OrderId(orderId)))
+    Position.limitAsk(btc.BTC, Price(eur, Euro), PositionId(PeerId.hashOf(by), OrderId(orderId)))
 
   def cross(bid: Position[Bid.type, Euro.type],
             ask: Position[Ask.type, Euro.type],
@@ -70,8 +70,8 @@ class OrderBookTest extends UnitTest with OptionValues {
       OrderBookEntry(OrderId("2"), Bid, 2.BTC, Price(200.EUR))
     ), userId)
     book.userPositions(userId).toSet shouldBe Set(
-      Position.bid(1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
-      Position.bid(2.BTC, Price(200.EUR), PositionId(userId, OrderId("2")))
+      Position.limitBid(1.BTC, Price(100.EUR), PositionId(userId, OrderId("1"))),
+      Position.limitBid(2.BTC, Price(200.EUR), PositionId(userId, OrderId("2")))
     )
   }
 
@@ -82,9 +82,9 @@ class OrderBookTest extends UnitTest with OptionValues {
       OrderBookEntry(OrderId("3"), Bid, 0.5.BTC, Price(230.EUR))
     )
     val positions = Seq(
-      Position.bid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1"))),
-      Position.bid(1.BTC, Price(200.EUR), PositionId(user, OrderId("2"))),
-      Position.bid(0.5.BTC, Price(230.EUR), PositionId(user, OrderId("3")))
+      Position.limitBid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1"))),
+      Position.limitBid(1.BTC, Price(200.EUR), PositionId(user, OrderId("2"))),
+      Position.limitBid(0.5.BTC, Price(230.EUR), PositionId(user, OrderId("3")))
     )
     val initialBook = OrderBook.empty(Euro).updateUserPositions(entries, user)
     initialBook.userPositions(user).toSet shouldBe positions.toSet
@@ -93,7 +93,7 @@ class OrderBookTest extends UnitTest with OptionValues {
   }
 
   it should "avoid adding a position twice" in {
-    val originalPos = Position.bid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1")))
+    val originalPos = Position.limitBid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1")))
     val modifiedPos = originalPos.copy(amount = 0.5.BTC)
     val emptyBook = OrderBook.empty(Euro)
     an [IllegalArgumentException] shouldBe thrownBy {
