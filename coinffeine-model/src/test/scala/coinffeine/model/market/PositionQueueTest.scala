@@ -10,9 +10,9 @@ class PositionQueueTest extends UnitTest {
   val peerA = PeerId.hashOf("A")
   val peerB = PeerId.hashOf("B")
   val unknownPeer = PeerId.hashOf("unknown")
-  val posA1 = Position.bid(1.BTC, Price(100.EUR), PositionId(peerA, OrderId("A1")))
-  val posA2 = Position.bid(0.3.BTC, Price(100.EUR), PositionId(peerA, OrderId("A2")))
-  val posB = Position.bid(0.2.BTC, Price(100.EUR), PositionId(peerB, OrderId("B")))
+  val posA1 = Position.limitBid(1.BTC, Price(100.EUR), PositionId(peerA, OrderId("A1")))
+  val posA2 = Position.limitBid(0.3.BTC, Price(100.EUR), PositionId(peerA, OrderId("A2")))
+  val posB = Position.limitBid(0.2.BTC, Price(100.EUR), PositionId(peerB, OrderId("B")))
   val queue = emptyQueue.enqueue(posA1).enqueue(posB).enqueue(posA2)
 
   "A position queue" should "enqueue new positions at the end" in new {
@@ -53,7 +53,7 @@ class PositionQueueTest extends UnitTest {
 
   it should "be price-homogeneous" in new {
     an [IllegalArgumentException] shouldBe thrownBy {
-      queue.enqueue(Position.bid(1.BTC, Price(120.EUR), PositionId(peerA, OrderId("A3"))))
+      queue.enqueue(Position.limitBid(1.BTC, Price(120.EUR), PositionId(peerA, OrderId("A3"))))
     }
   }
 }
