@@ -35,6 +35,14 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
     order.progress shouldBe 0.75
   }
 
+  it must "consider failed exchange progress" in {
+    val order = Order.randomLimit(Bid, 20.BTC, Price(10.EUR))
+      .withExchange(createSuccessfulExchange())
+      .withExchange(createExchangeInProgress(5)
+        .stepFailure(5, cause = new Exception("something went wrong"), transaction = None))
+    order.progress shouldBe 0.75
+  }
+
   it must "have its amount pending at the start" in {
     val order = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
     order.amounts shouldBe Order.Amounts(exchanged = 0.BTC, exchanging = 0.BTC, pending = 10.BTC)

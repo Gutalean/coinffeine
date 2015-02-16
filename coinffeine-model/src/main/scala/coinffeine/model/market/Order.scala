@@ -81,7 +81,8 @@ case class Order[C <: FiatCurrency](
     */
   def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
 
-  def pendingOrderBookEntry: OrderBookEntry[C] = OrderBookEntry(id, orderType, amounts.pending, price)
+  def pendingOrderBookEntry: OrderBookEntry[C] =
+    OrderBookEntry(id, orderType, amounts.pending, price)
 
   def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
 
@@ -91,7 +92,9 @@ case class Order[C <: FiatCurrency](
 }
 
 object Order {
-  case class Amounts(exchanged: Bitcoin.Amount, exchanging: Bitcoin.Amount, pending: Bitcoin.Amount) {
+  case class Amounts(exchanged: Bitcoin.Amount,
+                     exchanging: Bitcoin.Amount,
+                     pending: Bitcoin.Amount) {
     require((exchanged + exchanging + pending).isPositive)
     def completed: Boolean = exchanging.isZero && pending.isZero
     def progressMade: Boolean = exchanging.isPositive || exchanged.isPositive
@@ -132,14 +135,20 @@ object Order {
       exchanges = Map.empty)
 
   /** Creates a limit order with a random identifier. */
-  def randomLimit[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, price: Price[C]) =
+  def randomLimit[C <: FiatCurrency](orderType: OrderType,
+                                     amount: Bitcoin.Amount,
+                                     price: Price[C]) =
     random(orderType, amount, LimitPrice(price))
 
   /** Creates a market price order with a random identifier. */
-  def randomMarketPrice[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, currency: C) =
+  def randomMarketPrice[C <: FiatCurrency](orderType: OrderType,
+                                           amount: Bitcoin.Amount,
+                                           currency: C) =
     random(orderType, amount, MarketPrice(currency))
 
   /** Creates a market price order with a random identifier. */
-  def random[C <: FiatCurrency](orderType: OrderType, amount: Bitcoin.Amount, price: OrderPrice[C]) =
+  def random[C <: FiatCurrency](orderType: OrderType,
+                                amount: Bitcoin.Amount,
+                                price: OrderPrice[C]) =
     Order(OrderId.random(), orderType, amount, price)
 }
