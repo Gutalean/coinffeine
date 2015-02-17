@@ -1,12 +1,14 @@
 package coinffeine.gui.application.properties
 
+import scala.concurrent.ExecutionContext
 import scalafx.collections.ObservableBuffer
 
 import coinffeine.peer.api.CoinffeineNetwork
 
-class PeerOrders(coinffeineNetwork: CoinffeineNetwork) extends ObservableBuffer[OrderProperties] {
+class PeerOrders(coinffeineNetwork: CoinffeineNetwork,
+                 executor: ExecutionContext) extends ObservableBuffer[OrderProperties] {
 
-  import coinffeine.gui.util.FxExecutor.asContext
+  implicit val exec = executor
 
   coinffeineNetwork.orders.onNewValue { (id, order) =>
     find(_.orderIdProperty.value == id) match {
