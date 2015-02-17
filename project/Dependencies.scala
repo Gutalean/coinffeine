@@ -4,6 +4,7 @@ object Dependencies {
   object Versions {
     val akka = "2.3.9"
     val dispatch = "0.11.2"
+    val lift = "2.6"
   }
 
   lazy val akka = Seq(
@@ -29,9 +30,15 @@ object Dependencies {
   lazy val guava = "com.google.guava" % "guava" % "16.0.1"
   lazy val janino = "org.codehaus.janino" % "janino" % "2.7.8"
   lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
+  lazy val jetty = Seq(
+    "org.eclipse.jetty" % "jetty-webapp" % "8.1.7.v20120910" % "compile,test",
+    "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile"
+      artifacts Artifact("javax.servlet", "jar", "jar")
+  )
   lazy val jline = "jline" % "jline" % "2.12"
   lazy val jodaTime = "joda-time" % "joda-time" % "2.7"
   lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
+  lazy val lift = "net.liftweb" %% "lift-webkit" % Versions.lift
   lazy val loggingBackend = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.2",
     "ch.qos.logback" % "logback-core" % "1.1.2"
