@@ -6,6 +6,7 @@ import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
+import org.scalatest.time.{Span, Seconds, Millis}
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
@@ -17,6 +18,9 @@ import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.api.CoinffeineNetwork
 
 class PeerOrdersTest extends UnitTest with Eventually with Inside {
+
+  implicit override val patienceConfig =
+    PatienceConfig(timeout = scaled(Span(2, Seconds)), interval = scaled(Span(5, Millis)))
 
   "Peer orders" should "have no elements upon construction" in new Fixture {
     orders shouldBe 'empty
