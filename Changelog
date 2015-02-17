@@ -3,6 +3,10 @@ Changelog
 
 v0.6.0:
 
+v0.5.1:
+ - Bug fixing
+   * Now OKPay Mock balances are updated successfully after payments
+
 v0.5.0:
  - Support for market-price orders
  - Support concurrent exchanges for a single order
