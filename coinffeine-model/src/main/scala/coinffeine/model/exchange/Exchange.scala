@@ -18,6 +18,7 @@ trait Exchange[C <: FiatCurrency] {
   def metadata: ExchangeMetadata[C]
   def progress: Exchange.Progress
   def isCompleted: Boolean
+  def isStarted: Boolean
 
   def currency: C = metadata.amounts.currency
   def id: ExchangeId = metadata.id

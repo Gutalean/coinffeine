@@ -11,6 +11,7 @@ case class AbortingExchange[C <: FiatCurrency](prev: Exchange[C],
   override val status = s"aborting ($cause)"
   override val metadata = prev.metadata
   override val isCompleted = false
+  override val isStarted = true
   override val progress = Exchange.noProgress(currency)
 
   def broadcast(transaction: ImmutableTransaction): FailedExchange[C] =
