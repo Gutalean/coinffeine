@@ -12,8 +12,8 @@ import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, S
 
 /** Submits and resubmits orders for a given market */
 private class MarketSubmissionActor[C <: FiatCurrency](
-     market: Market[C], 
-     forwarderProps: SubmittingOrders[C] => Props,
+     market: Market[C],
+     forwarderProps: Submission[C] => Props,
      resubmitInterval: FiniteDuration) extends Actor with ActorLogging with Stash {
 
   private val timer = new ResubmitTimer(context, resubmitInterval)
@@ -22,27 +22,26 @@ private class MarketSubmissionActor[C <: FiatCurrency](
   override def preStart(): Unit = { timer.start() }
   override def postStop(): Unit = { timer.cancel() }
 
-  override def receive: Receive = handleOpenOrders(SubmittingOrders.empty)
+  override def receive: Receive = handleOpenOrders(Submission.empty(market))
 
-  private def handleOpenOrders(orders: SubmittingOrders[C]): Receive = {
+  private def handleOpenOrders(submission: Submission[C]): Receive = {
 
-    case KeepSubmitting(order: OrderBookEntry[C]) if order.price.currency == market.currency =>
-      val newOrders = orders + (sender() -> order)
-      if (newOrders != orders) {
+    case KeepSubmitting(orderBookEntry: OrderBookEntry[C])
+        if orderBookEntry.price.currency == market.currency =>
+      val newSubmission = submission.addEntry(sender(), orderBookEntry)
+      if (newSubmission != submission) {
         timer.reset()
-        forwardOrders(newOrders)
+        forwardOrders(newSubmission)
       }
 
-    case StopSubmitting(orderId) =>
-      val newOrders = orders.filterNot { case (_, entry) => entry.id == orderId }
-      forwardOrders(newOrders)
+    case StopSubmitting(orderId) => forwardOrders(submission.removeEntry(orderId))
 
-    case ResubmitTimer.ResubmitTimeout if orders.nonEmpty => forwardOrders(orders)
+    case ResubmitTimer.ResubmitTimeout if submission.entries.nonEmpty => forwardOrders(submission)
 
     case Terminated(child) if currentForwarder.contains(child) => currentForwarder = None
   }
 
-  private def forwardOrders(orders: SubmittingOrders[C]): Unit = {
+  private def forwardOrders(submission: Submission[C]): Unit = {
 
     def replaceForwarder(forwarder: ActorRef): Unit = {
       context.stop(forwarder)
@@ -55,15 +54,15 @@ private class MarketSubmissionActor[C <: FiatCurrency](
     }
 
     def startForwarder(): Unit = {
-      spawnForwarder(orders)
-      context.become(handleOpenOrders(orders))
+      spawnForwarder(submission)
+      context.become(handleOpenOrders(submission))
     }
 
     currentForwarder.fold(startForwarder())(replaceForwarder)
   }
 
-  private def spawnForwarder(orders: SubmittingOrders[C]): Unit = {
-    val forwarder = context.actorOf(forwarderProps(orders), s"forward${orders.hashCode()}")
+  private def spawnForwarder(submission: Submission[C]): Unit = {
+    val forwarder = context.actorOf(forwarderProps(submission), s"forward${submission.hashCode()}")
     context.watch(forwarder)
     currentForwarder = Some(forwarder)
   }
@@ -74,12 +73,12 @@ private[market] object MarketSubmissionActor {
   def props[C <: FiatCurrency](market: Market[C], gateway: ActorRef, constants: ProtocolConstants): Props =
     Props(new MarketSubmissionActor[C](
       market,
-      orders => PeerPositionsSubmitter.props(market, orders, gateway, constants),
+      submission => PeerPositionsSubmitter.props(submission, gateway, constants),
       constants.orderResubmitInterval
     ))
-  
+
   def props[C <: FiatCurrency](market: Market[C],
-                               forwarderProps: SubmittingOrders[C] => Props,
+                               forwarderProps: Submission[C] => Props,
                                resubmitInterval: FiniteDuration): Props =
     Props(new MarketSubmissionActor(market, forwarderProps, resubmitInterval))
 }

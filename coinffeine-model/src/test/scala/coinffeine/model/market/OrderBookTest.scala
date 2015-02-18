@@ -30,9 +30,10 @@ class OrderBookTest extends UnitTest with OptionValues {
   val seller = PeerId.hashOf("seller")
   val user = PeerId.hashOf("user")
   val participants = Both(buyer, seller)
+  val emptyBook = OrderBook.empty(Euro)
 
   "An order book" should "quote a spread" in {
-    OrderBook.empty(Euro).spread shouldBe Spread.empty
+    emptyBook.spread shouldBe Spread.empty
     OrderBook(
       bid(btc = 1, eur = 20, by = "buyer"),
       ask(btc = 2, eur = 25, by = "seller")
@@ -64,7 +65,6 @@ class OrderBookTest extends UnitTest with OptionValues {
 
   it should "add new positions when updating user positions as a whole" in {
     val userId = PeerId.hashOf("user")
-    val emptyBook = OrderBook.empty(Euro)
     val book = emptyBook.updateUserPositions(Seq(
       OrderBookEntry(OrderId("1"), Bid, 1.BTC, Price(100.EUR)),
       OrderBookEntry(OrderId("2"), Bid, 2.BTC, Price(200.EUR))
@@ -86,7 +86,7 @@ class OrderBookTest extends UnitTest with OptionValues {
       Position.limitBid(1.BTC, Price(200.EUR), PositionId(user, OrderId("2"))),
       Position.limitBid(0.5.BTC, Price(230.EUR), PositionId(user, OrderId("3")))
     )
-    val initialBook = OrderBook.empty(Euro).updateUserPositions(entries, user)
+    val initialBook = emptyBook.updateUserPositions(entries, user)
     initialBook.userPositions(user).toSet shouldBe positions.toSet
     val finalBook = initialBook.updateUserPositions(entries.tail, user)
     finalBook.userPositions(user).toSet shouldBe positions.tail.toSet
@@ -94,11 +94,8 @@ class OrderBookTest extends UnitTest with OptionValues {
 
   it should "avoid adding a position twice" in {
     val originalPos = Position.limitBid(1.BTC, Price(100.EUR), PositionId(user, OrderId("1")))
-    val modifiedPos = originalPos.copy(amount = 0.5.BTC)
-    val emptyBook = OrderBook.empty(Euro)
-    an [IllegalArgumentException] shouldBe thrownBy {
-      emptyBook.addPosition(originalPos).addPosition(modifiedPos)
-    }
+    val book = emptyBook.addPosition(originalPos)
+    book.addPosition(originalPos.copy(amount = 0.5.BTC)) should === (book)
   }
 
   it should "ignore position changes when updating user positions" in {
@@ -112,7 +109,7 @@ class OrderBookTest extends UnitTest with OptionValues {
 
   private def shouldIgnorePositionChange(originalEntry: OrderBookEntry[Euro.type],
                                          modifiedEntry: OrderBookEntry[Euro.type]): Unit = {
-    val originalBook = OrderBook.empty(Euro).updateUserPositions(Seq(originalEntry), user)
+    val originalBook = emptyBook.updateUserPositions(Seq(originalEntry), user)
     originalBook.updateUserPositions(Seq(modifiedEntry), user) shouldBe originalBook
   }
 

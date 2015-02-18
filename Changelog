@@ -3,6 +3,11 @@ Changelog
 
 v0.6.0:
 
+v0.5.2:
+ - Bug fixing
+   * Avoid sending repeated orders to the order book and improve handling
+     or such duplications
+
 v0.5.1:
  - Bug fixing
    * Now OKPay Mock balances are updated successfully after payments
