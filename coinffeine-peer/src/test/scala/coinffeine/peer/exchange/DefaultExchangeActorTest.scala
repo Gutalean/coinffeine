@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange
 
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.actor._
 import akka.testkit._
@@ -62,7 +63,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
     }
 
     protected def givenFailingUserInfoLookup(): Unit = {
-      peerInfoLookup.willFail(new Exception("injected lookup error"))
+      peerInfoLookup.willFail(new Exception("injected lookup error") with NoStackTrace)
     }
 
     protected def startActor(): Unit = {
@@ -148,6 +149,6 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       )))
 
     def failure = Props(new HandshakeStub(HandshakeFailure(
-      new Exception("injected handshake failure"))))
+      new Exception("injected handshake failure") with NoStackTrace)))
   }
 }

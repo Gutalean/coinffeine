@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange
 
 import scala.concurrent.duration.Duration
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.{Actor, Props, ReceiveTimeout}
@@ -28,6 +29,7 @@ object BroadcasterStub {
   def broadcasting(tx: ImmutableTransaction, timeout: Duration = Duration.Undefined) =
     Props(new BroadcasterStub(Success(tx), timeout))
 
-  def failing = Props(new BroadcasterStub(
-    Failure(new Exception("injected broadcast failure")), Duration.Undefined))
+  private val exception = new Exception("injected broadcast failure") with NoStackTrace
+
+  def failing = Props(new BroadcasterStub(Failure(exception), Duration.Undefined))
 }
