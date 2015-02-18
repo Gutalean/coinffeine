@@ -41,9 +41,10 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     withNewOrder("order-01") { order1 =>
       withNewOrder("order-02") { order2 =>
         eventually {
-          inside(orders.toSeq) { case Seq(orderProps1, orderProps2) =>
-            orderProps1.orderIdProperty.get shouldBe order1.id
-            orderProps2.orderIdProperty.get shouldBe order2.id
+          inside(orders.toSeq.sortBy(_.orderIdProperty.value.value)) {
+            case Seq(orderProps1, orderProps2) =>
+              orderProps1.orderIdProperty.get shouldBe order1.id
+              orderProps2.orderIdProperty.get shouldBe order2.id
           }
         }
       }
@@ -101,6 +102,9 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       val orderId = OrderId(id)
       val order = Order(orderId, Bid, 1.BTC, Price(100.EUR))
       network.orders.set(orderId, order)
+      eventually {
+        orders.find(_.orderIdProperty.get == orderId) shouldBe 'defined
+      }
       action(order)
     }
 
