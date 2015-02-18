@@ -11,13 +11,14 @@ import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.control.ConnectionStatusWidget
 import coinffeine.gui.control.wallet.{FiatBalanceWidget, BitcoinBalanceWidget}
 import coinffeine.gui.notification.NotificationManager
+import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
 
 class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider) extends PrimaryStage {
 
   private val manager = new NotificationManager(app)
-  private val properties = new ApplicationProperties(app)
+  private val properties = new ApplicationProperties(app, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"

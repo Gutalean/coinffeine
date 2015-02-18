@@ -5,7 +5,7 @@ import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
-import coinffeine.model.exchange.AnyExchange
+import coinffeine.model.exchange.{HandshakingExchange, AnyExchange}
 import coinffeine.model.market._
 
 class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
@@ -53,6 +53,8 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
 
   def updateExchanges(newExchanges: Seq[AnyExchange]): Unit = {
     exchanges.clear()
-    newExchanges.map(ex => new ExchangeProperties(ex)).foreach(exchanges.add)
+    newExchanges
+      .filter(_.isStarted)
+      .map(ex => new ExchangeProperties(ex)).foreach(exchanges.add)
   }
 }

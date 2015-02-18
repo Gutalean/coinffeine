@@ -5,6 +5,8 @@ import coinffeine.model.currency.FiatCurrency
 
 trait AfterHandshakeExchange[C <: FiatCurrency] extends Exchange[C] {
 
+  override def isStarted = true
+
   val user: Exchange.PeerInfo
   val counterpart: Exchange.PeerInfo
 

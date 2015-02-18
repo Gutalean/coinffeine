@@ -1,5 +1,6 @@
 package coinffeine.gui.application
 
+import scala.concurrent.ExecutionContext
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
 import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, WalletProperties}
@@ -8,13 +9,13 @@ import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.{Euro, FiatBalance}
 import coinffeine.peer.api.CoinffeineApp
 
-class ApplicationProperties(app: CoinffeineApp) extends PropertyBindings {
+class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) extends PropertyBindings {
 
   type EuroBalance = FiatBalance[Euro.type]
 
   import coinffeine.gui.util.FxExecutor.asContext
 
-  val ordersProperty = new PeerOrders(app.network)
+  val ordersProperty = new PeerOrders(app.network, executor)
 
   val wallet = new WalletProperties(app.wallet)
 

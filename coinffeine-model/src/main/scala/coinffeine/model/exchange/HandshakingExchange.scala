@@ -8,6 +8,7 @@ case class HandshakingExchange[C <: FiatCurrency](metadata: ExchangeMetadata[C])
   override val status = "handshaking"
   override val progress = Exchange.noProgress(currency)
   override val isCompleted = false
+  override val isStarted = false
 
   def startHandshaking(user: Exchange.PeerInfo,
                        counterpart: Exchange.PeerInfo): DepositPendingExchange[C] =
