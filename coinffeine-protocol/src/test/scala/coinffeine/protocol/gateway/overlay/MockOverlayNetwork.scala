@@ -2,6 +2,8 @@ package coinffeine.protocol.gateway.overlay
 
 import java.io.IOException
 
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ActorRef, ActorSystem}
 import akka.util.ByteString
 
@@ -17,6 +19,7 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   private val mockClient = new MockSupervisedActor()
   private var listener = ActorRef.noSender
   private var overlayId: OverlayId = _
+  private val error = new IOException("Injected error") with NoStackTrace
   override val clientProps = mockClient.props()
 
   def expectClientSpawn(): Unit = {
@@ -36,7 +39,7 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   }
 
   def rejectJoin(): Unit = {
-    val cause = OverlayNetwork.UnderlyingNetworkFailure(new IOException("Injected error"))
+    val cause = OverlayNetwork.UnderlyingNetworkFailure(error)
     mockClient.probe.send(listener, OverlayNetwork.JoinFailed(overlayId, cause))
   }
 
@@ -51,7 +54,7 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   }
 
   def givenRandomDisconnection(): Unit = {
-    val cause = OverlayNetwork.UnexpectedLeave(new IOException("Injected error"))
+    val cause = OverlayNetwork.UnexpectedLeave(error)
     mockClient.probe.send(listener, OverlayNetwork.Leaved(overlayId, cause))
   }
 

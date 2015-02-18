@@ -1,6 +1,7 @@
 package coinffeine.common.akka
 
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.testkit._
 import akka.util.Timeout
@@ -14,7 +15,7 @@ class ServiceTest extends AkkaSpec with FutureMatchers {
   implicit val timeout = Timeout(500.millis.dilated)
   import system.dispatcher
   case object ServiceArgs
-  val cause = new scala.Exception("injected error")
+  val cause = new Exception("injected error") with NoStackTrace
 
   "A service helper" should "be able to successfully start a service" in {
     val probe = TestProbe()

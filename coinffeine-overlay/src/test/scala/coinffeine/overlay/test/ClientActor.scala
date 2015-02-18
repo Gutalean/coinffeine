@@ -2,6 +2,8 @@ package coinffeine.overlay.test
 
 import java.io.IOException
 
+import scala.util.control.NoStackTrace
+
 import akka.actor.{Actor, ActorRef, Props}
 
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
@@ -25,7 +27,8 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
       context.become(connected(id, listener))
 
     case ServerActor.ConnectionRejected =>
-      val cause = OverlayNetwork.UnderlyingNetworkFailure(new IOException("Injected error"))
+      val cause = OverlayNetwork.UnderlyingNetworkFailure(
+        new IOException("Injected error") with NoStackTrace)
       listener ! OverlayNetwork.JoinFailed(id, cause)
       context.become(disconnected)
   }
@@ -42,7 +45,8 @@ private[this] class ClientActor(server: ActorRef) extends Actor {
       context.become(disconnecting(id, listener))
 
     case ServerActor.Disconnected =>
-      val cause = OverlayNetwork.UnexpectedLeave(new Exception("Injected disconnection"))
+      val cause = OverlayNetwork.UnexpectedLeave(
+        new Exception("Injected disconnection") with NoStackTrace)
       listener ! OverlayNetwork.Leaved(id, cause)
       context.become(disconnected)
 

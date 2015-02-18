@@ -3,13 +3,14 @@ package coinffeine.common
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success}
 
 import coinffeine.common.test.UnitTest
 
 class PimpScalaFutureTest extends UnitTest with ScalaFutureImplicits {
 
-  val cause = new Exception("injected error")
+  val cause = new Exception("injected error") with NoStackTrace
 
   "A future" should "be materialized to Success(value) when successful" in {
     Future.successful("ok").materialize.futureValue shouldBe Success("ok")
