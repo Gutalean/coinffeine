@@ -4,7 +4,7 @@ import akka.actor._
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{Market, OrderBookEntry}
+import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, Offline}
@@ -19,22 +19,18 @@ import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsRecei
   * gateway and then it will expect a [[PeerPositionsReceived]] response to notify the requesters
   * appropriately.
   *
-  * @param market       Market to submit orders to
-  * @param requests     The collection of each order book entry with the actor that requested each order
+  * @param submission   Information to submit to the order book and who to inform about the result
   * @param gateway      The  message gateway to forward the
   *                     [[PeerPositions]] message and receive the [[PeerPositionsReceived]] message
   *                     from.
   * @param retryPolicy  The time to wait and number of retries to perform
   */
 private class PeerPositionsSubmitter[C <: FiatCurrency](
-    market: Market[C],
-    requests: SubmittingOrders[C],
+    submission: Submission[C],
     gateway: ActorRef,
     retryPolicy: RetrySettings) extends Actor with ActorLogging {
 
-  private val peerPositions: PeerPositions[C] =
-    PeerPositions(market, requests.map(_._2).toSeq)
-
+  private val peerPositions: PeerPositions[C] = submission.toPeerPositions
   private val nonce = peerPositions.nonce
 
   override def preStart() = {
@@ -56,20 +52,20 @@ private class PeerPositionsSubmitter[C <: FiatCurrency](
   }
 
   private def terminate(notification: OrderBookEntry[_ <: FiatCurrency] => Any): Unit = {
-    requests.foreach { case (requester, entry) => requester ! notification(entry) }
+    submission.entries.foreach { entry =>
+      entry.requester ! notification(entry.orderBookEntry)
+    }
     context.stop(self)
   }
 }
 
 object PeerPositionsSubmitter {
 
-  def props[C <: FiatCurrency](
-      market: Market[C],
-      requests: SubmittingOrders[C],
-      gateway: ActorRef,
-      constants: ProtocolConstants): Props = {
+  def props[C <: FiatCurrency](submission: Submission[C],
+                               gateway: ActorRef,
+                               constants: ProtocolConstants): Props = {
     val retryPolicy = RetrySettings(
       Timeout(constants.orderAcknowledgeTimeout), constants.orderAcknowledgeRetries)
-    Props(new PeerPositionsSubmitter(market, requests, gateway, retryPolicy))
+    Props(new PeerPositionsSubmitter(submission, gateway, retryPolicy))
   }
 }

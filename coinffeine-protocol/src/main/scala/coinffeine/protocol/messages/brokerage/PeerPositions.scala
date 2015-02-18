@@ -12,6 +12,7 @@ case class PeerPositions[C <: FiatCurrency](
     entries: Seq[OrderBookEntry[C]],
     nonce: PeerPositions.Nonce = PeerPositions.createNonce()) extends PublicMessage {
   require(entries.forall(_.price.currency == market.currency), s"Mixed currencies in $this")
+  require(entries.map(_.id).toSet.size == entries.size, s"Repeated order ids: $entries")
 
   def addEntry(order: OrderBookEntry[C]): PeerPositions[C] =
     copy(entries = entries :+ order, nonce = PeerPositions.createNonce())
