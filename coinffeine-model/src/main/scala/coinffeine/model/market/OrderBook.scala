@@ -1,7 +1,5 @@
 package coinffeine.model.market
 
-import com.typesafe.scalalogging.StrictLogging
-
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 
@@ -24,13 +22,14 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     asks = asks.startHandshake(cross.positions.seller, cross.bitcoinAmounts.seller)
   )
 
-  /** Add a new position
+  /** Add a new position if not yet added
     *
     * @param position  Position to add
     * @return          New order book
     */
   def addPosition(position: BidOrAskPosition[C]): OrderBook[C] =
-    position.fold(bid = addBidPosition, ask = addAskPosition)
+    if (get(position.id).isDefined) this
+    else position.fold(bid = addBidPosition, ask = addAskPosition)
 
   def addPositions(positions: Seq[BidOrAskPosition[C]]): OrderBook[C] =
     positions.foldLeft(this)(_.addPosition(_))
@@ -77,18 +76,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     val previousPositionIds = userPositions(userId).map(_.id).toSet
     val newPositionIds = entries.map(entryId => PositionId(userId, entryId.id)).toSet
     val idsToRemove = previousPositionIds -- newPositionIds
-    val entriesToAdd = entries.filterNot { entry =>
-      previousPositionIds.contains(PositionId(userId, entry.id))
-    }
-    addPositions(entriesToAdd, userId).cancelPositions(idsToRemove.toSeq)
-  }
-
-  private def addPositions(entries: Seq[OrderBookEntry[C]], userId: PeerId): OrderBook[C] = {
-    entries.foldLeft(this) { (book, entry) =>
-      val positionId = PositionId(userId, entry.id)
-      require(book.get(positionId).isEmpty, s"Cannot add position $positionId: already existing")
-      book.addPosition(toPosition(userId, entry))
-    }
+    addPositions(entries.map(toPosition(userId, _))).cancelPositions(idsToRemove.toSeq)
   }
 
   private def toPosition(userId: PeerId, entry: OrderBookEntry[C]): Position[_ <: OrderType, C] =
@@ -98,8 +86,7 @@ case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {
     bids.anonymizedEntries ++ asks.anonymizedEntries
 }
 
-object OrderBook extends StrictLogging {
-  private val Log = logger
+object OrderBook {
 
   def apply[C <: FiatCurrency](position: BidOrAskPosition[C],
                                otherPositions: BidOrAskPosition[C]*): OrderBook[C] =
