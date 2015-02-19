@@ -12,7 +12,7 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 
-class RunWizardAction(configProvider: ConfigProvider, network: Network) extends StrictLogging {
+class RunWizardAction(configProvider: ConfigProvider, network: => Network) extends StrictLogging {
 
   def apply(): Future[Unit] = Future(if (mustRunWizard) { runSetupWizard() })(FxExecutor.asContext)
 
