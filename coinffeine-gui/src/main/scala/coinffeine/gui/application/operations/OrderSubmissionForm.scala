@@ -2,6 +2,7 @@ package coinffeine.gui.application.operations
 
 import java.net.URI
 import javafx.beans.binding.{BooleanBinding, ObjectBinding}
+import scala.concurrent.duration._
 import scala.util.Try
 import scalafx.Includes
 import scalafx.collections.ObservableBuffer
@@ -16,6 +17,7 @@ import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.beans.{ObservableValueCombiner, PollingBean}
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
 import coinffeine.gui.util.Browser
@@ -72,6 +74,10 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   private val limitIsValid: BooleanBinding =
     marketPriceRadioButton.selected or limitAmount.mapToBool(_.fold(false)(_.isPositive))
 
+  private val currentQuote = PollingBean(OrderSubmissionForm.CurrentQuotePollingInterval) {
+    app.marketStats.currentQuote(Market(Euro))
+  }
+
   private val limitLabel = new Label("Limit") {
     text <== when(operationChoiceBox.value.isEqualTo(Bid))
       .choose("For no more than")
@@ -123,7 +129,32 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
                 }
               )
             },
-            marketPriceRadioButton
+            new VBox {
+              spacing = 20
+              content = Seq(
+                marketPriceRadioButton,
+                new HBox() {
+                  styleClass += "indented"
+                  content = new Label(s"Bid market price starts at X EUR") {
+                    text <== ObservableValueCombiner(operationChoiceBox.value, currentQuote) {
+                      (op, quote) =>
+                        quote match {
+                          case Some(q) =>
+                            val (target, price) = op match {
+                              case Bid => Ask -> q.spread.lowestAsk
+                              case Ask => Bid -> q.spread.highestBid
+                            }
+                            price match {
+                              case Some(p) => s"$target market price starts at $p"
+                              case None => s"No $target orders available in the market"
+                            }
+                          case None => "Retrieving current quotes..."
+                        }
+                    }
+                  }
+                }
+              )
+            }
           )
         },
         new HBox {
@@ -179,6 +210,7 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
   }
 
   private def closeForm(): Unit = {
+    currentQuote.close()
     stage.foreach(_.close())
   }
 
@@ -239,4 +271,5 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
 
 object OrderSubmissionForm {
   val OrderAmountsUrl = new URI("https://github.com/coinffeine/coinffeine/wiki/order-amounts")
+  val CurrentQuotePollingInterval = 10.seconds
 }
