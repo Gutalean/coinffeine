@@ -1,0 +1,37 @@
+/* This file defines the styles for the splash screen. */
+
+#splash-root {
+    -fx-alignment: center;
+    -fx-min-width: 600px;
+    -fx-max-width: 600px;
+    -fx-min-height: 300px;
+    -fx-max-height: 300px;
+    -fx-padding: 10px;
+    -fx-spacing: 40px;
+
+    -fx-background-color: linear-gradient(
+        to bottom,
+        rgba(252,234,187,1) 0%,
+        rgba(252,205,77,1) 50%,
+        rgba(248,181,0,1) 51%,
+        rgba(251,223,147,1) 100%);
+    -fx-background-image: url("../graphics/splash-logo.png");
+    -fx-background-position: center -30px;
+    -fx-background-size: 500;
+    -fx-background-repeat: no-repeat;
+    -fx-alignment: bottom-center;
+}
+
+#splash-root ProgressBar {
+    -fx-pref-width: 200px;
+}
+
+#splash-root #copyright-note {
+    -fx-min-width: 290px;
+    -fx-alignment: center-left;
+}
+
+#splash-root #version-note {
+    -fx-min-width: 290px;
+    -fx-alignment: center-right;
+}
