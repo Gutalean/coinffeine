@@ -29,7 +29,7 @@ class AboutDialog extends Includes {
               },
               new ImageView(new Image("graphics/logo-128x128.png")),
               new Label(s"Version ${CoinffeineVersion.Current}"),
-              new Label("Copyright (C) 2014 Coinffeine S.L.")
+              new Label("Copyright (C) 2014-2015 Coinffeine S.L.")
             )
           },
           new VBox() {
