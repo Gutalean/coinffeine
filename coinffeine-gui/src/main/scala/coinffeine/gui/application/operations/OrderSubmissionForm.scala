@@ -87,7 +87,6 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
     }
 
   val root = new StackPane {
-    id = "operations-submit-root-pane"
     content = new VBox {
       id = "operations-submit-content-pane"
       content = Seq(
