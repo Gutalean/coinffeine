@@ -1,34 +1,45 @@
 package coinffeine.gui.application.launcher
 
 import java.io.File
-import scala.util.{Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
 
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core.Wallet
 
 import coinffeine.gui.setup.{SetupConfig, SetupWizard}
+import coinffeine.gui.util.FxExecutor
 import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 
-class RunWizardAction(configProvider: ConfigProvider, network: Network) extends StrictLogging {
+class RunWizardAction(configProvider: ConfigProvider, network: => Network) extends StrictLogging {
 
-  def apply(): Try[Unit] = if (mustRunWizard) { runSetupWizard() } else Success {}
+  def apply(): Future[Unit] =
+    mustRunWizard.flatMap(if (_) runSetupWizard() else Future.successful{})(ExecutionContext.global)
 
-  private def mustRunWizard: Boolean = !configProvider.generalSettings().licenseAccepted
+  private def mustRunWizard: Future[Boolean] =
+    Future(!configProvider.generalSettings().licenseAccepted)(ExecutionContext.global)
 
-  private def runSetupWizard() = Try {
-    val topUpAddress = loadOrCreateWallet().delegate.freshReceiveAddress()
-    persistSetupConfiguration(new SetupWizard(topUpAddress.toString).run())
+  private def runSetupWizard(): Future[Unit] =  {
+    implicit val executor = ExecutionContext.global
+    for {
+      wallet <- loadOrCreateWallet()
+      topUpAddress = wallet.delegate.freshReceiveAddress()
+      config <- invokeSetupWizard(topUpAddress.toString)
+    } yield persistSetupConfiguration(config)
   }
 
-  private def loadOrCreateWallet(): SmartWallet = {
+  private def invokeSetupWizard(walletAddress: String): Future[SetupConfig] = {
+    Future(new SetupWizard(walletAddress).run())(FxExecutor.asContext)
+  }
+
+  private def loadOrCreateWallet(): Future[SmartWallet] = Future {
     val walletFile = configProvider.bitcoinSettings().walletFile
     if (!walletFile.isFile) {
       createWallet(walletFile)
     }
     SmartWallet.loadFromFile(walletFile)
-  }
+  }(ExecutionContext.global)
 
   private def createWallet(walletFile: File): Unit = {
     new Wallet(network).saveToFile(walletFile)
