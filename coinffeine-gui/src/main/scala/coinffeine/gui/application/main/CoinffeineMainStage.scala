@@ -1,21 +1,22 @@
 package coinffeine.gui.application.main
 
-import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.image.Image
+import scalafx.stage.{Stage, StageStyle}
 
+import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.operations.validation.DefaultOrderValidation
 import coinffeine.gui.application.stats.StatsView
-import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
-import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.wallet.WalletView
+import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.ConnectionStatusWidget
-import coinffeine.gui.control.wallet.{FiatBalanceWidget, BitcoinBalanceWidget}
+import coinffeine.gui.control.wallet.{BitcoinBalanceWidget, FiatBalanceWidget}
 import coinffeine.gui.notification.NotificationManager
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
 
-class CoinffeinePrimaryStage(app: CoinffeineApp, configProvider: ConfigProvider) extends PrimaryStage {
+class CoinffeineMainStage(app: CoinffeineApp,
+                          configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
   private val manager = new NotificationManager(app)
   private val properties = new ApplicationProperties(app, FxExecutor.asContext)

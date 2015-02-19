@@ -1,23 +1,24 @@
 package coinffeine.gui.application.launcher
 
 import java.io.File
-import scala.util.{Success, Try}
+import scala.concurrent.Future
 
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core.Wallet
 
 import coinffeine.gui.setup.{SetupConfig, SetupWizard}
+import coinffeine.gui.util.FxExecutor
 import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 
 class RunWizardAction(configProvider: ConfigProvider, network: Network) extends StrictLogging {
 
-  def apply(): Try[Unit] = if (mustRunWizard) { runSetupWizard() } else Success {}
+  def apply(): Future[Unit] = Future(if (mustRunWizard) { runSetupWizard() })(FxExecutor.asContext)
 
   private def mustRunWizard: Boolean = !configProvider.generalSettings().licenseAccepted
 
-  private def runSetupWizard() = Try {
+  private def runSetupWizard(): Unit = {
     val topUpAddress = loadOrCreateWallet().delegate.freshReceiveAddress()
     persistSetupConfiguration(new SetupWizard(topUpAddress.toString).run())
   }

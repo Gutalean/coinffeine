@@ -1,21 +1,30 @@
 package coinffeine.gui.application.launcher
 
-import scala.util.Try
+import scala.concurrent.Future
 import scalafx.application.JFXApp.PrimaryStage
+import scalafx.stage.Stage
 
-import coinffeine.gui.application.main.CoinffeinePrimaryStage
+import coinffeine.gui.application.main.CoinffeineMainStage
+import coinffeine.gui.application.splash.SplashScreen
+import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
 
 trait AppLauncher { this: ProductionCoinffeineComponent =>
 
-  def launchApp(): Try[PrimaryStage] = {
+  implicit private val executor = FxExecutor.asContext
+
+  def launchApp(stage: PrimaryStage): Future[Stage] = {
     // FIXME: the laziness provided by the comprehension is needed since the cake does not properly
     //        manage the life cycle and race conditions arise
+    SplashScreen.displayOn(stage)
     for {
       _ <- new AcquirePidFileAction(configProvider.dataPath).apply()
       _ <- new RunWizardAction(configProvider, network).apply()
       _ <- new AppStartAction(app).apply()
       _ <- new CheckForUpdatesAction().apply()
-    } yield new CoinffeinePrimaryStage(app, configProvider)
+    } yield {
+      stage.close()
+      new CoinffeineMainStage(app, configProvider)
+    }
   }
 }

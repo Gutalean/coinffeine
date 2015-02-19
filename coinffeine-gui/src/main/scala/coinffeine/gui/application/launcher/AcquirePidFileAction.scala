@@ -1,22 +1,22 @@
 package coinffeine.gui.application.launcher
 
 import java.io.File
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ExecutionContext, Future}
 
 import coinffeine.peer.pid.PidFile
 
 class AcquirePidFileAction(dataDir: File) {
   private val pidFile = new PidFile(dataDir)
 
-  def apply(): Try[Unit] = pidFile.acquire() match {
-    case PidFile.Acquired => Success {
-      Runtime.getRuntime.addShutdownHook(new Thread() {
+  def apply(): Future[Unit] = Future {
+    pidFile.acquire() match {
+      case PidFile.Acquired => Runtime.getRuntime.addShutdownHook(new Thread() {
         override def run(): Unit = pidFile.release()
       })
+      case PidFile.AlreadyRunning(pid) => throw new AcquirePidFileAction.AlreadyRunning(pid)
+      case PidFile.CannotCreate(cause) => throw cause
     }
-    case PidFile.AlreadyRunning(pid) => Failure(AcquirePidFileAction.AlreadyRunning(pid))
-    case PidFile.CannotCreate(cause) => Failure(cause)
-  }
+  }(ExecutionContext.global)
 }
 
 object AcquirePidFileAction {
