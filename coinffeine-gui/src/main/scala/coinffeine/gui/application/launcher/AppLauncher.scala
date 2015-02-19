@@ -18,6 +18,7 @@ trait AppLauncher { this: ProductionCoinffeineComponent =>
     //        manage the life cycle and race conditions arise
     SplashScreen.displayOn(stage)
     for {
+      _ <- new ConfigureLogAction(configProvider).apply()
       _ <- new AcquirePidFileAction(configProvider.dataPath).apply()
       _ <- new RunWizardAction(configProvider, network).apply()
       _ <- new AppStartAction(app).apply()
