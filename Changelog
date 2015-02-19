@@ -4,6 +4,7 @@ Changelog
 v0.6.0:
  - Filter not-started exchanges in the operations view
  - Add a splash screen shown on application launching
+ - Add quote information in order submission form
 
 v0.5.2:
  - Bug fixing
