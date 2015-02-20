@@ -38,7 +38,13 @@
     -fx-spacing: 20px;
 }
 
-#operations-submit-disclaimer-pane {
+#operations-submit-fee-summary {
+    -fx-spacing: 5px;
+    -fx-font-size: 11px;
+    -fx-alignment: baseline-left;
+}
+
+#operations-submit-fee-summary HBox {
     -fx-alignment: baseline-left;
 }
 
