@@ -6,6 +6,7 @@ v0.6.0:
  - Add a splash screen shown on application launching
  - Add quote information in order submission form
  - Add a web faucet for OKPay mock
+ - Add a simple fee summary in order submission form
 
 v0.5.2:
  - Bug fixing

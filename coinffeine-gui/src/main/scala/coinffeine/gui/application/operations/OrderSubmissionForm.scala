@@ -21,14 +21,18 @@ import coinffeine.gui.beans.{ObservableValueCombiner, PollingBean}
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
 import coinffeine.gui.util.Browser
+import coinffeine.model.bitcoin.TransactionSizeFeeCalculator
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.peer.amounts
 import coinffeine.peer.api.CoinffeineApp
 
 class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) extends Includes {
 
   private val amountsCalculator = app.utils.exchangeAmountsCalculator
   private val maxFiatPerOrder = amountsCalculator.maxFiatPerExchange(Euro)
+  private val aproxBitcoinFee =
+    TransactionSizeFeeCalculator.defaultTransactionFee * amounts.HappyPathTransactions
 
   private val operationChoiceBox = new ChoiceBox[OrderType] {
     items = ObservableBuffer(OrderType.values)
@@ -154,20 +158,37 @@ class OrderSubmissionForm(app: CoinffeineApp, validation: OrderValidation) exten
                   }
                 }
               )
-            }
-          )
-        },
-        new HBox {
-          id = "operations-submit-disclaimer-pane"
-          content = Seq(
-            new Label("These are gross amounts. Payment processor and Bitcoin fees are included.") {
-              styleClass += "smalltext"
             },
-            new Hyperlink("Know more.") {
-              styleClass += "smalltext"
-              onAction = { e: ActionEvent =>
-                Browser.default.browse(OrderSubmissionForm.OrderAmountsUrl)
-              }
+            new VBox {
+              id = "operations-submit-fee-summary"
+              content = Seq(
+                new HBox {
+                  content = Seq(
+                    new Label("You will pay aproximately the following fees"),
+                    new Hyperlink("(know more):") {
+                      styleClass += "smalltext"
+                      onAction = { e: ActionEvent =>
+                        Browser.default.browse(OrderSubmissionForm.OrderAmountsUrl)
+                      }
+                    }
+                  )
+                },
+                new Label("\u27A4 0 BTC to Coinffeine") { styleClass += "indented" },
+                new Label {
+                  styleClass += "indented"
+                  text <== operationChoiceBox.value.delegate.map {
+                    case Bid => s"\u27A4 0 BTC to Bitcoin Network"
+                    case Ask => s"\u27A4 ${aproxBitcoinFee.value} BTC to Bitcoin Network"
+                  }
+                },
+                new Label {
+                  styleClass += "indented"
+                  text <== operationChoiceBox.value.delegate.map {
+                    case Bid => s"\u27A4 0.5% EUR to OKPay"
+                    case Ask => s"\u27A4 0 EUR to OKPay"
+                  }
+                }
+              )
             }
           )
         },
