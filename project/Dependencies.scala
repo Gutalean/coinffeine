@@ -38,7 +38,8 @@ object Dependencies {
   lazy val jline = "jline" % "jline" % "2.12"
   lazy val jodaTime = "joda-time" % "joda-time" % "2.7"
   lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
-  lazy val lift = "net.liftweb" %% "lift-webkit" % Versions.lift
+  lazy val liftJson = "net.liftweb" %% "lift-json" % Versions.lift
+  lazy val liftWeb = "net.liftweb" %% "lift-webkit" % Versions.lift
   lazy val loggingBackend = Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.2",
     "ch.qos.logback" % "logback-core" % "1.1.2"
