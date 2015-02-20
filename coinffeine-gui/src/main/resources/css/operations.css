@@ -32,20 +32,9 @@
     -fx-font-weight: bold;
 }
 
-#operations-submit-root-pane {
-    -fx-min-width: 550px;
-    -fx-max-width: 550px;
-    -fx-min-height: 300px;
-    -fx-max-height: 300px;
-}
-
 #operations-submit-content-pane {
     -fx-alignment: center;
-    -fx-pref-width: 600px;
-    -fx-min-width: 600px;
-    -fx-pref-height: 300px;
-    -fx-pref-height: 300px;
-    -fx-padding: 50px;
+    -fx-padding: 20px;
     -fx-spacing: 20px;
 }
 
