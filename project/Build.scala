@@ -41,6 +41,7 @@ object Build extends sbt.Build {
       async in (Compile, scalaxb) := true
     )
     dependsOn(
+      alarms % "compile->compile;test->test",
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile",
       model % "compile->compile;test->test",

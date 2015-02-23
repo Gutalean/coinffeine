@@ -68,6 +68,7 @@ class StatusCommandTest extends CommandTest {
       override val balance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]] =
         new MutablePropertyMap
     }
+    override def global = ???
     override def start(timeout: FiniteDuration): Future[Unit] = ???
   }
 }
