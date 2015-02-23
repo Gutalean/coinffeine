@@ -6,7 +6,6 @@ import scalaz._
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
-import coinffeine.peer.exchange.protocol.ExchangeProtocol._
 
 private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],
                                      requiredSignatures: Both[PublicKey],

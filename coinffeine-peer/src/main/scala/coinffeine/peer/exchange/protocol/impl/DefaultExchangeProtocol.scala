@@ -5,7 +5,6 @@ import scala.util.{Try, Failure, Success}
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
-import coinffeine.peer.exchange.protocol.ExchangeProtocol.DepositValidation
 import coinffeine.peer.exchange.protocol._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
