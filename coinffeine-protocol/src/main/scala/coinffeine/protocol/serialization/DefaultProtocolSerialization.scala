@@ -98,11 +98,13 @@ private[serialization] class DefaultProtocolSerialization(
   override def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
     message.getType match {
       case MessageType.PAYLOAD =>
-        require(message.hasPayload)
-        fromPayload(message.getPayload)
+        if (message.hasPayload) fromPayload(message.getPayload)
+        else MissingField("payload").failure
+
       case MessageType.PROTOCOL_MISMATCH =>
-        require(message.hasProtocolMismatch)
-        ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion)).success
+        if (message.hasProtocolMismatch)
+          ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion)).success
+        else MissingField("protocolMismatch").failure
     }
   }
 

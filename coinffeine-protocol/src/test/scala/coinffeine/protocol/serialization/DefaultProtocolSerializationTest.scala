@@ -22,7 +22,7 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, Payment
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.{MultiplePayloads, EmptyPayload, IncompatibleVersion}
+import coinffeine.protocol.serialization.ProtocolSerialization._
 
 class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
   with CoinffeineUnitTestNetwork.Component {
@@ -103,6 +103,18 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
       .build
     instance.fromProtobuf(multiMessage) should === (
       Failure(MultiplePayloads(Set("exchangeAborted", "quoteRequest"))))
+  }
+
+  it must "detect inconsistent message types" in {
+    val missingPayloadMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .build()
+    instance.fromProtobuf(missingPayloadMessage) should === (Failure(MissingField("payload")))
+    val missingMismatchMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PROTOCOL_MISMATCH)
+      .build()
+    instance.fromProtobuf(missingMismatchMessage) should === (
+      Failure(MissingField("protocolMismatch")))
   }
 
   trait SampleMessages {

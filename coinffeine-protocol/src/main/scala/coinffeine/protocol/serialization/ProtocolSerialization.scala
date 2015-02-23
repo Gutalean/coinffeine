@@ -19,4 +19,5 @@ object ProtocolSerialization {
   case object EmptyPayload extends DeserializationError
   case class MultiplePayloads(fields: Set[String]) extends DeserializationError
   case class UnsupportedProtobufMessage(fieldName: String) extends DeserializationError
+  case class MissingField(fieldName: String) extends DeserializationError
 }
