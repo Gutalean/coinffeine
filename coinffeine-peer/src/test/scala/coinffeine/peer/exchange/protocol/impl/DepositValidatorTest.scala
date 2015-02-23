@@ -19,8 +19,8 @@ class DepositValidatorTest extends ExchangeTest with Inside {
       )
       inside(validator.validate(deposits)) {
         case Both(buyerResult, sellerResult) =>
-          buyerResult should be ('failure)
-          sellerResult should be ('success)
+          buyerResult shouldBe 'failure
+          sellerResult shouldBe 'success
       }
   }
 
@@ -31,8 +31,8 @@ class DepositValidatorTest extends ExchangeTest with Inside {
     )
     inside(validator.validate(deposits)) {
       case Both(buyerResult, sellerResult) =>
-        buyerResult should be ('success)
-        sellerResult should be ('failure)
+        buyerResult shouldBe 'success
+        sellerResult shouldBe 'failure
     }
   }
 

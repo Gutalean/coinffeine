@@ -1,8 +1,11 @@
 package coinffeine.peer.exchange.protocol.impl
 
+import scala.util.{Try, Failure, Success}
+
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
+import coinffeine.peer.exchange.protocol.ExchangeProtocol.DepositValidation
 import coinffeine.peer.exchange.protocol._
 
 private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
@@ -22,7 +25,13 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
       case BuyerRole => validator.requireValidBuyerFunds _
       case SellerRole => validator.requireValidSellerFunds _
     }
-    validation(deposit).get
+    validation(deposit).swap.foreach { errors =>
+      throw new IllegalArgumentException(
+        s"""Our own deposit is invalid: ${errors.list.mkString(", ")}
+           |Deposit: $deposit
+           |Exchange: $exchange
+         """.stripMargin)
+    }
   }
 
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
@@ -32,7 +41,14 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
                                 requiredSignatures: Both[PublicKey],
                                 network: Network) =
-    new DepositValidator(amounts, requiredSignatures, network).validate(transactions)
+    new DepositValidator(amounts, requiredSignatures, network)
+      .validate(transactions)
+      .map(toTry)
+
+  private def toTry(validation: DepositValidation): Try[Unit] = validation.fold(
+    fail = errors => Failure(new Exception("Invalid deposit: " + errors.list.mkString(", "))),
+    succ = Success.apply
+  )
 }
 
 object DefaultExchangeProtocol {

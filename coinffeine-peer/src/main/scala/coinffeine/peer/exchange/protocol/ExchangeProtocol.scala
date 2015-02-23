@@ -1,10 +1,11 @@
 package coinffeine.peer.exchange.protocol
 
 import scala.util.Try
+import scalaz.ValidationNel
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{RunningExchange, DepositPendingExchange, Exchange, Both}
+import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.exchange._
 
 trait ExchangeProtocol {
 
@@ -36,4 +37,31 @@ object ExchangeProtocol {
   trait Component {
     def exchangeProtocol: ExchangeProtocol
   }
+
+  sealed trait DepositValidationError {
+    def description: String
+  }
+  case object NoOutputs extends DepositValidationError {
+    override def description = "the transaction has no outputs"
+  }
+  case object NoMultiSig extends DepositValidationError {
+    override def description = "transaction is not in multi signature at all"
+  }
+  case class UnexpectedNumberOfRequiredSignatures(requiredSignatures: Int)
+    extends DepositValidationError {
+    override def description = s"the output requires $requiredSignatures signatures instead of 2"
+  }
+  case class UnexpectedSignatureAddresses(actual: Seq[Address], expected: Both[Address])
+    extends DepositValidationError {
+    override def description = "the output in in multisig with %s while %s were expected".format(
+      actual.mkString("[", ", ", "]"),
+      expected.toSeq.mkString("[", ", ", "]")
+    )
+  }
+  case class InvalidCommittedAmount(actual: Bitcoin.Amount, expected: Bitcoin.Amount)
+    extends DepositValidationError {
+    override def description = s"committed a deposit of $actual when $expected was expected"
+  }
+
+  type DepositValidation = ValidationNel[DepositValidationError, Unit]
 }
