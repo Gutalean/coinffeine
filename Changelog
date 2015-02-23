@@ -1,6 +1,9 @@
 Changelog
 =========
 
+Note that the journal serialization format has changed and you should delete
+it when updating from v0.5.x.
+
 v0.6.0:
  - Filter not-started exchanges in the operations view
  - Add a splash screen shown on application launching

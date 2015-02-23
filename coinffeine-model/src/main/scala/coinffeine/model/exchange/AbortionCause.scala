@@ -1,7 +1,5 @@
 package coinffeine.model.exchange
 
-import scala.util.Try
-
 sealed trait AbortionCause
 
 object AbortionCause {
@@ -10,8 +8,13 @@ object AbortionCause {
     override val toString = "aborted by failed handshake commitment"
   }
 
-  case class InvalidCommitments(validation: Both[Try[Unit]]) extends AbortionCause {
+  case class InvalidCommitments(validation: Both[DepositValidation]) extends AbortionCause {
     require(validation.toSeq.count(_.isFailure) > 0)
-    override val toString = "aborted by invalid commitments"
+
+    override val toString = "aborted by invalid " + (validation.map(_.isFailure) match {
+      case Both(true, true) => "commitments"
+      case Both(true, _) => "buyer commitment"
+      case _ => "seller commitment"
+    })
   }
 }

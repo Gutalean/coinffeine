@@ -22,7 +22,13 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
       case BuyerRole => validator.requireValidBuyerFunds _
       case SellerRole => validator.requireValidSellerFunds _
     }
-    validation(deposit).get
+    validation(deposit).swap.foreach { errors =>
+      throw new IllegalArgumentException(
+        s"""Our own deposit is invalid: ${errors.list.mkString(", ")}
+           |Deposit: $deposit
+           |Exchange: $exchange
+         """.stripMargin)
+    }
   }
 
   override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
