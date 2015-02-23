@@ -1,6 +1,7 @@
 package coinffeine.protocol.serialization
 
 import scala.collection.JavaConverters._
+import scalaz.syntax.validation._
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
@@ -13,7 +14,7 @@ import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.Message
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.ProtocolVersionException
+import coinffeine.protocol.serialization.ProtocolSerialization.{Deserialization, ProtocolVersionException}
 
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
@@ -90,7 +91,7 @@ private[serialization] class DefaultProtocolSerialization(
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): CoinffeineMessage = {
+  override def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
     message.getType match {
       case MessageType.PAYLOAD =>
         require(message.hasPayload)
@@ -99,7 +100,7 @@ private[serialization] class DefaultProtocolSerialization(
         require(message.hasProtocolMismatch)
         ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion))
     }
-  }
+  }.success
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {
     val parsedVersion = Version(messageVersion.getMajor, messageVersion.getMinor)

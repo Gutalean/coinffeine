@@ -150,6 +150,7 @@ private class OverlayMessageGateway(
 
   private def deserializeMessage(bytes: ByteString): Try[CoinffeineMessage] = Try {
     serialization.fromProtobuf(proto.CoinffeineMessage.parseFrom(bytes.toArray))
+      .fold(problem => throw new Exception(problem.toString), identity)
   }
 }
 

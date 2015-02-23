@@ -2,6 +2,7 @@ package coinffeine.protocol.serialization
 
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
+import scalaz.Success
 
 import org.reflections.Reflections
 import org.scalautils.TypeCheckedTripleEquals
@@ -44,7 +45,7 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     sampleMessages.foreach { originalMessage =>
       val protoMessage = instance.toProtobuf(Payload(originalMessage))
       val roundtripMessage = instance.fromProtobuf(protoMessage)
-      roundtripMessage should === (Payload(originalMessage))
+      roundtripMessage should === (Success(Payload(originalMessage)))
     }
   }
 
@@ -56,7 +57,7 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
       .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
       .build()
     instance.toProtobuf(mismatch) should === (protobufMismatch)
-    instance.fromProtobuf(protobufMismatch) should === (mismatch)
+    instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
   }
 
   it must "throw when deserializing messages of a different protocol version" in {

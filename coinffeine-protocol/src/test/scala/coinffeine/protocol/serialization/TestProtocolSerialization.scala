@@ -15,7 +15,7 @@ class TestProtocolSerialization extends ProtocolSerialization {
       throw new IllegalArgumentException("Cannot serialize")
     else underlying.toProtobuf(message)
 
-  override def fromProtobuf(protoMessage: proto.CoinffeineMessage): CoinffeineMessage =
+  override def fromProtobuf(protoMessage: proto.CoinffeineMessage) =
     if (notDeserializableMessages.contains(protoMessage))
       throw new IllegalArgumentException("Cannot deserialize")
     else underlying.fromProtobuf(protoMessage)
