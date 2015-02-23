@@ -4,6 +4,7 @@ import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
 
 import org.reflections.Reflections
+import org.scalautils.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
@@ -18,9 +19,11 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
-class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
+class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
+  with CoinffeineUnitTestNetwork.Component {
 
   val orderId = OrderId.random()
   val exchangeId = ExchangeId.random()
@@ -41,17 +44,30 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
     sampleMessages.foreach { originalMessage =>
       val protoMessage = instance.toProtobuf(Payload(originalMessage))
       val roundtripMessage = instance.fromProtobuf(protoMessage)
-      roundtripMessage shouldBe Payload(originalMessage)
+      roundtripMessage should === (Payload(originalMessage))
     }
   }
 
+  it must "support roundtrip serialization of protocol mismatch messages" in {
+    val mismatch = ProtocolMismatch(Version(42, 0))
+    val protobufMismatch = proto.CoinffeineMessage.newBuilder()
+      .setType(MessageType.PROTOCOL_MISMATCH)
+      .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
+      .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
+      .build()
+    instance.toProtobuf(mismatch) should === (protobufMismatch)
+    instance.fromProtobuf(protobufMismatch) should === (mismatch)
+  }
+
   it must "throw when deserializing messages of a different protocol version" in {
-    val message = proto.CoinffeineMessage.newBuilder.setPayload(
-      proto.Payload.newBuilder
-        .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
-        .setExchangeAborted(
-          proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
-    ).build
+    val message = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .setPayload(
+        proto.Payload.newBuilder
+          .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
+          .setExchangeAborted(
+            proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+      ).build
     val ex = the [ProtocolSerialization.ProtocolVersionException] thrownBy {
       instance.fromProtobuf(message)
     }
@@ -67,6 +83,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   it must "throw when deserializing an empty protobuf message" in {
     val emptyMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
       .setPayload(proto.Payload.newBuilder().setVersion(protoVersion))
       .build
     val ex = the [IllegalArgumentException] thrownBy {
@@ -77,6 +94,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   it must "throw when deserializing a protobuf message with multiple messages" in {
     val multiMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
       .setPayload(proto.Payload.newBuilder
         .setVersion(protoVersion)
         .setExchangeAborted(

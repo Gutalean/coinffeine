@@ -9,6 +9,7 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, Comm
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
@@ -17,17 +18,30 @@ import coinffeine.protocol.serialization.ProtocolSerialization.ProtocolVersionEx
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
 
-  private val protoVersion = proto.ProtocolVersion.newBuilder()
-    .setMajor(Version.Current.major)
-    .setMinor(Version.Current.minor)
-    .build()
+  private val protoVersion = toProtobuf(Version.Current)
   private val mappings = new DefaultProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = message match {
-    case Payload(payload) =>
-      proto.CoinffeineMessage.newBuilder().setPayload(toPayload(payload)).build()
+  override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = {
+    val builder = proto.CoinffeineMessage.newBuilder()
+    message match {
+      case Payload(payload) =>
+          builder.setType(MessageType.PAYLOAD).setPayload(toPayload(payload))
+      case ProtocolMismatch(supportedVersion) =>
+        builder.setType(MessageType.PROTOCOL_MISMATCH).setProtocolMismatch(
+          proto.ProtocolMismatch.newBuilder().setSupportedVersion(toProtobuf(supportedVersion)))
+    }
+    builder.build()
   }
+
+  private def toProtobuf(version: Version): proto.ProtocolVersion =
+    proto.ProtocolVersion.newBuilder()
+      .setMajor(version.major)
+      .setMinor(version.minor)
+      .build()
+
+  private def fromProtobuf(version: proto.ProtocolVersion): Version =
+    Version(version.getMajor, version.getMinor)
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
     val builder = proto.Payload.newBuilder
@@ -77,7 +91,14 @@ private[serialization] class DefaultProtocolSerialization(
   }
 
   override def fromProtobuf(message: proto.CoinffeineMessage): CoinffeineMessage = {
-    Payload(fromPayload(message.getPayload))
+    message.getType match {
+      case MessageType.PAYLOAD =>
+        require(message.hasPayload)
+        Payload(fromPayload(message.getPayload))
+      case MessageType.PROTOCOL_MISMATCH =>
+        require(message.hasProtocolMismatch)
+        ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion))
+    }
   }
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {

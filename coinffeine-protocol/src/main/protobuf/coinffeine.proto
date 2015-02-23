@@ -164,6 +164,16 @@ message Payload {
     optional StepSignature stepSignature = 19;
 }
 
+message ProtocolMismatch {
+    required ProtocolVersion supportedVersion = 1;
+}
+
 message CoinffeineMessage {
-    required Payload payload = 2;
+    enum MessageType {
+        PAYLOAD = 0;
+        PROTOCOL_MISMATCH = 1;
+    }
+    required MessageType type = 1;
+    optional Payload payload = 2;
+    optional ProtocolMismatch protocolMismatch = 3;
 }
