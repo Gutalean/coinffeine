@@ -2,7 +2,11 @@ package coinffeine.protocol.serialization
 
 import scala.collection.JavaConverters._
 import scalaz.Validation
+import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
+
+import com.google.protobuf.Descriptors.FieldDescriptor
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
@@ -105,13 +109,8 @@ private[serialization] class DefaultProtocolSerialization(
 
   private def fromPayload(payload: proto.Payload): Deserialization = for {
     _ <- requireSameVersion(payload.getVersion)
+    descriptor <- requireJustOneOptionalField(payload.getAllFields.keySet().asScala.toSet)
   } yield {
-    val messageFields = payload.getAllFields
-    val optionalFields = messageFields.keySet().asScala.filter(_.isOptional)
-    require(optionalFields.nonEmpty, "Message has no content")
-    require(optionalFields.size <= 1,
-      s"Malformed message with ${optionalFields.size} fields: $payload")
-    val descriptor = optionalFields.head
     Payload(descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getExchangeAborted)
@@ -159,5 +158,12 @@ private[serialization] class DefaultProtocolSerialization(
     val parsedVersion = fromProtobuf(messageVersion)
     if (Version.Current == parsedVersion) ().success
     else IncompatibleVersion(parsedVersion, Version.Current).failure
+  }
+
+  private def requireJustOneOptionalField(
+      fields: Set[FieldDescriptor]): Validation[DeserializationError, FieldDescriptor] = {
+    val optionalFields = fields.filter(_.isOptional)
+    require(optionalFields.size <= 1, s"Malformed message with ${optionalFields.size} fields")
+    optionalFields.headOption.toSuccess(EmptyPayload)
   }
 }

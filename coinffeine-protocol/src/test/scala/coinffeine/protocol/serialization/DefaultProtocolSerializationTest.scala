@@ -22,7 +22,7 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, Payment
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.IncompatibleVersion
+import coinffeine.protocol.serialization.ProtocolSerialization.{EmptyPayload, IncompatibleVersion}
 
 class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
   with CoinffeineUnitTestNetwork.Component {
@@ -83,15 +83,12 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     ex.getMessage should include ("Unsupported message")
   }
 
-  it must "throw when deserializing an empty protobuf message" in {
+  it must "detect empty protobuf payloads" in {
     val emptyMessage = proto.CoinffeineMessage.newBuilder
       .setType(MessageType.PAYLOAD)
       .setPayload(proto.Payload.newBuilder().setVersion(protoVersion))
       .build
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.fromProtobuf(emptyMessage)
-    }
-    ex.getMessage should include ("Message has no content")
+    instance.fromProtobuf(emptyMessage) should === (Failure(EmptyPayload))
   }
 
   it must "throw when deserializing a protobuf message with multiple messages" in {
