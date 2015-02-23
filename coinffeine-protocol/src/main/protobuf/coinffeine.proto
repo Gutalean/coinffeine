@@ -137,33 +137,33 @@ message MicropaymentChannelClosed {
     required string exchangeId = 1;
 }
 
-message Payload {
-    optional CommitmentNotification commitmentNotification = 1;
-    optional CommitmentNotificationAck commitmentNotificationAck = 2;
-    optional ExchangeAborted exchangeAborted = 3;
-    optional ExchangeCommitment exchangeCommitment = 4;
-    optional ExchangeRejection exchangeRejection = 5;
-    optional MicropaymentChannelClosed micropaymentChannelClosed = 6;
-    optional OpenOrders openOrders = 7;
-    optional OpenOrdersRequest openOrderRequest = 8;
-    optional OrderMatch orderMatch = 9;
-    optional PaymentProof paymentProof = 10;
-    optional PeerHandshake peerHandshake = 11;
-    optional PeerPositions peerPositions = 12;
-    optional PeerPositionsReceived peerPositionsReceived = 13;
-    optional Quote quote = 14;
-    optional QuoteRequest quoteRequest = 15;
-    optional RefundSignatureRequest refundSignatureRequest = 16;
-    optional RefundSignatureResponse refundSignatureResponse = 17;
-    optional StepSignature stepSignature = 18;
-}
-
 message ProtocolVersion {
     required int32 major = 1;
     required int32 minor = 2;
 }
 
-message CoinffeineMessage {
+message Payload {
     required ProtocolVersion version = 1;
+    optional CommitmentNotification commitmentNotification = 2;
+    optional CommitmentNotificationAck commitmentNotificationAck = 3;
+    optional ExchangeAborted exchangeAborted = 4;
+    optional ExchangeCommitment exchangeCommitment = 5;
+    optional ExchangeRejection exchangeRejection = 6;
+    optional MicropaymentChannelClosed micropaymentChannelClosed = 7;
+    optional OpenOrders openOrders = 8;
+    optional OpenOrdersRequest openOrderRequest = 9;
+    optional OrderMatch orderMatch = 10;
+    optional PaymentProof paymentProof = 11;
+    optional PeerHandshake peerHandshake = 12;
+    optional PeerPositions peerPositions = 13;
+    optional PeerPositionsReceived peerPositionsReceived = 14;
+    optional Quote quote = 15;
+    optional QuoteRequest quoteRequest = 16;
+    optional RefundSignatureRequest refundSignatureRequest = 17;
+    optional RefundSignatureResponse refundSignatureResponse = 18;
+    optional StepSignature stepSignature = 19;
+}
+
+message CoinffeineMessage {
     required Payload payload = 2;
 }

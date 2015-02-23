@@ -46,11 +46,12 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
   }
 
   it must "throw when deserializing messages of a different protocol version" in {
-    val message = proto.CoinffeineMessage.newBuilder
-      .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
-      .setPayload(proto.Payload.newBuilder.setExchangeAborted(
-        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason")))
-      .build
+    val message = proto.CoinffeineMessage.newBuilder.setPayload(
+      proto.Payload.newBuilder
+        .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
+        .setExchangeAborted(
+          proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+    ).build
     val ex = the [ProtocolSerialization.ProtocolVersionException] thrownBy {
       instance.fromProtobuf(message)
     }
@@ -66,8 +67,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   it must "throw when deserializing an empty protobuf message" in {
     val emptyMessage = proto.CoinffeineMessage.newBuilder
-      .setVersion(protoVersion)
-      .setPayload(proto.Payload.newBuilder())
+      .setPayload(proto.Payload.newBuilder().setVersion(protoVersion))
       .build
     val ex = the [IllegalArgumentException] thrownBy {
       instance.fromProtobuf(emptyMessage)
@@ -77,9 +77,10 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   it must "throw when deserializing a protobuf message with multiple messages" in {
     val multiMessage = proto.CoinffeineMessage.newBuilder
-      .setVersion(protoVersion)
       .setPayload(proto.Payload.newBuilder
-        .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+        .setVersion(protoVersion)
+        .setExchangeAborted(
+          proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
         .setQuoteRequest(proto.QuoteRequest.newBuilder
           .setMarket(proto.Market.newBuilder().setCurrency("USD"))))
       .build

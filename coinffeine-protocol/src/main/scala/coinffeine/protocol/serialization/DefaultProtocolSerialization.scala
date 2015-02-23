@@ -1,6 +1,6 @@
 package coinffeine.protocol.serialization
 
-import com.google.protobuf.Descriptors.FieldDescriptor
+import scala.collection.JavaConverters._
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
@@ -26,13 +26,12 @@ private[serialization] class DefaultProtocolSerialization(
 
   override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = message match {
     case Payload(payload) =>
-      proto.CoinffeineMessage.newBuilder()
-        .setVersion(protoVersion)
-        .setPayload(toPayload(payload)).build()
+      proto.CoinffeineMessage.newBuilder().setPayload(toPayload(payload)).build()
   }
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
     val builder = proto.Payload.newBuilder
+    builder.setVersion(protoVersion)
     message match {
       case m: ExchangeAborted =>
         builder.setExchangeAborted(ProtoMapping.toProtobuf(m))
@@ -78,7 +77,6 @@ private[serialization] class DefaultProtocolSerialization(
   }
 
   override def fromProtobuf(message: proto.CoinffeineMessage): CoinffeineMessage = {
-    requireSameVersion(message.getVersion)
     Payload(fromPayload(message.getPayload))
   }
 
@@ -91,11 +89,13 @@ private[serialization] class DefaultProtocolSerialization(
   }
 
   private def fromPayload(payload: proto.Payload): PublicMessage = {
+    requireSameVersion(payload.getVersion)
     val messageFields = payload.getAllFields
-    val fieldNumber: Int = messageFields.size()
-    require(fieldNumber >= 1, "Message has no content")
-    require(fieldNumber <= 1, s"Malformed message with $fieldNumber fields: $payload")
-    val descriptor: FieldDescriptor = messageFields.keySet().iterator().next()
+    val optionalFields = messageFields.keySet().asScala.filter(_.isOptional)
+    require(optionalFields.nonEmpty, "Message has no content")
+    require(optionalFields.size <= 1,
+      s"Malformed message with ${optionalFields.size} fields: $payload")
+    val descriptor = optionalFields.head
     descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getExchangeAborted)
@@ -133,7 +133,8 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getPeerPositions)
       case PEERPOSITIONSRECEIVED_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived)
-      case _ => throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
+      case _ =>
+        throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
     }
   }
 }
