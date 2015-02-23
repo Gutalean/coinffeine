@@ -12,6 +12,7 @@ import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market.{Order, OrderId}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -36,6 +37,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   import CoinffeinePeerActor._
   import context.dispatcher
 
+  private val alarmReporterRef = context.actorOf(props.alarmReporter, "alarmReporter")
   private val gatewayRef = context.actorOf(props.gateway(context.system), "gateway")
   private val paymentProcessorRef = context.actorOf(props.paymentProcessor, "paymentProcessor")
   private val bitcoinPeerRef = context.actorOf(props.bitcoinPeer, "bitcoinPeer")
@@ -47,6 +49,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Starting Coinffeine peer actor...")
     (for {
+      _ <- Service.askStart(alarmReporterRef)
       _ <- Service.askStart(paymentProcessorRef)
       _ <- Service.askStart(bitcoinPeerRef)
       _ <- Service.askStart(gatewayRef)
@@ -74,7 +77,9 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   override protected def onStop() = {
     implicit val timeout = Timeout(ServiceStartStopTimeout)
     log.info("Stopping Coinffeine peer")
-    Service.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef).pipeTo(self)
+    Service
+      .askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef, alarmReporterRef)
+      .pipeTo(self)
     BecomeStopping {
       case () =>
         completeStop()
@@ -153,13 +158,15 @@ object CoinffeinePeerActor {
                                           blockchain: ActorRef,
                                           wallet: ActorRef)
 
-  case class PropsCatalogue(gateway: ActorSystem => Props,
+  case class PropsCatalogue(alarmReporter: Props,
+                            gateway: ActorSystem => Props,
                             marketInfo: ActorRef => Props,
                             orderSupervisor: OrderSupervisorCollaborators => Props,
                             bitcoinPeer: Props,
                             paymentProcessor: Props)
 
   trait Component { this: MessageGateway.Component
+    with AlarmReporterActor.Component
     with BitcoinPeerActor.Component
     with ExchangeActor.Component
     with ConfigComponent
@@ -171,6 +178,7 @@ object CoinffeinePeerActor {
 
     lazy val peerProps: Props = {
       val props = PropsCatalogue(
+        alarmReporterProps,
         messageGatewayProps(configProvider.messageGatewaySettings(),
           configProvider.relaySettings().clientSettings),
         MarketInfoActor.props,

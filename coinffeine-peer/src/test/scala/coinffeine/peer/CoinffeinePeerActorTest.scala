@@ -72,8 +72,9 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
-    val gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
+    val alarmReporter, gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
     val peer = system.actorOf(Props(new CoinffeinePeerActor(PropsCatalogue(
+      alarmReporter = alarmReporter.props(),
       gateway = system => gateway.props(system),
       marketInfo = market => marketInfo.props(market),
       orderSupervisor = collaborators => orders.props(collaborators),
@@ -105,10 +106,13 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait StartedFixture extends Fixture {
     // Firstly, the actors are created before peer is started
-    shouldCreateActors(gateway, paymentProcessor, bitcoinPeer, marketInfo)
+    shouldCreateActors(alarmReporter, gateway, paymentProcessor, bitcoinPeer, marketInfo)
 
     // Then we start the actor
     requester.send(peer, Service.Start {})
+
+    // Then it must request the alarm reporter to start
+    shouldRequestStart(alarmReporter, {})
 
     // Then it must request the payment processor to start
     shouldRequestStart(paymentProcessor, {})
