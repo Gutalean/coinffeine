@@ -1,7 +1,5 @@
 package coinffeine.peer.exchange.protocol.impl
 
-import scala.util.{Try, Failure, Success}
-
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -40,14 +38,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
                                 requiredSignatures: Both[PublicKey],
                                 network: Network) =
-    new DepositValidator(amounts, requiredSignatures, network)
-      .validate(transactions)
-      .map(toTry)
-
-  private def toTry(validation: DepositValidation): Try[Unit] = validation.fold(
-    fail = errors => Failure(new Exception("Invalid deposit: " + errors.list.mkString(", "))),
-    succ = Success.apply
-  )
+    new DepositValidator(amounts, requiredSignatures, network).validate(transactions)
 }
 
 object DefaultExchangeProtocol {

@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.protocol
 
 import java.math.BigInteger
-import scala.util.{Failure, Success, Try}
+import scalaz.syntax.validation._
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -20,11 +20,10 @@ class MockExchangeProtocol extends ExchangeProtocol {
   override def validateDeposits(transactions: Both[ImmutableTransaction],
                                 amounts: Exchange.Amounts[_ <: FiatCurrency],
                                 requiredSignatures: Both[PublicKey],
-                                network: Network): Both[Try[Unit]] =
+                                network: Network): Both[DepositValidation] =
     transactions.map {
-      case MockExchangeProtocol.InvalidDeposit =>
-        Failure(new IllegalArgumentException("Invalid buyer deposit"))
-      case _ => Success {}
+      case MockExchangeProtocol.InvalidDeposit => NoMultiSig.failureNel
+      case _ => ().successNel
     }
 }
 

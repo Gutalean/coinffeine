@@ -1,6 +1,6 @@
 package coinffeine.peer.exchange
 
-import scala.util.{Failure, Success}
+import scalaz.{Failure, Success}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange._

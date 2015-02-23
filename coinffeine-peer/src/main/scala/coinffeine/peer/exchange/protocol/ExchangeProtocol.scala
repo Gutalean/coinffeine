@@ -22,7 +22,7 @@ trait ExchangeProtocol {
   def validateDeposits(transactions: Both[ImmutableTransaction],
                        amounts: Exchange.Amounts[_ <: FiatCurrency],
                        requiredSignatures: Both[PublicKey],
-                       network: Network): Both[Try[Unit]]
+                       network: Network): Both[DepositValidation]
 
   /** Create a micro payment channel for an exchange given the deposit transactions and the
     * role to take.
