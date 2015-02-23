@@ -1,11 +1,10 @@
 package coinffeine.protocol.serialization
 
-import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 trait ProtocolSerialization {
-  def fromProtobuf(protoMessage: CoinffeineMessage): PublicMessage
-  def toProtobuf(message: PublicMessage): CoinffeineMessage
+  def fromProtobuf(protoMessage: proto.CoinffeineMessage): CoinffeineMessage
+  def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage
 }
 
 object ProtocolSerialization {

@@ -18,7 +18,6 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
@@ -40,14 +39,14 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
   "The default protocol serialization" should
     "support roundtrip serialization for all public messages" in new SampleMessages {
     sampleMessages.foreach { originalMessage =>
-      val protoMessage = instance.toProtobuf(originalMessage)
+      val protoMessage = instance.toProtobuf(Payload(originalMessage))
       val roundtripMessage = instance.fromProtobuf(protoMessage)
-      roundtripMessage should be (originalMessage)
+      roundtripMessage shouldBe Payload(originalMessage)
     }
   }
 
   it must "throw when deserializing messages of a different protocol version" in {
-    val message = CoinffeineMessage.newBuilder
+    val message = proto.CoinffeineMessage.newBuilder
       .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
       .setPayload(proto.Payload.newBuilder.setExchangeAborted(
         proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason")))
@@ -60,13 +59,13 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
 
   it must "throw when serializing unknown public messages" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      instance.toProtobuf(new PublicMessage {})
+      instance.toProtobuf(Payload(new PublicMessage {}))
     }
     ex.getMessage should include ("Unsupported message")
   }
 
   it must "throw when deserializing an empty protobuf message" in {
-    val emptyMessage = CoinffeineMessage.newBuilder
+    val emptyMessage = proto.CoinffeineMessage.newBuilder
       .setVersion(protoVersion)
       .setPayload(proto.Payload.newBuilder())
       .build
@@ -77,7 +76,7 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
   }
 
   it must "throw when deserializing a protobuf message with multiple messages" in {
-    val multiMessage = CoinffeineMessage.newBuilder
+    val multiMessage = proto.CoinffeineMessage.newBuilder
       .setVersion(protoVersion)
       .setPayload(proto.Payload.newBuilder
         .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))

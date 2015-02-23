@@ -24,10 +24,12 @@ private[serialization] class DefaultProtocolSerialization(
   private val mappings = new DefaultProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: PublicMessage): proto.CoinffeineMessage =
-    proto.CoinffeineMessage.newBuilder()
-      .setVersion(protoVersion)
-      .setPayload(toPayload(message)).build()
+  override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = message match {
+    case Payload(payload) =>
+      proto.CoinffeineMessage.newBuilder()
+        .setVersion(protoVersion)
+        .setPayload(toPayload(payload)).build()
+  }
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
     val builder = proto.Payload.newBuilder
@@ -75,9 +77,9 @@ private[serialization] class DefaultProtocolSerialization(
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): PublicMessage = {
+  override def fromProtobuf(message: proto.CoinffeineMessage): CoinffeineMessage = {
     requireSameVersion(message.getVersion)
-    fromPayload(message.getPayload)
+    Payload(fromPayload(message.getPayload))
   }
 
   private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {

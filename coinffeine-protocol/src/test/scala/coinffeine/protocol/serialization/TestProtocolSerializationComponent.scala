@@ -6,9 +6,8 @@ import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 /** Provides a serialization that behaves like the default one but allowing injection of
   * serialization errors and other testing goodies.
@@ -17,8 +16,8 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
 
   override lazy val protocolSerialization = new TestProtocolSerialization
 
-  def randomMessageAndSerialization(): (PublicMessage, CoinffeineMessage) = {
-    val message = randomOrderMatch()
+  def randomMessageAndSerialization(): (CoinffeineMessage, proto.CoinffeineMessage) = {
+    val message = Payload(randomOrderMatch())
     (message, protocolSerialization.toProtobuf(message))
   }
 

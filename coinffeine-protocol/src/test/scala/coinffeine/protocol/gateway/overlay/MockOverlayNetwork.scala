@@ -1,7 +1,6 @@
 package coinffeine.protocol.gateway.overlay
 
 import java.io.IOException
-
 import scala.util.control.NoStackTrace
 
 import akka.actor.{ActorRef, ActorSystem}
@@ -11,7 +10,7 @@ import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
 import coinffeine.model.network.NodeId
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.serialization.TestProtocolSerialization
+import coinffeine.protocol.serialization.{Payload, TestProtocolSerialization}
 
 class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
                         (implicit system: ActorSystem) extends OverlayNetwork with IdConversions {
@@ -76,5 +75,5 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   }
 
   private def serialize(message: PublicMessage): ByteString =
-    ByteString(protocolSerialization.toProtobuf(message).toByteArray)
+    ByteString(protocolSerialization.toProtobuf(Payload(message)).toByteArray)
 }
