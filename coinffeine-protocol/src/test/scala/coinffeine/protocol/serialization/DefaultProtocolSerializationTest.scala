@@ -2,7 +2,7 @@ package coinffeine.protocol.serialization
 
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
-import scalaz.Success
+import scalaz.{Failure, Success}
 
 import org.reflections.Reflections
 import org.scalautils.TypeCheckedTripleEquals
@@ -22,6 +22,7 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, Payment
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization.ProtocolSerialization.IncompatibleVersion
 
 class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
   with CoinffeineUnitTestNetwork.Component {
@@ -60,7 +61,7 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
   }
 
-  it must "throw when deserializing messages of a different protocol version" in {
+  it must "detect messages of a different protocol version" in {
     val message = proto.CoinffeineMessage.newBuilder
       .setType(MessageType.PAYLOAD)
       .setPayload(
@@ -69,10 +70,10 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
           .setExchangeAborted(
             proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
       ).build
-    val ex = the [ProtocolSerialization.ProtocolVersionException] thrownBy {
-      instance.fromProtobuf(message)
-    }
-    ex.getMessage should include ("Cannot deserialize message with version 42.0")
+    instance.fromProtobuf(message) should === (Failure(IncompatibleVersion(
+      actual = Version(42, 0),
+      expected = Version.Current
+    )))
   }
 
   it must "throw when serializing unknown public messages" in {

@@ -1,6 +1,7 @@
 package coinffeine.protocol.serialization
 
 import scala.collection.JavaConverters._
+import scalaz.Validation
 import scalaz.syntax.validation._
 
 import coinffeine.model.currency.FiatCurrency
@@ -14,7 +15,7 @@ import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.Message
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.{Deserialization, ProtocolVersionException}
+import coinffeine.protocol.serialization.ProtocolSerialization._
 
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
@@ -95,30 +96,23 @@ private[serialization] class DefaultProtocolSerialization(
     message.getType match {
       case MessageType.PAYLOAD =>
         require(message.hasPayload)
-        Payload(fromPayload(message.getPayload))
+        fromPayload(message.getPayload)
       case MessageType.PROTOCOL_MISMATCH =>
         require(message.hasProtocolMismatch)
-        ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion))
-    }
-  }.success
-
-  private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {
-    val parsedVersion = Version(messageVersion.getMajor, messageVersion.getMinor)
-    if (Version.Current != parsedVersion) {
-      throw ProtocolVersionException(
-        s"Cannot deserialize message with version $parsedVersion, ${Version.Current} expected")
+        ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion)).success
     }
   }
 
-  private def fromPayload(payload: proto.Payload): PublicMessage = {
-    requireSameVersion(payload.getVersion)
+  private def fromPayload(payload: proto.Payload): Deserialization = for {
+    _ <- requireSameVersion(payload.getVersion)
+  } yield {
     val messageFields = payload.getAllFields
     val optionalFields = messageFields.keySet().asScala.filter(_.isOptional)
     require(optionalFields.nonEmpty, "Message has no content")
     require(optionalFields.size <= 1,
       s"Malformed message with ${optionalFields.size} fields: $payload")
     val descriptor = optionalFields.head
-    descriptor.getNumber match {
+    Payload(descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
         ProtoMapping.fromProtobuf(payload.getExchangeAborted)
       case EXCHANGECOMMITMENT_FIELD_NUMBER =>
@@ -157,6 +151,13 @@ private[serialization] class DefaultProtocolSerialization(
         ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived)
       case _ =>
         throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
-    }
+    })
+  }
+
+  private def requireSameVersion(
+      messageVersion: ProtocolVersion): Validation[DeserializationError, Unit] = {
+    val parsedVersion = fromProtobuf(messageVersion)
+    if (Version.Current == parsedVersion) ().success
+    else IncompatibleVersion(parsedVersion, Version.Current).failure
   }
 }

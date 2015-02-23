@@ -2,6 +2,7 @@ package coinffeine.protocol.serialization
 
 import scalaz.Validation
 
+import coinffeine.protocol.Version
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 trait ProtocolSerialization {
@@ -12,8 +13,7 @@ trait ProtocolSerialization {
 object ProtocolSerialization {
 
   type Deserialization = Validation[DeserializationError, CoinffeineMessage]
-  sealed trait DeserializationError
 
-  case class ProtocolVersionException(msg: String,
-                                      cause: Throwable = null) extends Exception(msg, cause)
+  sealed trait DeserializationError
+  case class IncompatibleVersion(actual: Version, expected: Version) extends DeserializationError
 }
