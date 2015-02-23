@@ -12,6 +12,7 @@ object Build extends sbt.Build {
   def subModule(id: String): Project = Project(id = id, base = file(s"coinffeine-$id"))
 
   lazy val root = Project(id = "coinffeine", base = file(".")).aggregate(
+    alarms,
     common,
     commonAkka,
     commonTest,
@@ -125,5 +126,9 @@ object Build extends sbt.Build {
   lazy val tools = subModule("tools").dependsOn(
     commonTest,
     model % "compile->compile;test->test"
+  )
+
+  lazy val alarms = subModule("alarms").dependsOn(
+    commonTest
   )
 }
