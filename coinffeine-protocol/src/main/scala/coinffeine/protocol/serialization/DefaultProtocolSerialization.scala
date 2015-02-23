@@ -109,48 +109,46 @@ private[serialization] class DefaultProtocolSerialization(
   private def fromPayload(payload: proto.Payload): Deserialization = for {
     _ <- requireSameVersion(payload.getVersion)
     descriptor <- requireJustOneOptionalField(payload.getAllFields.keySet().asScala.toSet)
-  } yield {
-    Payload(descriptor.getNumber match {
+    payload <- descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeAborted)
+        ProtoMapping.fromProtobuf(payload.getExchangeAborted).success
       case EXCHANGECOMMITMENT_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeCommitment)
+        ProtoMapping.fromProtobuf(payload.getExchangeCommitment).success
       case COMMITMENTNOTIFICATION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
+        ProtoMapping.fromProtobuf(payload.getCommitmentNotification).success
       case COMMITMENTNOTIFICATIONACK_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getCommitmentNotificationAck)
+        ProtoMapping.fromProtobuf(payload.getCommitmentNotificationAck).success
       case ORDERMATCH_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOrderMatch)
+        ProtoMapping.fromProtobuf(payload.getOrderMatch).success
       case QUOTEREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getQuoteRequest)
+        ProtoMapping.fromProtobuf(payload.getQuoteRequest).success
       case QUOTE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getQuote)
+        ProtoMapping.fromProtobuf(payload.getQuote).success
       case EXCHANGEREJECTION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeRejection)
+        ProtoMapping.fromProtobuf(payload.getExchangeRejection).success
       case PEERHANDSHAKE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerHandshake)
+        ProtoMapping.fromProtobuf(payload.getPeerHandshake).success
       case REFUNDSIGNATUREREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundSignatureRequest)
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureRequest).success
       case REFUNDSIGNATURERESPONSE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundSignatureResponse)
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureResponse).success
       case STEPSIGNATURE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getStepSignature)
+        ProtoMapping.fromProtobuf(payload.getStepSignature).success
       case PAYMENTPROOF_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPaymentProof)
+        ProtoMapping.fromProtobuf(payload.getPaymentProof).success
       case MICROPAYMENTCHANNELCLOSED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getMicropaymentChannelClosed)
+        ProtoMapping.fromProtobuf(payload.getMicropaymentChannelClosed).success
       case OPENORDERREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOpenOrderRequest)
+        ProtoMapping.fromProtobuf(payload.getOpenOrderRequest).success
       case OPENORDERS_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOpenOrders)
+        ProtoMapping.fromProtobuf(payload.getOpenOrders).success
       case PEERPOSITIONS_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerPositions)
+        ProtoMapping.fromProtobuf(payload.getPeerPositions).success
       case PEERPOSITIONSRECEIVED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived)
-      case _ =>
-        throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
-    })
-  }
+        ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived).success
+      case _ => UnsupportedProtobufMessage(descriptor.getName).failure
+    }
+  } yield Payload(payload)
 
   private def requireSameVersion(
       messageVersion: ProtocolVersion): Validation[DeserializationError, Unit] = {
