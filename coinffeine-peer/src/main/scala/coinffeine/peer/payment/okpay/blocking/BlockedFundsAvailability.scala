@@ -23,7 +23,7 @@ private class BlockedFundsAvailability {
   }
 
   def clearAvailable(): Unit = {
-    availability = availability.mapValues(_ => Unavailable)
+    availability = availability.map { case (k, _) => k -> Unavailable }
   }
 
   def areAvailable(funds: ExchangeId): Boolean = availability(funds) == Available
@@ -37,6 +37,6 @@ private class BlockedFundsAvailability {
         case _ => // No change
       }
     }
-    announcedAvailability = availability.mapValues(Some.apply)
+    announcedAvailability = availability.map { case (k, v) => k -> Some(v) }
   }
 }
