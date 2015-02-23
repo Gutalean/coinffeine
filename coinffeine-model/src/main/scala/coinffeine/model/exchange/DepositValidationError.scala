@@ -22,7 +22,7 @@ case class UnexpectedNumberOfRequiredSignatures(requiredSignatures: Int)
 
 case class UnexpectedSignatureAddresses(actual: Seq[Address], expected: Both[Address])
   extends DepositValidationError {
-  override def description = "the output in in multisig with %s while %s were expected".format(
+  override def description = "the output is in multisig with %s while %s were expected".format(
     actual.mkString("[", ", ", "]"),
     expected.toSeq.mkString("[", ", ", "]")
   )
