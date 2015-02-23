@@ -2,7 +2,6 @@ package coinffeine.protocol.serialization
 
 import scala.collection.JavaConverters._
 import scalaz.Validation
-import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
 
@@ -163,7 +162,10 @@ private[serialization] class DefaultProtocolSerialization(
   private def requireJustOneOptionalField(
       fields: Set[FieldDescriptor]): Validation[DeserializationError, FieldDescriptor] = {
     val optionalFields = fields.filter(_.isOptional)
-    require(optionalFields.size <= 1, s"Malformed message with ${optionalFields.size} fields")
-    optionalFields.headOption.toSuccess(EmptyPayload)
+    optionalFields.size match {
+      case 0 => EmptyPayload.failure
+      case 1 => optionalFields.head.success
+      case _ => MultiplePayloads(optionalFields.map(_.getName)).failure
+    }
   }
 }

@@ -17,4 +17,5 @@ object ProtocolSerialization {
   sealed trait DeserializationError
   case class IncompatibleVersion(actual: Version, expected: Version) extends DeserializationError
   case object EmptyPayload extends DeserializationError
+  case class MultiplePayloads(fields: Set[String]) extends DeserializationError
 }

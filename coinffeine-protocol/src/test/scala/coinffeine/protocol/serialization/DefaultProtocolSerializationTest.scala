@@ -22,7 +22,7 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, Payment
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.{EmptyPayload, IncompatibleVersion}
+import coinffeine.protocol.serialization.ProtocolSerialization.{MultiplePayloads, EmptyPayload, IncompatibleVersion}
 
 class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
   with CoinffeineUnitTestNetwork.Component {
@@ -91,7 +91,7 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     instance.fromProtobuf(emptyMessage) should === (Failure(EmptyPayload))
   }
 
-  it must "throw when deserializing a protobuf message with multiple messages" in {
+  it must "detect a protobuf message with multiple payloads" in {
     val multiMessage = proto.CoinffeineMessage.newBuilder
       .setType(MessageType.PAYLOAD)
       .setPayload(proto.Payload.newBuilder
@@ -101,10 +101,8 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
         .setQuoteRequest(proto.QuoteRequest.newBuilder
           .setMarket(proto.Market.newBuilder().setCurrency("USD"))))
       .build
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.fromProtobuf(multiMessage)
-    }
-    ex.getMessage should include ("Malformed message with 2 fields")
+    instance.fromProtobuf(multiMessage) should === (
+      Failure(MultiplePayloads(Set("exchangeAborted", "quoteRequest"))))
   }
 
   trait SampleMessages {
