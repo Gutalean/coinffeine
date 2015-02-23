@@ -129,6 +129,7 @@ object Build extends sbt.Build {
   )
 
   lazy val alarms = subModule("alarms").dependsOn(
-    commonTest
+    commonTest,
+    commonAkka % "compile->compile;test->test"
   )
 }
