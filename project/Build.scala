@@ -109,7 +109,7 @@ object Build extends sbt.Build {
     )
     dependsOn(
       commonAkka % "compile->compile;test->test",
-      commonTest % "compile->compile;test->compile",
+      commonTest % "test->compile",
       model,
       peer
     )
@@ -118,7 +118,7 @@ object Build extends sbt.Build {
   lazy val benchmark = (subModule("benchmark")
     dependsOn(
       commonAkka % "compile->compile;test->test",
-      commonTest % "compile->compile;test->compile",
+      commonTest % "test->compile",
       peer % "compile->compile;test->test"
     )
     enablePlugins GatlingPlugin
@@ -130,7 +130,7 @@ object Build extends sbt.Build {
   )
 
   lazy val alarms = subModule("alarms").dependsOn(
-    commonTest,
+    commonTest % "test->compile",
     commonAkka % "compile->compile;test->test"
   )
 }
