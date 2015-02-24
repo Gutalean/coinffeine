@@ -17,7 +17,7 @@ import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.OrderMatch
-import coinffeine.protocol.serialization._
+import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
 
 class OverlayMessageGatewayIT
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem")) with Eventually {

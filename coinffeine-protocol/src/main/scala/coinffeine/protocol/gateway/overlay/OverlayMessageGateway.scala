@@ -1,9 +1,6 @@
 package coinffeine.protocol.gateway.overlay
 
-import scala.util.{Failure, Success, Try}
-
 import akka.actor._
-import akka.util.ByteString
 
 import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.model.network._
@@ -14,8 +11,7 @@ import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
-import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization.ProtocolSerialization.DeserializationError
 import coinffeine.protocol.serialization._
 
 /** Message gateway that uses an overlay network as transport */
@@ -72,12 +68,10 @@ private class OverlayMessageGateway(
         scheduleReconnection(s"Unexpected disconnection: ${leave.cause}")
 
       case MessageGateway.ForwardMessage(message, dest) =>
-        serializeMessage(message) match  {
-          case Success(payload) =>
-            client ! OverlayNetwork.SendMessage(dest.toOverlayId, payload)
-          case Failure(ex) =>
-            log.error(ex, "Cannot serialize message {}", message)
-        }
+        serialization.serialize(Payload(message)).fold(
+          error => log.error("Cannot serialize message {}: {}", message, error),
+          bytes => client ! OverlayNetwork.SendMessage(dest.toOverlayId, bytes)
+        )
 
       case OverlayNetwork.CannotSend(request, cause) =>
         log.error("Cannot send message to {}: cause", request.target, cause)
@@ -129,28 +123,27 @@ private class OverlayMessageGateway(
     case Terminated(actor) => subscriptions.tell(Unsubscribe, actor)
 
     case OverlayNetwork.ReceiveMessage(source, bytes) =>
-      deserializeMessage(bytes) match {
-        case Success(Payload(message)) =>
-          val receive = MessageGateway.ReceiveMessage(message, source.toNodeId)
-          subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
-        case Failure(ex) =>
-          log.error(ex, "Dropping invalid incoming message from {}", source.toNodeId)
-      }
+      val nodeId = source.toNodeId
+      serialization.deserialize(bytes).fold(
+        error => handleInvalidMessage(nodeId, error),
+        message => handleMessage(nodeId, message)
+      )
+  }
+
+  private def handleMessage(source: NodeId, message: CoinffeineMessage): Unit = message match {
+    case Payload(payload) =>
+      val receive = MessageGateway.ReceiveMessage(payload, source)
+      subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
+  }
+
+  private def handleInvalidMessage(source: NodeId, error: DeserializationError): Unit = {
+    log.error("Dropping invalid incoming message from {}: {}", source, error)
   }
 
   private def countingActivePeers: Receive = {
     case OverlayNetwork.NetworkStatus(networkSize) =>
       log.debug("Network size {}", networkSize)
       properties.activePeers.set(networkSize - 1)
-  }
-
-  private def serializeMessage(message: PublicMessage): Try[ByteString] = Try {
-    ByteString(serialization.toProtobuf(Payload(message)).toByteArray)
-  }
-
-  private def deserializeMessage(bytes: ByteString): Try[CoinffeineMessage] = Try {
-    serialization.fromProtobuf(proto.CoinffeineMessage.parseFrom(bytes.toArray))
-      .fold(problem => throw new Exception(problem.toString), identity)
   }
 }
 

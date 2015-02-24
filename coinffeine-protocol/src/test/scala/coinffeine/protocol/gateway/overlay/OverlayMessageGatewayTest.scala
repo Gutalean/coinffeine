@@ -18,7 +18,7 @@ import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
-import coinffeine.protocol.serialization.TestProtocolSerializationComponent
+import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
 
 class OverlayMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("overlayGateway")) with Eventually
@@ -65,13 +65,13 @@ class OverlayMessageGatewayTest
 
   it should "log messages whose serialization fail" in new JoinedGateway {
     object InvalidMessage extends PublicMessage
-    EventFilter[Exception](start = "Cannot serialize message", occurrences = 1) intercept {
+    EventFilter[Throwable](start = "Cannot serialize message", occurrences = 1) intercept {
       gateway ! MessageGateway.ForwardMessage(InvalidMessage, PeerId.random())
     }
   }
 
   it should "log invalid messages received" in new JoinedGateway {
-    EventFilter[Exception](start = "Dropping invalid incoming message", occurrences = 1) intercept {
+    EventFilter[Throwable](start = "Dropping invalid incoming message", occurrences = 1) intercept {
       overlay.receiveInvalidMessageFrom(BrokerId)
     }
   }

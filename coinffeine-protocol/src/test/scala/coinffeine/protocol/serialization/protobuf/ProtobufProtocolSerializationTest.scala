@@ -1,10 +1,12 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
 import scalaz.{Failure, Success}
 
+import akka.util.ByteString
 import org.reflections.Reflections
+import org.scalatest.Inside
 import org.scalautils.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
@@ -23,8 +25,9 @@ import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.ProtocolSerialization._
+import coinffeine.protocol.serialization.{Payload, ProtocolMismatch, TransactionSerialization}
 
-class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
+class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals with Inside
   with CoinffeineUnitTestNetwork.Component {
 
   val orderId = OrderId.random()
@@ -38,14 +41,13 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     .setMajor(Version.Current.major)
     .setMinor(Version.Current.minor)
     .build()
-  val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))
-
+  val instance = new ProtobufProtocolSerialization(new TransactionSerialization(network))
 
   "The default protocol serialization" should
     "support roundtrip serialization for all public messages" in new SampleMessages {
     sampleMessages.foreach { originalMessage =>
       val protoMessage = instance.toProtobuf(Payload(originalMessage))
-      val roundtripMessage = instance.fromProtobuf(protoMessage)
+      val roundtripMessage = instance.fromProtobuf(protoMessage.toOption.get)
       roundtripMessage should === (Success(Payload(originalMessage)))
     }
   }
@@ -57,8 +59,14 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
       .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
       .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
       .build()
-    instance.toProtobuf(mismatch) should === (protobufMismatch)
+    instance.toProtobuf(mismatch) should === (Success(protobufMismatch))
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
+  }
+
+  it must "detect messages that are invalid protobuf messages" in {
+    inside(instance.deserialize(ByteString("totally invalid"))) {
+      case Failure(InvalidProtocolBuffer(_)) =>
+    }
   }
 
   it must "detect messages of a different protocol version" in {
@@ -76,11 +84,10 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     )))
   }
 
-  it must "throw when serializing unknown public messages" in {
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.toProtobuf(Payload(new PublicMessage {}))
-    }
-    ex.getMessage should include ("Unsupported message")
+  it must "reject serializing unknown public messages" in {
+    val unsupportedMessage = new PublicMessage {}
+    instance.serialize(Payload(unsupportedMessage)) should === (
+      Failure(UnsupportedMessageClass(unsupportedMessage.getClass)))
   }
 
   it must "detect empty protobuf payloads" in {

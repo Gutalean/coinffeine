@@ -10,9 +10,9 @@ import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
 import coinffeine.model.network.NodeId
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.serialization.{Payload, TestProtocolSerialization}
+import coinffeine.protocol.serialization.{Payload, ProtocolSerialization}
 
-class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
+class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
                         (implicit system: ActorSystem) extends OverlayNetwork with IdConversions {
 
   private val mockClient = new MockSupervisedActor()
@@ -75,5 +75,6 @@ class MockOverlayNetwork(protocolSerialization: TestProtocolSerialization)
   }
 
   private def serialize(message: PublicMessage): ByteString =
-    ByteString(protocolSerialization.toProtobuf(Payload(message)).toByteArray)
+    protocolSerialization.serialize(Payload(message))
+      .getOrElse(throw new UnsupportedOperationException("cannot serialize"))
 }

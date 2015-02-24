@@ -10,7 +10,7 @@ import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.protocol.gateway.overlay.OverlayMessageGateway
-import coinffeine.protocol.serialization.DefaultProtocolSerializationComponent
+import coinffeine.protocol.serialization.protobuf.ProtobufProtocolSerializationComponent
 
 trait ProductionCoinffeineComponent
   extends DefaultCoinffeineApp.Component
@@ -23,6 +23,6 @@ trait ProductionCoinffeineComponent
     with BitcoinPeerActor.Component
     with DefaultBitcoinPlatform.Component
     with OverlayMessageGateway.Component
-    with DefaultProtocolSerializationComponent
+    with ProtobufProtocolSerializationComponent
     with UserFileConfigComponent
     with DefaultCoinffeinePropertiesComponent
