@@ -1,7 +1,5 @@
 package coinffeine.peer.exchange.protocol
 
-import scala.util.Try
-
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
