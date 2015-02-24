@@ -1,12 +1,14 @@
 package coinffeine.headless.commands
 
-import scalaz.{Scalaz, Validation}
+import scalaz.Validation
+import scalaz.Validation.FlatMap._
+import scalaz.syntax.std.option._
+import scalaz.syntax.validation._
 
 import coinffeine.model.market.OrderId
 import coinffeine.peer.api.CoinffeineNetwork
 
 class OrderIdValidation(network: CoinffeineNetwork) {
-  import Scalaz._
 
   def requireExistingOrderId(text: String): Validation[String, OrderId] = for {
     _ <- requireNonEmpty(text)
