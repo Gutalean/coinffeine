@@ -48,6 +48,15 @@ GridPane {
     -fx-background-insets: 0, 1 0 0 0, 2 0 0 0;
 }
 
+#notification-summary {
+    -fx-alignment: center-right;
+}
+
+.alerts-summary {
+    -fx-text-fill: red;
+    -fx-cursor: hand;
+}
+
 .title {
     -fx-font-size: 15;
     -fx-font-weight: bold;

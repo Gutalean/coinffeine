@@ -4,7 +4,8 @@ import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control._
-import scalafx.scene.layout.{HBox, Priority, VBox, BorderPane}
+import scalafx.scene.input.MouseEvent
+import scalafx.scene.layout._
 import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
@@ -24,6 +25,7 @@ import coinffeine.peer.config.SettingsProvider
 class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
                        statusBarWidgets: Seq[Node],
+                       notificationSummaryWidget: Node,
                        settingsProvider: SettingsProvider)
     extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet) {
 
@@ -80,7 +82,11 @@ class ApplicationScene(views: Seq[ApplicationView],
     styleClass += "tool-bar"
     id = "status"
     prefHeight = 25
-    content = statusBarWidgets
+    content = interleaveSeparators(statusBarWidgets) :+ new HBox {
+      id = "notification-summary"
+      hgrow = Priority.Always
+      content = notificationSummaryWidget
+    }
   }
 
   root = {
