@@ -13,12 +13,13 @@ import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market.OrderId
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayId
-import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.Subscribe
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.serialization.ProtocolMismatch
 import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
+import coinffeine.protocol.{MessageGatewaySettings, Version}
 
 class OverlayMessageGatewayTest
   extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("overlayGateway")) with Eventually
@@ -75,6 +76,14 @@ class OverlayMessageGatewayTest
       overlay.receiveInvalidMessageFrom(BrokerId)
     }
   }
+
+  it should "reply with a protocol mismatch to messages of other protocol versions" in
+    new JoinedGateway {
+      val sender = PeerId.random()
+      val version = Version(major = 42, minor = 13)
+      overlay.receiveMessageOfProtocolVersion(version, sender)
+      overlay.expectSendTo(sender, ProtocolMismatch(Version.Current))
+    }
 
   it should "leave before stopping" in new JoinedGateway {
     gateway ! Service.Stop
