@@ -4,7 +4,7 @@ import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control._
-import scalafx.scene.layout.{Priority, VBox, BorderPane}
+import scalafx.scene.layout.{HBox, Priority, VBox, BorderPane}
 import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
@@ -76,10 +76,11 @@ class ApplicationScene(views: Seq[ApplicationView],
     content = Seq(viewSelector, new Separator()) ++ toolbarWidgets
   }
 
-  private val statusBarPane = new ToolBar {
+  private val statusBarPane = new HBox() {
+    styleClass += "tool-bar"
     id = "status"
     prefHeight = 25
-    content = interleaveSeparators(statusBarWidgets)
+    content = statusBarWidgets
   }
 
   root = {
