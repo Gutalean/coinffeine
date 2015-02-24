@@ -15,8 +15,8 @@ import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
-import coinffeine.protocol.serialization.{ProtocolSerialization, ProtocolSerializationComponent}
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization._
 
 /** Message gateway that uses an overlay network as transport */
 private class OverlayMessageGateway(
@@ -130,7 +130,7 @@ private class OverlayMessageGateway(
 
     case OverlayNetwork.ReceiveMessage(source, bytes) =>
       deserializeMessage(bytes) match {
-        case Success(message) =>
+        case Success(Payload(message)) =>
           val receive = MessageGateway.ReceiveMessage(message, source.toNodeId)
           subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
         case Failure(ex) =>
@@ -145,12 +145,12 @@ private class OverlayMessageGateway(
   }
 
   private def serializeMessage(message: PublicMessage): Try[ByteString] = Try {
-    ByteString(serialization.toProtobuf(message).toByteArray)
+    ByteString(serialization.toProtobuf(Payload(message)).toByteArray)
   }
 
-  private def deserializeMessage(bytes: ByteString): Try[PublicMessage] = Try {
-    val protobuf = CoinffeineMessage.parseFrom(bytes.toArray)
-    serialization.fromProtobuf(protobuf)
+  private def deserializeMessage(bytes: ByteString): Try[CoinffeineMessage] = Try {
+    serialization.fromProtobuf(proto.CoinffeineMessage.parseFrom(bytes.toArray))
+      .fold(problem => throw new Exception(problem.toString), identity)
   }
 }
 

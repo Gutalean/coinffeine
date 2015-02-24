@@ -2,7 +2,8 @@ Changelog
 =========
 
 Note that the journal serialization format has changed and you should delete
-it when updating from v0.5.x.
+it when updating from v0.5.x.  Wire protocol has also changed to support
+better protocol mismatch detection and reporting.
 
 v0.6.0:
  - Filter not-started exchanges in the operations view

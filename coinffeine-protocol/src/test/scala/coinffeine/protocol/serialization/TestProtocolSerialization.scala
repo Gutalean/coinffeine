@@ -2,26 +2,28 @@ package coinffeine.protocol.serialization
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 class TestProtocolSerialization extends ProtocolSerialization {
   private val underlying = new DefaultProtocolSerialization(
     new TransactionSerialization(CoinffeineUnitTestNetwork))
-  var unserializableMessages = Set.empty[PublicMessage]
-  var undeserializableMessages = Set.empty[CoinffeineMessage]
+  var notSerializableMessages = Set.empty[CoinffeineMessage]
+  var notDeserializableMessages = Set.empty[proto.CoinffeineMessage]
 
-  override def toProtobuf(message: PublicMessage) =
-    if (unserializableMessages.contains(message))
+  override def toProtobuf(message: CoinffeineMessage) =
+    if (notSerializableMessages.contains(message))
       throw new IllegalArgumentException("Cannot serialize")
     else underlying.toProtobuf(message)
 
-  override def fromProtobuf(protoMessage: CoinffeineMessage): PublicMessage =
-    if (undeserializableMessages.contains(protoMessage))
+  override def fromProtobuf(protoMessage: proto.CoinffeineMessage) =
+    if (notDeserializableMessages.contains(protoMessage))
       throw new IllegalArgumentException("Cannot deserialize")
     else underlying.fromProtobuf(protoMessage)
 
-  def wontSerialize(message: PublicMessage): Unit = unserializableMessages += message
+  def wontSerialize(message: PublicMessage): Unit = {
+    notSerializableMessages += Payload(message)
+  }
 
-  def wontDeserialize(protoMessage: CoinffeineMessage): Unit =
-    undeserializableMessages += protoMessage
+  def wontDeserialize(protoMessage: proto.CoinffeineMessage): Unit =
+    notDeserializableMessages += protoMessage
 }

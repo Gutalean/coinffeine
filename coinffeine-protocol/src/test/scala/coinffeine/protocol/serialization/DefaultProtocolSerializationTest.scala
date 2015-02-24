@@ -2,8 +2,10 @@ package coinffeine.protocol.serialization
 
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
+import scalaz.{Failure, Success}
 
 import org.reflections.Reflections
+import org.scalautils.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
@@ -18,10 +20,12 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 import coinffeine.protocol.messages.handshake._
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization.ProtocolSerialization._
 
-class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
+class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
+  with CoinffeineUnitTestNetwork.Component {
 
   val orderId = OrderId.random()
   val exchangeId = ExchangeId.random()
@@ -40,54 +44,77 @@ class DefaultProtocolSerializationTest extends UnitTest with CoinffeineUnitTestN
   "The default protocol serialization" should
     "support roundtrip serialization for all public messages" in new SampleMessages {
     sampleMessages.foreach { originalMessage =>
-      val protoMessage = instance.toProtobuf(originalMessage)
+      val protoMessage = instance.toProtobuf(Payload(originalMessage))
       val roundtripMessage = instance.fromProtobuf(protoMessage)
-      roundtripMessage should be (originalMessage)
+      roundtripMessage should === (Success(Payload(originalMessage)))
     }
   }
 
-  it must "throw when deserializing messages of a different protocol version" in {
-    val message = CoinffeineMessage.newBuilder
-      .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
-      .setPayload(proto.Payload.newBuilder.setExchangeAborted(
-        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason")))
-      .build
-    val ex = the [ProtocolSerialization.ProtocolVersionException] thrownBy {
-      instance.fromProtobuf(message)
-    }
-    ex.getMessage should include ("Cannot deserialize message with version 42.0")
+  it must "support roundtrip serialization of protocol mismatch messages" in {
+    val mismatch = ProtocolMismatch(Version(42, 0))
+    val protobufMismatch = proto.CoinffeineMessage.newBuilder()
+      .setType(MessageType.PROTOCOL_MISMATCH)
+      .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
+      .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
+      .build()
+    instance.toProtobuf(mismatch) should === (protobufMismatch)
+    instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
+  }
+
+  it must "detect messages of a different protocol version" in {
+    val message = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .setPayload(
+        proto.Payload.newBuilder
+          .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
+          .setExchangeAborted(
+            proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+      ).build
+    instance.fromProtobuf(message) should === (Failure(IncompatibleVersion(
+      actual = Version(42, 0),
+      expected = Version.Current
+    )))
   }
 
   it must "throw when serializing unknown public messages" in {
     val ex = the [IllegalArgumentException] thrownBy {
-      instance.toProtobuf(new PublicMessage {})
+      instance.toProtobuf(Payload(new PublicMessage {}))
     }
     ex.getMessage should include ("Unsupported message")
   }
 
-  it must "throw when deserializing an empty protobuf message" in {
-    val emptyMessage = CoinffeineMessage.newBuilder
-      .setVersion(protoVersion)
-      .setPayload(proto.Payload.newBuilder())
+  it must "detect empty protobuf payloads" in {
+    val emptyMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .setPayload(proto.Payload.newBuilder().setVersion(protoVersion))
       .build
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.fromProtobuf(emptyMessage)
-    }
-    ex.getMessage should include ("Message has no content")
+    instance.fromProtobuf(emptyMessage) should === (Failure(EmptyPayload))
   }
 
-  it must "throw when deserializing a protobuf message with multiple messages" in {
-    val multiMessage = CoinffeineMessage.newBuilder
-      .setVersion(protoVersion)
+  it must "detect a protobuf message with multiple payloads" in {
+    val multiMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
       .setPayload(proto.Payload.newBuilder
-        .setExchangeAborted(proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+        .setVersion(protoVersion)
+        .setExchangeAborted(
+          proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
         .setQuoteRequest(proto.QuoteRequest.newBuilder
           .setMarket(proto.Market.newBuilder().setCurrency("USD"))))
       .build
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.fromProtobuf(multiMessage)
-    }
-    ex.getMessage should include ("Malformed message with 2 fields")
+    instance.fromProtobuf(multiMessage) should === (
+      Failure(MultiplePayloads(Set("exchangeAborted", "quoteRequest"))))
+  }
+
+  it must "detect inconsistent message types" in {
+    val missingPayloadMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .build()
+    instance.fromProtobuf(missingPayloadMessage) should === (Failure(MissingField("payload")))
+    val missingMismatchMessage = proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PROTOCOL_MISMATCH)
+      .build()
+    instance.fromProtobuf(missingMismatchMessage) should === (
+      Failure(MissingField("protocolMismatch")))
   }
 
   trait SampleMessages {

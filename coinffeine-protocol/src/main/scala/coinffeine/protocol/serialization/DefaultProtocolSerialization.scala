@@ -1,5 +1,10 @@
 package coinffeine.protocol.serialization
 
+import scala.collection.JavaConverters._
+import scalaz.Validation
+import scalaz.syntax.validation._
+import scalaz.Validation.FlatMap._
+
 import com.google.protobuf.Descriptors.FieldDescriptor
 
 import coinffeine.model.currency.FiatCurrency
@@ -9,28 +14,43 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, Comm
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
-import coinffeine.protocol.serialization.ProtocolSerialization.ProtocolVersionException
+import coinffeine.protocol.serialization.ProtocolSerialization._
 
 private[serialization] class DefaultProtocolSerialization(
     transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
 
-  private val protoVersion = proto.ProtocolVersion.newBuilder()
-    .setMajor(Version.Current.major)
-    .setMinor(Version.Current.minor)
-    .build()
+  private val protoVersion = toProtobuf(Version.Current)
   private val mappings = new DefaultProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: PublicMessage): proto.CoinffeineMessage =
-    proto.CoinffeineMessage.newBuilder()
-      .setVersion(protoVersion)
-      .setPayload(toPayload(message)).build()
+  override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = {
+    val builder = proto.CoinffeineMessage.newBuilder()
+    message match {
+      case Payload(payload) =>
+          builder.setType(MessageType.PAYLOAD).setPayload(toPayload(payload))
+      case ProtocolMismatch(supportedVersion) =>
+        builder.setType(MessageType.PROTOCOL_MISMATCH).setProtocolMismatch(
+          proto.ProtocolMismatch.newBuilder().setSupportedVersion(toProtobuf(supportedVersion)))
+    }
+    builder.build()
+  }
+
+  private def toProtobuf(version: Version): proto.ProtocolVersion =
+    proto.ProtocolVersion.newBuilder()
+      .setMajor(version.major)
+      .setMinor(version.minor)
+      .build()
+
+  private def fromProtobuf(version: proto.ProtocolVersion): Version =
+    Version(version.getMajor, version.getMinor)
 
   private def toPayload(message: PublicMessage): proto.Payload.Builder = {
     val builder = proto.Payload.newBuilder
+    builder.setVersion(protoVersion)
     message match {
       case m: ExchangeAborted =>
         builder.setExchangeAborted(ProtoMapping.toProtobuf(m))
@@ -75,63 +95,77 @@ private[serialization] class DefaultProtocolSerialization(
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): PublicMessage = {
-    requireSameVersion(message.getVersion)
-    fromPayload(message.getPayload)
-  }
+  override def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
+    message.getType match {
+      case MessageType.PAYLOAD =>
+        if (message.hasPayload) fromPayload(message.getPayload)
+        else MissingField("payload").failure
 
-  private def requireSameVersion(messageVersion: ProtocolVersion): Unit = {
-    val parsedVersion = Version(messageVersion.getMajor, messageVersion.getMinor)
-    if (Version.Current != parsedVersion) {
-      throw ProtocolVersionException(
-        s"Cannot deserialize message with version $parsedVersion, ${Version.Current} expected")
+      case MessageType.PROTOCOL_MISMATCH =>
+        if (message.hasProtocolMismatch)
+          ProtocolMismatch(fromProtobuf(message.getProtocolMismatch.getSupportedVersion)).success
+        else MissingField("protocolMismatch").failure
     }
   }
 
-  private def fromPayload(payload: proto.Payload): PublicMessage = {
-    val messageFields = payload.getAllFields
-    val fieldNumber: Int = messageFields.size()
-    require(fieldNumber >= 1, "Message has no content")
-    require(fieldNumber <= 1, s"Malformed message with $fieldNumber fields: $payload")
-    val descriptor: FieldDescriptor = messageFields.keySet().iterator().next()
-    descriptor.getNumber match {
+  private def fromPayload(payload: proto.Payload): Deserialization = for {
+    _ <- requireSameVersion(payload.getVersion)
+    descriptor <- requireJustOneOptionalField(payload.getAllFields.keySet().asScala.toSet)
+    payload <- descriptor.getNumber match {
       case EXCHANGEABORTED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeAborted)
+        ProtoMapping.fromProtobuf(payload.getExchangeAborted).success
       case EXCHANGECOMMITMENT_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeCommitment)
+        ProtoMapping.fromProtobuf(payload.getExchangeCommitment).success
       case COMMITMENTNOTIFICATION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getCommitmentNotification)
+        ProtoMapping.fromProtobuf(payload.getCommitmentNotification).success
       case COMMITMENTNOTIFICATIONACK_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getCommitmentNotificationAck)
+        ProtoMapping.fromProtobuf(payload.getCommitmentNotificationAck).success
       case ORDERMATCH_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOrderMatch)
+        ProtoMapping.fromProtobuf(payload.getOrderMatch).success
       case QUOTEREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getQuoteRequest)
+        ProtoMapping.fromProtobuf(payload.getQuoteRequest).success
       case QUOTE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getQuote)
+        ProtoMapping.fromProtobuf(payload.getQuote).success
       case EXCHANGEREJECTION_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getExchangeRejection)
+        ProtoMapping.fromProtobuf(payload.getExchangeRejection).success
       case PEERHANDSHAKE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerHandshake)
+        ProtoMapping.fromProtobuf(payload.getPeerHandshake).success
       case REFUNDSIGNATUREREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundSignatureRequest)
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureRequest).success
       case REFUNDSIGNATURERESPONSE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getRefundSignatureResponse)
+        ProtoMapping.fromProtobuf(payload.getRefundSignatureResponse).success
       case STEPSIGNATURE_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getStepSignature)
+        ProtoMapping.fromProtobuf(payload.getStepSignature).success
       case PAYMENTPROOF_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPaymentProof)
+        ProtoMapping.fromProtobuf(payload.getPaymentProof).success
       case MICROPAYMENTCHANNELCLOSED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getMicropaymentChannelClosed)
+        ProtoMapping.fromProtobuf(payload.getMicropaymentChannelClosed).success
       case OPENORDERREQUEST_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOpenOrderRequest)
+        ProtoMapping.fromProtobuf(payload.getOpenOrderRequest).success
       case OPENORDERS_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getOpenOrders)
+        ProtoMapping.fromProtobuf(payload.getOpenOrders).success
       case PEERPOSITIONS_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerPositions)
+        ProtoMapping.fromProtobuf(payload.getPeerPositions).success
       case PEERPOSITIONSRECEIVED_FIELD_NUMBER =>
-        ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived)
-      case _ => throw new IllegalArgumentException("Unsupported message: " + descriptor.getFullName)
+        ProtoMapping.fromProtobuf(payload.getPeerPositionsReceived).success
+      case _ => UnsupportedProtobufMessage(descriptor.getName).failure
+    }
+  } yield Payload(payload)
+
+  private def requireSameVersion(
+      messageVersion: ProtocolVersion): Validation[DeserializationError, Unit] = {
+    val parsedVersion = fromProtobuf(messageVersion)
+    if (Version.Current == parsedVersion) ().success
+    else IncompatibleVersion(parsedVersion, Version.Current).failure
+  }
+
+  private def requireJustOneOptionalField(
+      fields: Set[FieldDescriptor]): Validation[DeserializationError, FieldDescriptor] = {
+    val optionalFields = fields.filter(_.isOptional)
+    optionalFields.size match {
+      case 0 => EmptyPayload.failure
+      case 1 => optionalFields.head.success
+      case _ => MultiplePayloads(optionalFields.map(_.getName)).failure
     }
   }
 }

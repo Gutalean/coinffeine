@@ -1,15 +1,23 @@
 package coinffeine.protocol.serialization
 
-import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage
+import scalaz.Validation
+
+import coinffeine.protocol.Version
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 trait ProtocolSerialization {
-  def fromProtobuf(protoMessage: CoinffeineMessage): PublicMessage
-  def toProtobuf(message: PublicMessage): CoinffeineMessage
+  def fromProtobuf(protoMessage: proto.CoinffeineMessage): ProtocolSerialization.Deserialization
+  def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage
 }
 
 object ProtocolSerialization {
 
-  case class ProtocolVersionException(msg: String,
-                                      cause: Throwable = null) extends Exception(msg, cause)
+  type Deserialization = Validation[DeserializationError, CoinffeineMessage]
+
+  sealed trait DeserializationError
+  case class IncompatibleVersion(actual: Version, expected: Version) extends DeserializationError
+  case object EmptyPayload extends DeserializationError
+  case class MultiplePayloads(fields: Set[String]) extends DeserializationError
+  case class UnsupportedProtobufMessage(fieldName: String) extends DeserializationError
+  case class MissingField(fieldName: String) extends DeserializationError
 }
