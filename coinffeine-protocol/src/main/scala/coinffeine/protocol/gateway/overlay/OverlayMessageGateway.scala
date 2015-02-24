@@ -2,13 +2,14 @@ package coinffeine.protocol.gateway.overlay
 
 import akka.actor._
 
+import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.OverlayNetwork.NetworkStatus
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
-import coinffeine.protocol.MessageGatewaySettings
+import coinffeine.protocol.{Version, MessageGatewaySettings}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
 import coinffeine.protocol.serialization.ProtocolSerialization.{DeserializationError, IncompatibleVersion}
@@ -19,8 +20,8 @@ private class OverlayMessageGateway(
     settings: MessageGatewaySettings,
     overlay: OverlayNetwork,
     serialization: ProtocolSerialization,
-    properties: MutableCoinffeineNetworkProperties)
-  extends Actor with ServiceLifecycle[Unit] with ActorLogging with IdConversions {
+    properties: MutableCoinffeineNetworkProperties) extends Actor with ServiceLifecycle[Unit]
+  with EventStreamReporting with ActorLogging with IdConversions {
 
   import context.dispatcher
 
@@ -123,6 +124,9 @@ private class OverlayMessageGateway(
       case Payload(payload) =>
         val receive = MessageGateway.ReceiveMessage(payload, source)
         subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
+
+      case ProtocolMismatch(supportedVersion) =>
+        alert(MessageGateway.ProtocolMismatchAlarm(Version.Current, supportedVersion))
     }
 
     private def handleInvalidMessage(source: NodeId, error: DeserializationError): Unit =

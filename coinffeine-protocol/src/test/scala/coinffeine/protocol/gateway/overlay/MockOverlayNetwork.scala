@@ -74,7 +74,11 @@ class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
   }
 
   def receiveFrom(sender: NodeId, message: PublicMessage): Unit = {
-    receiveFrom(sender, serialize(Payload(message)))
+    receiveFrom(sender, Payload(message))
+  }
+
+  def receiveFrom(sender: NodeId, message: CoinffeineMessage): Unit = {
+    receiveFrom(sender, serialize(message))
   }
 
   private def receiveFrom(sender: NodeId, bytes: ByteString): Unit = {
@@ -82,8 +86,9 @@ class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
     mockClient.probe.send(listener, receive)
   }
 
-  def expectSendTo(target: NodeId, message: PublicMessage): Unit =
+  def expectSendTo(target: NodeId, message: PublicMessage): Unit = {
     expectSendTo(target, Payload(message))
+  }
 
   def expectSendTo(target: NodeId, message: CoinffeineMessage): Unit = {
     mockClient.expectMsg(OverlayNetwork.SendMessage(target.toOverlayId, serialize(message)))

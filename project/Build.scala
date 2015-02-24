@@ -41,7 +41,7 @@ object Build extends sbt.Build {
       async in (Compile, scalaxb) := true
     )
     dependsOn(
-      alarms % "compile->compile;test->test",
+      alarms,
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile",
       model % "compile->compile;test->test",
@@ -52,6 +52,7 @@ object Build extends sbt.Build {
   lazy val protocol = (subModule("protocol")
     settings(PB.protobufSettings: _*)
     dependsOn(
+      alarms,
       common,
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile",

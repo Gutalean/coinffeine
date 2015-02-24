@@ -6,6 +6,7 @@ import akka.actor._
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 
+import coinffeine.alarms.akka.AlarmMessage
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
@@ -14,7 +15,7 @@ import coinffeine.model.market.OrderId
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayId
 import coinffeine.protocol.gateway.MessageGateway
-import coinffeine.protocol.gateway.MessageGateway.Subscribe
+import coinffeine.protocol.gateway.MessageGateway.{ProtocolMismatchAlarm, Subscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization.ProtocolMismatch
@@ -83,6 +84,14 @@ class OverlayMessageGatewayTest
       val version = Version(major = 42, minor = 13)
       overlay.receiveMessageOfProtocolVersion(version, sender)
       overlay.expectSendTo(sender, ProtocolMismatch(Version.Current))
+    }
+
+  it should "raise an alarm when a protocol mismatch is received from the broker" in
+    new JoinedGateway {
+      val brokerVersion = Version(major = 100, minor = 0)
+      system.eventStream.subscribe(self, classOf[AlarmMessage.Alert])
+      overlay.receiveFrom(BrokerId, ProtocolMismatch(brokerVersion))
+      expectMsg(AlarmMessage.Alert(ProtocolMismatchAlarm(Version.Current, brokerVersion)))
     }
 
   it should "leave before stopping" in new JoinedGateway {
