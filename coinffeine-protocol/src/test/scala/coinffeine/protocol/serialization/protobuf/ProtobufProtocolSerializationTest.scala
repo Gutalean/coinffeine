@@ -47,7 +47,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     "support roundtrip serialization for all public messages" in new SampleMessages {
     sampleMessages.foreach { originalMessage =>
       val protoMessage = instance.toProtobuf(Payload(originalMessage))
-      val roundtripMessage = instance.fromProtobuf(protoMessage)
+      val roundtripMessage = instance.fromProtobuf(protoMessage.toOption.get)
       roundtripMessage should === (Success(Payload(originalMessage)))
     }
   }
@@ -59,7 +59,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
       .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
       .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
       .build()
-    instance.toProtobuf(mismatch) should === (protobufMismatch)
+    instance.toProtobuf(mismatch) should === (Success(protobufMismatch))
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
   }
 
@@ -84,11 +84,10 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     )))
   }
 
-  it must "throw when serializing unknown public messages" in {
-    val ex = the [IllegalArgumentException] thrownBy {
-      instance.toProtobuf(Payload(new PublicMessage {}))
-    }
-    ex.getMessage should include ("Unsupported message")
+  it must "reject serializing unknown public messages" in {
+    val unsupportedMessage = new PublicMessage {}
+    instance.serialize(Payload(unsupportedMessage)) should === (
+      Failure(UnsupportedMessageClass(unsupportedMessage.getClass)))
   }
 
   it must "detect empty protobuf payloads" in {

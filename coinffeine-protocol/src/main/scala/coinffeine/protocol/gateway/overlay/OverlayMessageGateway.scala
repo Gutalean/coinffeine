@@ -1,9 +1,6 @@
 package coinffeine.protocol.gateway.overlay
 
-import scala.util.{Failure, Success, Try}
-
 import akka.actor._
-import akka.util.ByteString
 
 import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.model.network._
@@ -14,7 +11,6 @@ import coinffeine.overlay.relay.settings.RelayClientSettings
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
-import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.serialization.ProtocolSerialization.DeserializationError
 import coinffeine.protocol.serialization._
 
@@ -72,12 +68,10 @@ private class OverlayMessageGateway(
         scheduleReconnection(s"Unexpected disconnection: ${leave.cause}")
 
       case MessageGateway.ForwardMessage(message, dest) =>
-        serializeMessage(message) match  {
-          case Success(payload) =>
-            client ! OverlayNetwork.SendMessage(dest.toOverlayId, payload)
-          case Failure(ex) =>
-            log.error(ex, "Cannot serialize message {}", message)
-        }
+        serialization.serialize(Payload(message)).fold(
+          error => log.error("Cannot serialize message {}: {}", message, error),
+          bytes => client ! OverlayNetwork.SendMessage(dest.toOverlayId, bytes)
+        )
 
       case OverlayNetwork.CannotSend(request, cause) =>
         log.error("Cannot send message to {}: cause", request.target, cause)
@@ -150,10 +144,6 @@ private class OverlayMessageGateway(
     case OverlayNetwork.NetworkStatus(networkSize) =>
       log.debug("Network size {}", networkSize)
       properties.activePeers.set(networkSize - 1)
-  }
-
-  private def serializeMessage(message: PublicMessage): Try[ByteString] = Try {
-    ByteString(serialization.toProtobuf(Payload(message)).toByteArray)
   }
 }
 

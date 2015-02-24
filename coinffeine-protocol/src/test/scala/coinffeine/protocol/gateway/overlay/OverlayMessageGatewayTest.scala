@@ -65,7 +65,7 @@ class OverlayMessageGatewayTest
 
   it should "log messages whose serialization fail" in new JoinedGateway {
     object InvalidMessage extends PublicMessage
-    EventFilter[Exception](start = "Cannot serialize message", occurrences = 1) intercept {
+    EventFilter[Throwable](start = "Cannot serialize message", occurrences = 1) intercept {
       gateway ! MessageGateway.ForwardMessage(InvalidMessage, PeerId.random())
     }
   }

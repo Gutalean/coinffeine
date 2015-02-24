@@ -30,16 +30,29 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
   private val mappings = new ProtoMappings(transactionSerialization)
   import mappings._
 
-  override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = {
-    val builder = proto.CoinffeineMessage.newBuilder()
+  override def serialize(message: CoinffeineMessage): Serialization =
+    toProtobuf(message).map(m => ByteString(m.toByteArray))
+
+  def toProtobuf(message: CoinffeineMessage): Validation[SerializationError, proto.CoinffeineMessage] = {
     message match {
       case Payload(payload) =>
-          builder.setType(MessageType.PAYLOAD).setPayload(toPayload(payload))
+        for {
+          protoPayload<- toPayload(payload)
+        } yield {
+          proto.CoinffeineMessage.newBuilder().
+            setType(MessageType.PAYLOAD)
+            .setPayload(protoPayload)
+            .build()
+        }
+
       case ProtocolMismatch(supportedVersion) =>
-        builder.setType(MessageType.PROTOCOL_MISMATCH).setProtocolMismatch(
-          proto.ProtocolMismatch.newBuilder().setSupportedVersion(toProtobuf(supportedVersion)))
+        proto.CoinffeineMessage.newBuilder()
+          .setType(MessageType.PROTOCOL_MISMATCH)
+          .setProtocolMismatch(
+            proto.ProtocolMismatch.newBuilder().setSupportedVersion(toProtobuf(supportedVersion)))
+          .build()
+          .success
     }
-    builder.build()
   }
 
   private def toProtobuf(version: Version): proto.ProtocolVersion =
@@ -51,51 +64,50 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
   private def fromProtobuf(version: proto.ProtocolVersion): Version =
     Version(version.getMajor, version.getMinor)
 
-  private def toPayload(message: PublicMessage): proto.Payload.Builder = {
+  private def toPayload(message: PublicMessage): Validation[SerializationError, proto.Payload.Builder] = {
     val builder = proto.Payload.newBuilder
     builder.setVersion(protoVersion)
     message match {
       case m: ExchangeAborted =>
-        builder.setExchangeAborted(ProtoMapping.toProtobuf(m))
+        builder.setExchangeAborted(ProtoMapping.toProtobuf(m)).success
       case m: ExchangeCommitment =>
-        builder.setExchangeCommitment(ProtoMapping.toProtobuf(m))
+        builder.setExchangeCommitment(ProtoMapping.toProtobuf(m)).success
       case m: CommitmentNotification =>
-        builder.setCommitmentNotification(ProtoMapping.toProtobuf(m))
+        builder.setCommitmentNotification(ProtoMapping.toProtobuf(m)).success
       case m: CommitmentNotificationAck =>
-        builder.setCommitmentNotificationAck(ProtoMapping.toProtobuf(m))
+        builder.setCommitmentNotificationAck(ProtoMapping.toProtobuf(m)).success
       case m @ OrderMatch(_, _, _, _, _, _) =>
-        builder.setOrderMatch(orderMatchMapping.toProtobuf(m))
+        builder.setOrderMatch(orderMatchMapping.toProtobuf(m)).success
       case m: QuoteRequest =>
-        builder.setQuoteRequest(ProtoMapping.toProtobuf(m))
+        builder.setQuoteRequest(ProtoMapping.toProtobuf(m)).success
       case m @ Quote(_, _, _) =>
-        builder.setQuote(ProtoMapping.toProtobuf[Quote[_ <: FiatCurrency], proto.Quote](m))
+        builder.setQuote(ProtoMapping.toProtobuf[Quote[_ <: FiatCurrency], proto.Quote](m)).success
       case m: ExchangeRejection =>
-        builder.setExchangeRejection(ProtoMapping.toProtobuf(m))
+        builder.setExchangeRejection(ProtoMapping.toProtobuf(m)).success
       case m: PeerHandshake =>
-        builder.setPeerHandshake(ProtoMapping.toProtobuf(m))
+        builder.setPeerHandshake(ProtoMapping.toProtobuf(m)).success
       case m: RefundSignatureRequest =>
-        builder.setRefundSignatureRequest(ProtoMapping.toProtobuf(m))
+        builder.setRefundSignatureRequest(ProtoMapping.toProtobuf(m)).success
       case m: RefundSignatureResponse =>
-        builder.setRefundSignatureResponse(ProtoMapping.toProtobuf(m))
+        builder.setRefundSignatureResponse(ProtoMapping.toProtobuf(m)).success
       case m: StepSignatures =>
-        builder.setStepSignature(ProtoMapping.toProtobuf(m))
+        builder.setStepSignature(ProtoMapping.toProtobuf(m)).success
       case m: PaymentProof =>
-        builder.setPaymentProof(ProtoMapping.toProtobuf(m))
+        builder.setPaymentProof(ProtoMapping.toProtobuf(m)).success
       case m: MicropaymentChannelClosed =>
-        builder.setMicropaymentChannelClosed(ProtoMapping.toProtobuf(m))
+        builder.setMicropaymentChannelClosed(ProtoMapping.toProtobuf(m)).success
       case m: OpenOrdersRequest =>
-        builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m))
+        builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m)).success
       case m @ OpenOrders(_) =>
         builder.setOpenOrders(
-          ProtoMapping.toProtobuf[OpenOrders[_ <: FiatCurrency], proto.OpenOrders](m))
+          ProtoMapping.toProtobuf[OpenOrders[_ <: FiatCurrency], proto.OpenOrders](m)).success
       case m @ PeerPositions(_, _, _) =>
         builder.setPeerPositions(
-          ProtoMapping.toProtobuf[PeerPositions[_ <: FiatCurrency], proto.PeerPositions](m))
+          ProtoMapping.toProtobuf[PeerPositions[_ <: FiatCurrency], proto.PeerPositions](m)).success
       case m: PeerPositionsReceived =>
-        builder.setPeerPositionsReceived(ProtoMapping.toProtobuf(m))
-      case _ => throw new IllegalArgumentException("Unsupported message: " + message)
+        builder.setPeerPositionsReceived(ProtoMapping.toProtobuf(m)).success
+      case _ => UnsupportedMessageClass(message.getClass).failure
     }
-    builder
   }
 
   override def deserialize(bytes: ByteString): Deserialization = {
