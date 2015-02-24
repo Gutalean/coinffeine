@@ -1,4 +1,4 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
@@ -23,8 +23,9 @@ import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.ProtocolSerialization._
+import coinffeine.protocol.serialization.{Payload, ProtocolMismatch, TransactionSerialization}
 
-class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
+class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
   with CoinffeineUnitTestNetwork.Component {
 
   val orderId = OrderId.random()
@@ -38,8 +39,7 @@ class DefaultProtocolSerializationTest extends UnitTest with TypeCheckedTripleEq
     .setMajor(Version.Current.major)
     .setMinor(Version.Current.minor)
     .build()
-  val instance = new DefaultProtocolSerialization(new TransactionSerialization(network))
-
+  val instance = new ProtobufProtocolSerialization(new TransactionSerialization(network))
 
   "The default protocol serialization" should
     "support roundtrip serialization for all public messages" in new SampleMessages {

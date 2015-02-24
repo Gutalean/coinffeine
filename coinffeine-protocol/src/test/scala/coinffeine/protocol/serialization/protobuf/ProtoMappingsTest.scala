@@ -1,4 +1,4 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import java.math.BigInteger
 
@@ -16,13 +16,14 @@ import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.MicropaymentChannelClosed
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => msg}
+import coinffeine.protocol.serialization.TransactionSerialization
 
-class DefaultProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
+class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
 
-  val commitmentTransaction = ImmutableTransaction(new MutableTransaction(network))
-  val txSerialization = new TransactionSerialization(network)
-  val testMappings = new DefaultProtoMappings(txSerialization)
-  val publicKey = new KeyPair().publicKey
+  private val commitmentTransaction = ImmutableTransaction(new MutableTransaction(network))
+  private val txSerialization = new TransactionSerialization(network)
+  private val testMappings = new ProtoMappings(txSerialization)
+  private val publicKey = new KeyPair().publicKey
   import testMappings._
 
   final def thereIsAMappingBetween[T, M <: Message](obj: T, msg: M)

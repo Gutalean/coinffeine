@@ -1,8 +1,8 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import com.google.protobuf.Message
 
-private[serialization] object ProtoMapping {
+private object ProtoMapping {
   def fromProtobuf[T, M <: Message](message: M)(implicit mapping: ProtoMapping[T, M]): T =
     mapping.fromProtobuf(message)
 
@@ -11,7 +11,7 @@ private[serialization] object ProtoMapping {
 }
 
 /** Represents how to map between a domain logic case class and a protobuf message */
-private[serialization] trait ProtoMapping[T, M <: Message] {
+private trait ProtoMapping[T, M <: Message] {
   def toProtobuf(obj: T): M
   def fromProtobuf(message: M): T
 }

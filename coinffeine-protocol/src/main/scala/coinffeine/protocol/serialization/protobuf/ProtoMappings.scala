@@ -1,4 +1,4 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import scala.collection.JavaConverters._
 
@@ -9,15 +9,16 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.{Both, ExchangeId}
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
+import coinffeine.protocol.messages.arbitration._
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.DecimalNumber
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => msg}
+import coinffeine.protocol.serialization.TransactionSerialization
 
 /** Implicit conversion mappings for the protocol messages */
-private[serialization] class DefaultProtoMappings(txSerialization: TransactionSerialization) {
+private class ProtoMappings(txSerialization: TransactionSerialization) {
 
   implicit val commitmentNotificationMapping =
     new ProtoMapping[CommitmentNotification, msg.CommitmentNotification] {

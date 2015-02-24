@@ -1,11 +1,13 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.test
 
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization._
+import coinffeine.protocol.serialization.protobuf.ProtobufProtocolSerialization
 
 class TestProtocolSerialization extends ProtocolSerialization {
-  private val underlying = new DefaultProtocolSerialization(
+  private val underlying = new ProtobufProtocolSerialization(
     new TransactionSerialization(CoinffeineUnitTestNetwork))
   var notSerializableMessages = Set.empty[CoinffeineMessage]
   var notDeserializableMessages = Set.empty[proto.CoinffeineMessage]

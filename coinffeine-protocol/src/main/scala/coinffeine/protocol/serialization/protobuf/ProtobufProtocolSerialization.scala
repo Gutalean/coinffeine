@@ -1,16 +1,16 @@
-package coinffeine.protocol.serialization
+package coinffeine.protocol.serialization.protobuf
 
 import scala.collection.JavaConverters._
 import scalaz.Validation
-import scalaz.syntax.validation._
 import scalaz.Validation.FlatMap._
+import scalaz.syntax.validation._
 
 import com.google.protobuf.Descriptors.FieldDescriptor
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.messages.arbitration.{CommitmentNotificationAck, CommitmentNotification}
+import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange._
 import coinffeine.protocol.messages.handshake._
@@ -19,12 +19,13 @@ import coinffeine.protocol.protobuf.CoinffeineProtobuf.Payload._
 import coinffeine.protocol.protobuf.CoinffeineProtobuf.ProtocolVersion
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.ProtocolSerialization._
+import coinffeine.protocol.serialization._
 
-private[serialization] class DefaultProtocolSerialization(
-    transactionSerialization: TransactionSerialization) extends ProtocolSerialization {
+class ProtobufProtocolSerialization(transactionSerialization: TransactionSerialization)
+  extends ProtocolSerialization {
 
   private val protoVersion = toProtobuf(Version.Current)
-  private val mappings = new DefaultProtoMappings(transactionSerialization)
+  private val mappings = new ProtoMappings(transactionSerialization)
   import mappings._
 
   override def toProtobuf(message: CoinffeineMessage): proto.CoinffeineMessage = {
