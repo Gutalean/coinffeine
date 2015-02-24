@@ -1,16 +1,15 @@
 digraph {
-    alarms -> commonTest, commonAkka;
-    server -> peer, commonTest;
-    test -> peer, server, commonTest, okpaymock;
-    gui -> peer, commonTest;
-    tools -> model, commonTest;
-    peer -> alarms, model, protocol, commonAkka, commonTest;
-    protocol -> model, common, commonAkka, commonTest, overlay;
-    overlay -> common, commonAkka, commonTest;
-    model -> commonTest;
-    common -> commonTest;
-    headless -> peer, commonTest;
-    okpaymock -> model, peer, commonAkka, commonTest;
-    commonAkka -> common, commonTest;
-    benchmark -> peer, commonAkka, commonTest;
+    graph[label="All modules depend on commonTest"];
+    alarms -> commonAkka;
+    server -> peer;
+    test -> peer, server, okpaymock;
+    gui -> peer;
+    tools -> model;
+    peer -> alarms, model, protocol, commonAkka;
+    protocol -> alarms, model, common, commonAkka, overlay;
+    overlay -> common, commonAkka;
+    headless -> peer;
+    okpaymock -> model, peer, commonAkka;
+    commonAkka -> common;
+    benchmark -> peer, commonAkka;
 }

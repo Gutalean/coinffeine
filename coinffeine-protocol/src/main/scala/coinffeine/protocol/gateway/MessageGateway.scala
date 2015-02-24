@@ -2,9 +2,10 @@ package coinffeine.protocol.gateway
 
 import akka.actor.{ActorSystem, Props}
 
+import coinffeine.alarms.{Severity, Alarm}
 import coinffeine.model.network.{BrokerId, NodeId}
 import coinffeine.overlay.relay.settings.RelayClientSettings
-import coinffeine.protocol.MessageGatewaySettings
+import coinffeine.protocol.{Version, MessageGatewaySettings}
 import coinffeine.protocol.messages.PublicMessage
 
 object MessageGateway {
@@ -41,6 +42,20 @@ object MessageGateway {
   /** An exception thrown when an error is found on message forward. */
   case class ForwardException(message: String, cause: Throwable = null)
     extends RuntimeException(message, cause)
+
+  /** Alarm to be raised if there is a protocol mismatch with the network */
+  case class ProtocolMismatchAlarm(ourVersion: Version, networkVersion: Version) extends Alarm {
+
+    override def summary = "Protocol version incompatibility"
+
+    override def description: String =
+      s"""Network protocol version is $networkVersion while this application supports $ourVersion.
+         |This means that your orders won't be sent to the market and you should update the
+         |application.
+       """.stripMargin
+
+    override def severity = Severity.High
+  }
 
   trait Component {
     def messageGatewayProps(messageGatewaySettings: MessageGatewaySettings,

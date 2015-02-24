@@ -2,16 +2,17 @@ package coinffeine.protocol.gateway.overlay
 
 import akka.actor._
 
+import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.ServiceLifecycle
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.OverlayNetwork.NetworkStatus
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
-import coinffeine.protocol.MessageGatewaySettings
+import coinffeine.protocol.{Version, MessageGatewaySettings}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
-import coinffeine.protocol.serialization.ProtocolSerialization.DeserializationError
+import coinffeine.protocol.serialization.ProtocolSerialization.{DeserializationError, IncompatibleVersion}
 import coinffeine.protocol.serialization._
 
 /** Message gateway that uses an overlay network as transport */
@@ -19,8 +20,8 @@ private class OverlayMessageGateway(
     settings: MessageGatewaySettings,
     overlay: OverlayNetwork,
     serialization: ProtocolSerialization,
-    properties: MutableCoinffeineNetworkProperties)
-  extends Actor with ServiceLifecycle[Unit] with ActorLogging with IdConversions {
+    properties: MutableCoinffeineNetworkProperties) extends Actor with ServiceLifecycle[Unit]
+  with EventStreamReporting with ActorLogging with IdConversions {
 
   import context.dispatcher
 
@@ -75,6 +76,13 @@ private class OverlayMessageGateway(
 
       case OverlayNetwork.CannotSend(request, cause) =>
         log.error("Cannot send message to {}: cause", request.target, cause)
+
+      case OverlayNetwork.ReceiveMessage(source, bytes) =>
+        val nodeId = source.toNodeId
+        serialization.deserialize(bytes).fold(
+          error => handleInvalidMessage(nodeId, error),
+          message => handleMessage(nodeId, message)
+        )
     }
 
     private def stopWhenJoined = {
@@ -111,6 +119,26 @@ private class OverlayMessageGateway(
       context.system.scheduler.scheduleOnce(delay, self, OverlayMessageGateway.Rejoin)
       become(waitingToRejoin, () => BecomeStopped) // TODO: use super?
     }
+
+    private def handleMessage(source: NodeId, message: CoinffeineMessage): Unit = message match {
+      case Payload(payload) =>
+        val receive = MessageGateway.ReceiveMessage(payload, source)
+        subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
+
+      case ProtocolMismatch(supportedVersion) =>
+        alert(MessageGateway.ProtocolMismatchAlarm(Version.Current, supportedVersion))
+    }
+
+    private def handleInvalidMessage(source: NodeId, error: DeserializationError): Unit =
+      error match {
+        case IncompatibleVersion(actualVersion, expectedVersion) =>
+          log.error("Message from {} of version {} when {} was expected. Notifying protocol mismatch.",
+            source, actualVersion, expectedVersion)
+          val bytes = serialization.serialize(ProtocolMismatch(expectedVersion)).toOption
+          client ! OverlayNetwork.SendMessage(source.toOverlayId, bytes.get)
+        case _ =>
+          log.error("Dropping invalid incoming message from {}: {}", source, error)
+      }
   }
 
   private def delegateSubscriptionManagement: Receive = {
@@ -121,23 +149,6 @@ private class OverlayMessageGateway(
     case msg @ Unsubscribe => subscriptions forward msg
 
     case Terminated(actor) => subscriptions.tell(Unsubscribe, actor)
-
-    case OverlayNetwork.ReceiveMessage(source, bytes) =>
-      val nodeId = source.toNodeId
-      serialization.deserialize(bytes).fold(
-        error => handleInvalidMessage(nodeId, error),
-        message => handleMessage(nodeId, message)
-      )
-  }
-
-  private def handleMessage(source: NodeId, message: CoinffeineMessage): Unit = message match {
-    case Payload(payload) =>
-      val receive = MessageGateway.ReceiveMessage(payload, source)
-      subscriptions ! SubscriptionManagerActor.NotifySubscribers(receive)
-  }
-
-  private def handleInvalidMessage(source: NodeId, error: DeserializationError): Unit = {
-    log.error("Dropping invalid incoming message from {}: {}", source, error)
   }
 
   private def countingActivePeers: Receive = {

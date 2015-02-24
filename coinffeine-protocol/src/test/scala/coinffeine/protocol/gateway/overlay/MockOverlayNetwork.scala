@@ -9,8 +9,11 @@ import akka.util.ByteString
 import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
 import coinffeine.model.network.NodeId
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.serialization.{Payload, ProtocolSerialization}
+import coinffeine.protocol.serialization.{CoinffeineMessage, Payload, ProtocolSerialization}
 
 class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
                         (implicit system: ActorSystem) extends OverlayNetwork with IdConversions {
@@ -61,7 +64,20 @@ class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
     receiveFrom(sender, ByteString("Total nonsense"))
   }
 
+  def receiveMessageOfProtocolVersion(version: Version, sender: NodeId): Unit = {
+    val protobuf = proto.CoinffeineMessage.newBuilder()
+      .setType(MessageType.PAYLOAD)
+      .setPayload(proto.Payload.newBuilder().setVersion(
+        proto.ProtocolVersion.newBuilder().setMajor(version.major).setMinor(version.minor)))
+      .build()
+    receiveFrom(sender, ByteString(protobuf.toByteArray))
+  }
+
   def receiveFrom(sender: NodeId, message: PublicMessage): Unit = {
+    receiveFrom(sender, Payload(message))
+  }
+
+  def receiveFrom(sender: NodeId, message: CoinffeineMessage): Unit = {
     receiveFrom(sender, serialize(message))
   }
 
@@ -71,10 +87,14 @@ class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)
   }
 
   def expectSendTo(target: NodeId, message: PublicMessage): Unit = {
+    expectSendTo(target, Payload(message))
+  }
+
+  def expectSendTo(target: NodeId, message: CoinffeineMessage): Unit = {
     mockClient.expectMsg(OverlayNetwork.SendMessage(target.toOverlayId, serialize(message)))
   }
 
-  private def serialize(message: PublicMessage): ByteString =
-    protocolSerialization.serialize(Payload(message))
+  private def serialize(message: CoinffeineMessage): ByteString =
+    protocolSerialization.serialize(message)
       .getOrElse(throw new UnsupportedOperationException("cannot serialize"))
 }
