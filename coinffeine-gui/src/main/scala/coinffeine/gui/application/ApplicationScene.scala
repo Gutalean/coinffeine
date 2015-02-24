@@ -4,7 +4,8 @@ import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control._
-import scalafx.scene.layout.{Priority, VBox, BorderPane}
+import scalafx.scene.input.MouseEvent
+import scalafx.scene.layout._
 import scalafx.scene.{Node, Parent}
 
 import org.controlsfx.control.SegmentedButton
@@ -24,8 +25,10 @@ import coinffeine.peer.config.SettingsProvider
 class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
                        statusBarWidgets: Seq[Node],
-                       settingsProvider: SettingsProvider)
-    extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet) {
+                       notificationSummaryWidget: Node,
+                       notificationDetailsPane: Node,
+                       settingsProvider: SettingsProvider) extends CoinffeineScene(
+    Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
 
   require(views.nonEmpty, "At least one view is required")
 
@@ -76,10 +79,29 @@ class ApplicationScene(views: Seq[ApplicationView],
     content = Seq(viewSelector, new Separator()) ++ toolbarWidgets
   }
 
-  private val statusBarPane = new ToolBar {
+  private val statusBarPane = new HBox() {
+    styleClass += "tool-bar"
     id = "status"
     prefHeight = 25
-    content = interleaveSeparators(statusBarWidgets)
+    content = interleaveSeparators(statusBarWidgets) :+ new HBox {
+      id = "notification-summary"
+      hgrow = Priority.Always
+      content = notificationSummaryWidget
+    }
+  }
+
+  private val notificationDetailsWrapper = new VBox {
+    id = "notification-details"
+    content = notificationDetailsPane
+    visible = false
+  }
+
+  private val centerPane = new StackPane {
+    id = "center-pane"
+    content = Seq(
+      new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) },
+      notificationDetailsWrapper
+    )
   }
 
   root = {
@@ -91,11 +113,15 @@ class ApplicationScene(views: Seq[ApplicationView],
           vgrow = Priority.Always
           top = toolbarPane
           bottom = statusBarPane
-          center <== currentView.delegate.map(_.centerPane.delegate)
+          center = centerPane
         }
       )
     }
     mainPane
+  }
+
+  notificationSummaryWidget.onMouseClicked = { e: MouseEvent =>
+    notificationDetailsWrapper.visible = !notificationDetailsWrapper.visible.value
   }
 
   private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =

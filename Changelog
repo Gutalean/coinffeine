@@ -11,6 +11,7 @@ v0.6.0:
  - Add quote information in order submission form
  - Add a web faucet for OKPay mock
  - Add a simple fee summary in order submission form
+ - Add a notification area in the UI for alarm reporting
 
 v0.5.2:
  - Bug fixing

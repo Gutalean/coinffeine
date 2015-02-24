@@ -8,8 +8,8 @@ import coinffeine.gui.application.operations.validation.DefaultOrderValidation
 import coinffeine.gui.application.stats.StatsView
 import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
-import coinffeine.gui.control.ConnectionStatusWidget
 import coinffeine.gui.control.wallet.{BitcoinBalanceWidget, FiatBalanceWidget}
+import coinffeine.gui.control.{AlarmDetailsPane, AlarmSummaryWidget, ConnectionStatusWidget}
 import coinffeine.gui.notification.NotificationManager
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
@@ -36,6 +36,8 @@ class CoinffeineMainStage(app: CoinffeineApp,
     statusBarWidgets = Seq(
       new ConnectionStatusWidget(properties.connectionStatusProperty)
     ),
+    new AlarmSummaryWidget(app.global.alarms),
+    new AlarmDetailsPane(app.global.alarms),
     settingsProvider = configProvider
   )
   icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))

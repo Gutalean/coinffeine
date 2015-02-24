@@ -48,6 +48,23 @@ GridPane {
     -fx-background-insets: 0, 1 0 0 0, 2 0 0 0;
 }
 
+#center-pane {
+    -fx-alignment: bottom-right;
+}
+
+#notification-summary {
+    -fx-alignment: center-right;
+}
+
+#notification-details {
+    -fx-max-width: 300px;
+    -fx-max-height: 100px;
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-border-color: #a6a6a6;
+    -fx-border-radius: 5px 5px 0 0;
+    -fx-border-width: 1 1 0 1;
+}
+
 .title {
     -fx-font-size: 15;
     -fx-font-weight: bold;
