@@ -4,7 +4,9 @@ import java.math.BigInteger.ZERO
 import scala.collection.JavaConversions
 import scalaz.{Failure, Success}
 
+import akka.util.ByteString
 import org.reflections.Reflections
+import org.scalatest.Inside
 import org.scalautils.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
@@ -25,7 +27,7 @@ import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.ProtocolSerialization._
 import coinffeine.protocol.serialization.{Payload, ProtocolMismatch, TransactionSerialization}
 
-class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals
+class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleEquals with Inside
   with CoinffeineUnitTestNetwork.Component {
 
   val orderId = OrderId.random()
@@ -59,6 +61,12 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
       .build()
     instance.toProtobuf(mismatch) should === (protobufMismatch)
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
+  }
+
+  it must "detect messages that are invalid protobuf messages" in {
+    inside(instance.deserialize(ByteString("totally invalid"))) {
+      case Failure(InvalidProtocolBuffer(_)) =>
+    }
   }
 
   it must "detect messages of a different protocol version" in {

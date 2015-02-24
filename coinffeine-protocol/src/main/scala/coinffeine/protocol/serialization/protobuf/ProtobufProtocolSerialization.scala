@@ -5,7 +5,9 @@ import scalaz.Validation
 import scalaz.Validation.FlatMap._
 import scalaz.syntax.validation._
 
+import akka.util.ByteString
 import com.google.protobuf.Descriptors.FieldDescriptor
+import com.google.protobuf.InvalidProtocolBufferException
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
@@ -96,7 +98,16 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
     builder
   }
 
-  override def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
+  override def deserialize(bytes: ByteString): Deserialization = {
+    (try {
+      proto.CoinffeineMessage.parseFrom(bytes.toArray).success
+    } catch {
+      case ex: InvalidProtocolBufferException =>
+        InvalidProtocolBuffer(ex.getMessage).failure
+    }).flatMap(fromProtobuf)
+  }
+
+  def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
     message.getType match {
       case MessageType.PAYLOAD =>
         if (message.hasPayload) fromPayload(message.getPayload)

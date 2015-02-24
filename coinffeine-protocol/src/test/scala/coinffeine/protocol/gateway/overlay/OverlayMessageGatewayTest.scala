@@ -71,7 +71,7 @@ class OverlayMessageGatewayTest
   }
 
   it should "log invalid messages received" in new JoinedGateway {
-    EventFilter[Exception](start = "Dropping invalid incoming message", occurrences = 1) intercept {
+    EventFilter[Throwable](start = "Dropping invalid incoming message", occurrences = 1) intercept {
       overlay.receiveInvalidMessageFrom(BrokerId)
     }
   }

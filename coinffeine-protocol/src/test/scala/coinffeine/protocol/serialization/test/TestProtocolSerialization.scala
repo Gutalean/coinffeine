@@ -1,8 +1,14 @@
 package coinffeine.protocol.serialization.test
 
+import scala.util.Try
+import scalaz.syntax.validation._
+
+import akka.util.ByteString
+
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
+import coinffeine.protocol.serialization.ProtocolSerialization.{Deserialization, InvalidProtocolBuffer}
 import coinffeine.protocol.serialization._
 import coinffeine.protocol.serialization.protobuf.ProtobufProtocolSerialization
 
@@ -17,7 +23,11 @@ class TestProtocolSerialization extends ProtocolSerialization {
       throw new IllegalArgumentException("Cannot serialize")
     else underlying.toProtobuf(message)
 
-  override def fromProtobuf(protoMessage: proto.CoinffeineMessage) =
+  override def deserialize(bytes: ByteString): Deserialization =
+    Try(proto.CoinffeineMessage.parseFrom(bytes.toArray)).map(fromProtobuf)
+      .getOrElse(InvalidProtocolBuffer(s"invalid $bytes").failure)
+
+  private def fromProtobuf(protoMessage: proto.CoinffeineMessage) =
     if (notDeserializableMessages.contains(protoMessage))
       throw new IllegalArgumentException("Cannot deserialize")
     else underlying.fromProtobuf(protoMessage)
