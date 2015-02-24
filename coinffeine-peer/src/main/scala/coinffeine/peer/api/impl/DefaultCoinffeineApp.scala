@@ -19,6 +19,7 @@ import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
+import coinffeine.peer.global.GlobalProperties
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
@@ -43,6 +44,8 @@ class DefaultCoinffeineApp(name: String,
     lookupAccountId, peerRef, properties.paymentProcessor)
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator)
+
+  override val global = properties.global
 
   override def start(timeout: FiniteDuration): Future[Unit] = {
     import system.dispatcher
@@ -74,7 +77,8 @@ class DefaultCoinffeineApp(name: String,
 object DefaultCoinffeineApp {
   case class Properties(bitcoin: BitcoinProperties,
                         network: CoinffeineNetworkProperties,
-                        paymentProcessor: PaymentProcessorProperties)
+                        paymentProcessor: PaymentProcessorProperties,
+                        global: GlobalProperties)
 
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent
@@ -83,7 +87,7 @@ object DefaultCoinffeineApp {
     private def accountId() = configProvider.okPaySettings().userAccount
 
     private val properties = Properties(
-      bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties)
+      bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties, globalProperties)
 
     override lazy val app = new DefaultCoinffeineApp(
       name = chooseName(), properties, accountId, peerProps, amountsCalculator, configProvider)

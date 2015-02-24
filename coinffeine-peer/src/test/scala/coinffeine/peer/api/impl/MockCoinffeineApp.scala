@@ -40,6 +40,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def exchangeAmountsCalculator = new DefaultAmountsComponent {}.amountsCalculator
   }
 
+  override def global = ???
+
   override def start(timeout: FiniteDuration) = Future.successful {}
   override def stop(timeout: FiniteDuration) = Future.successful {}
 }

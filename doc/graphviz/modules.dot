@@ -1,9 +1,10 @@
 digraph {
+    alarms -> commonTest, commonAkka;
     server -> peer, commonTest;
     test -> peer, server, commonTest, okpaymock;
     gui -> peer, commonTest;
     tools -> model, commonTest;
-    peer -> model, protocol, commonAkka, commonTest;
+    peer -> alarms, model, protocol, commonAkka, commonTest;
     protocol -> model, common, commonAkka, commonTest, overlay;
     overlay -> common, commonAkka, commonTest;
     model -> commonTest;

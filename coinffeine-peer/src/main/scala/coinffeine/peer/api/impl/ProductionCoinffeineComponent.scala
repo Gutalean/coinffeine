@@ -1,5 +1,6 @@
 package coinffeine.peer.api.impl
 
+import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.bitcoin._
 import coinffeine.peer.bitcoin.platform.DefaultBitcoinPlatform
@@ -16,6 +17,7 @@ trait ProductionCoinffeineComponent
     with CoinffeinePeerActor.Component
     with DefaultAmountsComponent
     with ProtocolConstants.DefaultComponent
+    with AlarmReporterActor.Component
     with DefaultExchangeActor.Component
     with DefaultExchangeProtocol.Component
     with BitcoinPeerActor.Component

@@ -12,6 +12,7 @@ object Build extends sbt.Build {
   def subModule(id: String): Project = Project(id = id, base = file(s"coinffeine-$id"))
 
   lazy val root = Project(id = "coinffeine", base = file(".")).aggregate(
+    alarms,
     common,
     commonAkka,
     commonTest,
@@ -40,6 +41,7 @@ object Build extends sbt.Build {
       async in (Compile, scalaxb) := true
     )
     dependsOn(
+      alarms % "compile->compile;test->test",
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile",
       model % "compile->compile;test->test",
@@ -107,7 +109,7 @@ object Build extends sbt.Build {
     )
     dependsOn(
       commonAkka % "compile->compile;test->test",
-      commonTest % "compile->compile;test->compile",
+      commonTest % "test->compile",
       model,
       peer
     )
@@ -116,7 +118,7 @@ object Build extends sbt.Build {
   lazy val benchmark = (subModule("benchmark")
     dependsOn(
       commonAkka % "compile->compile;test->test",
-      commonTest % "compile->compile;test->compile",
+      commonTest % "test->compile",
       peer % "compile->compile;test->test"
     )
     enablePlugins GatlingPlugin
@@ -125,5 +127,10 @@ object Build extends sbt.Build {
   lazy val tools = subModule("tools").dependsOn(
     commonTest,
     model % "compile->compile;test->test"
+  )
+
+  lazy val alarms = subModule("alarms").dependsOn(
+    commonTest % "test->compile",
+    commonAkka % "compile->compile;test->test"
   )
 }
