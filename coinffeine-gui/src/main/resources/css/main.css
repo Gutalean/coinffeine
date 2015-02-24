@@ -65,14 +65,6 @@ GridPane {
     -fx-border-width: 1 1 0 1;
 }
 
-.alerts-summary {
-    -fx-cursor: hand;
-}
-
-.alerts-details {
-    -fx-spacing: 10px;
-}
-
 .title {
     -fx-font-size: 15;
     -fx-font-weight: bold;
@@ -84,34 +76,6 @@ GridPane {
 
 .indented {
     -fx-padding: 0 0 0 30px;
-}
-
-.alarm-details {
-    -fx-padding: 15px;
-    -fx-spacing: 15px;
-}
-
-.alarm-details .alarm-list .column-title {
-    -fx-font-weight: bold;
-}
-
-.alarm-details .alarm-list .clickable {
-    -fx-cursor: hand;
-}
-
-.alert-info {
-    -fx-padding: 25px;
-    -fx-spacing: 25px;
-    -fx-alignment: center;
-    -fx-min-width: 400px;
-}
-
-.alert-info .section-title {
-    -fx-font-weight: bold;
-}
-
-.alert-info .button {
-    -fx-alignment: center;
 }
 
 .button-hpane {

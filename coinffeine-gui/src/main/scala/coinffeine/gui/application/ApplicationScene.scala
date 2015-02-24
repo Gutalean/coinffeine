@@ -27,8 +27,8 @@ class ApplicationScene(views: Seq[ApplicationView],
                        statusBarWidgets: Seq[Node],
                        notificationSummaryWidget: Node,
                        notificationDetailsPane: Node,
-                       settingsProvider: SettingsProvider)
-    extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet) {
+                       settingsProvider: SettingsProvider) extends CoinffeineScene(
+    Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
 
   require(views.nonEmpty, "At least one view is required")
 

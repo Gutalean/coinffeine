@@ -1,0 +1,33 @@
+/* This file defines the styles for the alarm showing controls in the main scene. */
+
+.alarm-summary {
+    -fx-cursor: hand;
+}
+
+.alarm-details {
+    -fx-padding: 15px;
+    -fx-spacing: 15px;
+}
+
+.alarm-details .alarm-list .column-title {
+    -fx-font-weight: bold;
+}
+
+.alarm-details .alarm-list .clickable {
+    -fx-cursor: hand;
+}
+
+.alarm-info {
+    -fx-padding: 25px;
+    -fx-spacing: 25px;
+    -fx-alignment: center;
+    -fx-min-width: 400px;
+}
+
+.alarm-info .section-title {
+    -fx-font-weight: bold;
+}
+
+.alarm-info .button {
+    -fx-alignment: center;
+}

@@ -9,7 +9,7 @@ import coinffeine.model.properties.Property
 
 class AlarmSummaryWidget(alarms: Property[Set[Alarm]]) extends Label {
 
-  styleClass += "alerts-summary"
+  styleClass += "alarm-summary"
   text <== alarms.map { a =>
     if (a.size > 0) s"${a.size} active alarms" else "No active alarms"
   }

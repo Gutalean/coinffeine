@@ -1,14 +1,14 @@
 package coinffeine.gui.control
 
 import scalafx.Includes._
-import scalafx.scene.{Node, Scene}
+import scalafx.scene.Node
 import scalafx.scene.control.{Button, Label}
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout.VBox
-import scalafx.stage.{StageStyle, Stage}
+import scalafx.stage.{Stage, StageStyle}
 
 import coinffeine.alarms.Alarm
-import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 
 class AlarmInfoDialog(alarm: Alarm) extends Stage(StageStyle.UTILITY) {
 
@@ -23,9 +23,9 @@ class AlarmInfoDialog(alarm: Alarm) extends Stage(StageStyle.UTILITY) {
 
   title = alarm.summary
   resizable = false
-  scene = new CoinffeineScene {
+  scene = new CoinffeineScene(Stylesheets.Alarms) {
     root = new VBox {
-      styleClass += "alert-info"
+      styleClass += "alarm-info"
       content = Seq(whatHappenedSection, howToFixItSection, acceptButton)
     }
   }
