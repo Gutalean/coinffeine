@@ -26,6 +26,7 @@ class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
                        statusBarWidgets: Seq[Node],
                        notificationSummaryWidget: Node,
+                       notificationDetailsPane: Node,
                        settingsProvider: SettingsProvider)
     extends CoinffeineScene(Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet) {
 
@@ -89,6 +90,20 @@ class ApplicationScene(views: Seq[ApplicationView],
     }
   }
 
+  private val notificationDetailsWrapper = new VBox {
+    id = "notification-details"
+    content = notificationDetailsPane
+    visible = false
+  }
+
+  private val centerPane = new StackPane {
+    id = "center-pane"
+    content = Seq(
+      new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) },
+      notificationDetailsWrapper
+    )
+  }
+
   root = {
     val mainPane = new VBox() {
       content = Seq(
@@ -98,11 +113,15 @@ class ApplicationScene(views: Seq[ApplicationView],
           vgrow = Priority.Always
           top = toolbarPane
           bottom = statusBarPane
-          center <== currentView.delegate.map(_.centerPane.delegate)
+          center = centerPane
         }
       )
     }
     mainPane
+  }
+
+  notificationSummaryWidget.onMouseClicked = { e: MouseEvent =>
+    notificationDetailsWrapper.visible = !notificationDetailsWrapper.visible.value
   }
 
   private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =

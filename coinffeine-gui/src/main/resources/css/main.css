@@ -48,13 +48,29 @@ GridPane {
     -fx-background-insets: 0, 1 0 0 0, 2 0 0 0;
 }
 
+#center-pane {
+    -fx-alignment: bottom-right;
+}
+
 #notification-summary {
     -fx-alignment: center-right;
 }
 
+#notification-details {
+    -fx-max-width: 300px;
+    -fx-max-height: 100px;
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-border-color: #a6a6a6;
+    -fx-border-radius: 5px 5px 0 0;
+    -fx-border-width: 1 1 0 1;
+}
+
 .alerts-summary {
-    -fx-text-fill: red;
     -fx-cursor: hand;
+}
+
+.alerts-details {
+    -fx-spacing: 10px;
 }
 
 .title {
@@ -68,6 +84,34 @@ GridPane {
 
 .indented {
     -fx-padding: 0 0 0 30px;
+}
+
+.alarm-details {
+    -fx-padding: 15px;
+    -fx-spacing: 15px;
+}
+
+.alarm-details .alarm-list .column-title {
+    -fx-font-weight: bold;
+}
+
+.alarm-details .alarm-list .clickable {
+    -fx-cursor: hand;
+}
+
+.alert-info {
+    -fx-padding: 25px;
+    -fx-spacing: 25px;
+    -fx-alignment: center;
+    -fx-min-width: 400px;
+}
+
+.alert-info .section-title {
+    -fx-font-weight: bold;
+}
+
+.alert-info .button {
+    -fx-alignment: center;
 }
 
 .button-hpane {
