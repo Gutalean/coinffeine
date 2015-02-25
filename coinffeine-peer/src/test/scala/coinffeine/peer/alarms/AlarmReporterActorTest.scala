@@ -49,15 +49,18 @@ class AlarmReporterActorTest extends AkkaSpec with Eventually {
   }
 
   case object Nazgul extends Alarm {
-    override def summary = "NAZGUUUUL!!!!!"
-    override def description = "A Dark Lord servant is here to kick your ass!"
-    override def severity = Severity.High
+    override val summary = "NAZGUUUUL!!!!!"
+    override val whatHappened = "A Dark Lord servant is here to kick your ass!"
+    override val howToFix =
+      "Distract him with a Hobbit from his back while you stab him with your sword. Good luck!"
+    override val severity = Severity.High
   }
 
   case object Gollum extends Alarm {
-    override def summary = "Gollum"
-    override def description = "Oh no! Again this creepy creature!"
-    override def severity = Severity.Low
+    override val summary = "Gollum"
+    override val whatHappened = "Oh no! Again this creepy creature!"
+    override val howToFix = "Tie his leg with elven rope. And never untie it for any reason!"
+    override val severity = Severity.Low
   }
 
   def startReporter(): Unit = {

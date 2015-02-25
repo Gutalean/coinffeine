@@ -19,9 +19,10 @@ class EventStreamReportingTest extends AkkaSpec {
   }
 
   case object SomeAlarm extends Alarm {
-    override def summary = "Oh no!"
-    override def description = "More Lemmings!"
-    override def severity = Severity.High
+    override val summary = "Oh no!"
+    override val whatHappened = "More Lemmings!"
+    override val howToFix = "Lead the lemmings to the level exit"
+    override val severity = Severity.High
   }
 
   trait Fixture {

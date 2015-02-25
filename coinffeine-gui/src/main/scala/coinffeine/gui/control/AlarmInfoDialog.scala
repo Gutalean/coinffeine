@@ -12,7 +12,7 @@ import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
 
 class AlarmInfoDialog(alarm: Alarm) extends Stage(StageStyle.UTILITY) {
 
-  private val whatHappenedSection = createSection("What happened?", alarm.description)
+  private val whatHappenedSection = createSection("What happened?", alarm.whatHappened)
 
   private val howToFixItSection = createSection(
     "How to fix it?", "A way to fix it will be specified very soon")

@@ -9,7 +9,14 @@ package coinffeine.alarms
   * this trait with a case object.
   */
 trait Alarm {
+  /** A brief summary of the anomalous situation. */
   def summary: String
-  def description: String
+
+  /** A detailed description of what happened. This may be several lines of text. */
+  def whatHappened: String
+
+  /** A detailed description of how to fix the problem. This may be several lines of text. */
+  def howToFix: String
+
   def severity: Severity
 }
