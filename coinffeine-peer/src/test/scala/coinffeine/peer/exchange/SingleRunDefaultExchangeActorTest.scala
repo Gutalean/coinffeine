@@ -106,10 +106,13 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       givenBroadcasterWillPanic(midWayTx)
       startActor()
       givenMicropaymentChannelCreation()
+      micropaymentChannelActor.probe.send(actor, ExchangeUpdate(runningExchange.completeStep(1)))
+      listener.expectMsgType[ExchangeUpdate]
       notifyDepositDestination(DepositRefund, midWayTx)
-      val failedState = listener.expectMsgType[ExchangeFailure].exchange
-      failedState.cause shouldBe FailureCause.PanicBlockReached
-      failedState.transaction.value shouldBe midWayTx
+      val failedExchange = listener.expectMsgType[ExchangeFailure].exchange
+      failedExchange.cause shouldBe FailureCause.PanicBlockReached
+      failedExchange.transaction.value shouldBe midWayTx
+      failedExchange.progress.bitcoinsTransferred.buyer shouldBe 'positive
       listener.expectTerminated(actor)
     }
 

@@ -79,7 +79,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       finishWith(ExchangeFailure(exchange.cancel(CancellationCause.CannotStartHandshake(cause))))
   }
 
-  private def inHandshake(user: Exchange.PeerInfo): Receive = propagatingNotifications orElse {
+  private def inHandshake(user: Exchange.PeerInfo): Receive = {
     case HandshakeSuccess(rawExchange, commitments, refundTx)
       if rawExchange.currency == exchange.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange[C]]
@@ -105,6 +105,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
       spawnBroadcaster(refundTx)
       startAbortion(
         exchange.abort(AbortionCause.HandshakeWithCommitmentFailed(cause), user, refundTx))
+
+    case update: ExchangeUpdate => collaborators.listener ! update
   }
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
@@ -127,9 +129,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     context.become(inMicropaymentChannel(runningExchange))
   }
 
-  private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive =
-    propagatingNotifications orElse {
-
+  private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.id)
       txBroadcaster ! PublishBestTransaction
@@ -146,6 +146,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
+
+    case update @ ExchangeUpdate(updatedRunningExchange: RunningExchange[C]) =>
+      collaborators.listener ! update
+      context.become(inMicropaymentChannel(updatedRunningExchange))
   }
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
@@ -166,10 +170,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
-  }
-
-  private def propagatingNotifications: Receive = {
-    case update: ExchangeUpdate => collaborators.listener ! update
   }
 
   private def failingAtStep(runningExchange: RunningExchange[C],
