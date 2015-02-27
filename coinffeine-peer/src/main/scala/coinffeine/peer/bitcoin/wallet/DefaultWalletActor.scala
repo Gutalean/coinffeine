@@ -49,11 +49,15 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case request @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       blockedOutputs.canUse(coinsId, amount + transactionFee) match {
         case scalaz.Success(outputs) =>
+          log.info("Creating deposit of {} (+{} fee) for {} with signatures {}",
+            amount, transactionFee, coinsId, signatures)
           persist(DepositCreated(request, outputs)) { event =>
             val tx = onDepositCreated(event)
             sender ! WalletActor.DepositCreated(request, tx)
           }
         case scalaz.Failure(error) =>
+          log.error("Failed to create deposit of {} (+{} fee) for {} with signatures {}",
+            amount, transactionFee, coinsId, signatures)
           sender() ! WalletActor.DepositCreationError(request, error)
       }
 
@@ -65,6 +69,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
       }
 
     case WalletActor.ReleaseDeposit(tx) =>
+      log.info("Releasing deposit on transaction {}", tx.get.getHashAsString)
       persist(DepositCancelled(tx))(onDepositCancelled)
 
     case CreateKeyPair =>
@@ -81,16 +86,19 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case BlockBitcoins(fundsId, amount) =>
       blockedOutputs.collectFunds(amount) match {
         case Some(funds) =>
+          log.info("Blocking {} for {}", fundsId)
           persist(FundsBlocked(fundsId, funds)) { event =>
             onFundsBlocked(event)
             sender() ! BlockedBitcoins(fundsId)
           }
         case None =>
+          log.error("Failed to block {} for {}", fundsId)
           sender() ! CannotBlockBitcoins(
               s"cannot collect funds to block $amount: ${blockedOutputs.available} available")
       }
 
     case UnblockBitcoins(fundsId) if blockedOutputs.areBlocked(fundsId) =>
+      log.info("Unblocking funds for {}", fundsId)
       persist(FundsUnblocked(fundsId))(onFundsUnblocked)
 
     case SubscribeToWalletChanges =>
