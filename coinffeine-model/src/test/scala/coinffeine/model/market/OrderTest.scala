@@ -11,7 +11,12 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   val exchangeParameters = Exchange.Parameters(10, network)
   val dummyDeposits = Both.fill(ImmutableTransaction(new MutableTransaction(network)))
 
-  "An order" must "report no progress with no exchanges" in {
+  "An order" must "require its amount to be strictly positive" in {
+    an [IllegalArgumentException] shouldBe thrownBy { Order.randomMarketPrice(Bid, 0.BTC, Euro) }
+    an [IllegalArgumentException] shouldBe thrownBy { Order.randomLimit(Bid, -1.BTC, Price(1.EUR)) }
+  }
+
+  it must "report no progress with no exchanges" in {
     Order.randomLimit(Bid, 10.BTC, Price(10.EUR)).progress shouldBe 0.0
   }
 
