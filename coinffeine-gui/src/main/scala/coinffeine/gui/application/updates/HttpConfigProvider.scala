@@ -17,7 +17,7 @@ class HttpConfigProvider extends ConfigVersionChecker.ConfigProvider {
     // `http.apply()` returns a future, but it's execution takes a long time (~1 second),
     // perhaps due to backend (Netty) machinery initialization. So we execute everything in
     // another future to ensure the function evaluates immediately.
-    http(HttpConfigProvider.FileLocation OK as.String).map(ConfigFactory.parseString)
+    http(url(HttpConfigProvider.FileLocation) OK as.String).map(ConfigFactory.parseString)
   }.flatMap(identity)
 
   override def shutdown(): Unit = {
@@ -27,6 +27,5 @@ class HttpConfigProvider extends ConfigVersionChecker.ConfigProvider {
 }
 
 object HttpConfigProvider {
-  val FileLocation = url(
-    "https://raw.githubusercontent.com/Coinffeine/coinffeine/master/VERSION")
+  val FileLocation = "http://www.coinffeine.com/version/current"
 }

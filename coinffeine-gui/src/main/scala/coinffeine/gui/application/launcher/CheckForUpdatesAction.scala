@@ -42,5 +42,5 @@ class CheckForUpdatesAction extends LazyLogging {
 
 object CheckForUpdatesAction {
 
-  val DownloadsUrl = new URI("http://github.com/coinffeine/coinffeine")
+  val DownloadsUrl = new URI("http://www.coinffeine.com/download.html")
 }
