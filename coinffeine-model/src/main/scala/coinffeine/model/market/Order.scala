@@ -28,6 +28,8 @@ case class Order[C <: FiatCurrency](
     cancelled: Boolean,
     exchanges: Map[ExchangeId, Exchange[C]]) {
 
+  require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
+
   val role = Role.fromOrderType(orderType)
 
   def start: Order[C] = {
