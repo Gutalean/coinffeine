@@ -11,7 +11,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidByReceiver, PaidBySender}
+import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
 import coinffeine.peer.payment.okpay.{OkPayClient, TokenGenerator}
 
@@ -57,6 +57,9 @@ class OkPayWebServiceClient(
       invoice = None
     ).map { response =>
       parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
+    }.mapSoapFault {
+      case UnsupportedPaymentMethodFault => UnsupportedPaymentMethod
+      case ReceiverNotFoundFault => ReceiverNotFound(to, _)
     }
 
   override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
@@ -69,9 +72,9 @@ class OkPayWebServiceClient(
       result.Transaction_GetResult.flatten.map(parsePayment)
     }.recover {
       case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
-    }
+    }.mapSoapFault()
 
-  override def currentBalances(): Future[Seq[FiatAmount]] = {
+  override def currentBalances(): Future[Seq[FiatAmount]] =
     service.wallet_Get_Balance(
       walletID = Some(Some(accountId)),
       securityToken = Some(Some(buildCurrentToken()))
@@ -80,8 +83,7 @@ class OkPayWebServiceClient(
         arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
       } yield parseBalances(arrayOfBalances)).getOrElse(
           throw new PaymentProcessorException(s"Cannot parse balances in $response"))
-    }
-  }
+    }.mapSoapFault()
 
   private def parsePaymentOfCurrency[C <: FiatCurrency](
      txInfo: TransactionInfo, expectedCurrency: C): Payment[C] = {
@@ -124,13 +126,40 @@ class OkPayWebServiceClient(
   }
 
   private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
+
+  implicit class PimpMyFuture[A](future: Future[A]) {
+
+    type SoapFaultMapper = PartialFunction[String, Throwable => OkPayClient.Error]
+
+    def mapSoapFault(specificFaultMapper: SoapFaultMapper = Map.empty): Future[A] = {
+      val generalFaultMapper: SoapFaultMapper = {
+        case AccountNotFoundFault => AccountNotFound(accountId, _)
+        case AuthenticationFailedFault => AuthenticationFailed(accountId, _)
+        case CurrencyDisabledFault => CurrencyDisabled
+        case NotEnoughMoneyFault => NotEnoughMoney(accountId, _)
+        case InternalErrorFault => InternalError
+        case e => UnexpectedError
+      }
+      future.recoverWith {
+        case e @ Soap11Fault(Fault(_, fault, _, _), _, _) =>
+          Future.failed(specificFaultMapper.orElse(generalFaultMapper)(fault)(e))
+      }
+    }
+  }
 }
 
 object OkPayWebServiceClient {
 
   val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
 
+  private val AccountNotFoundFault = "Account_Not_Found"
+  private val AuthenticationFailedFault = "Authentication_Failed"
+  private val CurrencyDisabledFault = "Currency_Disabled"
+  private val NotEnoughMoneyFault = "Not_Enough_Money"
   private val TransactionNotFoundFault = "Transaction_Not_Found"
+  private val UnsupportedPaymentMethodFault = "Payment_Method_Not_Supported"
+  private val ReceiverNotFoundFault = "Receiver_Not_Found"
+  private val InternalErrorFault = "Internal_Error"
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten
