@@ -15,10 +15,11 @@ class AlarmDetailsPane(alarms: Property[Set[Alarm]]) extends VBox {
   styleClass += "alarm-details"
 
   alarms.bindToList(content) { activeAlarms =>
-    val alarmsPresent = activeAlarms.size > 0
-    val title = Label(
-      if (!alarmsPresent) "There is no active alarm"
-      else s"There are ${activeAlarms.size} active alarms")
+    val title = Label(activeAlarms.size match {
+      case 0 => "There is no active alarm"
+      case 1 => "There is 1 active alarm"
+      case _ => "There are ${activeAlarms.size} active alarms"
+    })
 
     val sep = new Separator { orientation = Orientation.HORIZONTAL }
 
@@ -35,7 +36,7 @@ class AlarmDetailsPane(alarms: Property[Set[Alarm]]) extends VBox {
       }
     }
 
-    if (alarmsPresent) Seq(title, sep, alarmList)
+    if (activeAlarms.size > 0) Seq(title, sep, alarmList)
     else Seq(title)
   }
 
