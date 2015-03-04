@@ -8,6 +8,7 @@ import scala.util.{Failure, Success}
 import akka.actor._
 import akka.pattern._
 
+import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
@@ -22,7 +23,7 @@ private class OkPayProcessorActor(
     registryProps: Props,
     pollingInterval: FiniteDuration,
     properties: MutablePaymentProcessorProperties)
-  extends Actor with ActorLogging with ServiceLifecycle[Unit] {
+  extends Actor with ActorLogging with ServiceLifecycle[Unit] with EventStreamReporting {
 
   import context.dispatcher
   import OkPayProcessorActor._
@@ -123,6 +124,7 @@ private class OkPayProcessorActor(
   }
 
   private def updateBalances(balances: Seq[FiatAmount]): Unit = {
+    recover(OkPayPollingAlarm)
     for (amount <- balances) {
       updateBalance(FiatBalance(amount, hasExpired = false))
     }
@@ -132,6 +134,7 @@ private class OkPayProcessorActor(
   private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
     for (balance <- properties.balance.values) {
+      alert(OkPayPollingAlarm)
       updateBalance(balance.copy(hasExpired = true))
     }
   }
