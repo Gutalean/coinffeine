@@ -37,4 +37,34 @@ object OkPayClient {
   sealed trait FeePolicy
   case object PaidByReceiver extends FeePolicy
   case object PaidBySender extends FeePolicy
+
+  abstract class Error(msg: String, cause: Throwable)
+    extends Exception(s"invalid OKPay client operation: $msg", cause)
+
+  case class AccountNotFound(account: AccountId, cause: Throwable)
+    extends Error(s"account `$account` not found", cause)
+
+  case class AuthenticationFailed(account: AccountId, cause: Throwable)
+    extends Error(s"authentication failed for account `$account`", cause)
+
+  case class CurrencyDisabled(cause: Throwable)
+    extends Error("currency is disabled", cause)
+
+  case class NotEnoughMoney(account: AccountId, cause: Throwable)
+    extends Error(s"not enough funds in account $account", cause)
+
+  case class TransactionNotFound(cause: Throwable)
+    extends Error("transaction not found", cause)
+
+  case class UnsupportedPaymentMethod(cause: Throwable)
+    extends Error("unsupported payment method", cause)
+
+  case class ReceiverNotFound(receiver: AccountId, cause: Throwable)
+    extends Error(s"receiver `$receiver` not found", cause)
+
+  case class InternalError(cause: Throwable)
+    extends Error("internal error", cause)
+
+  case class UnexpectedError(cause: Throwable)
+    extends Error("unexpected error", cause)
 }
