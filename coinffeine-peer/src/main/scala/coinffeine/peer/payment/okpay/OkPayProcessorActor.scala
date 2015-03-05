@@ -133,8 +133,8 @@ private class OkPayProcessorActor(
 
   private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
+    alert(OkPayPollingAlarm)
     for (balance <- properties.balance.values) {
-      alert(OkPayPollingAlarm)
       updateBalance(balance.copy(hasExpired = true))
     }
   }
