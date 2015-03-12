@@ -12,8 +12,8 @@ class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
     wizardTitle = "Initial setup",
     steps = Seq(
       new LicenseAgreementPane,
-      new OkPayWalletDataPane,
-      new TopUpStepPane(walletAddress)
+      new TopUpStepPane(walletAddress),
+      new OkPayWalletDataPane
     ),
     initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None)) {
 
