@@ -11,7 +11,8 @@ import scalafx.scene.shape.Circle
 import scalafx.stage.{Modality, Stage, StageStyle}
 
 import coinffeine.gui.application.updates.CoinffeineVersion
-import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 
 class AboutDialog extends Includes {
 

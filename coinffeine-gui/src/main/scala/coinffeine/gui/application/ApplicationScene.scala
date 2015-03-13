@@ -13,7 +13,8 @@ import org.controlsfx.control.SegmentedButton
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.preferences.PreferencesForm
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.

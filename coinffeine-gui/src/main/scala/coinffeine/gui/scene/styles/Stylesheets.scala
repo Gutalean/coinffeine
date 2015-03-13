@@ -1,4 +1,4 @@
-package coinffeine.gui.scene
+package coinffeine.gui.scene.styles
 
 object Stylesheets {
   val Controls = "/css/controls.css"

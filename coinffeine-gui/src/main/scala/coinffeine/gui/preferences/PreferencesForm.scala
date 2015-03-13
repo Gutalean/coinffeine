@@ -6,7 +6,8 @@ import scalafx.scene.control.{Tab, Button, TabPane}
 import scalafx.scene.layout.VBox
 import scalafx.stage.{Modality, Stage, StageStyle}
 
-import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.peer.config.SettingsProvider
 
 class PreferencesForm(settingsProvider: SettingsProvider) extends Includes {
