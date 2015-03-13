@@ -1,15 +1,18 @@
 package coinffeine.gui.scene.styles
 
-import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.layout.{Pane, HBox, VBox}
 
-/** Styles applicable to HBox and VBox containers. */
-object BoxStyles {
+/** Styles applicable to panes. */
+object PaneStyles {
 
   /** The URL to the stylesheet for these styles. */
-  val StylesheetUrl = "/css/box.css"
+  val StylesheetUrl = "/css/pane.css"
 
   /** A button row comprised by several separated buttons in a horizontal layout. */
   trait ButtonRow { this: HBox => styleClass += "button-row" }
+
+  /** A box with some minor spacing */
+  trait MinorSpacing { this: Pane => styleClass += "minor-spacing" }
 
   /** A set of text paragraphs with some spacing among them. */
   trait Paragraphs { this: VBox => styleClass += "paragraphs" }

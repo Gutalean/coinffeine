@@ -20,7 +20,7 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
     editable = false
   }
 
-  content = new VBox with BoxStyles.Paragraphs {
+  content = new VBox with PaneStyles.Paragraphs {
     content = Seq(
       new Label("Obtain Technical Preview credentials") with TextStyles.H2,
       new Label with TextStyles.TextWrapped {
@@ -31,7 +31,7 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
         text = "Please copy the Bitcoin address below to the clipboard and use it in our " +
           "Faucet site to obtain your credentials."
       },
-      new HBox with BoxStyles.TextFieldWithButton {
+      new HBox with PaneStyles.TextFieldWithButton {
         content = Seq(
           addressTextField,
           new Button("Copy to clipboard") {
@@ -39,7 +39,7 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
           }
         )
       },
-      new HBox with BoxStyles.ButtonRow {
+      new HBox with PaneStyles.ButtonRow {
         content = new Button("Go to Faucet Site") {
           handleEvent(ActionEvent.Action) { () => openFaucet()}
         }
