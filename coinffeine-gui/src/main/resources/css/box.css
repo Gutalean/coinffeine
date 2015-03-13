@@ -1,0 +1,15 @@
+// Classes supporting styles defined in `BoxStyles`
+
+.button-row {
+    -fx-alignment: center;
+    -fx-spacing: 25px;
+}
+
+.paragraphs {
+    -fx-padding: 10px 50px 10px 50px;
+    -fx-spacing: 10px;
+}
+
+.textfield-with-button {
+    -fx-spacing: 5px;
+}
