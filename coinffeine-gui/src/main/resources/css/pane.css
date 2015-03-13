@@ -5,11 +5,20 @@
     -fx-spacing: 25px;
 }
 
+.inner { -fx-padding: 20px 10px 20px 10px; }
+
+.inner-with-margins { -fx-padding: 20px 50px 20px 50px; }
+
 .minor-spacing { -fx-spacing: 5px; }
 
 .paragraphs {
     -fx-padding: 10px 50px 10px 50px;
     -fx-spacing: 10px;
+}
+
+.spaced-grid {
+    -fx-hgap: 5px;
+    -fx-vgap: 5px;
 }
 
 .textfield-with-button { -fx-spacing: 5px; }
