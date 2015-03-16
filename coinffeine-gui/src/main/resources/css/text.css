@@ -1,0 +1,5 @@
+// Classes supporting styles defined in `TextStyles`
+
+.h2 { -fx-font-size: 16; }
+
+.text-wrapped { -fx-wrap-text: true; }

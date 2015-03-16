@@ -19,7 +19,8 @@ import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.{ObservableValueCombiner, PollingBean}
 import coinffeine.gui.control.CurrencyTextField
-import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.TransactionSizeFeeCalculator
 import coinffeine.model.currency._

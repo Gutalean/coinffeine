@@ -6,7 +6,8 @@ import scalafx.scene.layout._
 import scalafx.stage.StageStyle
 
 import coinffeine.gui.application.updates.CoinffeineVersion
-import coinffeine.gui.scene.{CoinffeineScene, Stylesheets}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 
 object SplashScreen {
 

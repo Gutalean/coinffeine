@@ -8,7 +8,8 @@ import scalafx.scene.layout.VBox
 import scalafx.stage.{Stage, StageStyle}
 
 import coinffeine.alarms.Alarm
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 
 class AlarmInfoDialog(alarm: Alarm) extends Stage(StageStyle.UTILITY) {
 

@@ -7,7 +7,8 @@ import scalafx.scene.control.{Button, Label}
 import scalafx.scene.layout.{AnchorPane, BorderPane, HBox}
 import scalafx.stage.{Stage, StageStyle}
 
-import coinffeine.gui.scene.{Stylesheets, CoinffeineScene}
+import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.scene.styles.Stylesheets
 
 /** Step-by-step wizard that accumulates information of type Data.
   *

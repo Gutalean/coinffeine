@@ -4,6 +4,7 @@ import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import coinffeine.gui.scene.styles.{ColumnStyles, PaneStyles, TextStyles}
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayWalletAccess
 
@@ -18,16 +19,10 @@ private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupCo
   private val access = new ObjectProperty[Option[OkPayWalletAccess]](this, "access", None)
 
   content = {
-    val grid = new GridPane {
-      id = "wizard-okpay-inputs-pane"
-      columnConstraints = Seq(new ColumnConstraints {
-        prefWidth = 100
-        fillWidth = false
-        hgrow = Priority.Never
-      }, new ColumnConstraints {
-        fillWidth = true
-        hgrow = Priority.Always
-      })
+    val grid = new GridPane with PaneStyles.SpacedGrid with PaneStyles.Inner {
+      columnConstraints = Seq(
+        new ColumnConstraints with ColumnStyles.FieldTitle,
+        new ColumnConstraints with ColumnStyles.FieldValue)
       add(new Label("Wallet ID"), 0, 0)
       add(new TextField() {
         id = "email"
@@ -40,11 +35,13 @@ private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupCo
       }, 1, 1)
     }
 
-    new VBox(spacing = 5) {
-      styleClass += "wizard-base-pane"
+    new VBox with PaneStyles.InnerWithMargins {
       content = Seq(
-        new Label("Configure your OKPay account") { styleClass = Seq("wizard-step-title") },
-        new Label("Please insert your OKPay API information"),
+        new Label with TextStyles.H2 { text = "Configure your OKPay account" },
+        new Label with TextStyles.TextWrapped {
+          text = "Use the OKPay credentials obtained from the Coinffeine Faucet to " +
+            "fill the following form."
+        },
         grid
       )
     }
