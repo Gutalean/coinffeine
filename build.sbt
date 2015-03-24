@@ -82,3 +82,7 @@ credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials"
 
 addCommandAlias("compile-all", ";coinffeine/test:compile ;test/test:compile ;benchmark/test:compile")
 
+publishArtifact := false
+
+addCommandAlias("publish-all", ";publish ;server/debian:publish ;okpaymock/debian:publish")
+
