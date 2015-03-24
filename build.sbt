@@ -72,5 +72,13 @@ release := {
   releaseDir
 }
 
+publishTo in ThisBuild := {
+  val nexus = "http://nexus.coinffeine.pri"
+  if (isSnapshot.value) Some("snapshots" at s"$nexus/content/repositories/snapshots")
+  else Some("releases"  at s"$nexus/content/repositories/releases")
+}
+
+credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
+
 addCommandAlias("compile-all", ";coinffeine/test:compile ;test/test:compile ;benchmark/test:compile")
 

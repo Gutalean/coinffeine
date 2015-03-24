@@ -1,5 +1,5 @@
 resolvers in ThisBuild ++= Seq(
-  "coinffeine-releases" at "http://repository.coinffeine.com/nexus/content/repositories/releases/",
+  "coinffeine-third-party" at "http://repository.coinffeine.com/nexus/content/repositories/third-party/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
   Resolver.sonatypeRepo("public"),
   Classpaths.sbtPluginReleases
