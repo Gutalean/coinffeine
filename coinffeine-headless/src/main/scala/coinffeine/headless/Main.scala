@@ -24,6 +24,9 @@ object Main {
       System.exit(-1)
     }
     try {
+      Runtime.getRuntime.addShutdownHook(new Thread {
+        override def run() = coinffeine.app.stopAndWait(timeout)
+      })
       coinffeine.app.startAndWait(timeout)
       val historyFile = new File(coinffeine.configProvider.dataPath, "history")
       new CoinffeineInterpreter(coinffeine.app, historyFile).run()
@@ -31,8 +34,6 @@ object Main {
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()
-    } finally {
-      coinffeine.app.stopAndWait(timeout)
     }
     System.exit(-1)
   }
