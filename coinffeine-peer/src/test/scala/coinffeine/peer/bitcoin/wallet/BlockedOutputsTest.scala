@@ -52,7 +52,10 @@ class BlockedOutputsTest extends UnitTest {
   it should "report blocked funds" in {
     val instance = instanceWithOutputs(5)
     instance.blocked shouldBe 0.BTC
-    instance.block(fundsId, instance.collectFunds(2.BTC).get)
+    val outputs = instance.collectFunds(2.BTC).get
+    instance.block(fundsId, outputs)
+    instance.blocked shouldBe 2.BTC
+    instance.use(fundsId, outputs.take(1))
     instance.blocked shouldBe 2.BTC
   }
 

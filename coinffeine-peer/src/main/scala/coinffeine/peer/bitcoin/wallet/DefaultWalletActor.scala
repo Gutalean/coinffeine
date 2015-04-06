@@ -86,13 +86,13 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case BlockBitcoins(fundsId, amount) =>
       blockedOutputs.collectFunds(amount) match {
         case Some(funds) =>
-          log.info("Blocking {} for {}", fundsId)
+          log.info("Blocking {} for {}", funds, fundsId)
           persist(FundsBlocked(fundsId, funds)) { event =>
             onFundsBlocked(event)
             sender() ! BlockedBitcoins(fundsId)
           }
         case None =>
-          log.error("Failed to block {} for {}", fundsId)
+          log.error("Failed to block {} for {}", amount, sender())
           sender() ! CannotBlockBitcoins(
               s"cannot collect funds to block $amount: ${blockedOutputs.available} available")
       }

@@ -14,27 +14,22 @@ private class BlockedOutputs {
 
   import BlockedOutputs.Output
 
-  private class BlockedFunds(var reservedOutputs: Set[Output] = Set.empty,
-                             var usedOutputs: Set[Output] = Set.empty) {
+  private class BlockedFunds(val blocked: Set[Output], var used: Set[Output] = Set.empty) {
 
-    def canUse(amount: Bitcoin.Amount): Validation[NotEnoughFunds, Set[Output]] = {
-      collectFundsGreedily(amount, reservedOutputs.toSeq)
-        .toSuccess(NotEnoughFunds(amount, reservedAmount))
-    }
+    def canUse(amount: Bitcoin.Amount): Validation[NotEnoughFunds, Set[Output]] =
+      collectFundsGreedily(amount, blocked.toSeq).toSuccess(NotEnoughFunds(amount, reservedAmount))
 
     def use(outputsToUse: Set[Output]): Unit = {
-      require(outputsToUse.subsetOf(reservedOutputs))
-      reservedOutputs --= outputsToUse
-      usedOutputs ++= outputsToUse
+      require(outputsToUse.subsetOf(blocked) && used.intersect(outputsToUse).isEmpty)
+      used ++= outputsToUse
     }
 
     def cancelUsage(outputs: Set[Output]): Unit = {
-      val revertedOutputs = usedOutputs.intersect(outputs)
-      reservedOutputs ++= revertedOutputs
-      usedOutputs --= revertedOutputs
+      val revertedOutputs = used.intersect(outputs)
+      used --= revertedOutputs
     }
 
-    def reservedAmount: Bitcoin.Amount = sumOutputs(reservedOutputs)
+    def reservedAmount: Bitcoin.Amount = sumOutputs(blocked)
   }
 
   private var spendableOutputs = Set.empty[Output]
@@ -102,7 +97,7 @@ private class BlockedOutputs {
 
   private def spendableAndNotBlocked = spendableOutputs diff blockedOutputs
 
-  private def blockedOutputs: Set[Output] = blockedFunds.values.flatMap(_.reservedOutputs).toSet
+  private def blockedOutputs: Set[Output] = blockedFunds.values.flatMap(_.blocked).toSet
 
   private def sumOutputs(outputs: Set[Output]): Bitcoin.Amount = outputs.toSeq.map(_.value).sum
 }
