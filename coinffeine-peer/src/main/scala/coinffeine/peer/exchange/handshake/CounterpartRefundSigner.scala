@@ -17,6 +17,7 @@ private class CounterpartRefundSigner(gateway: ActorRef,
 
   override def receive: Receive = {
     case StartSigningRefunds(handshake) =>
+      log.info("Handshake {}: ready to sign counterpart refund", exchangeId)
       gateway ! Subscribe {
         case ReceiveMessage(RefundSignatureRequest(`exchangeId`, _), `counterpart`) =>
       }
@@ -34,6 +35,10 @@ private class CounterpartRefundSigner(gateway: ActorRef,
         case cause: InvalidRefundTransaction =>
           log.warning("Handshake {}: Dropping invalid refund: {}", exchangeId, cause)
       }
+  }
+
+  override def postStop(): Unit = {
+    log.info("Handshake {}: stop signing counterpart refunds", exchangeId)
   }
 }
 

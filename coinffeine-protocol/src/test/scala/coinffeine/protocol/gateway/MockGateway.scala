@@ -136,9 +136,9 @@ class MockGateway(brokerId: PeerId = PeerId.hashOf("broker"))(implicit system: A
       case forward @ ForwardMessage(_, _) if matcher.isDefinedAt(forward) => matcher(forward)
     }.asInstanceOf[AnyForward]
 
-  def fishForForwardingTo(dest: NodeId, timeout: Duration = Duration.Undefined)
+  def fishForForwardingTo(dest: NodeId, timeout: Duration = Duration.Undefined, hint: String = "")
                          (matcher: PartialFunction[PublicMessage, Boolean]): PublicMessage =
-    messagesProbe.fishForMessage(max = timeout) {
+    messagesProbe.fishForMessage(max = timeout, hint = hint) {
       case ForwardMessage(message, `dest`) if matcher.isDefinedAt(message) => matcher(message)
     }.asInstanceOf[AnyForward].message
 

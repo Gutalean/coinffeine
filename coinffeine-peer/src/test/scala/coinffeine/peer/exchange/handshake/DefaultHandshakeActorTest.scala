@@ -99,10 +99,9 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def shouldSignCounterpartRefund(): Unit = {
     val id = exchange.id
-    gateway.fishForForwardingTo(counterpartId) {
+    gateway.fishForForwardingTo(counterpartId, hint = "counterpart refund signature") {
       case RefundSignatureRequest(_, _) => false
-      case RefundSignatureResponse(`id`, MockExchangeProtocol.CounterpartRefundSignature) =>
-        true
+      case RefundSignatureResponse(`id`, MockExchangeProtocol.CounterpartRefundSignature) => true
     }
   }
 
