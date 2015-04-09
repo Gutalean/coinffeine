@@ -1,11 +1,11 @@
 package coinffeine.model.bitcoin.network
 
-import org.bitcoinj.params.TestNet3Params
+import org.bitcoinj.params.RegTestParams
 
 import coinffeine.model.bitcoin.NetworkComponent
 import coinffeine.model.network.NetworkEndpoint
 
-trait TestNetwork extends TestNet3Params with NetworkComponent.SeedPeers {
+trait TestNetwork extends RegTestParams with NetworkComponent.SeedPeers {
   trait Component extends NetworkComponent {
     override lazy val network = TestNetwork.this
   }
