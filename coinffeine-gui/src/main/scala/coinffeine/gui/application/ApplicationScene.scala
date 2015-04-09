@@ -56,6 +56,10 @@ class ApplicationScene(views: Seq[ApplicationView],
     )
   }
 
+  val topbar = new VBox {
+    id = "top-bar"
+  }
+
   val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
 
   private val viewSelector: Parent = {
@@ -91,6 +95,7 @@ class ApplicationScene(views: Seq[ApplicationView],
     val mainPane = new VBox() {
       content = Seq(
         menuBar,
+        topbar,
         new BorderPane {
           id = "main-root-pane"
           vgrow = Priority.Always

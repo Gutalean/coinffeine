@@ -1,3 +1,19 @@
+/* This file defines the styles for the main window. */
+
+#top-bar {
+    -fx-min-height: 50px;
+    -fx-background-color: dark-background;
+    -fx-background-image: url("../graphics/topbar-logo.png");
+    /* -fx-background-position: center -50px; */
+    -fx-background-size: contain;
+    -fx-background-repeat: no-repeat;
+}
+
+
+/*
+ * The following properties are deprecated.
+ * Please remove them as they are not used.
+ */
 
 GridPane {
     -fx-hgap: 5px;
@@ -7,10 +23,6 @@ GridPane {
 #main-root-pane {
     -fx-pref-width: 1024;
     -fx-pref-height: 600;
-}
-
-#tool-bar Separator {
-    -fx-padding: 0 10;
 }
 
 #view-selector ToggleButton:disabled {
