@@ -4,7 +4,6 @@
     -fx-min-height: 50px;
     -fx-background-color: dark-background;
     -fx-background-image: url("../graphics/topbar-logo.png");
-    /* -fx-background-position: center -50px; */
     -fx-background-size: contain;
     -fx-background-repeat: no-repeat;
 }
