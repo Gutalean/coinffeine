@@ -1,7 +1,6 @@
 package coinffeine.gui.control
 
 import coinffeine.common.test.UnitTest
-import coinffeine.gui.control.ConnectionStatus.{Red, Yellow, Green}
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
 
@@ -27,46 +26,7 @@ class ConnectionStatusTest extends UnitTest {
     bitcoinStatus <- bitcoinStatuses
   } yield ConnectionStatus(coinffeineStatus, bitcoinStatus)
 
-  "A combined connection status" should
-    "have color green when connected to both networks and not downloading blocks" in {
-      for {
-        coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
-        bitcoinStatus <- bitcoinStatuses
-        if bitcoinStatus.connected && bitcoinStatus.blockchainStatus == BlockchainStatus.NotDownloading
-        combinedStatus = ConnectionStatus(coinffeineStatus, bitcoinStatus)
-      } withClue(combinedStatus) {
-        combinedStatus.color should be (Green)
-      }
-    }
-
-  it should "have color yellow when connected to both networks and downloading blocks" in {
-    for {
-      coinffeineStatus <- coinffeineStatuses if coinffeineStatus.connected
-      bitcoinStatus <- bitcoinStatuses
-      if bitcoinStatus.connected && bitcoinStatus.blockchainStatus != BlockchainStatus.NotDownloading
-      combinedStatus = ConnectionStatus(coinffeineStatus, bitcoinStatus)
-    } withClue(combinedStatus) {
-      combinedStatus.color should be (Yellow)
-    }
-  }
-
-  it should "have color red when disconnected from the coinffeine network" in {
-    for {
-      status <- anyStatus if !status.coinffeine.connected
-    } withClue(status) {
-      status.color should be (Red)
-    }
-  }
-
-  it should "have color red when disconnected from the bitcoin network" in {
-    for {
-      status <- anyStatus if !status.bitcoin.connected
-    } withClue(status) {
-      status.color should be (Red)
-    }
-  }
-
-  it should "report the number of coinffeine connected peers" in {
+  "A combined connection status" should "report the number of coinffeine connected peers" in {
     forEveryStatus { status =>
       status.description should include (s"${status.coinffeine.activePeers} coinffeine peer")
     }

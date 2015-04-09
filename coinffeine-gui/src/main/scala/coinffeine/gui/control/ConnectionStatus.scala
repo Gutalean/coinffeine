@@ -10,13 +10,6 @@ case class ConnectionStatus(
 
   import ConnectionStatus._
 
-  val color: Color =
-    if (!coinffeine.connected || !bitcoin.connected) Red
-    else bitcoin.blockchainStatus match {
-      case BlockchainStatus.NotDownloading => Green
-      case _: BlockchainStatus.Downloading => Yellow
-    }
-
   val description: String = "%s, %s%s".format(
     formatPeerCount(coinffeine.activePeers, "coinffeine"),
     formatPeerCount(bitcoin.activePeers, "bitcoin"),
@@ -39,11 +32,6 @@ case class ConnectionStatus(
 }
 
 object ConnectionStatus {
-
-  sealed trait Color
-  case object Red extends Color
-  case object Yellow extends Color
-  case object Green extends Color
 
   case class Coinffeine(activePeers: Int = 0, brokerId: Option[PeerId] = None) {
     def connected: Boolean = activePeers > 0 && brokerId.isDefined

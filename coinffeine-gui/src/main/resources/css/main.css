@@ -37,17 +37,6 @@ GridPane {
     -fx-text-fill: white;
 }
 
-#status Separator {
-    -fx-padding: 0 5;
-}
-#status {
-    -fx-background-color:
-        -fx-outer-border,
-        derive(TOP-COLOR,25%),
-        linear-gradient(to bottom, TOP-COLOR 2%, derive(-fx-base,-2.1%) 95%);
-    -fx-background-insets: 0, 1 0 0 0, 2 0 0 0;
-}
-
 #center-pane {
     -fx-alignment: bottom-right;
 }
