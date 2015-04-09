@@ -9,21 +9,24 @@
     -fx-padding: 10px;
     -fx-spacing: 40px;
 
-    -fx-background-color: linear-gradient(
-        to bottom,
-        rgba(252,234,187,1) 0%,
-        rgba(252,205,77,1) 50%,
-        rgba(248,181,0,1) 51%,
-        rgba(251,223,147,1) 100%);
+    -fx-background-color: dark-background;
     -fx-background-image: url("../graphics/splash-logo.png");
-    -fx-background-position: center -30px;
+    -fx-background-position: center -50px;
     -fx-background-size: 500;
     -fx-background-repeat: no-repeat;
     -fx-alignment: bottom-center;
 }
 
-#splash-root ProgressBar {
+#splash-root .label {
+    -fx-text-fill: white;
+}
+
+#splash-root .progress-bar {
     -fx-pref-width: 200px;
+}
+
+#splash-root .progress-bar:indeterminate > .bar {
+    -fx-background-color: dark-background;
 }
 
 #splash-root #copyright-note {
