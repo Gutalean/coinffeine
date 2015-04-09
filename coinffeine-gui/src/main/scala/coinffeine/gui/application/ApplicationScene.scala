@@ -14,7 +14,7 @@ import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.Stylesheets
+import coinffeine.gui.scene.styles.{PaneStyles, Stylesheets}
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -80,8 +80,7 @@ class ApplicationScene(views: Seq[ApplicationView],
     content = Seq(viewSelector, new Separator()) ++ toolbarWidgets
   }
 
-  private val statusBarPane = new HBox() {
-    styleClass += "tool-bar"
+  private val statusBarPane = new HBox with PaneStyles.StatusBar {
     id = "status"
     prefHeight = 25
     content = interleaveSeparators(statusBarWidgets) :+ new HBox {

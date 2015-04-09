@@ -21,4 +21,19 @@
     -fx-vgap: 5px;
 }
 
+.status-bar {
+    -fx-background-color: white;
+    -fx-padding: 5 15 5 15;
+    -fx-min-height: 35px;
+}
+
+.status-bar * {
+    -fx-max-height: 65535;
+    -fx-alignment: center;
+}
+
+.status-bar .label {
+    -fx-text-fill: #919191;
+}
+
 .textfield-with-button { -fx-spacing: 5px; }

@@ -25,6 +25,9 @@ object PaneStyles {
 
   trait SpacedGrid { this: GridPane => styleClass += "spaced-grid" }
 
+  /** An hbox that acts as a status bar at the bottom of the window. */
+  trait StatusBar { this: HBox => styleClass += "status-bar" }
+
   /** A Text field with a companion button on its right. */
   trait TextFieldWithButton { this: HBox => styleClass += "textfield-with-button" }
 }
