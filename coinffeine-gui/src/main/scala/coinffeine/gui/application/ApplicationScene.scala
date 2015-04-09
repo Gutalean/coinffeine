@@ -1,21 +1,19 @@
 package coinffeine.gui.application
 
-import scalafx.Includes._
-import scalafx.beans.property.ObjectProperty
-import scalafx.event.ActionEvent
-import scalafx.scene.control._
-import scalafx.scene.input.MouseEvent
-import scalafx.scene.layout._
-import scalafx.scene.{Node, Parent}
-
-import org.controlsfx.control.SegmentedButton
-
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{PaneStyles, Stylesheets}
 import coinffeine.peer.config.SettingsProvider
+import org.controlsfx.control.SegmentedButton
+
+import scalafx.Includes._
+import scalafx.beans.property.ObjectProperty
+import scalafx.event.ActionEvent
+import scalafx.scene.control._
+import scalafx.scene.layout._
+import scalafx.scene.{Node, Parent}
 
 /** Main scene of the application.
   *
@@ -26,8 +24,6 @@ import coinffeine.peer.config.SettingsProvider
 class ApplicationScene(views: Seq[ApplicationView],
                        toolbarWidgets: Seq[Node],
                        statusBarWidgets: Seq[Node],
-                       notificationSummaryWidget: Node,
-                       notificationDetailsPane: Node,
                        settingsProvider: SettingsProvider) extends CoinffeineScene(
     Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
 
@@ -83,25 +79,12 @@ class ApplicationScene(views: Seq[ApplicationView],
   private val statusBarPane = new HBox with PaneStyles.StatusBar {
     id = "status"
     prefHeight = 25
-    content = interleaveSeparators(statusBarWidgets) :+ new HBox {
-      id = "notification-summary"
-      hgrow = Priority.Always
-      content = notificationSummaryWidget
-    }
-  }
-
-  private val notificationDetailsWrapper = new VBox {
-    id = "notification-details"
-    content = notificationDetailsPane
-    visible = false
+    content = statusBarWidgets
   }
 
   private val centerPane = new StackPane {
     id = "center-pane"
-    content = Seq(
-      new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) },
-      notificationDetailsWrapper
-    )
+    content = new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) }
   }
 
   root = {
@@ -119,11 +102,4 @@ class ApplicationScene(views: Seq[ApplicationView],
     }
     mainPane
   }
-
-  notificationSummaryWidget.onMouseClicked = { e: MouseEvent =>
-    notificationDetailsWrapper.visible = !notificationDetailsWrapper.visible.value
-  }
-
-  private def interleaveSeparators(widgets: Seq[Node]): Seq[Node] =
-    widgets.flatMap(w => Seq(new Separator, w)).drop(1)
 }
