@@ -1,6 +1,9 @@
 Changelog
 =========
 
+v0.8.0:
+ - Use a regtest instead of a testnet
+
 v0.7.0:
  - Trigger alarms on OKPay balance availabity issues
  - Improve SOAP failure logging
