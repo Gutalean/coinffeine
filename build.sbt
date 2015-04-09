@@ -38,7 +38,7 @@ javacOptions in ThisBuild ++= Seq("-source", "1.8")
 compileOrder in ThisBuild := CompileOrder.JavaThenScala
 
 resolvers in ThisBuild ++= Seq(
-  "coinffeine-releases" at "http://repository.coinffeine.com/nexus/content/repositories/releases/",
+  "coinffeine-releases" at "http://repository.coinffeine.com/content/repositories/releases/",
   "bitcoinj" at "http://distribution.bitcoinj.googlecode.com/git/releases/",
   "sonatype-releases" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/",
   "Sonatype-repository" at "https://oss.sonatype.org/content/groups/public",
