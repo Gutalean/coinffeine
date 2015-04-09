@@ -1,6 +1,9 @@
 package coinffeine.peer.payment.okpay.blocking
 
-import scalaz.{Scalaz, Validation}
+import scalaz.Validation
+import scalaz.Validation.FlatMap._
+import scalaz.syntax.std.option._
+import scalaz.syntax.validation._
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted}
@@ -13,7 +16,6 @@ import coinffeine.peer.payment.PaymentProcessorActor
 private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   extends PersistentActor with ActorLogging {
 
-  import Scalaz._
   import BlockedFiatRegistry._
 
   private case class BlockedFundsInfo[C <: FiatCurrency](

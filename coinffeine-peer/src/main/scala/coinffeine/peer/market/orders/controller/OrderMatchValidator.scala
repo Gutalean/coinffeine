@@ -1,6 +1,8 @@
 package coinffeine.peer.market.orders.controller
 
-import scalaz.{Scalaz, Validation}
+import scalaz.Validation
+import scalaz.Validation.FlatMap._
+import scalaz.syntax.validation._
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange.Role
@@ -10,8 +12,6 @@ import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator) {
-
-  import Scalaz._
 
   def shouldAcceptOrderMatch[C <: FiatCurrency](order: Order[C],
                                                 orderMatch: OrderMatch[C],

@@ -2,7 +2,9 @@ package coinffeine.peer.bitcoin.wallet
 
 import scala.annotation.tailrec
 
-import scalaz.{Scalaz, Validation}
+import scalaz.Validation
+import scalaz.Validation.FlatMap._
+import scalaz.syntax.std.option._
 
 import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency._
@@ -10,8 +12,6 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{NotEnoughFunds, UnknownFunds, FundsUseException}
 
 private class BlockedOutputs {
-  import Scalaz._
-
   import BlockedOutputs.Output
 
   private class BlockedFunds(val blocked: Set[Output], var used: Set[Output] = Set.empty) {
