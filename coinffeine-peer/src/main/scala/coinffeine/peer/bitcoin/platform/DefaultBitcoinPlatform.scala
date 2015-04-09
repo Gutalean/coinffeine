@@ -19,8 +19,8 @@ object DefaultBitcoinPlatform {
   trait Component extends BitcoinPlatform.Component with NetworkComponent { this: ConfigComponent =>
 
     lazy val network = configProvider.bitcoinSettings().network match {
-      case BitcoinSettings.IntegrationTestnet => IntegrationTestNetwork
-      case BitcoinSettings.PublicTestnet => PublicTestNetwork
+      case BitcoinSettings.IntegrationRegnet => IntegrationTestNetwork
+      case BitcoinSettings.PublicRegnet => PublicTestNetwork
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 
