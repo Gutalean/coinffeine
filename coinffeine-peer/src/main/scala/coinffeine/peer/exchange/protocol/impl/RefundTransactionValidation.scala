@@ -31,13 +31,13 @@ private class RefundTransactionValidation(parameters: Exchange.Parameters,
   private def requireSingleInput(tx: MutableTransaction): Result = {
     val size = tx.getInputs.size
     if (size == 1) ().successNel
-    else InvalidInputs(s"Just one input was expected but $size were found").failNel
+    else InvalidInputs(s"Just one input was expected but $size were found").failureNel
   }
 
   private def requireValidRefundedAmount(tx: MutableTransaction): Result = {
     val actualAmount = tx.getOutputs.asScala.foldLeft(Bitcoin.Zero)(_ + _.getValue)
     if (actualAmount == expectedAmount) ().successNel
-    else InvalidRefundedAmount(actualAmount, expectedAmount).failNel
+    else InvalidRefundedAmount(actualAmount, expectedAmount).failureNel
   }
 }
 

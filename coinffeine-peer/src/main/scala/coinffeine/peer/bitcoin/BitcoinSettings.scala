@@ -17,17 +17,17 @@ object BitcoinSettings {
     override def toString = name
   }
 
-  case object PublicTestnet extends Network {
-    override def name = "public-testnet"
+  case object PublicRegnet extends Network {
+    override def name = "public-regnet"
   }
-  case object IntegrationTestnet extends Network {
-    override def name = "integration-testnet"
+  case object IntegrationRegnet extends Network {
+    override def name = "integration-regnet"
   }
   case object MainNet extends Network {
     override def name = "mainnet"
   }
 
   def parseNetwork(name: String): Network =
-    Seq(PublicTestnet, IntegrationTestnet, MainNet).find(_.toString == name).getOrElse(
+    Seq(PublicRegnet, IntegrationRegnet, MainNet).find(_.toString == name).getOrElse(
       throw new IllegalArgumentException(s"Unknown bitcoin network: '$name'"))
 }
