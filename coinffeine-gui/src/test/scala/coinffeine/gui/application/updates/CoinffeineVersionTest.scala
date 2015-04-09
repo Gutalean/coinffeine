@@ -13,6 +13,7 @@ class CoinffeineVersionTest extends UnitTest {
     CoinffeineVersion(2, 0, 0).isNewerThan(CoinffeineVersion(1, 0, 1)) shouldBe true
     CoinffeineVersion(1, 0, 1).isNewerThan(CoinffeineVersion(1, 0, 1, "SNAPSHOT")) shouldBe true
     CoinffeineVersion(1, 0, 0, "alpha").isNewerThan(CoinffeineVersion(1, 0, 0, "beta")) shouldBe false
+    CoinffeineVersion(0, 7, 0).isNewerThan(CoinffeineVersion(0, 8, 0, "SNAPSHOT")) shouldBe false
   }
 
   it should "be parsed from string" in {
