@@ -1,28 +1,28 @@
 package coinffeine.gui.control
 
-import javafx.beans.value.ObservableValue
-import scalafx.scene.paint._
+import javafx.beans.property.BooleanPropertyBase
+
+import scalafx.css.PseudoClass
 import scalafx.scene.shape.Circle
 
-import coinffeine.gui.beans.Implicits._
+class StatusDisc extends Circle {
 
-class StatusDisc(statusProperty: ObservableValue[ConnectionStatus.Color])
-  extends Circle {
+  styleClass += "status-disc"
+  delegate.pseudoClassStateChanged(StatusDisc.Failure, false)
+
+  val failure = new BooleanPropertyBase() {
+    override def getName = "failure"
+    override def getBean = StatusDisc.this
+    override def invalidated() = {
+      super.invalidated()
+      delegate.pseudoClassStateChanged(StatusDisc.Failure, get())
+    }
+  }
+
   radius = 8
-  fill.bind(statusProperty.map(status => StatusDisc.FillMapping(status)))
 }
 
 object StatusDisc {
 
-  private val FillMapping = Map[ConnectionStatus.Color, Paint](
-    ConnectionStatus.Red -> gradient("#ff2521", "#a10000"),
-    ConnectionStatus.Yellow -> gradient("#fffdd7", "#b2b200"),
-    ConnectionStatus.Green -> gradient("#ffffff", "#079400")
-  )
-
-  private def gradient(fromColor: String, toColor: String) =
-    LinearGradient(0, 0, 1, 1, true, CycleMethod.NoCycle,
-      Stop(0, Color.valueOf(fromColor)),
-      Stop(1, Color.valueOf(toColor))
-    )
+  val Failure = PseudoClass("failure")
 }

@@ -10,3 +10,11 @@
 .CurrencyTextField-symbol Label {
     -fx-text-fill: white;
 }
+
+.status-disc {
+    -fx-fill: good;
+}
+
+.status-disc:failure {
+    -fx-fill: bad;
+}
