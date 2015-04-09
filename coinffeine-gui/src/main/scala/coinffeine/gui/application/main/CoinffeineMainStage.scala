@@ -6,7 +6,6 @@ import coinffeine.gui.application.stats.StatsView
 import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.ConnectionStatusWidget
-import coinffeine.gui.control.wallet.{BitcoinBalanceWidget, FiatBalanceWidget}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
@@ -22,14 +21,11 @@ class CoinffeineMainStage(app: CoinffeineApp,
 
   title = "Coinffeine"
   scene = new ApplicationScene(
+    balances = ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalanceProperty),
     views = Seq(
       new OperationsView(app, properties, orderValidator),
       new StatsView(app),
       new WalletView(app, properties.wallet)
-    ),
-    toolbarWidgets = Seq(
-      new BitcoinBalanceWidget(properties.wallet.balance),
-      new FiatBalanceWidget(properties.fiatBalanceProperty)
     ),
     statusBarWidgets = Seq(
       new ConnectionStatusWidget(properties.connectionStatusProperty)

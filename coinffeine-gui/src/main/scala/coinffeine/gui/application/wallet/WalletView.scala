@@ -174,6 +174,9 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     id = "wallet-center-pane"
     content = Seq(detailsPane, transactionsPane)
   }
+
+  // TODO: provide a valid control pane
+  override def controlPane: Pane = new Pane
 }
 
 object WalletView {

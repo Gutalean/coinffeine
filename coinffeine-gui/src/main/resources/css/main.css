@@ -1,3 +1,51 @@
+/* This file defines the styles for the main window. */
+
+#top-bar {
+    -fx-min-height: 50px;
+    -fx-background-color: dark-background;
+    -fx-background-image: url("../graphics/topbar-logo.png");
+    -fx-background-size: contain;
+    -fx-background-repeat: no-repeat;
+}
+
+#control-bar {
+    -fx-min-height: 125px;
+    -fx-background-color: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);
+}
+
+#balance-pane {
+    -fx-padding: 20;
+    -fx-min-width: 300;
+}
+
+#view-selector-pane {
+    -fx-alignment: center;
+}
+
+#view-selector-pane .toggle-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #c8b9b3;
+    -fx-font-size: 16;
+    -fx-font-weight: 100;
+    -fx-border-color: #c8b9b3;
+    -fx-border-width: 0 0 1 0;
+}
+
+#view-selector-pane .toggle-button:selected {
+    -fx-opacity: 1.0;
+    -fx-text-fill: #815f52;
+    -fx-border-color: #815f52;
+}
+
+#view-selector-pane .toggle-button:hover {
+    -fx-cursor: hand;
+}
+
+/*
+ * The following properties are deprecated.
+ * Please remove them as they are not used.
+ */
 
 GridPane {
     -fx-hgap: 5px;
@@ -7,10 +55,6 @@ GridPane {
 #main-root-pane {
     -fx-pref-width: 1024;
     -fx-pref-height: 600;
-}
-
-#tool-bar Separator {
-    -fx-padding: 0 10;
 }
 
 #view-selector ToggleButton:disabled {
