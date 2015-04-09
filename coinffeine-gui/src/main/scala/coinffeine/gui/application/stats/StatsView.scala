@@ -1,6 +1,6 @@
 package coinffeine.gui.application.stats
 
-import scalafx.scene.layout.StackPane
+import scalafx.scene.layout.{Pane, StackPane}
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.model.currency.Euro
@@ -17,4 +17,7 @@ class StatsView(app: CoinffeineApp) extends ApplicationView {
     id = "stats-center-pane"
     content = orderBookChart
   }
+
+  // TODO: provide a valid control pane
+  override def controlPane: Pane = new Pane
 }

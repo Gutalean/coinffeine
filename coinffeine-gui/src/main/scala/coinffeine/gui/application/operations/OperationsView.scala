@@ -81,4 +81,7 @@ class OperationsView(app: CoinffeineApp,
     vgrow = Priority.Always
     content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
   }
+
+  // TODO: provide a valid control pane
+  override def controlPane: Pane = new Pane
 }

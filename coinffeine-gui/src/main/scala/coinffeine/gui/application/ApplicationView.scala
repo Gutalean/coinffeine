@@ -10,4 +10,7 @@ trait ApplicationView {
 
   /** Pane to be displayed at the center area of the application when this view is active */
   def centerPane: Pane
+
+  /** Pane to be displayed in the control bar when this new is active. */
+  def controlPane: Pane
 }
