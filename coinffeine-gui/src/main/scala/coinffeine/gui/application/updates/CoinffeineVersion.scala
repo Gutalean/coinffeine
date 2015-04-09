@@ -1,5 +1,11 @@
 package coinffeine.gui.application.updates
 
+import scala.annotation.tailrec
+import scalaz.Ordering.{EQ, GT, LT}
+import scalaz.std.anyVal._
+import scalaz.std.string._
+import scalaz.syntax.order._
+
 import coinffeine.gui.application.BuildInfo
 
 case class CoinffeineVersion(major: Int, minor: Int, revision: Int, tag: Option[String] = None) {
@@ -9,17 +15,30 @@ case class CoinffeineVersion(major: Int, minor: Int, revision: Int, tag: Option[
     s"v$major.$minor.$revision$printableTag"
   }
 
-  def isNewerThan(other: CoinffeineVersion): Boolean =
-    this.major > other.major ||
-    (this.major == other.major && this.minor > other.minor) ||
-    (this.major == other.major && this.minor == other.minor && this.revision > other.revision) ||
-    hasNewerTagThan(other)
+  def isNewerThan(other: CoinffeineVersion): Boolean = isGreater(Seq(
+    this.major ?|? other.major,
+    this.minor ?|? other.minor,
+    this.revision ?|? other.revision,
+    compareTags(this.tag, other.tag)
+  ))
 
-  private def hasNewerTagThan(other: CoinffeineVersion): Boolean = (this.tag, other.tag) match {
-    case (Some(thisTag), Some(otherTag)) => thisTag.compareTo(otherTag) > 0
-    case (None, Some(_)) => true
-    case _ => false
+  /** Combine orderings having the first ones more priority */
+  @tailrec
+  private def isGreater(orderings: Seq[scalaz.Ordering]): Boolean = orderings match {
+    case Seq(GT, _*) => true
+    case Seq(EQ) => false
+    case Seq(EQ, remaining @ _*) => isGreater(remaining)
+    case Seq(LT, _*) => false
   }
+
+  /** Compare tags considering absence of tag as a newer version */
+  private def compareTags(leftTag: Option[String], rightTag: Option[String]): scalaz.Ordering =
+    (leftTag, rightTag) match {
+      case (None, None) => EQ
+      case (None, Some(_)) => GT
+      case (Some(_), None) => LT
+      case (Some(left), Some(right)) => left ?|? right
+    }
 }
 
 object CoinffeineVersion {
