@@ -1,8 +1,10 @@
 package coinffeine.gui.application.operations
 
 import javafx.beans.binding.Bindings
+import coinffeine.gui.scene.styles.PaneStyles
+
 import scalafx.Includes._
-import scalafx.event.ActionEvent
+import scalafx.event.{Event, ActionEvent}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -29,15 +31,6 @@ class OperationsView(app: CoinffeineApp,
     }
     .mapToBool(_.booleanValue())
     .toReadOnlyProperty
-
-  private val newOrderButton = new Button {
-    id = "newOrderBtn"
-    text = "New order"
-    handleEvent(ActionEvent.Action) { () =>
-      val form = new OrderSubmissionForm(app, orderValidation)
-      form.show(delegate.getScene.getWindow)
-    }
-  }
 
   private val cancelButton = new Button {
     id = "cancelOrderBtn"
@@ -73,7 +66,7 @@ class OperationsView(app: CoinffeineApp,
 
   private val buttonsPane: Pane = new HBox {
     id = "operations-buttons-pane"
-    content = Seq(newOrderButton, cancelButton, toggleDetailsButton)
+    content = Seq(cancelButton, toggleDetailsButton)
   }
 
   override def centerPane: Pane = new VBox {
@@ -82,6 +75,12 @@ class OperationsView(app: CoinffeineApp,
     content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
   }
 
-  // TODO: provide a valid control pane
-  override def controlPane: Pane = new Pane
+  override def controlPane: Pane = new VBox with PaneStyles.Centered {
+    content = new Button("New order") {
+      onAction = { e: Event =>
+        val form = new OrderSubmissionForm(app, orderValidation)
+        form.show(delegate.getScene.getWindow)
+      }
+    }
+  }
 }

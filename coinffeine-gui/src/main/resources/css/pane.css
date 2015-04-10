@@ -5,6 +5,8 @@
     -fx-spacing: 25px;
 }
 
+.centered { -fx-alignment: center; }
+
 .inner { -fx-padding: 20px 10px 20px 10px; }
 
 .inner-with-margins { -fx-padding: 20px 50px 20px 50px; }

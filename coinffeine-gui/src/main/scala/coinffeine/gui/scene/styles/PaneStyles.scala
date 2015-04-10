@@ -11,6 +11,9 @@ object PaneStyles {
   /** A button row comprised by several separated buttons in a horizontal layout. */
   trait ButtonRow { this: HBox => styleClass += "button-row" }
 
+  /** A pane with its contents aligned in the center. */
+  trait Centered { this: Pane => styleClass += "centered" }
+
   /** A inner pane with some padding respect its parent. */
   trait Inner { this: Pane => styleClass += "inner" }
 
