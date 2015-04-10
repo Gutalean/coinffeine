@@ -32,6 +32,8 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   require(views.nonEmpty, "At least one view is required")
 
+  val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
+
   val menuBar = new MenuBar {
     useSystemMenuBar = true
 
@@ -106,16 +108,15 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     content = viewSelector
   }
 
-  val controlPane = new Pane {
+  val controlPane = new StackPane {
     minWidth = 300
+    currentView.delegate.bindToList(content) { p => Seq(p.controlPane) }
   }
 
   val controlBar = new HBox {
     id = "control-bar"
     content = Seq(balancePane, viewSelectorPane, controlPane)
   }
-
-  val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
 
   private val statusBarPane = new HBox with PaneStyles.StatusBar {
     id = "status"
