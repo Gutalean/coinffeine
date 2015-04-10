@@ -9,4 +9,9 @@
     /* The main color palette. */
     good: #5ccef9;
     bad: #ff8654;
+
+    /* The secondary color palette. */
+    col1: #5ac1bb;
+    col2: #c1b0e3;
+    col3: #606060;
 }
