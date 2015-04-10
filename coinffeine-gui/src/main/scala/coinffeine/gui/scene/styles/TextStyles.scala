@@ -13,11 +13,17 @@ object TextStyles {
   /** A relatively long text wrapped to expand on multiple lines. */
   trait TextWrapped { this: Labeled => styleClass += "text-wrapped" }
 
+  /** A light text labeled. */
+  trait Light { this: Labeled => styleClass += "light" }
+
   /** A boldface text labeled. */
   trait Boldface { this: Labeled => styleClass += "boldface" }
 
   /** A boldface text labeled. */
   trait SuperBoldface { this: Labeled => styleClass += "super-boldface" }
+
+  /** A semi-big sized text labeled. */
+  trait SemiBig { this: Labeled => styleClass += "semibig" }
 
   /** A big sized text labeled. */
   trait Big { this: Labeled => styleClass += "big" }

@@ -81,8 +81,8 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     content = Seq(
       new HBox with PaneStyles.MinorSpacing {
         content = Seq(
-          new Label("AVAILABLE") with TextStyles.NeutralNews,
-          new Label("BALANCE") with TextStyles.NeutralNews with TextStyles.Boldface)
+          new Label("AVAILABLE") with TextStyles.NeutralNews with TextStyles.Light with TextStyles.SemiBig,
+          new Label("BALANCE") with TextStyles.NeutralNews with TextStyles.Boldface with TextStyles.SemiBig)
       },
       new Label with TextStyles.GoodNews with TextStyles.SuperBoldface with TextStyles.Huge {
         text <== balances.fiat.delegate.mapToString {

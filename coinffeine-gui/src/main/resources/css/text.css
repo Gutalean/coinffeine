@@ -4,13 +4,17 @@
 
 .text-wrapped { -fx-wrap-text: true; }
 
-.boldface { -fx-font-weight: bold; }
+.light { -fx-font-weight: 300; }
 
-.super-boldface { -fx-font-weight: bolder; }
+.boldface { -fx-font-weight: 700; }
 
-.big { -fx-font-size: 18; }
+.super-boldface { -fx-font-weight: 800; }
 
-.huge { -fx-font-size: 32; }
+.semibig { -fx-font-size: 18; }
+
+.big { -fx-font-size: 24; }
+
+.huge { -fx-font-size: 36; }
 
 .good-news { -fx-text-fill: good; }
 

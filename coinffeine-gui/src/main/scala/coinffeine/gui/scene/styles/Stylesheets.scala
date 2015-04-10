@@ -1,6 +1,7 @@
 package coinffeine.gui.scene.styles
 
 object Stylesheets {
+  val Fonts = "/css/fonts.css"
   val Palette = "/css/palette.css"
   val Controls = "/css/controls.css"
   val Main = "/css/main.css"

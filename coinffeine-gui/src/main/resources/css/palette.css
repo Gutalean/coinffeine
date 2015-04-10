@@ -4,14 +4,14 @@
     /* The background colors. */
     dark-background: #392b28;
     background: #c8b9b3;
-    light-background: #f2efee;
+    light-background: #f2efed;
 
     /* The main color palette. */
-    good: #5ccef9;
+    good: #5dcef9;
     bad: #ff8654;
 
     /* The secondary color palette. */
-    col1: #5ac1bb;
-    col2: #c1b0e3;
+    col1: #5bc1ba;
+    col2: #c1afe2;
     col3: #606060;
 }
