@@ -1,5 +1,14 @@
 // Classes supporting styles defined in `BoxStyles`
 
+.button-col {
+    -fx-alignment: center;
+    -fx-spacing: 25px;
+}
+
+.button-col .button {
+    -fx-max-width: 99999;
+}
+
 .button-row {
     -fx-alignment: center;
     -fx-spacing: 25px;

@@ -8,6 +8,9 @@ object PaneStyles {
   /** The URL to the stylesheet for these styles. */
   val StylesheetUrl = "/css/pane.css"
 
+  /** A button column comprised by several separated buttons in a vertical layout. */
+  trait ButtonColumn { this: VBox => styleClass += "button-col" }
+
   /** A button row comprised by several separated buttons in a horizontal layout. */
   trait ButtonRow { this: HBox => styleClass += "button-row" }
 
