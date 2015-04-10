@@ -36,3 +36,14 @@
 .status-disc:failure {
     -fx-fill: bad;
 }
+
+.spinner {
+    -fx-font-size: 11px;
+    -fx-alignment: center;
+    -fx-min-height: 35px;
+    -fx-padding: 5px;
+}
+
+.spinner > .bar {
+    -fx-background-color: dark-background;
+}
