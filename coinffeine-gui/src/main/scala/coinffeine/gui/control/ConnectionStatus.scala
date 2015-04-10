@@ -8,8 +8,6 @@ case class ConnectionStatus(
     coinffeine: ConnectionStatus.Coinffeine,
     bitcoin: ConnectionStatus.Bitcoin) {
 
-  import ConnectionStatus._
-
   val description: String = "%s, %s%s".format(
     formatPeerCount(coinffeine.activePeers, "coinffeine"),
     formatPeerCount(bitcoin.activePeers, "bitcoin"),
