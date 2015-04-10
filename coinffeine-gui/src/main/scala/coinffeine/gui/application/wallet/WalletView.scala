@@ -18,6 +18,7 @@ import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.qrcode.QRCode
+import coinffeine.gui.scene.styles.PaneStyles
 import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.{Address, Hash}
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
@@ -63,56 +64,8 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     )
   }
 
-  private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 170)
-
-  private val noQrCode: Node = new Label("No public address available") {
-    id = "wallet-noqr-label"
-  }
-  private def qrCode(address: Address): Node = new VBox() {
-    content = Seq(
-      new ImageView(qrCodeImage(address)),
-      new Label(address.toString) {
-        id = "wallet-qr-label"
-      }
-    )
-  }
-
-  private val qrCodePane = new StackPane() {
-    id = "wallet-qr-pane"
-    app.wallet.primaryAddress.bindToList(content) {
-      case Some(addr) => Seq(qrCode(addr))
-      case None => Seq(noQrCode)
-    }
-  }
-
-  private val copyToClipboardButton = new Button("Copy address to clipboard") {
-    disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined)
-    onAction = { action: Any =>
-      val content = new ClipboardContent()
-      content.putString(app.wallet.primaryAddress.get.get.toString)
-      Clipboard.systemClipboard.setContent(content)
-    }
-  }
-
-  private val withdrawFundsButton = new Button("Withdraw") {
-    disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined) ||
-      app.wallet.balance.mapToBoolean {
-        case Some(balance) if balance.amount.isPositive => false
-        case _ => true
-      }
-    onAction = { action: Any =>
-      val form = new WithdrawFundsForm(app.wallet)
-      form.show() match {
-        case WithdrawFundsForm.Withdraw(amount, to) =>
-          app.wallet.transfer(amount, to)
-        case _ =>
-      }
-    }
-  }
-
   private val rightDetailsPane = new VBox() {
     id = "wallet-right-pane"
-    content = Seq(qrCodePane, copyToClipboardButton, withdrawFundsButton)
   }
 
   private val detailsPane = new HBox() {
@@ -175,8 +128,50 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     content = Seq(detailsPane, transactionsPane)
   }
 
-  // TODO: provide a valid control pane
-  override def controlPane: Pane = new Pane
+  override def controlPane: Pane = new HBox {
+
+    private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 125)
+
+    private val noQrCode: Node = new Label("No public address available")
+
+    private val qrCodePane = new StackPane() {
+      app.wallet.primaryAddress.bindToList(content) {
+        case Some(addr) => Seq(new ImageView(qrCodeImage(addr)))
+        case None => Seq(noQrCode)
+      }
+    }
+
+    private val copyToClipboardButton = new Button("Copy address") {
+      disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined)
+      onAction = { action: Any =>
+        val content = new ClipboardContent()
+        content.putString(app.wallet.primaryAddress.get.get.toString)
+        Clipboard.systemClipboard.setContent(content)
+      }
+    }
+
+    private val withdrawFundsButton = new Button("Withdraw") {
+      disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined) ||
+        app.wallet.balance.mapToBoolean {
+          case Some(balance) if balance.amount.isPositive => false
+          case _ => true
+        }
+      onAction = { action: Any =>
+        val form = new WithdrawFundsForm(app.wallet)
+        form.show() match {
+          case WithdrawFundsForm.Withdraw(amount, to) =>
+            app.wallet.transfer(amount, to)
+          case _ =>
+        }
+      }
+    }
+
+    private val buttons = new VBox with PaneStyles.ButtonColumn {
+      content = Seq(copyToClipboardButton, withdrawFundsButton)
+    }
+
+    content = Seq(qrCodePane, buttons)
+  }
 }
 
 object WalletView {
