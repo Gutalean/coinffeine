@@ -16,8 +16,8 @@
 
 .huge { -fx-font-size: 36; }
 
-.good-news { -fx-text-fill: good; }
+.good-news { -fx-text-fill: -cf-main1; }
 
-.bad-news { -fx-text-fill: bad; }
+.bad-news { -fx-text-fill: -cf-main2; }
 
 .neutral-news { -fx-text-fill: #797979; }

@@ -12,11 +12,11 @@
 }
 
 .status-disc {
-    -fx-fill: good;
+    -fx-fill: -cf-main1;
 }
 
 .status-disc:failure {
-    -fx-fill: bad;
+    -fx-fill: -cf-main2;
 }
 
 .spinner {
@@ -27,5 +27,5 @@
 }
 
 .spinner > .bar {
-    -fx-background-color: dark-background;
+    -fx-background-color: -cf-dark-background;
 }
