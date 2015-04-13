@@ -9,7 +9,7 @@
     -fx-padding: 10px;
     -fx-spacing: 40px;
 
-    -fx-background-color: dark-background;
+    -fx-background-color: -cf-dark-background;
     -fx-background-image: url("../graphics/splash-logo.png");
     -fx-background-position: center -50px;
     -fx-background-size: 500;
@@ -26,7 +26,7 @@
 }
 
 #splash-root .progress-bar:indeterminate > .bar {
-    -fx-background-color: dark-background;
+    -fx-background-color: -cf-dark-background;
 }
 
 #splash-root #copyright-note {

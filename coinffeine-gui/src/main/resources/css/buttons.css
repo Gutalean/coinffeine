@@ -1,0 +1,24 @@
+/* This file defines the styles for button controls. */
+
+.button {
+    -fx-color: -cf-main1;
+    -fx-background-color: -fx-color;
+    -fx-background-radius: 6;
+    -fx-padding: 0.166667em 1.233333em 0.25em 1.233333em;
+    -fx-text-fill: white;
+    -fx-font-size: 16;
+}
+
+.button:hover {
+    -fx-background-color: derive(-fx-color, -20%);
+    -fx-cursor: hand;
+}
+
+.button:armed {
+    -fx-background-color: derive(-fx-color, -40%);
+    -fx-cursor: hand;
+}
+
+.action-button {
+    -fx-color: -cf-sec1;
+}

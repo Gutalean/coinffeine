@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations
 
 import javafx.beans.binding.Bindings
-import coinffeine.gui.scene.styles.PaneStyles
+import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
 
 import scalafx.Includes._
 import scalafx.event.{Event, ActionEvent}
@@ -76,7 +76,7 @@ class OperationsView(app: CoinffeineApp,
   }
 
   override def controlPane: Pane = new VBox with PaneStyles.Centered {
-    content = new Button("New order") {
+    content = new Button("New order") with ButtonStyles.Action {
       onAction = { e: Event =>
         val form = new OrderSubmissionForm(app, orderValidation)
         form.show(delegate.getScene.getWindow)

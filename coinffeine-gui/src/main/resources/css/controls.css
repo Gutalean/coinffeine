@@ -11,30 +11,12 @@
     -fx-text-fill: white;
 }
 
-.button {
-    -fx-background-color: col1;
-    -fx-background-radius: 6;
-    -fx-padding: 0.166667em 1.233333em 0.25em 1.233333em;
-    -fx-text-fill: white;
-    -fx-font-size: 16;
-}
-
-.button:hover {
-    -fx-background-color: derive(col1, -20%);
-    -fx-cursor: hand;
-}
-
-.button:armed {
-    -fx-background-color: derive(col1, -40%);
-    -fx-cursor: hand;
-}
-
 .status-disc {
-    -fx-fill: good;
+    -fx-fill: -cf-main1;
 }
 
 .status-disc:failure {
-    -fx-fill: bad;
+    -fx-fill: -cf-main2;
 }
 
 .spinner {
@@ -45,5 +27,5 @@
 }
 
 .spinner > .bar {
-    -fx-background-color: dark-background;
+    -fx-background-color: -cf-dark-background;
 }
