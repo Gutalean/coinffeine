@@ -4,6 +4,7 @@
     -fx-color: -cf-main1;
     -fx-background-color: -fx-color;
     -fx-background-radius: 6;
+    -fx-background-insets: 0;
     -fx-padding: 0.166667em 1.233333em 0.25em 1.233333em;
     -fx-text-fill: white;
     -fx-font-size: 16;
