@@ -1,5 +1,11 @@
 /* This file defines the styles for the main window. */
 
+#main-root-pane {
+    -fx-min-width: 1024;
+    -fx-min-height: 600;
+    -fx-background-color: -cf-light-background;
+}
+
 #top-bar {
     -fx-min-height: 50px;
     -fx-background-color: -cf-dark-background;
@@ -43,6 +49,10 @@
     -fx-cursor: hand;
 }
 
+#center-pane {
+    -fx-padding: 20 50 20 50;
+}
+
 /*
  * The following properties are deprecated.
  * Please remove them as they are not used.
@@ -51,11 +61,6 @@
 GridPane {
     -fx-hgap: 5px;
     -fx-vgap: 5px;
-}
-
-#main-root-pane {
-    -fx-pref-width: 1024;
-    -fx-pref-height: 600;
 }
 
 #view-selector ToggleButton:disabled {
@@ -80,10 +85,6 @@ GridPane {
 .EUR-label {
     -fx-background-color: #490;
     -fx-text-fill: white;
-}
-
-#center-pane {
-    -fx-alignment: bottom-right;
 }
 
 #notification-summary {

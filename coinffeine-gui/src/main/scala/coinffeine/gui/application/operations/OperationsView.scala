@@ -1,78 +1,65 @@
 package coinffeine.gui.application.operations
 
-import javafx.beans.binding.Bindings
-import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
-
-import scalafx.Includes._
-import scalafx.event.{Event, ActionEvent}
-import scalafx.scene.control._
-import scalafx.scene.layout._
-
-import org.controlsfx.dialog.Dialog.Actions
-import org.controlsfx.dialog.{DialogStyle, Dialogs}
-
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.beans.ObservableConstants
+import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, PaneStyles}
+import coinffeine.model.market.Bid
 import coinffeine.peer.api.CoinffeineApp
+
+import scalafx.Includes._
+import scalafx.css.PseudoClass
+import scalafx.event.Event
+import scalafx.scene.Node
+import scalafx.scene.control._
+import scalafx.scene.layout._
 
 class OperationsView(app: CoinffeineApp,
                      props: ApplicationProperties,
                      orderValidation: OrderValidation) extends ApplicationView {
 
-  private val operationsTable = new OperationsTable(props.ordersProperty)
-
-  private val cancellableOperationProperty = operationsTable.selected.delegate
-    .flatMap {
-      case Some(op) => op.isCancellable
-      case None => ObservableConstants.False
-    }
-    .mapToBool(_.booleanValue())
-    .toReadOnlyProperty
-
-  private val cancelButton = new Button {
-    id = "cancelOrderBtn"
-    text = "Cancel"
-    disable <== Bindings.not(cancellableOperationProperty)
-    handleEvent(ActionEvent.Action) { () =>
-      val confirm = Dialogs.create()
-        .style(DialogStyle.NATIVE)
-        .title("Order cancellation")
-        .message("You are about to cancel the selected operation. Are you sure?")
-        .actions(Actions.YES, Actions.NO)
-        .showConfirm()
-      if (confirm == Actions.YES) {
-        operationsTable.selected.value.foreach {
-          case order: OrderProperties => app.network.cancelOrder(order.orderIdProperty.value)
+  private def lineFor(p: OrderProperties): Node = {
+    val (action, pseudoClass) =
+      if (p.orderTypeProperty.value == Bid) ("buying", PseudoClass("buy"))
+      else ("selling", PseudoClass("sell"))
+    val amount = p.amountProperty.value
+    new HBox {
+      styleClass += "line"
+      delegate.pseudoClassStateChanged(pseudoClass, true)
+      content = Seq(
+        new StackPane { styleClass += "icon" },
+        new Label(s"You are $action $amount") { styleClass += "summary" },
+        new Label("3d 20h ago") { styleClass += "date" },
+        new ProgressBar() { progress <== p.progressProperty },
+        new HBox with PaneStyles.ButtonRow {
+          styleClass += "buttons"
+          content = Seq(
+            new Button with ButtonStyles.Details,
+            new Button with ButtonStyles.Close)
         }
-      }
+      )
     }
   }
 
-  private val toggleDetailsButton = new Button {
-    id = "toggleDetailsButton"
-    text <== operationsTable.showDetails.delegate.mapToString { shown =>
-      if (shown) "Hide details" else "Show details"
-    }
-    disable <== operationsTable.selected.delegate.mapToBool(!_.isDefined)
-    onAction = { action: Any =>
-      operationsTable.showDetails.value = !operationsTable.showDetails.value
+  private val operationsTable = new VBox {
+    props.ordersProperty.bindToList(content) { p =>
+      lineFor(p)
     }
   }
 
   override def name: String = "Operations"
 
-  private val buttonsPane: Pane = new HBox {
-    id = "operations-buttons-pane"
-    content = Seq(cancelButton, toggleDetailsButton)
-  }
-
   override def centerPane: Pane = new VBox {
     id = "operations-center-pane"
     vgrow = Priority.Always
-    content = Seq(buttonsPane, jfxNode2sfx(operationsTable))
+    content = Seq(
+      new HBox with PaneStyles.Centered {
+        styleClass += "header"
+        content = new Label("RECENT ACTIVITY")
+      },
+      new ScrollPane() with NodeStyles.VExpand { content = operationsTable }
+    )
   }
 
   override def controlPane: Pane = new VBox with PaneStyles.Centered {

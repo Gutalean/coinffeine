@@ -129,21 +129,11 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     content = new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) }
   }
 
-  root = {
-    val mainPane = new VBox() {
-      content = Seq(
-        menuBar,
-        topbar,
-        controlBar,
-        new BorderPane {
-          id = "main-root-pane"
-          vgrow = Priority.Always
-          bottom = statusBarPane
-          center = centerPane
-        }
-      )
-    }
-    mainPane
+  root = new BorderPane {
+    id = "main-root-pane"
+    top = new VBox { content = Seq(menuBar, topbar, controlBar) }
+    center = centerPane
+    bottom = statusBarPane
   }
 }
 
