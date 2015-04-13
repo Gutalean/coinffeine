@@ -1,62 +1,88 @@
 /* This file defines the styles for the operations view. */
 
 #operations-center-pane {
-    -fx-padding: 20px;
-    -fx-spacing: 10px;
+    -fx-spacing: 0;
+    -fx-background-color: white;
+    -fx-background-radius: 5;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 0);
 }
 
-#operations-buttons-pane {
-    -fx-spacing: 10px;
+#operations-center-pane > .header {
+    -fx-background-radius: 5 5 0 0;
+    -fx-background-color: #f5f3f1;
+    -fx-min-height: 50;
 }
 
-.operations-bid-icon {
-    -fx-image: url('../graphics/operations/bid.gif');
+#operations-center-pane > .header > .label {
+    -fx-font-size: 16;
+    -fx-font-weight: 800;
+    -fx-text-fill: -cf-background;
 }
 
-.operations-ask-icon {
-    -fx-image: url('../graphics/operations/ask.gif');
+#operations-center-pane > .scroll-pane {
+    -fx-fit-to-width: true;
+    -fx-fit-to-height: true;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-background-color: transparent;
 }
 
-#operations-details-pane {
-    -fx-hgap: 5px;
-    -fx-vgap: 10px;
-    -fx-padding: 10px;
-    -fx-height: 200px;
+#operations-center-pane > .scroll-pane > * {
+    -fx-background-color: transparent;
 }
 
-#operations-details-pane .field-name {
-    -fx-label-padding: 0 0 0 10px;
-}
-
-#operations-details-pane .field-value {
-    -fx-font-weight: bold;
-}
-
-#operations-submit-content-pane {
-    -fx-alignment: center;
-    -fx-padding: 20px;
-    -fx-spacing: 20px;
-}
-
-#operations-submit-fee-summary {
-    -fx-spacing: 5px;
-    -fx-font-size: 11px;
-    -fx-alignment: baseline-left;
-}
-
-#operations-submit-fee-summary HBox {
-    -fx-alignment: baseline-left;
-}
-
-.operations-submit-declaration-pane {
+#operations-center-pane .line {
+    -fx-spacing: 40;
+    -fx-padding: 5 50 5 50;
+    -fx-min-height: 80;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -cf-light-background;
+    -fx-border-style: segments(3, 2);
     -fx-alignment: center-left;
-    -fx-spacing: 10px;
 }
 
-#operations-submit-root-pane #limit {
-    -fx-pref-column-count: 8;
+#operations-center-pane .line:buy {
+    -fx-color: -cf-main1;
 }
 
-#operations-submit-root-pane #amount {
-    -fx-pref-column-count: 8;
+#operations-center-pane .line .icon {
+    -fx-min-width: 50;
+    -fx-background-position: center;
+    -fx-background-size: 50;
+    -fx-background-repeat: no-repeat;
 }
+
+#operations-center-pane .line:buy .icon { -fx-background-image: url('/icons/buy.png'); }
+
+#operations-center-pane .line:sell { -fx-color: -cf-sec1; }
+
+#operations-center-pane .line:sell .icon { -fx-background-image: url('/icons/sell.png'); }
+
+#operations-center-pane .line .label {
+    -fx-font-size: 20;
+    -fx-text-fill: -fx-color;
+}
+
+#operations-center-pane .line .summary {
+    -fx-min-width: 400;
+}
+
+#operations-center-pane .line .date {
+    -fx-min-width: 100;
+    -fx-font-size: 16;
+}
+
+#operations-center-pane .line .progress-bar {
+    -fx-min-width: 100;
+    -fx-background-color: derive(-fx-color, 80%);
+    -fx-background-radius: 3;
+}
+
+#operations-center-pane .line .progress-bar > .track {
+    -fx-background-color: transparent;
+}
+
+#operations-center-pane .line .buttons {
+    -fx-spacing: 15;
+}
+
