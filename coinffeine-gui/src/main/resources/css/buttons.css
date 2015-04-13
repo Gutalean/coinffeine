@@ -23,3 +23,26 @@
 .action-button {
     -fx-color: -cf-sec1;
 }
+
+.rounded-button {
+    -fx-color: -cf-sec1;
+    -fx-background-color: -fx-color;
+    -fx-background-radius: 100%;
+    -fx-size: 20;
+    -fx-min-width: -fx-size;
+    -fx-max-width: -fx-size;
+    -fx-min-height: -fx-size;
+    -fx-max-height: -fx-size;
+}
+
+.rounded-button:hover {
+    -fx-background-color: derive(-fx-color, -20%);
+}
+
+.rounded-button:armed {
+    -fx-background-color: derive(-fx-color, -40%);
+}
+
+.details-button { -fx-background-image: url('/icons/details.png'); }
+
+.close-button { -fx-background-image: url('/icons/close.png'); }
