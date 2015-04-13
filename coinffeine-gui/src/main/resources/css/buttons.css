@@ -18,3 +18,7 @@
     -fx-background-color: derive(-fx-color, -40%);
     -fx-cursor: hand;
 }
+
+.action-button {
+    -fx-color: -cf-sec1;
+}
