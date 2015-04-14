@@ -53,10 +53,10 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
   it should "replace an existing element when order is modified in the network" in new Fixture {
     withNewOrder("order-01") { order =>
-      network.orders.set(order.id, order.becomeInMarket)
+      network.orders.set(order.id, order.withExchange(randomExchange(order)))
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.orderStatusProperty.value shouldBe InMarketOrder
+          orderProps.orderStatusProperty.value shouldBe InProgressOrder
         }
       }
     }

@@ -44,10 +44,10 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   it should "notify order state changes" in new Fixture {
     order.start()
     order.becomeOffline()
-    listener.lastStatus shouldBe OfflineOrder
+    listener.lastOrder should not be 'inMarket
 
     order.becomeInMarket()
-    listener.lastStatus shouldBe InMarketOrder
+    listener.lastOrder shouldBe 'inMarket
 
     order.fundsRequested(orderMatch, requiredFunds)
     order.startExchange(orderMatch.exchangeId)
@@ -100,7 +100,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     order.fundsRequested(firstHalfMatch, halfRequiredFunds)
     order.startExchange(firstHalfMatch.exchangeId)
     order.completeExchange(complete(order.view.exchanges.values.last))
-    listener.lastStatus shouldBe OfflineOrder
+    listener.lastOrder should not be 'inMarket
 
     order.view.amounts.pending shouldBe (initialOrder.amount / 2)
     order.becomeInMarket()

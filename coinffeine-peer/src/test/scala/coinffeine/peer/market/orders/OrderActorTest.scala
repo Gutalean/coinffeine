@@ -119,14 +119,14 @@ abstract class OrderActorTest extends AkkaSpec
 
     def givenOfflineOrder(): Unit = {
       givenInitializedOrder()
-      expectProperty { _.status shouldBe OfflineOrder }
+      expectProperty { _ should not be 'inMarket }
       submissionProbe.expectMsg(KeepSubmitting(entry))
     }
 
     def givenInMarketOrder(): Unit = {
       givenOfflineOrder()
       submissionProbe.send(actor, InMarket(entry))
-      expectProperty { _.status shouldBe InMarketOrder }
+      expectProperty { _.inMarket shouldBe true }
     }
 
     def givenASuccessfulPerfectMatchExchange(): Unit = {

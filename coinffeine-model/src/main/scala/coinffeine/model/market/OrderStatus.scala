@@ -16,27 +16,6 @@ case object NotStartedOrder extends OrderStatus {
   override val isActive = true
 }
 
-/** The order is offline.
-  *
-  * This status indicates that the corresponding order has been loaded in the system (either just
-  * created or loaded from the disk) but it is not still in the market. No matching should be
-  * expected while the order is in this state.
-  */
-case object OfflineOrder extends OrderStatus {
-  override val name = "offline"
-  override val isActive = true
-}
-
-/** The order is in the market.
-  *
-  * This status indicates that the corresponding order has been placed in the market.
-  *
-  */
-case object InMarketOrder extends OrderStatus {
-  override val name = "in market"
-  override val isActive = true
-}
-
 /** The order is in progress.
   *
   * This status indicates that there are some order matches and therefore some exchanges running.

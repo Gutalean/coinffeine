@@ -45,8 +45,6 @@ case class Order[C <: FiatCurrency](
     if (cancelled) CancelledOrder
     else if (amounts.completed) CompletedOrder
     else if (amounts.exchanging.isPositive) InProgressOrder
-    else if (inMarket) InMarketOrder
-    else if (started) OfflineOrder
     else NotStartedOrder
 
   require(started || !cancelled, "Cannot be cancelled and started")
@@ -54,7 +52,7 @@ case class Order[C <: FiatCurrency](
 
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): Order[C] =
-    if (exchanges.get(exchange.id) == Some(exchange)) this
+    if (exchanges.get(exchange.id).contains(exchange)) this
     else {
       val nextExchanges = exchanges + (exchange.id -> exchange)
       val nextAmounts = Order.Amounts.fromExchanges(amount, role, nextExchanges)
