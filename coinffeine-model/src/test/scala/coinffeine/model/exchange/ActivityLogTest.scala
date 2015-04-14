@@ -23,7 +23,7 @@ class ActivityLogTest extends UnitTest with OptionValues {
   }
 
   it should "record an activity" in {
-    val log = ActivityLog.empty.record(Start, timestamps.head)
+    val log = ActivityLog(Start, timestamps.head)
     log.activities shouldBe Seq(Entry(Start, timestamps.head))
   }
 
