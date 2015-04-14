@@ -8,7 +8,7 @@ case class DepositPendingExchange[C <: FiatCurrency](
     user: Exchange.PeerInfo,
     counterpart: Exchange.PeerInfo) extends AfterHandshakeExchange[C] {
 
-  override val status = "waiting deposit confirmation"
+  override val status = ExchangeStatus.WaitingDepositConfirmation
   override val metadata = prev.metadata
   override val progress = Exchange.noProgress(currency)
   override val isCompleted = false

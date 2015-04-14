@@ -8,7 +8,7 @@ case class AbortingExchange[C <: FiatCurrency](prev: Exchange[C],
                                                user: Exchange.PeerInfo,
                                                refundTx: ImmutableTransaction) extends Exchange[C] {
 
-  override val status = s"aborting ($cause)"
+  override val status = ExchangeStatus.Aborting(cause)
   override val metadata = prev.metadata
   override val isCompleted = false
   override val isStarted = true

@@ -59,7 +59,7 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
     private def printExchangeDetails(exchange: Exchange[_ <: FiatCurrency]): Unit = {
       output.println(Bold("\t" + exchange.id))
       printExchangeAmounts(exchange.amounts)
-      printStatus(exchange.status)
+      printStatus(exchange.status.name)
       printProgress((exchange.progress.bitcoinsTransferred(order.orderType).value /
         exchange.amounts.exchangedBitcoin(order.orderType).value).doubleValue())
     }

@@ -14,7 +14,7 @@ case class ExchangeMetadata[C <: FiatCurrency](
   parameters: Exchange.Parameters)
 
 trait Exchange[C <: FiatCurrency] {
-  def status: String
+  def status: ExchangeStatus
   def metadata: ExchangeMetadata[C]
   def progress: Exchange.Progress
   def isCompleted: Boolean

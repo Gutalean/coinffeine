@@ -151,7 +151,7 @@ class OperationsTable(peerOrders: PeerOrders) extends MasterDetailPane {
       add(fieldValue(exchange.role.toString.capitalize), 5, 0)
 
       add(fieldName("Status"), 0, 1)
-      add(fieldValue(exchange.status.capitalize), 1, 1)
+      add(fieldValue(exchange.status.name.capitalize), 1, 1)
       add(fieldName("Counterpart"), 2, 1)
       add(fieldValue(exchange.counterpartId.value), 3, 1)
       add(fieldName("Locktime"), 4, 1)

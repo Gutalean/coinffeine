@@ -6,7 +6,7 @@ import coinffeine.model.exchange.Exchange.Progress
 case class SuccessfulExchange[C <: FiatCurrency](
     prev: RunningExchange[C]) extends AfterHandshakeExchange[C] with CompletedExchange[C] {
 
-  override val status = "success"
+  override val status = ExchangeStatus.Successful
   override val metadata = prev.metadata
   override val progress = Progress(amounts.exchangedBitcoin)
   override val isSuccess = true

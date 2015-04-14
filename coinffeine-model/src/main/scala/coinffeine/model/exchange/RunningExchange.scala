@@ -8,7 +8,7 @@ case class RunningExchange[C <: FiatCurrency](
     deposits: Exchange.Deposits,
     progress: Exchange.Progress) extends AfterHandshakeExchange[C] {
 
-  override val status = "exchanging"
+  override val status = ExchangeStatus.Exchanging
   override val metadata = prev.metadata
   override val isCompleted = false
   override val user = prev.user

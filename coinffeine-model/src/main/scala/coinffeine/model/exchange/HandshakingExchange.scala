@@ -5,7 +5,7 @@ import coinffeine.model.currency.FiatCurrency
 
 case class HandshakingExchange[C <: FiatCurrency](metadata: ExchangeMetadata[C]) extends Exchange[C] {
 
-  override val status = "handshaking"
+  override val status = ExchangeStatus.Handshaking
   override val progress = Exchange.noProgress(currency)
   override val isCompleted = false
   override val isStarted = false
