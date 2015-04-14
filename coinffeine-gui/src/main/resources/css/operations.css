@@ -1,5 +1,9 @@
 /* This file defines the styles for the operations view. */
 
+.buy { -fx-color: -cf-main1; }
+
+.sell { -fx-color: -cf-sec1; }
+
 #operations-center-pane {
     -fx-spacing: 0;
     -fx-background-color: white;
@@ -41,10 +45,6 @@
     -fx-alignment: center-left;
 }
 
-#operations-center-pane .line:buy {
-    -fx-color: -cf-main1;
-}
-
 #operations-center-pane .line .icon {
     -fx-min-width: 50;
     -fx-background-position: center;
@@ -52,11 +52,9 @@
     -fx-background-repeat: no-repeat;
 }
 
-#operations-center-pane .line:buy .icon { -fx-background-image: url('/icons/buy.png'); }
+#operations-center-pane .line.buy .icon { -fx-background-image: url('/icons/buy.png'); }
 
-#operations-center-pane .line:sell { -fx-color: -cf-sec1; }
-
-#operations-center-pane .line:sell .icon { -fx-background-image: url('/icons/sell.png'); }
+#operations-center-pane .line.sell .icon { -fx-background-image: url('/icons/sell.png'); }
 
 #operations-center-pane .line .label {
     -fx-font-size: 20;
@@ -72,17 +70,6 @@
     -fx-font-size: 16;
 }
 
-#operations-center-pane .line .progress-bar {
-    -fx-min-width: 100;
-    -fx-background-color: derive(-fx-color, 80%);
-    -fx-background-radius: 3;
-}
-
-#operations-center-pane .line .progress-bar > .track {
-    -fx-background-color: transparent;
-}
-
 #operations-center-pane .line .buttons {
     -fx-spacing: 15;
 }
-

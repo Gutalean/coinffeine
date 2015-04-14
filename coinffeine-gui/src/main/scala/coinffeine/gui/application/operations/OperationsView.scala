@@ -4,7 +4,7 @@ import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, PaneStyles}
+import coinffeine.gui.scene.styles.{OperationStyles, ButtonStyles, NodeStyles, PaneStyles}
 import coinffeine.model.market.Bid
 import coinffeine.peer.api.CoinffeineApp
 
@@ -20,13 +20,10 @@ class OperationsView(app: CoinffeineApp,
                      orderValidation: OrderValidation) extends ApplicationView {
 
   private def lineFor(p: OrderProperties): Node = {
-    val (action, pseudoClass) =
-      if (p.orderTypeProperty.value == Bid) ("buying", PseudoClass("buy"))
-      else ("selling", PseudoClass("sell"))
+    val action = if (p.orderTypeProperty.value == Bid) "buying" else "selling"
     val amount = p.amountProperty.value
     new HBox {
-      styleClass += "line"
-      delegate.pseudoClassStateChanged(pseudoClass, true)
+      styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
       content = Seq(
         new StackPane { styleClass += "icon" },
         new Label(s"You are $action $amount") { styleClass += "summary" },
