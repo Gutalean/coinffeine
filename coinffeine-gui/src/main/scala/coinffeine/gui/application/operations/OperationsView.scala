@@ -1,5 +1,6 @@
 package coinffeine.gui.application.operations
 
+import coinffeine.gui.application.operations.OrderPropertiesDialog
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
@@ -32,7 +33,12 @@ class OperationsView(app: CoinffeineApp,
         new HBox with PaneStyles.ButtonRow {
           styleClass += "buttons"
           content = Seq(
-            new Button with ButtonStyles.Details,
+            new Button with ButtonStyles.Details {
+              onAction = { e: Event =>
+                val dialog = new OrderPropertiesDialog(p)
+                dialog.show(delegate.getScene.getWindow)
+              }
+            },
             new Button with ButtonStyles.Close)
         }
       )

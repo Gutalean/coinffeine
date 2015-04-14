@@ -73,3 +73,59 @@
 #operations-center-pane .line .buttons {
     -fx-spacing: 15;
 }
+
+.order-props {
+    -fx-spacing: 20;
+    -fx-min-width: 500;
+    -fx-max-width: 500;
+    -fx-min-height: 600;
+    -fx-max-height: 600;
+    -fx-background-color: white;
+}
+
+.order-props > .icon {
+    -fx-padding: 10 50 10 50;
+    -fx-min-height: 120;
+    -fx-background-position: center;
+    -fx-background-size: 120;
+    -fx-background-repeat: no-repeat;
+}
+
+.order-props > .buy-icon { -fx-background-image: url('/icons/buy.png'); }
+
+.order-props > .sell-icon { -fx-background-image: url('/icons/sell.png'); }
+
+.order-props > .summary {
+    -fx-padding: 10 50 10 50;
+    -fx-font-size: 20;
+    -fx-wrap-text: true;
+    -fx-text-alignment: center;
+}
+
+.order-props > .summary.buy { -fx-text-fill: -cf-main1; }
+
+.order-props > .summary.sell { -fx-text-fill: -cf-sec1; }
+
+.order-props > .lines {
+    -fx-spacing: 0;
+}
+
+.order-props > .lines > .line {
+    -fx-padding: 10 50 10 50;
+    -fx-spacing: 100;
+    -fx-alignment: center-left;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-color: -cf-light-background;
+    -fx-border-style: segments(3, 2);
+}
+
+.order-props > .lines > .line .prop-name {
+    -fx-font-weight: 700;
+    -fx-text-fill: #424242;
+}
+
+.order-props > .lines > .line .prop-value { -fx-text-fill: #a7a7a7; }
+
+.order-props > .lines > .line.buy .prop-value { -fx-text-fill: -cf-main1; }
+
+.order-props > .lines > .line.sell .prop-value { -fx-text-fill: -cf-sec1; }
