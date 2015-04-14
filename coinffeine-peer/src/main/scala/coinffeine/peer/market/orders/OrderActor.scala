@@ -44,16 +44,11 @@ class OrderActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
-    case OrderStarted => onOrderStarted()
     case event: FundsRequested[_] => onFundsRequested(event.asInstanceOf[FundsRequested[C]])
     case event: FundsBlocked => onFundsBlocked(event)
     case event: CannotBlockFunds => onCannotBlockFunds(event)
     case CancelledOrder => onCancelledOrder()
     case RecoveryCompleted => self ! ResumeOrder
-  }
-
-  private def onOrderStarted(): Unit = {
-    order.start()
   }
 
   private def onFundsRequested(event: FundsRequested[C]): Unit = {
@@ -127,12 +122,6 @@ class OrderActor[C <: FiatCurrency](
     val currentOrder = order.view
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
     updatePublisher(currentOrder)
-    if (!currentOrder.started) {
-      persist(OrderStarted) { _ =>
-        coinffeineProperties.orders.set(orderId, initialOrder)
-        onOrderStarted()
-      }
-    }
   }
 
   override def inMarket(): Unit = { order.becomeInMarket() }

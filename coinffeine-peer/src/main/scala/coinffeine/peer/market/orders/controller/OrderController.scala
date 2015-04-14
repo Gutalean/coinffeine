@@ -83,7 +83,6 @@ private[orders] class OrderController[C <: FiatCurrency](
     newExchange
   }
 
-  def start(): Unit = { updateOrder(_.start) }
   def becomeInMarket(): Unit = { updateOrder(_.becomeInMarket) }
   def becomeOffline(): Unit = { updateOrder(_.becomeOffline) }
   def cancel(): Unit = {

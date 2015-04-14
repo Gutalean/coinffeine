@@ -42,7 +42,6 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   }
 
   it should "notify order state changes" in new Fixture {
-    order.start()
     order.becomeOffline()
     listener.lastOrder should not be 'inMarket
 

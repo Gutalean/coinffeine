@@ -13,7 +13,6 @@ import coinffeine.model.exchange._
   * @param orderType  The type of order (bid or ask)
   * @param amount     The gross amount of bitcoins to bid or ask
   * @param price      The price per bitcoin
-  * @param started    Whether the order has actually started
   * @param inMarket   Presence on the order book
   * @param cancelled  Whether the order was cancelled
   * @param exchanges  The exchanges that have been initiated to complete this order
@@ -23,7 +22,6 @@ case class Order[C <: FiatCurrency](
     orderType: OrderType,
     amount: Bitcoin.Amount,
     price: OrderPrice[C],
-    started: Boolean,
     inMarket: Boolean,
     cancelled: Boolean,
     exchanges: Map[ExchangeId, Exchange[C]]) {
@@ -32,11 +30,7 @@ case class Order[C <: FiatCurrency](
 
   val role = Role.fromOrderType(orderType)
 
-  def start: Order[C] = {
-    require(!started, s"$this has already started")
-    copy(started = true)
-  }
-  def cancel: Order[C] = copy(started = true, cancelled = true)
+  def cancel: Order[C] = copy(cancelled = true)
   def becomeInMarket: Order[C] = copy(inMarket = true)
   def becomeOffline: Order[C] = copy(inMarket = false)
 
@@ -47,21 +41,13 @@ case class Order[C <: FiatCurrency](
     else if (amounts.exchanging.isPositive) InProgressOrder
     else NotStartedOrder
 
-  require(started || !cancelled, "Cannot be cancelled and started")
-  require(!amounts.progressMade || started, "Cannot have progress and not be started")
-
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): Order[C] =
     if (exchanges.get(exchange.id).contains(exchange)) this
-    else {
-      val nextExchanges = exchanges + (exchange.id -> exchange)
-      val nextAmounts = Order.Amounts.fromExchanges(amount, role, nextExchanges)
-      copy(
-        started = started || nextAmounts.progressMade,
-        inMarket = false,
-        exchanges = nextExchanges
-      )
-    }
+    else copy(
+      inMarket = false,
+      exchanges = exchanges + (exchange.id -> exchange)
+    )
 
   /** Retrieve the total amount of bitcoins that were already transferred.
     *
@@ -131,7 +117,7 @@ object Order {
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: OrderPrice[C]): Order[C] =
-    Order(id, orderType, amount, price, started = false, inMarket = false, cancelled = false,
+    Order(id, orderType, amount, price, inMarket = false, cancelled = false,
       exchanges = Map.empty)
 
   /** Creates a limit order with a random identifier. */

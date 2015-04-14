@@ -39,7 +39,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   }
 
   it should "reject already accepted matches" in {
-    val exchangingOrder = limitOrder.start.copy(exchanges = Map(exchange.id -> exchange))
+    val exchangingOrder = limitOrder.withExchange(exchange)
     inside(validator.shouldAcceptOrderMatch(
       exchangingOrder, orderMatch, orderMatch.bitcoinAmount.buyer)) {
         case MatchAlreadyAccepted(_) =>
@@ -108,10 +108,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
       user = Exchange.PeerInfo("account1", new KeyPair),
       counterpart = Exchange.PeerInfo("account2", new KeyPair)
     )
-    val exchangingOrder = limitOrder.start.copy(
-      amount = 10.BTC,
-      exchanges = Map(runningExchange.id -> runningExchange)
-    )
+    val exchangingOrder = limitOrder.copy(amount = 10.BTC).withExchange(runningExchange)
     inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
