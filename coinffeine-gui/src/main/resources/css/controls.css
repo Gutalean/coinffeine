@@ -11,6 +11,16 @@
     -fx-text-fill: white;
 }
 
+.progress-bar {
+    -fx-min-width: 150;
+    -fx-background-color: derive(-fx-color, 80%);
+    -fx-background-radius: 3;
+}
+
+.progress-bar > .track {
+    -fx-background-color: transparent;
+}
+
 .status-disc {
     -fx-fill: -cf-main1;
 }

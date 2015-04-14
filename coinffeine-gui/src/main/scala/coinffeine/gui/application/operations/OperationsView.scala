@@ -1,10 +1,11 @@
 package coinffeine.gui.application.operations
 
+import coinffeine.gui.application.operations.OrderPropertiesDialog
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, PaneStyles}
+import coinffeine.gui.scene.styles.{OperationStyles, ButtonStyles, NodeStyles, PaneStyles}
 import coinffeine.model.market.Bid
 import coinffeine.peer.api.CoinffeineApp
 
@@ -20,13 +21,10 @@ class OperationsView(app: CoinffeineApp,
                      orderValidation: OrderValidation) extends ApplicationView {
 
   private def lineFor(p: OrderProperties): Node = {
-    val (action, pseudoClass) =
-      if (p.orderTypeProperty.value == Bid) ("buying", PseudoClass("buy"))
-      else ("selling", PseudoClass("sell"))
+    val action = if (p.orderTypeProperty.value == Bid) "buying" else "selling"
     val amount = p.amountProperty.value
     new HBox {
-      styleClass += "line"
-      delegate.pseudoClassStateChanged(pseudoClass, true)
+      styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
       content = Seq(
         new StackPane { styleClass += "icon" },
         new Label(s"You are $action $amount") { styleClass += "summary" },
@@ -35,7 +33,12 @@ class OperationsView(app: CoinffeineApp,
         new HBox with PaneStyles.ButtonRow {
           styleClass += "buttons"
           content = Seq(
-            new Button with ButtonStyles.Details,
+            new Button with ButtonStyles.Details {
+              onAction = { e: Event =>
+                val dialog = new OrderPropertiesDialog(p)
+                dialog.show(delegate.getScene.getWindow)
+              }
+            },
             new Button with ButtonStyles.Close)
         }
       )
