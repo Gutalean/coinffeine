@@ -1,5 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
+import org.joda.time.DateTime
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
@@ -26,13 +27,15 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     lockTime = 37376,
     counterpart = PeerId.random()
   )
-  val exchange = Exchange.handshaking[Euro.type](
+  private val exchange = Exchange.create[Euro.type](
     id = orderMatch.exchangeId,
     role = BuyerRole,
     counterpartId = orderMatch.counterpart,
     amounts = amountsCalculator.exchangeAmountsFor(orderMatch),
-    parameters = Exchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork)
+    parameters = Exchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork),
+    createdOn = DateTime.now()
   )
+  private val handshakeStartedOn = exchange.metadata.createdOn.plusSeconds(5)
 
   "An order match validator" should "reject any order match if the order is finished" in {
     expectRejectionWithMessage(limitOrder.cancel, orderMatch, "Order already finished")
@@ -106,7 +109,8 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
       metadata = exchange.metadata.copy(id = ExchangeId.random())
     ).startHandshaking(
       user = Exchange.PeerInfo("account1", new KeyPair),
-      counterpart = Exchange.PeerInfo("account2", new KeyPair)
+      counterpart = Exchange.PeerInfo("account2", new KeyPair),
+      timestamp = handshakeStartedOn
     )
     val exchangingOrder = limitOrder.copy(amount = 10.BTC).withExchange(runningExchange)
     inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch, alreadyBlocking = 0.BTC)) {

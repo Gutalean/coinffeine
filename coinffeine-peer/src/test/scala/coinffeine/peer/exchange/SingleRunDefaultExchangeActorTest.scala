@@ -16,7 +16,9 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelSuccess()
     notifyDepositDestination(CompletedChannel)
     walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
-    listener.expectMsg(ExchangeSuccess(completedExchange))
+    listener.expectMsgPF() {
+      case ExchangeSuccess(ex) => ex shouldBe 'success
+    }
     listener.expectTerminated(actor)
   }
 
@@ -91,7 +93,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
       inside(listener.expectMsgType[ExchangeFailure].exchange) {
-        case FailedExchange(_, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
+        case FailedExchange(_, _, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
       }
       listener.expectTerminated(actor)
     }

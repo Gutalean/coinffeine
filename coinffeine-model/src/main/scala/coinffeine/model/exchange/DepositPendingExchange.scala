@@ -1,10 +1,13 @@
 package coinffeine.model.exchange
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 
 case class DepositPendingExchange[C <: FiatCurrency](
     prev: HandshakingExchange[C],
+    timestamp: DateTime,
     user: Exchange.PeerInfo,
     counterpart: Exchange.PeerInfo) extends AfterHandshakeExchange[C] {
 
@@ -13,12 +16,16 @@ case class DepositPendingExchange[C <: FiatCurrency](
   override val progress = Exchange.noProgress(currency)
   override val isCompleted = false
 
-  def startExchanging(deposits: Exchange.Deposits): RunningExchange[C] =
-    RunningExchange(this, deposits)
+  override lazy val log = prev.log.record(ExchangeStatus.WaitingDepositConfirmation, timestamp)
 
-  def cancel(cause: CancellationCause): FailedExchange[C] =
-    FailedExchange(this, FailureCause.Cancellation(cause), Some(user))
+  def startExchanging(deposits: Exchange.Deposits, timestamp: DateTime): RunningExchange[C] =
+    RunningExchange(this, deposits, timestamp)
 
-  def abort(cause: AbortionCause, refundTx: ImmutableTransaction): AbortingExchange[C] =
-    AbortingExchange(this, cause, user, refundTx)
+  def cancel(cause: CancellationCause, timestamp: DateTime): FailedExchange[C] =
+    FailedExchange(this, timestamp, FailureCause.Cancellation(cause), Some(user))
+
+  def abort(cause: AbortionCause,
+            refundTx: ImmutableTransaction,
+            timestamp: DateTime): AbortingExchange[C] =
+    AbortingExchange(this, timestamp, cause, user, refundTx)
 }

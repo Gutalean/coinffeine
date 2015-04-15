@@ -23,7 +23,8 @@ trait ExchangeTest extends BitcoinjTest {
       createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer))
     val buyerDeposit = {
       val depositAmounts = amounts.deposits.buyer
-      buyerWallet.createMultisignTransaction(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+      buyerWallet.createMultisignTransaction(
+        requiredSignatures, depositAmounts.output, depositAmounts.fee)
     }
     val buyerHandshake = protocol.createHandshake(buyerHandshakingExchange, buyerDeposit)
   }
@@ -34,7 +35,8 @@ trait ExchangeTest extends BitcoinjTest {
       createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller))
     val sellerDeposit = {
       val depositAmounts = amounts.deposits.seller
-      sellerWallet.createMultisignTransaction(requiredSignatures, depositAmounts.output, depositAmounts.fee)
+      sellerWallet.createMultisignTransaction(
+        requiredSignatures, depositAmounts.output, depositAmounts.fee)
     }
     val sellerHandshake = protocol.createHandshake(sellerHandshakingExchange, sellerDeposit)
   }
@@ -49,8 +51,10 @@ trait ExchangeTest extends BitcoinjTest {
     private val validation = protocol.validateDeposits(
       commitments, amounts, requiredSignatures, parameters.network)
     require(validation.forall(_.isSuccess))
-    val buyerRunningExchange = buyerHandshakingExchange.startExchanging(commitments)
-    val sellerRunningExchange = sellerHandshakingExchange.startExchanging(commitments)
+    val buyerRunningExchange =
+      buyerHandshakingExchange.startExchanging(commitments, ExchangeTimestamps.channelStart)
+    val sellerRunningExchange =
+      sellerHandshakingExchange.startExchanging(commitments, ExchangeTimestamps.channelStart)
     val buyerChannel = protocol.createMicroPaymentChannel(buyerRunningExchange)
     val sellerChannel = protocol.createMicroPaymentChannel(sellerRunningExchange)
     val totalSteps = buyerExchange.amounts.breakdown.totalSteps

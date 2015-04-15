@@ -6,6 +6,7 @@ import akka.actor._
 import akka.event.Logging
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 import org.bitcoinj.core.NetworkParameters
+import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
@@ -56,7 +57,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {
-    val exchange = order.startExchange(event.exchangeId)
+    val exchange = order.startExchange(event.exchangeId, event.timestamp)
     context.actorOf(delegates.exchangeActor(exchange), exchange.id.value)
   }
 
@@ -90,7 +91,7 @@ class OrderActor[C <: FiatCurrency](
       log.warning("Unexpected blocking result {} for {}", result, exchangeId)
 
     case FundsBlockerActor.BlockingResult(exchangeId, Success(_)) =>
-      persist(FundsBlocked(exchangeId)) { event =>
+      persist(FundsBlocked(exchangeId, DateTime.now())) { event =>
         log.info("Accepting {}, funds just got blocked", exchangeId)
         onFundsBlocked(event)
       }
@@ -221,10 +222,9 @@ object OrderActor {
   }
 
   private case object ResumeOrder
-  private case object OrderStarted extends PersistentEvent
   private case class FundsRequested[C <: FiatCurrency](
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
-  private case class FundsBlocked(exchangeId: ExchangeId) extends PersistentEvent
+  private case class FundsBlocked(exchangeId: ExchangeId, timestamp: DateTime) extends PersistentEvent
   private case class CannotBlockFunds(exchangeId: ExchangeId) extends PersistentEvent
   private case object CancelledOrder extends PersistentEvent
 }

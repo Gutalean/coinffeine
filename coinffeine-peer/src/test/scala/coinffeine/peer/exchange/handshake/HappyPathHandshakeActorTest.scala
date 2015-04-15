@@ -86,7 +86,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
       blockchain.reply(TransactionFound(tx.get.getHash, tx))
     }
     listener.expectMsgPF() {
-      case HandshakeSuccess(_, `expectedCommitments`, handshake.`mySignedRefund`) =>
+      case HandshakeSuccess(_, `expectedCommitments`, handshake.`mySignedRefund`, _) =>
     }
   }
 

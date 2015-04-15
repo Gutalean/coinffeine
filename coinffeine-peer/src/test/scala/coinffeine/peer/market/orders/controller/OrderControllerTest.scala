@@ -35,7 +35,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   "An order controller" should "start new exchanges" in new Fixture {
     order.shouldAcceptOrderMatch(orderMatch) shouldBe MatchAccepted(requiredFunds)
     order.fundsRequested(orderMatch, requiredFunds)
-    val newExchange = order.startExchange(orderMatch.exchangeId)
+    val newExchange = order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
     newExchange.amounts shouldBe amountsCalculator.exchangeAmountsFor(orderMatch)
     newExchange.role shouldBe BuyerRole
     order.view.exchanges should have size 1
@@ -49,7 +49,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     listener.lastOrder shouldBe 'inMarket
 
     order.fundsRequested(orderMatch, requiredFunds)
-    order.startExchange(orderMatch.exchangeId)
+    order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
     listener.lastStatus shouldBe InProgressOrder
 
     order.completeExchange(complete(order.view.exchanges.values.head))
@@ -63,7 +63,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
   it should "notify successful termination" in new Fixture {
     order.fundsRequested(orderMatch, requiredFunds)
-    order.startExchange(orderMatch.exchangeId)
+    order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
     order.completeExchange(complete(order.view.exchanges.values.head))
     listener.lastStatus shouldBe CompletedOrder
   }
@@ -75,14 +75,14 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
   it should "accept order matches during other exchange" in new Fixture {
     order.fundsRequested(firstHalfMatch, halfRequiredFunds)
-    order.startExchange(firstHalfMatch.exchangeId)
+    order.startExchange(firstHalfMatch.exchangeId, ExchangeTimestamps.creation)
     order.fundsRequested(secondHalfMatch, halfRequiredFunds)
-    order.startExchange(secondHalfMatch.exchangeId)
+    order.startExchange(secondHalfMatch.exchangeId, ExchangeTimestamps.creation.plusMinutes(1))
   }
 
   it should "recognize already accepted matches" in new Fixture {
     order.fundsRequested(orderMatch, requiredFunds)
-    val exchangeInProgress = order.startExchange(orderMatch.exchangeId)
+    val exchangeInProgress = order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
     order.shouldAcceptOrderMatch(orderMatch) shouldBe MatchAlreadyAccepted(exchangeInProgress)
   }
 
@@ -97,7 +97,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
     inside(order.shouldAcceptOrderMatch(firstHalfMatch)) { case MatchAccepted(_) => }
     order.fundsRequested(firstHalfMatch, halfRequiredFunds)
-    order.startExchange(firstHalfMatch.exchangeId)
+    order.startExchange(firstHalfMatch.exchangeId, ExchangeTimestamps.creation)
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastOrder should not be 'inMarket
 
@@ -106,7 +106,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
     inside(order.shouldAcceptOrderMatch(secondHalfMatch)) { case MatchAccepted(_) => }
     order.fundsRequested(secondHalfMatch, halfRequiredFunds)
-    order.startExchange(secondHalfMatch.exchangeId)
+    order.startExchange(secondHalfMatch.exchangeId, ExchangeTimestamps.creation.plusHours(1))
     order.completeExchange(complete(order.view.exchanges.values.last))
     listener.lastStatus shouldBe CompletedOrder
     listener should not be 'inMarket
@@ -119,11 +119,12 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     order.addListener(listener)
 
     def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] = exchange match {
-      case runningExchange: RunningExchange[Euro.type] => runningExchange.complete
+      case runningExchange: RunningExchange[Euro.type] =>
+        runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
       case notStarted: HandshakingExchange[Euro.type] =>
-        notStarted.startHandshaking(participants.buyer, participants.seller)
-          .startExchanging(MockExchangeProtocol.DummyDeposits)
-          .complete
+        notStarted.startHandshaking(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
+          .startExchanging(MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
+          .complete(ExchangeTimestamps.completion)
     }
   }
 }

@@ -16,13 +16,15 @@ abstract class CoinffeineClientTest(systemName: String)
 
 object CoinffeineClientTest {
 
-  trait Perspective {
+  trait Perspective extends SampleExchange {
     val exchange: HandshakingExchange[Euro.type]
     def myRole: Role
     def participants: Both[Exchange.PeerInfo]
-    def handshakingExchange = exchange.startHandshaking(user, counterpart)
-    def runningExchange = handshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
-    def completedExchange = runningExchange.complete
+    def handshakingExchange =
+      exchange.startHandshaking(user, counterpart, ExchangeTimestamps.handshakingStart)
+    def runningExchange = handshakingExchange.startExchanging(
+      MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.channelStart)
+    def completedExchange = runningExchange.complete(ExchangeTimestamps.completion)
     def user = exchange.role.select(participants)
     def counterpart = exchange.role.counterpart.select(participants)
     def counterpartId = exchange.counterpartId

@@ -1,5 +1,7 @@
 package coinffeine.model.exchange
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 import coinffeine.model.market.Price
@@ -11,10 +13,12 @@ case class ExchangeMetadata[C <: FiatCurrency](
   role: Role,
   counterpartId: PeerId,
   amounts: Exchange.Amounts[C],
-  parameters: Exchange.Parameters)
+  parameters: Exchange.Parameters,
+  createdOn: DateTime)
 
 trait Exchange[C <: FiatCurrency] {
   def status: ExchangeStatus
+  def log: ActivityLog[ExchangeStatus]
   def metadata: ExchangeMetadata[C]
   def progress: Exchange.Progress
   def isCompleted: Boolean
@@ -154,12 +158,13 @@ object Exchange {
 
   def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.Zero))
 
-  def handshaking[C <: FiatCurrency](id: ExchangeId,
-                                     role: Role,
-                                     counterpartId: PeerId,
-                                     amounts: Exchange.Amounts[C],
-                                     parameters: Exchange.Parameters) =
-      HandshakingExchange(ExchangeMetadata(id, role, counterpartId, amounts, parameters))
+  def create[C <: FiatCurrency](id: ExchangeId,
+                                role: Role,
+                                counterpartId: PeerId,
+                                amounts: Exchange.Amounts[C],
+                                parameters: Exchange.Parameters,
+                                createdOn: DateTime) =
+      HandshakingExchange(ExchangeMetadata(id, role, counterpartId, amounts, parameters, createdOn))
 
   sealed trait State[C <: FiatCurrency] {
     val progress: Exchange.Progress

@@ -21,8 +21,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
 
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))
-  val buyerRunningExchange =
-    buyerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
+  val buyerRunningExchange = buyerHandshakingExchange.startExchanging(
+    MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
   val buyerProps = BuyerMicroPaymentChannelActor.props(
     exchangeProtocol.createMicroPaymentChannel(buyerRunningExchange),
     protocolConstants,
@@ -32,8 +32,8 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.seller.paymentProcessorAccount, Seq(0.EUR)))
-  val sellerRunningExchange =
-    sellerHandshakingExchange.startExchanging(MockExchangeProtocol.DummyDeposits)
+  val sellerRunningExchange = sellerHandshakingExchange.startExchanging(
+    MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
   val sellerProps = SellerMicroPaymentChannelActor.props(
     exchangeProtocol.createMicroPaymentChannel(sellerRunningExchange),
     protocolConstants,
