@@ -24,8 +24,6 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
       override def handle(event: ActionEvent) = reloadData()
     }))
 
-  title = "Order Book"
-
   startDataReload()
 
   private def startDataReload(): Unit = {

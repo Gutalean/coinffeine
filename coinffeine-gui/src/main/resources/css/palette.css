@@ -9,6 +9,8 @@
     /* The main color palette. */
     -cf-main1: #5dcef9;
     -cf-main2: #ff8654;
+    -cf-main1-trans: #5dcef944;
+    -cf-main2-trans: #ff865444;
 
     /* The secondary color palette. */
     -cf-sec1: #5bc1ba;
