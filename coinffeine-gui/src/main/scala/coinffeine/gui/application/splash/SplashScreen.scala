@@ -18,7 +18,7 @@ object SplashScreen {
       root = new VBox {
         id = "splash-root"
         content = Seq(
-          new Spinner,
+          new Spinner(autoPlay = true),
           new HBox {
             content = Seq(
               new Label("Copyright (C) 2014-2015 Coinffeine S.L.") {
