@@ -5,9 +5,9 @@ import scala.collection.JavaConversions._
 import org.bitcoinj.core.Wallet.SendRequest
 import org.scalatest.Inside
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 
 class DepositValidatorTest extends ExchangeTest with Inside {
 

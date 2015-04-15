@@ -1,7 +1,8 @@
 package coinffeine.protocol.messages.brokerage
 
+import coinffeine.model.Both
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage

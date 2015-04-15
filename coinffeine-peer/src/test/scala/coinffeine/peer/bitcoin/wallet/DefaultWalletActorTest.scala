@@ -7,10 +7,11 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair, MutableWalletProperties}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 
 class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {

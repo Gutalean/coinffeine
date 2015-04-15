@@ -6,8 +6,8 @@ import akka.actor.{Address => _, _}
 import org.bitcoinj.core._
 import org.bitcoinj.script.ScriptBuilder
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.exchange.Both
 
 private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
   extends Actor with ActorLogging {

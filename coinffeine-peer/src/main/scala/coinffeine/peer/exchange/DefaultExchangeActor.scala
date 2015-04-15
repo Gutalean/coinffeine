@@ -6,6 +6,7 @@ import akka.persistence.{RecoveryCompleted, PersistentActor}
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange._

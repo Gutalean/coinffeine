@@ -4,6 +4,7 @@ import org.joda.time.DateTime
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._

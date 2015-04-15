@@ -2,8 +2,9 @@ package coinffeine.model.market
 
 import scalaz.Scalaz._
 
+import coinffeine.model.Both
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, Role}
+import coinffeine.model.exchange.Role
 
 /** Total or partial cross between a bidding and an asking position.
   *

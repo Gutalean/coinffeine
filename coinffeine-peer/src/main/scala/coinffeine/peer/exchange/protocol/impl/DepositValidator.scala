@@ -2,6 +2,7 @@ package coinffeine.peer.exchange.protocol.impl
 
 import scalaz.Scalaz._
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._

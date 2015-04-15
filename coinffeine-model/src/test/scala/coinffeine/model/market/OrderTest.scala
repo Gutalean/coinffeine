@@ -3,6 +3,7 @@ package coinffeine.model.market
 import org.joda.time.DateTime
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._

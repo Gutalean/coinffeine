@@ -8,10 +8,10 @@ import akka.testkit._
 import org.bitcoinj.core.Wallet.SendRequest
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjTest {

@@ -6,9 +6,10 @@ import scalaz.syntax.validation._
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.StepBreakdown
-import coinffeine.model.exchange.{Both, Exchange, ExchangeId}
+import coinffeine.model.exchange.{Exchange, ExchangeId}
 import coinffeine.model.payment.Payment
 import coinffeine.peer.exchange.micropayment.PaymentValidation._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}

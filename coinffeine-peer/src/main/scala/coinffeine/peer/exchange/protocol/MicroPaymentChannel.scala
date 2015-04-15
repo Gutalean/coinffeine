@@ -2,10 +2,11 @@ package coinffeine.peer.exchange.protocol
 
 import scala.util.Try
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange._
-import coinffeine.model.exchange.{Exchange, Both, RunningExchange}
+import coinffeine.model.exchange.{Exchange, RunningExchange}
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
 trait MicroPaymentChannel[C <: FiatCurrency] {

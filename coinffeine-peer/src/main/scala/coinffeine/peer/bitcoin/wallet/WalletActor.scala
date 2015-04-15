@@ -2,9 +2,10 @@ package coinffeine.peer.bitcoin.wallet
 
 import scala.util.control.NoStackTrace
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.Bitcoin
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 
 object WalletActor {
   /** A request message to create a new transaction. */

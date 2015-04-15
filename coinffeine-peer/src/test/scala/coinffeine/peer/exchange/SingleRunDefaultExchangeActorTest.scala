@@ -2,6 +2,7 @@ package coinffeine.peer.exchange
 
 import scalaz.{Failure, Success}
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.wallet.WalletActor

@@ -8,9 +8,9 @@ import org.bitcoinj.core.Wallet.{BalanceType, SendRequest}
 import org.bitcoinj.core.{Wallet => _, _}
 import org.bitcoinj.wallet.WalletTransaction
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 
 class SmartWallet(val delegate: Wallet) {
 

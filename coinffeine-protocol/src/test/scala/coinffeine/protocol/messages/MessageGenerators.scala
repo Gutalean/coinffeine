@@ -5,10 +5,11 @@ import org.bitcoinj.script.ScriptBuilder
 import org.scalacheck.Arbitrary._
 import org.scalacheck.{Arbitrary, Gen}
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration._

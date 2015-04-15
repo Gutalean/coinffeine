@@ -4,9 +4,10 @@ import scala.collection.JavaConverters._
 
 import com.google.protobuf.ByteString
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.Hash
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.arbitration._
