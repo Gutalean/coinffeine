@@ -14,9 +14,9 @@ case class HandshakingExchange[C <: FiatCurrency](metadata: ExchangeMetadata[C])
 
   override lazy val log = ActivityLog(ExchangeStatus.Handshaking, metadata.createdOn)
 
-  def startHandshaking(user: Exchange.PeerInfo,
-                       counterpart: Exchange.PeerInfo,
-                       timestamp: DateTime): DepositPendingExchange[C] =
+  def handshake(user: Exchange.PeerInfo,
+                counterpart: Exchange.PeerInfo,
+                timestamp: DateTime): DepositPendingExchange[C] =
     DepositPendingExchange(this, timestamp, user, counterpart)
 
   def cancel(cause: CancellationCause,

@@ -144,7 +144,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
   private object HandshakeStub {
     def successful(commitments: Both[ImmutableTransaction]) = {
       val handshakeSuccess = HandshakeSuccess(
-        exchange = exchange.startHandshaking(user, counterpart, ExchangeTimestamps.handshakingStart),
+        exchange = exchange.handshake(user, counterpart, ExchangeTimestamps.handshakingStart),
         bothCommitments = commitments,
         refundTx = dummyTx,
         timestamp = ExchangeTimestamps.completion

@@ -122,7 +122,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
       case runningExchange: RunningExchange[Euro.type] =>
         runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
       case notStarted: HandshakingExchange[Euro.type] =>
-        notStarted.startHandshaking(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
+        notStarted.handshake(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
           .startExchanging(MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
           .complete(ExchangeTimestamps.completion)
     }

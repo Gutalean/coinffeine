@@ -59,14 +59,14 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val buyerExchange = Exchange.create(
     exchangeId, BuyerRole, peerIds.seller, amounts, parameters, ExchangeTimestamps.creation)
-  val buyerHandshakingExchange = buyerExchange.startHandshaking(
+  val buyerHandshakingExchange = buyerExchange.handshake(
     user = participants.buyer,
     counterpart = participants.seller,
     timestamp = ExchangeTimestamps.handshakingStart)
 
   val sellerExchange = Exchange.create(
     exchangeId, SellerRole, peerIds.buyer, amounts, parameters, ExchangeTimestamps.creation)
-  val sellerHandshakingExchange = sellerExchange.startHandshaking(
+  val sellerHandshakingExchange = sellerExchange.handshake(
     user = participants.seller,
     counterpart = participants.buyer,
     timestamp = ExchangeTimestamps.handshakingStart)

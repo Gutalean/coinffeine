@@ -88,7 +88,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
       val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
       val handshakingExchange =
-        exchange.info.startHandshaking(exchange.user, counterpart, exchange.timestamp)
+        exchange.info.handshake(exchange.user, counterpart, exchange.timestamp)
       collaborators.listener ! ExchangeUpdate(handshakingExchange)
       createDeposit(handshakingExchange)
         .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))

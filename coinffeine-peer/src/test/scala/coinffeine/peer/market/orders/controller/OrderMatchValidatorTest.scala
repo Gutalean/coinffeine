@@ -107,7 +107,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   it should "accept matches when having a running exchange" in {
     val runningExchange = exchange.copy[Euro.type](
       metadata = exchange.metadata.copy(id = ExchangeId.random())
-    ).startHandshaking(
+    ).handshake(
       user = Exchange.PeerInfo("account1", new KeyPair),
       counterpart = Exchange.PeerInfo("account2", new KeyPair),
       timestamp = handshakeStartedOn

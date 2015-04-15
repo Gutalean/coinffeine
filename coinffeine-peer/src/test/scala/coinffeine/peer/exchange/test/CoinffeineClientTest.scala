@@ -21,7 +21,7 @@ object CoinffeineClientTest {
     def myRole: Role
     def participants: Both[Exchange.PeerInfo]
     def handshakingExchange =
-      exchange.startHandshaking(user, counterpart, ExchangeTimestamps.handshakingStart)
+      exchange.handshake(user, counterpart, ExchangeTimestamps.handshakingStart)
     def runningExchange = handshakingExchange.startExchanging(
       MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.channelStart)
     def completedExchange = runningExchange.complete(ExchangeTimestamps.completion)

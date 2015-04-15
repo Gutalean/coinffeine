@@ -107,7 +107,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
 
   private def createExchangeInProgress(stepsCompleted: Int) = {
     createRandomExchange()
-      .startHandshaking(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
+      .handshake(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
       .startExchanging(dummyDeposits, ExchangeTimestamps.handshakingStart)
       .completeStep(stepsCompleted)
   }

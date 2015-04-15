@@ -117,7 +117,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       Exchange.create(id, BuyerRole, counterpart, amounts, params, DateTime.now())
     }
 
-    def randomlyHandshake(exchange: HandshakingExchange[Euro.type]) = exchange.startHandshaking(
+    def randomlyHandshake(exchange: HandshakingExchange[Euro.type]) = exchange.handshake(
       user = Exchange.PeerInfo("peer-01", new ECKey()),
       counterpart = Exchange.PeerInfo("peer-02", new ECKey()),
       timestamp = DateTime.now()
