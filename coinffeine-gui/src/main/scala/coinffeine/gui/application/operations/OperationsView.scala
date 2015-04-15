@@ -64,11 +64,21 @@ class OperationsView(app: CoinffeineApp,
   }
 
   override def controlPane: Pane = new VBox with PaneStyles.Centered {
-    content = new Button("New order") with ButtonStyles.Action {
+
+    id = "operations-control-pane"
+
+    val bitcoinPrice = new Label {
+      styleClass += "btc-price"
+      // TODO: make this property depend on real-time price
+      text = "1 BTC = €230,50"
+    }
+
+    val newOrderButton = new Button("New order") with ButtonStyles.Action {
       onAction = { e: Event =>
         val form = new OrderSubmissionForm(app, orderValidation)
         form.show(delegate.getScene.getWindow)
       }
     }
+    content = Seq(bitcoinPrice, newOrderButton)
   }
 }
