@@ -21,12 +21,9 @@
     -fx-text-fill: white;
 }
 
-#splash-root .progress-bar {
-    -fx-pref-width: 200px;
-}
-
-#splash-root .progress-bar:indeterminate > .bar {
-    -fx-background-color: -cf-dark-background;
+#splash-root .spinner {
+    -fx-padding: 180 0 0 0;
+    -fx-color: white;
 }
 
 #splash-root #copyright-note {

@@ -36,6 +36,4 @@
     -fx-padding: 5px;
 }
 
-.spinner > .bar {
-    -fx-background-color: -cf-dark-background;
-}
+.spinner > .bar { -fx-fill: -fx-color; }
