@@ -1,5 +1,7 @@
 package coinffeine.model.exchange
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency._
@@ -48,16 +50,26 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val exchangeId = ExchangeId("id")
   val parameters = Exchange.Parameters(lockTime = 25, network)
+  object ExchangeTimestamps {
+    val creation = DateTime.parse("2014-04-05T12:00+01:00")
+    val handshakingStart = creation.plusMinutes(1)
+    val channelStart = handshakingStart.plus(10)
+    val completion = channelStart.plusMinutes(10)
+  }
 
-  val buyerExchange =
-    Exchange.handshaking(exchangeId, BuyerRole, peerIds.seller, amounts, parameters)
-  val buyerHandshakingExchange =
-    buyerExchange.startHandshaking(user = participants.buyer, counterpart = participants.seller)
+  val buyerExchange = Exchange.create(
+    exchangeId, BuyerRole, peerIds.seller, amounts, parameters, ExchangeTimestamps.creation)
+  val buyerHandshakingExchange = buyerExchange.handshake(
+    user = participants.buyer,
+    counterpart = participants.seller,
+    timestamp = ExchangeTimestamps.handshakingStart)
 
-  val sellerExchange =
-    Exchange.handshaking(exchangeId, SellerRole, peerIds.buyer, amounts, parameters)
-  val sellerHandshakingExchange =
-    sellerExchange.startHandshaking(user = participants.seller, counterpart = participants.buyer)
+  val sellerExchange = Exchange.create(
+    exchangeId, SellerRole, peerIds.buyer, amounts, parameters, ExchangeTimestamps.creation)
+  val sellerHandshakingExchange = sellerExchange.handshake(
+    user = participants.seller,
+    counterpart = participants.buyer,
+    timestamp = ExchangeTimestamps.handshakingStart)
 }
 
 object SampleExchange {

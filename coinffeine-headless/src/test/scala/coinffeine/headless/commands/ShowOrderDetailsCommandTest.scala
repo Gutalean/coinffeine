@@ -1,5 +1,7 @@
 package coinffeine.headless.commands
 
+import org.joda.time.DateTime
+
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{BuyerRole, Exchange, ExchangeId}
 import coinffeine.model.market._
@@ -16,12 +18,13 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
   }
 
   it should "report information on existing orders" in {
-    val exchange = Exchange.handshaking(
+    val exchange = Exchange.create(
       id = ExchangeId.random(),
       role = BuyerRole,
       counterpartId = PeerId.hashOf("counterpart"),
       amounts = amountsCalculator.exchangeAmountsFor(0.4.BTC, 50.EUR),
-      parameters = Exchange.Parameters(lockTime = 1234, network = null)
+      parameters = Exchange.Parameters(lockTime = 1234, network = null),
+      createdOn = DateTime.now()
     )
     val order = Order.randomLimit(Bid, 1.BTC, Price(100.EUR)).withExchange(exchange)
 

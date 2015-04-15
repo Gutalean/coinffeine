@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
+import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.Both
@@ -35,7 +36,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
 
   def startActor(): Unit = {
     actor = system.actorOf(DefaultHandshakeActor.props(
-      DefaultHandshakeActor.ExchangeToStart(exchange, user),
+      DefaultHandshakeActor.ExchangeToStart(exchange, DateTime.now(), user),
       DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
       DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
     ))

@@ -3,6 +3,7 @@ package coinffeine.peer.exchange
 import akka.actor._
 import akka.pattern._
 import akka.persistence.{RecoveryCompleted, PersistentActor}
+import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin._
@@ -40,15 +41,15 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
-    case event: RetrievedUserInfo => onRetrievedUserInfo(event)
+    case event: RetrievedPeerInfo => onRetrievedPeerInfo(event)
     case event: ExchangeFinished => onExchangeFinished(event)
     case RecoveryCompleted => self ! ResumeExchange
   }
 
   override def receiveCommand: Receive = waitingForUserInfo
 
-  private def onRetrievedUserInfo(event: RetrievedUserInfo): Unit = {
-    context.actorOf(delegates.handshake(event.user, self), HandshakeActorName)
+  private def onRetrievedPeerInfo(event: RetrievedPeerInfo): Unit = {
+    context.actorOf(delegates.handshake(event.user, event.timestamp, self), HandshakeActorName)
     context.become(inHandshake(event.user))
   }
 
@@ -72,15 +73,19 @@ class DefaultExchangeActor[C <: FiatCurrency](
       peerInfoLookup.lookup().pipeTo(self)
 
     case user: PeerInfo =>
-      persist(RetrievedUserInfo(user))(onRetrievedUserInfo)
+      persist(RetrievedPeerInfo(user, DateTime.now()))(onRetrievedPeerInfo)
 
     case Status.Failure(cause) =>
       log.error(cause, "Cannot start handshake of {}", exchange.id)
-      finishWith(ExchangeFailure(exchange.cancel(CancellationCause.CannotStartHandshake(cause))))
+      finishWith(ExchangeFailure(exchange.cancel(
+        cause = CancellationCause.CannotStartHandshake(cause),
+        user = None,
+        timestamp = DateTime.now()
+      )))
   }
 
   private def inHandshake(user: Exchange.PeerInfo): Receive = {
-    case HandshakeSuccess(rawExchange, commitments, refundTx)
+    case HandshakeSuccess(rawExchange, commitments, refundTx, committedOn)
       if rawExchange.currency == exchange.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange[C]]
       spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
@@ -88,23 +93,31 @@ class DefaultExchangeActor[C <: FiatCurrency](
       val validationResult = exchangeProtocol.validateDeposits(
         commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures,
         handshakingExchange.parameters.network)
-      if (validationResult.forall(_.isSuccess)) {
-        startMicropaymentChannel(commitments, handshakingExchange)
-      } else {
-        startAbortion(
-          handshakingExchange.abort(AbortionCause.InvalidCommitments(validationResult), refundTx))
-      }
+      if (validationResult.forall(_.isSuccess))
+        startMicropaymentChannel(commitments, committedOn, handshakingExchange)
+      else startAbortion(handshakingExchange.abort(
+        cause = AbortionCause.InvalidCommitments(validationResult),
+        refundTx = refundTx,
+        timestamp = DateTime.now()
+      ))
 
-    case HandshakeFailure(cause) =>
+    case HandshakeFailure(cause, failedOn) =>
       log.error(cause, "Handshake for exchange {} failed!", exchange.id)
-      finishWith(
-        ExchangeFailure(exchange.cancel(CancellationCause.HandshakeFailed(cause), Some(user))))
+      finishWith(ExchangeFailure(exchange.cancel(
+        cause = CancellationCause.HandshakeFailed(cause),
+        user = Some(user),
+        timestamp = failedOn
+      )))
 
-    case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx) =>
+    case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx, failedOn) =>
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
-      startAbortion(
-        exchange.abort(AbortionCause.HandshakeWithCommitmentFailed(cause), user, refundTx))
+      startAbortion(exchange.abort(
+        cause = AbortionCause.HandshakeWithCommitmentFailed(cause),
+        user = user,
+        refundTx = refundTx,
+        timestamp = failedOn
+      ))
 
     case update: ExchangeUpdate => collaborators.listener ! update
   }
@@ -121,8 +134,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
+                                       commitmentsConfirmedOn: DateTime,
                                        handshakingExchange: DepositPendingExchange[C]): Unit = {
-    val runningExchange = handshakingExchange.startExchanging(commitments)
+    val runningExchange = handshakingExchange.startExchanging(commitments, commitmentsConfirmedOn)
     val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val resultListeners = Set(self, txBroadcaster)
     context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName)
@@ -137,7 +151,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case DepositSpent(broadcastTx, CompletedChannel) =>
       log.info("Finishing exchange '{}' successfully", exchange.id)
-      finishWith(ExchangeSuccess(runningExchange.complete))
+      finishWith(ExchangeSuccess(runningExchange.complete(DateTime.now())))
 
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
@@ -145,7 +159,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       context.become(failingAtStep(runningExchange, step, cause))
 
     case DepositSpent(broadcastTx, _) =>
-      finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx)))
+      finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx, DateTime.now())))
 
     case update @ ExchangeUpdate(updatedRunningExchange: RunningExchange[C]) =>
       collaborators.listener ! update
@@ -160,16 +174,16 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def aborting(abortingExchange: AbortingExchange[C]): Receive = {
     case DepositSpent(tx, DepositRefund | ChannelAtStep(_)) =>
-      finishWith(ExchangeFailure(abortingExchange.broadcast(tx)))
+      finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
 
     case DepositSpent(tx, _) =>
       log.error("When aborting {} and unexpected transaction was broadcast: {}",
         abortingExchange.id, tx)
-      finishWith(ExchangeFailure(abortingExchange.broadcast(tx)))
+      finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
-      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast))
+      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast(DateTime.now())))
   }
 
   private def failingAtStep(runningExchange: RunningExchange[C],
@@ -181,27 +195,29 @@ class DefaultExchangeActor[C <: FiatCurrency](
         log.warning("Expected broadcast of {} but got {} for exchange {} (tx = {})",
           expectedDestination, destination, exchange.id, tx)
       }
-      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, Some(tx))))
+      finishWith(ExchangeFailure(runningExchange.stepFailure(
+        step, stepFailure, Some(tx), DateTime.now())))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast any recovery transaction")
-      finishWith(ExchangeFailure(runningExchange.stepFailure(step, stepFailure, transaction = None)))
+      finishWith(ExchangeFailure(runningExchange.stepFailure(
+        step, stepFailure, transaction = None, timestamp = DateTime.now())))
   }
 
   private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
                                          expectedLastTx: Option[ImmutableTransaction]): Receive = {
 
     case DepositSpent(_, CompletedChannel) =>
-      finishWith(ExchangeSuccess(runningExchange.complete))
+      finishWith(ExchangeSuccess(runningExchange.complete(DateTime.now())))
 
     case DepositSpent(broadcastTx, destination) =>
       log.error("{} ({}) was unexpectedly broadcast for exchange {}", broadcastTx,
         destination, exchange.id)
-      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx)))
+      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx, DateTime.now())))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "The finishing transaction could not be broadcast")
-      finishWith(ExchangeFailure(runningExchange.noBroadcast))
+      finishWith(ExchangeFailure(runningExchange.noBroadcast(DateTime.now())))
   }
 
   private def finishWith(result: ExchangeResult): Unit = {
@@ -212,7 +228,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 object DefaultExchangeActor {
 
   trait Delegates {
-    def handshake(user: Exchange.PeerInfo, listener: ActorRef): Props
+    def handshake(user: Exchange.PeerInfo, timestamp: DateTime, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
@@ -235,8 +251,10 @@ object DefaultExchangeActor {
             DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 
-        def handshake(user: Exchange.PeerInfo, listener: ActorRef) = DefaultHandshakeActor.props(
-          DefaultHandshakeActor.ExchangeToStart(exchange, user),
+        def handshake(user: Exchange.PeerInfo,
+                      timestamp: DateTime,
+                      listener: ActorRef) = DefaultHandshakeActor.props(
+          DefaultHandshakeActor.ExchangeToStart(exchange, timestamp, user),
           DefaultHandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
           DefaultHandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)
         )
@@ -265,6 +283,6 @@ object DefaultExchangeActor {
   }
 
   private case object ResumeExchange
-  private case class RetrievedUserInfo(user: Exchange.PeerInfo) extends PersistentEvent
+  private case class RetrievedPeerInfo(user: Exchange.PeerInfo, timestamp: DateTime) extends PersistentEvent
   private case class ExchangeFinished(result: ExchangeResult) extends PersistentEvent
 }

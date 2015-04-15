@@ -4,6 +4,7 @@ import scala.concurrent.ExecutionContext
 
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
+import org.joda.time.DateTime
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Span, Seconds, Millis}
@@ -53,10 +54,10 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
   it should "replace an existing element when order is modified in the network" in new Fixture {
     withNewOrder("order-01") { order =>
-      network.orders.set(order.id, order.becomeInMarket)
+      network.orders.set(order.id, order.withExchange(randomExchange(order)))
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.orderStatusProperty.value shouldBe InMarketOrder
+          orderProps.orderStatusProperty.value shouldBe InProgressOrder
         }
       }
     }
@@ -113,13 +114,13 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       val counterpart = PeerId.random()
       val amounts = amountsCalculator.estimateAmountsFor(order)
       val params = Exchange.Parameters(100, TestNet3Params.get())
-      Exchange.handshaking(id, BuyerRole, counterpart, amounts, params)
+      Exchange.create(id, BuyerRole, counterpart, amounts, params, DateTime.now())
     }
 
-    def randomlyHandshake(exchange: HandshakingExchange[Euro.type]) = exchange.startHandshaking(
+    def randomlyHandshake(exchange: HandshakingExchange[Euro.type]) = exchange.handshake(
       user = Exchange.PeerInfo("peer-01", new ECKey()),
-      counterpart = Exchange.PeerInfo("peer-02", new ECKey())
+      counterpart = Exchange.PeerInfo("peer-02", new ECKey()),
+      timestamp = DateTime.now()
     )
-
   }
 }

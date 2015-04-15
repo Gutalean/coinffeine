@@ -11,11 +11,13 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     startActor()
     givenMicropaymentChannelSuccess()
     notifyDepositDestination(CompletedChannel)
-    listener.expectMsg(ExchangeSuccess(completedExchange))
+    val originalSuccess = listener.expectMsgPF(hint = "a completed exchange") {
+      case result: ExchangeSuccess if result.exchange.id == exchange.id => result
+    }
     listener.expectTerminated(actor)
 
     startActor()
-    listener.expectMsg(ExchangeSuccess(completedExchange))
+    listener.expectMsg(originalSuccess)
     listener.expectTerminated(actor)
   }
 

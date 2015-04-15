@@ -6,6 +6,7 @@ import scala.util.Try
 import akka.actor._
 import akka.pattern._
 import akka.persistence.{RecoveryCompleted, PersistentActor}
+import org.joda.time.DateTime
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.PersistentEvent
@@ -86,7 +87,8 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
     case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
       val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
-      val handshakingExchange = exchange.info.startHandshaking(exchange.user, counterpart)
+      val handshakingExchange =
+        exchange.info.handshake(exchange.user, counterpart, exchange.timestamp)
       collaborators.listener ! ExchangeUpdate(handshakingExchange)
       createDeposit(handshakingExchange)
         .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
@@ -95,7 +97,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case createdHandshake: Handshake[C] =>
       persist(HandshakeStarted(createdHandshake))(onHandshakeStarted)
 
-    case Status.Failure(cause) => finishWith(HandshakeFailure(cause))
+    case Status.Failure(cause) => finishWith(HandshakeFailure(cause, DateTime.now()))
   }
 
   private def onHandshakeStarted(event: HandshakeStarted[C]): Unit = {
@@ -222,7 +224,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         val stillPending = pendingConfirmation - tx
         if (stillPending.isEmpty) {
           retrieveCommitmentTransactions(commitmentIds).map { commitmentTxs =>
-            HandshakeSuccess(handshake.exchange, commitmentTxs, refund)
+            HandshakeSuccess(handshake.exchange, commitmentTxs, refund, DateTime.now())
           }.pipeTo(self)
         } else {
           context.become(waitForPendingConfirmations(stillPending))
@@ -234,7 +236,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
         log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
         finishWith(HandshakeFailureWithCommitment(
-          handshake.exchange, cause, handshake.myDeposit, refund))
+          handshake.exchange, cause, handshake.myDeposit, refund, DateTime.now()))
 
       case ReceiveMessage(CommitmentNotification(_, bothCommitments), BrokerId) =>
         log.info("Handshake {}: commitment notification was received again; " +
@@ -245,7 +247,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       case result: HandshakeSuccess => finishWith(result)
 
       case Status.Failure(cause) => finishWith(HandshakeFailureWithCommitment(
-        handshake.exchange, cause, handshake.myDeposit, refund))
+        handshake.exchange, cause, handshake.myDeposit, refund, DateTime.now()))
     }
 
     if (recoveryFinished) {
@@ -287,13 +289,13 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       val cause = RefundSignatureTimeoutException(exchange.info.id)
       collaborators.gateway ! ForwardMessage(
         ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
-      finishWith(HandshakeFailure(cause))
+      finishWith(HandshakeFailure(cause, DateTime.now()))
   }
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
       log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
-      finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason)))
+      finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason), DateTime.now()))
   }
 
   private def subscribeToMessages(): Unit = {
@@ -337,6 +339,7 @@ object DefaultHandshakeActor {
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
   case class ExchangeToStart[C <: FiatCurrency](info: HandshakingExchange[C],
+                                                timestamp: DateTime,
                                                 user: Exchange.PeerInfo)
 
   def props(exchange: ExchangeToStart[_ <: FiatCurrency],

@@ -1,5 +1,6 @@
 package coinffeine.peer.market.orders.controller
 
+import org.joda.time.DateTime
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
@@ -26,20 +27,22 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     lockTime = 37376,
     counterpart = PeerId.random()
   )
-  val exchange = Exchange.handshaking[Euro.type](
+  private val exchange = Exchange.create[Euro.type](
     id = orderMatch.exchangeId,
     role = BuyerRole,
     counterpartId = orderMatch.counterpart,
     amounts = amountsCalculator.exchangeAmountsFor(orderMatch),
-    parameters = Exchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork)
+    parameters = Exchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork),
+    createdOn = DateTime.now()
   )
+  private val handshakeStartedOn = exchange.metadata.createdOn.plusSeconds(5)
 
   "An order match validator" should "reject any order match if the order is finished" in {
     expectRejectionWithMessage(limitOrder.cancel, orderMatch, "Order already finished")
   }
 
   it should "reject already accepted matches" in {
-    val exchangingOrder = limitOrder.start.copy(exchanges = Map(exchange.id -> exchange))
+    val exchangingOrder = limitOrder.withExchange(exchange)
     inside(validator.shouldAcceptOrderMatch(
       exchangingOrder, orderMatch, orderMatch.bitcoinAmount.buyer)) {
         case MatchAlreadyAccepted(_) =>
@@ -104,14 +107,12 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   it should "accept matches when having a running exchange" in {
     val runningExchange = exchange.copy[Euro.type](
       metadata = exchange.metadata.copy(id = ExchangeId.random())
-    ).startHandshaking(
+    ).handshake(
       user = Exchange.PeerInfo("account1", new KeyPair),
-      counterpart = Exchange.PeerInfo("account2", new KeyPair)
+      counterpart = Exchange.PeerInfo("account2", new KeyPair),
+      timestamp = handshakeStartedOn
     )
-    val exchangingOrder = limitOrder.start.copy(
-      amount = 10.BTC,
-      exchanges = Map(runningExchange.id -> runningExchange)
-    )
+    val exchangingOrder = limitOrder.copy(amount = 10.BTC).withExchange(runningExchange)
     inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }

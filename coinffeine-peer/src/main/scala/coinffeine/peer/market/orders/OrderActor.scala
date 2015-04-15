@@ -6,6 +6,7 @@ import akka.actor._
 import akka.event.Logging
 import akka.persistence.{RecoveryCompleted, PersistentActor}
 import org.bitcoinj.core.NetworkParameters
+import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
@@ -44,7 +45,6 @@ class OrderActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
-    case OrderStarted => onOrderStarted()
     case event: FundsRequested[_] => onFundsRequested(event.asInstanceOf[FundsRequested[C]])
     case event: FundsBlocked => onFundsBlocked(event)
     case event: CannotBlockFunds => onCannotBlockFunds(event)
@@ -52,16 +52,12 @@ class OrderActor[C <: FiatCurrency](
     case RecoveryCompleted => self ! ResumeOrder
   }
 
-  private def onOrderStarted(): Unit = {
-    order.start()
-  }
-
   private def onFundsRequested(event: FundsRequested[C]): Unit = {
     order.fundsRequested(event.orderMatch, event.requiredFunds)
   }
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {
-    val exchange = order.startExchange(event.exchangeId)
+    val exchange = order.startExchange(event.exchangeId, event.timestamp)
     context.actorOf(delegates.exchangeActor(exchange), exchange.id.value)
   }
 
@@ -95,7 +91,7 @@ class OrderActor[C <: FiatCurrency](
       log.warning("Unexpected blocking result {} for {}", result, exchangeId)
 
     case FundsBlockerActor.BlockingResult(exchangeId, Success(_)) =>
-      persist(FundsBlocked(exchangeId)) { event =>
+      persist(FundsBlocked(exchangeId, DateTime.now())) { event =>
         log.info("Accepting {}, funds just got blocked", exchangeId)
         onFundsBlocked(event)
       }
@@ -127,12 +123,6 @@ class OrderActor[C <: FiatCurrency](
     val currentOrder = order.view
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
     updatePublisher(currentOrder)
-    if (!currentOrder.started) {
-      persist(OrderStarted) { _ =>
-        coinffeineProperties.orders.set(orderId, initialOrder)
-        onOrderStarted()
-      }
-    }
   }
 
   override def inMarket(): Unit = { order.becomeInMarket() }
@@ -232,10 +222,9 @@ object OrderActor {
   }
 
   private case object ResumeOrder
-  private case object OrderStarted extends PersistentEvent
   private case class FundsRequested[C <: FiatCurrency](
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
-  private case class FundsBlocked(exchangeId: ExchangeId) extends PersistentEvent
+  private case class FundsBlocked(exchangeId: ExchangeId, timestamp: DateTime) extends PersistentEvent
   private case class CannotBlockFunds(exchangeId: ExchangeId) extends PersistentEvent
   private case object CancelledOrder extends PersistentEvent
 }

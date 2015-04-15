@@ -35,5 +35,8 @@ case class ActivityLog[+Event] private (activities: Seq[ActivityLog.Entry[Event]
 object ActivityLog {
   val empty = new ActivityLog[Nothing](Seq.empty)
 
+  def apply[Event](event: Event, timestamp: DateTime = DateTime.now()): ActivityLog[Event] =
+    empty.record(event, timestamp)
+
   case class Entry[+Event](event: Event, timestamp: DateTime)
 }

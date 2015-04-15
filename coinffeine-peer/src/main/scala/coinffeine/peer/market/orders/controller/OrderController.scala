@@ -1,5 +1,7 @@
 package coinffeine.peer.market.orders.controller
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
@@ -68,22 +70,22 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   /** Start an exchange. You should have called [[fundsRequested()]] previously. */
-  def startExchange(exchangeId: ExchangeId): HandshakingExchange[C] = {
+  def startExchange(exchangeId: ExchangeId, timestamp: DateTime): HandshakingExchange[C] = {
     val request = pendingFundRequests.getOrElse(exchangeId,
       throw new IllegalArgumentException(s"Cannot accept $exchangeId: no funds were blocked"))
     pendingFundRequests -= exchangeId
-    val newExchange = Exchange.handshaking(
+    val newExchange = Exchange.create(
       id = request.orderMatch.exchangeId,
-      Role.fromOrderType(view.orderType),
+      role = Role.fromOrderType(view.orderType),
       counterpartId = request.orderMatch.counterpart,
-      amountsCalculator.exchangeAmountsFor(request.orderMatch),
-      Exchange.Parameters(request.orderMatch.lockTime, network)
+      amounts = amountsCalculator.exchangeAmountsFor(request.orderMatch),
+      parameters = Exchange.Parameters(request.orderMatch.lockTime, network),
+      createdOn = timestamp
     )
     updateExchange(newExchange)
     newExchange
   }
 
-  def start(): Unit = { updateOrder(_.start) }
   def becomeInMarket(): Unit = { updateOrder(_.becomeInMarket) }
   def becomeOffline(): Unit = { updateOrder(_.becomeOffline) }
   def cancel(): Unit = {

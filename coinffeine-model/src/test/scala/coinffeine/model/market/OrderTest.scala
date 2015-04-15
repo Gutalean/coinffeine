@@ -1,5 +1,7 @@
 package coinffeine.model.market
 
+import org.joda.time.DateTime
+
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
@@ -43,8 +45,12 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   it must "consider failed exchange progress" in {
     val order = Order.randomLimit(Bid, 20.BTC, Price(10.EUR))
       .withExchange(createSuccessfulExchange())
-      .withExchange(createExchangeInProgress(5)
-        .stepFailure(5, cause = new Exception("something went wrong"), transaction = None))
+      .withExchange(createExchangeInProgress(5).stepFailure(
+        step = 5,
+        cause = new Exception("something went wrong"),
+        transaction = None,
+        timestamp = DateTime.now()
+      ))
     order.progress shouldBe 0.75
   }
 
@@ -96,12 +102,13 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .withExchange(createExchangeInProgress(5)) shouldBe 'shouldBeOnMarket
   }
 
-  private def createSuccessfulExchange() = createExchangeInProgress(10).complete
+  private def createSuccessfulExchange() =
+    createExchangeInProgress(10).complete(ExchangeTimestamps.completion)
 
   private def createExchangeInProgress(stepsCompleted: Int) = {
     createRandomExchange()
-      .startHandshaking(participants.buyer, participants.seller)
-      .startExchanging(dummyDeposits)
+      .handshake(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
+      .startExchanging(dummyDeposits, ExchangeTimestamps.handshakingStart)
       .completeStep(stepsCompleted)
   }
 

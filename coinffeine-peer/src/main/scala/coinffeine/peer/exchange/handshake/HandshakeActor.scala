@@ -1,5 +1,7 @@
 package coinffeine.peer.exchange.handshake
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
@@ -9,21 +11,25 @@ import coinffeine.model.exchange._
   */
 object HandshakeActor {
 
-  sealed trait HandshakeResult
+  sealed trait HandshakeResult {
+    def timestamp: DateTime
+  }
 
   /** Sent to the handshake listeners to notify success. */
   case class HandshakeSuccess(exchange: DepositPendingExchange[_ <: FiatCurrency],
                               bothCommitments: Both[ImmutableTransaction],
-                              refundTx: ImmutableTransaction) extends HandshakeResult
+                              refundTx: ImmutableTransaction,
+                              override val timestamp: DateTime) extends HandshakeResult
 
   /** Sent to the handshake listeners to notify a failure without having committed funds. */
-  case class HandshakeFailure(cause: Throwable) extends HandshakeResult
+  case class HandshakeFailure(cause: Throwable, override val timestamp: DateTime) extends HandshakeResult
 
   /** Send to listeners to notify a handshake failure after having compromised funds */
   case class HandshakeFailureWithCommitment(exchange: DepositPendingExchange[_ <: FiatCurrency],
                                             cause: Throwable,
                                             commitment: ImmutableTransaction,
-                                            refundTx: ImmutableTransaction) extends HandshakeResult
+                                            refundTx: ImmutableTransaction,
+                                            override val timestamp: DateTime) extends HandshakeResult
 
   case class RefundSignatureTimeoutException(exchangeId: ExchangeId) extends RuntimeException(
     s"Timeout waiting for a valid signature of the refund transaction of handshake $exchangeId")

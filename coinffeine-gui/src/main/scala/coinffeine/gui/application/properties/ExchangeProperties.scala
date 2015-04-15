@@ -31,7 +31,7 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
     new ObjectProperty(this, "amount", exchange.role.select(exchange.amounts.exchangedBitcoin))
 
   override val statusProperty: ReadOnlyStringProperty =
-    new StringProperty(this, "status", exchange.status.capitalize)
+    new StringProperty(this, "status", exchange.status.name.capitalize)
 
   override val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 

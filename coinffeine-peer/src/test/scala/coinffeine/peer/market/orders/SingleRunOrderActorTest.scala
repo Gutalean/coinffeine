@@ -10,7 +10,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
   "An order actor" should "submit to the broker and receive submission status" in new Fixture {
     givenOfflineOrder()
     submissionProbe.send(actor, InMarket(entry))
-    expectProperty { _.status shouldBe InMarketOrder }
+    expectProperty { _ shouldBe 'inMarket }
   }
 
   it should "keep submitting to the broker until been cancelled" in new Fixture {

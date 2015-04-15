@@ -14,9 +14,11 @@ class MockOrderControllerListener[C <: FiatCurrency]
     currentOrder = newOrder
   }
 
-  def lastStatus: OrderStatus = {
+  def lastStatus: OrderStatus = lastOrder.status
+
+  def lastOrder: Order[C] = {
     require(currentOrder != null, "Order status was never updated")
-    currentOrder.status
+    currentOrder
   }
 
   def inMarket: Boolean = currentOrder.shouldBeOnMarket

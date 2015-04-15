@@ -1,34 +1,47 @@
 package coinffeine.model.exchange
 
+import org.joda.time.DateTime
+
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 
 case class RunningExchange[C <: FiatCurrency](
     prev: DepositPendingExchange[C],
+    timestamp: DateTime,
     deposits: Exchange.Deposits,
     progress: Exchange.Progress) extends AfterHandshakeExchange[C] {
 
-  override val status = "exchanging"
+  override val status = ExchangeStatus.Exchanging
   override val metadata = prev.metadata
   override val isCompleted = false
   override val user = prev.user
   override val counterpart = prev.counterpart
 
-  def complete: SuccessfulExchange[C] = SuccessfulExchange(this)
+  override lazy val log = prev.log.record(status, timestamp)
 
-  def panicked(transaction: ImmutableTransaction): FailedExchange[C] =
-    FailedExchange(this, FailureCause.PanicBlockReached, Some(prev.user), Some(transaction))
+  def complete(timestamp: DateTime): SuccessfulExchange[C] =
+    SuccessfulExchange(this, timestamp)
+
+  def panicked(transaction: ImmutableTransaction,
+               timestamp: DateTime): FailedExchange[C] = {
+    val cause = FailureCause.PanicBlockReached
+    FailedExchange(this, timestamp, cause, Some(prev.user), Some(transaction))
+  }
 
   def stepFailure(step: Int,
                   cause: Throwable,
-                  transaction: Option[ImmutableTransaction]): FailedExchange[C] =
-    FailedExchange(this, FailureCause.StepFailed(step, cause), Some(prev.user), transaction)
+                  transaction: Option[ImmutableTransaction],
+                  timestamp: DateTime): FailedExchange[C] = FailedExchange(
+    this, timestamp, FailureCause.StepFailed(step, cause), Some(prev.user), transaction)
 
-  def unexpectedBroadcast(actualTransaction: ImmutableTransaction): FailedExchange[C] =
-    FailedExchange(this, FailureCause.UnexpectedBroadcast, Some(prev.user), Some(actualTransaction))
+  def unexpectedBroadcast(actualTransaction: ImmutableTransaction,
+                          timestamp: DateTime): FailedExchange[C] = {
+    val cause = FailureCause.UnexpectedBroadcast
+    FailedExchange(this, timestamp, cause, Some(prev.user), Some(actualTransaction))
+  }
 
-  def noBroadcast: FailedExchange[C] =
-    FailedExchange(this, FailureCause.NoBroadcast, Some(prev.user), transaction = None)
+  def noBroadcast(timestamp: DateTime): FailedExchange[C] =
+    FailedExchange(this, timestamp, FailureCause.NoBroadcast, Some(prev.user), transaction = None)
 
   def completeStep(step: Int): RunningExchange[C] =
     copy(progress = amounts.steps(step - 1).progress)
@@ -37,6 +50,7 @@ case class RunningExchange[C <: FiatCurrency](
 object RunningExchange {
 
   def apply[C <: FiatCurrency](prev: DepositPendingExchange[C],
-                               deposits: Exchange.Deposits): RunningExchange[C] =
-    RunningExchange(prev, deposits, prev.progress)
+                               deposits: Exchange.Deposits,
+                               timestamp: DateTime): RunningExchange[C] =
+    RunningExchange(prev, timestamp, deposits, prev.progress)
 }

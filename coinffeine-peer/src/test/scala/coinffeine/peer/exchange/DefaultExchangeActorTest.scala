@@ -5,6 +5,7 @@ import scala.util.control.NoStackTrace
 
 import akka.actor._
 import akka.testkit._
+import org.joda.time.DateTime
 import org.scalatest.{Inside, OptionValues}
 
 import coinffeine.common.akka.test.MockSupervisedActor
@@ -40,7 +41,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       new DefaultExchangeActor.Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
           broadcasterProps
-        def handshake(user: PeerInfo, listener: ActorRef) = handshakeProps
+        def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeProps
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) =
           micropaymentChannelActor.props(channel, resultListeners)
@@ -141,14 +142,19 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
   }
 
   private object HandshakeStub {
-    def successful(commitments: Both[ImmutableTransaction]) =
-      Props(new HandshakeStub(HandshakeSuccess(
-        exchange = exchange.startHandshaking(user, counterpart),
+    def successful(commitments: Both[ImmutableTransaction]) = {
+      val handshakeSuccess = HandshakeSuccess(
+        exchange = exchange.handshake(user, counterpart, ExchangeTimestamps.handshakingStart),
         bothCommitments = commitments,
-        refundTx = dummyTx
-      )))
+        refundTx = dummyTx,
+        timestamp = ExchangeTimestamps.completion
+      )
+      Props(new HandshakeStub(handshakeSuccess))
+    }
 
-    def failure = Props(new HandshakeStub(HandshakeFailure(
-      new Exception("injected handshake failure") with NoStackTrace)))
+    def failure = {
+      val exception = new scala.Exception("injected handshake failure") with NoStackTrace
+      Props(new HandshakeStub(HandshakeFailure(exception, ExchangeTimestamps.completion)))
+    }
   }
 }
