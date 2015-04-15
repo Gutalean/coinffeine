@@ -1,16 +1,14 @@
 package coinffeine.gui.application.operations
 
-import coinffeine.gui.application.operations.OrderPropertiesDialog
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.scene.styles.{OperationStyles, ButtonStyles, NodeStyles, PaneStyles}
+import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, OperationStyles, PaneStyles}
 import coinffeine.model.market.Bid
 import coinffeine.peer.api.CoinffeineApp
 
 import scalafx.Includes._
-import scalafx.css.PseudoClass
 import scalafx.event.Event
 import scalafx.scene.Node
 import scalafx.scene.control._
