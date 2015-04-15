@@ -18,15 +18,16 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
   }
 
   it should "report information on existing orders" in {
+    val orderCreation = DateTime.parse("2015-01-01T00:00")
     val exchange = Exchange.create(
       id = ExchangeId.random(),
       role = BuyerRole,
       counterpartId = PeerId.hashOf("counterpart"),
       amounts = amountsCalculator.exchangeAmountsFor(0.4.BTC, 50.EUR),
       parameters = Exchange.Parameters(lockTime = 1234, network = null),
-      createdOn = DateTime.now()
+      createdOn = orderCreation.plusMinutes(1)
     )
-    val order = Order.randomLimit(Bid, 1.BTC, Price(100.EUR)).withExchange(exchange)
+    val order = Order.randomLimit(Bid, 1.BTC, Price(100.EUR), orderCreation).withExchange(exchange)
 
     network.givenOrderExists(order)
     executeCommand(command, order.id.value) should (
