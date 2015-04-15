@@ -2,6 +2,7 @@ package coinffeine.peer.exchange.handshake
 
 import org.joda.time.DateTime
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._

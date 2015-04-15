@@ -3,10 +3,10 @@ package coinffeine.peer.bitcoin.wallet
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{Hash, KeyPair, MutableTransaction}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
 
 class SmartWalletTest extends UnitTest with BitcoinjTest {

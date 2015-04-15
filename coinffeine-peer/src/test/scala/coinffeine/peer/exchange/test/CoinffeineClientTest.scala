@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange.test
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.Both
 import coinffeine.model.currency.Euro
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._

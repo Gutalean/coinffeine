@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.protocol
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._

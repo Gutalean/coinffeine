@@ -10,8 +10,8 @@ import org.bitcoinj.crypto.TransactionSignature
 import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.common.akka.{AskPattern, ResubmitTimer}
+import coinffeine.model.Both
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel

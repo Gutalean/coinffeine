@@ -3,9 +3,10 @@ package coinffeine.peer.exchange.protocol.impl
 import scala.util.Try
 import scala.util.control.NonFatal
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.{Both, RunningExchange}
+import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.protocol.impl.DefaultMicroPaymentChannel._

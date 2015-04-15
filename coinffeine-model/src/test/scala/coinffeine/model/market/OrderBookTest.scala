@@ -3,8 +3,8 @@ package coinffeine.model.market
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 import coinffeine.model.network.PeerId
 
 class OrderBookTest extends UnitTest with OptionValues {

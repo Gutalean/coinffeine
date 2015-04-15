@@ -3,6 +3,7 @@ package coinffeine.model.market
 import org.joda.time.DateTime
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
@@ -71,6 +72,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5))
     order.amounts shouldBe Order.Amounts(exchanged = 10.BTC, exchanging = 10.BTC, pending = 80.BTC)
+    order.status shouldBe InProgressOrder
   }
 
   it must "detect completion when exchanges complete the order" in {
@@ -102,13 +104,12 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .withExchange(createExchangeInProgress(5)) shouldBe 'shouldBeOnMarket
   }
 
-  private def createSuccessfulExchange() =
-    createExchangeInProgress(10).complete(ExchangeTimestamps.completion)
+  private def createSuccessfulExchange() = createExchangeInProgress(10).complete(DateTime.now())
 
   private def createExchangeInProgress(stepsCompleted: Int) = {
     createRandomExchange()
-      .handshake(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
-      .startExchanging(dummyDeposits, ExchangeTimestamps.handshakingStart)
+      .handshake(participants.buyer, participants.seller, DateTime.now())
+      .startExchanging(dummyDeposits, DateTime.now())
       .completeStep(stepsCompleted)
   }
 

@@ -3,6 +3,7 @@ package coinffeine.peer.market.orders.controller
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -15,7 +16,8 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
-  private val initialOrder = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
+  private val initialOrder =
+    Order.randomLimit(Bid, 10.BTC, Price(1.EUR), ExchangeTimestamps.creation.minusMinutes(1))
   private val orderMatch = OrderMatch(
     orderId = initialOrder.id,
     exchangeId = ExchangeId.random(),
@@ -122,9 +124,10 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
       case runningExchange: RunningExchange[Euro.type] =>
         runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
       case notStarted: HandshakingExchange[Euro.type] =>
-        notStarted.handshake(participants.buyer, participants.seller, ExchangeTimestamps.handshakingStart)
-          .startExchanging(MockExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
-          .complete(ExchangeTimestamps.completion)
+        val createdOn = notStarted.metadata.createdOn
+        notStarted.handshake(participants.buyer, participants.seller, createdOn.plusSeconds(5))
+          .startExchanging(MockExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))
+          .complete(createdOn.plusMinutes(20))
     }
   }
 }

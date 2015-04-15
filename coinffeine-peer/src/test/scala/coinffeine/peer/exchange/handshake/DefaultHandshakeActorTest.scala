@@ -6,8 +6,8 @@ import akka.actor.ActorRef
 import akka.testkit.TestProbe
 import org.joda.time.DateTime
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate

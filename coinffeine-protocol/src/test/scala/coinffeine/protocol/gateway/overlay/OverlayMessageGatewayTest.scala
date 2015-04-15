@@ -9,8 +9,9 @@ import org.scalatest.concurrent.Eventually
 import coinffeine.alarms.akka.AlarmMessage
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.Both
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.OrderId
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayId

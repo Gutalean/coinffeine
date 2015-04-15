@@ -3,9 +3,9 @@ package coinffeine.peer.exchange.micropayment
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest

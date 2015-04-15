@@ -3,8 +3,9 @@ package coinffeine.peer.exchange.micropayment
 import scalaz.ValidationNel
 import scalaz.Scalaz._
 
+import coinffeine.model.Both
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.{Both, Exchange, ExchangeId}
+import coinffeine.model.exchange.{Exchange, ExchangeId}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{IntermediateStep, FinalStep, Step}

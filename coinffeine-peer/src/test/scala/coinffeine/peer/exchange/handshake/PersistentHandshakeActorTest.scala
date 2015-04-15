@@ -4,8 +4,8 @@ import scala.concurrent.duration._
 
 import akka.testkit._
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.exchange.Both
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess

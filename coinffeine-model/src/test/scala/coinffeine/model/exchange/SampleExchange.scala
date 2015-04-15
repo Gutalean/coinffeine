@@ -2,6 +2,7 @@ package coinffeine.model.exchange
 
 import org.joda.time.DateTime
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency._

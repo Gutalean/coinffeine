@@ -10,10 +10,11 @@ import org.scalatest.Inside
 import org.scalautils.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.Version

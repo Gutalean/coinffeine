@@ -1,5 +1,7 @@
 package coinffeine.model.exchange
 
+import coinffeine.model.Both
+
 sealed trait AbortionCause
 
 object AbortionCause {

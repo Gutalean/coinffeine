@@ -10,6 +10,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.{Progress, DepositAmounts}

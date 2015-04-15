@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._

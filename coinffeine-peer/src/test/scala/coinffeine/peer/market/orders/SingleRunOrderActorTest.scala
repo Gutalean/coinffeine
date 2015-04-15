@@ -1,5 +1,7 @@
 package coinffeine.peer.market.orders
 
+import org.joda.time.DateTime
+
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.peer.exchange.ExchangeActor
@@ -40,9 +42,10 @@ class SingleRunOrderActorTest extends OrderActorTest {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
-      expectProperty { _.status shouldBe InProgressOrder }
+      expectProperty { _.status should not be NotStartedOrder }
       expectProperty { _.progress shouldBe 0.0 }
-      exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
+      exchangeActor.probe.send(actor,
+        ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
       expectProperty { _.status shouldBe CompletedOrder }
     }
 

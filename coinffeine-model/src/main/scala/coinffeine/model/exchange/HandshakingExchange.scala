@@ -2,6 +2,7 @@ package coinffeine.model.exchange
 
 import org.joda.time.DateTime
 
+import coinffeine.model.ActivityLog
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 

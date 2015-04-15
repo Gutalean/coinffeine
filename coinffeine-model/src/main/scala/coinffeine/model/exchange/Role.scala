@@ -1,5 +1,6 @@
 package coinffeine.model.exchange
 
+import coinffeine.model.Both
 import coinffeine.model.market.{Ask, Bid, OrderType}
 
 sealed trait Role {

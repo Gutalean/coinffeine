@@ -2,9 +2,10 @@ package coinffeine.protocol.serialization.test
 
 import scala.util.Random
 
+import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
-import coinffeine.model.exchange.{Both, ExchangeId}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.brokerage.OrderMatch
