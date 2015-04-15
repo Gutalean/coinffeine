@@ -87,7 +87,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
       new Label with TextStyles.GoodNews with TextStyles.SuperBoldface with TextStyles.Huge {
         text <== balances.fiat.delegate.mapToString {
           case Some(b) => s"€${ApplicationScene.BalanceFormat.format(b.amount)}"
-          case None => "€?"
+          case None => "€__,__"
         }
       },
       new HBox {

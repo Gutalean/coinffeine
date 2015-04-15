@@ -17,7 +17,8 @@
 #control-bar {
     -fx-min-height: 125px;
     -fx-background-color: white;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -cf-background;
 }
 
 #balance-pane {

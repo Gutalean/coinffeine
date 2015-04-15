@@ -8,7 +8,9 @@
     -fx-spacing: 0;
     -fx-background-color: white;
     -fx-background-radius: 5;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 0);
+    -fx-border-width: 1;
+    -fx-border-color: derive(-cf-background, 50%);
+    -fx-border-radius: 5;
 }
 
 #operations-center-pane > .header {

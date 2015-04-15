@@ -20,13 +20,13 @@ object Spinner {
 
   private def bar(animationDelay: Duration): Rectangle = new Rectangle {
     styleClass += "bar"
-    width = 5
-    height = 11
+    width = 3
+    height = 6
     new ScaleTransition(AnimationCycle, this) {
       cycleCount = Timeline.Indefinite
       autoReverse = true
       delay = animationDelay
-      byY = 2
+      byY = 1.5
     }.play()
   }
 }
