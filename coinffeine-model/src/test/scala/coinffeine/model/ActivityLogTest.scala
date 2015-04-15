@@ -1,10 +1,10 @@
-package coinffeine.model.exchange
+package coinffeine.model
 
 import org.joda.time.DateTime
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.exchange.ActivityLog.Entry
+import coinffeine.model.ActivityLog.Entry
 
 class ActivityLogTest extends UnitTest with OptionValues {
 

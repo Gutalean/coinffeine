@@ -1,4 +1,4 @@
-package coinffeine.model.exchange
+package coinffeine.model
 
 import org.joda.time.DateTime
 
