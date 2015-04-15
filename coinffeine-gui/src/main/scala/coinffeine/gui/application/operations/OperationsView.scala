@@ -81,7 +81,7 @@ class OperationsView(app: CoinffeineApp,
 
       text <== currentPrice.mapToString {
         case Some(Some(p)) => s"1 BTC = ${p.of(1.BTC)}"
-        case _ => s"1 BTC = ${CurrencyAmount.formatNone(Euro)}"
+        case _ => s"1 BTC = ${CurrencyAmount.formatMissing(Euro)}"
       }
     }
 

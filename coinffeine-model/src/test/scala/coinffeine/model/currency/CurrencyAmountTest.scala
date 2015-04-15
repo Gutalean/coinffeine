@@ -49,16 +49,16 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
 
   it should "use the whole precision when converted to string" in {
     forAll(sampleAmounts) { amount =>
-      val valueRepresentation = amount.toString.split(" ")(0)
+      val valueRepresentation = amount.format(Currency.NoSymbol)
       valueRepresentation.reverse.takeWhile(_.isDigit) should have size amount.currency.precision
     }
   }
 
   it should "be printable" in {
-    Euro.Zero.toString shouldBe "0.00 EUR"
-    0.01.USD.toString shouldBe "0.01 USD"
-    -2.2.EUR.toString shouldBe "-2.20 EUR"
-    Bitcoin.fromSatoshi(-1).toString shouldBe "-0.00000001 BTC"
+    Euro.Zero.toString shouldBe "€0.00"
+    0.01.USD.toString shouldBe "USD0.01"
+    -2.2.EUR.toString shouldBe "€-2.20"
+    Bitcoin.fromSatoshi(-1).toString shouldBe "-0.00000001BTC"
   }
 
   private def genericHandling[C <: Currency](amount: CurrencyAmount[C]): Unit = {

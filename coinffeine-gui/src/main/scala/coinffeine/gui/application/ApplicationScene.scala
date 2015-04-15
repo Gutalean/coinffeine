@@ -85,7 +85,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
       new Label with TextStyles.GoodNews with TextStyles.SuperBoldface with TextStyles.Huge {
         text <== balances.fiat.delegate.mapToString {
           case Some(b) => b.amount.format
-          case None => CurrencyAmount.formatNone(Euro)
+          case None => CurrencyAmount.formatMissing(Euro)
         }
       },
       new HBox {
@@ -93,7 +93,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
           new Label with TextStyles.GoodNews with TextStyles.Big {
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.available.format(Currency.NoSymbol)
-              case None => CurrencyAmount.formatNone(Euro, Currency.NoSymbol)
+              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
           new Label("BTC") with TextStyles.GoodNews with TextStyles.Boldface with TextStyles.Big)

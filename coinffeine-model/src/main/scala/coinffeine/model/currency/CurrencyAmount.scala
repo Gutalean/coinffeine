@@ -101,19 +101,17 @@ object CurrencyAmount {
   def format[C <: Currency](amount: CurrencyAmount[C]): String =
     format(amount, amount.currency.preferredSymbolPosition)
 
-  def formatNone[C <: Currency](currency: C, symbolPos: Currency.SymbolPosition): String = {
-    val amount = s"_.${"_" * currency.precision}"
+  def formatMissing[C <: Currency](currency: C, symbolPos: Currency.SymbolPosition): String = {
+    val amount = "_." + "_" * currency.precision
     val symbol = currency.symbol
     addSymbol(amount, symbolPos, currency)
   }
 
-  def formatNone[C <: Currency](currency: C): String =
-    formatNone(currency, currency.preferredSymbolPosition)
+  def formatMissing[C <: Currency](currency: C): String =
+    formatMissing(currency, currency.preferredSymbolPosition)
 
   private def addSymbol[C <: Currency](
-                                        amount: String,
-                                        symbolPos: Currency.SymbolPosition,
-                                        currency: C): String = symbolPos match {
+      amount: String, symbolPos: Currency.SymbolPosition, currency: C): String = symbolPos match {
     case Currency.SymbolPrefixed => s"${currency.symbol}$amount"
     case Currency.SymbolSuffixed => s"$amount${currency.symbol}"
     case Currency.NoSymbol => amount
