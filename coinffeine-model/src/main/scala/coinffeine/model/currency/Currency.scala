@@ -12,6 +12,10 @@ trait Currency {
   /** Minimum amount that can be expressed on this currency in terms of decimal positions allowed */
   val precision: Int
 
+  val symbol: String
+
+  val preferredSymbolPosition: Currency.SymbolPosition
+
   def closestAmount(value: BigDecimal): Amount =
     CurrencyAmount.closestAmount[this.type](value, this)
   def exactAmount(value: BigDecimal): Amount =
@@ -28,4 +32,12 @@ trait Currency {
 
   lazy val Zero: Amount = apply(0)
   lazy val UnitsInOne: Long = Seq.fill(precision)(10).product
+}
+
+object Currency {
+
+  sealed trait SymbolPosition
+  case object SymbolPrefixed extends SymbolPosition
+  case object SymbolSuffixed extends SymbolPosition
+  case object NoSymbol extends SymbolPosition
 }

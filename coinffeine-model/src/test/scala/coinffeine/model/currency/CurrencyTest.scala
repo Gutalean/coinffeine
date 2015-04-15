@@ -34,6 +34,8 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
       currency(2).tryCompareTo(currency(2)).get should be (0)
       object FakeCurrency extends Currency {
         override val precision = 2
+        override val symbol = "F"
+        override val preferredSymbolPosition = Currency.SymbolSuffixed
       }
       currency(3).tryCompareTo(FakeCurrency(4)) shouldBe 'empty
     }

@@ -56,12 +56,11 @@ case class CurrencyAmount[C <: Currency](units: Long, currency: C)
       thatAmount
     }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
 
-  override def toString = s"%s%d.%0${currency.precision}d %s".format(
-    if(units < 0) "-" else "",
-    units.abs / currency.UnitsInOne,
-    units.abs % currency.UnitsInOne,
-    currency
-  )
+  def format(symbolPos: Currency.SymbolPosition): String = CurrencyAmount.format(this, symbolPos)
+
+  def format: String = CurrencyAmount.format(this)
+
+  override def toString = format
 
   def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
     currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
@@ -87,5 +86,36 @@ object CurrencyAmount {
                                       roundingMode: RoundingMode.Value): CurrencyAmount[C] = {
     val units = value.setScale(currency.precision, roundingMode) * currency.UnitsInOne
     CurrencyAmount(units.toLong, currency)
+  }
+
+  def format[C <: Currency](amount: CurrencyAmount[C],
+                            symbolPos: Currency.SymbolPosition): String = {
+    val currency = amount.currency
+    val units = amount.units
+    val symbol = currency.symbol
+    val numbers = s"%s%d.%0${currency.precision}d".format(
+      if (units < 0) "-" else "", units.abs / currency.UnitsInOne, units.abs % currency.UnitsInOne)
+    addSymbol(numbers, symbolPos, currency)
+  }
+
+  def format[C <: Currency](amount: CurrencyAmount[C]): String =
+    format(amount, amount.currency.preferredSymbolPosition)
+
+  def formatNone[C <: Currency](currency: C, symbolPos: Currency.SymbolPosition): String = {
+    val amount = s"_.${"_" * currency.precision}"
+    val symbol = currency.symbol
+    addSymbol(amount, symbolPos, currency)
+  }
+
+  def formatNone[C <: Currency](currency: C): String =
+    formatNone(currency, currency.preferredSymbolPosition)
+
+  private def addSymbol[C <: Currency](
+                                        amount: String,
+                                        symbolPos: Currency.SymbolPosition,
+                                        currency: C): String = symbolPos match {
+    case Currency.SymbolPrefixed => s"${currency.symbol}$amount"
+    case Currency.SymbolSuffixed => s"$amount${currency.symbol}"
+    case Currency.NoSymbol => amount
   }
 }
