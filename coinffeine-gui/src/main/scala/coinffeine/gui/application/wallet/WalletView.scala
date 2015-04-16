@@ -1,131 +1,71 @@
 package coinffeine.gui.application.wallet
 
 import java.net.{URI, URL}
-import scala.util.Try
+import java.util.Locale
 import scalafx.Includes._
-import scalafx.event.ActionEvent
-import scalafx.geometry.HPos
+import scalafx.event.Event
 import scalafx.scene.Node
-import scalafx.scene.control.TableColumn._
 import scalafx.scene.control._
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
-import org.joda.time.format.DateTimeFormat
-
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.pane.PagePane
 import coinffeine.gui.qrcode.QRCode
-import coinffeine.gui.scene.styles.PaneStyles
+import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
 import coinffeine.gui.util.Browser
-import coinffeine.model.bitcoin.{Address, Hash}
-import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
+import coinffeine.model.bitcoin.Address
 import coinffeine.peer.api.CoinffeineApp
+import org.joda.time.format.DateTimeFormat
 
 class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
 
-  private val balanceDetailsPane = new GridPane() {
-    id = "wallet-balance-details"
-    columnConstraints = Seq(
-      new ColumnConstraints() { halignment = HPos.Right},
-      new ColumnConstraints() { halignment = HPos.Left }
-    )
+  private def styleClassFor(tx: WalletActivityEntryProperties): String =
+    if (tx.amount.value.isNegative) "outcome" else "income"
 
-    val lines: Seq[(String, BitcoinBalance => String)] = Seq(
-      "Active balance:" -> (_.estimated.toString),
-      "Available balance:" -> (_.available.toString),
-      "Funds in use:" -> (_.blocked.toString),
-      "Minimum output:" -> (_.minOutput.map(_.toString).getOrElse("None"))
-    )
+  private def actionFor(tx: WalletActivityEntryProperties): String =
+    if (tx.amount.value.isNegative) "withdrawn" else "added"
 
-    lines.zipWithIndex.foreach { case ((title, valueExtractor), index) =>
-      add(new Label(title), 0, index)
-      add(new Label() {
-        text <== app.wallet.balance.map {
-          case Some(balance) => valueExtractor(balance)
-          case None => "unknown"
-        }
-      }, 1, index)
+  private def dateFor(tx: WalletActivityEntryProperties): String = {
+    val date = tx.time.value
+    WalletView.DateFormat.print(date)
+  }
+
+  private val transactionsTable = new VBox {
+    styleClass += "transactions"
+    properties.transactions.bindToList(content) { tx =>
+      new HBox {
+        styleClass ++= Seq("line", styleClassFor(tx))
+        content = Seq(
+          new StackPane { styleClass += "icon" },
+          new Label(s"${tx.amount.value} were ${actionFor(tx)} to your wallet") {
+            styleClass += "summary"
+          },
+          new Label(dateFor(tx)) { styleClass += "date" },
+          new HBox {
+            styleClass += "buttons"
+            content = Seq(
+              new Button with ButtonStyles.Details {
+                onAction = { e: Event =>
+                  Browser.default.browse(WalletView.detailsOfTransaction(tx.hash.value.toString))
+                }
+              }
+            )
+          }
+        )
+      }.delegate
     }
   }
 
-  private val leftDetailsPane = new VBox() {
-    id = "wallet-left-pane"
-    hgrow = Priority.Always
-    content = Seq(
-      new Label("Wallet funds") {
-        styleClass = Seq("title")
-      },
-      balanceDetailsPane
-    )
-  }
-
-  private val rightDetailsPane = new VBox() {
-    id = "wallet-right-pane"
-  }
-
-  private val detailsPane = new HBox() {
-    id = "wallet-details-pane"
-    content = Seq(leftDetailsPane, rightDetailsPane)
-  }
-
-  private val transactionsTable = new TableView[WalletActivityEntryProperties](properties.transactions) {
-    id = "wallet-transactions-table"
-    placeholder = new Label("No transactions found")
-    hgrow = Priority.Always
-    columns ++= Seq(
-      new TableColumn[WalletActivityEntryProperties, String] {
-        text = "Time"
-        cellValueFactory = {
-          _.value.time.delegate.mapToString { instant =>
-            DateTimeFormat.mediumDateTime().print(instant.toLocalDateTime)
-          }
-        }
-      },
-      new TableColumn[WalletActivityEntryProperties, Hash] {
-        text = "Hash"
-        cellValueFactory = { _.value.hash }
-        cellFactory = { _ => new TableCell[WalletActivityEntryProperties, Hash] {
-          item.onChange { (_, _, hash) =>
-            val hashString = Try(hash.toString).getOrElse("---")
-            graphic = new HBox(spacing = 5) {
-              styleClass += "hash-cell"
-              content = Seq(
-                new Label(hashString) {
-                  maxWidth = Double.MaxValue
-                  hgrow = Priority.Always
-                },
-                new Button("More") {
-                  onAction = { _: ActionEvent =>
-                    Browser.default.browse(WalletView.detailsOfTransaction(hashString))
-                  }
-                }
-              )
-            }
-          }
-        }}
-      },
-      new TableColumn[WalletActivityEntryProperties, Bitcoin.Amount] {
-        text = "Amount"
-        cellValueFactory = { _.value.amount }
-      }
-    )
-  }
-
-  private val transactionsPane = new VBox() {
-    id = "wallet-transactions-pane"
-    content = Seq(
-      new Label("Wallet transactions") { styleClass = Seq("title") },
-      transactionsTable)
-  }
-
-  override val centerPane = new VBox() {
+  override val centerPane = new PagePane {
     id = "wallet-center-pane"
-    content = Seq(detailsPane, transactionsPane)
+    headerText = "WALLET TRANSACTIONS"
+    pageContent = transactionsTable
   }
 
   override def controlPane: Pane = new HBox {
@@ -179,6 +119,10 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 object WalletView {
 
   private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com/tx/")
+
+  private val DateFormat = DateTimeFormat
+    .forPattern("ddMMMyyyy hh:mm:ss")
+    .withLocale(Locale.US)
 
   private def detailsOfTransaction(txHash: String): URI =
     new URL(TransactionInfoBaseUri, txHash).toURI
