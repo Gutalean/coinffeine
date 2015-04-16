@@ -36,6 +36,8 @@
     -fx-background-color: white;
     -fx-padding: 5 15 5 15;
     -fx-min-height: 35px;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-color: derive(-cf-background, 50%);
 }
 
 .status-bar * {

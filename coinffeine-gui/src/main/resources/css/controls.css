@@ -23,6 +23,7 @@
 
 .status-disc {
     -fx-fill: -cf-main1;
+    -fx-stroke: derive(-fx-fill, -20%);
 }
 
 .status-disc:failure {
