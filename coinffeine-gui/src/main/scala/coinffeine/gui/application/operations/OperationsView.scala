@@ -24,7 +24,7 @@ class OperationsView(app: CoinffeineApp,
                      orderValidation: OrderValidation) extends ApplicationView {
 
   private def lineFor(p: OrderProperties): Node = {
-    val action = if (p.orderTypeProperty.value == Bid) "buying" else "selling"
+    val action = if (p.typeProperty.value == Bid) "buying" else "selling"
     val amount = p.amountProperty.value
     new HBox {
       styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
@@ -33,7 +33,7 @@ class OperationsView(app: CoinffeineApp,
         new Label(s"You are $action $amount") { styleClass += "summary" },
         new Label("3d 20h ago") { styleClass += "date" },
         new OrderStatusWidget {
-          status <== p.sourceProperty.delegate.map {
+          status <== p.orderProperty.delegate.map {
             case order: AnyCurrencyOrder => OrderStatusWidget.Status.fromOrder(order)
           }
         },

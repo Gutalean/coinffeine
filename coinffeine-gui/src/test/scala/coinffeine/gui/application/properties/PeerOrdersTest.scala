@@ -33,7 +33,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     network.orders.set(orderId, order)
     eventually {
       inside(orders.toSeq) { case Seq(orderProps) =>
-        orderProps.orderIdProperty.get shouldBe orderId
+        orderProps.idProperty.get shouldBe orderId
       }
     }
   }
@@ -42,10 +42,10 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     withNewOrder("order-01") { order1 =>
       withNewOrder("order-02") { order2 =>
         eventually {
-          inside(orders.toSeq.sortBy(_.orderIdProperty.value.value)) {
+          inside(orders.toSeq.sortBy(_.idProperty.value.value)) {
             case Seq(orderProps1, orderProps2) =>
-              orderProps1.orderIdProperty.get shouldBe order1.id
-              orderProps2.orderIdProperty.get shouldBe order2.id
+              orderProps1.idProperty.get shouldBe order1.id
+              orderProps2.idProperty.get shouldBe order2.id
           }
         }
       }
@@ -57,7 +57,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       network.orders.set(order.id, order.withExchange(randomExchange(order)))
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.orderStatusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe InProgressOrder
         }
       }
     }
@@ -70,14 +70,14 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       println(order.withExchange(exchange).amounts.progressMade)
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.orderStatusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe InProgressOrder
           orderProps.exchanges shouldBe 'empty
         }
       }
       network.orders.set(order.id, order.withExchange(randomlyHandshake(exchange)))
       eventually {
         inside(orders.toSeq) {  case Seq(orderProps) =>
-          orderProps.orderStatusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe InProgressOrder
           inside(orderProps.exchanges.toSeq) { case Seq(ex) =>
             ex.exchangeIdProperty.value shouldBe exchange.id
           }
@@ -104,7 +104,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       val order = Order(orderId, Bid, 1.BTC, Price(100.EUR))
       network.orders.set(orderId, order)
       eventually {
-        orders.find(_.orderIdProperty.get == orderId) shouldBe 'defined
+        orders.find(_.idProperty.get == orderId) shouldBe 'defined
       }
       action(order)
     }
