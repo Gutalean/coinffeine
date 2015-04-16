@@ -18,6 +18,7 @@ import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
 import coinffeine.model.market.{Bid, Market}
+import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp,
@@ -27,27 +28,54 @@ class OperationsView(app: CoinffeineApp,
   private def lineFor(p: OrderProperties): Node = {
     val action = if (p.typeProperty.value == Bid) "buying" else "selling"
     val amount = p.amountProperty.value
-    new HBox {
-      styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
-      content = Seq(
-        new StackPane { styleClass += "icon" },
-        new Label(s"You are $action $amount") { styleClass += "summary" },
-        new Label("3d 20h ago") { styleClass += "date" },
-        new OrderStatusWidget {
-          status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
-        },
-        new HBox with PaneStyles.ButtonRow {
-          styleClass += "buttons"
-          content = Seq(
-            new Button with ButtonStyles.Details {
-              onAction = { e: Event =>
-                val dialog = new OrderPropertiesDialog(p)
-                dialog.show(delegate.getScene.getWindow)
-              }
-            },
-            new Button with ButtonStyles.Close)
+    new StackPane {
+
+      val lineWidth = width
+
+      val progress = new HBox {
+        content = new StackPane {
+          styleClass += "progress"
+          minWidth <== lineWidth * p.progressProperty
+          visible <==
+            p.statusProperty.delegate.mapToBool(_.isActive) and
+            p.progressProperty.delegate.mapToBool { p =>
+              val percent = p.doubleValue()
+              percent > 0.0d && percent < 1.0d
+            }
         }
-      )
+      }
+
+      val controls = new HBox {
+        styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
+        content = Seq(
+          new StackPane {
+            styleClass += "icon"
+          },
+          new Label(s"You are $action $amount") {
+            styleClass += "summary"
+          },
+          new Label("3d 20h ago") {
+            styleClass += "date"
+          },
+          new OrderStatusWidget {
+            status <== p.orderProperty.delegate.map {
+              case order: AnyCurrencyOrder => OrderStatusWidget.Status.fromOrder(order)
+            }
+          },
+          new HBox with PaneStyles.ButtonRow {
+            styleClass += "buttons"
+            content = Seq(
+              new Button with ButtonStyles.Details {
+                onAction = { e: Event =>
+                  val dialog = new OrderPropertiesDialog(p)
+                  dialog.show(delegate.getScene.getWindow)
+                }
+              },
+              new Button with ButtonStyles.Close)
+          }
+        )
+      }
+      content = Seq(progress, controls)
     }
   }
 
