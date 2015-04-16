@@ -36,12 +36,8 @@ class OperationsView(app: CoinffeineApp,
         content = new StackPane {
           styleClass += "progress"
           minWidth <== lineWidth * p.progressProperty
-          visible <==
-            p.statusProperty.delegate.mapToBool(_.isActive) and
-            p.progressProperty.delegate.mapToBool { p =>
-              val percent = p.doubleValue()
-              percent > 0.0d && percent < 1.0d
-            }
+          visible <== p.statusProperty.delegate.mapToBool(_.isActive) and
+            p.progressProperty.delegate.mapToBool(_.doubleValue() > 0.0d)
         }
       }
 
