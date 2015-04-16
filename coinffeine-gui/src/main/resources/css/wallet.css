@@ -84,3 +84,4 @@
 #wallet-transactions-table .hash-cell Button {
     -fx-font-size: 9;
 }
+#wallet-control-pane .button { -fx-color: -cf-main1; }

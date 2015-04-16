@@ -130,6 +130,8 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   override def controlPane: Pane = new HBox {
 
+    id = "wallet-control-pane"
+
     private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 125)
 
     private val noQrCode: Node = new Label("No public address available")
