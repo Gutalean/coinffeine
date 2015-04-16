@@ -41,7 +41,6 @@
 
 #operations-center-pane .line .order-status {
     -fx-color: -cf-sec1;
-    -fx-min-width: 150;
 }
 
 #operations-center-pane .line .buttons {

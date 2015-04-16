@@ -40,6 +40,7 @@
 
 .order-status {
     -fx-spacing: 2;
+    -fx-min-width: 150;
 }
 
 .order-status .message {

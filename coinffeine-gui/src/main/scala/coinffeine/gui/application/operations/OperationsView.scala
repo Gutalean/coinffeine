@@ -17,7 +17,7 @@ import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.{AnyCurrencyOrder, Bid, Market}
+import coinffeine.model.market.{Bid, Market}
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp,
@@ -34,9 +34,7 @@ class OperationsView(app: CoinffeineApp,
         new Label(s"You are $action $amount") { styleClass += "summary" },
         new Label("3d 20h ago") { styleClass += "date" },
         new OrderStatusWidget {
-          status <== p.orderProperty.delegate.map {
-            case order: AnyCurrencyOrder => OrderStatusWidget.Status.fromOrder(order)
-          }
+          status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
         },
         new HBox with PaneStyles.ButtonRow {
           styleClass += "buttons"
