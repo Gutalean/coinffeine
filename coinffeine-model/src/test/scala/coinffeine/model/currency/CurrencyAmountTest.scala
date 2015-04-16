@@ -56,7 +56,7 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
 
   it should "be printable" in {
     Euro.Zero.toString shouldBe "€0.00"
-    0.01.USD.toString shouldBe "USD0.01"
+    0.01.USD.toString shouldBe "US$0.01"
     -2.2.EUR.toString shouldBe "€-2.20"
     Bitcoin.fromSatoshi(-1).toString shouldBe "-0.00000001BTC"
   }
