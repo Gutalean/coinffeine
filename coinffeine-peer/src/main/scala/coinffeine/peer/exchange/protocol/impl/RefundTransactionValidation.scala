@@ -23,9 +23,8 @@ private class RefundTransactionValidation(parameters: Exchange.Parameters,
 
   private def requireValidLockTime(tx: MutableTransaction): Result = {
     val actualLockTime = tx.isTimeLocked.option(tx.getLockTime)
-    if (actualLockTime != Some(parameters.lockTime))
-      InvalidLockTime(actualLockTime, parameters.lockTime).failNel
-    else ().successNel
+    if (actualLockTime.contains(parameters.lockTime)) ().successNel
+    else InvalidLockTime(actualLockTime, parameters.lockTime).failureNel
   }
 
   private def requireSingleInput(tx: MutableTransaction): Result = {
