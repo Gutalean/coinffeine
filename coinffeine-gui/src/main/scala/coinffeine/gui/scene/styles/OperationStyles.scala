@@ -8,7 +8,7 @@ object OperationStyles {
   private val BuyStyleClass = "buy"
   private val SellStyleClass = "sell"
 
-  def styleClassFor(order: OrderProperties): String = order.orderTypeProperty.value match {
+  def styleClassFor(order: OrderProperties): String = order.typeProperty.value match {
     case Bid => BuyStyleClass
     case Ask => SellStyleClass
   }

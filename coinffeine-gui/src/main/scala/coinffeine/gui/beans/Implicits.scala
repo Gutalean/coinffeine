@@ -29,6 +29,9 @@ object Implicits {
   implicit def pimpMyBooleanBinding(binding: BooleanBinding): BooleanBindingPimp =
     new BooleanBindingPimp(binding)
 
+  implicit def pimpMyDoubleBinding(binding: DoubleBinding): DoubleBindingPimp =
+    new DoubleBindingPimp(binding)
+
   implicit def pimpMyStringBinding(binding: StringBinding): StringBindingPimp =
     new StringBindingPimp(binding)
 
