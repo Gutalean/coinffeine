@@ -49,9 +49,7 @@ class OperationsView(app: CoinffeineApp,
   }
 
   private val operationsTable = new VBox {
-    props.ordersProperty.bindToList(content) { p =>
-      lineFor(p)
-    }
+    props.ordersProperty.bindToList(content)(lineFor)
   }
 
   override def name: String = "Operations"
