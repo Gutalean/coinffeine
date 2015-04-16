@@ -7,7 +7,7 @@ import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{AnyExchange, ExchangeId}
 import coinffeine.model.market.{AnyOrderPrice, LimitPrice}
 
-class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
+class ExchangeProperties(exchange: AnyExchange) {
 
   val exchangeSourceProperty: ObjectProperty[AnyExchange] =
     new ObjectProperty(this, "source", exchange)
@@ -18,27 +18,27 @@ class ExchangeProperties(exchange: AnyExchange) extends OperationProperties {
   val exchangeProgressProperty: DoubleProperty =
     new DoubleProperty(this, "progress", progressOf(exchange))
 
-  override val sourceProperty =
+  val sourceProperty: ReadOnlyObjectProperty[AnyRef] =
     exchangeSourceProperty.delegate.map(ex => ex: AnyRef).toReadOnlyProperty
 
-  override val idProperty =
+  val idProperty: ReadOnlyStringProperty =
     exchangeIdProperty.delegate.mapToString(_.value).toReadOnlyProperty
 
-  override val isCancellable: ReadOnlyBooleanProperty =
+  val isCancellable: ReadOnlyBooleanProperty =
     new BooleanProperty(this, "isCancellable", false)
 
-  override val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
+  val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
     new ObjectProperty(this, "amount", exchange.role.select(exchange.amounts.exchangedBitcoin))
 
-  override val statusProperty: ReadOnlyStringProperty =
+  val statusProperty: ReadOnlyStringProperty =
     new StringProperty(this, "status", exchange.status.name.capitalize)
 
-  override val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
+  val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
-  override val priceProperty: ReadOnlyObjectProperty[AnyOrderPrice] =
+  val priceProperty: ReadOnlyObjectProperty[AnyOrderPrice] =
     new ObjectProperty(this, "price", LimitPrice(exchange.amounts.price(exchange.role)))
 
-  override val operationTypeProperty: ReadOnlyStringProperty =
+  val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")
 
   def updateProgress(exchange: AnyExchange): Unit = {
