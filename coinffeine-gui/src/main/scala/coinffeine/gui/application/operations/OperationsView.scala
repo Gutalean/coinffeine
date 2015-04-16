@@ -12,10 +12,11 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
+import coinffeine.gui.control.OrderStatusWidget
 import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.{Bid, Market}
+import coinffeine.model.market.{AnyCurrencyOrder, Bid, Market}
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp,
@@ -31,7 +32,11 @@ class OperationsView(app: CoinffeineApp,
         new StackPane { styleClass += "icon" },
         new Label(s"You are $action $amount") { styleClass += "summary" },
         new Label("3d 20h ago") { styleClass += "date" },
-        new ProgressBar() { progress <== p.progressProperty },
+        new OrderStatusWidget {
+          status <== p.sourceProperty.delegate.map {
+            case order: AnyCurrencyOrder => OrderStatusWidget.Status.fromOrder(order)
+          }
+        },
         new HBox with PaneStyles.ButtonRow {
           styleClass += "buttons"
           content = Seq(
@@ -48,9 +53,7 @@ class OperationsView(app: CoinffeineApp,
   }
 
   private val operationsTable = new VBox {
-    props.ordersProperty.bindToList(content) { p =>
-      lineFor(p)
-    }
+    props.ordersProperty.bindToList(content)(lineFor)
   }
 
   override def name: String = "Operations"

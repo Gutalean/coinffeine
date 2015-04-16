@@ -37,3 +37,57 @@
 }
 
 .spinner > .bar { -fx-fill: -fx-color; }
+
+.order-status {
+    -fx-spacing: 2;
+}
+
+.order-status .message {
+    -fx-font-size: 16;
+    -fx-text-fill: -fx-color;
+    -fx-alignment: center;
+    -fx-max-width: 9999;
+}
+
+.order-status .spinner {
+    -fx-color: white;
+    -fx-scale-y: 0.7;
+    -fx-scale-x: 0.7;
+    -fx-min-height: 20;
+}
+
+.order-status .bar {
+    -fx-min-height: 20;
+    -fx-max-height: 20;
+    -fx-background-color: derive(-fx-color, 80%);
+    -fx-background-radius: 7;
+}
+
+.order-status .section1,
+.order-status .section2,
+.order-status .section3 {
+    -fx-padding: 0;
+    -fx-max-width: 50;
+    -fx-border-color: derive(-fx-color, 50%);
+}
+
+.order-status .section1:filled,
+.order-status .section2:filled,
+.order-status .section3:filled {
+    -fx-background-color: -fx-color;
+    -fx-border-width: 0;
+}
+
+.order-status .section1 {
+    -fx-background-radius: 7 0 0 7;
+    -fx-border-width: 0 2 0 0;
+}
+
+.order-status .section2 {
+    -fx-border-width: 0 2 0 0;
+}
+
+.order-status .section3 {
+    -fx-background-radius: 0 7 7 0;
+    -fx-border-width: 0;
+}

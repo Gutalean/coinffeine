@@ -5,20 +5,20 @@ import scalafx.collections.ObservableBuffer
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
-import coinffeine.model.exchange.{HandshakingExchange, AnyExchange}
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
 
-class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
-  val sourceOrderProperty = new ObjectProperty[AnyCurrencyOrder](this, "source", order)
-  val orderIdProperty = new ObjectProperty[OrderId](this, "id", order.id)
-  val orderTypeProperty = new ObjectProperty[OrderType](this, "orderType", order.orderType)
-  val orderStatusProperty = new ObjectProperty[OrderStatus](this, "status", order.status)
+class OrderProperties(initialValue: AnyCurrencyOrder) extends OperationProperties {
+  val orderProperty = new ObjectProperty[AnyCurrencyOrder](this, "source", initialValue)
+  val orderIdProperty = new ObjectProperty[OrderId](this, "id", initialValue.id)
+  val orderTypeProperty = new ObjectProperty[OrderType](this, "orderType", initialValue.orderType)
+  val orderStatusProperty = new ObjectProperty[OrderStatus](this, "status", initialValue.status)
 
   val exchanges = new ObservableBuffer[ExchangeProperties]
-  updateExchanges(order.exchanges.values.toSeq)
+  updateExchanges(initialValue.exchanges.values.toSeq)
 
   override val sourceProperty =
-    sourceOrderProperty.delegate.map(order => order: AnyRef).toReadOnlyProperty
+    orderProperty.delegate.map(order => order: AnyRef).toReadOnlyProperty
 
   override val idProperty =
     orderIdProperty.delegate.mapToString(_.value).toReadOnlyProperty
@@ -32,12 +32,12 @@ class OrderProperties(order: AnyCurrencyOrder) extends OperationProperties {
   override val isCancellable =
     orderStatusProperty.delegate.mapToBool(_.isActive).toReadOnlyProperty
 
-  override val amountProperty = new ObjectProperty[Bitcoin.Amount](this, "amount", order.amount)
-  override val priceProperty = new ObjectProperty[AnyOrderPrice](this, "price", order.price)
-  override val progressProperty = new DoubleProperty(this, "progress", order.progress)
+  override val amountProperty = new ObjectProperty[Bitcoin.Amount](this, "amount", initialValue.amount)
+  override val priceProperty = new ObjectProperty[AnyOrderPrice](this, "price", initialValue.price)
+  override val progressProperty = new DoubleProperty(this, "progress", initialValue.progress)
 
   def update(order: AnyCurrencyOrder): Unit = {
-    sourceOrderProperty.value = order
+    orderProperty.value = order
     updateStatus(order.status)
     updateProgress(order.progress)
     updateExchanges(order.exchanges.values.toSeq)
