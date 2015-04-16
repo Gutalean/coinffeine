@@ -54,9 +54,7 @@ class OperationsView(app: CoinffeineApp,
             styleClass += "date"
           },
           new OrderStatusWidget {
-            status <== p.orderProperty.delegate.map {
-              case order: AnyCurrencyOrder => OrderStatusWidget.Status.fromOrder(order)
-            }
+            status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
           },
           new HBox with PaneStyles.ButtonRow {
             styleClass += "buttons"
