@@ -1,9 +1,5 @@
 /* This file defines the styles for the operations view. */
 
-.buy { -fx-color: -cf-main1; }
-
-.sell { -fx-color: -cf-sec1; }
-
 #operations-center-pane .progress {
     -fx-background-color: derive(-cf-sec1, 90%);
     -fx-border-width: 0 2 0 0;
@@ -19,6 +15,10 @@
     -fx-border-style: segments(3, 2);
     -fx-alignment: center-left;
 }
+
+#operations-center-pane .line.completed { -fx-color: -cf-main1; }
+#operations-center-pane .line.running { -fx-color: -cf-sec1; }
+#operations-center-pane .line.failed { -fx-color: #bebebe; }
 
 #operations-center-pane .line .icon {
     -fx-min-width: 50;
@@ -78,8 +78,12 @@
     -fx-background-repeat: no-repeat;
 }
 
-.order-props > .buy-icon { -fx-background-image: url('/icons/buy.png'); }
+.order-props .completed { -fx-color: -cf-main1; }
+.order-props .running { -fx-color: -cf-sec1; }
+.order-props .failed { -fx-color: #bebebe; }
 
+
+.order-props > .buy-icon { -fx-background-image: url('/icons/buy.png'); }
 .order-props > .sell-icon { -fx-background-image: url('/icons/sell.png'); }
 
 .order-props > .summary {
@@ -89,9 +93,7 @@
     -fx-text-alignment: center;
 }
 
-.order-props > .summary.buy { -fx-text-fill: -cf-main1; }
-
-.order-props > .summary.sell { -fx-text-fill: -cf-sec1; }
+.order-props > .summary { -fx-text-fill: -fx-color; }
 
 .order-props > .lines {
     -fx-spacing: 0;
@@ -113,6 +115,6 @@
 
 .order-props > .lines > .line .prop-value { -fx-text-fill: #a7a7a7; }
 
-.order-props > .lines > .line.buy .prop-value { -fx-text-fill: -cf-main1; }
-
-.order-props > .lines > .line.sell .prop-value { -fx-text-fill: -cf-sec1; }
+.order-props > .lines > .line.completed .prop-value,
+.order-props > .lines > .line.running .prop-value,
+.order-props > .lines > .line.failed .prop-value { -fx-text-fill: -fx-color; }

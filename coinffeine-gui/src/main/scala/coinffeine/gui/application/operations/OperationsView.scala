@@ -46,7 +46,7 @@ class OperationsView(app: CoinffeineApp,
       }
 
       val controls = new HBox {
-        styleClass ++= Seq("line", OperationStyles.styleClassFor(p))
+        p.orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
         content = Seq(
           new StackPane {
             styleClass += "icon"
