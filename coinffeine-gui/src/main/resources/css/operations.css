@@ -76,6 +76,14 @@
     -fx-spacing: 15;
 }
 
+#operations-control-pane { -fx-spacing: 15; }
+
+#operations-control-pane > .btc-price {
+    -fx-text-fill: #a39191;
+    -fx-font-size: 18;
+    -fx-font-weight: 300;
+}
+
 .order-props {
     -fx-spacing: 20;
     -fx-min-width: 500;

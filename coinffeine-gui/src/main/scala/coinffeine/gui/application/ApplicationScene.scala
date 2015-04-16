@@ -1,6 +1,11 @@
 package coinffeine.gui.application
 
-import java.text.DecimalFormat
+import scalafx.Includes._
+import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
+import scalafx.event.ActionEvent
+import scalafx.scene.Node
+import scalafx.scene.control._
+import scalafx.scene.layout._
 
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
@@ -9,13 +14,6 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
 import coinffeine.peer.config.SettingsProvider
-
-import scalafx.Includes._
-import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.event.ActionEvent
-import scalafx.scene.Node
-import scalafx.scene.control._
-import scalafx.scene.layout._
 
 /** Main scene of the application.
   *
@@ -86,16 +84,16 @@ class ApplicationScene(balances: ApplicationScene.Balances,
       },
       new Label with TextStyles.GoodNews with TextStyles.SuperBoldface with TextStyles.Huge {
         text <== balances.fiat.delegate.mapToString {
-          case Some(b) => s"€${ApplicationScene.BalanceFormat.format(b.amount)}"
-          case None => "€__,__"
+          case Some(b) => b.amount.format
+          case None => CurrencyAmount.formatMissing(Euro)
         }
       },
       new HBox {
         content = Seq(
           new Label with TextStyles.GoodNews with TextStyles.Big {
             text <== balances.bitcoin.delegate.mapToString {
-              case Some(b) => ApplicationScene.BalanceFormat.format(b.available.value)
-              case None => "?"
+              case Some(b) => b.available.format(Currency.NoSymbol)
+              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
           new Label("BTC") with TextStyles.GoodNews with TextStyles.Boldface with TextStyles.Big)
@@ -143,6 +141,4 @@ object ApplicationScene {
     bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
     fiat: ReadOnlyObjectProperty[Option[FiatBalance[Euro.type]]]
   )
-
-  private val BalanceFormat = new DecimalFormat("###,###,##0.00######")
 }
