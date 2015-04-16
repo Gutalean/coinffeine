@@ -7,6 +7,8 @@ import scalafx.scene.layout.{HBox, StackPane, VBox}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.NodeStyles
+import coinffeine.model.exchange.Exchange
+import coinffeine.model.market._
 
 /** Interactively shows the status of an order if you bind the {{{status}}} property. */
 class OrderStatusWidget extends VBox {
@@ -68,6 +70,20 @@ object OrderStatusWidget {
     def message: String = ""
     def filledSections: Int = 0
     def spinnerSection: Option[Int] = None
+  }
+
+  object Status {
+    def fromOrder(order: AnyCurrencyOrder): Status =
+      order.status match {
+        case NotStartedOrder if !order.inMarket => Offline
+        case NotStartedOrder => InMarket
+        case InProgressOrder =>
+          if (order.exchanges.values.exists(isInProgress)) InProgress else Matching
+        case CompletedOrder | CancelledOrder => Completed
+      }
+
+    private def isInProgress(exchange: Exchange[_]): Boolean =
+      !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
   }
 
   case object Offline extends Status {
