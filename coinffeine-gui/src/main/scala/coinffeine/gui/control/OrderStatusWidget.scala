@@ -15,7 +15,7 @@ class OrderStatusWidget extends VBox {
   import OrderStatusWidget._
 
   /** Property representing the status or an order */
-  val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Offline)
+  val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Submitting)
 
   private val spinner = new Spinner
   private val label = new Label() {
@@ -75,7 +75,7 @@ object OrderStatusWidget {
   object Status {
     def fromOrder(order: AnyCurrencyOrder): Status =
       order.status match {
-        case NotStartedOrder if !order.inMarket => Offline
+        case NotStartedOrder if !order.inMarket => Submitting
         case NotStartedOrder => InMarket
         case InProgressOrder =>
           if (order.exchanges.values.exists(isInProgress)) InProgress else Matching
@@ -86,8 +86,8 @@ object OrderStatusWidget {
       !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
   }
 
-  case object Offline extends Status {
-    override val message = "Offline"
+  case object Submitting extends Status {
+    override val message = "Submitting"
   }
 
   case object InMarket extends Status {

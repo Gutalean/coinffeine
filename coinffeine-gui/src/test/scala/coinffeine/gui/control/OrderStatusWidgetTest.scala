@@ -15,8 +15,8 @@ import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 
 class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmountsComponent {
 
-  "Order status" should "be offline for not started offline orders" in {
-    Status.fromOrder(randomOrder(1.BTC)) shouldBe Offline
+  "Order status" should "be submitting for not started offline orders" in {
+    Status.fromOrder(randomOrder(1.BTC)) shouldBe Submitting
   }
 
   it should "be in market for not started in market orders" in {
