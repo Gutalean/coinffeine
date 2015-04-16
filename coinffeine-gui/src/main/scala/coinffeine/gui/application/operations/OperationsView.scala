@@ -12,6 +12,7 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
+import coinffeine.gui.control.OrderStatusWidget
 import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
@@ -31,7 +32,7 @@ class OperationsView(app: CoinffeineApp,
         new StackPane { styleClass += "icon" },
         new Label(s"You are $action $amount") { styleClass += "summary" },
         new Label("3d 20h ago") { styleClass += "date" },
-        new ProgressBar() { progress <== p.progressProperty },
+        new OrderStatusWidget,
         new HBox with PaneStyles.ButtonRow {
           styleClass += "buttons"
           content = Seq(

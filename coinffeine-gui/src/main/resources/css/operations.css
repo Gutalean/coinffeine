@@ -58,7 +58,7 @@
 
 #operations-center-pane .line.sell .icon { -fx-background-image: url('/icons/sell.png'); }
 
-#operations-center-pane .line .label {
+#operations-center-pane .line > .label {
     -fx-font-size: 20;
     -fx-text-fill: -fx-color;
 }
@@ -70,6 +70,11 @@
 #operations-center-pane .line .date {
     -fx-min-width: 100;
     -fx-font-size: 16;
+}
+
+#operations-center-pane .line .order-status {
+    -fx-color: -cf-sec1;
+    -fx-min-width: 150;
 }
 
 #operations-center-pane .line .buttons {
