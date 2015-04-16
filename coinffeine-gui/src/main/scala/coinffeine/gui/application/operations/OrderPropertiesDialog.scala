@@ -1,11 +1,11 @@
 package coinffeine.gui.application.operations
 
+import javafx.beans.value.ObservableStringValue
 import scalafx.beans.property.ReadOnlyObjectProperty
-import scalafx.scene.control.{Label, ProgressBar}
+import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.scene.{Node, Parent}
 import scalafx.stage.{Modality, Stage, Window}
-import javafx.beans.value.{ObservableDoubleValue, ObservableStringValue}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
@@ -25,7 +25,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private val summary = new Label {
-    styleClass ++= Seq("summary", OperationStyles.styleClassFor(props))
+    props.orderProperty.delegate.bindToList(styleClass)("summary" +: OperationStyles.stylesFor(_))
     text = s"You're $action $amount as of April 4, 2015"
   }
 
@@ -60,20 +60,27 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def makeStatusLine(status: ObservableStringValue,
-                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) = makeLine(
-    title = "Status",
-    value = status,
-    valueClass = Some(OperationStyles.styleClassFor(props)),
-    companionNode = Some(new OrderStatusWidget {
-      status <== orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
-    })
-  )
+                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) =  new HBox {
+    orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
+    content = Seq(
+      new VBox {
+        content = Seq(
+          new Label("Status") { styleClass += "prop-name" },
+          new Label {
+            styleClass += "prop-value"
+            text <== status
+          }
+        )
+      },
+      new OrderStatusWidget {
+        status <== orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
+      }
+    )
+  }
 
   private def makeLine(title: String,
-                       value: ObservableStringValue,
-                       valueClass: Option[String] = None,
-                       companionNode: Option[Node] = None): Node = new HBox {
-    styleClass ++= Seq("line") ++ valueClass
+                       value: ObservableStringValue): Node = new HBox {
+    styleClass += "line"
     content = Seq(
       new VBox {
         content = Seq(
@@ -85,6 +92,5 @@ class OrderPropertiesDialog(props: OrderProperties) {
         )
       }
     )
-    companionNode.foreach(content.add(_))
   }
 }
