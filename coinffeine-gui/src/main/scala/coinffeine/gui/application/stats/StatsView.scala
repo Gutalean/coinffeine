@@ -1,10 +1,9 @@
 package coinffeine.gui.application.stats
 
-import scalafx.scene.control.{Label, ScrollPane}
-import scalafx.scene.layout.{HBox, Pane, VBox}
+import scalafx.scene.layout.Pane
 
 import coinffeine.gui.application.ApplicationView
-import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles}
+import coinffeine.gui.pane.PagePane
 import coinffeine.model.currency.Euro
 import coinffeine.model.market.Market
 import coinffeine.peer.api.CoinffeineApp
@@ -15,15 +14,10 @@ class StatsView(app: CoinffeineApp) extends ApplicationView {
 
   private val orderBookChart = new OrderBookChart(app.marketStats, Market(Euro))
 
-  override def centerPane = new VBox {
+  override def centerPane = new PagePane {
     id = "stats-center-pane"
-    content = Seq(
-      new HBox with PaneStyles.Centered {
-        styleClass += "header"
-        content = new Label("ORDER BOOK")
-      },
-      new ScrollPane() with NodeStyles.VExpand { content = orderBookChart }
-    )
+    headerText = "ORDER BOOK"
+    pageContent = orderBookChart
   }
 
   // TODO: provide a valid control pane

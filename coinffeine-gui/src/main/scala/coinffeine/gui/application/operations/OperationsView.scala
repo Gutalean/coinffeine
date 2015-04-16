@@ -13,7 +13,8 @@ import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.OrderStatusWidget
-import coinffeine.gui.scene.styles.{ButtonStyles, NodeStyles, OperationStyles, PaneStyles}
+import coinffeine.gui.pane.PagePane
+import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
 import coinffeine.model.market.{AnyCurrencyOrder, Bid, Market}
@@ -58,16 +59,10 @@ class OperationsView(app: CoinffeineApp,
 
   override def name: String = "Operations"
 
-  override def centerPane: Pane = new VBox {
+  override def centerPane: Pane = new PagePane() {
     id = "operations-center-pane"
-    vgrow = Priority.Always
-    content = Seq(
-      new HBox with PaneStyles.Centered {
-        styleClass += "header"
-        content = new Label("RECENT ACTIVITY")
-      },
-      new ScrollPane() with NodeStyles.VExpand { content = operationsTable }
-    )
+    headerText = "RECENT ACTIVITY"
+    pageContent = operationsTable
   }
 
   override def controlPane: Pane = new VBox with PaneStyles.Centered {
