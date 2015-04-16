@@ -1,5 +1,6 @@
 package coinffeine.gui.application.operations
 
+import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.{Label, ProgressBar}
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.scene.{Node, Parent}
@@ -8,9 +9,10 @@ import javafx.beans.value.{ObservableDoubleValue, ObservableStringValue}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.control.OrderStatusWidget
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
-import coinffeine.model.market.Bid
+import coinffeine.model.market.{AnyCurrencyOrder, Bid}
 
 class OrderPropertiesDialog(props: OrderProperties) {
 
@@ -31,7 +33,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
     styleClass += "lines"
     content = Seq(
       makeStatusLine(
-        props.statusProperty.delegate.mapToString(_.name.capitalize), props.progressProperty),
+        props.statusProperty.delegate.mapToString(_.name.capitalize), props.orderProperty),
       makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
       makeLine("Type", props.typeProperty.delegate.mapToString(_.toString)),
       makeLine("Price", props.priceProperty.delegate.mapToString(_.toString)),
@@ -58,11 +60,13 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def makeStatusLine(status: ObservableStringValue,
-                             orderProgress: ObservableDoubleValue) = makeLine(
+                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) = makeLine(
     title = "Status",
     value = status,
     valueClass = Some(OperationStyles.styleClassFor(props)),
-    companionNode = Some(new ProgressBar { progress <== orderProgress })
+    companionNode = Some(new OrderStatusWidget {
+      status <== orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
+    })
   )
 
   private def makeLine(title: String,
