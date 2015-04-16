@@ -1,86 +1,45 @@
 /* This file defines the styles for the wallet view. */
 
-#wallet-balance-details {
-    -fx-hgap: 10px;
-    -fx-vgap: 10px;
+#wallet-center-pane .line {
+    -fx-spacing: 40;
+    -fx-padding: 5 50 5 50;
+    -fx-min-height: 80;
+    -fx-border-width: 0 0 1 0;
+    -fx-border-color: -cf-light-background;
+    -fx-border-style: segments(3, 2);
+    -fx-alignment: center-left;
+    -fx-color: -cf-sec3;
 }
 
-#wallet-noqr-label {
-    -fx-text-alignment: center;
-    -fx-min-height: 170;
-    -fx-min-width: 170;
+#wallet-center-pane .line .icon {
+    -fx-min-width: 50;
+    -fx-background-position: center;
+    -fx-background-size: 50;
+    -fx-background-repeat: no-repeat;
 }
 
-#wallet-qr-label {
-    -fx-text-alignment: center;
-    -fx-margin: 0 0 10px 0;
+#wallet-center-pane .line.income > .icon { -fx-background-image: url('/icons/income.png'); }
+#wallet-center-pane .line.outcome > .icon { -fx-background-image: url('/icons/outcome.png'); }
+
+#wallet-center-pane .line .label { -fx-text-fill: -fx-color; }
+
+#wallet-center-pane .line .summary {
+    -fx-font-size: 20;
+    -fx-min-width: 400;
 }
 
-#wallet-qr-pane {
-    -fx-border-color: lightgray;
-    -fx-border-radius: 5;
-    -fx-background-color: white;
-    -fx-background-radius: 5;
-    -fx-font-size: 8;
-    -fx-padding: 5px;
-    -fx-alignment: top-right;
+#wallet-center-pane .line .date {
+    -fx-font-size: 16;
+    -fx-font-weight: 300;
+    -fx-min-width: 200;
 }
 
-#wallet-details-pane  {
-    -fx-spacing: 5px;
+#wallet-center-pane .line .buttons {
+    -fx-spacing: 15;
+    -fx-alignment: center-left;
+    -fx-color: -cf-sec3;
 }
 
-#wallet-left-pane  {
-    -fx-padding: 20px;
-    -fx-spacing: 5px;
-}
+#wallet-center-pane .button { -fx-color: #bebebe; }
 
-#wallet-right-pane  {
-    -fx-padding: 10px;
-    -fx-alignment: top-center;
-    -fx-spacing: 5px;
-}
-
-#wallet-right-pane Button {
-    -fx-max-width: 999999;
-}
-
-#wallet-transactions-pane {
-    -fx-padding: 10px;
-    -fx-spacing: 10px;
-}
-
-#wallet-center-pane {
-    -fx-spacing: 10px;
-}
-
-#wallet-withdraw-root-pane {
-    -fx-min-width: 400px;
-    -fx-max-width: 400px;
-    -fx-min-height: 225px;
-    -fx-max-height: 225px;
-    -fx-padding: 20px;
-    -fx-spacing: 25px;
-}
-
-#wallet-withdraw-root-pane HBox {
-    -fx-spacing: 5px;
-}
-
-#wallet-withdraw-root-pane VBox {
-    -fx-spacing: 5px;
-}
-
-#wallet-withdraw-root-pane TilePane {
-    -fx-alignment: center;
-    -fx-orientation: horizontal;
-    -fx-hgap: 20px;
-}
-
-#wallet-withdraw-address-field {
-    -fx-min-width: 300px;
-}
-
-#wallet-transactions-table .hash-cell Button {
-    -fx-font-size: 9;
-}
+#wallet-control-pane .button { -fx-color: -cf-main1; }

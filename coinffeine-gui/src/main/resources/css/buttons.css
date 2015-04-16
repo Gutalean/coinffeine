@@ -1,7 +1,6 @@
 /* This file defines the styles for button controls. */
 
 .button {
-    -fx-color: -cf-main1;
     -fx-background-color: -fx-color;
     -fx-background-radius: 6;
     -fx-background-insets: 0;
@@ -25,7 +24,6 @@
 }
 
 .rounded-button {
-    -fx-color: -cf-sec1;
     -fx-background-color: -fx-color;
     -fx-background-radius: 100%;
     -fx-size: 20;

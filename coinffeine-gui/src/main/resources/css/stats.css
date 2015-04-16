@@ -1,38 +1,5 @@
 /* This file defines the styles for the stats view. */
 
-#stats-center-pane {
-    -fx-spacing: 0;
-    -fx-background-color: white;
-    -fx-background-radius: 5;
-    -fx-border-width: 1;
-    -fx-border-color: derive(-cf-background, 50%);
-    -fx-border-radius: 5;
-}
-
-#stats-center-pane > .header {
-    -fx-background-radius: 5 5 0 0;
-    -fx-background-color: #f5f3f1;
-    -fx-min-height: 50;
-}
-
-#stats-center-pane > .header > .label {
-    -fx-font-size: 16;
-    -fx-font-weight: 800;
-    -fx-text-fill: -cf-background;
-}
-
-#stats-center-pane > .scroll-pane {
-    -fx-fit-to-width: true;
-    -fx-fit-to-height: true;
-    -fx-padding: 20;
-    -fx-background-insets: 0;
-    -fx-background-color: transparent;
-}
-
-#stats-center-pane > .scroll-pane > * {
-    -fx-background-color: transparent;
-}
-
 #stats-center-pane .axis {
    -fx-tick-label-fill: derive(-cf-background, -50%);
 }
@@ -45,4 +12,3 @@
 
 #stats-center-pane .default-color0.chart-series-area-fill { -fx-fill: derive(-cf-main1-trans, 50%); }
 #stats-center-pane .default-color1.chart-series-area-fill { -fx-fill: derive(-cf-main2-trans, 50%); }
-
