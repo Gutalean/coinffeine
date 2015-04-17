@@ -4,10 +4,13 @@ import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayCredentials
 
 private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   private val emailProperty = new StringProperty(this, "email", "")
   emailProperty.onChange { updateCredentials() }

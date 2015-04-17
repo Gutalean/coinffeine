@@ -7,11 +7,14 @@ import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.scene.styles._
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
 private[setup] class FaucetInfoStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   private val addressTextField = new TextField {
     hgrow = Priority.Always

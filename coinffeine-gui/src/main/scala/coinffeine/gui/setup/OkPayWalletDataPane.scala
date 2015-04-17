@@ -4,11 +4,14 @@ import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.scene.styles.{ColumnStyles, PaneStyles, TextStyles}
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayWalletAccess
 
 private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   private val walletIdProperty = new StringProperty(this, "walletId", "")
   walletIdProperty.onChange { updateAccess() }

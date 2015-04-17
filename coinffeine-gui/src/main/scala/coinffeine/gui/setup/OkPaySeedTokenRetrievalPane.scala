@@ -11,11 +11,14 @@ import scalafx.scene.layout._
 
 import org.controlsfx.dialog.{DialogStyle, Dialogs}
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.{OkPayWalletAccess, OkPayProfileExtractor}
 
 private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   val retrievalError = new ObjectProperty[Throwable](null, "error")
 
