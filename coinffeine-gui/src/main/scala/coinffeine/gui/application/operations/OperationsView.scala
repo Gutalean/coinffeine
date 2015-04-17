@@ -61,10 +61,7 @@ class OperationsView(app: CoinffeineApp,
           new Label {
             styleClass += "date"
             text <== now.mapToString { n =>
-              val elapsed = n match {
-                case Some(t) => new Period(createdOn, t)
-                case None => new Period(createdOn, DateTime.now())
-              }
+              val elapsed = new Period(createdOn, n.getOrElse(DateTime.now()))
               dateTimePrinter.printElapsed(createdOn, elapsed)
             }
           },
