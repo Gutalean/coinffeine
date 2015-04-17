@@ -7,26 +7,30 @@ import org.joda.time.format.{DateTimeFormat, PeriodFormatterBuilder}
 
 class DateTimePrinter {
 
-  private val shortPeriodFormatter = new PeriodFormatterBuilder()
+  private val shortElapsedFormatter = new PeriodFormatterBuilder()
     .appendHours().appendSuffix("h").appendSeparator(" ")
     .appendMinutes().appendSuffix("m").appendSeparator(" ")
     .appendLiteral(" ago")
     .printZeroNever()
     .toFormatter
 
-  private val longPeriodFormatter = new PeriodFormatterBuilder()
+  private val longElapsedFormatter = new PeriodFormatterBuilder()
     .appendDays().appendSuffix("d").appendSeparator(" ")
     .appendHours().appendSuffix("h").appendSeparator(" ")
     .appendLiteral(" ago")
     .printZeroNever()
     .toFormatter
 
-  private val dateTimeFormatter = DateTimeFormat.forPattern("ddMMMyyyy").withLocale(Locale.US)
+  private val farElapsedFormatter = DateTimeFormat.forPattern("ddMMMyyyy").withLocale(Locale.US)
 
-  def apply(timestamp: DateTime, elapsed: Period): String = {
-    if (elapsed.getMonths > 0) dateTimeFormatter.print(timestamp)
-    else if (elapsed.getDays > 0) longPeriodFormatter.print(elapsed)
-    else if (elapsed.toStandardMinutes.getMinutes > 0) shortPeriodFormatter.print(elapsed)
+  private val dateTimeFormatter = DateTimeFormat.forPattern("MMMM dd, yyyy").withLocale(Locale.US)
+
+  def printElapsed(timestamp: DateTime, elapsed: Period): String = {
+    if (elapsed.getMonths > 0) farElapsedFormatter.print(timestamp)
+    else if (elapsed.getDays > 0) longElapsedFormatter.print(elapsed)
+    else if (elapsed.toStandardMinutes.getMinutes > 0) shortElapsedFormatter.print(elapsed)
     else "just now"
   }
+
+  def printDate(timestamp: DateTime): String = dateTimeFormatter.print(timestamp)
 }

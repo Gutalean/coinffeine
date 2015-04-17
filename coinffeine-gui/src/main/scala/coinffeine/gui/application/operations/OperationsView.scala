@@ -65,7 +65,7 @@ class OperationsView(app: CoinffeineApp,
                 case Some(t) => new Period(createdOn, t)
                 case None => new Period(createdOn, DateTime.now())
               }
-              dateTimePrinter(createdOn, elapsed)
+              dateTimePrinter.printElapsed(createdOn, elapsed)
             }
           },
           new OrderStatusWidget {
