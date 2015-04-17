@@ -1,11 +1,11 @@
 package coinffeine.peer.serialization
 
 import java.io.ByteArrayOutputStream
-
 import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
+import org.joda.time.DateTime
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin._
@@ -21,6 +21,9 @@ trait SerializerTest extends UnitTest {
 
   protected def keyPairSerializationRoundtrip(value: KeyPair): KeyPair =
     serializationRoundtrip(value, classOf[KeyPair])
+
+  protected def dateTimeSerializationRoundtrip(value: DateTime): DateTime =
+    serializationRoundtrip(value, classOf[DateTime])
 
   protected def serializationRoundtrip[T](value: T)(implicit ev: ClassTag[T]): T = {
     serializationRoundtrip(value, ev.runtimeClass.asInstanceOf[Class[T]])

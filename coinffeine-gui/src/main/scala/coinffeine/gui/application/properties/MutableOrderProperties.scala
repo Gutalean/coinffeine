@@ -7,11 +7,19 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
+import org.joda.time.DateTime
 
 class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProperties {
+
   override val orderProperty = new ObjectProperty[AnyCurrencyOrder](this, "source", initialValue)
+
   override val idProperty = new ReadOnlyObjectProperty[OrderId](this, "id", initialValue.id)
-  override val typeProperty = new ReadOnlyObjectProperty[OrderType](this, "orderType", initialValue.orderType)
+
+  override val typeProperty = new ReadOnlyObjectProperty[OrderType](
+    this, "orderType", initialValue.orderType)
+
+  override val createdOnProperty = new ReadOnlyObjectProperty[DateTime](
+    this, "createdOn", initialValue.log.activities.head.timestamp)
 
   override val exchanges = new ObservableBuffer[ExchangeProperties]
   updateExchanges(initialValue.exchanges.values.toSeq)
