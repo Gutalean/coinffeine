@@ -16,7 +16,7 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
       text <== stringBinding(summarize)
     },
     new Label with NodeStyles.Poppable {
-      text <== stringBinding(_.amounts.exchanged.toString)
+      text <== stringBinding(_.amount.toString)
       popOverContent = new Label {
         text <== stringBinding(formatFiatAmount)
       }
