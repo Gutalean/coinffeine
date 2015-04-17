@@ -92,7 +92,7 @@ class OperationsView(app: CoinffeineApp,
     val bitcoinPrice = new Label {
       styleClass += "btc-price"
 
-      private val currentPrice = PollingBean(OrderSubmissionForm.CurrentQuotePollingInterval) {
+      private val currentPrice = PollingBean(OperationsView.BitcoinPricePollingInterval) {
         implicit val executor = FxExecutor.asContext
         app.marketStats.currentQuote(Market(Euro)).map(_.lastPrice)
       }
@@ -115,5 +115,5 @@ class OperationsView(app: CoinffeineApp,
 
 object OperationsView {
 
-  val BitcoinPricePollingInterval = 10.seconds
+  private val BitcoinPricePollingInterval = 10.seconds
 }
