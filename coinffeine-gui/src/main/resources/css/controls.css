@@ -97,3 +97,7 @@
 .poppable {
     -fx-font-weight: bold;
 }
+
+.popover > .content {
+    -fx-padding: 4;
+}
