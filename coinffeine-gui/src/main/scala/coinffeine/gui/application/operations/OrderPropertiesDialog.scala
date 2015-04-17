@@ -16,8 +16,11 @@ import coinffeine.model.market.{AnyCurrencyOrder, Bid}
 
 class OrderPropertiesDialog(props: OrderProperties) {
 
+  private val dateTimePrinter = new DateTimePrinter
+
   private val action = if (props.typeProperty.value == Bid) "buying" else "selling"
   private val amount = props.amountProperty.value
+  private val date = dateTimePrinter.printDate(props.createdOnProperty.value)
 
   private val icon = new StackPane {
     styleClass += "icon"
@@ -26,7 +29,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
 
   private val summary = new Label {
     props.orderProperty.delegate.bindToList(styleClass)("summary" +: OperationStyles.stylesFor(_))
-    text = s"You're $action $amount as of April 4, 2015"
+    text = s"You're $action $amount as of $date"
   }
 
   private val lines = new VBox {
