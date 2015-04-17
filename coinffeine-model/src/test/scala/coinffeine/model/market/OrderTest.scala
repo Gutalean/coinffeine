@@ -29,8 +29,9 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
   }
 
   it must "report progress with one incomplete exchange that overwrites itself" in {
+    val initialOrder = Order.randomLimit(Bid, 10.BTC, Price(10.EUR))
     val exchange = createExchangeInProgress(5)
-    val order = Order.randomLimit(Bid, 10.BTC, Price(10.EUR))
+    val order = initialOrder
       .withExchange(exchange)
       .withExchange(exchange.completeStep(6))
     order.progress shouldBe 0.6
