@@ -1,5 +1,6 @@
 package coinffeine.gui.application.operations
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scalafx.Includes._
 import scalafx.event.Event
@@ -18,16 +19,23 @@ import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
 import coinffeine.model.market.{Bid, Market}
-import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
+import org.joda.time.{DateTime, Period}
 
 class OperationsView(app: CoinffeineApp,
                      props: ApplicationProperties,
                      orderValidation: OrderValidation) extends ApplicationView {
 
+  private val now = PollingBean[DateTime](
+    OperationsView.TimeComputingInterval)(Future.successful(DateTime.now()))
+
+  private val dateTimePrinter = new DateTimePrinter
+
   private def lineFor(p: OrderProperties): Node = {
     val action = if (p.typeProperty.value == Bid) "buying" else "selling"
     val amount = p.amountProperty.value
+    val createdOn = p.createdOnProperty.value
+
     new StackPane {
 
       val lineWidth = width
@@ -50,8 +58,15 @@ class OperationsView(app: CoinffeineApp,
           new Label(s"You are $action $amount") {
             styleClass += "summary"
           },
-          new Label("3d 20h ago") {
+          new Label {
             styleClass += "date"
+            text <== now.mapToString { n =>
+              val elapsed = n match {
+                case Some(t) => new Period(createdOn, t)
+                case None => new Period(createdOn, DateTime.now())
+              }
+              dateTimePrinter(createdOn, elapsed)
+            }
           },
           new OrderStatusWidget {
             status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
@@ -116,4 +131,5 @@ class OperationsView(app: CoinffeineApp,
 object OperationsView {
 
   private val BitcoinPricePollingInterval = 10.seconds
+  private val TimeComputingInterval = 10.seconds
 }
