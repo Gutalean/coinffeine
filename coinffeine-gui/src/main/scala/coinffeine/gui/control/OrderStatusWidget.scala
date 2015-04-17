@@ -17,7 +17,7 @@ class OrderStatusWidget extends VBox {
   /** Property representing the status or an order */
   val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Submitting)
 
-  private val spinner = new Spinner
+  private val spinner = new Spinner(autoPlay = true)
   private val label = new Label() {
     styleClass += "message"
     text <== status.delegate.mapToString(_.message)
@@ -27,6 +27,7 @@ class OrderStatusWidget extends VBox {
       styleClass += s"section${index + 1}"
     }
   }
+  sections.head.content.add(spinner)
 
   styleClass += "order-status"
   visible <== status.delegate.mapToBool(_ != Completed)
@@ -88,6 +89,7 @@ object OrderStatusWidget {
 
   case object Submitting extends Status {
     override val message = "Submitting"
+    override val spinnerSection = Some(0)
   }
 
   case object InMarket extends Status {
