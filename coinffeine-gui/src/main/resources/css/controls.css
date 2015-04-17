@@ -96,3 +96,7 @@
     -fx-background-radius: 0 7 7 0;
     -fx-border-width: 0;
 }
+
+.popover > .content {
+    -fx-padding: 4;
+}
