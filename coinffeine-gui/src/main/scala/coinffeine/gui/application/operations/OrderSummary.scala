@@ -12,10 +12,10 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
   styleClass += "summary"
 
   content = Seq(
-    new Label with NodeStyles.VExpand {
+    new Label {
       text <== stringBinding(summarize)
     },
-    new Label with NodeStyles.VExpand with NodeStyles.Poppable {
+    new Label with NodeStyles.Poppable {
       text <== stringBinding(_.amounts.exchanged.toString)
       private val fiatAmountsLabel = new Label {
         text <== stringBinding(formatFiatAmount)
