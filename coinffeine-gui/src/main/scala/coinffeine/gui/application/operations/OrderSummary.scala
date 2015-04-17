@@ -57,8 +57,8 @@ private object OrderSummary {
       Ask -> "You have sold "
     ),
     Cancelled -> Map(
-      Bid -> "You have cancelled your buy order of ",
-      Ask -> "You have cancelled your sell order of "
+      Bid -> "You cancelled your buy of ",
+      Ask -> "You cancelled your sell of "
     )
   )
 }

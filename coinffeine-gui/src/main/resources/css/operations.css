@@ -32,13 +32,13 @@
 #operations-center-pane .line.sell .icon { -fx-background-image: url('/icons/sell.png'); }
 
 #operations-center-pane .line .label {
-    -fx-font-size: 20;
+    -fx-font-size: 18;
     -fx-text-fill: -fx-color;
 }
 
 #operations-center-pane .line .summary {
-    -fx-min-width: 400;
-    -fx-alignment: center;
+    -fx-min-width: 420;
+    -fx-alignment: center-left;
 }
 
 #operations-center-pane .line .summary .poppable {
@@ -97,7 +97,7 @@
 
 .order-props > .summary {
     -fx-padding: 10 50 10 50;
-    -fx-font-size: 20;
+    -fx-font-size: 18;
     -fx-wrap-text: true;
     -fx-text-alignment: center;
 }
