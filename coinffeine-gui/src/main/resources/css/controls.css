@@ -94,10 +94,6 @@
     -fx-border-width: 0;
 }
 
-.poppable {
-    -fx-font-weight: bold;
-}
-
 .popover > .content {
     -fx-padding: 4;
 }
