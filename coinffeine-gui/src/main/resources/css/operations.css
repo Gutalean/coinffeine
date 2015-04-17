@@ -31,13 +31,14 @@
 
 #operations-center-pane .line.sell .icon { -fx-background-image: url('/icons/sell.png'); }
 
-#operations-center-pane .line > .label {
+#operations-center-pane .line .label {
     -fx-font-size: 20;
     -fx-text-fill: -fx-color;
 }
 
 #operations-center-pane .line .summary {
     -fx-min-width: 400;
+    -fx-alignment: center;
 }
 
 #operations-center-pane .line .date {

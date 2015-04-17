@@ -8,6 +8,8 @@ import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import org.joda.time.{DateTime, Period}
+
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
@@ -18,9 +20,8 @@ import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.{Bid, Market}
+import coinffeine.model.market.Market
 import coinffeine.peer.api.CoinffeineApp
-import org.joda.time.{DateTime, Period}
 
 class OperationsView(app: CoinffeineApp,
                      props: ApplicationProperties,
@@ -32,8 +33,6 @@ class OperationsView(app: CoinffeineApp,
   private val dateTimePrinter = new DateTimePrinter
 
   private def lineFor(p: OrderProperties): Node = {
-    val action = if (p.typeProperty.value == Bid) "buying" else "selling"
-    val amount = p.amountProperty.value
     val createdOn = p.createdOnProperty.value
 
     new StackPane {
@@ -55,9 +54,7 @@ class OperationsView(app: CoinffeineApp,
           new StackPane {
             styleClass += "icon"
           },
-          new Label(s"You are $action $amount") {
-            styleClass += "summary"
-          },
+          new OrderSummary(p.orderProperty),
           new Label {
             styleClass += "date"
             text <== now.mapToString { n =>

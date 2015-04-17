@@ -93,3 +93,7 @@
     -fx-background-radius: 0 7 7 0;
     -fx-border-width: 0;
 }
+
+.poppable {
+    -fx-font-weight: bold;
+}
