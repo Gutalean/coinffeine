@@ -17,10 +17,9 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
     },
     new Label with NodeStyles.Poppable {
       text <== stringBinding(_.amounts.exchanged.toString)
-      private val fiatAmountsLabel = new Label {
+      popOverContent = new Label {
         text <== stringBinding(formatFiatAmount)
       }
-      popOverContent.value_=(fiatAmountsLabel.delegate)
     }
   )
 

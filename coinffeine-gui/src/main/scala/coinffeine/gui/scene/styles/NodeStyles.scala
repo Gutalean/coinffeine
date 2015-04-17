@@ -21,7 +21,11 @@ object NodeStyles {
   /** A node that has a pop-over. */
   trait Poppable { this: Node =>
 
-    val popOverContent = new ObjectProperty[javafx.scene.Node](this, "popOverContent", new Label(""))
+    private val _popOverContent = new ObjectProperty[javafx.scene.Node](this, "popOverContent", new Label(""))
+    def popOverContent = _popOverContent
+    def popOverContent_=(value: Node): Unit = {
+      _popOverContent.value = value
+    }
 
     private val popover = new PopOver {
       detachableProperty().set(false)
