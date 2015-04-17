@@ -15,12 +15,15 @@ private class CounterpartRefundSigner(gateway: ActorRef,
                                       exchangeId: ExchangeId,
                                       counterpart: PeerId) extends Actor with ActorLogging {
 
+  override def preStart(): Unit = {
+    gateway ! Subscribe {
+      case ReceiveMessage(RefundSignatureRequest(`exchangeId`, _), `counterpart`) =>
+    }
+  }
+
   override def receive: Receive = {
     case StartSigningRefunds(handshake) =>
       log.info("Handshake {}: ready to sign counterpart refund", exchangeId)
-      gateway ! Subscribe {
-        case ReceiveMessage(RefundSignatureRequest(`exchangeId`, _), `counterpart`) =>
-      }
       context.become(signingRefunds(handshake))
   }
 
