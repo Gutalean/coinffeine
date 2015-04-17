@@ -1,7 +1,9 @@
 package coinffeine.gui.scene.styles
 
 import scalafx.Includes._
+import scalafx.beans.property.ObjectProperty
 import scalafx.scene.Node
+import scalafx.scene.control.Label
 import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout.Priority
 
@@ -19,13 +21,13 @@ object NodeStyles {
   /** A node that has a pop-over. */
   trait Poppable { this: Node =>
 
-    /** The first time a pop-over is displayed derived classes are asked for its contents. */
-    def popOverContent: Node
+    val popOverContent = new ObjectProperty[javafx.scene.Node](this, "popOverContent", new Label(""))
 
-    private val popover = new PopOver(popOverContent) {
+    private val popover = new PopOver {
       detachableProperty().set(false)
       arrowSizeProperty().set(6)
       arrowIndentProperty().set(4)
+      contentNodeProperty().bind(popOverContent)
     }
 
     styleClass += "poppable"
