@@ -52,10 +52,13 @@
 }
 
 .order-status .spinner {
-    -fx-color: white;
     -fx-scale-y: 0.7;
     -fx-scale-x: 0.7;
     -fx-min-height: 20;
+}
+
+.order-status .spinner .bar {
+    -fx-fill: derive(-fx-color, 50%);
 }
 
 .order-status .bar {
