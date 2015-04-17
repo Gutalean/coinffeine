@@ -1,6 +1,6 @@
 package coinffeine.gui.control
 
-import scalafx.beans.property.ObjectProperty
+import scalafx.beans.property.{BooleanProperty, ObjectProperty}
 import scalafx.css.PseudoClass
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, StackPane, VBox}
@@ -17,6 +17,9 @@ class OrderStatusWidget extends VBox {
   /** Property representing the status or an order */
   val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Submitting)
 
+  /** Property representing lack of connectivity with the Coinffeine network */
+  val online = new BooleanProperty(this, "online", true)
+
   private val spinner = new Spinner(autoPlay = true)
   private val label = new Label() {
     styleClass += "message"
@@ -30,7 +33,7 @@ class OrderStatusWidget extends VBox {
   sections.head.content.add(spinner)
 
   styleClass += "order-status"
-  visible <== status.delegate.mapToBool(_ != Completed)
+  visible <== status.delegate.mapToBool(_ != Completed).and(online)
   content = Seq(label, new HBox {
     styleClass += "bar"
     content = sections

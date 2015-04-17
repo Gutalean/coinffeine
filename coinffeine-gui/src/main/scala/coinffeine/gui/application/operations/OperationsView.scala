@@ -64,6 +64,7 @@ class OperationsView(app: CoinffeineApp,
           },
           new OrderStatusWidget {
             status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
+            online <== props.connectionStatusProperty.delegate.mapToBool(_.coinffeine.connected)
           },
           new HBox with PaneStyles.ButtonRow {
             styleClass += "buttons"
