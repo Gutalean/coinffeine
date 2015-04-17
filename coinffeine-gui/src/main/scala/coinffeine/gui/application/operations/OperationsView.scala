@@ -77,7 +77,13 @@ class OperationsView(app: CoinffeineApp,
                   dialog.show(delegate.getScene.getWindow)
                 }
               },
-              new Button with ButtonStyles.Close)
+              new Button with ButtonStyles.Close {
+                visible <== p.statusProperty.delegate.mapToBool(_.isActive)
+                onAction = { e: Event =>
+                  app.network.cancelOrder(p.idProperty.value)
+                }
+              }
+            )
           }
         )
       }
