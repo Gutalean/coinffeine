@@ -41,6 +41,10 @@
     -fx-alignment: center;
 }
 
+#operations-center-pane .popover .label {
+    -fx-font-size: 16;
+}
+
 #operations-center-pane .line .date {
     -fx-min-width: 100;
     -fx-font-size: 16;

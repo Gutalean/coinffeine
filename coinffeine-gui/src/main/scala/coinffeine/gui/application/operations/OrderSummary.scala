@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations
 
 import scalafx.beans.property.ReadOnlyObjectProperty
-import scalafx.scene.control.{Label, Tooltip}
+import scalafx.scene.control.Label
 import scalafx.scene.layout.HBox
 
 import coinffeine.gui.beans.Implicits._
@@ -13,13 +13,18 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
 
   content = Seq(
     new Label with NodeStyles.VExpand {
-      text <== orderProperty.delegate.mapToString(summarize)
+      text <== stringBinding(summarize)
     },
-    new Label with NodeStyles.VExpand {
-      styleClass += "poppable"
-      text <== orderProperty.delegate.mapToString(_.amounts.exchanged.toString)
+    new Label with NodeStyles.VExpand with NodeStyles.Poppable {
+      text <== stringBinding(_.amounts.exchanged.toString)
+      override def popOverContent = new Label {
+        text <== stringBinding(formatFiatAmount)
+      }
     }
   )
+
+  private def stringBinding(pred: AnyCurrencyOrder => String) =
+    orderProperty.delegate.mapToString(pred)
 
   private def summarize(order: AnyCurrencyOrder): String = {
     val action = order.status match {
@@ -28,6 +33,11 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
       case _ => OrderSummary.Completed
     }
     OrderSummary.Texts(action)(order.orderType)
+  }
+
+  private def formatFiatAmount(order: AnyCurrencyOrder): String = order.price match {
+    case MarketPrice(currency) => s"at $currency market price"
+    case LimitPrice(price) => price.of(order.amount).format
   }
 }
 
