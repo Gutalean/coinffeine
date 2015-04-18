@@ -20,16 +20,12 @@
 #operations-center-pane .line.running { -fx-color: -cf-sec1; }
 #operations-center-pane .line.failed { -fx-color: #bebebe; }
 
-#operations-center-pane .line .icon {
+#operations-center-pane .line .icon.glyph-icon {
     -fx-min-width: 50;
-    -fx-background-position: center;
-    -fx-background-size: 50;
-    -fx-background-repeat: no-repeat;
+    -fx-font-size: 50;
+    -fx-text-alignment: center;
+    -fx-text-fill: -fx-color;
 }
-
-#operations-center-pane .line.buy .icon { -fx-background-image: url('/icons/buy.png'); }
-
-#operations-center-pane .line.sell .icon { -fx-background-image: url('/icons/sell.png'); }
 
 #operations-center-pane .line .label {
     -fx-font-size: 20;
