@@ -15,12 +15,13 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
-import coinffeine.gui.control.OrderStatusWidget
+import coinffeine.gui.control.GlyphLabel.Icon
+import coinffeine.gui.control.{GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.Market
+import coinffeine.model.market.{Ask, Bid, Market}
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp,
@@ -51,8 +52,12 @@ class OperationsView(app: CoinffeineApp,
       val controls = new HBox {
         p.orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
         content = Seq(
-          new StackPane {
+          new GlyphLabel {
             styleClass += "icon"
+            icon <== p.typeProperty.delegate.map {
+              case Bid => Icon.Buy
+              case Ask => Icon.Sell
+            }
           },
           new OrderSummary(p.orderProperty),
           new Label {
