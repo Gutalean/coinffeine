@@ -63,6 +63,12 @@
     -fx-color: -cf-sec1;
 }
 
+#operations-center-pane .line .order-status .message {
+    -fx-font-size: 14;
+    -fx-min-height: 27;
+    -fx-alignment: bottom-center;
+}
+
 #operations-center-pane .line .buttons {
     -fx-spacing: 15;
 }
