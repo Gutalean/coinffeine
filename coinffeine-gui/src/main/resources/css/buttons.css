@@ -43,5 +43,3 @@
 .rounded-button:armed {
     -fx-background-color: derive(-fx-color, -40%);
 }
-
-.close-button { -fx-background-image: url('/icons/close.png'); }

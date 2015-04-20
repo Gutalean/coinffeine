@@ -23,5 +23,8 @@ object ButtonStyles {
   }
 
   /** The close rounded button. */
-  trait Close extends Rounded { this: Button => styleClass += "close-button" }
+  trait Close extends Rounded { this: Button =>
+    styleClass ++= Seq("close-button", "glyph-icon")
+    text = Icon.Cross.letter.toString
+  }
 }
