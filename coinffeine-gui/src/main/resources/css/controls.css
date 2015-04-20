@@ -11,6 +11,18 @@
     -fx-text-fill: white;
 }
 
+.glyph-toggle {
+    -fx-background-color: transparent;
+    -fx-color: -cf-background;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-text-fill: -fx-color;
+}
+
+.glyph-toggle:hover { -fx-text-fill: derive(-fx-color, -20%); }
+
+.glyph-toggle:selected { -fx-color: -cf-main1; }
+
 .progress-bar {
     -fx-min-width: 150;
     -fx-background-color: derive(-fx-color, 80%);
