@@ -88,7 +88,6 @@
 .order-props .failed { -fx-color: #bebebe; }
 
 .order-props .icon {
-    -fx-min-width: 140;
     -fx-font-size: 140;
     -fx-text-alignment: center;
     -fx-text-fill: -fx-color;
