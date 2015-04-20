@@ -15,8 +15,7 @@ import org.joda.time.format.DateTimeFormat
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.GlyphLabel
-import coinffeine.gui.control.GlyphLabel.Icon
+import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
@@ -28,8 +27,8 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   override val name = "Wallet"
 
-  private def iconFor(tx: WalletActivityEntryProperties): Icon =
-    if (tx.amount.value.isNegative) Icon.BitcoinOutflow else Icon.BitcoinInflow
+  private def iconFor(tx: WalletActivityEntryProperties): GlyphIcon =
+    if (tx.amount.value.isNegative) GlyphIcon.BitcoinOutflow else GlyphIcon.BitcoinInflow
 
   private def actionFor(tx: WalletActivityEntryProperties): String =
     if (tx.amount.value.isNegative) "withdrawn from" else "added to"

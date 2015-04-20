@@ -17,8 +17,7 @@ import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
-import coinffeine.gui.control.GlyphLabel.Icon
-import coinffeine.gui.control.{GlyphLabel, OrderStatusWidget}
+import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
@@ -80,8 +79,8 @@ class OperationsView(app: CoinffeineApp,
           new GlyphLabel {
             styleClass += "icon"
             icon <== p.typeProperty.delegate.map {
-              case Bid => Icon.Buy
-              case Ask => Icon.Sell
+              case Bid => GlyphIcon.Buy
+              case Ask => GlyphIcon.Sell
             }
           },
           new OrderSummary(p.orderProperty),
