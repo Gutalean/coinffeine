@@ -64,7 +64,7 @@ class OperationsView(app: CoinffeineApp,
             Insets(0, 0, 0, size.doubleValue() + ProgressTextPadding).delegate
           }
           text <== p.orderProperty.delegate.mapToString { order =>
-            "(%s / %s)".format(order.bitcoinsTransferred, order.amount)
+            s"(${order.bitcoinsTransferred} transferred)"
           }
           minWidth <== Bindings.when(textInside).choose(0).otherwise(barWidth)
           alignment <== Bindings.when(textInside).choose(Pos.TopLeft).otherwise(Pos.TopRight)
