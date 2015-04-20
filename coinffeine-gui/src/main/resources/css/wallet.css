@@ -18,8 +18,8 @@
     -fx-background-repeat: no-repeat;
 }
 
-#wallet-center-pane .line.income > .icon { -fx-background-image: url('/icons/income.png'); }
-#wallet-center-pane .line.outcome > .icon { -fx-background-image: url('/icons/outcome.png'); }
+#wallet-center-pane .line.inflow > .icon { -fx-background-image: url('/icons/income.png'); }
+#wallet-center-pane .line.outflow > .icon { -fx-background-image: url('/icons/outcome.png'); }
 
 #wallet-center-pane .line .label { -fx-text-fill: -fx-color; }
 

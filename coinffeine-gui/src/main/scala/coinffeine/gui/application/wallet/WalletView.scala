@@ -26,7 +26,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
   override val name = "Wallet"
 
   private def styleClassFor(tx: WalletActivityEntryProperties): String =
-    if (tx.amount.value.isNegative) "outcome" else "income"
+    if (tx.amount.value.isNegative) "outflow" else "inflow"
 
   private def actionFor(tx: WalletActivityEntryProperties): String =
     if (tx.amount.value.isNegative) "withdrawn" else "added"
