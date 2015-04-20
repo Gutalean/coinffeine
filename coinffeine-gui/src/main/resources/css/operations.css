@@ -87,9 +87,11 @@
 .order-props .running { -fx-color: -cf-sec1; }
 .order-props .failed { -fx-color: #bebebe; }
 
-
-.order-props > .buy-icon { -fx-background-image: url('/icons/buy.png'); }
-.order-props > .sell-icon { -fx-background-image: url('/icons/sell.png'); }
+.order-props .icon {
+    -fx-font-size: 140;
+    -fx-text-alignment: center;
+    -fx-text-fill: -fx-color;
+}
 
 .order-props > .summary {
     -fx-padding: 10 50 10 50;
