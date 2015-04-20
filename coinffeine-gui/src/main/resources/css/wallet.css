@@ -18,13 +18,14 @@
     -fx-background-repeat: no-repeat;
 }
 
-#wallet-center-pane .line.inflow > .icon { -fx-background-image: url('/icons/income.png'); }
-#wallet-center-pane .line.outflow > .icon { -fx-background-image: url('/icons/outcome.png'); }
-
 #wallet-center-pane .line .label { -fx-text-fill: -fx-color; }
+#wallet-center-pane .line .icon {
+    -fx-font-size: 50;
+    -fx-text-fill: -fx-color;
+}
 
 #wallet-center-pane .line .summary {
-    -fx-font-size: 20;
+    -fx-font-size: 18;
     -fx-min-width: 400;
 }
 

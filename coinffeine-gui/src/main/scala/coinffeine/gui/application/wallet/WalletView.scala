@@ -1,7 +1,5 @@
 package coinffeine.gui.application.wallet
 
-import java.net.{URI, URL}
-import java.util.Locale
 import scalafx.Includes._
 import scalafx.event.Event
 import scalafx.scene.Node
@@ -9,27 +7,32 @@ import scalafx.scene.control._
 import scalafx.scene.image.{Image, ImageView}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
+import java.net.{URI, URL}
+import java.util.Locale
+
+import org.joda.time.format.DateTimeFormat
 
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.control.GlyphLabel
+import coinffeine.gui.control.GlyphLabel.Icon
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
 import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.Address
 import coinffeine.peer.api.CoinffeineApp
-import org.joda.time.format.DateTimeFormat
 
 class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
 
-  private def styleClassFor(tx: WalletActivityEntryProperties): String =
-    if (tx.amount.value.isNegative) "outflow" else "inflow"
+  private def iconFor(tx: WalletActivityEntryProperties): Icon =
+    if (tx.amount.value.isNegative) Icon.BitcoinOutflow else Icon.BitcoinInflow
 
   private def actionFor(tx: WalletActivityEntryProperties): String =
-    if (tx.amount.value.isNegative) "withdrawn" else "added"
+    if (tx.amount.value.isNegative) "withdrawn from" else "added to"
 
   private def dateFor(tx: WalletActivityEntryProperties): String = {
     val date = tx.time.value
@@ -40,10 +43,13 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     styleClass += "transactions"
     properties.transactions.bindToList(content) { tx =>
       new HBox {
-        styleClass ++= Seq("line", styleClassFor(tx))
+        styleClass += "line"
         content = Seq(
-          new StackPane { styleClass += "icon" },
-          new Label(s"${tx.amount.value} were ${actionFor(tx)} to your wallet") {
+          new GlyphLabel {
+            styleClass += "icon"
+            icon = iconFor(tx)
+          },
+          new Label(s"${tx.amount.value} ${actionFor(tx)} your wallet") {
             styleClass += "summary"
           },
           new Label(dateFor(tx)) { styleClass += "date" },
@@ -84,7 +90,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     }
 
     private val copyToClipboardButton = new Button("Copy address") {
-      disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined)
+      disable <== app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
       onAction = { action: Any =>
         val content = new ClipboardContent()
         content.putString(app.wallet.primaryAddress.get.get.toString)
@@ -93,7 +99,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     }
 
     private val withdrawFundsButton = new Button("Withdraw") {
-      disable <== app.wallet.primaryAddress.mapToBoolean(!_.isDefined) ||
+      disable <== app.wallet.primaryAddress.mapToBoolean(_.isEmpty) ||
         app.wallet.balance.mapToBoolean {
           case Some(balance) if balance.amount.isPositive => false
           case _ => true
