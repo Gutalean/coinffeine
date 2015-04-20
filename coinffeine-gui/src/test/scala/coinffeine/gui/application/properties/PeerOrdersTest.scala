@@ -86,6 +86,16 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     }
   }
 
+  it should "sort orders by the time of their last event" in new Fixture {
+    val time1 = DateTime.now()
+    val time2 = time1.plusMinutes(1)
+    withNewOrder("order2", time2) { order2 =>
+      withNewOrder("order1", time1) { order1 =>
+        orders.toList.map(_.idProperty.get.value) shouldBe List("order1", "order2")
+      }
+    }
+  }
+
   trait Fixture extends DefaultAmountsComponent {
 
     val network = new CoinffeineNetwork {
@@ -99,9 +109,10 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
     val orders = new PeerOrders(network, ExecutionContext.global)
 
-    def withNewOrder(id: String)(action: Order[Euro.type] => Unit): Unit = {
+    def withNewOrder(id: String, timestamp: DateTime = DateTime.now())
+                    (action: Order[Euro.type] => Unit): Unit = {
       val orderId = OrderId(id)
-      val order = Order(orderId, Bid, 1.BTC, Price(100.EUR))
+      val order = Order(orderId, Bid, 1.BTC, Price(100.EUR), timestamp)
       network.orders.set(orderId, order)
       eventually {
         orders.find(_.idProperty.get == orderId) shouldBe 'defined
