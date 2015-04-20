@@ -9,7 +9,8 @@ import scalafx.stage.{Modality, Stage, Window}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.OrderStatusWidget
+import coinffeine.gui.control.GlyphLabel.Icon
+import coinffeine.gui.control.{GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.model.market.{AnyCurrencyOrder, Bid}
@@ -22,9 +23,10 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private val amount = props.amountProperty.value
   private val date = dateTimePrinter.printDate(props.createdOnProperty.value)
 
-  private val icon = new StackPane {
-    styleClass += "icon"
-    styleClass += (if (props.typeProperty.value == Bid) "buy-icon" else "sell-icon")
+  private val icon = new GlyphLabel {
+    props.orderProperty.delegate.bindToList(styleClass)(
+      Seq("glyph-icon", "icon") ++ OperationStyles.stylesFor(_))
+    icon = if (props.typeProperty.value == Bid) Icon.Buy else Icon.Sell
   }
 
   private val summary = new Label {
