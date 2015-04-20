@@ -3,7 +3,9 @@ package coinffeine.gui.application.operations
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scalafx.Includes._
+import scalafx.beans.binding._
 import scalafx.event.Event
+import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
@@ -28,8 +30,9 @@ class OperationsView(app: CoinffeineApp,
                      props: ApplicationProperties,
                      orderValidation: OrderValidation) extends ApplicationView {
 
-  private val now = PollingBean[DateTime](
-    OperationsView.TimeComputingInterval)(Future.successful(DateTime.now()))
+  import OperationsView._
+
+  private val now = PollingBean[DateTime](TimeComputingInterval)(Future.successful(DateTime.now()))
 
   private val dateTimePrinter = new DateTimePrinter
 
@@ -39,13 +42,35 @@ class OperationsView(app: CoinffeineApp,
     new StackPane {
 
       val lineWidth = width
+      val barWidth = lineWidth * p.progressProperty
+      val progressVisible = p.orderProperty.delegate.mapToBool { order =>
+        order.status.isActive && order.progress > 0d
+      }
+      val textInside = p.progressProperty < ProgressThreshold
 
       val progress = new HBox {
         content = new StackPane {
           styleClass += "progress"
-          minWidth <== lineWidth * p.progressProperty
-          visible <== p.statusProperty.delegate.mapToBool(_.isActive) and
-            p.progressProperty.delegate.mapToBool(_.doubleValue() > 0.0d)
+          minWidth <== barWidth
+          visible <== progressVisible
+        }
+      }
+
+      val progressText = new HBox {
+        styleClass += "progress-text"
+        visible <== progressVisible
+        content = new Label {
+          private val textInsideInsets = barWidth.delegate.map { size =>
+            Insets(0, 0, 0, size.doubleValue() + ProgressTextPadding).delegate
+          }
+          text <== p.orderProperty.delegate.mapToString { order =>
+            "(%s / %s)".format(order.bitcoinsTransferred, order.amount)
+          }
+          minWidth <== Bindings.when(textInside).choose(0).otherwise(barWidth)
+          alignment <== Bindings.when(textInside).choose(Pos.TopLeft).otherwise(Pos.TopRight)
+          padding <== Bindings.when(textInside)
+            .choose(textInsideInsets)
+            .otherwise(Insets(0, ProgressTextPadding, 0, 0))
         }
       }
 
@@ -90,7 +115,7 @@ class OperationsView(app: CoinffeineApp,
           }
         )
       }
-      content = Seq(progress, controls)
+      content = Seq(progress, progressText, controls)
     }
   }
 
@@ -113,7 +138,7 @@ class OperationsView(app: CoinffeineApp,
     val bitcoinPrice = new Label {
       styleClass += "btc-price"
 
-      private val currentPrice = PollingBean(OperationsView.BitcoinPricePollingInterval) {
+      private val currentPrice = PollingBean(BitcoinPricePollingInterval) {
         implicit val executor = FxExecutor.asContext
         app.marketStats.currentQuote(Market(Euro)).map(_.lastPrice)
       }
@@ -138,4 +163,10 @@ object OperationsView {
 
   private val BitcoinPricePollingInterval = 10.seconds
   private val TimeComputingInterval = 10.seconds
+
+  /** Distance from the progress line to its legend text */
+  private val ProgressTextPadding = 3d
+
+  /** Minimum progress to move the legend inside the progress bar */
+  private val ProgressThreshold = 0.2
 }

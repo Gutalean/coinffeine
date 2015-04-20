@@ -6,6 +6,15 @@
     -fx-border-color: derive(-cf-sec1, 80%);
 }
 
+#operations-center-pane .progress-text {
+    -fx-alignment: top-left;
+}
+
+#operations-center-pane .progress-text .label {
+    -fx-text-fill: -cf-sec1;
+    -fx-font-size: 9;
+}
+
 #operations-center-pane .line {
     -fx-spacing: 40;
     -fx-padding: 5 50 5 50;
