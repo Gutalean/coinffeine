@@ -88,6 +88,9 @@ case class Order[C <: FiatCurrency] private (
 
   def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
 
+  /** Timestamp of the last recorded change */
+  def lastChange: DateTime = log.mostRecent.get.timestamp
+
   private def totalSum[A <: Currency](
       zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)

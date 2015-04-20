@@ -105,6 +105,14 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .withExchange(createExchangeInProgress(5)) shouldBe 'shouldBeOnMarket
   }
 
+  it must "have the timestamp of the most recent change" in {
+    val createdOn = DateTime.now().minusMinutes(10)
+    val matchedOn = createdOn.plusMinutes(1)
+    val order = Order.randomLimit(Bid, 20.BTC, Price(1.EUR), createdOn)
+    order.lastChange shouldBe createdOn
+    order.withExchange(createRandomExchange(matchedOn)).lastChange shouldBe matchedOn
+  }
+
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete(DateTime.now())
 
   private def createExchangeInProgress(stepsCompleted: Int) = {
@@ -114,7 +122,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
       .completeStep(stepsCompleted)
   }
 
-  private def createRandomExchange(): HandshakingExchange[Euro.type] = {
-    buyerExchange.copy(metadata = buyerExchange.metadata.copy(id = ExchangeId.random()))
-  }
+  private def createRandomExchange(
+      timestamp: DateTime = DateTime.now()): HandshakingExchange[Euro.type] =
+    Exchange.create(ExchangeId.random(), BuyerRole, peerIds.seller, amounts, parameters, timestamp)
 }
