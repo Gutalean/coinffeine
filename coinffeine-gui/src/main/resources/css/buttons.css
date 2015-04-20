@@ -24,8 +24,11 @@
 }
 
 .rounded-button {
-    -fx-background-color: -fx-color;
     -fx-background-radius: 100%;
+    -fx-background-color: -fx-color;
+    -fx-text-alignment: center;
+    -fx-padding: 0;
+    -fx-font-size: 8;
     -fx-size: 20;
     -fx-min-width: -fx-size;
     -fx-max-width: -fx-size;
@@ -40,7 +43,5 @@
 .rounded-button:armed {
     -fx-background-color: derive(-fx-color, -40%);
 }
-
-.details-button { -fx-background-image: url('/icons/details.png'); }
 
 .close-button { -fx-background-image: url('/icons/close.png'); }
