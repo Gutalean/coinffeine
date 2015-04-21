@@ -46,7 +46,7 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
   }
 
   it should "be completed for cancelled orders" in {
-    Status.fromOrder(randomOrder(1.BTC).cancel) shouldBe Completed
+    Status.fromOrder(randomOrder(1.BTC).cancel(DateTime.now())) shouldBe Completed
   }
 
   private def randomOrder(amount: Bitcoin.Amount): Order[Euro.type] = {

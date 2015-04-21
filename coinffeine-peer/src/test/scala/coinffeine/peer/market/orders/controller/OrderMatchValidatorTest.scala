@@ -39,7 +39,8 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
   private val handshakeStartedOn = exchange.metadata.createdOn.plusSeconds(5)
 
   "An order match validator" should "reject any order match if the order is finished" in {
-    expectRejectionWithMessage(limitOrder.cancel, orderMatch, "Order already finished")
+    expectRejectionWithMessage(
+      limitOrder.cancel(DateTime.now()), orderMatch, "Order already finished")
   }
 
   it should "reject already accepted matches" in {

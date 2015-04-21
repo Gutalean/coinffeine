@@ -88,9 +88,9 @@ private[orders] class OrderController[C <: FiatCurrency](
 
   def becomeInMarket(): Unit = { updateOrder(_.becomeInMarket) }
   def becomeOffline(): Unit = { updateOrder(_.becomeOffline) }
-  def cancel(): Unit = {
+  def cancel(timestamp: DateTime): Unit = {
     // TODO: is this what we wanna do if an exchange is running?
-    updateOrder(_.cancel)
+    updateOrder(_.cancel(timestamp))
   }
 
   private def updateOrder(mutator: Order[C] => Order[C]): Unit = {

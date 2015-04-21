@@ -59,7 +59,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   }
 
   it should "stop publishing orders upon cancellation" in new Fixture {
-    order.cancel()
+    order.cancel(ExchangeTimestamps.completion)
     listener should not be 'inMarket
   }
 
@@ -71,7 +71,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   }
 
   it should "notify termination upon cancellation" in new Fixture {
-    order.cancel()
+    order.cancel(ExchangeTimestamps.completion)
     listener.lastStatus shouldBe CancelledOrder
   }
 
@@ -89,7 +89,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
   }
 
   it should "reject order matches when order is finished" in new Fixture {
-    order.cancel()
+    order.cancel(ExchangeTimestamps.completion)
     order.shouldAcceptOrderMatch(orderMatch) shouldBe MatchRejected("Order already finished")
   }
 

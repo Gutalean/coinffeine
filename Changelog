@@ -1,6 +1,9 @@
 Changelog
 =========
 
+Note: you should clean your journal when updating from 0.7.x since the binary format has
+changed.
+
 v0.8.0:
  - Use a regtest instead of a testnet
 

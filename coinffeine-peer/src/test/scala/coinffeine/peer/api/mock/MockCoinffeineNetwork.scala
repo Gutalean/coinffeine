@@ -1,5 +1,7 @@
 package coinffeine.peer.api.mock
 
+import org.joda.time.DateTime
+
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{AnyCurrencyOrder, Order, OrderId}
 import coinffeine.model.network.PeerId
@@ -13,7 +15,7 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
   override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] = new MutablePropertyMap
 
   override def cancelOrder(orderId: OrderId): Unit = {
-    orders.get(orderId).foreach(order => orders.set(orderId, order.cancel))
+    orders.get(orderId).foreach(order => orders.set(orderId, order.cancel(DateTime.now())))
   }
 
   override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
