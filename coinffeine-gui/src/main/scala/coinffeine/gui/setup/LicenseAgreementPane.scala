@@ -3,7 +3,7 @@ package coinffeine.gui.setup
 import scala.io.Source
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{CheckBox, Label}
-import scalafx.scene.layout.{HBox, StackPane, VBox}
+import scalafx.scene.layout.{StackPane, VBox}
 import scalafx.scene.web.WebView
 
 import coinffeine.gui.control.GlyphIcon
@@ -14,7 +14,6 @@ class LicenseAgreementPane extends StackPane with StepPane[SetupConfig] {
   override val icon = GlyphIcon.Number1
 
   private val licenseText = new WebView() {
-    id = "wizard-license-text"
     val licenseFile = getClass.getResourceAsStream("/docs/license.html")
     try {
       val license = Source.fromInputStream(licenseFile).mkString
@@ -28,12 +27,12 @@ class LicenseAgreementPane extends StackPane with StepPane[SetupConfig] {
     canContinue <== selected
   }
 
-  id = "wizard-license-agreement-pane"
   content = new VBox() {
+    styleClass += "license-pane"
     content = Seq(
       Label("You must accept the Coinffeine End-User License Agreement before continue."),
-      new HBox() {
-        styleClass += "webview-wrapper"
+      new StackPane {
+        styleClass += "license-text"
         content = licenseText
       },
       licenseAccepted)

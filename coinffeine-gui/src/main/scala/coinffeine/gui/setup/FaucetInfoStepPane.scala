@@ -8,7 +8,6 @@ import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
 import coinffeine.gui.control.GlyphIcon
-import coinffeine.gui.scene.styles._
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
@@ -23,31 +22,35 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
     editable = false
   }
 
-  content = new VBox with PaneStyles.Paragraphs {
+  private val title = new Label("Obtain Technical Preview credentials") { styleClass += "title" }
+
+  private val par1 = new Label {
+    text = "This is Coinffeine Technical Preview. We use a private Bitcoin testnet " +
+      "and a mocked OKPay service to avoid money lost due to application failures."
+  }
+
+  private val par2 = new Label {
+    text = "Please copy the Bitcoin address below to the clipboard and use it in our " +
+      "Faucet site to obtain your credentials."
+  }
+
+  private val addressLine = new HBox {
+    styleClass += "address"
     content = Seq(
-      new Label("Obtain Technical Preview credentials") with TextStyles.H2,
-      new Label with TextStyles.TextWrapped {
-        text = "This is Coinffeine Technical Preview. We use a private Bitcoin testnet " +
-          "and a mocked OKPay service to avoid money lost due to application failures."
-      },
-      new Label with TextStyles.TextWrapped {
-        text = "Please copy the Bitcoin address below to the clipboard and use it in our " +
-          "Faucet site to obtain your credentials."
-      },
-      new HBox with PaneStyles.TextFieldWithButton {
-        content = Seq(
-          addressTextField,
-          new Button("Copy to clipboard") {
-            handleEvent(ActionEvent.Action) { () => copyAddressToClipboard() }
-          }
-        )
-      },
-      new HBox with PaneStyles.ButtonRow {
-        content = new Button("Go to Faucet Site") {
-          handleEvent(ActionEvent.Action) { () => openFaucet()}
-        }
+      addressTextField,
+      new Button("Copy to clipboard") {
+        handleEvent(ActionEvent.Action) { () => copyAddressToClipboard() }
       }
     )
+  }
+
+  private val gotoFaucetLine = new Button("Go to Faucet Site") {
+    handleEvent(ActionEvent.Action) { () => openFaucet()}
+  }
+
+  content = new VBox {
+    styleClass += "faucet-pane"
+    content = Seq(title, par1, par2, addressLine, gotoFaucetLine)
   }
 
   override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {

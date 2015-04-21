@@ -1,119 +1,73 @@
 /* This file defines the styles for the setup wizard. */
 
-.wizard .wizard-license-text
-
-.wizard-step-title {
-  -fx-font-size: 16;
+.wizard .license-pane {
+    -fx-max-width: 600;
+    -fx-padding: 20 50 20 50;
+    -fx-spacing: 25;
 }
 
-.wizard-error-progressbar {
-  -fx-accent: red;
+.wizard .license-pane .label {
+    -fx-font-size: 24;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
 }
 
-.wizard-error-label {
-  -fx-text-fill: #da4100;
+.wizard .license-pane .license-text {
+    -fx-border-color: -cf-background;
+    -fx-border-radius: 5;
+    -fx-border-width: 1;
+    -fx-max-height: 250;
+    -fx-padding: 0 0 0 3;
 }
 
-.wizard-progress-indicator-active Label {
-  -fx-text-fill: #ffffff;
-}
-
-.wizard-progress-indicator-inactive Label {
-  -fx-text-fill: #ccc;
-}
-
-.wizard-progress-indicator-active Circle {
-  -fx-fill: #51350C;
-  -fx-effect: dropshadow( three-pass-box , rgba(0,0,0,0.6) , 5, 0.0 , 0 , 1 );
-}
-
-.wizard-progress-indicator-inactive Circle {
-  -fx-fill: #aaa;
-}
-
-.wizard-progress-indicator Label {
-}
-
-#wizard-header-pane {
-    -fx-pref-height: 50px;
-}
-
-#wizard-header-pane > Label {
-    -fx-font-size: 18;
-}
-
-#wizard-footer-pane {
-    -fx-pref-height: 44px;
-}
-
-#wizard-root-pane {
-    -fx-pref-width: 540px;
-    -fx-pref-height: 320px;
-}
-
-.wizard-base-pane {
-    -fx-padding: 10px 50px 10px 50px;
-    -fx-spacing: 5px;
-}
-
-#wizard-password-inputs-pane {
-    -fx-padding: 5px 10px 0 10px;
-}
-
-#wizard-password-credentials-pane {
-    -fx-hgap: 5px;
-    -fx-vgap: 5px;
-    -fx-padding: 0 0 0 20px;
-}
-
-#wizard-password-warn-label {
-    -fx-pref-height: 35px;
-}
-
-#wizard-okpay-inputs-pane {
-    -fx-padding: 20px 10px 0 10px;
-    -fx-hgap: 5px;
-    -fx-vgap: 5px;
-}
-
-#wizard-okpaytoken-base-pane {
+.wizard .faucet-pane {
     -fx-alignment: center;
-    -fx-padding: 10px 50px 10px 50px;
+    -fx-padding: 25;
+    -fx-spacing: 30;
 }
 
-#wizard-okpaytoken-errorline-pane {
-    -fx-padding: 20px 0 0 0;
-    -fx-alignment: center-left;
+.wizard .faucet-pane .button { -fx-color: -cf-sec1; }
+
+.wizard .faucet-pane .label {
+    -fx-text-alignment: center;
+    -fx-font-size: 16;
+    -fx-wrap-text: true;
 }
 
-#wizard-topup-disclaimer-pane {
-    -fx-alignment: baseline-left;
+.wizard .faucet-pane .title {
+    -fx-font-size: 22;
+    -fx-font-weight: 400;
 }
 
-#wizard-topup-walletinfo-pane {
+.wizard .faucet-pane .address {
     -fx-alignment: center;
-    -fx-spacing: 10px;
+    -fx-spacing: 20;
 }
 
-#wizard-topup-address-pane TextField {
-    -fx-font-size: 12;
-}
+.wizard .faucet-pane .address .text-field { -fx-font-size: 16; }
 
-#wizard-topup-address-pane {
-    -fx-spacing: 5px;
+.wizard .okpay-pane {
     -fx-alignment: center;
-
+    -fx-padding: 25;
+    -fx-spacing: 30;
 }
 
-#wizard-license-agreement-pane {
-    -fx-padding: 5px 20px 0 20px;
+.wizard .okpay-pane .label {
+    -fx-text-alignment: center;
+    -fx-font-size: 16;
+    -fx-wrap-text: true;
 }
 
-#wizard-license-agreement-pane VBox {
-    -fx-spacing: 10px;
+.wizard .okpay-pane .title {
+    -fx-font-size: 22;
+    -fx-font-weight: 400;
 }
 
-#wizard-license-agreement-pane .webview-wrapper {
-    -fx-border-color: lightgray;
-    -fx-border-radius: 2;
+.wizard .okpay-pane .data {
+    -fx-alignment: center;
+    -fx-padding: 10 100 0 100;
+    -fx-spacing: 15;
 }
+
+.wizard .okpay-pane .text-field { -fx-font-size: 16; }
+
