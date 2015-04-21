@@ -89,7 +89,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
   title = Wizard.this.wizardTitle
   resizable = false
-  scene = new CoinffeineScene(Stylesheets.Wizard +: additionalStyles: _*) {
+  scene = new CoinffeineScene(additionalStyles: _*) {
     root = rootWizardPane
   }
 
