@@ -122,9 +122,9 @@ class OperationsView(app: CoinffeineApp,
   }
 
   private val operationsTable = new VBox {
-    val sortedOrders = new ObservableBuffer(new SortedList[OrderProperties](
+    val sortedList = new ObservableBuffer(new SortedList[OrderProperties](
       props.ordersProperty.delegate, new LastChangeComparator))
-    sortedOrders.bindToList(content)(lineFor)
+    sortedList.bindToList(content)(lineFor)
   }
 
   override def name: String = "Operations"
