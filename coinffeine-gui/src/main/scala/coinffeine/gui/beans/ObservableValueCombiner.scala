@@ -8,6 +8,7 @@ import javafx.beans.{InvalidationListener, Observable}
   * This class provides a combination of two observable values in another
   * `ObservableValue` instance which value depends on a combiner function.
   */
+@deprecated("Use zip() function provided by ObservableValuePimp instead")
 class ObservableValueCombiner[A, B, C](a: ObservableValue[A],
                                        b: ObservableValue[B],
                                        combiner: (A, B) => C) extends ObservableValueBase[C] {
@@ -25,6 +26,7 @@ class ObservableValueCombiner[A, B, C](a: ObservableValue[A],
 
 object ObservableValueCombiner {
 
+  @deprecated("Use zip() function provided by ObservableValuePimp instead")
   def apply[A, B, C](a: ObservableValue[A],
                      b: ObservableValue[B])
                     (combiner: (A, B) => C): ObservableValueCombiner[A, B, C] =

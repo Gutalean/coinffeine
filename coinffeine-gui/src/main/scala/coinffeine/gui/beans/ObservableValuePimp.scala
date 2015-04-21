@@ -56,4 +56,18 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     })
     list.setAll(f(observableValue.getValue): _*) // ensure last values are set
   }
+
+  def zip[B, S](b: ObservableValue[B])
+               (f: (A, B) => S): ObjectBinding[S] = Bindings.createObjectBinding(
+    new Callable[S] {
+      override def call() = f(observableValue.getValue, b.getValue)
+    },
+    observableValue)
+
+  def zip[B, C, S](b: ObservableValue[B], c: ObservableValue[C])
+                  (f: (A, B, C) => S): ObjectBinding[S] = Bindings.createObjectBinding(
+    new Callable[S] {
+      override def call() = f(observableValue.getValue, b.getValue, c.getValue)
+    },
+    observableValue)
 }
