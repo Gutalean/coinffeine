@@ -96,7 +96,7 @@ class OrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetw
 
   it must "not be in market when the exchange is finished" in {
     val exchange = Order.randomLimit(Bid, 10.BTC, Price(1.EUR))
-    exchange.cancel should not be 'shouldBeOnMarket
+    exchange.cancel(DateTime.now()) should not be 'shouldBeOnMarket
     exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 

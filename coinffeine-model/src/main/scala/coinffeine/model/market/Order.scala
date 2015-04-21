@@ -35,7 +35,7 @@ case class Order[C <: FiatCurrency] private (
   val role = Role.fromOrderType(orderType)
   lazy val amounts: Order.Amounts = Order.Amounts.fromExchanges(amount, role, exchanges)
 
-  def cancel: Order[C] = copy(log = log.record(CancelledOrder))
+  def cancel(timestamp: DateTime): Order[C] = copy(log = log.record(CancelledOrder, timestamp))
   def becomeInMarket: Order[C] = copy(inMarket = true)
   def becomeOffline: Order[C] = copy(inMarket = false)
 

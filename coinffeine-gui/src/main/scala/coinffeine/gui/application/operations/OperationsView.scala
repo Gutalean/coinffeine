@@ -5,11 +5,13 @@ import scala.concurrent.duration._
 import scala.util.Try
 import scalafx.Includes._
 import scalafx.beans.binding._
+import scalafx.collections.ObservableBuffer
 import scalafx.event.Event
 import scalafx.geometry.{Insets, Pos}
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
+import javafx.collections.transformation.SortedList
 
 import org.joda.time.{DateTime, Period}
 
@@ -121,7 +123,9 @@ class OperationsView(app: CoinffeineApp,
   }
 
   private val operationsTable = new VBox {
-    props.ordersProperty.bindToList(content)(lineFor)
+    val sortedList = new ObservableBuffer(new SortedList[OrderProperties](
+      props.ordersProperty.delegate, new LastChangeComparator))
+    sortedList.bindToList(content)(lineFor)
   }
 
   override def name: String = "Operations"

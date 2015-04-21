@@ -20,7 +20,7 @@ class MutablePropertyMap[K, V] extends PropertyMap[K, V] {
 
   def set(key: K, value: V): Unit = synchronized {
     val prevValue = map.get(key)
-    if (prevValue != Some(value)) {
+    if (!prevValue.contains(value)) {
       map += key -> value
       listeners.invoke(handler => handler(key, prevValue, value))
     }
