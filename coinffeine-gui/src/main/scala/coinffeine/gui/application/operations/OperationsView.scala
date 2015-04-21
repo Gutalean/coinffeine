@@ -2,6 +2,7 @@ package coinffeine.gui.application.operations
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Try
 import scalafx.Includes._
 import scalafx.beans.binding._
 import scalafx.event.Event
@@ -13,6 +14,7 @@ import scalafx.scene.layout._
 import org.joda.time.{DateTime, Period}
 
 import coinffeine.gui.application.operations.validation.OrderValidation
+import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.application.{ApplicationProperties, ApplicationView}
 import coinffeine.gui.beans.Implicits._
@@ -22,7 +24,7 @@ import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.{Ask, Bid, Market}
+import coinffeine.model.market.{Order, Ask, Bid, Market}
 import coinffeine.peer.api.CoinffeineApp
 
 class OperationsView(app: CoinffeineApp,
@@ -150,8 +152,11 @@ class OperationsView(app: CoinffeineApp,
 
     val newOrderButton = new Button("New order") with ButtonStyles.Action {
       onAction = { e: Event =>
-        val form = new OrderSubmissionForm(app, orderValidation)
-        form.show(delegate.getScene.getWindow)
+        val wizard = new OrderSubmissionWizard(app.marketStats)
+        Try(wizard.run()).toOption.foreach { data =>
+          val order = Order.random(data.orderType.value, data.bitcoinAmount.value, data.price.value)
+          app.network.submitOrder(order)
+        }
       }
     }
     content = Seq(bitcoinPrice, newOrderButton)
