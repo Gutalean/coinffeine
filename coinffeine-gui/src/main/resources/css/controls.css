@@ -1,15 +1,38 @@
 /* This file defines the styles for custom controls. */
 
-.CurrencyTextField-symbol {
+.currency-text-field { -fx-font-size: 20; }
+
+.currency-text-field .symbol {
+    -fx-font-size: 20;
     -fx-padding: 0 5px 0 5px;
-    -fx-background-color: #51350C;
-    -fx-background-radius: 2;
-    -fx-font-size: 10;
 }
 
-.CurrencyTextField-symbol Label {
-    -fx-text-fill: white;
+.currency-text-field .symbol .label {
+    -fx-font-weight: 800;
+    -fx-text-fill: #424242;
 }
+
+.glyph-toggle {
+    -fx-alignment: center;
+    -fx-spacing: 10;
+}
+
+.glyph-toggle > .toggle-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-text-fill: -cf-background;
+}
+
+.glyph-toggle > .toggle-button:hover { -fx-text-fill: derive(-cf-background, -20%); }
+.glyph-toggle > .toggle-button:selected { -fx-text-fill: -cf-main1; }
+
+.glyph-toggle > .label {
+    -fx-font-size: 16;
+    -fx-text-fill: -cf-background;
+}
+
+.glyph-toggle > .label:selected { -fx-text-fill: -cf-main1; }
 
 .progress-bar {
     -fx-min-width: 150;
@@ -100,3 +123,11 @@
 .popover > .content {
     -fx-padding: 4;
 }
+
+.radio-button > .radio  {
+   -fx-background-color: -cf-background, white;
+   -fx-background-insets: 0, 1;
+   -fx-background-radius: 2.0em;
+   -fx-max-height: 5;
+}
+

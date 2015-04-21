@@ -7,11 +7,14 @@ import scalafx.scene.control.{Hyperlink, Label, TextField}
 import scalafx.scene.image.ImageView
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
 private[setup] class TopUpStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   content = new VBox() {
     styleClass += "wizard-base-pane"

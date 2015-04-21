@@ -2,7 +2,7 @@ package coinffeine.gui.scene.styles
 
 import scalafx.scene.control.Button
 
-import coinffeine.gui.control.GlyphLabel.Icon
+import coinffeine.gui.control.GlyphIcon
 
 /** Mixin traits to manage button styles. */
 object ButtonStyles {
@@ -19,12 +19,12 @@ object ButtonStyles {
   /** The details rounded button. */
   trait Details extends Rounded { this: Button =>
     styleClass ++= Seq("details-button", "glyph-icon")
-    text = Icon.MagnifyingGlass.letter.toString
+    text = GlyphIcon.MagnifyingGlass.letter.toString
   }
 
   /** The close rounded button. */
   trait Close extends Rounded { this: Button =>
     styleClass ++= Seq("close-button", "glyph-icon")
-    text = Icon.Cross.letter.toString
+    text = GlyphIcon.Cross.letter.toString
   }
 }

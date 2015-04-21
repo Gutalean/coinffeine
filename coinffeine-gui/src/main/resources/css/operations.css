@@ -140,3 +140,75 @@
 .order-props > .lines > .line.completed .prop-value,
 .order-props > .lines > .line.running .prop-value,
 .order-props > .lines > .line.failed .prop-value { -fx-text-fill: -fx-color; }
+
+.wizard .order-type-sel .question {
+    -fx-color: #424242;
+    -fx-font-size: 28;
+    -fx-max-width: 500;
+    -fx-padding: 30;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+}
+
+.wizard .order-type-sel .options {
+    -fx-alignment: center;
+    -fx-padding: 30;
+    -fx-spacing: 40;
+    -fx-font-size: 100;
+}
+
+.wizard .order-amounts {
+    -fx-alignment: center;
+    -fx-padding: 20;
+    -fx-spacing: 15;
+    -fx-text-fill: #424242;
+}
+
+.wizard .order-amounts .action { -fx-font-size: 22; }
+.wizard .order-amounts .btc-input { -fx-max-width: 200; }
+
+.wizard .order-amounts .market-selection {
+    -fx-padding: 0 30 0 30;
+    -fx-spacing: 15;
+}
+
+.wizard .order-amounts .market-selection .radio-button { -fx-font-size: 18; }
+
+.wizard .order-amounts .market-selection .details {
+    -fx-font-size: 14;
+    -fx-padding: 0 5 0 30;
+    -fx-spacing: 10;
+}
+
+.wizard .order-amounts .market-selection .details .price-line {
+    -fx-alignment: baseline-left;
+    -fx-spacing: 5;
+}
+
+.wizard .order-amounts .market-selection .details .fiat-input .symbol { -fx-font-size: 14; }
+
+.wizard .order-amounts .market-selection .details .fiat-input {
+    -fx-max-width: 130;
+    -fx-min-width: 130;
+    -fx-font-size: 14;
+}
+
+.wizard .order-amounts .market-selection .details .disclaimer { -fx-font-size: 12; }
+
+.wizard .order-confirmation {
+    -fx-alignment: center;
+    -fx-padding: 0 30 0 30;
+    -fx-spacing: 15;
+}
+
+.wizard .order-confirmation .summary {
+    -fx-font-size: 22;
+    -fx-max-width: 500;
+    -fx-text-alignment: center;
+    -fx-wrap-text: true;
+}
+
+.wizard .order-confirmation .glyph-icon {
+    -fx-text-fill: -cf-main1;
+    -fx-font-size: 100;
+}

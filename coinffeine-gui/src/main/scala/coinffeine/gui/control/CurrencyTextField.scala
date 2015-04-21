@@ -20,14 +20,14 @@ class CurrencyTextField[C <: Currency](
 
   require(!initialValue.isNegative, "Initial value cannot be negative")
 
-  styleClass += "CurrencyTextField"
+  styleClass += "currency-text-field"
 
   private val _currencyValue = ObjectProperty[CurrencyAmount[C]](this, "currencyValue", initialValue)
 
   private val currency = initialValue.currency
 
   private val currencySymbol = new StackPane() {
-    styleClass = Seq("CurrencyTextField-symbol")
+    styleClass = Seq("symbol")
     margin = Insets(5, 0, 5, 0) // cannot be set in CSS
     content = new Label(currency.toString)
   }

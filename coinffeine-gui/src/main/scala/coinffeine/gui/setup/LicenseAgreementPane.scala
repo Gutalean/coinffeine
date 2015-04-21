@@ -6,9 +6,12 @@ import scalafx.scene.control.{CheckBox, Label}
 import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalafx.scene.web.WebView
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 
 class LicenseAgreementPane extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   private val licenseText = new WebView() {
     id = "wizard-license-text"

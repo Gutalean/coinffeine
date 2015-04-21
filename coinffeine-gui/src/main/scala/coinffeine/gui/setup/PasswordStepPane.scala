@@ -7,9 +7,12 @@ import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
 import scalafx.scene.text.TextAlignment
 
+import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 
 private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Coinffeine
 
   private val passwordValidator = new PasswordValidator
 
