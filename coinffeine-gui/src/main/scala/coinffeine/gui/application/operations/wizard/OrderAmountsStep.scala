@@ -12,9 +12,11 @@ import coinffeine.gui.control.{CurrencyTextField, GlyphIcon}
 import coinffeine.gui.wizard.StepPane
 import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
+import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
-class OrderAmountsStep(marketStats: MarketStats) extends StepPane[OrderSubmissionWizard.CollectedData] {
+class OrderAmountsStep(marketStats: MarketStats,
+                       amountsCalculator: AmountsCalculator) extends StepPane[OrderSubmissionWizard.CollectedData] {
 
   private val currentQuote = PollingBean(OrderAmountsStep.CurrentQuotePollingInterval) {
     marketStats.currentQuote(Market(Euro))
@@ -43,7 +45,11 @@ class OrderAmountsStep(marketStats: MarketStats) extends StepPane[OrderSubmissio
           styleClass += "price-line"
           content = Seq(new Label("For no more than"), fiatAmount, new Label("per BTC"))
         },
-        new Label("(Maximum allowed fiat per order is 1500 EUR)") { styleClass += "disclaimer" }
+        new Label {
+          styleClass += "disclaimer"
+          val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
+          text = s"(Maximum allowed fiat per order is $maxFiat)"
+        }
       )
     }
 
@@ -78,11 +84,9 @@ class OrderAmountsStep(marketStats: MarketStats) extends StepPane[OrderSubmissio
     }
 
     canContinue <== btcAmount.currencyValue.delegate.zip(data.value.price) {
-      (amount, price) => price match {
-        case LimitPrice(limit) if limit.value.doubleValue() > 0.0d => true
-        case MarketPrice(_) => amount.isPositive
-        case _ => false
-      }
+      case (_, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => true
+      case (amount, MarketPrice(_)) => amount.isPositive
+      case _ => false
     }.mapToBool(identity)
 
     data.value.bitcoinAmount <== btcAmount.currencyValue

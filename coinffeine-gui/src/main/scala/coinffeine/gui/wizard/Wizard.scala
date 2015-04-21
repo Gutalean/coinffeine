@@ -6,7 +6,7 @@ import scalafx.event.{ActionEvent, Event}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.scene.shape.Rectangle
-import scalafx.stage.{Stage, StageStyle}
+import scalafx.stage.{Window, Modality, Stage, StageStyle}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
@@ -32,8 +32,10 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
   private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
-  def run(): Data = {
+  def run(parentWindow: Option[Window] = None): Data = {
     initializeSteps()
+    initModality(Modality.WINDOW_MODAL)
+    parentWindow.foreach(initOwner)
     showAndWait()
     if (cancelled.value) { throw new Wizard.CancelledByUser("The wizard was cancelled by the user") }
     data.value
@@ -43,7 +45,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
   private val wizardHeader = new HBox {
     styleClass += "header"
-    content = steps.zipWithIndex.map { case (step, index) =>
+    content = steps.zipWithIndex.flatMap { case (step, index) =>
       val icon = new GlyphLabel with HExpand {
         icon <== currentStep.delegate.map { s =>
           if (s.intValue() > index + 1) GlyphIcon.Completed else step.icon
@@ -55,7 +57,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
         height = 4
       }
       if (index < stepNumber - 1) Seq(icon, separator) else Seq(icon)
-    }.flatten
+    }
   }
 
   private val cancelButton = new Button("Cancel") {
@@ -90,6 +92,8 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   scene = new CoinffeineScene(Stylesheets.Wizard +: additionalStyles: _*) {
     root = rootWizardPane
   }
+
+  onCloseRequest = { _: Event => cancel() }
 
   private def initializeSteps(): Unit = {
     currentStep.onChange {

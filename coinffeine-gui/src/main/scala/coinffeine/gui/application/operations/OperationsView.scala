@@ -152,8 +152,8 @@ class OperationsView(app: CoinffeineApp,
 
     val newOrderButton = new Button("New order") with ButtonStyles.Action {
       onAction = { e: Event =>
-        val wizard = new OrderSubmissionWizard(app.marketStats)
-        Try(wizard.run()).toOption.foreach { data =>
+        val wizard = new OrderSubmissionWizard(app.marketStats, app.utils.exchangeAmountsCalculator)
+        Try(wizard.run(Some(delegate.getScene.getWindow))).foreach { data =>
           val order = Order.random(data.orderType.value, data.bitcoinAmount.value, data.price.value)
           app.network.submitOrder(order)
         }

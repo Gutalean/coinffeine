@@ -6,13 +6,15 @@ import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 import coinffeine.model.currency.{Euro, CurrencyAmount, Bitcoin}
 import coinffeine.model.market.{OrderPrice, OrderType}
+import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
 class OrderSubmissionWizard(
-    marketStats: MarketStats) extends Wizard[OrderSubmissionWizard.CollectedData](
+    marketStats: MarketStats,
+    amountsCalculator: AmountsCalculator) extends Wizard[OrderSubmissionWizard.CollectedData](
   steps = Seq(
     new OrderTypeSelectionStep,
-    new OrderAmountsStep(marketStats),
+    new OrderAmountsStep(marketStats, amountsCalculator),
     new OrderConfirmationStep
   ),
   initialData = new OrderSubmissionWizard.CollectedData(),
