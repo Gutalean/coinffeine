@@ -12,16 +12,26 @@
 }
 
 .glyph-toggle {
-    -fx-background-color: transparent;
-    -fx-color: -cf-background;
-    -fx-cursor: hand;
-    -fx-padding: 0;
-    -fx-text-fill: -fx-color;
+    -fx-alignment: center;
+    -fx-spacing: 10;
 }
 
-.glyph-toggle:hover { -fx-text-fill: derive(-fx-color, -20%); }
+.glyph-toggle > .toggle-button {
+    -fx-background-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-text-fill: -cf-background;
+}
 
-.glyph-toggle:selected { -fx-color: -cf-main1; }
+.glyph-toggle > .toggle-button:hover { -fx-text-fill: derive(-cf-background, -20%); }
+.glyph-toggle > .toggle-button:selected { -fx-text-fill: -cf-main1; }
+
+.glyph-toggle > .label {
+    -fx-font-size: 16;
+    -fx-text-fill: -cf-background;
+}
+
+.glyph-toggle > .label:selected { -fx-text-fill: -cf-main1; }
 
 .progress-bar {
     -fx-min-width: 150;
