@@ -26,7 +26,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
                    wizardTitle: String,
                    additionalStyles: Seq[String] = Seq.empty) extends Stage(StageStyle.UTILITY) {
 
-  private val data = new ObjectProperty[Data](this, "wizardData", initialData)
+  private val data = initialData
   private val cancelled = new BooleanProperty(this, "cancelled", false)
   private val stepNumber = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
@@ -38,7 +38,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
     parentWindow.foreach(initOwner)
     showAndWait()
     if (cancelled.value) { throw new Wizard.CancelledByUser("The wizard was cancelled by the user") }
-    data.value
+    data
   }
 
   def cancel(): Unit = { cancelled.set(true) }

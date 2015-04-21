@@ -86,8 +86,8 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
   }
 
   /** Translates updates on the password property to the setupConfig property */
-  override def bindTo(setupConfig: ObjectProperty[SetupConfig]): Unit = {
-    setupConfig.value.password <== password.delegate.map(_.orNull)
+  override def bindTo(setupConfig: SetupConfig): Unit = {
+    setupConfig.password <== password.delegate.map(_.orNull)
   }
 
   private def handlePasswordChange(): Unit = {

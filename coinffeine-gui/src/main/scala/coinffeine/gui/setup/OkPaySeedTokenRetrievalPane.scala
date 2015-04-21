@@ -60,17 +60,17 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
     retrievalError.value = error
   }
 
-  override def bindTo(data: ObjectProperty[SetupConfig]) = {
+  override def bindTo(data: SetupConfig) = {
     implicit val context = FxExecutor.asContext
     initFields()
     try {
-      val credentials = data.value.okPayCredentials.get
+      val credentials = data.okPayCredentials.get
       val extractor = new OkPayProfileExtractor(credentials.id, credentials.password)
       extractor.configureProfile().onComplete {
         case Success(profile) =>
           progressHint.text = "Token retrieved successfully."
           retrievalProgress.progress = 1.0f
-          data.value.okPayWalletAccess.value = OkPayWalletAccess(profile.walletId, profile.token)
+          data.okPayWalletAccess.value = OkPayWalletAccess(profile.walletId, profile.token)
           canContinue.value = true
         case Failure(error) =>
           reportError(error)

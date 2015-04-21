@@ -50,7 +50,7 @@ private[setup] class TopUpStepPane(address: String) extends StackPane with StepP
     )
   }
 
-  override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {
+  override def bindTo(data: SetupConfig): Unit = {
     canContinue.value = true
   }
 

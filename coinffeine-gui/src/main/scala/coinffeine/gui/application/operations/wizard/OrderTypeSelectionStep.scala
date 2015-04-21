@@ -1,18 +1,18 @@
 package coinffeine.gui.application.operations.wizard
 
-import scalafx.beans.property.ObjectProperty
-import scalafx.scene.control.{ToggleGroup, Label}
-import scalafx.scene.layout.{VBox, HBox}
+import scalafx.scene.control.{Label, ToggleGroup}
+import scalafx.scene.layout.{HBox, VBox}
 
+import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{GlyphToggle, GlyphIcon}
+import coinffeine.gui.control.{GlyphIcon, GlyphToggle}
 import coinffeine.gui.wizard.StepPane
 import coinffeine.model.market.{Ask, Bid, OrderType}
 
 class OrderTypeSelectionStep extends StepPane[OrderSubmissionWizard.CollectedData] {
 
-  override def bindTo(dataBinding: ObjectProperty[OrderSubmissionWizard.CollectedData]) = {
-    dataBinding.value.orderType <== Buttons.group.selectedToggle.delegate.map(
+  override def bindTo(dataBinding: CollectedData) = {
+    dataBinding.orderType <== Buttons.group.selectedToggle.delegate.map(
       t => Option(t).map(_.getUserData.asInstanceOf[OrderType]).orNull)
   }
 

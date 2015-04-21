@@ -1,6 +1,5 @@
 package coinffeine.gui.setup
 
-import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -38,10 +37,10 @@ private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupCo
   }
 
 
-  override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {
+  override def bindTo(data: SetupConfig): Unit = {
     canContinue <== walletIdField.text.delegate.mapToBool(!_.isEmpty) and
       walletAddressField.text.delegate.mapToBool(!_.isEmpty)
-    data.value.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
+    data.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
       (id, address) => OkPayWalletAccess(id, address)
     }
   }

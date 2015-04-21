@@ -1,7 +1,6 @@
 package coinffeine.gui.application.operations.wizard
 
 import scala.concurrent.duration._
-import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{Label, RadioButton, ToggleGroup}
 import scalafx.scene.layout.{HBox, VBox}
 
@@ -64,10 +63,10 @@ class OrderAmountsStep(marketStats: MarketStats,
     content = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails)
   }
 
-  override def bindTo(data: ObjectProperty[CollectedData]) = {
-    action.text <== data.value.orderType.delegate.mapToString(
+  override def bindTo(data: CollectedData) = {
+    action.text <== data.orderType.delegate.mapToString(
       ot => s"I want to ${ot.toString.toLowerCase}")
-    marketPrice.text <== data.value.orderType.delegate.zip(currentQuote) {
+    marketPrice.text <== data.orderType.delegate.zip(currentQuote) {
       (op, quote) =>
         quote match {
           case Some(q) =>
@@ -83,15 +82,15 @@ class OrderAmountsStep(marketStats: MarketStats,
         }
     }
 
-    canContinue <== btcAmount.currencyValue.delegate.zip(data.value.price) {
+    canContinue <== btcAmount.currencyValue.delegate.zip(data.price) {
       case (_, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => true
       case (amount, MarketPrice(_)) => amount.isPositive
       case _ => false
     }.mapToBool(identity)
 
-    data.value.bitcoinAmount <== btcAmount.currencyValue
+    data.bitcoinAmount <== btcAmount.currencyValue
 
-    data.value.price <==
+    data.price <==
       MarketSelection.group.selectedToggle.delegate.zip(fiatAmount.currencyValue) {
         (sel, price) => Option(sel) match {
           case Some(MarketSelection.limitButton) if price.isPositive => LimitPrice(price)

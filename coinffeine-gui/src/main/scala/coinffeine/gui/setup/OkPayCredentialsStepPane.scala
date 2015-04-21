@@ -52,9 +52,9 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
     }
   }
 
-  override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {
+  override def bindTo(data: SetupConfig): Unit = {
     canContinue.value = true
-    data.value.okPayCredentials <== credentials.delegate.map(_.orNull)
+    data.okPayCredentials <== credentials.delegate.map(_.orNull)
   }
 
   private def updateCredentials(): Unit = {

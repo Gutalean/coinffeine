@@ -53,7 +53,7 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
     content = Seq(title, par1, par2, addressLine, gotoFaucetLine)
   }
 
-  override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {
+  override def bindTo(data: SetupConfig): Unit = {
     canContinue.value = true
   }
 
