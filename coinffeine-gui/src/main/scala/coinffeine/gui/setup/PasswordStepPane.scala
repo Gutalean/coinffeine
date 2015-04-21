@@ -7,6 +7,7 @@ import scalafx.scene.control.{Label, PasswordField, RadioButton, ToggleGroup}
 import scalafx.scene.layout._
 import scalafx.scene.text.TextAlignment
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 
@@ -86,9 +87,7 @@ private[setup] class PasswordStepPane extends StackPane with StepPane[SetupConfi
 
   /** Translates updates on the password property to the setupConfig property */
   override def bindTo(setupConfig: ObjectProperty[SetupConfig]): Unit = {
-    password.onChange {
-      setupConfig.value = setupConfig.value.copy(password.value)
-    }
+    setupConfig.value.password <== password.delegate.map(_.orNull)
   }
 
   private def handlePasswordChange(): Unit = {

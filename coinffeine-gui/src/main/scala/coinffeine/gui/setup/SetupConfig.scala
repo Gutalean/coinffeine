@@ -1,16 +1,16 @@
 package coinffeine.gui.setup
 
+import scalafx.beans.property.{ObjectProperty, StringProperty}
+
 import coinffeine.peer.payment.okpay.{OkPayWalletAccess, OkPayCredentials}
 
-/** Initial setup configuration.
-  *
-  * Note that all fields are optionals as the user is not forced to fill them in.
-  *
-  * @param password          Password to protect the application
-  * @param okPayCredentials  OKPay credentials
-  * @param okPayWalletAccess OKPay wallet access
-  */
-case class SetupConfig(
-  password: Option[String],
-  okPayCredentials: Option[OkPayCredentials],
-  okPayWalletAccess: Option[OkPayWalletAccess])
+class SetupConfig {
+
+  val password: StringProperty = new StringProperty(this, "password")
+
+  val okPayCredentials: ObjectProperty[OkPayCredentials] =
+    new ObjectProperty(this, "okPayCredentials")
+
+  val okPayWalletAccess: ObjectProperty[OkPayWalletAccess] =
+    new ObjectProperty[OkPayWalletAccess](this, "okPayWalletAccess")
+}

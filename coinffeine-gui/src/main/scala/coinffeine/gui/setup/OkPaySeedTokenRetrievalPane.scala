@@ -70,8 +70,7 @@ private[setup] class OkPaySeedTokenRetrievalPane extends StackPane with StepPane
         case Success(profile) =>
           progressHint.text = "Token retrieved successfully."
           retrievalProgress.progress = 1.0f
-          data.value = data.value.copy(okPayWalletAccess =
-            Some(OkPayWalletAccess(walletId = profile.walletId, seedToken = profile.token)))
+          data.value.okPayWalletAccess.value = OkPayWalletAccess(profile.walletId, profile.token)
           canContinue.value = true
         case Failure(error) =>
           reportError(error)

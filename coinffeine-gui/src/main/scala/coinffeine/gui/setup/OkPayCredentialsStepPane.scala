@@ -4,6 +4,7 @@ import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayCredentials
@@ -53,9 +54,7 @@ private[setup] class OkPayCredentialsStepPane extends StackPane with StepPane[Se
 
   override def bindTo(data: ObjectProperty[SetupConfig]): Unit = {
     canContinue.value = true
-    credentials.onChange {
-      data.value = data.value.copy(okPayCredentials = credentials.value)
-    }
+    data.value.okPayCredentials <== credentials.delegate.map(_.orNull)
   }
 
   private def updateCredentials(): Unit = {

@@ -16,7 +16,7 @@ class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
       new FaucetInfoStepPane(walletAddress),
       new OkPayWalletDataPane
     ),
-    initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None),
+    initialData = new SetupConfig,
     additionalStyles = Seq(Stylesheets.Setup)) {
 
   private def onCloseAction(ev: WindowEvent): Unit = {
