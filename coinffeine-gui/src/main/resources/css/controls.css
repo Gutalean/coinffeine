@@ -121,7 +121,11 @@
 }
 
 .popover > .content {
-    -fx-padding: 4;
+    -fx-padding: 8;
+}
+
+.popover > .border {
+    -fx-effect: null !important;
 }
 
 .radio-button > .radio  {
