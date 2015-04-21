@@ -21,21 +21,26 @@ object NodeStyles {
   /** A node that has a pop-over. */
   trait Poppable { this: Node =>
 
-    private val _popOverContent = new ObjectProperty[javafx.scene.Node](this, "popOverContent", new Label(""))
+    private val _popOverContent =
+      new ObjectProperty[javafx.scene.Node](this, "popOverContent", new Label(""))
     def popOverContent = _popOverContent
     def popOverContent_=(value: Node): Unit = {
       _popOverContent.value = value
     }
 
     private val popover = new PopOver {
+      styleClass += "plain-popover"
       detachableProperty().set(false)
       arrowSizeProperty().set(6)
-      arrowIndentProperty().set(4)
+      arrowIndentProperty().set(8)
+      arrowLocationProperty().set(PopOver.ArrowLocation.BOTTOM_CENTER)
       contentNodeProperty().bind(popOverContent)
     }
 
     styleClass += "poppable"
-    onMouseEntered = { (ev: MouseEvent) => popover.show(this) }
+    onMouseEntered = { (ev: MouseEvent) => popover.show(this, -PopOverMargin) }
     onMouseExited = { (ev: MouseEvent) => popover.hide() }
   }
+
+  private val PopOverMargin = 3
 }
