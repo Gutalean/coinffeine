@@ -31,6 +31,11 @@
     -fx-alignment: bottom-right;
 }
 
+#payment-processor .name,
+#payment-processor .glyph-icon {
+    -fx-cursor: hand;
+}
+
 #payment-processor .name {
     -fx-font-weight: bold;
     -fx-alignment: top-right;
