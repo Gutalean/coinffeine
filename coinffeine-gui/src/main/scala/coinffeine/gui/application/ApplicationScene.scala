@@ -9,6 +9,7 @@ import scalafx.scene.layout._
 
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.control.PaymentProcessorWidget
 import coinffeine.gui.preferences.PreferencesForm
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
@@ -70,8 +71,9 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     buttons
   }
 
-  val topbar = new VBox {
+  val topBar = new HBox {
     id = "top-bar"
+    content = new PaymentProcessorWidget
   }
 
   val balancePane = new VBox {
@@ -129,7 +131,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   root = new BorderPane {
     id = "main-root-pane"
-    top = new VBox { content = Seq(menuBar, topbar, controlBar) }
+    top = new VBox { content = Seq(menuBar, topBar, controlBar) }
     center = centerPane
     bottom = statusBarPane
   }

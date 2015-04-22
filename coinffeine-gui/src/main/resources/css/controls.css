@@ -129,9 +129,9 @@
 }
 
 .radio-button > .radio  {
-   -fx-background-color: -cf-background, white;
-   -fx-background-insets: 0, 1;
-   -fx-background-radius: 2.0em;
-   -fx-max-height: 5;
+    -fx-background-color: -cf-background, white;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 2.0em;
+    -fx-max-height: 5;
 }
 
