@@ -32,8 +32,9 @@ private[setup] class OkPayWalletDataPane(
     content = Seq(walletIdLabel, walletIdField, walletAddressLabel, walletAddressField)
   }
 
-  canContinue <== walletIdField.text.delegate.mapToBool(!_.isEmpty) and
-    walletAddressField.text.delegate.mapToBool(!_.isEmpty)
+  canContinue <== walletIdField.text.delegate.mapToBool(_.nonEmpty) and
+    walletAddressField.text.delegate.mapToBool(_.nonEmpty)
+
   data.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
     (id, address) => OkPayWalletAccess(id, address)
   }
