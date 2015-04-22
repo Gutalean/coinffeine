@@ -89,7 +89,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
         content = Seq(
           new Label with TextStyles.GoodNews with TextStyles.Big {
             text <== balances.bitcoin.delegate.mapToString {
-              case Some(b) => b.available.format(Currency.NoSymbol)
+              case Some(b) => b.estimated.format(Currency.NoSymbol)
               case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
