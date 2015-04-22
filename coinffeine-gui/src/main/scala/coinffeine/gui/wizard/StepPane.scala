@@ -11,13 +11,14 @@ import coinffeine.gui.control.GlyphIcon
 trait StepPane[Data] extends StackPane {
   def icon: GlyphIcon
 
-  val canContinue: BooleanProperty = new BooleanProperty(this, "canContinue", true)
+  private val _canContinue: BooleanProperty = new BooleanProperty(this, "canContinue", true)
+  def canContinue: BooleanProperty = _canContinue
+  def canContinue_=(value: Boolean): Unit = { _canContinue.value = value }
+
 
   private val _onActivation: ObjectProperty[EventHandler[StepPaneEvent]] =
     new ObjectProperty(this, "onActivation")
-
   def onActivation: ObjectProperty[EventHandler[StepPaneEvent]] = _onActivation
-
   def onActivation_=(value: EventHandler[StepPaneEvent]): Unit = { _onActivation.value = value }
 
   implicit def stepPaneEventWrapper(handler: StepPaneEvent => Any): EventHandler[StepPaneEvent] =
