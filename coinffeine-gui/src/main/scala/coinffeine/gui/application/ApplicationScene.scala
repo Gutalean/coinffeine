@@ -10,7 +10,7 @@ import scalafx.scene.layout._
 import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PaymentProcessorWidget
-import coinffeine.gui.preferences.PreferencesForm
+import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
@@ -31,7 +31,8 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   require(views.nonEmpty, "At least one view is required")
 
-  val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
+  private val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
+  private val settingsForm = new PaymentProcessorSettingsForm(settingsProvider)
 
   val menuBar = new MenuBar {
     useSystemMenuBar = true
@@ -39,21 +40,15 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     menus = Seq(
       new Menu("Edit") {
         items = Seq(
-          new MenuItem("Preferences") {
-            onAction = { e: ActionEvent =>
-              val form = new PreferencesForm(settingsProvider)
-              form.show()
-            }
+          new MenuItem("Payment processor settings...") {
+            onAction = { e: ActionEvent => settingsForm.show() }
           }
         )
       },
       new Menu("Help") {
         items = Seq(
           new MenuItem("About...") {
-            onAction = { e: ActionEvent =>
-              val dialog = new AboutDialog
-              dialog.show()
-            }
+            onAction = { e: ActionEvent => new AboutDialog().show() }
           }
         )
       }
