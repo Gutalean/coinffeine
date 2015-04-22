@@ -1,11 +1,13 @@
 package coinffeine.gui.application.operations
 
 import scalafx.beans.property.ReadOnlyObjectProperty
+import scalafx.scene.Node
 import scalafx.scene.control.Label
 import scalafx.scene.layout.HBox
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.scene.styles.NodeStyles
+import coinffeine.gui.scene.styles.{NodeStyles, TextStyles}
+import coinffeine.model.currency.Currency
 import coinffeine.model.market._
 
 class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) extends HBox(0) {
@@ -17,11 +19,25 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
     },
     new Label with NodeStyles.Poppable {
       text <== stringBinding(_.amount.toString)
-      popOverContent = new Label {
-        text <== stringBinding(formatFiatAmount)
-      }
+      popOverContent = fiatAmountNode()
     }
   )
+
+  private def fiatAmountNode(): Node = {
+    val order = orderProperty.value
+    order.price match {
+      case MarketPrice(currency) => new Label(s"at $currency market price")
+
+      case LimitPrice(price) =>
+        val amount = price.of(order.amount)
+        new HBox {
+          content = Seq(
+            new Label(amount.format(Currency.NoSymbol)) with TextStyles.Light,
+            new Label(amount.currency.toString) with TextStyles.Boldface
+          )
+        }
+    }
+  }
 
   private def stringBinding(pred: AnyCurrencyOrder => String) =
     orderProperty.delegate.mapToString(pred)
@@ -33,11 +49,6 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
       case _ => OrderSummary.Completed
     }
     OrderSummary.Texts(action)(order.orderType)
-  }
-
-  private def formatFiatAmount(order: AnyCurrencyOrder): String = order.price match {
-    case MarketPrice(currency) => s"at $currency market price"
-    case LimitPrice(price) => price.of(order.amount).format
   }
 }
 
