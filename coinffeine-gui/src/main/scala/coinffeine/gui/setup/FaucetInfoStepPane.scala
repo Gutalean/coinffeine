@@ -14,7 +14,7 @@ import coinffeine.gui.wizard.StepPane
 
 private[setup] class FaucetInfoStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
 
-  override val icon = GlyphIcon.Coinffeine
+  override val icon = GlyphIcon.Number2
 
   private val addressTextField = new TextField {
     hgrow = Priority.Always

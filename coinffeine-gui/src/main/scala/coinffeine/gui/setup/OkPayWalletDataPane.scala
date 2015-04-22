@@ -11,7 +11,7 @@ import coinffeine.peer.payment.okpay.OkPayWalletAccess
 
 private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupConfig] {
 
-  override val icon = GlyphIcon.Coinffeine
+  override val icon = GlyphIcon.Number3
 
   private val walletIdProperty = new StringProperty(this, "walletId", "")
   walletIdProperty.onChange { updateAccess() }
