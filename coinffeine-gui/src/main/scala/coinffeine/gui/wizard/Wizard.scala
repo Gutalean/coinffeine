@@ -22,7 +22,7 @@ import coinffeine.gui.scene.styles.NodeStyles.HExpand
   */
 class Wizard[Data](steps: Seq[StepPane[Data]],
                    data: Data,
-                   wizardTitle: String,
+                   wizardTitle: String = "",
                    additionalStyles: Seq[String] = Seq.empty) extends Stage(StageStyle.UTILITY) {
 
   private val cancelled = new BooleanProperty(this, "cancelled", false)

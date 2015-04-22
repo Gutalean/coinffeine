@@ -20,7 +20,6 @@ class OrderSubmissionWizard(
     new OrderConfirmationStep(data)
   ),
   data = data,
-  wizardTitle = "",
   additionalStyles = Seq(Stylesheets.Operations)
 )
 

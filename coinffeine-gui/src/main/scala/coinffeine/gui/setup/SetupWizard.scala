@@ -11,7 +11,7 @@ import coinffeine.gui.wizard.Wizard
 /** Wizard to collect the initial configuration settings */
 class SetupWizard(walletAddress: String,
                   data: SetupConfig = new SetupConfig) extends Wizard[SetupConfig](
-    wizardTitle = "",
+    wizardTitle = "Initial setup",
     steps = Seq(
       new LicenseAgreementPane,
       new FaucetInfoStepPane(walletAddress),
