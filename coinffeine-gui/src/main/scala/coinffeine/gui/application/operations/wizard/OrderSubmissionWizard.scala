@@ -2,6 +2,7 @@ package coinffeine.gui.application.operations.wizard
 
 import scalafx.beans.property.ObjectProperty
 
+import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 import coinffeine.model.currency.{Euro, CurrencyAmount, Bitcoin}
@@ -11,14 +12,14 @@ import coinffeine.peer.api.MarketStats
 
 class OrderSubmissionWizard(
     marketStats: MarketStats,
-    amountsCalculator: AmountsCalculator) extends Wizard[OrderSubmissionWizard.CollectedData](
+    amountsCalculator: AmountsCalculator,
+    data: OrderSubmissionWizard.CollectedData = new CollectedData) extends Wizard[OrderSubmissionWizard.CollectedData](
   steps = Seq(
-    new OrderTypeSelectionStep,
-    new OrderAmountsStep(marketStats, amountsCalculator),
-    new OrderConfirmationStep
+    new OrderTypeSelectionStep(data),
+    new OrderAmountsStep(marketStats, amountsCalculator, data),
+    new OrderConfirmationStep(data)
   ),
-  initialData = new OrderSubmissionWizard.CollectedData(),
-  wizardTitle = "",
+  data = data,
   additionalStyles = Seq(Stylesheets.Operations)
 )
 

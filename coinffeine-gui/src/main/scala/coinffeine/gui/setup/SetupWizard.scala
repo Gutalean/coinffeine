@@ -5,17 +5,20 @@ import scalafx.stage.WindowEvent
 
 import org.controlsfx.dialog.{DialogStyle, Dialog, Dialogs}
 
+import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
+class SetupWizard(walletAddress: String,
+                  data: SetupConfig = new SetupConfig) extends Wizard[SetupConfig](
     wizardTitle = "Initial setup",
     steps = Seq(
       new LicenseAgreementPane,
       new FaucetInfoStepPane(walletAddress),
-      new OkPayWalletDataPane
+      new OkPayWalletDataPane(data)
     ),
-    initialData = SetupConfig(password = None, okPayCredentials = None, okPayWalletAccess = None)) {
+    data = data,
+    additionalStyles = Seq(Stylesheets.Setup)) {
 
   private def onCloseAction(ev: WindowEvent): Unit = {
     val answer = Dialogs.create()

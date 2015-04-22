@@ -50,12 +50,11 @@ class RunWizardAction(configProvider: ConfigProvider, network: => Network) exten
     configProvider.saveUserSettings(
       configProvider.generalSettings().copy(licenseAccepted = true))
 
-    setupConfig.okPayWalletAccess.foreach { access =>
-      val okPaySettings = configProvider.okPaySettings()
-      configProvider.saveUserSettings(okPaySettings.copy(
-        userAccount = Some(access.walletId),
-        seedToken = Some(access.seedToken)
-      ))
-    }
+    val access = setupConfig.okPayWalletAccess.value
+    val okPaySettings = configProvider.okPaySettings()
+    configProvider.saveUserSettings(okPaySettings.copy(
+      userAccount = Some(access.walletId),
+      seedToken = Some(access.seedToken)
+    ))
   }
 }
