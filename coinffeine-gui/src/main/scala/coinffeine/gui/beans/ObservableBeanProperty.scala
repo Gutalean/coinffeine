@@ -14,13 +14,18 @@ import javafx.beans.{InvalidationListener, Observable}
   * @param propertyExtractor  The function that extracts the property from the bean
   */
 class ObservableBeanProperty[A](bean: ObservableValue[A],
-                                propertyExtractor: A => Observable) extends Observable {
+                                propertyExtractor: A => ObservableValue[_]) extends Observable {
   
-  private var property: Option[Observable] = None
+  private var property: Option[ObservableValue[_]] = None
   private var listeners: Set[InvalidationListener] = Set.empty
   
   private val propertyListener = new InvalidationListener {
-    override def invalidated(observable: Observable) = invokeListeners()
+    override def invalidated(observable: Observable) = {
+      // We must get property value to clean up its invalidation state
+      property.foreach(_.getValue)
+
+      invokeListeners()
+    }
   }
 
   private def invokeListeners(): Unit = listeners.foreach(_.invalidated(this))
