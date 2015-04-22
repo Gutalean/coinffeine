@@ -6,15 +6,11 @@ import scalafx.scene.layout.{HBox, VBox}
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphToggle}
-import coinffeine.gui.wizard.StepPane
+import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.model.market.{Ask, Bid, OrderType}
 
-class OrderTypeSelectionStep extends StepPane[OrderSubmissionWizard.CollectedData] {
-
-  override def bindTo(dataBinding: CollectedData) = {
-    dataBinding.orderType <== Buttons.group.selectedToggle.delegate.map(
-      t => Option(t).map(_.getUserData.asInstanceOf[OrderType]).orNull)
-  }
+class OrderTypeSelectionStep(
+    data: CollectedData) extends StepPane[OrderSubmissionWizard.CollectedData] {
 
   override val icon = GlyphIcon.ExchangeTypes
 
@@ -41,8 +37,14 @@ class OrderTypeSelectionStep extends StepPane[OrderSubmissionWizard.CollectedDat
     content = Seq(buy, sell)
   }
 
+  onActivation = { e: StepPaneEvent  =>
+    data.orderType <== Buttons.group.selectedToggle.delegate.map(
+      t => Option(t).map(_.getUserData.asInstanceOf[OrderType]).orNull)
+
+    canContinue <== Buttons.group.selectedToggle.delegate.mapToBool(_ != null)
+  }
+
   content = new VBox {
     content = Seq(question, Buttons)
   }
-  canContinue <== Buttons.group.selectedToggle.delegate.mapToBool(_ != null)
 }

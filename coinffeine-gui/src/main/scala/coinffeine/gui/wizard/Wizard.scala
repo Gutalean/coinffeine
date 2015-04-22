@@ -6,27 +6,25 @@ import scalafx.event.{ActionEvent, Event}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.scene.shape.Rectangle
-import scalafx.stage.{Window, Modality, Stage, StageStyle}
+import scalafx.stage.{Modality, Stage, StageStyle, Window}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.NodeStyles.HExpand
-import coinffeine.gui.scene.styles.Stylesheets
 
 /** Step-by-step wizard that accumulates information of type Data.
   *
   * @param steps        Sequence of wizard steps
-  * @param initialData  Initial value for the wizard
+  * @param data         The data configured by the wizard
   * @param wizardTitle  Wizard title
   * @tparam Data        Type of the wizard result
   */
 class Wizard[Data](steps: Seq[StepPane[Data]],
-                   initialData: Data,
+                   data: Data,
                    wizardTitle: String,
                    additionalStyles: Seq[String] = Seq.empty) extends Stage(StageStyle.UTILITY) {
 
-  private val data = initialData
   private val cancelled = new BooleanProperty(this, "cancelled", false)
   private val stepNumber = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 0)
@@ -98,16 +96,17 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   private def initializeSteps(): Unit = {
     currentStep.onChange {
       val stepPane = steps(currentStep.value - 1)
-      stepPane.bindTo(data)
       currentStepPane.value = stepPane
       rootWizardPane.center = stepPane
       nextButton.disable <== stepPane.canContinue.not()
     }
-    currentStep.value = 1
+    changeToStep(1)
   }
 
   private def changeToStep(index: Int): Unit = {
     currentStep.value = index
+    val pane = currentStepPane.value
+    Option(pane.onActivation.value).foreach(_.handle(new StepPaneEvent(this, pane)))
   }
 }
 

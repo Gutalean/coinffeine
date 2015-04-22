@@ -8,7 +8,8 @@ import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
 import coinffeine.peer.payment.okpay.OkPayWalletAccess
 
-private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupConfig] {
+private[setup] class OkPayWalletDataPane(
+    data: SetupConfig) extends StackPane with StepPane[SetupConfig] {
 
   override val icon = GlyphIcon.Number3
 
@@ -31,17 +32,14 @@ private[setup] class OkPayWalletDataPane extends StackPane with StepPane[SetupCo
     content = Seq(walletIdLabel, walletIdField, walletAddressLabel, walletAddressField)
   }
 
+  canContinue <== walletIdField.text.delegate.mapToBool(!_.isEmpty) and
+    walletAddressField.text.delegate.mapToBool(!_.isEmpty)
+  data.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
+    (id, address) => OkPayWalletAccess(id, address)
+  }
+
   content = new VBox {
     styleClass += "okpay-pane"
     content = Seq(title, subtitle, dataPane)
-  }
-
-
-  override def bindTo(data: SetupConfig): Unit = {
-    canContinue <== walletIdField.text.delegate.mapToBool(!_.isEmpty) and
-      walletAddressField.text.delegate.mapToBool(!_.isEmpty)
-    data.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
-      (id, address) => OkPayWalletAccess(id, address)
-    }
   }
 }

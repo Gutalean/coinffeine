@@ -6,16 +6,24 @@ import scalafx.scene.layout.VBox
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
-import coinffeine.gui.wizard.StepPane
+import coinffeine.gui.wizard.{StepPaneEvent, StepPane}
 import coinffeine.model.market.{Ask, Bid, LimitPrice, MarketPrice}
 
-class OrderConfirmationStep extends StepPane[OrderSubmissionWizard.CollectedData] {
+class OrderConfirmationStep(
+    data: CollectedData) extends StepPane[OrderSubmissionWizard.CollectedData] {
+
+  override val icon = GlyphIcon.Network
 
   private val summary = new Label { styleClass += "summary" }
 
   private val orderTypeIcon = new GlyphLabel
 
-  override def bindTo(data: CollectedData) = {
+  onActivation = { _: StepPaneEvent =>
+    bindSummaryText()
+    bindOrderTypeIcon()
+  }
+
+  private def bindSummaryText(): Unit = {
     summary.text <== data.orderType.delegate.zip(
       data.bitcoinAmount, data.price) { (orderType, amount, orderPrice) =>
       val verb = orderType match {
@@ -28,16 +36,14 @@ class OrderConfirmationStep extends StepPane[OrderSubmissionWizard.CollectedData
       }
       s"You are about to $verb $amount at $price"
     }
+  }
 
+  private def bindOrderTypeIcon(): Unit = {
     orderTypeIcon.icon <== data.orderType.delegate.map {
       case Bid => GlyphIcon.Buy
       case Ask => GlyphIcon.Sell
     }
   }
-
-  override val icon = GlyphIcon.Network
-
-  canContinue.value = true
 
   content = new VBox {
     styleClass += "order-confirmation"

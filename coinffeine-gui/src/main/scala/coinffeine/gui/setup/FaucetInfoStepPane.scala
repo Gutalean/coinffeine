@@ -1,7 +1,6 @@
 package coinffeine.gui.setup
 
 import java.net.URI
-import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
@@ -51,10 +50,6 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
   content = new VBox {
     styleClass += "faucet-pane"
     content = Seq(title, par1, par2, addressLine, gotoFaucetLine)
-  }
-
-  override def bindTo(data: SetupConfig): Unit = {
-    canContinue.value = true
   }
 
   private def openFaucet(): Unit = {

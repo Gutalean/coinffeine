@@ -37,6 +37,4 @@ class LicenseAgreementPane extends StackPane with StepPane[SetupConfig] {
       },
       licenseAccepted)
   }
-
-  override def bindTo(data: SetupConfig) = {}
 }

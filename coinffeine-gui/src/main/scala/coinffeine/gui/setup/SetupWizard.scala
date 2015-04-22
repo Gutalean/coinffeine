@@ -9,14 +9,15 @@ import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard(walletAddress: String) extends Wizard[SetupConfig](
+class SetupWizard(walletAddress: String,
+                  data: SetupConfig = new SetupConfig) extends Wizard[SetupConfig](
     wizardTitle = "",
     steps = Seq(
       new LicenseAgreementPane,
       new FaucetInfoStepPane(walletAddress),
-      new OkPayWalletDataPane
+      new OkPayWalletDataPane(data)
     ),
-    initialData = new SetupConfig,
+    data = data,
     additionalStyles = Seq(Stylesheets.Setup)) {
 
   private def onCloseAction(ev: WindowEvent): Unit = {

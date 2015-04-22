@@ -8,14 +8,17 @@ import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.Collec
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{CurrencyTextField, GlyphIcon}
-import coinffeine.gui.wizard.StepPane
+import coinffeine.gui.wizard.{StepPaneEvent, StepPane}
 import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
 class OrderAmountsStep(marketStats: MarketStats,
-                       amountsCalculator: AmountsCalculator) extends StepPane[OrderSubmissionWizard.CollectedData] {
+                       amountsCalculator: AmountsCalculator,
+                       data: CollectedData) extends StepPane[OrderSubmissionWizard.CollectedData] {
+
+  override val icon = GlyphIcon.MarketPrice
 
   private val currentQuote = PollingBean(OrderAmountsStep.CurrentQuotePollingInterval) {
     marketStats.currentQuote(Market(Euro))
@@ -63,9 +66,24 @@ class OrderAmountsStep(marketStats: MarketStats,
     content = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails)
   }
 
-  override def bindTo(data: CollectedData) = {
+  onActivation = { _: StepPaneEvent =>
+    bindActionText()
+    bindMarketPriceText()
+    bindCanContinue()
+    bindOutputData()
+  }
+
+  content = new VBox {
+    styleClass += "order-amounts"
+    content = Seq(action, btcAmount, MarketSelection)
+  }
+
+  private def bindActionText(): Unit = {
     action.text <== data.orderType.delegate.mapToString(
       ot => s"I want to ${ot.toString.toLowerCase}")
+  }
+
+  private def bindMarketPriceText(): Unit = {
     marketPrice.text <== data.orderType.delegate.zip(currentQuote) {
       (op, quote) =>
         quote match {
@@ -81,13 +99,17 @@ class OrderAmountsStep(marketStats: MarketStats,
           case None => "Retrieving current quotes..."
         }
     }
+  }
 
+  private def bindCanContinue(): Unit = {
     canContinue <== btcAmount.currencyValue.delegate.zip(data.price) {
       case (_, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => true
       case (amount, MarketPrice(_)) => amount.isPositive
       case _ => false
     }.mapToBool(identity)
+  }
 
+  private def bindOutputData(): Unit = {
     data.bitcoinAmount <== btcAmount.currencyValue
 
     data.price <==
@@ -97,14 +119,7 @@ class OrderAmountsStep(marketStats: MarketStats,
           case Some(MarketSelection.marketPriceButton) => MarketPrice(Euro)
           case _ => null
         }
-    }
-  }
-
-  override val icon = GlyphIcon.MarketPrice
-
-  content = new VBox {
-    styleClass += "order-amounts"
-    content = Seq(action, btcAmount, MarketSelection)
+      }
   }
 }
 
