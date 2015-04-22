@@ -68,7 +68,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   val topBar = new HBox {
     id = "top-bar"
-    content = new PaymentProcessorWidget
+    content = new PaymentProcessorWidget(settingsForm)
   }
 
   val balancePane = new VBox {
