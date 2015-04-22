@@ -13,6 +13,7 @@
     -fx-background-image: url("../graphics/splash-logo.png");
     -fx-background-position: center -50px;
     -fx-background-size: 500;
+    -fx-background-radius: 8;
     -fx-background-repeat: no-repeat;
     -fx-alignment: bottom-center;
 }
