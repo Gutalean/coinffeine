@@ -1,53 +1,32 @@
 /* This file defines the styles for the preferences form. */
 
-#preferences-root-pane {
-    -fx-padding: 0 0 20px 0;
+.payment-processor-preferences {
+    -fx-font-size: 14;
+    -fx-background-color: white;
+    -fx-font-family: 'Open Sans';
+    -fx-alignment: center;
+    -fx-text-alignment: center;
+    -fx-padding: 20 0 0 0;
+}
+
+.payment-processor-preferences > * {
+    -fx-padding: 10 100 10 100;
     -fx-alignment: center;
 }
 
-#preferences-okpay-details {
-    -fx-hgap: 10px;
-    -fx-vgap: 15px;
+.payment-processor-preferences .header {
+    -fx-font-size: 24;
+}
+
+.payment-processor-preferences .labeled-field {
+    -fx-padding: 10 100 40 100;
+}
+
+.payment-processor-preferences .footer {
     -fx-alignment: center;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-color: -cf-light-background;
+    -fx-border-style: segments(3, 2);
+    -fx-padding: 25;
+    -fx-spacing: 50;
 }
-
-#preferences-okpay-userid-field {
-    -fx-pref-column-count: 20;
-    -fx-min-width: 300px;
-}
-
-#preferences-okpay-token-field {
-    -fx-pref-column-count: 20;
-    -fx-min-width: 300px;
-}
-
-#network-tab {
-    -fx-padding: 20px;
-    -fx-spacing: 20px;
-}
-
-.network-option {
-    -fx-spacing: 15px;
-}
-
-.network-option-details {
-    -fx-padding: 0 0 0 20px;
-    -fx-spacing: 15px;
-}
-
-.network-option-details > HBox {
-    -fx-spacing: 5px;
-    -fx-alignment: baseline-left;
-}
-
-.network-port {
-    -fx-pref-column-count: 5;
-    -fx-max-width: 60px;
-}
-
-#okpay-tab {
-    -fx-padding: 20px;
-    -fx-spacing: 20px;
-    -fx-alignment: center;
-}
-

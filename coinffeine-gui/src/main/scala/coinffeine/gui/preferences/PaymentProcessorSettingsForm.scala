@@ -2,58 +2,56 @@ package coinffeine.gui.preferences
 
 import scalafx.Includes._
 import scalafx.event.ActionEvent
-import scalafx.geometry.HPos
 import scalafx.scene.control.{Button, Label, TextField}
-import scalafx.scene.layout.{ColumnConstraints, GridPane, VBox}
+import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.{Modality, Stage, StageStyle}
 
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.Stylesheets
+import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.peer.config.SettingsProvider
 
 class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
 
   private val okPaySettings = settingsProvider.okPaySettings()
 
-  private val walletIdField = new TextField {
-    id = "preferences-okpay-userid-field"
+  private val accountIdField = new TextField {
     text = okPaySettings.userAccount.getOrElse("")
   }
 
-  private val seedTokenField = new TextField {
-    id = "preferences-okpay-token-field"
+  private val tokenField = new TextField {
     text = okPaySettings.seedToken.getOrElse("")
   }
 
   private val formScene = new CoinffeineScene(Stylesheets.Preferences) {
     root = new VBox() {
-      id = "preferences-root-pane"
+      styleClass += "payment-processor-preferences"
       content = Seq(
-        new VBox() {
-          id = "okpay-tab"
-          content = new GridPane() {
-            id = "preferences-okpay-details"
-
-            columnConstraints = Seq(
-              new ColumnConstraints() {
-                halignment = HPos.Right
-              },
-              new ColumnConstraints() {
-                halignment = HPos.Left
-              }
-            )
-
-            add(new Label("Wallet ID"), 0, 0)
-            add(walletIdField, 1, 0)
-            add(new Label("Seed token"), 0, 1)
-            add(seedTokenField, 1, 1)
-          }
+        new HBox {
+          styleClass += "header"
+          content = Seq(
+            new Label("This is your ") with TextStyles.Light,
+            new Label("OKPay account") with TextStyles.Boldface)
         },
-        new Button("Apply") {
-          onAction = { e: ActionEvent => close() }
+        new Label("Please fill your OKPay account details"),
+        labeledField(accountIdField, "Account ID"),
+        labeledField(tokenField, "Token"),
+        new HBox {
+          styleClass += "footer"
+          content = new Button("Apply") {
+            styleClass += "action-button"
+            onAction = { e: ActionEvent => close() }
+          }
         }
       )
     }
+  }
+
+  private def labeledField(field: TextField, label: String) = new VBox {
+    styleClass += "labeled-field"
+    content = Seq(
+      new Label(label) with TextStyles.Boldface,
+      field
+    )
   }
 
   private val formStage = new Stage(style = StageStyle.DECORATED) {
@@ -72,8 +70,8 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
   private def saveSettings(): Unit = {
     settingsProvider.saveUserSettings(
       okPaySettings.copy(
-        userAccount = Some(walletIdField.text.value),
-        seedToken = Some(seedTokenField.text.value)
+        userAccount = Some(accountIdField.text.value),
+        seedToken = Some(tokenField.text.value)
       ))
   }
 
