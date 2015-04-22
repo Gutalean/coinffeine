@@ -24,4 +24,13 @@ object GlyphIcon {
   case object Dwolla extends GlyphIcon { override val letter = 'j' }
   case object Printer extends GlyphIcon { override val letter = 'k' }
   case object LoudSpeaker extends GlyphIcon { override val letter = 'l' }
+  case object Number1 extends GlyphIcon { override val letter = 'z' }
+  case object Number2 extends GlyphIcon { override val letter = 'x' }
+  case object Number3 extends GlyphIcon { override val letter = 'c' }
+
+  val Numbers = Map(
+    1 -> Number1,
+    2 -> Number2,
+    3 -> Number3
+  )
 }
