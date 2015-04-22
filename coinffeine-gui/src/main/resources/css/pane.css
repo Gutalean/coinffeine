@@ -2,7 +2,7 @@
 
 .button-col {
     -fx-alignment: center;
-    -fx-spacing: 25px;
+    -fx-spacing: 5px;
 }
 
 .button-col .button {

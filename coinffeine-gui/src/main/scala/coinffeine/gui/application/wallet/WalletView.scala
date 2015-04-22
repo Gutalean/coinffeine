@@ -27,6 +27,8 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   override val name = "Wallet"
 
+  private val fundsDialog = new FundsDialog(properties)
+
   private def iconFor(tx: WalletActivityEntryProperties): GlyphIcon =
     if (tx.amount.value.isNegative) GlyphIcon.BitcoinOutflow else GlyphIcon.BitcoinInflow
 
@@ -77,7 +79,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
     id = "wallet-control-pane"
 
-    private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 125)
+    private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 145)
 
     private val noQrCode: Node = new Label("No public address available")
 
@@ -88,9 +90,13 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
       }
     }
 
+    private val fundsButton = new Button("Wallet funds") {
+      onAction = fundsDialog.show _
+    }
+
     private val copyToClipboardButton = new Button("Copy address") {
       disable <== app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
-      onAction = { action: Any =>
+      onAction = () => {
         val content = new ClipboardContent()
         content.putString(app.wallet.primaryAddress.get.get.toString)
         Clipboard.systemClipboard.setContent(content)
@@ -103,18 +109,18 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
           case Some(balance) if balance.amount.isPositive => false
           case _ => true
         }
-      onAction = { action: Any =>
+      onAction = () => {
         val form = new WithdrawFundsForm(app.wallet)
         form.show() match {
           case WithdrawFundsForm.Withdraw(amount, to) =>
             app.wallet.transfer(amount, to)
-          case _ =>
+          case WithdrawFundsForm.Cancel => // Do nothing
         }
       }
     }
 
     private val buttons = new VBox with PaneStyles.ButtonColumn {
-      content = Seq(copyToClipboardButton, withdrawFundsButton)
+      content = Seq(fundsButton, copyToClipboardButton, withdrawFundsButton)
     }
 
     content = Seq(qrCodePane, buttons)
