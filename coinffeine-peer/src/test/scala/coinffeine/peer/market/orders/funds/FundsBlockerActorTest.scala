@@ -38,7 +38,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     givenBitcoinFundsAreBlocked()
     expectBitcoinFundsUnblocking()
     expectFiatFundsUnblocking()
-    expectFailedBlocking(s"€100.00 blocked for $exchangeId but not available")
+    expectFailedBlocking(s"100.00EUR blocked for $exchangeId but not available")
   }
 
   it should "fail if bitcoin funds cannot be blocked" in new Fixture {

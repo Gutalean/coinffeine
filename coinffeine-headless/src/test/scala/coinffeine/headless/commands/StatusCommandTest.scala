@@ -15,9 +15,9 @@ class StatusCommandTest extends CommandTest {
   "The status command" should "print the available and blocked fiat" in new Fixture {
     commandOutput() should include("FIAT: --")
     app.fiatBalance.set(Some(CoinffeinePaymentProcessor.Balance(0.05.EUR)))
-    commandOutput() should include("FIAT: €0.05")
+    commandOutput() should include("FIAT: 0.05EUR")
     app.fiatBalance.set(Some(CoinffeinePaymentProcessor.Balance(123.45.EUR, 20.3.EUR)))
-    commandOutput() should include("FIAT: €123.45 (€20.30 blocked)")
+    commandOutput() should include("FIAT: 123.45EUR (20.30EUR blocked)")
   }
 
   it should "print the bitcoin wallet balances" in new Fixture {

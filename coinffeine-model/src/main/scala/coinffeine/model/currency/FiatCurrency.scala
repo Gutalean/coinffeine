@@ -19,6 +19,7 @@ object FiatCurrency {
 /** A fiat currency. */
 trait FiatCurrency extends Currency {
   val javaCurrency: JavaCurrency
-  override lazy val preferredSymbolPosition = Currency.SymbolPrefixed
-  override lazy val toString = javaCurrency.getCurrencyCode
+  override lazy val preferredSymbolPosition = Currency.SymbolSuffixed
+  override lazy val symbol = javaCurrency.getCurrencyCode
+  override lazy val toString = symbol
 }
