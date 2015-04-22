@@ -12,7 +12,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PaymentProcessorWidget
 import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
+import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets}
 import coinffeine.model.currency._
 import coinffeine.peer.config.SettingsProvider
 
@@ -76,24 +76,30 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     content = Seq(
       new HBox with PaneStyles.MinorSpacing {
         content = Seq(
-          new Label("AVAILABLE") with TextStyles.NeutralNews with TextStyles.Light with TextStyles.SemiBig,
-          new Label("BALANCE") with TextStyles.NeutralNews with TextStyles.Boldface with TextStyles.SemiBig)
-      },
-      new Label with TextStyles.GoodNews with TextStyles.SuperBoldface with TextStyles.Huge {
-        text <== balances.fiat.delegate.mapToString {
-          case Some(b) => b.amount.format
-          case None => CurrencyAmount.formatMissing(Euro)
-        }
+          new Label("AVAILABLE") { styleClass += "title-amount" },
+          new Label("BALANCE")  { styleClass += "title-suffix" })
       },
       new HBox {
         content = Seq(
-          new Label with TextStyles.GoodNews with TextStyles.Big {
+          new Label {
+            styleClass += "currency-amount"
+            text <== balances.fiat.delegate.mapToString {
+              case Some(b) => b.amount.format(Currency.NoSymbol)
+              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+            }
+          },
+          new Label("EUR") { styleClass += "currency-suffix" })
+      },
+      new HBox {
+        content = Seq(
+          new Label {
+            styleClass += "currency-amount"
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
               case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
-          new Label("BTC") with TextStyles.GoodNews with TextStyles.Boldface with TextStyles.Big)
+          new Label("BTC") { styleClass += "currency-suffix" })
       }
     )
   }

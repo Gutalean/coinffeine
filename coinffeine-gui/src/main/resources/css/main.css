@@ -63,6 +63,30 @@
     -fx-min-width: 300;
 }
 
+#balance-pane .title-amount {
+    -fx-font-size: 18;
+    -fx-font-weight: 300;
+    -fx-text-fill: #797979;
+}
+
+#balance-pane .title-suffix {
+    -fx-font-size: 18;
+    -fx-font-weight: 800;
+    -fx-text-fill: #797979;
+}
+
+#balance-pane .currency-amount {
+    -fx-font-size: 24;
+    -fx-font-weight: 300;
+    -fx-text-fill: -cf-main1;
+}
+
+#balance-pane .currency-suffix {
+    -fx-font-size: 24;
+    -fx-font-weight: 800;
+    -fx-text-fill: -cf-main1;
+}
+
 #view-selector-pane {
     -fx-alignment: center;
 }
