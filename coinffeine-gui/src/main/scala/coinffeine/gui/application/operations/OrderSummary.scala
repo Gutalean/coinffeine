@@ -32,8 +32,8 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
         val amount = price.of(order.amount)
         new HBox {
           content = Seq(
-            new Label(amount.format(Currency.NoSymbol)) with TextStyles.Light,
-            new Label(amount.currency.toString) with TextStyles.Boldface
+            new Label(amount.format(Currency.NoSymbol)) with TextStyles.CurrencyAmount,
+            new Label(amount.currency.toString) with TextStyles.CurrencySymbol
           )
         }
     }

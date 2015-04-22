@@ -30,12 +30,10 @@
   font-style: normal;
   font-weight: 800;
   src: local('Open Sans Extrabold'), local('OpenSans-Extrabold'),
-    url('/fonts/OpenSans-EXtraBold.ttf') format('truetype');
+    url('/fonts/OpenSans-ExtraBold.ttf') format('truetype');
 }
 
-.text-y {
-  -fx-font-family: 'Open Sans';
-}
+.root { -fx-font-family: 'Open Sans'; }
 
 @font-face {
   font-family: 'coinffeineiconography';
