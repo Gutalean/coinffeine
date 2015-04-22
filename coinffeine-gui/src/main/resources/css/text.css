@@ -1,23 +1,7 @@
 // Classes supporting styles defined in `TextStyles`
 
-.h2 { -fx-font-size: 16; }
+.currency-amount { -fx-font-weight: 300; }
 
-.text-wrapped { -fx-wrap-text: true; }
+.currency-symbol { -fx-font-weight: 700; }
 
-.light { -fx-font-weight: 300; }
-
-.boldface { -fx-font-weight: 700; }
-
-.super-boldface { -fx-font-weight: 800; }
-
-.semibig { -fx-font-size: 18; }
-
-.big { -fx-font-size: 24; }
-
-.huge { -fx-font-size: 36; }
-
-.good-news { -fx-text-fill: -cf-main1; }
-
-.bad-news { -fx-text-fill: -cf-main2; }
-
-.neutral-news { -fx-text-fill: #797979; }
+.emphasis { -fx-font-weight: 700; }

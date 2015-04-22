@@ -29,8 +29,8 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
         new HBox {
           styleClass += "header"
           content = Seq(
-            new Label("This is your ") with TextStyles.Light,
-            new Label("OKPay account") with TextStyles.Boldface)
+            new Label("This is your "),
+            new Label("OKPay account") with TextStyles.Emphasis)
         },
         new Label("Please fill your OKPay account details"),
         labeledField(accountIdField, "Account ID"),
@@ -49,7 +49,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
   private def labeledField(field: TextField, label: String) = new VBox {
     styleClass += "labeled-field"
     content = Seq(
-      new Label(label) with TextStyles.Boldface,
+      new Label(label) with TextStyles.Emphasis,
       field
     )
   }

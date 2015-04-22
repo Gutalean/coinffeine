@@ -12,7 +12,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PaymentProcessorWidget
 import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets}
+import coinffeine.gui.scene.styles.{TextStyles, NodeStyles, PaneStyles, Stylesheets}
 import coinffeine.model.currency._
 import coinffeine.peer.config.SettingsProvider
 
@@ -77,29 +77,29 @@ class ApplicationScene(balances: ApplicationScene.Balances,
       new HBox with PaneStyles.MinorSpacing {
         content = Seq(
           new Label("AVAILABLE") { styleClass += "title-amount" },
-          new Label("BALANCE")  { styleClass += "title-suffix" })
+          new Label("BALANCE") { styleClass += "title-suffix" })
       },
       new HBox {
+        styleClass += "currency"
         content = Seq(
-          new Label {
-            styleClass += "currency-amount"
+          new Label with TextStyles.CurrencyAmount {
             text <== balances.fiat.delegate.mapToString {
               case Some(b) => b.amount.format(Currency.NoSymbol)
               case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
-          new Label("EUR") { styleClass += "currency-suffix" })
+          new Label("EUR") with TextStyles.CurrencySymbol)
       },
       new HBox {
+        styleClass += "currency"
         content = Seq(
-          new Label {
-            styleClass += "currency-amount"
+          new Label with TextStyles.CurrencyAmount {
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
               case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
             }
           },
-          new Label("BTC") { styleClass += "currency-suffix" })
+          new Label("BTC") with TextStyles.CurrencySymbol)
       }
     )
   }
