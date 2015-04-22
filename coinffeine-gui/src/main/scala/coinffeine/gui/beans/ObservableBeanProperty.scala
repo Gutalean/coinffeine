@@ -21,7 +21,7 @@ class ObservableBeanProperty[A](bean: ObservableValue[A],
   
   private val propertyListener = new InvalidationListener {
     override def invalidated(observable: Observable) = {
-      // We must get property value to clean up its invalidation state
+      // We must get the property value to clean up its invalidation state
       property.foreach(_.getValue)
 
       invokeListeners()

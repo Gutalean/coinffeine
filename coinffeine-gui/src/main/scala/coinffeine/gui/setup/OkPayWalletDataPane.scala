@@ -19,23 +19,23 @@ private[setup] class OkPayWalletDataPane(
     styleClass += "subtitle"
   }
 
-  private val walletIdLabel = new Label("Your wallet ID")
+  private val accountIdLabel = new Label("Your account ID")
 
-  private val walletIdField = new TextField {}
+  private val accountIdField = new TextField {}
 
-  private val walletAddressLabel = new Label("Your wallet address")
+  private val tokenLabel = new Label("Your token")
 
-  private val walletAddressField = new TextField {}
+  private val tokenField = new TextField {}
 
   private val dataPane = new VBox {
     styleClass += "data"
-    content = Seq(walletIdLabel, walletIdField, walletAddressLabel, walletAddressField)
+    content = Seq(accountIdLabel, accountIdField, tokenLabel, tokenField)
   }
 
-  canContinue <== walletIdField.text.delegate.mapToBool(_.nonEmpty) and
-    walletAddressField.text.delegate.mapToBool(_.nonEmpty)
+  canContinue <== accountIdField.text.delegate.mapToBool(_.nonEmpty) and
+    tokenField.text.delegate.mapToBool(_.nonEmpty)
 
-  data.okPayWalletAccess <== walletIdField.text.delegate.zip(walletAddressField.text) {
+  data.okPayWalletAccess <== accountIdField.text.delegate.zip(tokenField.text) {
     (id, address) => OkPayWalletAccess(id, address)
   }
 
