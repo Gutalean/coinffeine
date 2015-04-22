@@ -27,7 +27,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
   private val cancelled = new BooleanProperty(this, "cancelled", false)
   private val stepNumber = steps.size
-  private val currentStep = new IntegerProperty(this, "currentStep", 0)
+  private val currentStep = new IntegerProperty(this, "currentStep", 1)
   private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
   def run(parentWindow: Option[Window] = None): Data = {
@@ -94,12 +94,9 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   onCloseRequest = { _: Event => cancel() }
 
   private def initializeSteps(): Unit = {
-    currentStep.onChange {
-      val stepPane = steps(currentStep.value - 1)
-      currentStepPane.value = stepPane
-      rootWizardPane.center = stepPane
-      nextButton.disable <== stepPane.canContinue.not()
-    }
+    currentStepPane <== currentStep.delegate.map(c => steps(c.intValue() - 1))
+    rootWizardPane.center <== currentStepPane.delegate.map(_.delegate)
+    nextButton.disable <== currentStepPane.delegate.flatMap(_.canContinue.not())
     changeToStep(1)
   }
 
