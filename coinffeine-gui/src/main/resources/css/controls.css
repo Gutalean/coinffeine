@@ -107,7 +107,7 @@
 }
 
 .order-status .section1 {
-    -fx-background-radius: 7 0 0 7;
+    -fx-background-radius: 8 0 0 8;
     -fx-border-width: 0 2 0 0;
 }
 
@@ -116,7 +116,7 @@
 }
 
 .order-status .section3 {
-    -fx-background-radius: 0 7 7 0;
+    -fx-background-radius: 0 8 8 0;
     -fx-border-width: 0;
 }
 
@@ -131,7 +131,7 @@
 .radio-button > .radio  {
     -fx-background-color: -cf-background, white;
     -fx-background-insets: 0, 1;
-    -fx-background-radius: 2.0em;
+    -fx-background-radius: 100%;
     -fx-max-height: 5;
 }
 

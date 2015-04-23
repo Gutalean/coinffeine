@@ -45,7 +45,7 @@
 #payment-processor .glyph-icon {
     -fx-text-fill: #de6d16;
     -fx-background-color: white;
-    -fx-background-radius: 15;
+    -fx-background-radius: 100%;
     -fx-min-width: 30;
     -fx-min-height: 30;
     -fx-alignment: center;
