@@ -6,7 +6,7 @@ import scalafx.scene.layout._
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.GlyphIcon
 import coinffeine.gui.wizard.StepPane
-import coinffeine.peer.payment.okpay.OkPayWalletAccess
+import coinffeine.peer.payment.okpay.{OkPaySettings, OkPayWalletAccess}
 
 private[setup] class OkPayWalletDataPane(
     data: SetupConfig) extends StackPane with StepPane[SetupConfig] {
@@ -32,7 +32,7 @@ private[setup] class OkPayWalletDataPane(
     content = Seq(accountIdLabel, accountIdField, tokenLabel, tokenField)
   }
 
-  canContinue <== accountIdField.text.delegate.mapToBool(_.nonEmpty) and
+  canContinue <== accountIdField.text.delegate.mapToBool(validAccountId) and
     tokenField.text.delegate.mapToBool(_.nonEmpty)
 
   data.okPayWalletAccess <== accountIdField.text.delegate.zip(tokenField.text) {
@@ -42,5 +42,10 @@ private[setup] class OkPayWalletDataPane(
   content = new VBox {
     styleClass += "okpay-pane"
     content = Seq(title, subtitle, dataPane)
+  }
+
+  private def validAccountId(text: String) = {
+    val trimmedText = text.trim
+    trimmedText.nonEmpty && trimmedText.matches(OkPaySettings.AccountIdPattern)
   }
 }

@@ -2,7 +2,6 @@ package coinffeine.peer.api.impl
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Random
 import scala.util.control.{NoStackTrace, NonFatal}
 
 import akka.actor._
@@ -17,9 +16,9 @@ import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
+import coinffeine.peer.global.GlobalProperties
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
-import coinffeine.peer.global.GlobalProperties
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
@@ -89,10 +88,10 @@ object DefaultCoinffeineApp {
     private val properties = Properties(
       bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties, globalProperties)
 
-    override lazy val app = new DefaultCoinffeineApp(
-      name = chooseName(), properties, accountId, peerProps, amountsCalculator, configProvider)
-
-    /** Choose a name use for naming the actor systems and logging */
-    private def chooseName() = accountId().getOrElse("app-" + Random.nextInt(1000))
+    override lazy val app = {
+      val name = SystemName.choose(accountId())
+      new DefaultCoinffeineApp(
+        name, properties, accountId, peerProps, amountsCalculator, configProvider)
+    }
   }
 }
