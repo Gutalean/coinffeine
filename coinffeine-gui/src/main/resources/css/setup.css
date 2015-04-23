@@ -26,7 +26,7 @@
     -fx-spacing: 30;
 }
 
-.wizard .faucet-pane .button { -fx-color: -cf-sec1; }
+.wizard .faucet-pane .button { -fx-color: -cf-main1; }
 
 .wizard .faucet-pane .label {
     -fx-text-alignment: center;

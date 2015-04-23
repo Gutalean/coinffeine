@@ -2,16 +2,29 @@
 
 .button {
     -fx-background-color: -fx-color;
-    -fx-background-radius: 6;
+    -fx-background-radius: 8;
     -fx-background-insets: 0;
-    -fx-padding: 0.166667em 1.233333em 0.25em 1.233333em;
     -fx-text-fill: white;
-    -fx-font-size: 16;
+    -fx-font-size: 12;
+    -fx-font-weight: bold;
+    -fx-min-height: 24;
+    -fx-border-color: transparent;
+    -fx-border-width: 1;
+}
+
+.button:disabled {
+    -fx-background-color: -cf-gray4;
 }
 
 .button:hover {
-    -fx-background-color: derive(-fx-color, -20%);
+    -fx-background-color: #54b8e0;
     -fx-cursor: hand;
+}
+
+.button:focused {
+    -fx-border-color: white;
+    -fx-border-radius: 8;
+    -fx-effect: dropshadow(gaussian, #5dcef9, 5, 0, 0, 0);
 }
 
 .button:armed {
@@ -20,7 +33,8 @@
 }
 
 .action-button {
-    -fx-color: -cf-sec1;
+    -fx-color: -cf-main1;
+    -fx-min-width: 120;
 }
 
 .rounded-button {

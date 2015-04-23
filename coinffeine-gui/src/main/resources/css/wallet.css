@@ -8,7 +8,7 @@
     -fx-border-color: -cf-light-background;
     -fx-border-style: segments(3, 2);
     -fx-alignment: center-left;
-    -fx-color: -cf-sec3;
+    -fx-color: -cf-sec2;
 }
 
 #wallet-center-pane .line .icon {
@@ -38,7 +38,7 @@
 #wallet-center-pane .line .buttons {
     -fx-spacing: 15;
     -fx-alignment: center-left;
-    -fx-color: -cf-sec3;
+    -fx-color: -cf-sec2;
 }
 
 #wallet-center-pane .button { -fx-color: #bebebe; }
