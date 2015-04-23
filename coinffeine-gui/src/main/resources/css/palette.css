@@ -1,6 +1,13 @@
 /* This file defines the colour palette of the application. */
 
 .root {
+    /* Shades of grey */
+    -cf-gray1: #222222;
+    -cf-gray2: #606060;
+    -cf-gray3: #a7a7a7;
+    -cf-gray4: #dddddd;
+    -cf-gray5: #f1f1f1;
+
     /* The background colors. */
     -cf-dark-background: #1a1a1a;
     -cf-background: #c8b9b3;
@@ -14,6 +21,5 @@
 
     /* The secondary color palette. */
     -cf-sec1: #5bc1ba;
-    -cf-sec2: #c1afe2;
-    -cf-sec3: #606060;
+    -cf-sec2: -cf-gray2;
 }
