@@ -63,7 +63,7 @@
 .wallet-funds .funds-table {
     -fx-hgap: 5;
     -fx-vgap: 10;
-    -fx-font-weight: light;
+    -fx-font-weight: lighter;
 }
 
 .wallet-funds .amount-label {
@@ -73,4 +73,28 @@
 
 .wallet-funds .amount .label {
     -fx-text-fill: -cf-main1;
+}
+
+/* Styles of the wallet send dialog */
+
+.wallet-send {
+    -fx-background-color: white;
+    -fx-padding: 20 60 40 60;
+    -fx-alignment: center;
+    -fx-spacing: 10;
+    -fx-font-size: 20;
+}
+
+.wallet-send .line {
+    -fx-alignment: center;
+    -fx-padding: 10 0 0 0;
+}
+
+.wallet-send .text-field {
+    -fx-font-size: 16;
+    -fx-min-width: 22em;
+}
+
+.wallet-send .footer {
+    -fx-spacing: 50;
 }

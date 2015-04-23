@@ -79,14 +79,17 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
     id = "wallet-control-pane"
 
-    private def qrCodeImage(address: Address): Image = QRCode.encode(s"bitcoin:$address", 145)
-
-    private val noQrCode: Node = new Label("No public address available")
+    private val noPrimaryAddress = app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
+    private val noAvailableFunds = app.wallet.balance.mapToBoolean(!_.exists(_.available.isPositive))
 
     private val qrCodePane = new StackPane() {
-      app.wallet.primaryAddress.bindToList(content) {
-        case Some(addr) => Seq(new ImageView(qrCodeImage(addr)))
-        case None => Seq(noQrCode)
+      private def qrCodeImage(address: Address): Node =
+        new ImageView(QRCode.encode(s"bitcoin:$address", 145))
+
+      private val noQrCode: Node = new Label("No public address available")
+
+      app.wallet.primaryAddress.bindToList(content) { address =>
+        Seq(address.fold(noQrCode)(qrCodeImage))
       }
     }
 
@@ -95,7 +98,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     }
 
     private val copyToClipboardButton = new Button("Copy address") {
-      disable <== app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
+      disable <== noPrimaryAddress
       onAction = () => {
         val content = new ClipboardContent()
         content.putString(app.wallet.primaryAddress.get.get.toString)
@@ -103,24 +106,18 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
       }
     }
 
-    private val withdrawFundsButton = new Button("Withdraw") {
-      disable <== app.wallet.primaryAddress.mapToBoolean(_.isEmpty) ||
-        app.wallet.balance.mapToBoolean {
-          case Some(balance) if balance.amount.isPositive => false
-          case _ => true
-        }
+    private val sendButton = new Button("Send") {
+      disable <== noPrimaryAddress || noAvailableFunds
       onAction = () => {
-        val form = new WithdrawFundsForm(app.wallet)
-        form.show() match {
-          case WithdrawFundsForm.Withdraw(amount, to) =>
-            app.wallet.transfer(amount, to)
-          case WithdrawFundsForm.Cancel => // Do nothing
+        new SendFundsForm(app.wallet).show() match {
+          case SendFundsForm.Send(amount, to) => app.wallet.transfer(amount, to)
+          case SendFundsForm.CancelSend => // Do nothing
         }
       }
     }
 
     private val buttons = new VBox with PaneStyles.ButtonColumn {
-      content = Seq(fundsButton, copyToClipboardButton, withdrawFundsButton)
+      content = Seq(fundsButton, copyToClipboardButton, sendButton)
     }
 
     content = Seq(qrCodePane, buttons)
