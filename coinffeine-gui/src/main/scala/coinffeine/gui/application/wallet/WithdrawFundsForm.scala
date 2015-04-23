@@ -1,6 +1,5 @@
 package coinffeine.gui.application.wallet
 
-import java.lang.Boolean
 import scala.util.control.NonFatal
 import scalafx.Includes._
 import scalafx.beans.property.{BooleanProperty, ObjectProperty}
@@ -73,7 +72,7 @@ class WithdrawFundsForm(props: WalletProperties) {
           new Button("Withdraw") {
             maxWidth = Double.MaxValue
             disable <== amount.delegate.mapToBool(a => !isValidAmount(a)) ||
-              address.delegate.mapToBool(addr => !addr.isDefined)
+              address.delegate.mapToBool(addr => addr.isEmpty)
             onAction = { action: Any =>
               submit.value = true
               close()
