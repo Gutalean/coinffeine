@@ -1,13 +1,14 @@
 package coinffeine.gui.control
 
 import javafx.beans.property.BooleanPropertyBase
-
+import scalafx.Includes._
 import scalafx.css.PseudoClass
-import scalafx.scene.shape.Circle
+import scalafx.scene.layout.StackPane
 
-class StatusDisc extends Circle {
+class StatusDisc extends StackPane {
 
   styleClass += "status-disc"
+
   delegate.pseudoClassStateChanged(StatusDisc.Failure, false)
 
   val failure = new BooleanPropertyBase() {
@@ -19,7 +20,12 @@ class StatusDisc extends Circle {
     }
   }
 
-  radius = 8
+  private val disc = new GlyphLabel {
+    styleClass += "disc"
+    icon <== when(failure) choose (GlyphIcon.Cross: GlyphIcon) otherwise (GlyphIcon.Mark: GlyphIcon)
+  }
+
+  content = Seq(disc)
 }
 
 object StatusDisc {

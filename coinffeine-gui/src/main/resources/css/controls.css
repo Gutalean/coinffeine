@@ -44,14 +44,24 @@
     -fx-background-color: transparent;
 }
 
-.status-disc {
-    -fx-fill: -cf-main1;
-    -fx-stroke: derive(-fx-fill, -20%);
+.status-disc .disc {
+    -fx-size: 18;
+    -fx-color: -cf-main1;
+
+    -fx-alignment: baseline-center;
+    -fx-font-size: 6;
+    -fx-background-color: derive(-fx-color, -20%), -fx-color;
+    -fx-background-radius: 100%, 100%;
+    -fx-background-insets: 0, 1;
+    -fx-max-width: -fx-size;
+    -fx-min-width: -fx-size;
+    -fx-max-height: -fx-size;
+    -fx-min-height: -fx-size;
+    -fx-padding: 0 0 2 0;
+    -fx-text-fill: derive(-fx-color, -20%) !important;
 }
 
-.status-disc:failure {
-    -fx-fill: -cf-main2;
-}
+.status-disc:failure .disc { -fx-color: -cf-gray4; }
 
 .spinner {
     -fx-font-size: 11px;
