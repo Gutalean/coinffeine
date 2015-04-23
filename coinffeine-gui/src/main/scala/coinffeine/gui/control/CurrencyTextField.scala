@@ -12,6 +12,7 @@ import scalafx.scene.layout.StackPane
 
 import org.controlsfx.control.textfield.CustomTextField
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.{Currency, CurrencyAmount}
 
 class CurrencyTextField[C <: Currency](
@@ -69,33 +70,34 @@ class CurrencyTextField[C <: Currency](
                          oldValue: String,
                          newValue: String): Unit = {
       if (!ignore) {
-        if (isValidInput(newValue)) {
-          _currencyValue.value = Try(CurrencyAmount.exactAmount(BigDecimal(newValue), currency))
-            .getOrElse(CurrencyAmount.zero(currency))
-        } else {
-          ignoringSelfChanges {
-            text = oldValue
-          }
+        if (!isValidInput(newValue)) {
+          ignoringSelfChanges { text = oldValue }
         }
       }
     }
   })
 
-  /*
-   * This event handler is triggered when enter key is pressed, normalising the text.
-   */
-  handleEvent(ActionEvent.Action) { () =>
-    text = normalise(text.value)
+  _currencyValue <== text.delegate.map { input =>
+    Try(CurrencyAmount.exactAmount(BigDecimal(input), currency))
+      .getOrElse(CurrencyAmount.zero(currency))
   }
 
   /*
-   * This listener watches the focused property, which is changed when the control receives or
-   * loses the focus. When that happens, the text is normalised.
+   * This event handler is triggered when enter key is pressed, normalising the text.
    */
-  focused.addListener { (observable: ObservableValue[_ <: java.lang.Boolean],
-                         oldValue: java.lang.Boolean,
-                         newValue: java.lang.Boolean) =>
-    text = normalise(text.value)
+  onAction = { () => text = normalise(text.value) }
+
+  /*
+   * This listener watches the focused property, which is changed when the control receives or
+   * loses the focus. On focus received, the text is removed if it was 0. On focus lost, the
+   * text is normalised.
+   */
+  focused.onChange { (_, _, isFocused) =>
+    if (isFocused) {
+      if (text.value == "0") { text = "" }
+    } else {
+      text = normalise(text.value)
+    }
   }
 
   private def isValidInputChar(input: String): Boolean = input match {
