@@ -13,7 +13,7 @@ import coinffeine.model.currency.{Bitcoin, BitcoinBalance, Currency}
 
 class FundsDialog(props: WalletProperties) {
 
-  private val dialogScene = new CoinffeineScene(Stylesheets.Funds) {
+  private val dialogScene = new CoinffeineScene(Stylesheets.Wallet) {
     root = new VBox {
       styleClass += "wallet-funds"
       content = Seq(

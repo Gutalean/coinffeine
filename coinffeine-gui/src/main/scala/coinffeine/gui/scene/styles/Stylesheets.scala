@@ -11,7 +11,6 @@ object Stylesheets {
 
   val About = "/css/about.css"
   val Alarms = "/css/alarms.css"
-  val Funds = "/css/funds.css"
   val Operations = "/css/operations.css"
   val Preferences = "/css/preferences.css"
   val Setup = "/css/setup.css"
