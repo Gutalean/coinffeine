@@ -103,7 +103,7 @@ class OrderAmountsStep(marketStats: MarketStats,
 
   private def bindCanContinue(): Unit = {
     canContinue <== btcAmount.currencyValue.delegate.zip(data.price) {
-      case (_, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => true
+      case (amount, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => amount.isPositive
       case (amount, MarketPrice(_)) => amount.isPositive
       case _ => false
     }.mapToBool(identity)
