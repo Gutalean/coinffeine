@@ -124,7 +124,7 @@ class OperationsView(app: CoinffeineApp,
 
   private val operationsTable = new VBox {
     val sortedList = new ObservableBuffer(new SortedList[OrderProperties](
-      props.ordersProperty.delegate, new LastChangeComparator))
+      props.ordersProperty.delegate, new CreationTimestampComparator))
     sortedList.bindToList(content)(lineFor)
   }
 
