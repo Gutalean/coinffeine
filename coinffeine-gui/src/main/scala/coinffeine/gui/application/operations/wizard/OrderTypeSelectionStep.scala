@@ -16,7 +16,7 @@ class OrderTypeSelectionStep(
 
   styleClass += "order-type-sel"
 
-  val question = new Label("Choose the type of order you want to perform") {
+  val question = new Label("Choose the type of order\nyou want to perform") {
     styleClass += "question"
   }
 
