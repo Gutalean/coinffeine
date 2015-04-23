@@ -62,12 +62,12 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     new Callable[S] {
       override def call() = f(observableValue.getValue, b.getValue)
     },
-    observableValue)
+    observableValue, b)
 
   def zip[B, C, S](b: ObservableValue[B], c: ObservableValue[C])
                   (f: (A, B, C) => S): ObjectBinding[S] = Bindings.createObjectBinding(
     new Callable[S] {
       override def call() = f(observableValue.getValue, b.getValue, c.getValue)
     },
-    observableValue)
+    observableValue, b, c)
 }
