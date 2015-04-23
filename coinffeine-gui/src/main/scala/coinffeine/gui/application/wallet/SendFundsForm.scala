@@ -1,6 +1,6 @@
 package coinffeine.gui.application.wallet
 
-import scala.util.control.NonFatal
+import scala.util.Try
 import scalafx.Includes._
 import scalafx.beans.property.{BooleanProperty, ObjectProperty}
 import scalafx.scene.control.{Button, Label, TextField}
@@ -10,7 +10,7 @@ import scalafx.stage.{Modality, Stage, StageStyle}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.CurrencyTextField
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.Stylesheets
+import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
 import coinffeine.model.bitcoin.{Address, WalletProperties}
 import coinffeine.model.currency._
 
@@ -25,54 +25,44 @@ class SendFundsForm(props: WalletProperties) {
   private val submit = new BooleanProperty(this, "submit", false)
 
   private val content = new VBox() {
-    id = "wallet-send-root-pane"
+    styleClass += "wallet-send"
+
+    val currencyField = new CurrencyTextField(0.BTC) {
+      amount <== currencyValue
+    }
+
     content = Seq(
-      new VBox() {
-        content = Seq(
-          new Label("Select the amount to send"),
-          new HBox() {
-            val currencyField = new CurrencyTextField(0.BTC) {
-              amount <== currencyValue
-            }
-            content = Seq(
-              currencyField,
-              new Button("Max") {
-                text <== props.balance.map {
-                  case Some(balance) => s"Max (${balance.amount.format})"
-                  case _ => "Max"
-                }
-                onAction = () => {
-                  props.balance.get.foreach { balance =>
-                    currencyField.text.value = balance.amount.value.toString()
-                  }
-                }
-              }
-            )
-          })
+      selectLabel("amount to send"),
+      new Button("Max") with ButtonStyles.Action {
+        text <== props.balance.map { balance =>
+          s"Max (${balance.get.available.format})"
+        }
+        onAction = () => {
+          props.balance.get.foreach { balance =>
+            currencyField.text.value = balance.available.value.toString()
+          }
+        }
       },
-      new VBox() {
-        content = Seq(
-          new Label("Select the destination address"),
-          new TextField() {
-            id = "wallet-send-address-field"
-            promptText = "Insert the destination Bitcoin address"
-            address <== text.delegate.map { addr =>
-              try { Some(new Address(null, addr)) }
-              catch { case NonFatal(_) => None }
-            }
-          })
+      currencyField,
+
+      selectLabel("destination address"),
+      new TextField() {
+        promptText = "Insert the destination address"
+        address <== text.delegate.map { addr =>
+          Try(new Address(null, addr)).toOption
+        }
       },
-      new TilePane() {
+
+      new HBox {
+        styleClass ++= Seq("line", "footer")
         content = Seq(
-          new Button("Cancel") {
-            maxWidth = Double.MaxValue
-            onAction = { action: Any => close() }
+          new Button("Cancel") with ButtonStyles.Action {
+            onAction = close _
           },
-          new Button("Send") {
-            maxWidth = Double.MaxValue
+          new Button("Send") with ButtonStyles.Action {
             disable <== amount.delegate.mapToBool(a => !isValidAmount(a)) ||
               address.delegate.mapToBool(addr => addr.isEmpty)
-            onAction = { action: Any =>
+            onAction = () => {
               submit.value = true
               close()
             }
@@ -80,6 +70,11 @@ class SendFundsForm(props: WalletProperties) {
         )
       }
     )
+  }
+
+  private def selectLabel(name: String) = new HBox() {
+    styleClass += "line"
+    content = Seq(new Label("Select the "), new Label(name) with TextStyles.Emphasis)
   }
 
   private def isValidAmount(amount: Bitcoin.Amount): Boolean =
