@@ -2,12 +2,18 @@
 
 #about-pane {
     -fx-alignment: center;
+    -fx-background-color: white;
     -fx-min-width: 720px;
     -fx-max-width: 720px;
-    -fx-min-height: 320px;
-    -fx-max-height: 320px;
+    -fx-min-height: 350px;
+    -fx-max-height: 350px;
     -fx-padding: 30px;
     -fx-spacing: 30px;
+}
+
+#about-pane .button {
+    -fx-color: -cf-main1;
+    -fx-min-width: 80;
 }
 
 #about-pane HBox {
