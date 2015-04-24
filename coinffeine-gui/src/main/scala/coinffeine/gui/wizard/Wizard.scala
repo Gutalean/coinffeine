@@ -49,7 +49,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
     styleClass += "header"
     content = steps.zipWithIndex.flatMap { case (step, index) =>
       val stepNumber = index + 1
-      Seq(stepIcon(stepNumber, step)) ++ (stepNumber < stepsCount).option(separator())
+      Seq(stepIcon(stepNumber, step)) ++ (stepNumber < stepsCount).option(separator(stepNumber))
     }
 
     private def stepIcon(stepNumber: Int, step: StepPane[Data]) = new GlyphLabel with HExpand {
@@ -73,10 +73,11 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
       }
     }
 
-    private def separator() = new Rectangle {
+    private def separator(stepNumber: Int) = new Rectangle {
       styleClass += "separator"
       width = 80
       height = 4
+      disable <== currentStep.delegate.mapToBool(currentStep => stepNumber >= currentStep.intValue())
     }
   }
 

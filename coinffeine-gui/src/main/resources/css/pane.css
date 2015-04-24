@@ -106,6 +106,8 @@
 
 .wizard > .header > .separator { -fx-fill: -cf-sec1; }
 
+.wizard > .header > .separator:disabled { -fx-opacity: 0.4; }
+
 .wizard > .footer {
     -fx-alignment: center;
     -fx-border-width: 1 0 0 0;
