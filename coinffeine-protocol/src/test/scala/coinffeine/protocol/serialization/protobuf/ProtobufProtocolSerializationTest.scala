@@ -126,7 +126,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
         .setLastPrice(proto.DecimalNumber.newBuilder().setValue(0).setScale(0)))
     }
     instance.fromProtobuf(inconsistentMessage) should === (
-      Failure(ConstraintViolation("requirement failed: Price must be strictly positive")))
+      Failure(ConstraintViolation("requirement failed: Price must be strictly positive (0 given)")))
   }
 
   trait SampleMessages {
