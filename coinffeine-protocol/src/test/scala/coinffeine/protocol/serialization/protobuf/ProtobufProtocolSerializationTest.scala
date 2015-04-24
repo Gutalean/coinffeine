@@ -54,11 +54,11 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
   }
 
   it must "support roundtrip serialization of protocol mismatch messages" in {
-    val mismatch = ProtocolMismatch(Version(42, 0))
+    val mismatch = ProtocolMismatch(Version.Current.copy(minor = Version.Current.minor + 1))
     val protobufMismatch = proto.CoinffeineMessage.newBuilder()
       .setType(MessageType.PROTOCOL_MISMATCH)
       .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
-      .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
+      .setSupportedVersion(protoVersion.toBuilder.setMinor(Version.Current.minor + 1)))
       .build()
     instance.toProtobuf(mismatch) should === (Success(protobufMismatch))
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
