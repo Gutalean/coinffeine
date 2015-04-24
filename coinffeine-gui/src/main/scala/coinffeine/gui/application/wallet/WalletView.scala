@@ -129,7 +129,7 @@ object WalletView {
   private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com/tx/")
 
   private val DateFormat = DateTimeFormat
-    .forPattern("ddMMMyyyy hh:mm:ss")
+    .forPattern("ddMMMyyyy HH:mm:ss")
     .withLocale(Locale.US)
 
   private def detailsOfTransaction(txHash: String): URI =
