@@ -123,7 +123,8 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     val inconsistentMessage = payloadMessage { payload =>
       payload.setQuote(proto.Quote.newBuilder
         .setMarket(proto.Market.newBuilder.setCurrency("EUR"))
-        .setLastPrice(proto.DecimalNumber.newBuilder().setValue(0).setScale(0)))
+        .setLastPrice(proto.DecimalNumber.newBuilder().setValue(
+          com.google.protobuf.ByteString.copyFrom(Array[Byte](0))).setScale(0)))
     }
     instance.fromProtobuf(inconsistentMessage) should === (
       Failure(ConstraintViolation("requirement failed: Price must be strictly positive (0 given)")))

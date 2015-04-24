@@ -49,15 +49,23 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val bigDecimal = BigDecimal(1.1)
   val decimalNumber = msg.DecimalNumber.newBuilder
-    .setValue(11)
     .setScale(1)
+    .setValue(ByteString.copyFrom(Array[Byte](11)))
     .build()
   "Decimal number" should behave like thereIsAMappingBetween(bigDecimal, decimalNumber)
+
+  val extremelySmallDecimal = BigDecimal(10).pow(-40)
+  val smallDecimalNumber = msg.DecimalNumber.newBuilder
+    .setScale(40)
+    .setValue(ByteString.copyFrom(Array[Byte](1)))
+    .build()
+  "Really small decimal number" should behave like
+    thereIsAMappingBetween(extremelySmallDecimal, smallDecimalNumber)
 
   "Fiat amount" should behave like thereIsAMappingBetween[FiatAmount, msg.FiatAmount](
     3.EUR, msg.FiatAmount.newBuilder
       .setCurrency("EUR")
-      .setAmount(msg.DecimalNumber.newBuilder.setValue(3).setScale(0).build())
+      .setAmount(decimalNumberMapping.toProtobuf(3))
       .build
     )
 
@@ -65,10 +73,10 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
   val limitOrderBookEntryMessage = msg.OrderBookEntry.newBuilder
     .setId("orderId")
     .setOrderType(msg.OrderBookEntry.OrderType.BID)
-    .setAmount(msg.DecimalNumber.newBuilder.setValue(10).setScale(0))
+    .setAmount(decimalNumberMapping.toProtobuf(10))
     .setPrice(msg.Price.newBuilder
       .setCurrency("EUR")
-      .setLimit(msg.DecimalNumber.newBuilder.setValue(400).setScale(0)))
+      .setLimit(decimalNumberMapping.toProtobuf(400)))
     .build
   val marketOrderBookEntry = limitOrderBookEntry.copy(price = MarketPrice(Euro))
   val marketOrderBookEntryMessage = limitOrderBookEntryMessage.toBuilder

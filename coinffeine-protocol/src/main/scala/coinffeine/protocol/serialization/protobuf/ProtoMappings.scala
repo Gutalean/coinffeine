@@ -95,11 +95,11 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
   implicit val decimalNumberMapping = new ProtoMapping[BigDecimal, msg.DecimalNumber] {
 
     override def fromProtobuf(amount: msg.DecimalNumber): BigDecimal =
-      BigDecimal(amount.getValue, amount.getScale)
+      BigDecimal(BigInt(amount.getValue.toByteArray), amount.getScale)
 
     override def toProtobuf(amount: BigDecimal): msg.DecimalNumber = msg.DecimalNumber.newBuilder
-      .setValue(amount.underlying().unscaledValue.longValue)
       .setScale(amount.scale)
+      .setValue(ByteString.copyFrom(amount.underlying().unscaledValue.toByteArray))
       .build
   }
 
