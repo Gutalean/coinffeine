@@ -54,11 +54,11 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
   }
 
   it must "support roundtrip serialization of protocol mismatch messages" in {
-    val mismatch = ProtocolMismatch(Version(42, 0))
+    val mismatch = ProtocolMismatch(Version.Current.copy(minor = Version.Current.minor + 1))
     val protobufMismatch = proto.CoinffeineMessage.newBuilder()
       .setType(MessageType.PROTOCOL_MISMATCH)
       .setProtocolMismatch(proto.ProtocolMismatch.newBuilder()
-      .setSupportedVersion(protoVersion.toBuilder.setMajor(42).setMinor(0)))
+      .setSupportedVersion(protoVersion.toBuilder.setMinor(Version.Current.minor + 1)))
       .build()
     instance.toProtobuf(mismatch) should === (Success(protobufMismatch))
     instance.fromProtobuf(protobufMismatch) should === (Success(mismatch))
@@ -123,10 +123,11 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     val inconsistentMessage = payloadMessage { payload =>
       payload.setQuote(proto.Quote.newBuilder
         .setMarket(proto.Market.newBuilder.setCurrency("EUR"))
-        .setLastPrice(proto.DecimalNumber.newBuilder().setValue(0).setScale(0)))
+        .setLastPrice(proto.DecimalNumber.newBuilder().setValue(
+          com.google.protobuf.ByteString.copyFrom(Array[Byte](0))).setScale(0)))
     }
     instance.fromProtobuf(inconsistentMessage) should === (
-      Failure(ConstraintViolation("requirement failed: Price must be strictly positive")))
+      Failure(ConstraintViolation("requirement failed: Price must be strictly positive (0 given)")))
   }
 
   trait SampleMessages {

@@ -10,7 +10,7 @@ import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
   * currency.
   */
 case class Price[C <: FiatCurrency](value: BigDecimal, currency: C) {
-  require(value > 0, "Price must be strictly positive")
+  require(value > 0, s"Price must be strictly positive ($value given)")
 
   def outbids(otherPrice: Price[C]): Boolean = value > otherPrice.value
   def outbidsOrMatches(otherPrice: Price[C]): Boolean = value >= otherPrice.value
