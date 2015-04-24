@@ -121,9 +121,7 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
 
   def fromProtobuf(message: proto.CoinffeineMessage): Deserialization = {
     message.getType match {
-      case MessageType.PAYLOAD =>
-        if (message.hasPayload) fromPayload(message.getPayload)
-        else MissingField("payload").failure
+      case MessageType.PAYLOAD => fromPayload(message)
 
       case MessageType.PROTOCOL_MISMATCH =>
         if (message.hasProtocolMismatch)
@@ -131,6 +129,13 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
         else MissingField("protocolMismatch").failure
     }
   }
+
+  private def fromPayload(message: proto.CoinffeineMessage): Deserialization =
+    if (!message.hasPayload) MissingField("payload").failure
+    else try fromPayload(message.getPayload)
+    catch {
+      case ex: IllegalArgumentException => ConstraintViolation(ex.getMessage).failure
+    }
 
   private def fromPayload(payload: proto.Payload): Deserialization = for {
     _ <- requireSameVersion(payload.getVersion)

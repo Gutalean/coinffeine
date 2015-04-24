@@ -92,23 +92,17 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
   }
 
   it must "detect empty protobuf payloads" in {
-    val emptyMessage = proto.CoinffeineMessage.newBuilder
-      .setType(MessageType.PAYLOAD)
-      .setPayload(proto.Payload.newBuilder().setVersion(protoVersion))
-      .build
+    val emptyMessage = payloadMessage { payload => /* Nothing added */ }
     instance.fromProtobuf(emptyMessage) should === (Failure(EmptyPayload))
   }
 
   it must "detect a protobuf message with multiple payloads" in {
-    val multiMessage = proto.CoinffeineMessage.newBuilder
-      .setType(MessageType.PAYLOAD)
-      .setPayload(proto.Payload.newBuilder
-        .setVersion(protoVersion)
-        .setExchangeAborted(
-          proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
-        .setQuoteRequest(proto.QuoteRequest.newBuilder
-          .setMarket(proto.Market.newBuilder().setCurrency("USD"))))
-      .build
+    val multiMessage = payloadMessage { payload =>
+      payload.setExchangeAborted(
+        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+      payload.setQuoteRequest(proto.QuoteRequest.newBuilder
+        .setMarket(proto.Market.newBuilder().setCurrency("USD")))
+    }
     instance.fromProtobuf(multiMessage) should === (
       Failure(MultiplePayloads(Set("exchangeAborted", "quoteRequest"))))
   }
@@ -123,6 +117,16 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
       .build()
     instance.fromProtobuf(missingMismatchMessage) should === (
       Failure(MissingField("protocolMismatch")))
+  }
+
+  it must "detect message constraint violations" in {
+    val inconsistentMessage = payloadMessage { payload =>
+      payload.setQuote(proto.Quote.newBuilder
+        .setMarket(proto.Market.newBuilder.setCurrency("EUR"))
+        .setLastPrice(proto.DecimalNumber.newBuilder().setValue(0).setScale(0)))
+    }
+    instance.fromProtobuf(inconsistentMessage) should === (
+      Failure(ConstraintViolation("requirement failed: Price must be strictly positive")))
   }
 
   trait SampleMessages {
@@ -162,6 +166,15 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     }
 
     requireSampleInstancesForAllPublicMessages(sampleMessages)
+  }
+
+  private def payloadMessage(completePayload: proto.Payload.Builder => Unit): proto.CoinffeineMessage = {
+    val payloadBuilder = proto.Payload.newBuilder.setVersion(protoVersion)
+    completePayload(payloadBuilder)
+    proto.CoinffeineMessage.newBuilder
+      .setType(MessageType.PAYLOAD)
+      .setPayload(payloadBuilder)
+      .build()
   }
 
   /** Make sure we have a working serialization for all defined public messages. */
