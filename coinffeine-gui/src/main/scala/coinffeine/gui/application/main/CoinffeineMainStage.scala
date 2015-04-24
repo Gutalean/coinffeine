@@ -32,5 +32,5 @@ class CoinffeineMainStage(app: CoinffeineApp,
     ),
     settingsProvider = configProvider
   )
-  icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-128x128.png")))
+  icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-256x256.png")))
 }

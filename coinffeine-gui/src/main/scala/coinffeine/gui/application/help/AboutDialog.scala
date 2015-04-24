@@ -5,8 +5,8 @@ import scalafx.Includes
 import scalafx.event.ActionEvent
 import scalafx.scene.Node
 import scalafx.scene.control.{Button, Label}
-import scalafx.scene.image.{Image, ImageView}
-import scalafx.scene.layout.{Priority, GridPane, HBox, VBox}
+import scalafx.scene.image.Image
+import scalafx.scene.layout._
 import scalafx.scene.shape.Circle
 import scalafx.stage.{Modality, Stage, StageStyle}
 
@@ -17,28 +17,28 @@ import coinffeine.gui.scene.styles.Stylesheets
 class AboutDialog extends Includes {
 
   private val content = new VBox() {
-    id = "about-root"
+    id = "about-pane"
     content = Seq(
       new HBox() {
         hgrow = Priority.Always
         content = Seq(
           new VBox() {
-            id = "productinfo"
+            styleClass += "productinfo"
             content = Seq(
               new Label("Coinffeine") {
                 styleClass += "title"
               },
-              new ImageView(new Image("graphics/logo-128x128.png")),
+              new StackPane { styleClass += "logo" },
               new Label(s"Version ${CoinffeineVersion.Current}"),
               new Label("Copyright (C) 2014-2015 Coinffeine S.L.")
             )
           },
           new VBox() {
-            id = "authorinfo"
+            styleClass += "authorinfo"
             content = Seq(
               new Label("Coinffeine was created, coded and maintained by:"),
               new GridPane() {
-                id = "author-list"
+                styleClass += "author-list"
                 add(createAuthorInfo("Sebastián Ortega Torres", "graphics/avatar/sortega.jpg"), 0, 0)
                 add(createAuthorInfo("Álvaro Polo Valdenebro", "graphics/avatar/apoloval.jpg"), 1, 0)
                 add(createAuthorInfo("Alberto Gómez Toribio", "graphics/avatar/gotoalberto.jpg"), 0, 1)

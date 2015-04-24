@@ -1,38 +1,56 @@
 /* This file defines the styles for the about dialog. */
 
-#about-root {
+#about-pane {
     -fx-alignment: center;
+    -fx-background-color: white;
     -fx-min-width: 720px;
     -fx-max-width: 720px;
-    -fx-min-height: 320px;
-    -fx-max-height: 320px;
+    -fx-min-height: 350px;
+    -fx-max-height: 350px;
     -fx-padding: 30px;
     -fx-spacing: 30px;
 }
 
-#about-root HBox {
+#about-pane .button {
+    -fx-color: -cf-main1;
+    -fx-min-width: 80;
+}
+
+#about-pane HBox {
     -fx-spacing: 50px;
 }
 
-#about-root #productinfo {
+#about-pane .productinfo {
     -fx-alignment: center;
 }
 
-#about-root #authorinfo {
+#about-pane .authorinfo {
     -fx-alignment: center;
     -fx-spacing: 20px;
 }
 
-#about-root .title {
+#about-pane .logo {
+    -fx-size: 128;
+
+    -fx-background-image: url('/graphics/logo-256x256.png');
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: contain;
+    -fx-max-width: -fx-size;
+    -fx-min-width: -fx-size;
+    -fx-max-height: -fx-size;
+    -fx-min-height: -fx-size;
+}
+
+#about-pane .title {
     -fx-font-size: 30;
 }
 
-#about-root .avatar {
+#about-pane .avatar {
     -fx-alignment: center;
     -fx-spacing: 5px;
 }
 
-#about-root #author-list {
+#about-pane .author-list {
     -fx-font-weight: bold;
     -fx-hgap: 20px;
     -fx-vgap: 20px;
