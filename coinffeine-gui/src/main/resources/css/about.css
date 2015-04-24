@@ -29,6 +29,18 @@
     -fx-spacing: 20px;
 }
 
+#about-pane .logo {
+    -fx-size: 128;
+
+    -fx-background-image: url('/graphics/logo-256x256.png');
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: contain;
+    -fx-max-width: -fx-size;
+    -fx-min-width: -fx-size;
+    -fx-max-height: -fx-size;
+    -fx-min-height: -fx-size;
+}
+
 #about-pane .title {
     -fx-font-size: 30;
 }

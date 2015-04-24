@@ -5,8 +5,8 @@ import scalafx.Includes
 import scalafx.event.ActionEvent
 import scalafx.scene.Node
 import scalafx.scene.control.{Button, Label}
-import scalafx.scene.image.{Image, ImageView}
-import scalafx.scene.layout.{Priority, GridPane, HBox, VBox}
+import scalafx.scene.image.Image
+import scalafx.scene.layout._
 import scalafx.scene.shape.Circle
 import scalafx.stage.{Modality, Stage, StageStyle}
 
@@ -28,7 +28,7 @@ class AboutDialog extends Includes {
               new Label("Coinffeine") {
                 styleClass += "title"
               },
-              new ImageView(new Image("graphics/logo-128x128.png")),
+              new StackPane { styleClass += "logo" },
               new Label(s"Version ${CoinffeineVersion.Current}"),
               new Label("Copyright (C) 2014-2015 Coinffeine S.L.")
             )
