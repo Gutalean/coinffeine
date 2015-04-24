@@ -2,11 +2,13 @@ package coinffeine.gui.wizard
 
 import scalafx.Includes._
 import scalafx.beans.property.{BooleanProperty, IntegerProperty, ObjectProperty}
+import scalafx.css.PseudoClass
 import scalafx.event.{ActionEvent, Event}
 import scalafx.scene.control.Button
 import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.scene.shape.Rectangle
 import scalafx.stage.{Modality, Stage, StageStyle, Window}
+import scalaz.syntax.std.boolean._
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
@@ -25,8 +27,10 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
                    wizardTitle: String = "",
                    additionalStyles: Seq[String] = Seq.empty) extends Stage(StageStyle.UTILITY) {
 
+  import Wizard._
+
   private val cancelled = new BooleanProperty(this, "cancelled", false)
-  private val stepNumber = steps.size
+  private val stepsCount = steps.size
   private val currentStep = new IntegerProperty(this, "currentStep", 1)
   private val currentStepPane = new ObjectProperty(this, "currentStepPane", steps.head)
 
@@ -35,7 +39,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
     initModality(Modality.WINDOW_MODAL)
     parentWindow.foreach(initOwner)
     showAndWait()
-    if (cancelled.value) { throw new Wizard.CancelledByUser("The wizard was cancelled by the user") }
+    if (cancelled.value) { throw new CancelledByUser("The wizard was cancelled by the user") }
     data
   }
 
@@ -44,17 +48,36 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   private val wizardHeader = new HBox {
     styleClass += "header"
     content = steps.zipWithIndex.flatMap { case (step, index) =>
-      val icon = new GlyphLabel with HExpand {
-        icon <== currentStep.delegate.map { s =>
-          if (s.intValue() > index + 1) GlyphIcon.Completed else step.icon
+      val stepNumber = index + 1
+      Seq(stepIcon(stepNumber, step)) ++ (stepNumber < stepsCount).option(separator(stepNumber))
+    }
+
+    private def stepIcon(stepNumber: Int, step: StepPane[Data]) = new GlyphLabel with HExpand {
+
+      private val navigable = new BooleanProperty(this, "navigable", false)
+      navigable <== currentStep.delegate.mapToBool(stepNumber < _.intValue)
+      navigable.onChange { (_, _, newValue) =>
+        delegate.pseudoClassStateChanged(NavigableClass, newValue)
+      }
+
+      icon <== currentStep.delegate.map { currentStep =>
+        if (currentStep.intValue > stepNumber) GlyphIcon.Completed else step.icon
+      }
+
+      disable <== currentStep.delegate.mapToBool(currentStep => stepNumber > currentStep.intValue())
+
+      onMouseClicked = () => {
+        if (navigable.value) {
+          changeToStep(stepNumber)
         }
       }
-      val separator = new Rectangle {
-        styleClass += "separator"
-        width = 80
-        height = 4
-      }
-      if (index < stepNumber - 1) Seq(icon, separator) else Seq(icon)
+    }
+
+    private def separator(stepNumber: Int) = new Rectangle {
+      styleClass += "separator"
+      width = 80
+      height = 4
+      disable <== currentStep.delegate.mapToBool(currentStep => stepNumber >= currentStep.intValue())
     }
   }
 
@@ -66,10 +89,10 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
   }
 
   private val nextButton = new Button {
-    text <== when(currentStep === stepNumber) choose "Finish" otherwise "Continue"
+    text <== when(currentStep === stepsCount) choose "Finish" otherwise "Continue"
     disable = true
     handleEvent(ActionEvent.Action) { () =>
-      if (currentStep.value < stepNumber) changeToStep(currentStep.value + 1) else close()
+      if (currentStep.value < stepsCount) changeToStep(currentStep.value + 1) else close()
     }
   }
 
@@ -91,7 +114,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
     root = rootWizardPane
   }
 
-  onCloseRequest = { _: Event => cancel() }
+  onCloseRequest = cancel _
 
   private def initializeSteps(): Unit = {
     currentStepPane <== currentStep.delegate.map(c => steps(c.intValue() - 1))
@@ -110,4 +133,6 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 object Wizard {
 
   class CancelledByUser(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
+
+  private val NavigableClass = PseudoClass("navigable")
 }
