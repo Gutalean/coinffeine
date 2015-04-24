@@ -1,14 +1,15 @@
 package coinffeine.gui.application.wallet
 
-import scalafx.Includes._
-import scalafx.event.Event
-import scalafx.scene.Node
-import scalafx.scene.control._
-import scalafx.scene.image.{Image, ImageView}
-import scalafx.scene.input.{Clipboard, ClipboardContent}
-import scalafx.scene.layout._
 import java.net.{URI, URL}
 import java.util.Locale
+import javafx.collections.transformation.SortedList
+import scalafx.Includes._
+import scalafx.collections.ObservableBuffer
+import scalafx.scene.Node
+import scalafx.scene.control._
+import scalafx.scene.image.ImageView
+import scalafx.scene.input.{Clipboard, ClipboardContent}
+import scalafx.scene.layout._
 
 import org.joda.time.format.DateTimeFormat
 
@@ -42,7 +43,9 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   private val transactionsTable = new VBox {
     styleClass += "transactions"
-    properties.transactions.bindToList(content) { tx =>
+    val sortedList = new ObservableBuffer(new SortedList[WalletActivityEntryProperties](
+      properties.transactions.delegate, new TransactionTimestampComparator))
+    sortedList.bindToList(content) { tx =>
       new HBox {
         styleClass += "line"
         content = Seq(
@@ -58,7 +61,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
             styleClass += "buttons"
             content = Seq(
               new Button with ButtonStyles.Details {
-                onAction = { e: Event =>
+                onAction = () => {
                   Browser.default.browse(WalletView.detailsOfTransaction(tx.hash.value.toString))
                 }
               }
