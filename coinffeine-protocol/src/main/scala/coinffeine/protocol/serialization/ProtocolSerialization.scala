@@ -6,7 +6,6 @@ import akka.util.ByteString
 
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 
 trait ProtocolSerialization {
   def deserialize(bytes: ByteString): ProtocolSerialization.Deserialization
@@ -24,6 +23,7 @@ object ProtocolSerialization {
   case class MultiplePayloads(fields: Set[String]) extends DeserializationError
   case class UnsupportedProtobufMessage(fieldName: String) extends DeserializationError
   case class MissingField(fieldName: String) extends DeserializationError
+  case class ConstraintViolation(description: String) extends DeserializationError
 
   type Serialization = Validation[SerializationError, ByteString]
 
