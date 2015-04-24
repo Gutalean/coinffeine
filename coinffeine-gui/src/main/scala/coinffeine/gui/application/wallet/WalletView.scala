@@ -17,9 +17,9 @@ import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.CoinffeineWallet
 
-class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
+class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
 
@@ -71,7 +71,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     pageContent = transactionsTable
   }
 
-  override def controlPane = new WalletControlPane(app.wallet, properties)
+  override def controlPane = new WalletControlPane(wallet, properties)
 }
 
 object WalletView {
