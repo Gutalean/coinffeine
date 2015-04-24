@@ -38,17 +38,10 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     useSystemMenuBar = true
 
     menus = Seq(
-      new Menu("Edit") {
-        items = Seq(
-          new MenuItem("Payment processor settings...") {
-            onAction = { e: ActionEvent => settingsForm.show() }
-          }
-        )
-      },
       new Menu("Help") {
         items = Seq(
           new MenuItem("About...") {
-            onAction = { e: ActionEvent => new AboutDialog().show() }
+            onAction = new AboutDialog().show _
           }
         )
       }
