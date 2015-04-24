@@ -102,9 +102,9 @@
     -fx-text-fill: -cf-sec1;
 }
 
-.wizard > .header > .separator {
-    -fx-fill: -cf-sec1;
-}
+.wizard > .header > .glyph-icon:navigable { -fx-cursor: hand; }
+
+.wizard > .header > .separator { -fx-fill: -cf-sec1; }
 
 .wizard > .footer {
     -fx-alignment: center;
