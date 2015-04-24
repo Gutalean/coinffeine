@@ -18,13 +18,13 @@ object ButtonStyles {
 
   /** The details rounded button. */
   trait Details extends Rounded { this: Button =>
-    styleClass ++= Seq("details-button", "glyph-icon")
+    styleClass += "glyph-icon"
     text = GlyphIcon.MagnifyingGlass.letter.toString
   }
 
   /** The close rounded button. */
   trait Close extends Rounded { this: Button =>
-    styleClass ++= Seq("close-button", "glyph-icon")
+    styleClass += "glyph-icon"
     text = GlyphIcon.Cross.letter.toString
   }
 }

@@ -25,10 +25,26 @@
     -fx-alignment: center-left;
 }
 
-#operations-center-pane .line.completed.buy { -fx-color: -cf-main1; }
-#operations-center-pane .line.completed.sell { -fx-color: -cf-main2; }
-#operations-center-pane .line.running { -fx-color: -cf-sec1; }
-#operations-center-pane .line.failed { -fx-color: -cf-gray3; }
+#operations-center-pane .line.completed.buy,
+#operations-center-pane .line.completed.buy .button {
+    -fx-color: -cf-main1;
+}
+
+#operations-center-pane .line.completed.sell,
+#operations-center-pane .line.completed.sell .button {
+    -fx-color: -cf-main2;
+}
+
+#operations-center-pane .line.running,
+#operations-center-pane .line.running .button {
+    -fx-color: -cf-sec1;
+}
+
+#operations-center-pane .line.failed,
+#operations-center-pane .line.failed .button {
+    -fx-color: -cf-gray3;
+}
+
 
 #operations-center-pane .line .icon.glyph-icon {
     -fx-min-width: 50;

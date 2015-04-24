@@ -17,14 +17,14 @@
 }
 
 .button:hover {
-    -fx-background-color: #54b8e0;
+    -fx-background-color: derive(-fx-color, -20%);
     -fx-cursor: hand;
 }
 
 .button:focused {
     -fx-border-color: white;
     -fx-border-radius: 8;
-    -fx-effect: dropshadow(gaussian, #5dcef9, 5, 0, 0, 0);
+    -fx-effect: dropshadow(gaussian, derive(-fx-color, -20%), 5, 0, 0, 0);
 }
 
 .button:armed {
@@ -33,11 +33,11 @@
 }
 
 .action-button {
-    -fx-color: -cf-main1;
+    -fx-color: -cf-sec1;
     -fx-min-width: 120;
 }
 
-.rounded-button {
+.button.rounded-button {
     -fx-background-radius: 100%;
     -fx-background-color: -fx-color;
     -fx-text-alignment: center;
@@ -50,10 +50,10 @@
     -fx-max-height: -fx-size;
 }
 
-.rounded-button:hover {
+.button.rounded-button:hover {
     -fx-background-color: derive(-fx-color, -20%);
 }
 
-.rounded-button:armed {
+.button.rounded-button:armed {
     -fx-background-color: derive(-fx-color, -40%);
 }
