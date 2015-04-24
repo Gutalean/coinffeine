@@ -1,6 +1,6 @@
 /* This file defines the styles for the about dialog. */
 
-#about-root {
+#about-pane {
     -fx-alignment: center;
     -fx-min-width: 720px;
     -fx-max-width: 720px;
@@ -10,29 +10,29 @@
     -fx-spacing: 30px;
 }
 
-#about-root HBox {
+#about-pane HBox {
     -fx-spacing: 50px;
 }
 
-#about-root #productinfo {
+#about-pane .productinfo {
     -fx-alignment: center;
 }
 
-#about-root #authorinfo {
+#about-pane .authorinfo {
     -fx-alignment: center;
     -fx-spacing: 20px;
 }
 
-#about-root .title {
+#about-pane .title {
     -fx-font-size: 30;
 }
 
-#about-root .avatar {
+#about-pane .avatar {
     -fx-alignment: center;
     -fx-spacing: 5px;
 }
 
-#about-root #author-list {
+#about-pane .author-list {
     -fx-font-weight: bold;
     -fx-hgap: 20px;
     -fx-vgap: 20px;

@@ -17,13 +17,13 @@ import coinffeine.gui.scene.styles.Stylesheets
 class AboutDialog extends Includes {
 
   private val content = new VBox() {
-    id = "about-root"
+    id = "about-pane"
     content = Seq(
       new HBox() {
         hgrow = Priority.Always
         content = Seq(
           new VBox() {
-            id = "productinfo"
+            styleClass += "productinfo"
             content = Seq(
               new Label("Coinffeine") {
                 styleClass += "title"
@@ -34,11 +34,11 @@ class AboutDialog extends Includes {
             )
           },
           new VBox() {
-            id = "authorinfo"
+            styleClass += "authorinfo"
             content = Seq(
               new Label("Coinffeine was created, coded and maintained by:"),
               new GridPane() {
-                id = "author-list"
+                styleClass += "author-list"
                 add(createAuthorInfo("Sebastián Ortega Torres", "graphics/avatar/sortega.jpg"), 0, 0)
                 add(createAuthorInfo("Álvaro Polo Valdenebro", "graphics/avatar/apoloval.jpg"), 1, 0)
                 add(createAuthorInfo("Alberto Gómez Toribio", "graphics/avatar/gotoalberto.jpg"), 0, 1)
