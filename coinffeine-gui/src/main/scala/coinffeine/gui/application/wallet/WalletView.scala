@@ -5,10 +5,7 @@ import java.util.Locale
 import javafx.collections.transformation.SortedList
 import scalafx.Includes._
 import scalafx.collections.ObservableBuffer
-import scalafx.scene.Node
 import scalafx.scene.control._
-import scalafx.scene.image.ImageView
-import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout._
 
 import org.joda.time.format.DateTimeFormat
@@ -18,17 +15,13 @@ import coinffeine.gui.application.properties.{WalletActivityEntryProperties, Wal
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.pane.PagePane
-import coinffeine.gui.qrcode.QRCode
-import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
+import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
-import coinffeine.model.bitcoin.Address
 import coinffeine.peer.api.CoinffeineApp
 
 class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
-
-  private val fundsDialog = new FundsDialog(properties)
 
   private def iconFor(tx: WalletActivityEntryProperties): GlyphIcon =
     if (tx.amount.value.isNegative) GlyphIcon.BitcoinOutflow else GlyphIcon.BitcoinInflow
@@ -78,53 +71,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     pageContent = transactionsTable
   }
 
-  override def controlPane: Pane = new HBox {
-
-    id = "wallet-control-pane"
-
-    private val noPrimaryAddress = app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
-    private val noAvailableFunds = app.wallet.balance.mapToBoolean(!_.exists(_.available.isPositive))
-
-    private val qrCodePane = new StackPane() {
-      private def qrCodeImage(address: Address): Node =
-        new ImageView(QRCode.encode(s"bitcoin:$address", 145))
-
-      private val noQrCode: Node = new Label("No public address available")
-
-      app.wallet.primaryAddress.bindToList(content) { address =>
-        Seq(address.fold(noQrCode)(qrCodeImage))
-      }
-    }
-
-    private val fundsButton = new Button("Wallet funds") {
-      onAction = fundsDialog.show _
-    }
-
-    private val copyToClipboardButton = new Button("Copy address") {
-      disable <== noPrimaryAddress
-      onAction = () => {
-        val content = new ClipboardContent()
-        content.putString(app.wallet.primaryAddress.get.get.toString)
-        Clipboard.systemClipboard.setContent(content)
-      }
-    }
-
-    private val sendButton = new Button("Send") {
-      disable <== noPrimaryAddress || noAvailableFunds
-      onAction = () => {
-        new SendFundsForm(app.wallet).show() match {
-          case SendFundsForm.Send(amount, to) => app.wallet.transfer(amount, to)
-          case SendFundsForm.CancelSend => // Do nothing
-        }
-      }
-    }
-
-    private val buttons = new VBox with PaneStyles.ButtonColumn {
-      content = Seq(fundsButton, copyToClipboardButton, sendButton)
-    }
-
-    content = Seq(qrCodePane, buttons)
-  }
+  override def controlPane = new WalletControlPane(app.wallet, properties)
 }
 
 object WalletView {
