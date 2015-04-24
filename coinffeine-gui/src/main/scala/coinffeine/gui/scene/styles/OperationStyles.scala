@@ -20,5 +20,6 @@ object OperationStyles {
       case Bid => "buy"
       case Ask => "sell"
     }
-    Seq(statusStyle, orderTypeStyle)  }
+    Seq(statusStyle, orderTypeStyle)
+  }
 }
