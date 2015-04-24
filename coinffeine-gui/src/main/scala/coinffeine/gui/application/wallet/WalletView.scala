@@ -1,14 +1,12 @@
 package coinffeine.gui.application.wallet
 
-import scalafx.Includes._
-import scalafx.event.Event
-import scalafx.scene.Node
-import scalafx.scene.control._
-import scalafx.scene.image.{Image, ImageView}
-import scalafx.scene.input.{Clipboard, ClipboardContent}
-import scalafx.scene.layout._
 import java.net.{URI, URL}
 import java.util.Locale
+import javafx.collections.transformation.SortedList
+import scalafx.Includes._
+import scalafx.collections.ObservableBuffer
+import scalafx.scene.control._
+import scalafx.scene.layout._
 
 import org.joda.time.format.DateTimeFormat
 
@@ -17,17 +15,13 @@ import coinffeine.gui.application.properties.{WalletActivityEntryProperties, Wal
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.pane.PagePane
-import coinffeine.gui.qrcode.QRCode
-import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles}
+import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
-import coinffeine.model.bitcoin.Address
-import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.api.CoinffeineWallet
 
-class WalletView(app: CoinffeineApp, properties: WalletProperties) extends ApplicationView {
+class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
-
-  private val fundsDialog = new FundsDialog(properties)
 
   private def iconFor(tx: WalletActivityEntryProperties): GlyphIcon =
     if (tx.amount.value.isNegative) GlyphIcon.BitcoinOutflow else GlyphIcon.BitcoinInflow
@@ -42,7 +36,9 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
 
   private val transactionsTable = new VBox {
     styleClass += "transactions"
-    properties.transactions.bindToList(content) { tx =>
+    val sortedList = new ObservableBuffer(new SortedList[WalletActivityEntryProperties](
+      properties.transactions.delegate, new TransactionTimestampComparator))
+    sortedList.bindToList(content) { tx =>
       new HBox {
         styleClass += "line"
         content = Seq(
@@ -58,7 +54,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
             styleClass += "buttons"
             content = Seq(
               new Button with ButtonStyles.Details {
-                onAction = { e: Event =>
+                onAction = () => {
                   Browser.default.browse(WalletView.detailsOfTransaction(tx.hash.value.toString))
                 }
               }
@@ -75,53 +71,7 @@ class WalletView(app: CoinffeineApp, properties: WalletProperties) extends Appli
     pageContent = transactionsTable
   }
 
-  override def controlPane: Pane = new HBox {
-
-    id = "wallet-control-pane"
-
-    private val noPrimaryAddress = app.wallet.primaryAddress.mapToBoolean(_.isEmpty)
-    private val noAvailableFunds = app.wallet.balance.mapToBoolean(!_.exists(_.available.isPositive))
-
-    private val qrCodePane = new StackPane() {
-      private def qrCodeImage(address: Address): Node =
-        new ImageView(QRCode.encode(s"bitcoin:$address", 145))
-
-      private val noQrCode: Node = new Label("No public address available")
-
-      app.wallet.primaryAddress.bindToList(content) { address =>
-        Seq(address.fold(noQrCode)(qrCodeImage))
-      }
-    }
-
-    private val fundsButton = new Button("Wallet funds") {
-      onAction = fundsDialog.show _
-    }
-
-    private val copyToClipboardButton = new Button("Copy address") {
-      disable <== noPrimaryAddress
-      onAction = () => {
-        val content = new ClipboardContent()
-        content.putString(app.wallet.primaryAddress.get.get.toString)
-        Clipboard.systemClipboard.setContent(content)
-      }
-    }
-
-    private val sendButton = new Button("Send") {
-      disable <== noPrimaryAddress || noAvailableFunds
-      onAction = () => {
-        new SendFundsForm(app.wallet).show() match {
-          case SendFundsForm.Send(amount, to) => app.wallet.transfer(amount, to)
-          case SendFundsForm.CancelSend => // Do nothing
-        }
-      }
-    }
-
-    private val buttons = new VBox with PaneStyles.ButtonColumn {
-      content = Seq(fundsButton, copyToClipboardButton, sendButton)
-    }
-
-    content = Seq(qrCodePane, buttons)
-  }
+  override def controlPane = new WalletControlPane(wallet, properties)
 }
 
 object WalletView {
@@ -129,7 +79,7 @@ object WalletView {
   private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com/tx/")
 
   private val DateFormat = DateTimeFormat
-    .forPattern("ddMMMyyyy hh:mm:ss")
+    .forPattern("ddMMMyyyy HH:mm:ss")
     .withLocale(Locale.US)
 
   private def detailsOfTransaction(txHash: String): URI =

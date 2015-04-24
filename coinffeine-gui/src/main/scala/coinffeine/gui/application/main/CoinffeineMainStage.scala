@@ -1,5 +1,8 @@
 package coinffeine.gui.application.main
 
+import scalafx.scene.image.Image
+import scalafx.stage.{Stage, StageStyle}
+
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.operations.validation.DefaultOrderValidation
 import coinffeine.gui.application.stats.StatsView
@@ -9,9 +12,6 @@ import coinffeine.gui.control.ConnectionStatusWidget
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
-
-import scalafx.scene.image.Image
-import scalafx.stage.{Stage, StageStyle}
 
 class CoinffeineMainStage(app: CoinffeineApp,
                           configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
@@ -25,7 +25,7 @@ class CoinffeineMainStage(app: CoinffeineApp,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
       new StatsView(app),
-      new WalletView(app, properties.wallet)
+      new WalletView(app.wallet, properties.wallet)
     ),
     statusBarWidgets = Seq(
       new ConnectionStatusWidget(properties.connectionStatusProperty)
