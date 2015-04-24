@@ -75,10 +75,11 @@
 
 #operations-control-pane { -fx-spacing: 15; }
 
-#operations-control-pane > .btc-price {
+#operations-control-pane > .btc-price { -fx-alignment: center; }
+
+#operations-control-pane > .btc-price .label {
     -fx-text-fill: #a39191;
     -fx-font-size: 18;
-    -fx-font-weight: 300;
 }
 
 .order-props {

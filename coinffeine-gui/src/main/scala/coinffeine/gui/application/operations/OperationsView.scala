@@ -23,7 +23,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
-import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
+import coinffeine.gui.scene.styles.{TextStyles, ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
 import coinffeine.model.market.{Order, Ask, Bid, Market}
@@ -140,7 +140,7 @@ class OperationsView(app: CoinffeineApp,
 
     id = "operations-control-pane"
 
-    val bitcoinPrice = new Label {
+    val bitcoinPrice = new HBox() {
       styleClass += "btc-price"
 
       private val currentPrice = PollingBean(BitcoinPricePollingInterval) {
@@ -148,10 +148,17 @@ class OperationsView(app: CoinffeineApp,
         app.marketStats.currentQuote(Market(Euro)).map(_.lastPrice)
       }
 
-      text <== currentPrice.mapToString {
-        case Some(Some(p)) => s"1 BTC = ${p.of(1.BTC)}"
-        case _ => s"1 BTC = ${CurrencyAmount.formatMissing(Euro)}"
+      val prelude = new Label("1 BTC = ")
+
+      val amount = new Label with TextStyles.CurrencyAmount {
+        text <== currentPrice.mapToString {
+          case Some(Some(p)) => p.of(1.BTC).format(Currency.NoSymbol)
+          case _ => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+        }
       }
+      val symbol = new Label(Euro.toString) with TextStyles.CurrencySymbol
+
+      content = Seq(prelude, amount, symbol)
     }
 
     val newOrderButton = new Button("New order") with ButtonStyles.Action {
