@@ -163,7 +163,7 @@
 
 .support-icon {
     -fx-text-fill: -cf-gray3;
-    -fx-padding: 5;
+    -fx-padding: 0 5;
     -fx-font-size: 40;
 }
 

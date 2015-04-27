@@ -193,6 +193,10 @@
     -fx-spacing: 15;
 }
 
+.wizard .order-amounts .market-selection .support-icon {
+    -fx-font-size: 18;
+}
+
 .wizard .order-amounts .market-selection .radio-button { -fx-font-size: 18; }
 
 .wizard .order-amounts .market-selection .details {
@@ -215,6 +219,10 @@
 }
 
 .wizard .order-amounts .market-selection .details .disclaimer { -fx-font-size: 12; }
+
+.wizard .order-amounts .market-selection .details {
+    -fx-alignment: bottom-center;
+}
 
 .wizard .order-confirmation {
     -fx-alignment: center;
