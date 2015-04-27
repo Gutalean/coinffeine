@@ -60,6 +60,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
       initModality(Modality.WINDOW_MODAL)
       initOwner(parentWindow)
     }
+    stage.setResizable(false)
     stage.show()
   }
 
