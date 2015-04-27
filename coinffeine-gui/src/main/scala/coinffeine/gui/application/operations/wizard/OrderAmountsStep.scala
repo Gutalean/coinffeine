@@ -7,7 +7,7 @@ import scalafx.scene.layout.{HBox, VBox}
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
-import coinffeine.gui.control.{CurrencyTextField, GlyphIcon}
+import coinffeine.gui.control.{SupportWidget, CurrencyTextField, GlyphIcon}
 import coinffeine.gui.wizard.{StepPaneEvent, StepPane}
 import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
@@ -47,20 +47,25 @@ class OrderAmountsStep(marketStats: MarketStats,
           styleClass += "price-line"
           content = Seq(new Label("For no more than"), fiatAmount, new Label("per BTC"))
         },
-        new Label {
+        new HBox {
           styleClass += "disclaimer"
-          val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
-          text = s"(Maximum allowed fiat per order is $maxFiat)"
+          content = Seq(
+            new Label {
+              val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
+              text = s"(Maximum allowed fiat per order is $maxFiat)"
+            },
+            new SupportWidget("max-amount")
+          )
         }
       )
     }
 
     val marketPriceButton = new RadioButton("Market price order") { toggleGroup = group }
 
-    val marketPriceDetails = new VBox {
+    val marketPriceDetails = new HBox {
       styleClass += "details"
       disable <== !marketPriceButton.selected
-      content = marketPrice
+      content = Seq(marketPrice, new SupportWidget("market-price"))
     }
 
     content = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails)

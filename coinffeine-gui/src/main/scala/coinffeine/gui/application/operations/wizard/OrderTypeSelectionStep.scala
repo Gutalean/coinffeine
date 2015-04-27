@@ -5,7 +5,7 @@ import scalafx.scene.layout.{HBox, VBox}
 
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{GlyphIcon, GlyphToggle}
+import coinffeine.gui.control.{GlyphIcon, GlyphToggle, SupportWidget}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.model.market.{Ask, Bid, OrderType}
 
@@ -16,8 +16,12 @@ class OrderTypeSelectionStep(
 
   styleClass += "order-type-sel"
 
-  val question = new Label("Choose the type of order\nyou want to perform") {
+  val question = new HBox {
     styleClass += "question"
+    content = Seq(
+      new Label("Choose the type of order\nyou want to perform"),
+      new SupportWidget("create-order")
+    )
   }
 
   object Buttons extends HBox {

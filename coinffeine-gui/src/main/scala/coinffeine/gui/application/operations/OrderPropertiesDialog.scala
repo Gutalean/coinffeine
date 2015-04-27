@@ -9,7 +9,7 @@ import scalafx.stage.{Modality, Stage, Window}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
+import coinffeine.gui.control.{SupportWidget, GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.model.market.{AnyCurrencyOrder, Bid}
@@ -41,7 +41,8 @@ class OrderPropertiesDialog(props: OrderProperties) {
       makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
       makeLine("Type", props.typeProperty.delegate.mapToString(_.toString)),
       makeLine("Price", props.priceProperty.delegate.mapToString(_.toString)),
-      makeLine("Order ID", props.idProperty.delegate.mapToString(_.value))
+      makeLine("Order ID", props.idProperty.delegate.mapToString(_.value)),
+      makeFooter()
     )
   }
 
@@ -60,6 +61,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
       initModality(Modality.WINDOW_MODAL)
       initOwner(parentWindow)
     }
+    stage.setResizable(false)
     stage.show()
   }
 
@@ -85,16 +87,19 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private def makeLine(title: String,
                        value: ObservableStringValue): Node = new HBox {
     styleClass += "line"
-    content = Seq(
-      new VBox {
-        content = Seq(
-          new Label(title) { styleClass += "prop-name" },
-          new Label {
-            styleClass += "prop-value"
-            text <== value
-          }
-        )
-      }
-    )
+    content = new VBox {
+      content = Seq(
+        new Label(title) { styleClass += "prop-name" },
+        new Label {
+          styleClass += "prop-value"
+          text <== value
+        }
+      )
+    }
+  }
+
+  private def makeFooter(): Node = new HBox {
+    styleClass ++= Seq("line", "footer")
+    content = new SupportWidget("order-props")
   }
 }
