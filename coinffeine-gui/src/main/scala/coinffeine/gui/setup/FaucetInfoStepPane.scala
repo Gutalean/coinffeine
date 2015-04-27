@@ -6,7 +6,7 @@ import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
-import coinffeine.gui.control.GlyphIcon
+import coinffeine.gui.control.{SupportWidget, GlyphIcon}
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
@@ -49,7 +49,7 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
 
   content = new VBox {
     styleClass += "faucet-pane"
-    content = Seq(title, par1, par2, addressLine, gotoFaucetLine)
+    content = Seq(title, par1, par2, new SupportWidget("setup-faucet"), addressLine, gotoFaucetLine)
   }
 
   private def openFaucet(): Unit = {

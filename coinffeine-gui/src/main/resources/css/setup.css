@@ -46,6 +46,8 @@
 
 .wizard .faucet-pane .address .text-field { -fx-font-size: 16; }
 
+.wizard .faucet-pane .support-icon { -fx-font-size: 30; }
+
 .wizard .okpay-pane {
     -fx-alignment: center;
     -fx-padding: 25;
@@ -57,6 +59,12 @@
     -fx-font-size: 16;
     -fx-wrap-text: true;
 }
+
+.wizard .okpay-pane .subtitle {
+    -fx-alignment: center;
+}
+
+.wizard .okpay-pane .support-icon { -fx-font-size: 20; }
 
 .wizard .okpay-pane .title {
     -fx-font-size: 22;
