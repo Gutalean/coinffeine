@@ -114,7 +114,8 @@
     -fx-background-repeat: no-repeat;
 }
 
-.order-props .completed { -fx-color: -cf-main1; }
+.order-props .completed.buy { -fx-color: -cf-main1; }
+.order-props .completed.sell { -fx-color: -cf-main2; }
 .order-props .running { -fx-color: -cf-sec1; }
 .order-props .failed { -fx-color: #bebebe; }
 
