@@ -7,6 +7,7 @@ import scalaz.syntax.std.option._
 
 import coinffeine.gui.application.properties.WalletProperties
 import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.control.SupportWidget
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance, Currency}
@@ -19,7 +20,11 @@ class FundsDialog(props: WalletProperties) {
       content = Seq(
         new HBox {
           styleClass += "header"
-          content = Seq(new Label("Wallet "), new Label("Funds") with TextStyles.Emphasis)
+          content = Seq(
+            new Label("Wallet "),
+            new Label("Funds") with TextStyles.Emphasis,
+            new SupportWidget("funds-dialog")
+          )
         },
         new GridPane {
           styleClass += "funds-table"

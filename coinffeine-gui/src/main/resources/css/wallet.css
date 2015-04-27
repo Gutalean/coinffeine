@@ -60,6 +60,10 @@
     -fx-padding: 0 0 20 0;
 }
 
+.wallet-funds .support-icon {
+    -fx-font-size: 28;
+}
+
 .wallet-funds .funds-table {
     -fx-hgap: 5;
     -fx-vgap: 10;
