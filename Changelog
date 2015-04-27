@@ -6,6 +6,9 @@ changed.
 
 v0.8.0:
  - Use a regtest instead of a testnet
+ - GUI redesign
+ - Bug fixing
+   * Fix overflow during wire protocol serialization
 
 v0.7.0:
  - Trigger alarms on OKPay balance availabity issues
