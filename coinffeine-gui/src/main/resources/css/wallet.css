@@ -86,6 +86,8 @@
     -fx-font-size: 20;
 }
 
+.wallet-send .support-icon { -fx-font-size: 20; }
+
 .wallet-send .form-data {
     -fx-alignment: center;
     -fx-padding: 20 60 40 60;

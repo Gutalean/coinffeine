@@ -8,7 +8,7 @@ import scalafx.scene.layout._
 import scalafx.stage.{Modality, Stage, StageStyle}
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.CurrencyTextField
+import coinffeine.gui.control.{SupportWidget, CurrencyTextField}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
 import coinffeine.model.bitcoin.{Address, WalletProperties}
@@ -32,7 +32,7 @@ class SendFundsForm(props: WalletProperties) {
     }
 
     content = Seq(
-      selectLabel("amount to send"),
+      selectLabel("amount to send", "send-amount"),
       new Button("Max") with ButtonStyles.Action {
         text <== props.balance.map { balance =>
           s"Max (${balance.get.available.format})"
@@ -45,7 +45,7 @@ class SendFundsForm(props: WalletProperties) {
       },
       currencyField,
 
-      selectLabel("destination address"),
+      selectLabel("destination address", "send-address"),
       new TextField() {
         promptText = "Insert the destination address"
         address <== text.delegate.map { addr =>
@@ -77,9 +77,13 @@ class SendFundsForm(props: WalletProperties) {
     content = Seq(formData, footer)
   }
 
-  private def selectLabel(name: String) = new HBox() {
+  private def selectLabel(name: String, helpTopic: String) = new HBox() {
     styleClass += "line"
-    content = Seq(new Label("Select the "), new Label(name) with TextStyles.Emphasis)
+    content = Seq(
+      new Label("Select the "),
+      new Label(name) with TextStyles.Emphasis,
+      new SupportWidget(helpTopic)
+    )
   }
 
   private def isValidAmount(amount: Bitcoin.Amount): Boolean =
