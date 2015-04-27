@@ -161,12 +161,15 @@
 
 .wizard .order-type-sel .question {
     -fx-color: #424242;
+    -fx-spacing: 5;
     -fx-font-size: 28;
     -fx-min-width: 500;
     -fx-padding: 30;
-    -fx-text-alignment: center;
     -fx-alignment: center;
 }
+
+.wizard .order-type-sel .question .label { -fx-text-alignment: center; }
+.wizard .order-type-sel .question .support-icon { -fx-font-size: 20; }
 
 .wizard .order-type-sel .options {
     -fx-alignment: center;
