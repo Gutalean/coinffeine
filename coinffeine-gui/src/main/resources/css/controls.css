@@ -145,3 +145,7 @@
     -fx-max-height: 5;
 }
 
+.radio-button:focused > .radio  {
+    -fx-effect: dropshadow(gaussian, derive(-cf-main1, -20%), 10, 0, 0, 0);
+}
+
