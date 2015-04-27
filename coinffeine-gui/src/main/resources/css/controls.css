@@ -1,5 +1,17 @@
 /* This file defines the styles for custom controls. */
 
+.check-box > .box {
+    -fx-background-color: white;
+    -fx-border-color: -cf-gray4;
+    -fx-border-width: 1;
+    -fx-border-radius: 2;
+    -fx-cursor: hand;
+}
+
+.check-box:focused > .box {
+    -fx-effect: dropshadow(gaussian, derive(-cf-main1, -20%), 10, 0, 0, 0);
+}
+
 .currency-text-field { -fx-font-size: 20; }
 
 .currency-text-field .symbol {
