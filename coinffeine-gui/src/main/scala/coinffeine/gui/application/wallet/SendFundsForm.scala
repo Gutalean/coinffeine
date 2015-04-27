@@ -24,8 +24,8 @@ class SendFundsForm(props: WalletProperties) {
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
 
-  private val content = new VBox() {
-    styleClass += "wallet-send"
+  private val formData = new VBox() {
+    styleClass += "form-data"
 
     val currencyField = new CurrencyTextField(0.BTC) {
       amount <== currencyValue
@@ -51,25 +51,30 @@ class SendFundsForm(props: WalletProperties) {
         address <== text.delegate.map { addr =>
           Try(new Address(null, addr)).toOption
         }
-      },
-
-      new HBox {
-        styleClass ++= Seq("line", "footer")
-        content = Seq(
-          new Button("Cancel") with ButtonStyles.Action {
-            onAction = close _
-          },
-          new Button("Send") with ButtonStyles.Action {
-            disable <== amount.delegate.mapToBool(a => !isValidAmount(a)) ||
-              address.delegate.mapToBool(addr => addr.isEmpty)
-            onAction = () => {
-              submit.value = true
-              close()
-            }
-          }
-        )
       }
     )
+  }
+
+  private val footer = new HBox {
+    styleClass += "footer"
+    content = Seq(
+      new Button("Cancel") with ButtonStyles.Action {
+        onAction = close _
+      },
+      new Button("Send") with ButtonStyles.Action {
+        disable <== amount.delegate.mapToBool(a => !isValidAmount(a)) ||
+          address.delegate.mapToBool(addr => addr.isEmpty)
+        onAction = () => {
+          submit.value = true
+          close()
+        }
+      }
+    )
+  }
+
+  private val content = new VBox() {
+    styleClass += "wallet-send"
+    content = Seq(formData, footer)
   }
 
   private def selectLabel(name: String) = new HBox() {

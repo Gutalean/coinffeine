@@ -79,16 +79,21 @@
 
 .wallet-send {
     -fx-background-color: white;
-    -fx-padding: 20 60 40 60;
-    -fx-alignment: center;
-    -fx-spacing: 10;
     -fx-font-size: 20;
+}
+
+.wallet-send .form-data {
+    -fx-alignment: center;
+    -fx-padding: 20 60 40 60;
+    -fx-spacing: 20;
 }
 
 .wallet-send .line {
     -fx-alignment: center;
-    -fx-padding: 10 0 0 0;
+    -fx-padding: 20 0 0 0;
 }
+
+.wallet-send .button { -fx-color: -cf-main1; }
 
 .wallet-send .text-field {
     -fx-font-size: 16;
@@ -96,5 +101,11 @@
 }
 
 .wallet-send .footer {
+    -fx-alignment: center;
+    -fx-border-width: 1 0 0 0;
+    -fx-border-color: -cf-light-background;
+    -fx-border-insets: 15 0 0 0;
+    -fx-border-style: segments(3, 2);
+    -fx-padding: 30 0 30 0;
     -fx-spacing: 50;
 }
