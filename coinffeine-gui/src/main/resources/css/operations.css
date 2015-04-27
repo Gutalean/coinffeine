@@ -157,6 +157,9 @@
 .order-props > .lines > .line.running .prop-value,
 .order-props > .lines > .line.failed .prop-value { -fx-text-fill: -fx-color; }
 
+.order-props .line.footer { -fx-alignment: center; }
+.order-props .line.footer .support-icon  { -fx-font-size: 30; }
+
 .wizard .order-type-sel .question {
     -fx-color: #424242;
     -fx-spacing: 5;
