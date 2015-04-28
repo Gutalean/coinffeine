@@ -32,12 +32,11 @@ class GlyphToggle(initialText: String = "") extends VBox {
     text <== _icon.delegate.mapToString(_.letter.toString)
   }
 
-  val label = new Label {
-    toggle.selected.onChange { (_, _, newValue) =>
-      delegate.pseudoClassStateChanged(PseudoClass("selected"), newValue)
-    }
-    text <== _text
-  }
+  val label = new Label { text <== _text }
 
   content = Seq(toggle, label)
+
+  toggle.selected.onChange { (_, _, newValue) =>
+    delegate.pseudoClassStateChanged(PseudoClass("selected"), newValue)
+  }
 }
