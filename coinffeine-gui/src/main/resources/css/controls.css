@@ -33,18 +33,19 @@
     -fx-background-color: transparent;
     -fx-cursor: hand;
     -fx-padding: 0;
-    -fx-text-fill: -cf-background;
+    -fx-text-fill: -cf-gray3;
 }
-
-.glyph-toggle > .toggle-button:hover { -fx-text-fill: derive(-cf-background, -20%); }
-.glyph-toggle > .toggle-button:selected { -fx-text-fill: -cf-main1; }
 
 .glyph-toggle > .label {
     -fx-font-size: 16;
     -fx-text-fill: -cf-background;
 }
 
-.glyph-toggle > .label:selected { -fx-text-fill: -cf-main1; }
+.glyph-toggle:hover > .label,
+.glyph-toggle:hover > .toggle-button { -fx-text-fill: derive(-cf-gray3, -20%); }
+
+.glyph-toggle:selected > .label,
+.glyph-toggle:selected > .toggle-button { -fx-text-fill: -cf-color; }
 
 .progress-bar {
     -fx-min-width: 150;
