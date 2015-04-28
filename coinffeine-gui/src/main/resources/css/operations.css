@@ -104,26 +104,28 @@
     -fx-min-width: 500;
     -fx-max-width: 500;
     -fx-background-color: white;
+    -fx-padding: 20 0 0 0;
 }
 
 .order-props > .icon {
-    -fx-padding: 10 50 10 50;
-    -fx-min-height: 120;
+    -fx-icon-size: 120;
+    -fx-min-height: -fx-icon-size;
+    -fx-min-height: -fx-icon-size;
     -fx-background-position: center;
-    -fx-background-size: 120;
+    -fx-background-size: contain;
     -fx-background-repeat: no-repeat;
 }
+.order-props > .icon.buy.completed { -fx-background-image: url(../graphics/order/buy/completed.gif) }
+.order-props > .icon.buy.running { -fx-background-image: url(../graphics/order/buy/running.gif) }
+.order-props > .icon.buy.failed { -fx-background-image: url(../graphics/order/buy/failed.gif) }
+.order-props > .icon.sell.completed { -fx-background-image: url(../graphics/order/sell/completed.gif) }
+.order-props > .icon.sell.running { -fx-background-image: url(../graphics/order/sell/running.gif) }
+.order-props > .icon.sell.failed { -fx-background-image: url(../graphics/order/sell/failed.gif) }
 
 .order-props .completed.buy { -fx-color: -cf-main1; }
 .order-props .completed.sell { -fx-color: -cf-main2; }
 .order-props .running { -fx-color: -cf-sec1; }
 .order-props .failed { -fx-color: #bebebe; }
-
-.order-props .icon {
-    -fx-font-size: 140;
-    -fx-text-alignment: center;
-    -fx-text-fill: -fx-color;
-}
 
 .order-props > .summary {
     -fx-padding: 10 50 10 50;

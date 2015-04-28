@@ -3,13 +3,13 @@ package coinffeine.gui.application.operations
 import javafx.beans.value.ObservableStringValue
 import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
-import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.layout.{HBox, Pane, VBox}
 import scalafx.scene.{Node, Parent}
 import scalafx.stage.{StageStyle, Modality, Stage, Window}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{SupportWidget, GlyphIcon, GlyphLabel, OrderStatusWidget}
+import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.model.market.{AnyCurrencyOrder, Bid}
@@ -22,10 +22,8 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private val amount = props.amountProperty.value
   private val date = dateTimePrinter.printDate(props.createdOnProperty.value)
 
-  private val icon = new GlyphLabel {
-    props.orderProperty.delegate.bindToList(styleClass)(
-      Seq("glyph-icon", "icon") ++ OperationStyles.stylesFor(_))
-    icon = if (props.typeProperty.value == Bid) GlyphIcon.Buy else GlyphIcon.Sell
+  private val icon = new Pane {
+    props.orderProperty.delegate.bindToList(styleClass)(OperationStyles.stylesFor(_) :+ "icon")
   }
 
   private val summary = new Label {
