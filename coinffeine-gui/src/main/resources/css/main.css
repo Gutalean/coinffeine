@@ -52,6 +52,7 @@
 }
 
 #control-bar {
+    -fx-max-height: 125px;
     -fx-min-height: 125px;
     -fx-background-color: white;
     -fx-border-width: 0 0 1 0;
