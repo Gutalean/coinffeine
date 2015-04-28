@@ -54,7 +54,7 @@ class AboutDialog extends Includes {
     )
   }
 
-  private val stage = new Stage(style = StageStyle.DECORATED) {
+  private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "About Coinffeine"
     resizable = false
     initModality(Modality.APPLICATION_MODAL)
