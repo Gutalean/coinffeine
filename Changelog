@@ -5,7 +5,7 @@ Note: you should clean your journal when updating from 0.7.x since the binary fo
 changed.
 
 v0.8.0:
- - Use a regtest instead of a testnet
+ - Use a regtest instead of a testnet for integration tests
  - GUI redesign
  - Bug fixing
    * Fix overflow during wire protocol serialization

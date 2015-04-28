@@ -5,7 +5,7 @@ import coinffeine.common.test.UnitTest
 class BitcoinSettingsTest extends UnitTest {
 
   "Bitcoin settings" should "parse network names" in {
-    BitcoinSettings.parseNetwork("public-regnet") shouldBe BitcoinSettings.PublicRegnet
+    BitcoinSettings.parseNetwork("public-testnet") shouldBe BitcoinSettings.PublicTestnet
     BitcoinSettings.parseNetwork("integration-regnet") shouldBe BitcoinSettings.IntegrationRegnet
     BitcoinSettings.parseNetwork("mainnet") shouldBe BitcoinSettings.MainNet
   }
