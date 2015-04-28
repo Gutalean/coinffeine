@@ -28,11 +28,13 @@ class OrderTypeSelectionStep(
     styleClass += "options"
     val group = new ToggleGroup()
     val buy = new GlyphToggle("Bid (Buy)") {
+      styleClass += "buy"
       icon = GlyphIcon.Buy
       toggleGroup = group
       toggle.userData = Bid
     }
     val sell = new GlyphToggle("Ask (Sell)") {
+      styleClass += "sell"
       icon = GlyphIcon.Sell
       toggleGroup = group
       toggle.userData = Ask

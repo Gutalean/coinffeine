@@ -180,6 +180,9 @@
     -fx-font-size: 100;
 }
 
+.wizard .order-type-sel .options .glyph-toggle.buy { -cf-color: -cf-main1; }
+.wizard .order-type-sel .options .glyph-toggle.sell { -cf-color: -cf-main2; }
+
 .wizard .order-amounts {
     -fx-alignment: center;
     -fx-padding: 20;
