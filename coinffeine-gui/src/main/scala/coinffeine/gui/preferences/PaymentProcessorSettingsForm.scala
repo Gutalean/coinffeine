@@ -54,7 +54,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
     )
   }
 
-  private val formStage = new Stage(style = StageStyle.DECORATED) {
+  private val formStage = new Stage(style = StageStyle.UTILITY) {
     title = "Payment processor settings"
     resizable = false
     initModality(Modality.APPLICATION_MODAL)

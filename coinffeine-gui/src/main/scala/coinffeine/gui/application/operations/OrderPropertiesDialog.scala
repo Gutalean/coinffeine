@@ -5,7 +5,7 @@ import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.scene.{Node, Parent}
-import scalafx.stage.{Modality, Stage, Window}
+import scalafx.stage.{StageStyle, Modality, Stage, Window}
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
@@ -55,7 +55,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
     val formScene = new CoinffeineScene(Stylesheets.Operations) {
       root = OrderPropertiesDialog.this.root
     }
-    val stage = new Stage {
+    val stage = new Stage(StageStyle.UTILITY) {
       scene = formScene
       resizable = false
       initModality(Modality.WINDOW_MODAL)
