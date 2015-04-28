@@ -20,7 +20,7 @@ object DefaultBitcoinPlatform {
 
     lazy val network = configProvider.bitcoinSettings().network match {
       case BitcoinSettings.IntegrationRegnet => IntegrationTestNetwork
-      case BitcoinSettings.PublicRegnet => PublicTestNetwork
+      case BitcoinSettings.PublicTestnet => PublicTestNetwork
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 
