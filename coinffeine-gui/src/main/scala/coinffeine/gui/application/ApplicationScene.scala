@@ -1,18 +1,16 @@
 package coinffeine.gui.application
 
-import scalafx.Includes._
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import scalafx.event.ActionEvent
 import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
-import coinffeine.gui.application.help.AboutDialog
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PaymentProcessorWidget
 import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
-import coinffeine.gui.scene.styles.{TextStyles, NodeStyles, PaneStyles, Stylesheets}
+import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
 import coinffeine.peer.config.SettingsProvider
 
@@ -33,20 +31,6 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   private val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
   private val settingsForm = new PaymentProcessorSettingsForm(settingsProvider)
-
-  val menuBar = new MenuBar {
-    useSystemMenuBar = true
-
-    menus = Seq(
-      new Menu("Help") {
-        items = Seq(
-          new MenuItem("About...") {
-            onAction = new AboutDialog().show _
-          }
-        )
-      }
-    )
-  }
 
   private val viewSelector: Seq[ToggleButton] = {
     val group = new ToggleGroup
@@ -125,7 +109,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   root = new BorderPane {
     id = "main-root-pane"
-    top = new VBox { content = Seq(menuBar, topBar, controlBar) }
+    top = new VBox { content = Seq(topBar, controlBar) }
     center = centerPane
     bottom = statusBarPane
   }
