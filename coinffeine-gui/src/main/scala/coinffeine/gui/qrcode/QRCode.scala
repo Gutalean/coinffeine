@@ -11,14 +11,16 @@ import com.google.zxing.{BarcodeFormat, EncodeHintType}
 
 object QRCode {
 
-  private val hints = new JavaHashMap[EncodeHintType, Any]() {
+  private def hints(margin: Int) = new JavaHashMap[EncodeHintType, Any]() {
     put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L)
+    put(EncodeHintType.MARGIN, margin)
   }
 
-  def encode(text: String, size: Int): Image = toWritableImage(toBitMatrix(text, size))
+  def encode(text: String, size: Int, margin: Int = 0): Image =
+    toWritableImage(toBitMatrix(text, size, margin))
 
-  private def toBitMatrix(text: String, size: Int): BitMatrix =
-    new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, hints)
+  private def toBitMatrix(text: String, size: Int, margin: Int): BitMatrix =
+    new QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, size, size, hints(margin))
 
   private def toWritableImage(bitMatrix: BitMatrix): WritableImage = {
     val image = new WritableImage(bitMatrix.getWidth, bitMatrix.getHeight)

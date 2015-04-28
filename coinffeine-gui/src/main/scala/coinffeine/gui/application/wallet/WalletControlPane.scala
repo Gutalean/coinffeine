@@ -23,7 +23,7 @@ class WalletControlPane(wallet: CoinffeineWallet, properties: WalletProperties) 
 
   private val qrCodePane = new StackPane() {
     private def qrCodeImage(address: Address): Node =
-      new ImageView(QRCode.encode(s"bitcoin:$address", 145))
+      new ImageView(QRCode.encode(s"bitcoin:$address", 120, 5))
 
     private val noQrCode: Node = new Label("No public address available")
 
