@@ -15,6 +15,7 @@ object SplashScreen {
 
   def displayOn(stage: PrimaryStage): Unit = {
     stage.initStyle(StageStyle.TRANSPARENT)
+    stage.title = "Coinffeine"
     stage.scene = new CoinffeineScene(Stylesheets.Splash) {
       fill = Color.Transparent
       root = new VBox {

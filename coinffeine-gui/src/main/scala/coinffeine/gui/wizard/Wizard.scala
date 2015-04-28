@@ -17,10 +17,11 @@ import coinffeine.gui.scene.styles.NodeStyles.HExpand
 
 /** Step-by-step wizard that accumulates information of type Data.
   *
-  * @param steps        Sequence of wizard steps
-  * @param data         The data configured by the wizard
-  * @param wizardTitle  Wizard title
-  * @tparam Data        Type of the wizard result
+  * @param steps             Sequence of wizard steps
+  * @param data              The data configured by the wizard
+  * @param wizardTitle       Wizard title
+  * @param additionalStyles  CSS classes to add to the wizard content root
+  * @tparam Data             Type of the wizard result
   */
 class Wizard[Data](steps: Seq[StepPane[Data]],
                    data: Data,
