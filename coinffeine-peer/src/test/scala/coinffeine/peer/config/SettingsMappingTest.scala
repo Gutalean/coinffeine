@@ -57,12 +57,12 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       walletFile = new File("/tmp/user.wallet"),
       blockchainFile = new File("/tmp/foo"),
       rebroadcastTimeout = 60.seconds,
-      network = BitcoinSettings.PublicRegnet
+      network = BitcoinSettings.PublicTestnet
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
     cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
-    cfg.getString("coinffeine.bitcoin.network") shouldBe "public-regnet"
+    cfg.getString("coinffeine.bitcoin.network") shouldBe "public-testnet"
   }
 
   val messageGatewayBasicSettings = makeConfig(
