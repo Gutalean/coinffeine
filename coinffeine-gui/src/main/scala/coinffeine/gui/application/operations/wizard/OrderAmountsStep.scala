@@ -54,7 +54,7 @@ class OrderAmountsStep(marketStats: MarketStats,
               val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
               text = s"(Maximum allowed fiat per order is $maxFiat)"
             },
-            new SupportWidget("max-amount")
+            new SupportWidget("limit-price")
           )
         }
       )
