@@ -12,8 +12,9 @@ import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles, TextStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
-import coinffeine.model.market.{Market, Order}
+import coinffeine.model.market._
 import coinffeine.peer.api.CoinffeineApp
+import coinffeine.protocol.messages.brokerage.Quote
 
 private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneStyles.Centered {
   id = "operations-control-pane"
@@ -23,7 +24,7 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
 
     private val currentPrice = PollingBean(OperationsControlPane.BitcoinPricePollingInterval) {
       implicit val executor = FxExecutor.asContext
-      app.marketStats.currentQuote(Market(Euro)).map(_.lastPrice)
+      app.marketStats.currentQuote(Market(Euro)).map(quote => OperationsControlPane.summarize(quote))
     }
 
     val prelude = new Label("1 BTC = ")
@@ -54,6 +55,19 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
   content = Seq(bitcoinPrice, newOrderButton)
 }
 
-private object OperationsControlPane {
+object OperationsControlPane {
   private val BitcoinPricePollingInterval = 10.seconds
+
+  /** Summarizes a full quote into a simple price or None if there is no price information at all */
+  def summarize[C <: FiatCurrency](quote: Quote[C]): Option[Price[C]] =
+    quote.lastPrice orElse summarize(quote.spread)
+
+  private def summarize[C <: FiatCurrency](spread: Spread[C]): Option[Price[C]] = {
+    val spreadAverage = for {
+      bid <- spread.highestBid
+      ask <- spread.lowestAsk
+    } yield bid.averageWith(ask)
+
+    spreadAverage orElse spread.highestBid orElse spread.lowestAsk
+  }
 }
