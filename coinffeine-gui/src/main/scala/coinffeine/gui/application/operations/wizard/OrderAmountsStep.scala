@@ -7,8 +7,8 @@ import scalafx.scene.layout.{HBox, VBox}
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
-import coinffeine.gui.control.{SupportWidget, CurrencyTextField, GlyphIcon}
-import coinffeine.gui.wizard.{StepPaneEvent, StepPane}
+import coinffeine.gui.control.{CurrencyTextField, GlyphIcon, SupportWidget}
+import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
@@ -45,7 +45,15 @@ class OrderAmountsStep(marketStats: MarketStats,
       content = Seq(
         new HBox {
           styleClass += "price-line"
-          content = Seq(new Label("For no more than"), fiatAmount, new Label("per BTC"))
+          content = Seq(
+            new Label {
+              text <== data.orderType.delegate.mapToString {
+                case Bid => "For no more than"
+                case Ask => "For no less than"
+              }
+            },
+            fiatAmount,
+            new Label("per BTC"))
         },
         new HBox {
           styleClass += "disclaimer"
