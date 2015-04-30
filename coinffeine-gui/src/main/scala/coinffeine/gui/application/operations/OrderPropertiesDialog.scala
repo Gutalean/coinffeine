@@ -5,14 +5,14 @@ import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Pane, VBox}
 import scalafx.scene.{Node, Parent}
-import scalafx.stage.{StageStyle, Modality, Stage, Window}
+import scalafx.stage._
 
 import coinffeine.gui.application.properties.OrderProperties
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
-import coinffeine.model.market.{AnyCurrencyOrder, Bid}
+import coinffeine.model.market._
 
 class OrderPropertiesDialog(props: OrderProperties) {
 
@@ -38,7 +38,10 @@ class OrderPropertiesDialog(props: OrderProperties) {
         props.statusProperty.delegate.mapToString(_.name.capitalize), props.orderProperty),
       makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
       makeLine("Type", props.typeProperty.delegate.mapToString(_.toString)),
-      makeLine("Price", props.priceProperty.delegate.mapToString(_.toString)),
+      makeLine("Price", props.priceProperty.delegate.mapToString {
+        case LimitPrice(limit) => "Limit price at " + limit
+        case MarketPrice(currency) => s"$currency market price"
+      }),
       makeLine("Order ID", props.idProperty.delegate.mapToString(_.value)),
       makeFooter()
     )
