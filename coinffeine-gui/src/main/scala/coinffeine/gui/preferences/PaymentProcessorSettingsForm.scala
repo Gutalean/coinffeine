@@ -32,7 +32,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
             new Label("This is your "),
             new Label("OKPay account") with TextStyles.Emphasis)
         },
-        new Label("Please fill your OKPay account details"),
+        new Label("Please fill in your OKPay account details"),
         labeledField(accountIdField, "Account ID"),
         labeledField(tokenField, "Token"),
         new HBox {

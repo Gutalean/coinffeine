@@ -6,7 +6,7 @@ import scalafx.scene.layout.VBox
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
-import coinffeine.gui.wizard.{StepPaneEvent, StepPane}
+import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.model.market.{Ask, Bid, LimitPrice, MarketPrice}
 
 class OrderConfirmationStep(
@@ -32,7 +32,7 @@ class OrderConfirmationStep(
       }
       val price = orderPrice match {
         case MarketPrice(_) => "market price"
-        case LimitPrice(p) => s"limit price of $p"
+        case LimitPrice(p) => s"a limit price of $p"
       }
       s"You are about to $verb $amount at $price"
     }

@@ -6,11 +6,12 @@ import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.input.{Clipboard, ClipboardContent}
 import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
 
-import coinffeine.gui.control.{SupportWidget, GlyphIcon}
+import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
-private[setup] class FaucetInfoStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
+private[setup] class FaucetInfoStepPane(address: String)
+  extends StackPane with StepPane[SetupConfig] {
 
   override val icon = GlyphIcon.Number2
 
@@ -24,13 +25,13 @@ private[setup] class FaucetInfoStepPane(address: String) extends StackPane with 
   private val title = new Label("Obtain Technical Preview credentials") { styleClass += "title" }
 
   private val par1 = new Label {
-    text = "This is Coinffeine Technical Preview. We use a private Bitcoin testnet " +
-      "and a mocked OKPay service to avoid money lost due to application failures."
+    text = "This is a technical preview. We use a private Bitcoin testnet " +
+      "and a mocked OKPay service to allow you testing Coinffeine without risking money."
   }
 
   private val par2 = new Label {
-    text = "Please copy the Bitcoin address below to the clipboard and use it in our " +
-      "Faucet site to obtain your credentials."
+    text = "Please, copy the Bitcoin address below to the clipboard and use it in our " +
+      "faucet site to obtain your credentials."
   }
 
   private val addressLine = new HBox {
