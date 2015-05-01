@@ -12,7 +12,9 @@
         </encoder>
     </appender>
 
-    <logger name="coinffeine" level="INFO"/>
+    <logger name="coinffeine" level="DEBUG"/>
+    <logger name="coinffeine.overlay.relay" level="INFO"/>
+    <logger name="coinffeine.peer.bitcoin.BitcoinPeerActor" level="INFO"/>
 
     <logger name="com.google.bitcoin" level="ERROR"/>
     <logger name="org.bitcoin" level="ERROR"/>
