@@ -7,6 +7,7 @@
 
     <logger name="coinffeine" level="DEBUG"/>
     <logger name="coinffeine.acceptance.gateway" level="INFO"/>
+    <logger name="coinffeine.overlay.relay" level="INFO"/>
     <logger name="coinffeine.peer.bitcoin.BitcoinPeerActor" level="INFO"/>
     <logger name="coinffeine.peer.market.submission.PeerPositionsSubmitter" level="INFO"/>
     <logger name="coinffeine.server.broker.BrokerActor" level="INFO"/>

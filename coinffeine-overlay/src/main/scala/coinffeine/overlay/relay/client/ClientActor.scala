@@ -30,9 +30,8 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
       * @param onInvalidData  Handler for invalid data received
       */
     def decodeFrames(onMessage: Message => Unit,
-                     onInvalidData: InvalidDataReceived => Unit): Unit = {
+                     onInvalidData: InvalidDataReceived => Unit): Unit =
       while(decodeFrame(onMessage, onInvalidData)) {}
-    }
 
     /** Decode at most a frame.
       *
@@ -41,7 +40,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
       * @return               True if there is more unprocessed buffer
       */
     def decodeFrame(onMessage: Message => Unit,
-                    onInvalidData: InvalidDataReceived => Unit): Boolean = {
+                    onInvalidData: InvalidDataReceived => Unit): Boolean =
       Frame.deserialize(buffer, settings.maxFrameBytes) match {
         case Frame.IncompleteInput => false
         case Frame.Parsed(Frame(protobuf), remainingBuffer) =>
@@ -58,7 +57,6 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
           onInvalidData(InvalidDataReceived(s"Cannot delimit frame: $message"))
           false
       }
-    }
   }
 
   override def receive: Receive = disconnected
@@ -67,9 +65,11 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
     case OverlayNetwork.Join(id) =>
       resolveAddress() match {
         case Success(remoteAddress) =>
+          log.debug("Joining relay network at {} as {}", remoteAddress, id)
           becomeConnecting(id, remoteAddress, sender())
 
         case Failure(ex) =>
+          log.debug("Join failure: cannot resolve {}", settings.host)
           val cause = new IOException(s"Cannot resolve ${settings.host}:${settings.port}", ex)
           sender() ! OverlayNetwork.JoinFailed(id, OverlayNetwork.UnderlyingNetworkFailure(cause))
       }
@@ -86,12 +86,16 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
     tcpManager ! Tcp.Connect(remoteAddress, timeout = Some(settings.connectionTimeout))
     context.become(notSendingMessages orElse {
       case OverlayNetwork.Join(otherId) =>
+        if (otherId == id) log.error("Already joining as {}", id)
+        else log.error("Cannot join as {}, already joining as {} ", otherId, id)
         sender() ! OverlayNetwork.JoinFailed(otherId, OverlayNetwork.AlreadyJoining)
 
       case Tcp.Connected(_, _) =>
+        log.debug("TCP connection with {} succeeded, start handshaking", remoteAddress)
         becomeHandshaking(new Connection(id, socket = sender(), listener))
 
       case Tcp.CommandFailed(_: Tcp.Connect) =>
+        log.error("TCP connection with {} failed", remoteAddress)
         val cause = OverlayNetwork.UnderlyingNetworkFailure(CannotStartConnection(remoteAddress))
         listener ! OverlayNetwork.JoinFailed(id, cause)
         context.become(disconnected)
@@ -101,7 +105,8 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
   private def becomeHandshaking(connection: Connection): Unit = {
     import context.dispatcher
     object IdentificationTimeout
-    val timeout = context.system.scheduler.scheduleOnce(settings.identificationTimeout, self, IdentificationTimeout)
+    val timeout = context.system.scheduler.scheduleOnce(
+      settings.identificationTimeout, self, IdentificationTimeout)
 
     log.info("Connected to {}:{}, identifying as {}", settings.host, settings.port, connection.id)
 
@@ -137,6 +142,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
         abortHandshake(s"server didn't respond in ${settings.identificationTimeout}")
 
       case Tcp.Received(data) =>
+        log.debug("Received {} bytes", data.size)
         connection.append(data)
         connection.decodeFrame(onMessage, onInvalidData)
     })
@@ -147,8 +153,10 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
       connection.decodeFrames(
         onMessage = {
           case StatusMessage(networkSize) =>
+            log.debug("Network size of {}", networkSize)
             connection.listener ! OverlayNetwork.NetworkStatus(networkSize)
           case RelayMessage(senderId, payload) =>
+            log.debug("Message from {} of size {}", senderId, payload.size)
             connection.listener ! OverlayNetwork.ReceiveMessage(senderId, payload)
           case joinMessage: JoinMessage =>
             val cause = InvalidDataReceived(s"Unexpected message received: $joinMessage")
@@ -189,6 +197,7 @@ private[this] class ClientActor(settings: RelayClientSettings, tcpManager: Actor
   }
 
   private def becomeDisconnecting(connection: Connection, cause: OverlayNetwork.LeaveCause): Unit = {
+    log.debug("Disconnecting because of {}", cause)
     connection.socket ! Tcp.Close
     context.become(alreadyJoined orElse notSendingMessages orElse {
       case _: Tcp.ConnectionClosed =>
