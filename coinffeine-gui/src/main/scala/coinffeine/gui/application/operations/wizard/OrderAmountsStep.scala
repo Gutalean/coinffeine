@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{Label, RadioButton, ToggleGroup}
 import scalafx.scene.layout.{HBox, VBox}
+import scalaz.syntax.std.option._
 
 import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
@@ -11,7 +12,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{CurrencyTextField, GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.model.currency.{FiatCurrency, Bitcoin, Euro}
+import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
@@ -88,6 +89,9 @@ class OrderAmountsStep(marketStats: MarketStats,
 
     val messages = new Label {
       styleClass += "messages"
+      validation.delegate.bindToList(styleClass) { result =>
+        Seq("label", "messages") ++ styleClassFor(result)
+      }
       text <== validation.delegate.mapToString {
         case OrderValidation.OK => ""
         case OrderValidation.Warning(violations) => violations.list.mkString("\n")
@@ -96,6 +100,12 @@ class OrderAmountsStep(marketStats: MarketStats,
     }
 
     content = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails, messages)
+  }
+
+  private def styleClassFor(result: OrderValidation.Result): Option[String] = result match {
+    case _: OrderValidation.Warning => "warning".some
+    case _: OrderValidation.Error => "error".some
+    case _ => None
   }
 
   onActivation = { _: StepPaneEvent =>

@@ -241,6 +241,20 @@
     -fx-wrap-text: true;
     -fx-max-width: 500;
     -fx-min-height: 60;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2 10;
+}
+
+.wizard .order-amounts .messages.error {
+    -fx-border-color: #c60f10;
+    -fx-text-fill: #c60f10;
+    -fx-background-color: #ff9aaf;
+}
+
+.wizard .order-amounts .messages.warning {
+    -fx-border-color: black;
+    -fx-background-color: #FFFFBA;
 }
 
 .wizard .order-confirmation {
