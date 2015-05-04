@@ -12,7 +12,7 @@ import coinffeine.model.properties.MutablePropertyMap
 
 class SelfCrossValidationTest extends UnitTest with Inside {
 
-  private val newBid = Order.randomLimit(Bid, 0.5.BTC, Price(300.EUR))
+  private val newBid = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
 
   "Self-cross requirement" should "avoid self-crossing" in new Fixture {
     val crossingAsk = Order.randomLimit(Ask, 0.03.BTC, Price(295.EUR))

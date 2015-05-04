@@ -3,12 +3,12 @@ package coinffeine.gui.application.operations.validation
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.Order
+import coinffeine.model.market.OrderRequest
 
 /** Checks order pre-requirements */
 trait OrderValidation {
   /** Check a new order for its creation requirements */
-  def apply[C <: FiatCurrency](newOrder: Order[C]): OrderValidation.Result
+  def apply[C <: FiatCurrency](request: OrderRequest[C]): OrderValidation.Result
 }
 
 object OrderValidation {

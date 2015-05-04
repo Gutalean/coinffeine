@@ -3,7 +3,7 @@ package coinffeine.gui.application.operations.validation
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency._
-import coinffeine.model.market.{Order, Spread}
+import coinffeine.model.market.{OrderRequest, Spread}
 import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.amounts.AmountsCalculator
 
@@ -12,9 +12,9 @@ private class AvailableFundsValidation(
     fiatBalance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]],
     bitcoinBalance: Property[Option[BitcoinBalance]]) extends OrderValidation {
 
-  override def apply[C <: FiatCurrency](newOrder: Order[C]): OrderValidation.Result =
+  override def apply[C <: FiatCurrency](request: OrderRequest[C]): OrderValidation.Result =
     checkAvailableFunds(
-      currentAvailableFiat(newOrder.price.currency), currentAvailableBitcoin(), newOrder)
+      currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request)
 
   private def currentAvailableFiat[C <: FiatCurrency](currency: C): Option[CurrencyAmount[C]] =
     fiatBalance.get(currency)
@@ -27,14 +27,14 @@ private class AvailableFundsValidation(
   private def checkAvailableFunds[C <: FiatCurrency](
       availableFiat: Option[CurrencyAmount[C]],
       availableBitcoin: Option[Bitcoin.Amount],
-      newOrder: Order[C]): OrderValidation.Result =
-    amountsCalculator.estimateAmountsFor(newOrder, Spread.empty)
+      request: OrderRequest[C]): OrderValidation.Result =
+    amountsCalculator.estimateAmountsFor(request, Spread.empty)
       .fold[OrderValidation.Result](OrderValidation.OK) { estimatedAmounts =>
       OrderValidation.Result.combine(
         checkForAvailableBalance("bitcoin", availableBitcoin,
-          estimatedAmounts.bitcoinRequired(newOrder.orderType)),
-        checkForAvailableBalance(newOrder.price.currency.toString, availableFiat,
-          estimatedAmounts.fiatRequired(newOrder.orderType))
+          estimatedAmounts.bitcoinRequired(request.orderType)),
+        checkForAvailableBalance(request.price.currency.toString, availableFiat,
+          estimatedAmounts.fiatRequired(request.orderType))
       )
     }
 

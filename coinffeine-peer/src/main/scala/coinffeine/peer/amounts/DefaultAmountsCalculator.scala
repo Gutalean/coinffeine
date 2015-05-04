@@ -1,5 +1,7 @@
 package coinffeine.peer.amounts
 
+import scala.util.Try
+
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency._
@@ -7,7 +9,6 @@ import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
-import coinffeine.protocol.messages.brokerage.Quote
 
 private[amounts] class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
@@ -88,27 +89,23 @@ private[amounts] class DefaultAmountsCalculator(
   }
 
   override def estimateAmountsFor[C <: FiatCurrency](
-      order: Order[C], spread: Spread[C]): Option[Exchange.Amounts[C]] = {
+      order: OrderRequest[C], spread: Spread[C]): Option[Exchange.Amounts[C]] = {
 
-    val effectivePrice = {
-      order.price.toOption orElse (order.orderType match {
-        case Bid => spread.lowestAsk
-        case Ask => spread.highestBid
-      })
-    }
+    val effectivePrice = order.price.toOption orElse (order.orderType match {
+      case Bid => spread.lowestAsk
+      case Ask => spread.highestBid
+    })
 
-    effectivePrice.map { price =>
-      order.orderType match {
-        case Bid => exchangeAmountsFor(
-          grossBitcoinAmount =
-            order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions,
-          grossFiatAmount = price.of(order.amount)
-        )
-        case Ask => exchangeAmountsFor(
-          grossBitcoinAmount = order.amount,
-          grossFiatAmount = stepwiseCalculator.requiredAmountToPay(price.of(order.amount))
-        )
+    effectivePrice.flatMap { price =>
+      val grossBitcoinAmount = order.orderType match {
+        case Bid => order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions
+        case Ask => order.amount
       }
+      val grossFiatAmount = order.orderType match {
+        case Bid => price.of(order.amount)
+        case Ask => stepwiseCalculator.requiredAmountToPay(price.of(order.amount))
+      }
+      Try(exchangeAmountsFor(grossBitcoinAmount, grossFiatAmount)).toOption
     }
   }
 

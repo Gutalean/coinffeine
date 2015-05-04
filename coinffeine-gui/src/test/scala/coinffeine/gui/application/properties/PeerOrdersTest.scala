@@ -112,7 +112,8 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     def randomExchange(order: Order[Euro.type]) = {
       val id = ExchangeId.random()
       val counterpart = PeerId.random()
-      val amounts = amountsCalculator.estimateAmountsFor(order, Spread.empty).get
+      val request = OrderRequest(order.orderType, order.amount, order.price)
+      val amounts = amountsCalculator.estimateAmountsFor(request, Spread.empty).get
       val params = Exchange.Parameters(100, TestNet3Params.get())
       Exchange.create(id, BuyerRole, counterpart, amounts, params, DateTime.now())
     }

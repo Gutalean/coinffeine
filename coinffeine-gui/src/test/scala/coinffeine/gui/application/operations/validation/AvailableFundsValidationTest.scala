@@ -13,7 +13,7 @@ import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent with Inside {
 
-  private val newBid = Order.randomLimit(Bid, 0.5.BTC, Price(300.EUR))
+  private val newBid = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
 
   "The available funds requirement" should "optionally require bitcoin funds to be known" in
     new Fixture {
