@@ -5,8 +5,9 @@ import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
-import coinffeine.model.market.{Ask, Bid, Order}
+import coinffeine.model.market._
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
+import coinffeine.protocol.messages.brokerage.Quote
 
 private[amounts] class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
@@ -86,19 +87,28 @@ private[amounts] class DefaultAmountsCalculator(
       grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
   }
 
-  override def estimateAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] = {
-    val limitPrice = order.price.toOption.getOrElse(
-      throw new IllegalArgumentException("Impossible to calculate without a limit price"))
-    order.orderType match {
-      case Bid => exchangeAmountsFor(
-        grossBitcoinAmount =
-          order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions,
-        grossFiatAmount = limitPrice.of(order.amount)
-      )
-      case Ask => exchangeAmountsFor(
-        grossBitcoinAmount = order.amount,
-        grossFiatAmount = stepwiseCalculator.requiredAmountToPay(limitPrice.of(order.amount))
-      )
+  override def estimateAmountsFor[C <: FiatCurrency](
+      order: Order[C], spread: Spread[C]): Option[Exchange.Amounts[C]] = {
+
+    val effectivePrice = {
+      order.price.toOption orElse (order.orderType match {
+        case Bid => spread.lowestAsk
+        case Ask => spread.highestBid
+      })
+    }
+
+    effectivePrice.map { price =>
+      order.orderType match {
+        case Bid => exchangeAmountsFor(
+          grossBitcoinAmount =
+            order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions,
+          grossFiatAmount = price.of(order.amount)
+        )
+        case Ask => exchangeAmountsFor(
+          grossBitcoinAmount = order.amount,
+          grossFiatAmount = stepwiseCalculator.requiredAmountToPay(price.of(order.amount))
+        )
+      }
     }
   }
 

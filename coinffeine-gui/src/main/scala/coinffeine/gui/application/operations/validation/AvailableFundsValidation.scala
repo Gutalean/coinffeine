@@ -1,10 +1,9 @@
 package coinffeine.gui.application.operations.validation
 
-import scala.util.{Failure, Success, Try}
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency._
-import coinffeine.model.market.Order
+import coinffeine.model.market.{Order, Spread}
 import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.amounts.AmountsCalculator
 
@@ -29,15 +28,14 @@ private class AvailableFundsValidation(
       availableFiat: Option[CurrencyAmount[C]],
       availableBitcoin: Option[Bitcoin.Amount],
       newOrder: Order[C]): OrderValidation.Result =
-    Try(amountsCalculator.estimateAmountsFor(newOrder)) match {
-      case Success(estimatedAmounts) =>
-        OrderValidation.Result.combine(
-          checkForAvailableBalance("bitcoin", availableBitcoin,
-            estimatedAmounts.bitcoinRequired(newOrder.orderType)),
-          checkForAvailableBalance(newOrder.price.currency.toString, availableFiat,
-            estimatedAmounts.fiatRequired(newOrder.orderType))
-        )
-      case Failure(noAmountsCanBeEstimated) => OrderValidation.OK
+    amountsCalculator.estimateAmountsFor(newOrder, Spread.empty)
+      .fold[OrderValidation.Result](OrderValidation.OK) { estimatedAmounts =>
+      OrderValidation.Result.combine(
+        checkForAvailableBalance("bitcoin", availableBitcoin,
+          estimatedAmounts.bitcoinRequired(newOrder.orderType)),
+        checkForAvailableBalance(newOrder.price.currency.toString, availableFiat,
+          estimatedAmounts.fiatRequired(newOrder.orderType))
+      )
     }
 
   private def checkForAvailableBalance[C <: Currency](
