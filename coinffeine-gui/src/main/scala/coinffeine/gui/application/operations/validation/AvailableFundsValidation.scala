@@ -49,18 +49,14 @@ private class AvailableFundsValidation(
     }
   }
 
-  private def cannotCheckBalance(name: String) = OrderValidation.Violation(
-    title = s"Cannot check the $name balance",
-    description = s"It is not possible to check your $name balance.\n" +
+  private def cannotCheckBalance(name: String) =
+    s"It is not possible to check your $name balance.\n" +
       "It can be submitted anyway, but it might be stalled until your balance is " +
       "available again and it has enough funds to satisfy the order."
-  )
 
   private def shortOfFunds[C <: Currency](available: CurrencyAmount[C],
-                                          required: CurrencyAmount[C]) = OrderValidation.Violation(
-    title = "Insufficient funds",
-    description = s"Your $available available are insufficient for this order " +
+                                          required: CurrencyAmount[C]) =
+    s"Your $available available are insufficient for this order " +
       s"(at least $required required).\nYou may proceed, but your order will be stalled until " +
       "enough funds are available."
-  )
 }

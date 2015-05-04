@@ -37,9 +37,6 @@ private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyOrder]
       candidate.price.currency == request.price.currency &&
       candidate.orderType == request.orderType.oppositeType
 
-  private def selfCross(at: Price[_ <: FiatCurrency]) =
-    OrderValidation.Error(NonEmptyList(OrderValidation.Violation(
-      title = "Self cross detected",
-      description = s"This order would be self-crossing a previously submitted order of $at"
-    )))
+  private def selfCross(at: Price[_ <: FiatCurrency]) = OrderValidation.Error(NonEmptyList(
+    s"This order would be self-crossing a previously submitted order of $at"))
 }

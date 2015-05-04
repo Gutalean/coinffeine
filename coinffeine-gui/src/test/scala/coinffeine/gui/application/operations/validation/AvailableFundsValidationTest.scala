@@ -20,7 +20,7 @@ class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent
       bitcoinBalance.set(Some(initialBitcoinBalance.copy(hasExpired = true)))
       inside(instance.apply(newBid)) {
         case Warning(NonEmptyList(requirement)) =>
-          requirement.description should include ("not possible to check")
+          requirement should include ("not possible to check")
       }
       bitcoinBalance.set(None)
       instance.apply(newBid) should not be OK
@@ -31,7 +31,7 @@ class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent
     bitcoinBalance.set(Some(initialBitcoinBalance.copy(available = notEnoughBitcoin)))
     inside(instance.apply(newBid)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include (
+        requirement should include (
           s"Your $notEnoughBitcoin available are insufficient for this order")
     }
   }
@@ -40,7 +40,7 @@ class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent
     fiatBalance.set(Euro, initialFiatBalance.copy(hasExpired = true))
     inside(instance.apply(newBid)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include ("not possible to check")
+        requirement should include ("not possible to check")
     }
   }
 
@@ -49,7 +49,7 @@ class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent
     fiatBalance.set(Euro, initialFiatBalance.copy(amount = notEnoughFiat))
     inside(instance.apply(newBid)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include (
+        requirement should include (
           s"Your $notEnoughFiat available are insufficient for this order")
     }
   }

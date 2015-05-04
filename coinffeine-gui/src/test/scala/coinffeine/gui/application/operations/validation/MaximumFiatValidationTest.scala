@@ -18,7 +18,7 @@ class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmounts
     val limit = LimitPrice(amountsCalculator.maxFiatPerExchange(Euro))
     inside(instance.apply(OrderRequest(Bid, 1.1.BTC, limit))) {
       case Error(NonEmptyList(requirement)) =>
-        requirement.description should include ("Maximum allowed fiat amount")
+        requirement should include ("Maximum allowed fiat amount")
     }
   }
 

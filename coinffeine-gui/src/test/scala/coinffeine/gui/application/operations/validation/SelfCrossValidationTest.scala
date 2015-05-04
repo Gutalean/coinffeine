@@ -20,7 +20,7 @@ class SelfCrossValidationTest extends UnitTest with Inside {
 
     inside(instance.apply(newBid)) {
       case Error(NonEmptyList(unmetRequirement)) =>
-        unmetRequirement.description should include ("self-cross")
+        unmetRequirement should include ("self-cross")
     }
   }
 

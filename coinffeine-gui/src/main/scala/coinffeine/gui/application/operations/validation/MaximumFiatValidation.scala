@@ -21,8 +21,6 @@ private class MaximumFiatValidation(amountsCalculator: AmountsCalculator) extend
   }
 
   private def maximumAmountViolated(requested: CurrencyAmount[_], maximum: CurrencyAmount[_]) =
-    OrderValidation.Error(NonEmptyList(OrderValidation.Violation(
-      title = "Invalid fiat amount",
-      description = s"Maximum allowed fiat amount is $maximum, but you requested $requested"
-    )))
+    OrderValidation.Error(NonEmptyList(
+      s"Maximum allowed fiat amount is $maximum, but you requested $requested"))
 }

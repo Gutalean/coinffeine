@@ -8,10 +8,10 @@ import coinffeine.gui.application.operations.validation.OrderValidation._
 
 class OrderValidationTest extends UnitTest {
 
-  private val selfCross = Violation("self-cross", "thou not self-cross!")
-  private val offLimits = Violation("off limits", "too big order")
-  private val noFiat = Violation("not enough fiat", "you have no Euros but you need 3.34 €")
-  private val noBtc = Violation("not enough BTC", "you have 0 BTC but you need 3 satoshis")
+  private val selfCross = "thou not self-cross!"
+  private val offLimits = "too big order"
+  private val noFiat = "you have no Euros but you need 3.34 €"
+  private val noBtc = "you have 0 BTC but you need 3 satoshis"
 
   "Combining check results" should "treat RequirementsMet as recessive" in {
     val otherResults = Seq(

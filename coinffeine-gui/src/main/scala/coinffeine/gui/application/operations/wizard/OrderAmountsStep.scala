@@ -88,8 +88,8 @@ class OrderAmountsStep(marketStats: MarketStats,
       styleClass += "messages"
       text <== validation.delegate.mapToString {
         case OrderValidation.OK => ""
-        case OrderValidation.Warning(violations) => violations.list.map(_.description).mkString("\n")
-        case OrderValidation.Error(violations) => violations.list.map(_.description).mkString("\n")
+        case OrderValidation.Warning(violations) => violations.list.mkString("\n")
+        case OrderValidation.Error(violations) => violations.list.mkString("\n")
       }
     }
 
