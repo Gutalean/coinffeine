@@ -4,7 +4,6 @@ import javafx.beans.value.{ChangeListener, ObservableValue}
 import scala.util.Try
 import scalafx.Includes._
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalafx.event.ActionEvent
 import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, TextField}
 import scalafx.scene.input.KeyEvent

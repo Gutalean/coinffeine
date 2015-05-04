@@ -12,9 +12,10 @@ private class AvailableFundsValidation(
     fiatBalance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]],
     bitcoinBalance: Property[Option[BitcoinBalance]]) extends OrderValidation {
 
-  override def apply[C <: FiatCurrency](request: OrderRequest[C]): OrderValidation.Result =
+  override def apply[C <: FiatCurrency](request: OrderRequest[C],
+                                        spread: Spread[C]): OrderValidation.Result =
     checkAvailableFunds(
-      currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request)
+      currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request, spread)
 
   private def currentAvailableFiat[C <: FiatCurrency](currency: C): Option[CurrencyAmount[C]] =
     fiatBalance.get(currency)
@@ -27,8 +28,9 @@ private class AvailableFundsValidation(
   private def checkAvailableFunds[C <: FiatCurrency](
       availableFiat: Option[CurrencyAmount[C]],
       availableBitcoin: Option[Bitcoin.Amount],
-      request: OrderRequest[C]): OrderValidation.Result =
-    amountsCalculator.estimateAmountsFor(request, Spread.empty)
+      request: OrderRequest[C],
+      spread: Spread[C]): OrderValidation.Result =
+    amountsCalculator.estimateAmountsFor(request, spread)
       .fold[OrderValidation.Result](OrderValidation.OK) { estimatedAmounts =>
       OrderValidation.Result.combine(
         checkForAvailableBalance("bitcoin", availableBitcoin,

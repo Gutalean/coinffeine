@@ -89,14 +89,8 @@ private[amounts] class DefaultAmountsCalculator(
   }
 
   override def estimateAmountsFor[C <: FiatCurrency](
-      order: OrderRequest[C], spread: Spread[C]): Option[Exchange.Amounts[C]] = {
-
-    val effectivePrice = order.price.toOption orElse (order.orderType match {
-      case Bid => spread.lowestAsk
-      case Ask => spread.highestBid
-    })
-
-    effectivePrice.flatMap { price =>
+      order: OrderRequest[C], spread: Spread[C]): Option[Exchange.Amounts[C]] =
+    order.estimatedPrice(spread).flatMap { price =>
       val grossBitcoinAmount = order.orderType match {
         case Bid => order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions
         case Ask => order.amount
@@ -107,7 +101,6 @@ private[amounts] class DefaultAmountsCalculator(
       }
       Try(exchangeAmountsFor(grossBitcoinAmount, grossFiatAmount)).toOption
     }
-  }
 
   private def cumulative[D <: Currency](amounts: Seq[CurrencyAmount[D]]): Seq[CurrencyAmount[D]] =
     amounts.tail.scan(amounts.head)(_ + _)

@@ -11,7 +11,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{CurrencyTextField, GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.model.currency.{Bitcoin, Euro}
+import coinffeine.model.currency.{FiatCurrency, Bitcoin, Euro}
 import coinffeine.model.market._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
@@ -24,8 +24,10 @@ class OrderAmountsStep(marketStats: MarketStats,
 
   override val icon = GlyphIcon.MarketPrice
 
+  private val order =
+    new ObjectProperty[Option[OrderRequest[Euro.type]]](this, "order", None)
   private val validation =
-    new ObjectProperty[OrderValidation.Result](this, "orderRequest", OrderValidation.OK)
+    new ObjectProperty[OrderValidation.Result](this, "validation", OrderValidation.OK)
 
   private val currentQuote = PollingBean(OrderAmountsStep.CurrentQuotePollingInterval) {
     marketStats.currentQuote(Market(Euro))
@@ -129,27 +131,27 @@ class OrderAmountsStep(marketStats: MarketStats,
   }
 
   private def bindValidation(): Unit = {
-    validation <== data.orderType.delegate.zip(data.bitcoinAmount, data.price) {
+    order <== data.orderType.delegate.zip(data.bitcoinAmount, data.price) {
       (orderType, nullableAmount, nullablePrice) =>
-        val validationResult = for {
-          price <- Option(nullablePrice)
+        for {
           amount <- Option(nullableAmount) if amount.isPositive
-        } yield validator(OrderRequest(orderType, nullableAmount, price))
-        validationResult.getOrElse(OrderValidation.OK)
+          price <- Option(nullablePrice)
+        } yield OrderRequest(orderType, nullableAmount, price)
+    }
+
+    validation <== order.delegate.zip(currentQuote) { (order, quote) =>
+      val spread = quote.map(_.spread).getOrElse(Spread.empty)
+      order.map(o => validator(o, spread)).getOrElse(OrderValidation.OK)
     }
   }
 
   private def bindCanContinue(): Unit = {
-    val validInputs = btcAmount.currencyValue.delegate.zip(data.price) {
-      case (amount, LimitPrice(limit)) if limit.value.doubleValue() > 0.0d => amount.isPositive
-      case (amount, MarketPrice(_)) => amount.isPositive
-      case _ => false
-    }.mapToBool(identity)
-    val validOrderRequest = validation.delegate.mapToBool {
+    val definedOrder = order.delegate.mapToBool(_.isDefined)
+    val validOrder = validation.delegate.mapToBool {
       case _: OrderValidation.Error => false
       case _ => true
     }
-    canContinue <== validInputs and validOrderRequest
+    canContinue <== definedOrder and validOrder
   }
 
   private def bindOutputData(): Unit = {

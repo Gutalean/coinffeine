@@ -10,12 +10,11 @@ import coinffeine.model.properties.PropertyMap
 private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyOrder])
   extends OrderValidation {
 
-  override def apply[C <: FiatCurrency](request: OrderRequest[C]) = {
+  override def apply[C <: FiatCurrency](request: OrderRequest[C], spread: Spread[C]) =
     request.price match {
       case LimitPrice(limit) => validateLimitOrder(request, limit)
       case MarketPrice(_) => OrderValidation.OK
     }
-  }
 
   private def validateLimitOrder[C <: FiatCurrency](request: OrderRequest[C],
                                                     limit: Price[C]): Result = {
