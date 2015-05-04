@@ -7,7 +7,7 @@ import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.Collec
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.model.market.{Ask, Bid, LimitPrice, MarketPrice}
+import coinffeine.model.market._
 
 class OrderConfirmationStep(
     data: CollectedData) extends StepPane[OrderSubmissionWizard.CollectedData] {

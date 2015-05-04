@@ -6,6 +6,7 @@ import scalafx.Includes._
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
+import coinffeine.gui.application.operations.validation.DefaultOrderValidation
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
@@ -19,7 +20,9 @@ import coinffeine.protocol.messages.brokerage.Quote
 private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneStyles.Centered {
   id = "operations-control-pane"
 
-  val bitcoinPrice = new HBox() {
+  private val validation = new DefaultOrderValidation(app)
+
+  private val bitcoinPrice = new HBox() {
     styleClass += "btc-price"
 
     private val currentPrice = PollingBean(OperationsControlPane.BitcoinPricePollingInterval) {
@@ -40,13 +43,14 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
     content = Seq(prelude, amount, symbol)
   }
 
-  val newOrderButton = new Button("New order") with ButtonStyles.Action {
+  private val newOrderButton = new Button("New order") with ButtonStyles.Action {
     onAction = submitNewOrder _
   }
 
   private def submitNewOrder(): Unit = {
-    val wizard = new OrderSubmissionWizard(app.marketStats, app.utils.exchangeAmountsCalculator)
-    Try(wizard.run(Some(delegate.getScene.getWindow))).foreach { data =>
+    val wizard = new OrderSubmissionWizard(
+      app.marketStats, app.utils.exchangeAmountsCalculator, validation)
+    Try(wizard.run(Option(delegate.getScene.getWindow))).foreach { data =>
       val order = Order.random(data.orderType.value, data.bitcoinAmount.value, data.price.value)
       app.network.submitOrder(order)
     }
