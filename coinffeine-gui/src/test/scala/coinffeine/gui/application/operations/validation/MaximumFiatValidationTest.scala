@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
-
+import scalaz.syntax.std.option._
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
@@ -15,15 +15,20 @@ class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmounts
   private val instance = new MaximumFiatValidation(amountsCalculator)
 
   "Maximum fiat requirement" should "reject orders above the limit" in {
-    val tooBigBid = Order.randomLimit(Bid, 1.1.BTC, Price(amountsCalculator.maxFiatPerExchange(Euro)))
-    inside(instance.apply(tooBigBid)) {
+    val limitPrice = LimitPrice(amountsCalculator.maxFiatPerExchange(Euro))
+    inside(instance.apply(OrderRequest(Bid, 1.1.BTC, limitPrice), Spread.empty)) {
       case Error(NonEmptyList(requirement)) =>
-        requirement.description should include ("Maximum allowed fiat amount")
+        requirement should include ("Maximum allowed fiat amount")
+    }
+
+    val spread = Spread(lowestAsk = limitPrice.limit.some, highestBid = None)
+    inside(instance.apply(OrderRequest(Bid, 1.1.BTC, MarketPrice(Euro)), spread)) {
+      case Error(NonEmptyList(requirement)) =>
+        requirement should include ("Maximum allowed fiat amount")
     }
   }
 
   it should "accept orders up to the limit" in {
-    val newBid = Order.randomLimit(Bid, 0.5.BTC, Price(300.EUR))
-    instance.apply(newBid) shouldBe OK
+    instance.apply(OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR)), Spread.empty) shouldBe OK
   }
 }

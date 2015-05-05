@@ -13,43 +13,44 @@ import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent with Inside {
 
-  private val newBid = Order.randomLimit(Bid, 0.5.BTC, Price(300.EUR))
+  private val newBid = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
+  private val spread = Spread.empty[Euro.type]
 
   "The available funds requirement" should "optionally require bitcoin funds to be known" in
     new Fixture {
       bitcoinBalance.set(Some(initialBitcoinBalance.copy(hasExpired = true)))
-      inside(instance.apply(newBid)) {
+      inside(instance.apply(newBid, spread)) {
         case Warning(NonEmptyList(requirement)) =>
-          requirement.description should include ("not possible to check")
+          requirement should include ("not possible to check")
       }
       bitcoinBalance.set(None)
-      instance.apply(newBid) should not be OK
+      instance.apply(newBid, spread) should not be OK
     }
 
   it should "optionally require available bitcoin balance to cover order needs" in new Fixture {
     val notEnoughBitcoin = 0.001.BTC
     bitcoinBalance.set(Some(initialBitcoinBalance.copy(available = notEnoughBitcoin)))
-    inside(instance.apply(newBid)) {
+    inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include (
+        requirement should include (
           s"Your $notEnoughBitcoin available are insufficient for this order")
     }
   }
 
   it should "optionally require fiat funds to be known" in new Fixture {
     fiatBalance.set(Euro, initialFiatBalance.copy(hasExpired = true))
-    inside(instance.apply(newBid)) {
+    inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include ("not possible to check")
+        requirement should include ("not possible to check")
     }
   }
 
   it should "optionally require available fiat balance to cover order needs" in new Fixture {
     val notEnoughFiat = 1.EUR
     fiatBalance.set(Euro, initialFiatBalance.copy(amount = notEnoughFiat))
-    inside(instance.apply(newBid)) {
+    inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement.description should include (
+        requirement should include (
           s"Your $notEnoughFiat available are insufficient for this order")
     }
   }

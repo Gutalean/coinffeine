@@ -15,6 +15,6 @@ class DefaultOrderValidation(app: CoinffeineApp) extends OrderValidation {
       amountsCalculator, app.paymentProcessor.balance, app.wallet.balance)
   )
 
-  override def apply[C <: FiatCurrency](newOrder: Order[C]) =
-    validations.map(_.apply(newOrder)).reduce(OrderValidation.Result.combine)
+  override def apply[C <: FiatCurrency](request: OrderRequest[C], spread: Spread[C]) =
+    validations.map(_.apply(request, spread)).reduce(OrderValidation.Result.combine)
 }

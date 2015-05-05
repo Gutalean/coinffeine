@@ -1,11 +1,13 @@
 package coinffeine.peer.amounts
 
+import scala.util.Try
+
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
-import coinffeine.model.market.{Ask, Bid, Order}
+import coinffeine.model.market._
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 private[amounts] class DefaultAmountsCalculator(
@@ -86,21 +88,19 @@ private[amounts] class DefaultAmountsCalculator(
       grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
   }
 
-  override def estimateAmountsFor[C <: FiatCurrency](order: Order[C]): Exchange.Amounts[C] = {
-    val limitPrice = order.price.toOption.getOrElse(
-      throw new IllegalArgumentException("Impossible to calculate without a limit price"))
-    order.orderType match {
-      case Bid => exchangeAmountsFor(
-        grossBitcoinAmount =
-          order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions,
-        grossFiatAmount = limitPrice.of(order.amount)
-      )
-      case Ask => exchangeAmountsFor(
-        grossBitcoinAmount = order.amount,
-        grossFiatAmount = stepwiseCalculator.requiredAmountToPay(limitPrice.of(order.amount))
-      )
+  override def estimateAmountsFor[C <: FiatCurrency](
+      order: OrderRequest[C], spread: Spread[C]): Option[Exchange.Amounts[C]] =
+    order.estimatedPrice(spread).flatMap { price =>
+      val grossBitcoinAmount = order.orderType match {
+        case Bid => order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions
+        case Ask => order.amount
+      }
+      val grossFiatAmount = order.orderType match {
+        case Bid => price.of(order.amount)
+        case Ask => stepwiseCalculator.requiredAmountToPay(price.of(order.amount))
+      }
+      Try(exchangeAmountsFor(grossBitcoinAmount, grossFiatAmount)).toOption
     }
-  }
 
   private def cumulative[D <: Currency](amounts: Seq[CurrencyAmount[D]]): Seq[CurrencyAmount[D]] =
     amounts.tail.scan(amounts.head)(_ + _)

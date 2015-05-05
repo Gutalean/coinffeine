@@ -163,6 +163,12 @@
 .order-props .line.footer { -fx-alignment: center; }
 .order-props .line.footer .support-icon  { -fx-font-size: 30; }
 
+.wizard .order-type-sel,
+.wizard .order-amounts,
+.wizard .order-confirmation {
+    -fx-min-height: 380;
+}
+
 .wizard .order-type-sel .question {
     -fx-color: #424242;
     -fx-spacing: 5;
@@ -229,6 +235,26 @@
 
 .wizard .order-amounts .market-selection .details {
     -fx-alignment: bottom-center;
+}
+
+.wizard .order-amounts .messages {
+    -fx-wrap-text: true;
+    -fx-max-width: 500;
+    -fx-min-height: 60;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2 10;
+}
+
+.wizard .order-amounts .messages.error {
+    -fx-border-color: #c60f10;
+    -fx-text-fill: #c60f10;
+    -fx-background-color: #ff9aaf;
+}
+
+.wizard .order-amounts .messages.warning {
+    -fx-border-color: black;
+    -fx-background-color: #FFFFBA;
 }
 
 .wizard .order-confirmation {

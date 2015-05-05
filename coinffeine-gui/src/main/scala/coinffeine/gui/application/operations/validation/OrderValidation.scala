@@ -3,17 +3,15 @@ package coinffeine.gui.application.operations.validation
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.Order
+import coinffeine.model.market.{OrderRequest, Spread}
 
 /** Checks order pre-requirements */
 trait OrderValidation {
   /** Check a new order for its creation requirements */
-  def apply[C <: FiatCurrency](newOrder: Order[C]): OrderValidation.Result
+  def apply[C <: FiatCurrency](request: OrderRequest[C], spread: Spread[C]): OrderValidation.Result
 }
 
 object OrderValidation {
-
-  case class Violation(title: String, description: String)
 
   sealed trait Result
 
@@ -21,10 +19,10 @@ object OrderValidation {
   case object OK extends Result
 
   /** At least one mandatory requirement was unmet and the order cannot be created */
-  case class Error(violations: NonEmptyList[Violation]) extends Result
+  case class Error(violations: NonEmptyList[String]) extends Result
 
   /** Optional requirements were unmet, the order can be created after user confirmation */
-  case class Warning(violations: NonEmptyList[Violation]) extends Result
+  case class Warning(violations: NonEmptyList[String]) extends Result
 
   object Result {
     def combine(checkResults: Result*): Result = {
