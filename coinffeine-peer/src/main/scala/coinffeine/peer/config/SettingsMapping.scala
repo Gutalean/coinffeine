@@ -38,11 +38,15 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
   implicit val general = new SettingsMapping[GeneralSettings] {
 
-    override def fromConfig(configPath: File, config: Config) =
-      GeneralSettings(config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false))
+    override def fromConfig(configPath: File, config: Config) = GeneralSettings(
+      licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
+      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
+    )
 
-    override def toConfig(settings: GeneralSettings, config: Config) =
-      config.withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+    override def toConfig(settings: GeneralSettings, config: Config) = config
+      .withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+      .withValue("coinffeine.serviceStartStopTimeout",
+        configDuration(settings.serviceStartStopTimeout))
   }
 
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
