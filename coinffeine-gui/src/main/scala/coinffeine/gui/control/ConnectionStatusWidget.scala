@@ -14,7 +14,7 @@ class ConnectionStatusWidget(
 
   content = Seq(
     new StatusDisc() {
-      failure <== status.delegate.mapToBool(!_.coinffeine.connected)
+      failure <== status.delegate.mapToBool(!_.connected)
     },
     new Label {
       id = "connection-status"

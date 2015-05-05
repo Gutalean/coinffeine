@@ -14,6 +14,8 @@ case class ConnectionStatus(
     formatBlockchainSyncing
   )
 
+  val connected = coinffeine.connected && bitcoin.connected
+
   private def formatPeerCount(count: Int, name: String): String = {
     val pluralS = if (count == 1) "" else "s"
     s"$count $name peer$pluralS"
