@@ -1,7 +1,9 @@
 package coinffeine.peer
 
+import scala.concurrent.duration._
+
 import akka.actor.{ActorSystem, Props}
-import akka.testkit.TestProbe
+import akka.testkit._
 import org.bitcoinj.params.TestNet3Params
 
 import coinffeine.common.akka.Service
@@ -72,15 +74,16 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   trait Fixture {
     val requester, wallet, blockchain = TestProbe()
-    val alarmReporter, gateway, marketInfo, orders, bitcoinPeer, paymentProcessor = new MockSupervisedActor()
-    val peer = system.actorOf(Props(new CoinffeinePeerActor(PropsCatalogue(
+    val alarmReporter, gateway, marketInfo, orders, bitcoinPeer, paymentProcessor =
+      new MockSupervisedActor()
+    private val propsCatalogue = PropsCatalogue(
       alarmReporter = alarmReporter.props(),
       gateway = system => gateway.props(system),
       marketInfo = market => marketInfo.props(market),
       orderSupervisor = collaborators => orders.props(collaborators),
       paymentProcessor = paymentProcessor.props(),
       bitcoinPeer = bitcoinPeer.props())
-    )))
+    val peer = system.actorOf(Props(new CoinffeinePeerActor(propsCatalogue, 1.second.dilated)))
 
     def shouldForwardMessage(message: Any, delegate: MockSupervisedActor): Unit = {
       peer ! message
