@@ -31,7 +31,7 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
+class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTimeout: FiniteDuration)
   extends Actor with ActorLogging with ServiceLifecycle[Unit] {
 
   import CoinffeinePeerActor._
@@ -46,7 +46,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   private var walletRef: ActorRef = _
 
   override def onStart(arg: Unit) = {
-    implicit val timeout = Timeout(ServiceStartStopTimeout)
+    implicit val timeout = Timeout(serviceTimeout)
     log.info("Starting Coinffeine peer actor...")
     (for {
       _ <- Service.askStart(alarmReporterRef)
@@ -75,7 +75,7 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
   }
 
   override protected def onStop() = {
-    implicit val timeout = Timeout(ServiceStartStopTimeout)
+    implicit val timeout = Timeout(serviceTimeout)
     log.info("Stopping Coinffeine peer")
     Service
       .askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef, alarmReporterRef)
@@ -116,7 +116,6 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue)
 /** Topmost actor on a peer node. */
 object CoinffeinePeerActor {
 
-  val ServiceStartStopTimeout = 10.seconds
   val WithdrawFundsTxBroadcastTimeout = 30.seconds
 
   /** Open a new order.
@@ -186,7 +185,7 @@ object CoinffeinePeerActor {
         bitcoinPeerProps,
         OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
       )
-      Props(new CoinffeinePeerActor(props))
+      Props(new CoinffeinePeerActor(props, configProvider.generalSettings().serviceStartStopTimeout))
     }
 
     private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =

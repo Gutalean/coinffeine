@@ -38,11 +38,15 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
   implicit val general = new SettingsMapping[GeneralSettings] {
 
-    override def fromConfig(configPath: File, config: Config) =
-      GeneralSettings(config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false))
+    override def fromConfig(configPath: File, config: Config) = GeneralSettings(
+      licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
+      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
+    )
 
-    override def toConfig(settings: GeneralSettings, config: Config) =
-      config.withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+    override def toConfig(settings: GeneralSettings, config: Config) = config
+      .withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+      .withValue("coinffeine.serviceStartStopTimeout",
+        configDuration(settings.serviceStartStopTimeout))
   }
 
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
@@ -50,20 +54,19 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = {
       val network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
       BitcoinSettings(
-        connectionRetryInterval =
-          config.getSecondsOpt("coinffeine.bitcoin.connectionRetryInterval").get,
+        connectionRetryInterval = config.getSeconds("coinffeine.bitcoin.connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
         blockchainFile = new File(configPath, s"${network.name}.h2.db"),
-        rebroadcastTimeout = config.getSecondsOpt("coinffeine.bitcoin.rebroadcastTimeout").get,
+        rebroadcastTimeout = config.getSeconds("coinffeine.bitcoin.rebroadcastTimeout"),
         network = network
       )
     }
 
     override def toConfig(settings: BitcoinSettings, config: Config) = config
       .withValue("coinffeine.bitcoin.connectionRetryInterval",
-        configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
+        configDuration(settings.connectionRetryInterval))
       .withValue("coinffeine.bitcoin.rebroadcastTimeout",
-        configValue(s"${settings.rebroadcastTimeout.toSeconds}s"))
+        configDuration(settings.rebroadcastTimeout))
       .withValue("coinffeine.bitcoin.network", configValue(settings.network.toString))
   }
 
@@ -71,13 +74,13 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
     override def fromConfig(configPath: File, config: Config) = MessageGatewaySettings(
       peerId = PeerId(config.getString("coinffeine.peer.id")),
-      connectionRetryInterval = config.getSecondsOpt("coinffeine.peer.connectionRetryInterval").get
+      connectionRetryInterval = config.getSeconds("coinffeine.peer.connectionRetryInterval")
     )
 
     override def toConfig(settings: MessageGatewaySettings, config: Config) = config
       .withValue("coinffeine.peer.id", configValue(settings.peerId.value))
       .withValue("coinffeine.peer.connectionRetryInterval",
-        configValue(s"${settings.connectionRetryInterval.toSeconds}s"))
+        configDuration(settings.connectionRetryInterval))
 
     /** Ensure that the given config has a peer ID.
       *
@@ -122,7 +125,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
       .withValue("coinffeine.overlay.relay.server.minTimeBetweenStatusUpdates",
         configValue(s"${settings.minTimeBetweenStatusUpdates.toSeconds}s"))
       .withValue("coinffeine.overlay.relay.client.connectionTimeout",
-        configValue(s"${settings.connectionTimeout.toSeconds}s"))
+        configDuration(settings.connectionTimeout))
   }
 
   implicit val okPay = new SettingsMapping[OkPaySettings] {
@@ -131,16 +134,18 @@ object SettingsMapping extends TypesafeConfigImplicits {
       userAccount = config.getStringOpt("coinffeine.okpay.id"),
       seedToken = config.getStringOpt("coinffeine.okpay.token"),
       serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
-      pollingInterval = config.getSecondsOpt("coinffeine.okpay.pollingInterval").get
+      pollingInterval = config.getSeconds("coinffeine.okpay.pollingInterval")
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
       .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
       .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
-      .withValue("coinffeine.okpay.pollingInterval",
-        configValue(s"${settings.pollingInterval.toSeconds}s"))
+      .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))
   }
+
+  private def configDuration(duration: FiniteDuration): ConfigValue =
+    configValue(s"${duration.toSeconds}s")
 
   private def configValue[A](value: A): ConfigValue = ConfigValueFactory.fromAnyRef(value)
 }

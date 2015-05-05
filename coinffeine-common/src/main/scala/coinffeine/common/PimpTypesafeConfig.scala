@@ -3,25 +3,23 @@ package coinffeine.common
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.{Config, ConfigException}
 
 class PimpTypesafeConfig(val config: Config) extends AnyVal {
 
-  def getBooleanOpt(key: String): Option[Boolean] = getOptional(_.getBoolean(key))
+  def getBooleanOpt(key: String): Option[Boolean] = getOptional(config.getBoolean(key))
 
-  def getStringOpt(key: String): Option[String] = getOptional(_.getString(key))
+  def getStringOpt(key: String): Option[String] = getOptional(config.getString(key))
 
-  def getNonEmptyStringOpt(key: String): Option[String] = getOptional { cfg =>
-    val s = cfg.getString(key)
-    if (s.isEmpty)
-      throw new ConfigException.Missing(s"a non-empty string was expected for key $key")
-    else s
-  }
+  def getNonEmptyStringOpt(key: String): Option[String] =
+    getOptional(config.getString(key)).filter(_.nonEmpty)
+
+  def getSeconds(key: String): FiniteDuration = config.getDuration(key, TimeUnit.SECONDS).seconds
 
   def getSecondsOpt(key: String): Option[FiniteDuration] =
-    getOptional(_.getDuration(key, TimeUnit.SECONDS).seconds)
+    getOptional(config.getDuration(key, TimeUnit.SECONDS).seconds)
 
-  private def getOptional[T](extractor: Config => T): Option[T] =
-    try { Some(extractor(config)) }
+  private def getOptional[T](extractor: => T): Option[T] =
+    try Some(extractor)
     catch { case _: ConfigException.Missing => None }
 }

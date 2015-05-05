@@ -24,16 +24,23 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     SettingsMapping.fromConfig[T](basePath, config)
 
   "General settings mapping" should "map from config" in {
-    fromConfig[GeneralSettings](ConfigFactory.empty()).licenseAccepted shouldBe false
-    fromConfig[GeneralSettings](makeConfig("coinffeine.licenseAccepted" -> false))
+    val baseConfig = makeConfig("coinffeine.serviceStartStopTimeout" -> "30s")
+    fromConfig[GeneralSettings](baseConfig).licenseAccepted shouldBe false
+    fromConfig[GeneralSettings](baseConfig).serviceStartStopTimeout shouldBe 30.seconds
+    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> false))
       .licenseAccepted shouldBe false
-    fromConfig[GeneralSettings](makeConfig("coinffeine.licenseAccepted" -> true))
+    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> true))
       .licenseAccepted shouldBe true
   }
 
   it should "map to config" in {
-    SettingsMapping.toConfig(GeneralSettings(licenseAccepted = false))
-      .getBoolean("coinffeine.licenseAccepted") shouldBe false
+    val settings = GeneralSettings(
+      licenseAccepted = false,
+      serviceStartStopTimeout = 30.seconds
+    )
+    val cfg = SettingsMapping.toConfig(settings)
+    cfg.getBoolean("coinffeine.licenseAccepted") shouldBe false
+    cfg.getDuration("coinffeine.serviceStartStopTimeout", TimeUnit.SECONDS) shouldBe 30
   }
 
   "Bitcoins settings mapping" should "map from config" in {
