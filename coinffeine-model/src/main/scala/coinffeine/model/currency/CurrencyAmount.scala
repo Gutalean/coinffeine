@@ -1,7 +1,6 @@
 package coinffeine.model.currency
 
 import scala.math.BigDecimal.RoundingMode
-import scala.util.Try
 
 /** An finite amount of currency C.
   *
@@ -16,8 +15,7 @@ import scala.util.Try
   * @tparam C The type of currency this amount is represented in
   */
 case class CurrencyAmount[C <: Currency](units: Long, currency: C)
-  extends PartiallyOrdered[CurrencyAmount[C]] {
-
+  extends Ordered[CurrencyAmount[C]] {
   require(currency.isValidAmount(value), s"Invalid amount for $currency: $value")
 
   lazy val value: BigDecimal = BigDecimal(units) / currency.UnitsInOne
@@ -49,12 +47,10 @@ case class CurrencyAmount[C <: Currency](units: Long, currency: C)
   def toIndivisibleUnits: BigInt =
     (value / CurrencyAmount.smallestAmount(currency).value).toBigInt()
 
-  override def tryCompareTo[B >: CurrencyAmount[C] <% PartiallyOrdered[B]](that: B): Option[Int] =
-    Try {
-      val thatAmount = that.asInstanceOf[CurrencyAmount[_ <: FiatCurrency]]
-      require(thatAmount.currency == this.currency)
-      thatAmount
-    }.toOption.map(thatAmount => this.value.compare(thatAmount.value))
+  override def compare(other: CurrencyAmount[C]): Int = {
+    require(currency == other.currency)
+    units.compareTo(other.units)
+  }
 
   def format(symbolPos: Currency.SymbolPosition): String = CurrencyAmount.format(this, symbolPos)
 
@@ -92,7 +88,6 @@ object CurrencyAmount {
                             symbolPos: Currency.SymbolPosition): String = {
     val currency = amount.currency
     val units = amount.units
-    val symbol = currency.symbol
     val numbers = s"%s%d.%0${currency.precision}d".format(
       if (units < 0) "-" else "", units.abs / currency.UnitsInOne, units.abs % currency.UnitsInOne)
     addSymbol(numbers, symbolPos, currency)
@@ -103,7 +98,6 @@ object CurrencyAmount {
 
   def formatMissing[C <: Currency](currency: C, symbolPos: Currency.SymbolPosition): String = {
     val amount = "_." + "_" * currency.precision
-    val symbol = currency.symbol
     addSymbol(amount, symbolPos, currency)
   }
 

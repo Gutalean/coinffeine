@@ -29,15 +29,9 @@ class CurrencyTest extends FlatSpec with ShouldMatchers {
     }
 
     it must "compare amounts of its own currency" in {
-      currency(7).tryCompareTo(currency(10)).get should be < 0
-      currency(7.5).tryCompareTo(currency(7)).get should be > 0
-      currency(2).tryCompareTo(currency(2)).get should be (0)
-      object FakeCurrency extends Currency {
-        override val precision = 2
-        override val symbol = "F"
-        override val preferredSymbolPosition = Currency.SymbolSuffixed
-      }
-      currency(3).tryCompareTo(FakeCurrency(4)) shouldBe 'empty
+      currency(7) should be < currency(10)
+      currency(7.5) should be > currency(7)
+      currency(2).compare(currency(2)) should be (0)
     }
 
     it must "add amounts of its own currency" in {
