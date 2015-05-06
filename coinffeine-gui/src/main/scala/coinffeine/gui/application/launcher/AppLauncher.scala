@@ -1,5 +1,6 @@
 package coinffeine.gui.application.launcher
 
+import scalafx.Includes._
 import scala.concurrent.Future
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.stage.Stage
@@ -20,7 +21,7 @@ trait AppLauncher { this: ProductionCoinffeineComponent =>
     for {
       _ <- new ConfigureLogAction(configProvider).apply()
       _ <- new AcquirePidFileAction(configProvider.dataPath).apply()
-      _ <- new RunWizardAction(configProvider, network).apply()
+      _ <- new RunWizardAction(configProvider, stage.scene.value.getWindow, network).apply()
       _ <- new AppStartAction(app).apply()
       _ <- new CheckForUpdatesAction().apply()
     } yield {
