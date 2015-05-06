@@ -2,6 +2,7 @@ package coinffeine.gui.application.launcher
 
 import java.io.File
 import scala.concurrent.{ExecutionContext, Future}
+import scalafx.stage.Window
 
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core.Wallet
@@ -12,7 +13,8 @@ import coinffeine.model.bitcoin.Network
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 
-class RunWizardAction(configProvider: ConfigProvider, network: => Network) extends StrictLogging {
+class RunWizardAction(configProvider: ConfigProvider, window: Window, network: => Network)
+  extends StrictLogging {
 
   def apply(): Future[Unit] =
     mustRunWizard.flatMap(if (_) runSetupWizard() else Future.successful{})(ExecutionContext.global)
@@ -29,9 +31,8 @@ class RunWizardAction(configProvider: ConfigProvider, network: => Network) exten
     } yield persistSetupConfiguration(config)
   }
 
-  private def invokeSetupWizard(walletAddress: String): Future[SetupConfig] = {
-    Future(new SetupWizard(walletAddress).run())(FxExecutor.asContext)
-  }
+  private def invokeSetupWizard(walletAddress: String): Future[SetupConfig] =
+    Future(new SetupWizard(walletAddress).run(Some(window)))(FxExecutor.asContext)
 
   private def loadOrCreateWallet(): Future[SmartWallet] = Future {
     val walletFile = configProvider.bitcoinSettings().walletFile
