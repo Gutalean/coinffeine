@@ -7,6 +7,7 @@ v0.8.1:
  - Show warnings and errors in the new order wizard
  - Bug fixing
    * Connection status was successful even when disconnected from bitcoin network
+   * Fix setup wizard placement issues
 
 v0.8.0:
  - Use a regtest instead of a testnet for integration tests
