@@ -19,10 +19,10 @@ private[impl] class DefaultCoinffeineNetwork(
   override val brokerId: Property[Option[PeerId]] = properties.brokerId
   override val orders: PropertyMap[OrderId, AnyCurrencyActiveOrder] = properties.orders
 
-  override def submitOrder[C <: FiatCurrency](order: OrderRequest[C]): ActiveOrder[C] = {
-    val result = await(AskPattern(peer, OpenOrder(order)).withReply[OrderOpened]())
-    result.order.asInstanceOf[ActiveOrder[C]]
-  }
+  override def submitOrder[C <: FiatCurrency](order: OrderRequest[C]) =
+    AskPattern(peer, OpenOrder(order))
+      .withReply[OrderOpened]()
+      .map(_.order.asInstanceOf[ActiveOrder[C]])
 
   override def cancelOrder(order: OrderId): Unit = {
     peer ! CancelOrder(order)

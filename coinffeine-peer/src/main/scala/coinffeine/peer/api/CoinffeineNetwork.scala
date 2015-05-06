@@ -1,5 +1,7 @@
 package coinffeine.peer.api
 
+import scala.concurrent.Future
+
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.market._
 import coinffeine.model.network.CoinffeineNetworkProperties
@@ -13,7 +15,8 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
     * @param price   Price in fiat
     * @return        A new order if submitted successfully
     */
-  def submitBuyOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): ActiveOrder[C] =
+  def submitBuyOrder[C <: FiatCurrency](amount: Bitcoin.Amount,
+                                        price: Price[C]): Future[ActiveOrder[C]] =
     submitOrder(OrderRequest(Bid, amount, LimitPrice(price)))
 
   /** Submit an order to sell bitcoins.
@@ -22,11 +25,12 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
     * @param price   Price in fiat
     * @return        A new order if submitted successfully
     */
-  def submitSellOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): ActiveOrder[C] =
+  def submitSellOrder[C <: FiatCurrency](amount: Bitcoin.Amount,
+                                         price: Price[C]): Future[ActiveOrder[C]] =
     submitOrder(OrderRequest(Ask, amount, LimitPrice(price)))
 
   /** Submit an order. */
-  def submitOrder[C <: FiatCurrency](order: OrderRequest[C]): ActiveOrder[C]
+  def submitOrder[C <: FiatCurrency](order: OrderRequest[C]): Future[ActiveOrder[C]]
 
   /** Cancel an order
     *

@@ -1,6 +1,6 @@
 package coinffeine.gui.application.properties
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
@@ -90,7 +90,8 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
     val network = new CoinffeineNetwork {
       override def cancelOrder(order: OrderId) = {}
-      override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = request.create()
+      override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) =
+        Future.successful(request.create())
       override val brokerId: Property[Option[PeerId]] = null
       override val activePeers: Property[Int] = null
       override val orders: MutablePropertyMap[OrderId, AnyCurrencyActiveOrder] =

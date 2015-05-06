@@ -1,9 +1,11 @@
 package coinffeine.peer.api.mock
 
+import scala.concurrent.Future
+
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{OrderRequest, AnyCurrencyActiveOrder, ActiveOrder, OrderId}
+import coinffeine.model.market.{AnyCurrencyActiveOrder, OrderId, OrderRequest}
 import coinffeine.model.network.PeerId
 import coinffeine.model.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.peer.api.CoinffeineNetwork
@@ -18,9 +20,9 @@ class MockCoinffeineNetwork extends CoinffeineNetwork {
     orders.get(orderId).foreach(order => orders.set(orderId, order.cancel(DateTime.now())))
   }
 
-  override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]): ActiveOrder[C] = {
+  override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = {
     val order = request.create()
     orders.set(order.id, order)
-    order
+    Future.successful(order)
   }
 }
