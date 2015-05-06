@@ -60,6 +60,6 @@ object Dependencies {
   lazy val scalatest = "org.scalatest" %% "scalatest" % "2.1.4"
   lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
   lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
-  lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.1.0"
+  lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.1.2"
   lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
 }
