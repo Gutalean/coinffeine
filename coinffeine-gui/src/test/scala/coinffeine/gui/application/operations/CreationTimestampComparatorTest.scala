@@ -32,5 +32,5 @@ class CreationTimestampComparatorTest extends UnitTest with DefaultAmountsCompon
   }
 
   private def orderPropertiesFor(timestamp: DateTime) =
-    new MutableOrderProperties(Order.randomMarketPrice(Bid, 1.BTC, Euro, timestamp))
+    new MutableOrderProperties(ActiveOrder.randomMarketPrice(Bid, 1.BTC, Euro, timestamp))
 }

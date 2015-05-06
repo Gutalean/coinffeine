@@ -36,7 +36,7 @@ abstract class OrderActorTest extends AkkaSpec
   private implicit val patience = PatienceConfig(idleTime * 10, idleTime)
 
   protected trait Fixture {
-    val order = Order.randomLimit(Bid, 10.BTC, Price(2.EUR))
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(2.EUR))
     val orderMatch = OrderMatch(
       order.id,
       exchangeId,
@@ -154,7 +154,7 @@ abstract class OrderActorTest extends AkkaSpec
         Failure(new Exception("intended lack of funds"))))
     }
 
-    def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
+    def expectProperty(f: AnyCurrencyActiveOrder => Unit): Unit = {
       eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }

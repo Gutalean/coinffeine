@@ -7,7 +7,7 @@ import coinffeine.model.properties.MutablePropertyMap
 
 class ListOrdersCommandTest extends CommandTest {
 
-  val orderMap = new MutablePropertyMap[OrderId, AnyCurrencyOrder]()
+  val orderMap = new MutablePropertyMap[OrderId, AnyCurrencyActiveOrder]()
   val command = new ListOrdersCommand(orderMap)
 
   "The list orders command" should "print a message when no orders exist" in {
@@ -15,7 +15,7 @@ class ListOrdersCommandTest extends CommandTest {
   }
 
   it should "show order id, state and relevant amounts of existing orders" in {
-    val order = Order.randomLimit(Bid, 10.BTC, Price(500.EUR))
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(500.EUR))
     orderMap.set(order.id, order)
     executeCommand(command) should (
       include(order.id.value) and include(order.status.toString) and
@@ -26,7 +26,7 @@ class ListOrdersCommandTest extends CommandTest {
     val orders = for {
       index <- 1 to 10
       orderType <- OrderType.values
-    } yield Order.randomLimit(orderType, index.BTC, Price((500 - index).EUR))
+    } yield ActiveOrder.randomLimit(orderType, index.BTC, Price((500 - index).EUR))
 
     orders.foreach { order => orderMap.set(order.id, order) }
 

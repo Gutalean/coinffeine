@@ -21,7 +21,7 @@ import coinffeine.model.exchange._
   * @param exchanges  The exchanges that have been initiated to complete this order
   * @param log        Log of important order events
   */
-case class Order[C <: FiatCurrency] private (
+case class ActiveOrder[C <: FiatCurrency] private (
     id: OrderId,
     orderType: OrderType,
     amount: Bitcoin.Amount,
@@ -33,21 +33,21 @@ case class Order[C <: FiatCurrency] private (
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
 
   val role = Role.fromOrderType(orderType)
-  lazy val amounts: Order.Amounts = Order.Amounts.fromExchanges(amount, role, exchanges)
+  lazy val amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
 
-  def cancel(timestamp: DateTime): Order[C] = copy(log = log.record(CancelledOrder, timestamp))
-  def becomeInMarket: Order[C] = copy(inMarket = true)
-  def becomeOffline: Order[C] = copy(inMarket = false)
+  def cancel(timestamp: DateTime): ActiveOrder[C] = copy(log = log.record(CancelledOrder, timestamp))
+  def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
+  def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
 
   def status: OrderStatus = log.mostRecent.get.event
   def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
 
   /** Create a new copy of this order with the given exchange. */
-  def withExchange(exchange: Exchange[C]): Order[C] =
+  def withExchange(exchange: Exchange[C]): ActiveOrder[C] =
     if (exchanges.get(exchange.id).contains(exchange)) this
     else {
       val nextExchanges = exchanges + (exchange.id -> exchange)
-      val nextAmounts = Order.Amounts.fromExchanges(amount, role, nextExchanges)
+      val nextAmounts = ActiveOrder.Amounts.fromExchanges(amount, role, nextExchanges)
       val timestamp = exchange.log.mostRecent.get.timestamp
 
       def recordProgressStart(log: ActivityLog[OrderStatus]) =
@@ -96,7 +96,7 @@ case class Order[C <: FiatCurrency] private (
     exchanges.values.map(f).foldLeft(zero)(_ + _)
 }
 
-object Order {
+object ActiveOrder {
   case class Amounts(exchanged: Bitcoin.Amount,
                      exchanging: Bitcoin.Amount,
                      pending: Bitcoin.Amount) {
@@ -118,7 +118,7 @@ object Order {
         case _ => 'exchanging
       }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
 
-      Order.Amounts(
+      ActiveOrder.Amounts(
         exchanged = exchangeGroups('exchanged),
         exchanging = exchangeGroups('exchanging),
         pending = amount - exchangeGroups('exchanged) - exchangeGroups('exchanging)
@@ -130,16 +130,16 @@ object Order {
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: Price[C],
-                               timestamp: DateTime = DateTime.now()): Order[C] =
+                               timestamp: DateTime = DateTime.now()): ActiveOrder[C] =
     apply(id, orderType, amount, LimitPrice(price), timestamp)
 
   def apply[C <: FiatCurrency](id: OrderId,
                                orderType: OrderType,
                                amount: Bitcoin.Amount,
                                price: OrderPrice[C],
-                               timestamp: DateTime): Order[C] = {
+                               timestamp: DateTime): ActiveOrder[C] = {
     val log = ActivityLog(NotStartedOrder, timestamp)
-    Order(id, orderType, amount, price, inMarket = false, exchanges = Map.empty, log)
+    ActiveOrder(id, orderType, amount, price, inMarket = false, exchanges = Map.empty, log)
   }
 
   /** Creates a limit order with a random identifier. */
@@ -161,5 +161,5 @@ object Order {
                                 amount: Bitcoin.Amount,
                                 price: OrderPrice[C],
                                 timestamp: DateTime = DateTime.now()) =
-    Order(OrderId.random(), orderType, amount, price, timestamp)
+    ActiveOrder(OrderId.random(), orderType, amount, price, timestamp)
 }

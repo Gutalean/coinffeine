@@ -67,7 +67,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def makeStatusLine(status: ObservableStringValue,
-                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) =  new HBox {
+                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyActiveOrder]) =  new HBox {
     orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
     content = Seq(
       new VBox {

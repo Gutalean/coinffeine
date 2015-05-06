@@ -77,7 +77,7 @@ object OrderStatusWidget {
   }
 
   object Status {
-    def fromOrder(order: AnyCurrencyOrder): Status =
+    def fromOrder(order: AnyCurrencyActiveOrder): Status =
       order.status match {
         case NotStartedOrder if !order.inMarket => Submitting
         case NotStartedOrder => InMarket

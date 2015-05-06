@@ -14,7 +14,7 @@ import coinffeine.peer.market.orders.OrderSupervisor.Delegates
 
 class OrderSupervisorTest extends AkkaSpec {
 
-  class MockOrderActor(order: Order[_ <: FiatCurrency], listener: ActorRef) extends Actor {
+  class MockOrderActor(order: ActiveOrder[_ <: FiatCurrency], listener: ActorRef) extends Actor {
     override def preStart(): Unit = {
       listener ! order
     }
@@ -25,7 +25,7 @@ class OrderSupervisorTest extends AkkaSpec {
   }
 
   object MockOrderActor {
-    def props(order: Order[_ <: FiatCurrency], probe: TestProbe) =
+    def props(order: ActiveOrder[_ <: FiatCurrency], probe: TestProbe) =
       Props(new MockOrderActor(order, probe.ref))
   }
 
@@ -50,12 +50,12 @@ class OrderSupervisorTest extends AkkaSpec {
 
   trait Fixture extends ProtocolConstants.DefaultComponent {
     val id = Random.nextInt().toHexString
-    val order1 = Order.randomLimit(Bid, 5.BTC, Price(500.EUR))
-    val order2 = Order.randomLimit(Ask, 2.BTC, Price(800.EUR))
+    val order1 = ActiveOrder.randomLimit(Bid, 5.BTC, Price(500.EUR))
+    val order2 = ActiveOrder.randomLimit(Ask, 2.BTC, Price(800.EUR))
     val createdOrdersProbe = TestProbe()
     val submissionProbe = new MockSupervisedActor()
     private val delegates = new Delegates {
-      def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef) =
+      def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef) =
         MockOrderActor.props(order, createdOrdersProbe)
       val submissionProps = submissionProbe.props()
     }
@@ -69,7 +69,7 @@ class OrderSupervisorTest extends AkkaSpec {
       submissionProbe.expectCreation()
     }
 
-    def shouldCreateActorForOrder(order: Order[_ <: FiatCurrency]): Unit = {
+    def shouldCreateActorForOrder(order: ActiveOrder[_ <: FiatCurrency]): Unit = {
       actor ! OpenOrder(order)
       createdOrdersProbe.expectMsg(order)
     }

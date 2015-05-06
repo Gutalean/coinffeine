@@ -49,8 +49,8 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
     Status.fromOrder(randomOrder(1.BTC).cancel(DateTime.now())) shouldBe Completed
   }
 
-  private def randomOrder(amount: Bitcoin.Amount): Order[Euro.type] = {
-    Order.randomMarketPrice(Ask, amount, Euro)
+  private def randomOrder(amount: Bitcoin.Amount): ActiveOrder[Euro.type] = {
+    ActiveOrder.randomMarketPrice(Ask, amount, Euro)
   }
 
   private def randomExchange(amount: Bitcoin.Amount): HandshakingExchange[Euro.type] =

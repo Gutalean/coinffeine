@@ -13,7 +13,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator) {
 
-  def shouldAcceptOrderMatch[C <: FiatCurrency](order: Order[C],
+  def shouldAcceptOrderMatch[C <: FiatCurrency](order: ActiveOrder[C],
                                                 orderMatch: OrderMatch[C],
                                                 alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
 

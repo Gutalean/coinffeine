@@ -27,7 +27,7 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
       parameters = Exchange.Parameters(lockTime = 1234, network = null),
       createdOn = orderCreation.plusMinutes(1)
     )
-    val order = Order.randomLimit(Bid, 1.BTC, Price(100.EUR), orderCreation).withExchange(exchange)
+    val order = ActiveOrder.randomLimit(Bid, 1.BTC, Price(100.EUR), orderCreation).withExchange(exchange)
 
     network.givenOrderExists(order)
     executeCommand(command, order.id.value) should (

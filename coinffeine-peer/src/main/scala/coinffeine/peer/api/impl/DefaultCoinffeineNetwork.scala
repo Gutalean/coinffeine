@@ -5,7 +5,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorRef
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{AnyCurrencyOrder, Order, OrderId}
+import coinffeine.model.market.{AnyCurrencyActiveOrder, ActiveOrder, OrderId}
 import coinffeine.model.network.{CoinffeineNetworkProperties, PeerId}
 import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder}
@@ -17,9 +17,9 @@ private[impl] class DefaultCoinffeineNetwork(
 
   override val activePeers: Property[Int] = properties.activePeers
   override val brokerId: Property[Option[PeerId]] = properties.brokerId
-  override val orders: PropertyMap[OrderId, AnyCurrencyOrder] = properties.orders
+  override val orders: PropertyMap[OrderId, AnyCurrencyActiveOrder] = properties.orders
 
-  override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = {
+  override def submitOrder[C <: FiatCurrency](order: ActiveOrder[C]): ActiveOrder[C] = {
     peer ! OpenOrder(order)
     order
   }

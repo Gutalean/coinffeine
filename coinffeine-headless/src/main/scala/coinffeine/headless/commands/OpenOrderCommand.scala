@@ -30,7 +30,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
     }
 
     def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]): Unit = {
-      val order = Order.randomLimit(orderType, amount, price)
+      val order = ActiveOrder.randomLimit(orderType, amount, price)
       network.submitOrder(order)
       output.format("Created order %s%n", order.id.value)
     }

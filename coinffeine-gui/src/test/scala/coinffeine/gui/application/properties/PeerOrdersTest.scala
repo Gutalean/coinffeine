@@ -29,7 +29,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
   it should "add a new element when new order is present in the network" in new Fixture {
     val orderId = OrderId("order-01")
-    val order = Order(orderId, Bid, 1.BTC, Price(100.EUR))
+    val order = ActiveOrder(orderId, Bid, 1.BTC, Price(100.EUR))
     network.orders.set(orderId, order)
     eventually {
       inside(orders.toSeq) { case Seq(orderProps) =>
@@ -90,18 +90,18 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
     val network = new CoinffeineNetwork {
       override def cancelOrder(order: OrderId) = {}
-      override def submitOrder[C <: FiatCurrency](order: Order[C]) = order
+      override def submitOrder[C <: FiatCurrency](order: ActiveOrder[C]) = order
       override val brokerId: Property[Option[PeerId]] = null
       override val activePeers: Property[Int] = null
-      override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] =
-        new MutablePropertyMap[OrderId, AnyCurrencyOrder]
+      override val orders: MutablePropertyMap[OrderId, AnyCurrencyActiveOrder] =
+        new MutablePropertyMap[OrderId, AnyCurrencyActiveOrder]
     }
 
     val orders = new PeerOrders(network, ExecutionContext.global)
 
-    def withNewOrder(id: String)(action: Order[Euro.type] => Unit): Unit = {
+    def withNewOrder(id: String)(action: ActiveOrder[Euro.type] => Unit): Unit = {
       val orderId = OrderId(id)
-      val order = Order(orderId, Bid, 1.BTC, Price(100.EUR))
+      val order = ActiveOrder(orderId, Bid, 1.BTC, Price(100.EUR))
       network.orders.set(orderId, order)
       eventually {
         orders.find(_.idProperty.get == orderId) shouldBe 'defined
@@ -109,7 +109,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       action(order)
     }
 
-    def randomExchange(order: Order[Euro.type]) = {
+    def randomExchange(order: ActiveOrder[Euro.type]) = {
       val id = ExchangeId.random()
       val counterpart = PeerId.random()
       val request = OrderRequest(order.orderType, order.amount, order.price)

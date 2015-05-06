@@ -22,7 +22,7 @@ private[orders] class OrderController[C <: FiatCurrency](
     peerId: PeerId,
     amountsCalculator: AmountsCalculator,
     network: Network,
-    initialOrder: Order[C]) {
+    initialOrder: ActiveOrder[C]) {
 
   private case class FundsRequest(orderMatch: OrderMatch[C], funds: RequiredFunds[C])
 
@@ -32,7 +32,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   private var pendingFundRequests = Map.empty[ExchangeId, FundsRequest]
 
   /** Immutable snapshot of the order */
-  def view: Order[C] = _order
+  def view: ActiveOrder[C] = _order
 
   def updateExchange(exchange: Exchange[C]): Unit = {
     updateOrder(_.withExchange(exchange))
@@ -93,7 +93,7 @@ private[orders] class OrderController[C <: FiatCurrency](
     updateOrder(_.cancel(timestamp))
   }
 
-  private def updateOrder(mutator: Order[C] => Order[C]): Unit = {
+  private def updateOrder(mutator: ActiveOrder[C] => ActiveOrder[C]): Unit = {
     val previousOrder = _order
     val newOrder = mutator(_order)
     if (previousOrder != newOrder) {
@@ -105,6 +105,6 @@ private[orders] class OrderController[C <: FiatCurrency](
 
 private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
-    def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit
+    def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit
   }
 }

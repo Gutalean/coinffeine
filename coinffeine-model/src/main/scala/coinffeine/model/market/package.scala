@@ -4,7 +4,7 @@ import coinffeine.model.currency.FiatCurrency
 
 package object market {
 
-  type AnyCurrencyOrder = Order[_ <: FiatCurrency]
+  type AnyCurrencyActiveOrder = ActiveOrder[_ <: FiatCurrency]
 
   type AnyPrice = Price[_ <: FiatCurrency]
   type AnyOrderPrice = OrderPrice[_ <: FiatCurrency]
