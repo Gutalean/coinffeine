@@ -7,7 +7,7 @@ version in ThisBuild := "0.9-SNAPSHOT"
 
 organization in ThisBuild := "com.coinffeine"
 
-scalaVersion in ThisBuild := "2.11.5"
+scalaVersion in ThisBuild := "2.11.6"
 
 scalacOptions in ThisBuild ++= Seq(
   "-deprecation",
