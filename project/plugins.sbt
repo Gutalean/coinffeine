@@ -19,7 +19,7 @@ addSbtPlugin("no.vedaadata" % "sbt-javafx" % "0.6.2-coinffeine")
 
 addSbtPlugin("org.scalaxb" % "sbt-scalaxb" % "1.3.0")
 
-addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "1.0.4")
+addSbtPlugin("org.scoverage" %% "sbt-scoverage" % "1.1.0")
 
 addSbtPlugin("com.ebiznext.sbt.plugins" % "sbt-cxf-wsdl2java" % "0.1.4")
 
