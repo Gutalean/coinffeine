@@ -5,6 +5,7 @@ object Dependencies {
     val akka = "2.3.9"
     val dispatch = "0.11.2"
     val lift = "2.6"
+    val logback = "1.1.3"
   }
 
   lazy val akka = Seq(
@@ -41,8 +42,8 @@ object Dependencies {
   lazy val liftJson = "net.liftweb" %% "lift-json" % Versions.lift
   lazy val liftWeb = "net.liftweb" %% "lift-webkit" % Versions.lift
   lazy val loggingBackend = Seq(
-    "ch.qos.logback" % "logback-classic" % "1.1.2",
-    "ch.qos.logback" % "logback-core" % "1.1.2"
+    "ch.qos.logback" % "logback-classic" % Versions.logback,
+    "ch.qos.logback" % "logback-core" % Versions.logback
   )
   lazy val testLoggingBackend = loggingBackend.map(_ % "test")
   lazy val loggingFacade = Seq(
