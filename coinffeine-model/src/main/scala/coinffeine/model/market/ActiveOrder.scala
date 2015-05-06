@@ -28,19 +28,16 @@ case class ActiveOrder[C <: FiatCurrency] private (
     price: OrderPrice[C],
     inMarket: Boolean,
     exchanges: Map[ExchangeId, Exchange[C]],
-    log: ActivityLog[OrderStatus]) {
+    log: ActivityLog[OrderStatus]) extends Order[C] {
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
-
-  val role = Role.fromOrderType(orderType)
-  lazy val amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
 
   def cancel(timestamp: DateTime): ActiveOrder[C] = copy(log = log.record(CancelledOrder, timestamp))
   def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
   def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
 
-  def status: OrderStatus = log.mostRecent.get.event
-  def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
+  override def status: OrderStatus = log.mostRecent.get.event
+  override def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
 
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): ActiveOrder[C] =
@@ -65,35 +62,10 @@ case class ActiveOrder[C <: FiatCurrency] private (
       )
     }
 
-  /** Retrieve the total amount of bitcoins that were already transferred.
-    *
-    * This count comprise those bitcoins belonging to exchanges that have been completed and
-    * exchanges that are in course. That doesn't include the deposits.
-    *
-    * @return The amount of bitcoins that have been transferred
-    */
-  def bitcoinsTransferred: Bitcoin.Amount =
-    totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
-
-  /** Retrieve the progress of this order.
-    *
-    * The progress is measured with a double value in range [0.0, 1.0].
-    *
-    * @return
-    */
-  def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
-
-  def pendingOrderBookEntry: OrderBookEntry[C] =
-    OrderBookEntry(id, orderType, amounts.pending, price)
-
-  def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
-
   /** Timestamp of the last recorded change */
   def lastChange: DateTime = log.mostRecent.get.timestamp
 
-  private def totalSum[A <: Currency](
-      zero: CurrencyAmount[A])(f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
-    exchanges.values.map(f).foldLeft(zero)(_ + _)
+  override def createdOn = log.activities.head.timestamp
 }
 
 object ActiveOrder {
