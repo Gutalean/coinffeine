@@ -7,7 +7,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
 import coinffeine.model.properties.PropertyMap
 
-private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyActiveOrder])
+private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyOrder])
   extends OrderValidation {
 
   override def apply[C <: FiatCurrency](request: OrderRequest[C], spread: Spread[C]) =
@@ -31,7 +31,7 @@ private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyActive
   }
 
   private def suitableForSelfCross(request: OrderRequest[_ <: FiatCurrency],
-                                   candidate: AnyCurrencyActiveOrder): Boolean =
+                                   candidate: AnyCurrencyOrder): Boolean =
     candidate.price.isLimited && candidate.status.isActive &&
       candidate.price.currency == request.price.currency &&
       candidate.orderType == request.orderType.oppositeType

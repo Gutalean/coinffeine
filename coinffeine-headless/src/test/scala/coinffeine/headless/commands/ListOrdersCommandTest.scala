@@ -7,7 +7,7 @@ import coinffeine.model.properties.MutablePropertyMap
 
 class ListOrdersCommandTest extends CommandTest {
 
-  val orderMap = new MutablePropertyMap[OrderId, AnyCurrencyActiveOrder]()
+  val orderMap = new MutablePropertyMap[OrderId, AnyCurrencyOrder]()
   val command = new ListOrdersCommand(orderMap)
 
   "The list orders command" should "print a message when no orders exist" in {
@@ -31,8 +31,8 @@ class ListOrdersCommandTest extends CommandTest {
     orders.foreach { order => orderMap.set(order.id, order) }
 
     val outputLines = executeCommand(command).lines.toList
-    val (bidHeader, afterBidHeader) = outputLines.span(_ == Bold("Bid orders"))
-    val (bids, askHeader :: asks) = afterBidHeader.span(_ != Bold("Ask orders"))
+    val (_, afterBidHeader) = outputLines.span(_ == Bold("Bid orders"))
+    val (bids, _ :: asks) = afterBidHeader.span(_ != Bold("Ask orders"))
     bids.sorted shouldBe bids
     asks.sorted shouldBe asks
   }

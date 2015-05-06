@@ -1,11 +1,12 @@
 package coinffeine.peer.api.impl
 
-import akka.actor.ActorRef
 import scala.concurrent.ExecutionContext.Implicits.global
+
+import akka.actor.ActorRef
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{ActiveOrder, AnyCurrencyActiveOrder, OrderId, OrderRequest}
+import coinffeine.model.market._
 import coinffeine.model.network.{CoinffeineNetworkProperties, PeerId}
 import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, OrderOpened}
@@ -17,7 +18,7 @@ private[impl] class DefaultCoinffeineNetwork(
 
   override val activePeers: Property[Int] = properties.activePeers
   override val brokerId: Property[Option[PeerId]] = properties.brokerId
-  override val orders: PropertyMap[OrderId, AnyCurrencyActiveOrder] = properties.orders
+  override val orders: PropertyMap[OrderId, AnyCurrencyOrder] = properties.orders
 
   override def submitOrder[C <: FiatCurrency](order: OrderRequest[C]) =
     AskPattern(peer, OpenOrder(order))

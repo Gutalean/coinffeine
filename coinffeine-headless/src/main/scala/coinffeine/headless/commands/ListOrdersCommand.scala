@@ -7,7 +7,7 @@ import coinffeine.headless.shell.Command
 import coinffeine.model.market._
 import coinffeine.model.properties.PropertyMap
 
-class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyActiveOrder]) extends Command {
+class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
   override val keyword = "list"
   override val description = "lists all orders"
 
@@ -17,7 +17,7 @@ class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyActiveOr
     else printOrders(output, currentOrders)
   }
 
-  def printOrders(output: PrintWriter, allOrders: List[AnyCurrencyActiveOrder]): Unit = {
+  def printOrders(output: PrintWriter, allOrders: List[AnyCurrencyOrder]): Unit = {
     val ordersByType = allOrders.groupBy(_.orderType)
     for {
       orderType <- OrderType.values
@@ -29,7 +29,7 @@ class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyActiveOr
 
   private def printOrders(output: PrintWriter,
                           orderType: OrderType,
-                          orders: List[AnyCurrencyActiveOrder]): Unit = {
+                          orders: List[AnyCurrencyOrder]): Unit = {
     output.println(Bold(orderType.shortName.capitalize + " orders"))
     orders.sortBy(_.id.value).foreach { order =>
       output.format("%s\t%s\t%s\t%s%n", order.id.value, order.status, order.amount, order.price)

@@ -7,7 +7,7 @@ import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.exchange.Exchange.Amounts
-import coinffeine.model.market.{AnyCurrencyActiveOrder, OrderId}
+import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
 import coinffeine.peer.api.CoinffeineNetwork
 
 class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
@@ -34,7 +34,7 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
     validator.requireExistingOrderId(args).fold(fail = reportError, succ = printOrderDetails)
   }
 
-  private class OrderDetailsPrinter(output: PrintWriter, order: AnyCurrencyActiveOrder) {
+  private class OrderDetailsPrinter(output: PrintWriter, order: AnyCurrencyOrder) {
 
     def print(): Unit = {
       printGeneralDetails()

@@ -13,5 +13,5 @@ class CreationTimestampComparator extends Comparator[OrderProperties] {
     creationTimestampOf(right).compareTo(creationTimestampOf(left))
 
   private def creationTimestampOf(right: OrderProperties): DateTime =
-    right.orderProperty.get.log.activities.head.timestamp
+    right.orderProperty.get.createdOn
 }

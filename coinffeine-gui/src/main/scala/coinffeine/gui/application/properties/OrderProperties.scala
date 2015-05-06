@@ -8,7 +8,7 @@ import coinffeine.model.market._
 import org.joda.time.DateTime
 
 trait OrderProperties {
-  def orderProperty: ReadOnlyObjectProperty[AnyCurrencyActiveOrder]
+  def orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]
   def idProperty: ReadOnlyObjectProperty[OrderId]
   def typeProperty: ReadOnlyObjectProperty[OrderType]
   def createdOnProperty: ReadOnlyObjectProperty[DateTime]

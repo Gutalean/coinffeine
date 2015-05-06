@@ -4,7 +4,7 @@ import coinffeine.model.market._
 
 object OperationStyles {
 
-  def stylesFor(order: AnyCurrencyActiveOrder): Seq[String] = {
+  def stylesFor(order: AnyCurrencyOrder): Seq[String] = {
     val statusStyle = order.status match {
       case CompletedOrder => "completed"
       case NotStartedOrder | InProgressOrder => "running"

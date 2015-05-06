@@ -10,7 +10,7 @@ import coinffeine.gui.scene.styles.{NodeStyles, TextStyles}
 import coinffeine.model.currency.Currency
 import coinffeine.model.market._
 
-class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyActiveOrder]) extends HBox(0) {
+class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) extends HBox(0) {
   styleClass += "summary"
 
   content = Seq(
@@ -39,10 +39,10 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyActiveOrder]
     }
   }
 
-  private def stringBinding(pred: AnyCurrencyActiveOrder => String) =
+  private def stringBinding(pred: AnyCurrencyOrder => String) =
     orderProperty.delegate.mapToString(pred)
 
-  private def summarize(order: AnyCurrencyActiveOrder): String = {
+  private def summarize(order: AnyCurrencyOrder): String = {
     val action = order.status match {
       case CancelledOrder => OrderSummary.Cancelled
       case active if active.isActive => OrderSummary.InProgress

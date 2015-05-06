@@ -94,8 +94,8 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
         Future.successful(request.create())
       override val brokerId: Property[Option[PeerId]] = null
       override val activePeers: Property[Int] = null
-      override val orders: MutablePropertyMap[OrderId, AnyCurrencyActiveOrder] =
-        new MutablePropertyMap[OrderId, AnyCurrencyActiveOrder]
+      override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] =
+        new MutablePropertyMap[OrderId, AnyCurrencyOrder]
     }
 
     val orders = new PeerOrders(network, ExecutionContext.global)

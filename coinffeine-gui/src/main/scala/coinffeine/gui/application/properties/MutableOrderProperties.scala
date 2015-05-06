@@ -9,9 +9,9 @@ import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market._
 import org.joda.time.DateTime
 
-class MutableOrderProperties(initialValue: AnyCurrencyActiveOrder) extends OrderProperties {
+class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProperties {
 
-  override val orderProperty = new ObjectProperty[AnyCurrencyActiveOrder](this, "source", initialValue)
+  override val orderProperty = new ObjectProperty[AnyCurrencyOrder](this, "source", initialValue)
 
   override val idProperty = new ReadOnlyObjectProperty[OrderId](this, "id", initialValue.id)
 
@@ -19,7 +19,7 @@ class MutableOrderProperties(initialValue: AnyCurrencyActiveOrder) extends Order
     this, "orderType", initialValue.orderType)
 
   override val createdOnProperty = new ReadOnlyObjectProperty[DateTime](
-    this, "createdOn", initialValue.log.activities.head.timestamp)
+    this, "createdOn", initialValue.createdOn)
 
   override val exchanges = new ObservableBuffer[ExchangeProperties]
   updateExchanges(initialValue.exchanges.values.toSeq)
@@ -37,7 +37,7 @@ class MutableOrderProperties(initialValue: AnyCurrencyActiveOrder) extends Order
 
   override val progressProperty = orderProperty.delegate.mapToDouble(_.progress).toReadOnlyProperty
 
-  def update(order: AnyCurrencyActiveOrder): Unit = {
+  def update(order: AnyCurrencyOrder): Unit = {
     orderProperty.value = order
     updateExchanges(order.exchanges.values.toSeq)
   }

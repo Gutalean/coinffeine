@@ -154,7 +154,7 @@ abstract class OrderActorTest extends AkkaSpec
         Failure(new Exception("intended lack of funds"))))
     }
 
-    def expectProperty(f: AnyCurrencyActiveOrder => Unit): Unit = {
+    def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
       eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }
