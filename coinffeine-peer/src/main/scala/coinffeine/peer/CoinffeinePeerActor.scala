@@ -10,7 +10,7 @@ import akka.util.Timeout
 import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market.{ActiveOrder, OrderId}
+import coinffeine.model.market.{ActiveOrder, OrderId, OrderRequest}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.AmountsComponent
@@ -125,7 +125,10 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: ActiveOrder[_ <: FiatCurrency])
+  case class OpenOrder(order: OrderRequest[_ <: FiatCurrency])
+
+  /** An order created as response to [[OpenOrder]]. */
+  case class OrderOpened(order: ActiveOrder[_ <: FiatCurrency])
 
   /** Cancel an order
     *

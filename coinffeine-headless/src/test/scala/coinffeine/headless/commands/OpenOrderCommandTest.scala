@@ -39,7 +39,8 @@ class OpenOrderCommandTest extends CommandTest with Inside {
 
     def submissions: Seq[AnyCurrencyActiveOrder] = _submissions
 
-    override def submitOrder[C <: FiatCurrency](order: ActiveOrder[C]): ActiveOrder[C] = synchronized {
+    override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = synchronized {
+      val order = request.create()
       _submissions :+= order
       order
     }

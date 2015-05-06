@@ -51,8 +51,8 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
     val wizard = new OrderSubmissionWizard(
       app.marketStats, app.utils.exchangeAmountsCalculator, validation)
     Try(wizard.run(Option(delegate.getScene.getWindow))).foreach { data =>
-      val order = ActiveOrder.random(data.orderType.value, data.bitcoinAmount.value, data.price.value)
-      app.network.submitOrder(order)
+      val request = OrderRequest(data.orderType.value, data.bitcoinAmount.value, data.price.value)
+      app.network.submitOrder(request)
     }
   }
 

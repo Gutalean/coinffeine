@@ -90,7 +90,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
     val network = new CoinffeineNetwork {
       override def cancelOrder(order: OrderId) = {}
-      override def submitOrder[C <: FiatCurrency](order: ActiveOrder[C]) = order
+      override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = request.create()
       override val brokerId: Property[Option[PeerId]] = null
       override val activePeers: Property[Int] = null
       override val orders: MutablePropertyMap[OrderId, AnyCurrencyActiveOrder] =

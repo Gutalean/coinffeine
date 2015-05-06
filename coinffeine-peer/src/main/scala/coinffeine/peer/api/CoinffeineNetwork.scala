@@ -11,22 +11,22 @@ trait CoinffeineNetwork extends CoinffeineNetworkProperties {
     *
     * @param amount  Amount to buy
     * @param price   Price in fiat
-    * @return        A new exchange if submitted successfully
+    * @return        A new order if submitted successfully
     */
   def submitBuyOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): ActiveOrder[C] =
-    submitOrder(ActiveOrder.randomLimit(Bid, amount, price))
+    submitOrder(OrderRequest(Bid, amount, LimitPrice(price)))
 
   /** Submit an order to sell bitcoins.
     *
     * @param amount  Amount to sell
     * @param price   Price in fiat
-    * @return        A new exchange if submitted successfully
+    * @return        A new order if submitted successfully
     */
   def submitSellOrder[C <: FiatCurrency](amount: Bitcoin.Amount, price: Price[C]): ActiveOrder[C] =
-    submitOrder(ActiveOrder.randomLimit(Ask, amount, price))
+    submitOrder(OrderRequest(Ask, amount, LimitPrice(price)))
 
   /** Submit an order. */
-  def submitOrder[C <: FiatCurrency](order: ActiveOrder[C]): ActiveOrder[C]
+  def submitOrder[C <: FiatCurrency](order: OrderRequest[C]): ActiveOrder[C]
 
   /** Cancel an order
     *
