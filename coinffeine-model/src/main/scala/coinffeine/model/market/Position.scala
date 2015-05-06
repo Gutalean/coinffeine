@@ -21,7 +21,8 @@ case class Position[T <: OrderType, C <: FiatCurrency](
   }
 
   def clearHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
-    copy(handshakingAmount = handshakingAmount - crossedAmount)
+    copy(handshakingAmount = (handshakingAmount - crossedAmount) max Bitcoin.Zero)
+
   def startHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
     copy(handshakingAmount = handshakingAmount + crossedAmount)
 
