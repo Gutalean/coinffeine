@@ -10,7 +10,7 @@ class CancelOrderCommandTest extends CommandTest {
   }
 
   it should "cancel existing orders" in new Fixture {
-    val order = Order.randomLimit(Bid, 10.BTC, Price(10.EUR))
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(10.EUR))
     network.givenOrderExists(order)
     executeCommand(command, order.id.value.toString)
     network.cancellations shouldBe Seq(order.id)

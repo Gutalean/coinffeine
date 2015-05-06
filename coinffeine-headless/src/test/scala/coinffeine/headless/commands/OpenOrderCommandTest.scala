@@ -1,5 +1,7 @@
 package coinffeine.headless.commands
 
+import scala.concurrent.Future
+
 import org.scalatest.Inside
 
 import coinffeine.model.currency._
@@ -35,13 +37,16 @@ class OpenOrderCommandTest extends CommandTest with Inside {
   }
 
   class CoinffeineNetworkSpy extends DummyCoinffeineNetwork {
-    private var _submissions = Seq.empty[AnyCurrencyOrder]
+    private var _submissions = Seq.empty[AnyCurrencyActiveOrder]
 
-    def submissions: Seq[AnyCurrencyOrder] = _submissions
+    def submissions: Seq[AnyCurrencyActiveOrder] = _submissions
 
-    override def submitOrder[C <: FiatCurrency](order: Order[C]): Order[C] = synchronized {
-      _submissions :+= order
-      order
+    override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = Future.successful {
+      synchronized {
+        val order = request.create()
+        _submissions :+= order
+        order
+      }
     }
   }
 }

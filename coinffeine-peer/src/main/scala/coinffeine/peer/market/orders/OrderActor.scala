@@ -23,7 +23,7 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class OrderActor[C <: FiatCurrency](
-    initialOrder: Order[C],
+    initialOrder: ActiveOrder[C],
     order: OrderController[C],
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
@@ -143,7 +143,7 @@ class OrderActor[C <: FiatCurrency](
 
   private def subscribeToOrderChanges(): Unit = {
     order.addListener(new OrderController.Listener[C] {
-      override def onOrderChange(oldOrder: Order[C], newOrder: Order[C]): Unit = {
+      override def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit = {
         if (recoveryFinished) {
           if (newOrder.status != oldOrder.status) {
             log.info("Order {} has now {} status", orderId, newOrder.status)
@@ -158,7 +158,7 @@ class OrderActor[C <: FiatCurrency](
     })
   }
 
-  private def updatePublisher(order: Order[C]): Unit = {
+  private def updatePublisher(order: ActiveOrder[C]): Unit = {
     if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
     else publisher.stopPublishing()
   }
@@ -198,7 +198,7 @@ object OrderActor {
   def props[C <: FiatCurrency](exchangeActorProps: (HandshakingExchange[C], ExchangeActor.Collaborators) => Props,
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
-                               order: Order[C],
+                               order: ActiveOrder[C],
                                coinffeineProperties: MutableCoinffeineNetworkProperties,
                                collaborators: Collaborators,
                                peerId: PeerId): Props = {

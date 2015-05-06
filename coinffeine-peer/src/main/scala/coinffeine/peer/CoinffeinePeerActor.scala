@@ -10,7 +10,7 @@ import akka.util.Timeout
 import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.market.{ActiveOrder, OrderId, OrderRequest}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.AmountsComponent
@@ -125,7 +125,10 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: Order[_ <: FiatCurrency])
+  case class OpenOrder(order: OrderRequest[_ <: FiatCurrency])
+
+  /** An order created as response to [[OpenOrder]]. */
+  case class OrderOpened(order: ActiveOrder[_ <: FiatCurrency])
 
   /** Cancel an order
     *
@@ -192,7 +195,7 @@ object CoinffeinePeerActor {
       OrderSupervisor.props(new OrderSupervisor.Delegates {
         import orderSupervisorCollaborators._
 
-        override def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef) = {
+        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef) = {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
             gateway, bitcoinPeer, blockchain)
           OrderActor.props(exchangeActorProps, network, amountsCalculator, order,

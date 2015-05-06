@@ -19,7 +19,7 @@ class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProper
     this, "orderType", initialValue.orderType)
 
   override val createdOnProperty = new ReadOnlyObjectProperty[DateTime](
-    this, "createdOn", initialValue.log.activities.head.timestamp)
+    this, "createdOn", initialValue.createdOn)
 
   override val exchanges = new ObservableBuffer[ExchangeProperties]
   updateExchanges(initialValue.exchanges.values.toSeq)

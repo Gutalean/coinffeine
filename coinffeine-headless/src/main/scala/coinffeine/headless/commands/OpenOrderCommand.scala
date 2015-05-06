@@ -1,6 +1,8 @@
 package coinffeine.headless.commands
 
 import java.io.PrintWriter
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 import coinffeine.headless.parsing.{AmountsParser, Tokenizer}
 import coinffeine.headless.prompt.ANSIText.Red
@@ -30,8 +32,8 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
     }
 
     def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]): Unit = {
-      val order = Order.randomLimit(orderType, amount, price)
-      network.submitOrder(order)
+      val order = Await.result(
+        network.submitOrder(OrderRequest(orderType, amount, LimitPrice(price))), Duration.Inf)
       output.format("Created order %s%n", order.id.value)
     }
 

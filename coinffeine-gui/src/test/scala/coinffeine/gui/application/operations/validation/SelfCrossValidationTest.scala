@@ -15,7 +15,7 @@ class SelfCrossValidationTest extends UnitTest with Inside {
   private val request = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
 
   "Self-cross requirement" should "avoid self-crossing" in new Fixture {
-    val crossingAsk = Order.randomLimit(Ask, 0.03.BTC, Price(295.EUR))
+    val crossingAsk = ActiveOrder.randomLimit(Ask, 0.03.BTC, Price(295.EUR))
     orders.set(crossingAsk.id, crossingAsk)
 
     inside(instance.apply(request, Spread.empty)) {
@@ -30,7 +30,7 @@ class SelfCrossValidationTest extends UnitTest with Inside {
 
   private trait Fixture {
     val orders = new MutablePropertyMap[OrderId, AnyCurrencyOrder]
-    val existingOrder = Order.randomLimit(Bid, 1.BTC, Price(200.EUR))
+    val existingOrder = ActiveOrder.randomLimit(Bid, 1.BTC, Price(200.EUR))
     orders.set(existingOrder.id, existingOrder)
     val instance = new SelfCrossValidation(orders)
   }

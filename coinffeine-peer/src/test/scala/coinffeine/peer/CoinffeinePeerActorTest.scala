@@ -28,7 +28,7 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
   }
 
   it must "delegate order placement" in new StartedFixture {
-    shouldForwardMessage(OpenOrder(Order.randomLimit(Bid, 10.BTC, Price(300.EUR))), orders)
+    shouldForwardMessage(OpenOrder(OrderRequest(Bid, 10.BTC, LimitPrice(300.EUR))), orders)
   }
 
   it must "delegate order cancellation" in new StartedFixture {

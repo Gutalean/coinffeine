@@ -5,7 +5,7 @@ import akka.persistence.PersistentActor
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{Order, OrderId}
+import coinffeine.model.market.{ActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 
 /** Manages orders */
@@ -24,8 +24,11 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   override val receiveCommand: Receive = {
 
-    case OpenOrder(order) =>
-      persist(OrderCreated(order))(onOrderCreated)
+    case OpenOrder(request) =>
+      persist(OrderCreated(request.create())){ event =>
+        onOrderCreated(event)
+        sender() ! OrderOpened(event.order)
+      }
 
     case CancelOrder(orderId) =>
       orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
@@ -44,7 +47,7 @@ object OrderSupervisor {
 
   trait Delegates {
     val submissionProps: Props
-    def orderActorProps(order: Order[_ <: FiatCurrency], submission: ActorRef): Props
+    def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef): Props
   }
 
   def props(delegates: Delegates): Props = props(DefaultPersistenceId, delegates)
@@ -52,5 +55,5 @@ object OrderSupervisor {
   def props(persistenceId: String, delegates: Delegates): Props =
     Props(new OrderSupervisor(persistenceId, delegates))
 
-  private case class OrderCreated(order: Order[_ <: FiatCurrency]) extends PersistentEvent
+  private case class OrderCreated(order: ActiveOrder[_ <: FiatCurrency]) extends PersistentEvent
 }

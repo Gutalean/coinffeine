@@ -1,8 +1,8 @@
 package coinffeine.model.network
 
-import coinffeine.model.exchange.{AnyExchange}
+import coinffeine.model.exchange.AnyExchange
 import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
-import coinffeine.model.properties.{MutablePropertyMap, PropertyMap, MutableProperty, Property}
+import coinffeine.model.properties._
 
 trait CoinffeineNetworkProperties {
   val activePeers: Property[Int]

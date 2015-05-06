@@ -18,7 +18,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
 
   private val ownId = PeerId.random()
   private val validator = new OrderMatchValidator(ownId, amountsCalculator)
-  private val limitOrder = Order.randomLimit(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
+  private val limitOrder = ActiveOrder.randomLimit(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
   private val marketPriceOrder = limitOrder.copy(price = MarketPrice(Euro))
   private val orderMatch = OrderMatch(
     orderId = limitOrder.id,
@@ -120,7 +120,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     }
   }
 
-  private def expectRejectionWithMessage(order: Order[Euro.type],
+  private def expectRejectionWithMessage(order: ActiveOrder[Euro.type],
                                          orderMatch: OrderMatch[Euro.type],
                                          message: String,
                                          alreadyBlocking: Bitcoin.Amount = 0.BTC): Unit = {

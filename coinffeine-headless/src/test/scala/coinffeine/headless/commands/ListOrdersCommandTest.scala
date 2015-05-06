@@ -15,7 +15,7 @@ class ListOrdersCommandTest extends CommandTest {
   }
 
   it should "show order id, state and relevant amounts of existing orders" in {
-    val order = Order.randomLimit(Bid, 10.BTC, Price(500.EUR))
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(500.EUR))
     orderMap.set(order.id, order)
     executeCommand(command) should (
       include(order.id.value) and include(order.status.toString) and
@@ -26,13 +26,13 @@ class ListOrdersCommandTest extends CommandTest {
     val orders = for {
       index <- 1 to 10
       orderType <- OrderType.values
-    } yield Order.randomLimit(orderType, index.BTC, Price((500 - index).EUR))
+    } yield ActiveOrder.randomLimit(orderType, index.BTC, Price((500 - index).EUR))
 
     orders.foreach { order => orderMap.set(order.id, order) }
 
     val outputLines = executeCommand(command).lines.toList
-    val (bidHeader, afterBidHeader) = outputLines.span(_ == Bold("Bid orders"))
-    val (bids, askHeader :: asks) = afterBidHeader.span(_ != Bold("Ask orders"))
+    val (_, afterBidHeader) = outputLines.span(_ == Bold("Bid orders"))
+    val (bids, _ :: asks) = afterBidHeader.span(_ != Bold("Ask orders"))
     bids.sorted shouldBe bids
     asks.sorted shouldBe asks
   }
