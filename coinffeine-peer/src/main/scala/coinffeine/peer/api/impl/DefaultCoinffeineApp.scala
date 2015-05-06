@@ -1,7 +1,6 @@
 package coinffeine.peer.api.impl
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.control.{NoStackTrace, NonFatal}
 
 import akka.actor._
@@ -46,9 +45,9 @@ class DefaultCoinffeineApp(name: String,
 
   override val global = properties.global
 
-  override def start(timeout: FiniteDuration): Future[Unit] = {
+  override def start(): Future[Unit] = {
     import system.dispatcher
-    implicit val to = Timeout(timeout)
+    implicit val to = Timeout(configProvider.generalSettings().serviceStartStopTimeout)
     for {
       _ <- Service.askStart(peerRef).recoverWith {
         case NonFatal(cause) => Future.failed(new RuntimeException("cannot start coinffeine app", cause))
@@ -61,9 +60,9 @@ class DefaultCoinffeineApp(name: String,
     } yield ()
   }
 
-  override def stop(timeout: FiniteDuration): Future[Unit] = {
+  override def stop(): Future[Unit] = {
     import system.dispatcher
-    implicit val to = Timeout(timeout)
+    implicit val to = Timeout(configProvider.generalSettings().serviceStartStopTimeout)
     Service.askStop(peerRef).recover {
       case cause => logger.error("cannot gracefully stop coinffeine app", cause)
     }.map { _ =>

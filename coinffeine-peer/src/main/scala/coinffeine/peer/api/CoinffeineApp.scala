@@ -16,11 +16,11 @@ trait CoinffeineApp {
   def utils: CoinffeineUtils
   def global: GlobalProperties
 
-  def start(timeout: FiniteDuration): Future[Unit]
-  def stop(timeout: FiniteDuration): Future[Unit]
+  def start(): Future[Unit]
+  def stop(): Future[Unit]
 
-  def startAndWait(timeout: FiniteDuration): Unit = waitForever(start(timeout))
-  def stopAndWait(timeout: FiniteDuration): Unit = waitForever(stop(timeout))
+  def startAndWait(): Unit = waitForever(start())
+  def stopAndWait(): Unit = waitForever(stop())
 
   private def waitForever(future: Future[Unit]): Unit = {
     Await.result(future, Duration.Inf)

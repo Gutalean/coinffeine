@@ -52,7 +52,7 @@ class StatusCommandTest extends CommandTest {
     val primaryAddress = new MutableProperty[Option[Address]](None)
 
     override def network: CoinffeineNetwork = ???
-    override def stop(timeout: FiniteDuration): Future[Unit] = ???
+    override def stop(): Future[Unit] = ???
     override def bitcoinNetwork: BitcoinNetwork = ???
     override def utils: CoinffeineUtils = ???
     override def marketStats: MarketStats = ???
@@ -69,6 +69,6 @@ class StatusCommandTest extends CommandTest {
         new MutablePropertyMap
     }
     override def global = ???
-    override def start(timeout: FiniteDuration): Future[Unit] = ???
+    override def start(): Future[Unit] = ???
   }
 }
