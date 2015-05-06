@@ -1,6 +1,5 @@
 package coinffeine.gui
 
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
@@ -42,6 +41,6 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
   }(FxExecutor.asContext)
 
   override def stopApp(): Unit = {
-    app.stopAndWait(30.seconds)
+    app.stopAndWait()
   }
 }

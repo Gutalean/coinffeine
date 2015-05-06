@@ -1,7 +1,6 @@
 package coinffeine.peer.api.impl
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.{Address, MutableNetworkProperties, WalletActivity}
@@ -42,8 +41,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
   override def global = ???
 
-  override def start(timeout: FiniteDuration) = Future.successful {}
-  override def stop(timeout: FiniteDuration) = Future.successful {}
+  override def start() = Future.successful {}
+  override def stop() = Future.successful {}
 }
 
 object MockCoinffeineApp {

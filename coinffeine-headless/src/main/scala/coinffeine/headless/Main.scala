@@ -1,7 +1,6 @@
 package coinffeine.headless
 
 import java.io.File
-import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NonFatal
 
@@ -10,8 +9,6 @@ import coinffeine.peer.log.LogConfigurator
 import coinffeine.peer.pid.PidFile
 
 object Main {
-
-  private val timeout = 20.seconds
 
   def main(args: Array[String]): Unit = {
     val coinffeine = new ProductionCoinffeineComponent {
@@ -25,9 +22,9 @@ object Main {
     }
     try {
       Runtime.getRuntime.addShutdownHook(new Thread {
-        override def run() = coinffeine.app.stopAndWait(timeout)
+        override def run() = coinffeine.app.stopAndWait()
       })
-      coinffeine.app.startAndWait(timeout)
+      coinffeine.app.startAndWait()
       val historyFile = new File(coinffeine.configProvider.dataPath, "history")
       new CoinffeineInterpreter(coinffeine.app, historyFile).run()
       System.exit(-1)
