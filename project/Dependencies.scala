@@ -36,7 +36,7 @@ object Dependencies {
     "org.eclipse.jetty.orbit" % "javax.servlet" % "3.0.0.v201112011016" % "compile"
       artifacts Artifact("javax.servlet", "jar", "jar")
   )
-  lazy val jline = "jline" % "jline" % "2.12"
+  lazy val jline = "jline" % "jline" % "2.12.1"
   lazy val jodaTime = "joda-time" % "joda-time" % "2.7"
   lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
   lazy val liftJson = "net.liftweb" %% "lift-json" % Versions.lift
@@ -58,8 +58,8 @@ object Dependencies {
   )
   lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.12.2"
   lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.4"
-  lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.1"
-  lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.2"
+  lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
+  lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
   lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.1.2"
-  lazy val zxing = "com.google.zxing" % "core" % "3.1.0"
+  lazy val zxing = "com.google.zxing" % "core" % "3.2.0"
 }
