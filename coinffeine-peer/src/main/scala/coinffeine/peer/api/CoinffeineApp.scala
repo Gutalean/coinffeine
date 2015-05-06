@@ -1,6 +1,6 @@
 package coinffeine.peer.api
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
 import coinffeine.peer.global.GlobalProperties

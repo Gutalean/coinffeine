@@ -7,7 +7,7 @@ import scalaz.{Failure, Success}
 import akka.util.ByteString
 import org.reflections.Reflections
 import org.scalatest.Inside
-import org.scalautils.TypeCheckedTripleEquals
+import org.scalactic.TypeCheckedTripleEquals
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
