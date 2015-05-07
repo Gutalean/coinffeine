@@ -82,7 +82,6 @@ class OrderActor[C <: FiatCurrency](
             onFundsRequested(event)
           }
         case MatchRejected(cause) =>
-          log.error("Invalid order match for {}: {}", orderMatch.exchangeId, cause)
           rejectOrderMatch(ExchangeRejection.InvalidOrderMatch, orderMatch.exchangeId)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
