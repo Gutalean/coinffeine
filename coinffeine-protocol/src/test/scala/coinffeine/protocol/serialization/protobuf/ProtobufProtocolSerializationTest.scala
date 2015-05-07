@@ -79,7 +79,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
           .setExchangeAborted(
             proto.ExchangeAborted.newBuilder
               .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
-              .setReason("reason"))
+              .setCause(proto.ExchangeAborted.Cause.TIMEOUT))
       ).build
     instance.fromProtobuf(message) should === (Failure(IncompatibleVersion(
       actual = Version(42, 0),
@@ -102,7 +102,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
     val multiMessage = payloadMessage { payload =>
       payload.setExchangeAborted(proto.ExchangeAborted.newBuilder
         .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
-        .setReason("reason"))
+        .setCause(proto.ExchangeAborted.Cause.TIMEOUT))
       payload.setQuoteRequest(proto.QuoteRequest.newBuilder
         .setMarket(proto.Market.newBuilder().setCurrency("USD")))
     }

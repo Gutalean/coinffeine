@@ -93,38 +93,79 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
       .setCommitmentTransaction(txSerialization.serialize(message.commitmentTransaction)).build
   }
 
-  implicit val exchangeAbortedMapping = new ProtoMapping[ExchangeAborted, msg.ExchangeAborted] {
-
-    override def fromProtobuf(exchangeAborted: msg.ExchangeAborted) = ExchangeAborted(
-      exchangeId = ProtoMapping.fromProtobuf(exchangeAborted.getExchangeId),
-      cause = exchangeAborted.getReason
-    )
-
-    override def toProtobuf(exchangeAborted: ExchangeAborted) = msg.ExchangeAborted.newBuilder
-      .setExchangeId(ProtoMapping.toProtobuf(exchangeAborted.exchangeId))
-      .setReason(exchangeAborted.cause)
-      .build
-  }
-
-  implicit val exchangeRejectionMapping = new ProtoMapping[ExchangeRejection, msg.ExchangeRejection] {
-
-    private val causeMapping: Map[ExchangeRejection.Cause, msg.ExchangeRejection.Cause] = Map(
+  private val exchangeRejectionCauseMapping =
+    Map[ExchangeRejection.Cause, msg.ExchangeRejection.Cause](
       ExchangeRejection.CounterpartTimeout -> msg.ExchangeRejection.Cause.COUNTERPART_TIMEOUT,
       ExchangeRejection.UnavailableFunds -> msg.ExchangeRejection.Cause.UNAVAILABLE_FUNDS,
       ExchangeRejection.InvalidOrderMatch -> msg.ExchangeRejection.Cause.INVALID_ORDER_MATCH
     )
 
+  private def exchangeRejectionCauseReverseMapping(message: msg.ExchangeRejection.Cause) = {
+    exchangeRejectionCauseMapping.collectFirst {
+      case (cause, protoCause) if protoCause == message => cause
+    }.getOrElse(throw new scala.NoSuchElementException(s"Unsupported rejection cause: $message"))
+  }
+
+  implicit val exchangeRejectionMapping = new ProtoMapping[ExchangeRejection, msg.ExchangeRejection] {
+
     override def fromProtobuf(rejection: msg.ExchangeRejection) = ExchangeRejection(
       exchangeId = ProtoMapping.fromProtobuf(rejection.getExchangeId),
-      cause = causeMapping.collectFirst {
-        case (cause, protoCause) if protoCause == rejection.getCause => cause
-      }.getOrElse(throw new NoSuchElementException(s"Unsupported rejection cause: $rejection"))
+      cause = exchangeRejectionCauseReverseMapping(rejection.getCause)
     )
 
     override def toProtobuf(rejection: ExchangeRejection) = msg.ExchangeRejection.newBuilder
       .setExchangeId(ProtoMapping.toProtobuf(rejection.exchangeId))
-      .setCause(causeMapping(rejection.cause))
+      .setCause(exchangeRejectionCauseMapping(rejection.cause))
       .build
+  }
+
+  implicit val exchangeAbortedMapping = new ProtoMapping[ExchangeAborted, msg.ExchangeAborted] {
+
+    override def fromProtobuf(exchangeAborted: msg.ExchangeAborted) = ExchangeAborted(
+      exchangeId = ProtoMapping.fromProtobuf(exchangeAborted.getExchangeId),
+      cause = exchangeAborted.getCause match {
+
+        case msg.ExchangeAborted.Cause.TIMEOUT => ExchangeAborted.Timeout
+
+        case msg.ExchangeAborted.Cause.INVALID_COMMITMENTS =>
+          val culprits: Set[PeerId] = exchangeAborted.getCulpritsList.asScala
+            .map(peerId => ProtoMapping.fromProtobuf(peerId))
+            .toSet
+          ExchangeAborted.InvalidCommitments(culprits)
+
+        case msg.ExchangeAborted.Cause.PUBLICATION_FAILURE =>
+          require(exchangeAborted.hasTxId, "Missing field txId")
+          ExchangeAborted.PublicationFailure(new Hash(exchangeAborted.getTxId.toByteArray))
+
+        case msg.ExchangeAborted.Cause.REJECTED =>
+          require(exchangeAborted.hasRejectionCause, "Missing field rejectionCause")
+          ExchangeAborted.Rejected(
+            exchangeRejectionCauseReverseMapping(exchangeAborted.getRejectionCause))
+      }
+    )
+
+    override def toProtobuf(exchangeAborted: ExchangeAborted) = {
+      val builder = msg.ExchangeAborted.newBuilder
+        .setExchangeId(ProtoMapping.toProtobuf(exchangeAborted.exchangeId))
+      exchangeAborted.cause match {
+
+        case ExchangeAborted.Timeout =>
+          builder.setCause(msg.ExchangeAborted.Cause.TIMEOUT)
+
+        case ExchangeAborted.InvalidCommitments(culprits) =>
+          builder.setCause(msg.ExchangeAborted.Cause.INVALID_COMMITMENTS)
+          builder.addAllCulprits(culprits.map(peerId => ProtoMapping.toProtobuf(peerId)).asJava)
+
+        case ExchangeAborted.PublicationFailure(txId) =>
+          builder.setCause(msg.ExchangeAborted.Cause.PUBLICATION_FAILURE)
+          builder.setTxId(ByteString.copyFrom(txId.getBytes))
+
+        case ExchangeAborted.Rejected(rejectionCause) =>
+          builder.setCause(msg.ExchangeAborted.Cause.REJECTED)
+          builder.setRejectionCause(exchangeRejectionCauseMapping(rejectionCause))
+      }
+      builder.build()
+    }
   }
 
   implicit val decimalNumberMapping = new ProtoMapping[BigDecimal, msg.DecimalNumber] {

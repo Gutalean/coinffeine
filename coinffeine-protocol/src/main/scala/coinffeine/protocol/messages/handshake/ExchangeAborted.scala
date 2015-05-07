@@ -5,12 +5,9 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 import coinffeine.protocol.messages.PublicMessage
 
-case class ExchangeAborted(exchangeId: ExchangeId, cause: String) extends PublicMessage
+case class ExchangeAborted(exchangeId: ExchangeId, cause: ExchangeAborted.Cause) extends PublicMessage
 
 case object ExchangeAborted {
-
-  def apply(exchangeId: ExchangeId, cause: Cause): ExchangeAborted =
-    ExchangeAborted(exchangeId, cause.message)
 
   sealed trait Cause {
     def message: String

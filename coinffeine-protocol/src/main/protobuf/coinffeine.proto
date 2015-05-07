@@ -87,11 +87,6 @@ message OpenOrders {
     required PeerPositions orders = 1;
 }
 
-message ExchangeAborted {
-    required ExchangeId exchangeId = 1;
-    required string reason = 2;
-}
-
 message ExchangeRejection {
     enum Cause {
         COUNTERPART_TIMEOUT = 0;
@@ -100,6 +95,20 @@ message ExchangeRejection {
     }
     required ExchangeId exchangeId = 1;
     required Cause cause = 2;
+}
+
+message ExchangeAborted {
+    enum Cause {
+        REJECTED = 0;
+        PUBLICATION_FAILURE = 1;
+        INVALID_COMMITMENTS = 2;
+        TIMEOUT = 3;
+    }
+    required ExchangeId exchangeId = 1;
+    required Cause cause = 2;
+    optional ExchangeRejection.Cause rejectionCause = 3;
+    optional bytes txId = 4;
+    repeated PeerId culprits = 5;
 }
 
 message PeerHandshake {

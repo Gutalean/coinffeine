@@ -295,7 +295,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-      log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
+      log.info("Handshake {}: aborted by the broker: {}", exchange.info.id, reason.message)
       finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason), DateTime.now()))
   }
 

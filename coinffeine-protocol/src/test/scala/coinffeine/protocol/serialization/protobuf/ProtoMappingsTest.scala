@@ -144,7 +144,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     ExchangeAborted.Timeout)
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
     .setExchangeId(sampleExchangeIdMessage)
-    .setReason(ExchangeAborted.Timeout.message)
+    .setCause(msg.ExchangeAborted.Cause.TIMEOUT)
     .build()
 
   "Exchange aborted" should behave like thereIsAMappingBetween(
