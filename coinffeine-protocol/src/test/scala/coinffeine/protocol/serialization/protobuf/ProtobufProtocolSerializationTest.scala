@@ -77,7 +77,9 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
         proto.Payload.newBuilder
           .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
           .setExchangeAborted(
-            proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+            proto.ExchangeAborted.newBuilder
+              .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
+              .setReason("reason"))
       ).build
     instance.fromProtobuf(message) should === (Failure(IncompatibleVersion(
       actual = Version(42, 0),
@@ -98,8 +100,9 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
 
   it must "detect a protobuf message with multiple payloads" in {
     val multiMessage = payloadMessage { payload =>
-      payload.setExchangeAborted(
-        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+      payload.setExchangeAborted(proto.ExchangeAborted.newBuilder
+        .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
+        .setReason("reason"))
       payload.setQuoteRequest(proto.QuoteRequest.newBuilder
         .setMarket(proto.Market.newBuilder().setCurrency("USD")))
     }
