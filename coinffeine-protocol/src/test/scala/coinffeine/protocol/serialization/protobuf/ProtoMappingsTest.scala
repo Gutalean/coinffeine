@@ -177,7 +177,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     .setBuyerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10050)))
     .setSellerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10000)))
     .setLockTime(310000L)
-    .setCounterpart(buyer.value)
+    .setCounterpart(msg.PeerId.newBuilder().setValue(buyer.value))
     .build
   "Order match" must behave like
     thereIsAMappingBetween[OrderMatch[_ <: FiatCurrency], msg.OrderMatch](

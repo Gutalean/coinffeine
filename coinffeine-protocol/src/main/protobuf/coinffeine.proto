@@ -23,6 +23,10 @@ message Market {
     required string currency = 1;
 }
 
+message PeerId {
+    required string value = 1;
+}
+
 message OrderBookEntry {
     enum OrderType {
         BID = 0;
@@ -64,7 +68,7 @@ message OrderMatch {
     required DecimalNumber buyerFiatAmount = 6;
     required DecimalNumber sellerFiatAmount = 7;
     required int64 lockTime = 8;
-    required string counterpart = 9;
+    required PeerId counterpart = 9;
 }
 
 message OpenOrdersRequest {

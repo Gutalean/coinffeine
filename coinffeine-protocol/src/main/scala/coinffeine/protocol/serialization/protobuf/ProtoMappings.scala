@@ -21,6 +21,15 @@ import coinffeine.protocol.serialization.TransactionSerialization
 /** Implicit conversion mappings for the protocol messages */
 private class ProtoMappings(txSerialization: TransactionSerialization) {
 
+  implicit val peerIdMapping = new ProtoMapping[PeerId, msg.PeerId] {
+
+    override def fromProtobuf(message: msg.PeerId) = PeerId(message.getValue)
+
+    override def toProtobuf(peerId: PeerId) = msg.PeerId.newBuilder()
+      .setValue(peerId.value)
+      .build()
+  }
+
   implicit val commitmentNotificationMapping =
     new ProtoMapping[CommitmentNotification, msg.CommitmentNotification] {
 
@@ -227,7 +236,7 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
             ProtoMapping.fromProtobuf(orderMatch.getSellerFiatAmount), currency)
         ),
         lockTime = orderMatch.getLockTime,
-        counterpart = PeerId(orderMatch.getCounterpart)
+        counterpart = ProtoMapping.fromProtobuf(orderMatch.getCounterpart)
       )
     }
 
@@ -241,7 +250,7 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
         .setBuyerFiatAmount(ProtoMapping.toProtobuf(orderMatch.fiatAmount.buyer.value))
         .setSellerFiatAmount(ProtoMapping.toProtobuf(orderMatch.fiatAmount.seller.value))
         .setLockTime(orderMatch.lockTime)
-        .setCounterpart(orderMatch.counterpart.value)
+        .setCounterpart(ProtoMapping.toProtobuf(orderMatch.counterpart))
         .build
   }
 
