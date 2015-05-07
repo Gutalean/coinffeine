@@ -3,15 +3,10 @@ package coinffeine.protocol.messages.handshake
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.protocol.messages.PublicMessage
 
-case class ExchangeRejection (
-  exchangeId: ExchangeId,
-  reason: String
-) extends PublicMessage
+case class ExchangeRejection (exchangeId: ExchangeId, cause: ExchangeRejection.Cause)
+  extends PublicMessage
 
 object ExchangeRejection {
-
-  def apply(exchangeId: ExchangeId, cause: Cause): ExchangeRejection =
-    ExchangeRejection(exchangeId, cause.message)
 
   sealed trait Cause {
     val message: String

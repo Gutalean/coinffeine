@@ -81,14 +81,22 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
 
   implicit val exchangeRejectionMapping = new ProtoMapping[ExchangeRejection, msg.ExchangeRejection] {
 
+    private val causeMapping: Map[ExchangeRejection.Cause, msg.ExchangeRejection.Cause] = Map(
+      ExchangeRejection.CounterpartTimeout -> msg.ExchangeRejection.Cause.COUNTERPART_TIMEOUT,
+      ExchangeRejection.UnavailableFunds -> msg.ExchangeRejection.Cause.UNAVAILABLE_FUNDS,
+      ExchangeRejection.InvalidOrderMatch -> msg.ExchangeRejection.Cause.INVALID_ORDER_MATCH
+    )
+
     override def fromProtobuf(rejection: msg.ExchangeRejection) = ExchangeRejection(
       exchangeId = ExchangeId(rejection.getExchangeId),
-      reason = rejection.getReason
+      cause = causeMapping.collectFirst {
+        case (cause, protoCause) if protoCause == rejection.getCause => cause
+      }.getOrElse(throw new NoSuchElementException(s"Unsupported rejection cause: $rejection"))
     )
 
     override def toProtobuf(rejection: ExchangeRejection) = msg.ExchangeRejection.newBuilder
       .setExchangeId(rejection.exchangeId.value)
-      .setReason(rejection.reason)
+      .setCause(causeMapping(rejection.cause))
       .build
   }
 

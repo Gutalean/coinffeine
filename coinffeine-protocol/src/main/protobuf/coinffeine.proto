@@ -81,8 +81,13 @@ message ExchangeAborted {
 }
 
 message ExchangeRejection {
+    enum Cause {
+        COUNTERPART_TIMEOUT = 0;
+        UNAVAILABLE_FUNDS = 1;
+        INVALID_ORDER_MATCH = 2;
+    }
     required string exchangeId = 1;
-    required string reason = 2;
+    required Cause cause = 2;
 }
 
 message PeerHandshake {

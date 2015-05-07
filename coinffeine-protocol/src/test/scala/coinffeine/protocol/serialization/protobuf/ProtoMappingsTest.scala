@@ -152,7 +152,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     cause = ExchangeRejection.InvalidOrderMatch)
   val exchangeRejectionMessage = msg.ExchangeRejection.newBuilder()
     .setExchangeId(sampleExchangeId.value)
-    .setReason(ExchangeRejection.InvalidOrderMatch.message)
+    .setCause(msg.ExchangeRejection.Cause.INVALID_ORDER_MATCH)
     .build()
 
   "Exchange rejection" should behave like thereIsAMappingBetween(
