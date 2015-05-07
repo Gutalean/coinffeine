@@ -90,7 +90,11 @@ trait MessageGenerators {
 
   val exchangeRejections: Gen[ExchangeRejection] = for {
     id <- arbitrary[ExchangeId]
-    reason <- Gen.oneOf("rejected by peer", "invalid exchange")
+    reason <- Gen.oneOf(
+      ExchangeRejection.CounterpartTimeout,
+      ExchangeRejection.InvalidOrderMatch,
+      ExchangeRejection.UnavailableFunds
+    )
   } yield ExchangeRejection(id, reason)
 
   val channelClosures: Gen[MicropaymentChannelClosed] =

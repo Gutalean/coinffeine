@@ -6,6 +6,7 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, InMarket, StopSubmitting}
+import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class SingleRunOrderActorTest extends OrderActorTest {
 
@@ -30,7 +31,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
   it should "reject order matches after being cancelled" in new Fixture {
     givenOfflineOrder()
     actor ! OrderActor.CancelOrder
-    shouldRejectAnOrderMatch("Order already finished")
+    shouldRejectAnOrderMatch(ExchangeRejection.InvalidOrderMatch)
   }
 
   it should "stop submitting to the broker & report new status once matching is received" in

@@ -13,7 +13,7 @@ class PersistentOrderActorTest extends OrderActorTest {
       gatewayProbe.relayMessageFromBroker(orderMatch)
       givenFailedFundsBlocking()
       gatewayProbe.expectForwardingToBroker(
-        ExchangeRejection(orderMatch.exchangeId, "Cannot block funds"))
+        ExchangeRejection(orderMatch.exchangeId, ExchangeRejection.UnavailableFunds))
 
       restartOrder()
       fundsBlocker.expectStop()
@@ -45,6 +45,6 @@ class PersistentOrderActorTest extends OrderActorTest {
 
     restartOrder()
     expectNoMsg(idleTime)
-    shouldRejectAnOrderMatch("Order already finished")
+    shouldRejectAnOrderMatch(ExchangeRejection.InvalidOrderMatch)
   }
 }

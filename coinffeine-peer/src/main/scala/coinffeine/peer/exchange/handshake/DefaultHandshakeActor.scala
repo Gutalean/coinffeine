@@ -289,7 +289,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case RequestSignatureTimeout =>
       val cause = RefundSignatureTimeoutException(exchange.info.id)
       collaborators.gateway ! ForwardMessage(
-        ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
+        ExchangeRejection(exchange.info.id, ExchangeRejection.CounterpartTimeout), BrokerId)
       finishWith(HandshakeFailure(cause, DateTime.now()))
   }
 

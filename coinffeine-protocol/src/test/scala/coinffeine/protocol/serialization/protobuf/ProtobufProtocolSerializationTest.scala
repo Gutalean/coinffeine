@@ -152,7 +152,7 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
           PeerId.hashOf("peer")),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
-        ExchangeRejection(exchangeId, "reason"),
+        ExchangeRejection(exchangeId, ExchangeRejection.UnavailableFunds),
         PeerHandshake(exchangeId, publicKey, "paymentAccount"),
         RefundSignatureRequest(exchangeId, transaction),
         RefundSignatureResponse(exchangeId, transactionSignature),
