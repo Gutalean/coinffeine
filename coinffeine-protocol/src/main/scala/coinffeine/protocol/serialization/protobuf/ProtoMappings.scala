@@ -70,12 +70,12 @@ private class ProtoMappings(txSerialization: TransactionSerialization) {
 
     override def fromProtobuf(exchangeAborted: msg.ExchangeAborted) = ExchangeAborted(
       exchangeId = ExchangeId(exchangeAborted.getExchangeId),
-      reason = exchangeAborted.getReason
+      cause = exchangeAborted.getReason
     )
 
     override def toProtobuf(exchangeAborted: ExchangeAborted) = msg.ExchangeAborted.newBuilder
       .setExchangeId(exchangeAborted.exchangeId.value)
-      .setReason(exchangeAborted.reason)
+      .setReason(exchangeAborted.cause)
       .build
   }
 

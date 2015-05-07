@@ -143,13 +143,17 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
         OrderBookEntry.random(Ask, 0.4.BTC, Price(600.USD))
       ))
       val publicKey = new KeyPair().publicKey
+      val peer = PeerId.hashOf("peer")
       Seq(
-        ExchangeAborted(exchangeId, "reason"),
+        ExchangeAborted(exchangeId, ExchangeAborted.Timeout),
+        ExchangeAborted(exchangeId, ExchangeAborted.InvalidCommitments(peer)),
+        ExchangeAborted(exchangeId, ExchangeAborted.PublicationFailure(transaction.get.getHash)),
+        ExchangeAborted(exchangeId, ExchangeAborted.Rejected(ExchangeRejection.CounterpartTimeout)),
         ExchangeCommitment(exchangeId, publicKey, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         CommitmentNotificationAck(exchangeId),
-        OrderMatch(orderId, exchangeId, Both.fill(btcAmount), Both.fill(fiatAmount), 310000L,
-          PeerId.hashOf("peer")),
+        OrderMatch(
+          orderId, exchangeId, Both.fill(btcAmount), Both.fill(fiatAmount), 310000L, peer),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
         ExchangeRejection(exchangeId, ExchangeRejection.UnavailableFunds),

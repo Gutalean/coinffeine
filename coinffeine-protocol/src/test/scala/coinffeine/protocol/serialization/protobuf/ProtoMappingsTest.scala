@@ -138,10 +138,11 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value), "a reason")
+  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value),
+    ExchangeAborted.Timeout)
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
     .setExchangeId(sampleExchangeId.value)
-    .setReason("a reason")
+    .setReason(ExchangeAborted.Timeout.message)
     .build()
 
   "Exchange aborted" should behave like thereIsAMappingBetween(
