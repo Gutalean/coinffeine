@@ -43,6 +43,8 @@
 
 #wallet-center-pane .button { -fx-color: #bebebe; }
 
+#wallet-control-pane { -fx-alignment: center; }
+
 #wallet-control-pane .button { -fx-color: -cf-main1; }
 
 /* Styles of the wallet funds dialog */
