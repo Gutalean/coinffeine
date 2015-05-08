@@ -87,7 +87,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
   }
 
   val controlPane = new StackPane {
-    minWidth = 300
+    id = "control-pane"
     currentView.delegate.bindToList(content) { p => Seq(p.controlPane) }
   }
 
