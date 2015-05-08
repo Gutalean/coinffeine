@@ -103,6 +103,8 @@
     -fx-cursor: hand;
 }
 
+#control-pane { -fx-min-width: 300; }
+
 #center-pane {
     -fx-padding: 20 50 20 50;
 }
