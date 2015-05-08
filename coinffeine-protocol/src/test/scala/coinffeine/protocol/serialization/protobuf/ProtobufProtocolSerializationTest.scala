@@ -77,7 +77,9 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
         proto.Payload.newBuilder
           .setVersion(protoVersion.toBuilder.setMajor(42).setMinor(0))
           .setExchangeAborted(
-            proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+            proto.ExchangeAborted.newBuilder
+              .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
+              .setCause(proto.ExchangeAborted.Cause.TIMEOUT))
       ).build
     instance.fromProtobuf(message) should === (Failure(IncompatibleVersion(
       actual = Version(42, 0),
@@ -98,8 +100,9 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
 
   it must "detect a protobuf message with multiple payloads" in {
     val multiMessage = payloadMessage { payload =>
-      payload.setExchangeAborted(
-        proto.ExchangeAborted.newBuilder.setExchangeId("id").setReason("reason"))
+      payload.setExchangeAborted(proto.ExchangeAborted.newBuilder
+        .setExchangeId(proto.ExchangeId.newBuilder().setValue("id"))
+        .setCause(proto.ExchangeAborted.Cause.TIMEOUT))
       payload.setQuoteRequest(proto.QuoteRequest.newBuilder
         .setMarket(proto.Market.newBuilder().setCurrency("USD")))
     }
@@ -143,16 +146,20 @@ class ProtobufProtocolSerializationTest extends UnitTest with TypeCheckedTripleE
         OrderBookEntry.random(Ask, 0.4.BTC, Price(600.USD))
       ))
       val publicKey = new KeyPair().publicKey
+      val peer = PeerId.hashOf("peer")
       Seq(
-        ExchangeAborted(exchangeId, "reason"),
+        ExchangeAborted(exchangeId, ExchangeAborted.Timeout),
+        ExchangeAborted(exchangeId, ExchangeAborted.InvalidCommitments(peer)),
+        ExchangeAborted(exchangeId, ExchangeAborted.PublicationFailure(transaction.get.getHash)),
+        ExchangeAborted(exchangeId, ExchangeAborted.Rejected(ExchangeRejection.CounterpartTimeout)),
         ExchangeCommitment(exchangeId, publicKey, transaction),
         CommitmentNotification(exchangeId, Both(sampleTxId, sampleTxId)),
         CommitmentNotificationAck(exchangeId),
-        OrderMatch(orderId, exchangeId, Both.fill(btcAmount), Both.fill(fiatAmount), 310000L,
-          PeerId.hashOf("peer")),
+        OrderMatch(
+          orderId, exchangeId, Both.fill(btcAmount), Both.fill(fiatAmount), 310000L, peer),
         QuoteRequest(market),
         Quote(fiatAmount -> fiatAmount, fiatAmount),
-        ExchangeRejection(exchangeId, "reason"),
+        ExchangeRejection(exchangeId, ExchangeRejection.UnavailableFunds),
         PeerHandshake(exchangeId, publicKey, "paymentAccount"),
         RefundSignatureRequest(exchangeId, transaction),
         RefundSignatureResponse(exchangeId, transactionSignature),

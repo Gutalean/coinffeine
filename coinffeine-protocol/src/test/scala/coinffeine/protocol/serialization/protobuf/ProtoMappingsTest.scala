@@ -45,7 +45,9 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val sampleTxId = new Hash("d03f71f44d97243a83804b227cee881280556e9e73e5110ecdcb1bbf72d75c71")
   val sampleOrderId = OrderId.random()
+  val sampleOrderIdMessage = msg.OrderId.newBuilder().setValue(sampleOrderId.value).build()
   val sampleExchangeId = ExchangeId.random()
+  val sampleExchangeIdMessage = msg.ExchangeId.newBuilder().setValue(sampleExchangeId.value).build()
 
   val bigDecimal = BigDecimal(1.1)
   val decimalNumber = msg.DecimalNumber.newBuilder
@@ -69,9 +71,9 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
       .build
     )
 
-  val limitOrderBookEntry = OrderBookEntry(OrderId("orderId"), Bid, 10.BTC, Price(400.EUR))
+  val limitOrderBookEntry = OrderBookEntry(sampleOrderId, Bid, 10.BTC, Price(400.EUR))
   val limitOrderBookEntryMessage = msg.OrderBookEntry.newBuilder
-    .setId("orderId")
+    .setId(sampleOrderIdMessage)
     .setOrderType(msg.OrderBookEntry.OrderType.BID)
     .setAmount(decimalNumberMapping.toProtobuf(10))
     .setPrice(msg.Price.newBuilder
@@ -113,7 +115,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val commitmentNotification = CommitmentNotification(sampleExchangeId, Both(sampleTxId, sampleTxId))
   val commitmentNotificationMessage = msg.CommitmentNotification.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .setBuyerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .setSellerTxId(ByteString.copyFrom(sampleTxId.getBytes))
     .build()
@@ -123,7 +125,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val commitmentNotificationAck = CommitmentNotificationAck(sampleExchangeId)
   val commitmentNotificationAckMessage = msg.CommitmentNotificationAck.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .build()
 
   "Commitment notification acknowledge" should behave like thereIsAMappingBetween(
@@ -131,17 +133,18 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val commitment = ExchangeCommitment(sampleExchangeId, publicKey, commitmentTransaction)
   val commitmentMessage = msg.ExchangeCommitment.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .setPublicKey(txSerialization.serialize(publicKey))
     .setCommitmentTransaction( txSerialization.serialize(commitmentTransaction))
     .build()
 
   "Enter exchange" must behave like thereIsAMappingBetween(commitment, commitmentMessage)
 
-  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value), "a reason")
+  val exchangeAborted = ExchangeAborted(ExchangeId(sampleExchangeId.value),
+    ExchangeAborted.Timeout)
   val exchangeAbortedMessage = msg.ExchangeAborted.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
-    .setReason("a reason")
+    .setExchangeId(sampleExchangeIdMessage)
+    .setCause(msg.ExchangeAborted.Cause.TIMEOUT)
     .build()
 
   "Exchange aborted" should behave like thereIsAMappingBetween(
@@ -149,10 +152,10 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val exchangeRejection = ExchangeRejection(
     exchangeId = sampleExchangeId,
-    reason = "a reason")
+    cause = ExchangeRejection.InvalidOrderMatch)
   val exchangeRejectionMessage = msg.ExchangeRejection.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
-    .setReason("a reason")
+    .setExchangeId(sampleExchangeIdMessage)
+    .setCause(msg.ExchangeRejection.Cause.INVALID_ORDER_MATCH)
     .build()
 
   "Exchange rejection" should behave like thereIsAMappingBetween(
@@ -168,15 +171,15 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     counterpart = buyer
   )
   val orderMatchMessage = msg.OrderMatch.newBuilder
-    .setOrderId(sampleOrderId.value)
-    .setExchangeId(sampleExchangeId.value)
+    .setOrderId(sampleOrderIdMessage)
+    .setExchangeId(sampleExchangeIdMessage)
     .setCurrency("EUR")
     .setBuyerBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1)))
     .setSellerBitcoinAmount(ProtoMapping.toProtobuf(BigDecimal(0.1003)))
     .setBuyerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10050)))
     .setSellerFiatAmount(ProtoMapping.toProtobuf(BigDecimal(10000)))
     .setLockTime(310000L)
-    .setCounterpart(buyer.value)
+    .setCounterpart(msg.PeerId.newBuilder().setValue(buyer.value))
     .build
   "Order match" must behave like
     thereIsAMappingBetween[OrderMatch[_ <: FiatCurrency], msg.OrderMatch](
@@ -207,7 +210,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val peerHandshake = PeerHandshake(sampleExchangeId, publicKey, "accountId")
   val peerHandshakeMessage = msg.PeerHandshake.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .setPublicKey(ByteString.copyFrom(publicKey.getPubKey))
     .setPaymentProcessorAccount("accountId")
     .build()
@@ -217,7 +220,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
   val refundTx = ImmutableTransaction(new MutableTransaction(network))
   val refundSignatureRequest = RefundSignatureRequest(sampleExchangeId, refundTx)
   val refundSignatureRequestMessage = msg.RefundSignatureRequest.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .setRefundTx(ByteString.copyFrom(refundTx.get.bitcoinSerialize()))
     .build()
 
@@ -227,7 +230,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
   val refundTxSignature = new TransactionSignature(BigInteger.ZERO, BigInteger.ZERO)
   val refundSignatureResponse = RefundSignatureResponse(sampleExchangeId, refundTxSignature)
   val refundSignatureResponseMessage = msg.RefundSignatureResponse.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .setTransactionSignature(ByteString.copyFrom(refundTxSignature.encodeToBitcoin()))
     .build()
 
@@ -236,7 +239,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
 
   val micropaymentChannelClosed = MicropaymentChannelClosed(sampleExchangeId)
   val micropaymentChannelClosedMessage = msg.MicropaymentChannelClosed.newBuilder()
-    .setExchangeId(sampleExchangeId.value)
+    .setExchangeId(sampleExchangeIdMessage)
     .build()
 
   "Micropayment channel closed" must behave like thereIsAMappingBetween(

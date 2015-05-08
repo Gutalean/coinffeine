@@ -6,6 +6,7 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
+import coinffeine.protocol.messages.handshake.ExchangeAborted
 
 /** A handshake actor is in charge of entering into a value exchange by getting a refundSignature
   * transaction signed and relying on the broker to publish the commitment TX.
@@ -40,6 +41,6 @@ object HandshakeActor {
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 
-  case class HandshakeAbortedException(exchangeId: ExchangeId, reason: String)
-    extends RuntimeException(s"Handshake $exchangeId aborted externally: $reason")
+  case class HandshakeAbortedException(exchangeId: ExchangeId, cause: ExchangeAborted.Cause)
+    extends RuntimeException(s"Handshake $exchangeId aborted externally: $cause")
 }

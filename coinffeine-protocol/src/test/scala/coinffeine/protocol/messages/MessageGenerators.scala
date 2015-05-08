@@ -77,21 +77,32 @@ trait MessageGenerators {
   val commitmentNotificationAcks: Gen[CommitmentNotificationAck] =
     arbitrary[ExchangeId].map(CommitmentNotificationAck.apply)
 
-  val exchangeAbortions: Gen[ExchangeAborted] = for {
-    id <- arbitrary[ExchangeId]
-    message <- Gen.oneOf("timeout", "rejected by counterpart", "invalid commitments")
-  } yield ExchangeAborted(id, message)
-
   val exchangeCommitments: Gen[ExchangeCommitment] = for  {
     id <- arbitrary[ExchangeId]
     keyPair <- arbitrary[KeyPair]
     commitment <- arbitrary[ImmutableTransaction]
   } yield ExchangeCommitment(id, keyPair.publicKey, commitment)
 
+  val exchangeRejectionCauses: Gen[ExchangeRejection.Cause] = Gen.oneOf(
+    ExchangeRejection.CounterpartTimeout,
+    ExchangeRejection.InvalidOrderMatch,
+    ExchangeRejection.UnavailableFunds
+  )
+
   val exchangeRejections: Gen[ExchangeRejection] = for {
     id <- arbitrary[ExchangeId]
-    reason <- Gen.oneOf("rejected by peer", "invalid exchange")
+    reason <- exchangeRejectionCauses
   } yield ExchangeRejection(id, reason)
+
+  val exchangeAbortions: Gen[ExchangeAborted] = for {
+    id <- arbitrary[ExchangeId]
+    cause <- Gen.oneOf(
+      exchangeRejectionCauses.map(ExchangeAborted.Rejected.apply),
+      arbitrary[Hash].map(ExchangeAborted.PublicationFailure.apply),
+      arbitrary[PeerId].map(ExchangeAborted.InvalidCommitments(_)),
+      Gen.const(ExchangeAborted.Timeout)
+    )
+  } yield ExchangeAborted(id, cause)
 
   val channelClosures: Gen[MicropaymentChannelClosed] =
     arbitrary[ExchangeId].map(MicropaymentChannelClosed.apply)

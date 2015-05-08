@@ -136,11 +136,10 @@ abstract class OrderActorTest extends AkkaSpec
       exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
     }
 
-    def shouldRejectAnOrderMatch(errorMessage: String): Unit = {
+    def shouldRejectAnOrderMatch(cause: ExchangeRejection.Cause): Unit = {
       val otherExchangeId = ExchangeId.random()
       gatewayProbe.relayMessageFromBroker(orderMatch.copy(exchangeId = otherExchangeId))
-      gatewayProbe.expectForwardingToBroker(
-        ExchangeRejection(otherExchangeId, errorMessage))
+      gatewayProbe.expectForwardingToBroker(ExchangeRejection(otherExchangeId, cause))
     }
 
     def givenSuccessfulFundsBlocking(exchangeId: ExchangeId): Unit = {

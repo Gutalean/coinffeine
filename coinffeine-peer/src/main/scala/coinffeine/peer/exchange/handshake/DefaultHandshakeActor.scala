@@ -289,13 +289,13 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case RequestSignatureTimeout =>
       val cause = RefundSignatureTimeoutException(exchange.info.id)
       collaborators.gateway ! ForwardMessage(
-        ExchangeRejection(exchange.info.id, cause.toString), BrokerId)
+        ExchangeRejection(exchange.info.id, ExchangeRejection.CounterpartTimeout), BrokerId)
       finishWith(HandshakeFailure(cause, DateTime.now()))
   }
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-      log.info("Handshake {}: Aborted by the broker: {}", exchange.info.id, reason)
+      log.info("Handshake {}: aborted by the broker: {}", exchange.info.id, reason.message)
       finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason), DateTime.now()))
   }
 

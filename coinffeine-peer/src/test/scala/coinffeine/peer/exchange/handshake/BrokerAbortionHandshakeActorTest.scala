@@ -16,8 +16,8 @@ class BrokerAbortionHandshakeActorTest extends DefaultHandshakeActorTest("broker
 
   "Handshakes aborted by the broker" should "make the handshake to fail" in {
     shouldForwardPeerHandshake()
-    gateway.relayMessageFromBroker(ExchangeAborted(exchange.id, "test abortion"))
-    listener.expectMsgType[HandshakeFailure].cause.toString should include ("test abortion")
+    gateway.relayMessageFromBroker(ExchangeAborted(exchange.id, ExchangeAborted.Timeout))
+    listener.expectMsgType[HandshakeFailure].cause.toString should include ("Timeout")
   }
 
   it should "terminate the handshake" in {

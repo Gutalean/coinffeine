@@ -82,7 +82,7 @@ class OrderActor[C <: FiatCurrency](
             onFundsRequested(event)
           }
         case MatchRejected(cause) =>
-          rejectOrderMatch(cause, orderMatch.exchangeId)
+          rejectOrderMatch(ExchangeRejection.InvalidOrderMatch, orderMatch.exchangeId)
         case MatchAlreadyAccepted(oldExchange) =>
           log.debug("Received order match for the already accepted exchange {}", oldExchange.id)
       }
@@ -99,7 +99,7 @@ class OrderActor[C <: FiatCurrency](
     case FundsBlockerActor.BlockingResult(exchangeId, Failure(cause)) =>
       persist(CannotBlockFunds(exchangeId)) { event =>
         log.error(cause, "Cannot block funds for {}", exchangeId)
-        rejectOrderMatch("Cannot block funds", exchangeId)
+        rejectOrderMatch(ExchangeRejection.UnavailableFunds, exchangeId)
         onCannotBlockFunds(event)
       }
 
@@ -163,8 +163,8 @@ class OrderActor[C <: FiatCurrency](
     else publisher.stopPublishing()
   }
 
-  private def rejectOrderMatch(cause: String, exchangeId: ExchangeId): Unit = {
-    log.info("Rejecting match for {}: {}", exchangeId, cause)
+  private def rejectOrderMatch(cause: ExchangeRejection.Cause, exchangeId: ExchangeId): Unit = {
+    log.info("Rejecting match for {}: {}", exchangeId, cause.message)
     val rejection = ExchangeRejection(exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }

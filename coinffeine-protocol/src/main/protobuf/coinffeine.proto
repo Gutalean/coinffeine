@@ -23,12 +23,24 @@ message Market {
     required string currency = 1;
 }
 
+message PeerId {
+    required string value = 1;
+}
+
+message OrderId {
+    required string value = 1;
+}
+
+message ExchangeId {
+    required string value = 1;
+}
+
 message OrderBookEntry {
     enum OrderType {
         BID = 0;
         ASK = 1;
     }
-    required string id = 1;
+    required OrderId id = 1;
     required OrderType orderType = 2;
     required DecimalNumber amount = 3;
     optional Price price = 4;
@@ -56,15 +68,15 @@ message Quote {
 }
 
 message OrderMatch {
-    required string orderId = 1;
-    required string exchangeId = 2;
+    required OrderId orderId = 1;
+    required ExchangeId exchangeId = 2;
     required string currency = 3;
     required DecimalNumber buyerBitcoinAmount = 4;
     required DecimalNumber sellerBitcoinAmount = 5;
     required DecimalNumber buyerFiatAmount = 6;
     required DecimalNumber sellerFiatAmount = 7;
     required int64 lockTime = 8;
-    required string counterpart = 9;
+    required PeerId counterpart = 9;
 }
 
 message OpenOrdersRequest {
@@ -75,66 +87,80 @@ message OpenOrders {
     required PeerPositions orders = 1;
 }
 
-message ExchangeAborted {
-    required string exchangeId = 1;
-    required string reason = 2;
+message ExchangeRejection {
+    enum Cause {
+        COUNTERPART_TIMEOUT = 0;
+        UNAVAILABLE_FUNDS = 1;
+        INVALID_ORDER_MATCH = 2;
+    }
+    required ExchangeId exchangeId = 1;
+    required Cause cause = 2;
 }
 
-message ExchangeRejection {
-    required string exchangeId = 1;
-    required string reason = 2;
+message ExchangeAborted {
+    enum Cause {
+        REJECTED = 0;
+        PUBLICATION_FAILURE = 1;
+        INVALID_COMMITMENTS = 2;
+        TIMEOUT = 3;
+    }
+    required ExchangeId exchangeId = 1;
+    required Cause cause = 2;
+    optional ExchangeRejection.Cause rejectionCause = 3;
+    optional bytes txId = 4;
+    repeated PeerId culprits = 5;
 }
 
 message PeerHandshake {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required bytes publicKey = 2;
     required string paymentProcessorAccount = 3;
 }
 
 message RefundSignatureRequest {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required bytes refundTx = 2;
 }
 
 message RefundSignatureResponse {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required bytes transactionSignature = 2;
 }
 
 // Sent by the parts to enter an exchange with a deposit commitment
 message ExchangeCommitment {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required bytes publicKey = 2;
     required bytes commitmentTransaction = 3;
 }
 
 // Notification to the exchange parts of the actual commitments
 message CommitmentNotification {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required bytes buyerTxId = 2;
     required bytes sellerTxId = 3;
 }
 
 // Confirmation make by an exchange part of having received the commitment notification
 message CommitmentNotificationAck {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
 }
 
 message StepSignature {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required int32 step = 2;
     required bytes buyerDepositSignature = 3;
     required bytes sellerDepositSignature = 4;
 }
 
 message PaymentProof {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
     required int32 step = 2;
     required string paymentId = 3;
 }
 
 message MicropaymentChannelClosed {
-    required string exchangeId = 1;
+    required ExchangeId exchangeId = 1;
 }
 
 message ProtocolVersion {
