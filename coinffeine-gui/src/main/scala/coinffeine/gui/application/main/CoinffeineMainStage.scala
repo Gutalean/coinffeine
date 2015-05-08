@@ -20,6 +20,8 @@ class CoinffeineMainStage(app: CoinffeineApp,
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
+  minWidth = 1024
+  minHeight = 600
   scene = new ApplicationScene(
     balances = ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalanceProperty),
     views = Seq(
