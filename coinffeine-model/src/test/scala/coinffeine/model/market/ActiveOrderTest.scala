@@ -76,6 +76,19 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
     order.status shouldBe InProgressOrder
   }
 
+  it must "consider failed exchange amounts" in {
+    val order = ActiveOrder.randomLimit(Bid, 100.BTC, Price(1.EUR))
+      .withExchange(createSuccessfulExchange())
+      .withExchange(createExchangeInProgress(5).stepFailure(
+        step = 5,
+        cause = new Exception("something went wrong"),
+        transaction = None,
+        timestamp = DateTime.now()
+      ))
+    order.amounts shouldBe ActiveOrder.Amounts(exchanged = 15.BTC, exchanging = 0.BTC, pending = 85.BTC)
+    order.status shouldBe InProgressOrder
+  }
+
   it must "detect completion when exchanges complete the order" in {
     val order = ActiveOrder.randomLimit(Bid, 20.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())

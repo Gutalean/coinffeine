@@ -81,12 +81,15 @@ object ActiveOrder {
     def fromExchanges[C <: FiatCurrency](amount: Bitcoin.Amount,
                                          role: Role,
                                          exchanges: Map[ExchangeId, Exchange[C]]): Amounts = {
-      def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount =
-        exchanges.map(ex => role.select(ex.amounts.exchangedBitcoin)).sum
+      def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount = exchanges.map {
+        case ex: SuccessfulExchange[_] => ex.progress.bitcoinsTransferred
+        case ex: FailedExchange[_] => ex.progress.bitcoinsTransferred
+        case ex => ex.amounts.exchangedBitcoin
+      }.map(role.select).sum
 
       val exchangeGroups = exchanges.values.groupBy {
         case _: SuccessfulExchange[_] => 'exchanged
-        case _: FailedExchange[_] => 'other
+        case _: FailedExchange[_] => 'exchanged
         case _ => 'exchanging
       }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
 
