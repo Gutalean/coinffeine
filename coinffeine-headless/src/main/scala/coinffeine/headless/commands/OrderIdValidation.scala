@@ -4,8 +4,7 @@ import scalaz.Validation
 import scalaz.Validation.FlatMap._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
-
-import coinffeine.model.market.OrderId
+import coinffeine.model.order.OrderId
 import coinffeine.peer.api.CoinffeineNetwork
 
 class OrderIdValidation(network: CoinffeineNetwork) {

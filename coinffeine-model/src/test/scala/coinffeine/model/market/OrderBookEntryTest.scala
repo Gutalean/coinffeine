@@ -1,8 +1,8 @@
-package coinffeine.model.order
+package coinffeine.model.market
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.market._
+import coinffeine.model.order._
 
 class OrderBookEntryTest extends UnitTest {
 

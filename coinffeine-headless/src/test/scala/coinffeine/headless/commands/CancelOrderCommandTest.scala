@@ -1,7 +1,7 @@
 package coinffeine.headless.commands
 
 import coinffeine.model.currency._
-import coinffeine.model.market._
+import coinffeine.model.order.{ActiveOrder, Bid, Price}
 
 class CancelOrderCommandTest extends CommandTest {
 

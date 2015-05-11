@@ -6,7 +6,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.util.Timeout
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{Market, OrderBookEntry, OrderId}
+import coinffeine.model.market.{Market, OrderBookEntry}
+import coinffeine.model.order.OrderId
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 

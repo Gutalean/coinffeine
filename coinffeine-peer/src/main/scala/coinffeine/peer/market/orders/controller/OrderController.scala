@@ -7,6 +7,7 @@ import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
 

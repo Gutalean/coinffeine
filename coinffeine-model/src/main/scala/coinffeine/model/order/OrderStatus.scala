@@ -1,4 +1,4 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 sealed trait OrderStatus {
   def name: String

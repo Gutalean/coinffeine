@@ -8,6 +8,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{OrderRequest, Bid, LimitPrice}
 import coinffeine.model.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 

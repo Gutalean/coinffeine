@@ -3,7 +3,8 @@ package coinffeine.gui.application.operations.validation
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.market.{Spread, OrderRequest}
+import coinffeine.model.market.Spread
+import coinffeine.model.order.OrderRequest
 import coinffeine.peer.amounts.AmountsCalculator
 
 private class MaximumFiatValidation(amountsCalculator: AmountsCalculator) extends OrderValidation {

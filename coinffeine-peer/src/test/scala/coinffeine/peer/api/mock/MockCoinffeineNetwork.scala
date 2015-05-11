@@ -5,8 +5,8 @@ import scala.concurrent.Future
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.{OrderRequest, OrderId, AnyCurrencyActiveOrder, AnyCurrencyOrder}
 import coinffeine.model.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.peer.api.CoinffeineNetwork
 

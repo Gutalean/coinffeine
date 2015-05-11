@@ -8,6 +8,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
+import coinffeine.model.order.{OrderRequest, Ask, Bid}
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 private[amounts] class DefaultAmountsCalculator(

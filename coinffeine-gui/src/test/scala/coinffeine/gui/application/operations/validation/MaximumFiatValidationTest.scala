@@ -8,6 +8,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{OrderRequest, Bid, LimitPrice, MarketPrice}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmountsComponent {

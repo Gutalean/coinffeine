@@ -3,7 +3,7 @@ package coinffeine.peer.market.orders.controller
 import org.scalatest.Assertions
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{OrderStatus, ActiveOrder}
+import coinffeine.model.order.{ActiveOrder, OrderStatus}
 
 class MockOrderControllerListener[C <: FiatCurrency]
   extends OrderController.Listener[C] with Assertions {

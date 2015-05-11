@@ -5,7 +5,7 @@ import java.io.File
 import coinffeine.headless.commands._
 import coinffeine.headless.prompt.ConnectionStatusPrompt
 import coinffeine.headless.shell.{Command, Shell}
-import coinffeine.model.market.{Ask, Bid}
+import coinffeine.model.order.{Ask, Bid}
 import coinffeine.peer.api.CoinffeineApp
 
 class CoinffeineInterpreter(app: CoinffeineApp, historyFile: File)

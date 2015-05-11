@@ -1,7 +1,7 @@
 package coinffeine.model
 
 import coinffeine.model.exchange._
-import coinffeine.model.market.{Ask, Bid, OrderType}
+import coinffeine.model.order.{Ask, Bid, OrderType}
 
 /** Utility class for a pair of values belonging to buyer and seller respectively.
   *

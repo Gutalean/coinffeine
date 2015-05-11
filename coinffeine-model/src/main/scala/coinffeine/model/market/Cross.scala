@@ -5,6 +5,7 @@ import scalaz.Scalaz._
 import coinffeine.model.Both
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Role
+import coinffeine.model.order.OrderType
 
 /** Total or partial cross between a bidding and an asking position.
   *

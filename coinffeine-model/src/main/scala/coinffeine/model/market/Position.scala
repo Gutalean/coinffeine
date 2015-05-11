@@ -1,6 +1,7 @@
 package coinffeine.model.market
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.order._
 
 /** Bidding or asking position taken by a requester */
 case class Position[T <: OrderType, C <: FiatCurrency](

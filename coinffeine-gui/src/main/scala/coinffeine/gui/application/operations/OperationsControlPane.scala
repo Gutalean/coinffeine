@@ -14,6 +14,7 @@ import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles, TextStyles}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{OrderRequest, Price}
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.protocol.messages.brokerage.Quote
 

@@ -12,7 +12,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
-import coinffeine.model.market._
+import coinffeine.model.order._
 
 class OrderPropertiesDialog(props: OrderProperties) {
 

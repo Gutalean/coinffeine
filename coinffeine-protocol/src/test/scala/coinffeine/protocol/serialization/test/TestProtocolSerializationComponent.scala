@@ -6,8 +6,8 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market.OrderId
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.OrderId
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.serialization._
 import coinffeine.protocol.serialization.protobuf.ProtobufProtocolSerialization

@@ -2,6 +2,7 @@ package coinffeine.gui.application.operations.validation
 
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.OrderRequest
 import coinffeine.peer.api.CoinffeineApp
 
 class DefaultOrderValidation(app: CoinffeineApp) extends OrderValidation {

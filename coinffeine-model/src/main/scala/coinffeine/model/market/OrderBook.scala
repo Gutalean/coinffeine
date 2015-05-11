@@ -2,6 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.{Ask, Bid, OrderType, Price}
 
 /** Represents a snapshot of a continuous double auction (CDA) */
 case class OrderBook[C <: FiatCurrency](bids: BidMap[C], asks: AskMap[C]) {

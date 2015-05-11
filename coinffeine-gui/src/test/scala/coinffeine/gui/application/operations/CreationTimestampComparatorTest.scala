@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.properties.MutableOrderProperties
 import coinffeine.model.currency._
-import coinffeine.model.market._
+import coinffeine.model.order.{ActiveOrder, Bid}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class CreationTimestampComparatorTest extends UnitTest with DefaultAmountsComponent {

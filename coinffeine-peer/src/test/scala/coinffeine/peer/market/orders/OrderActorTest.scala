@@ -13,10 +13,11 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.{Progress, DepositAmounts}
+import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.order.{ActiveOrder, Bid, AnyCurrencyOrder, Price}
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective

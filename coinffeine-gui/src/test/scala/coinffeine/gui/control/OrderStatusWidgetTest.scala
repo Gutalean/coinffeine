@@ -8,8 +8,8 @@ import coinffeine.model.bitcoin.PublicKey
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
-import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.{ActiveOrder, Ask}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol
 

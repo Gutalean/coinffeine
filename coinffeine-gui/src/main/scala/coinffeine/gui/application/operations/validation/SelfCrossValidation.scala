@@ -5,6 +5,7 @@ import scalaz.NonEmptyList
 import coinffeine.gui.application.operations.validation.OrderValidation.Result
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
+import coinffeine.model.order._
 import coinffeine.model.properties.PropertyMap
 
 private class SelfCrossValidation(orders: PropertyMap[OrderId, AnyCurrencyOrder])

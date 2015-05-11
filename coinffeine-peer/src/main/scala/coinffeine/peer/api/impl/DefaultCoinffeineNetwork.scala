@@ -8,6 +8,7 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
 import coinffeine.model.network.{CoinffeineNetworkProperties, PeerId}
+import coinffeine.model.order.{OrderRequest, ActiveOrder, OrderId, AnyCurrencyOrder}
 import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, OrderOpened}
 import coinffeine.peer.api.CoinffeineNetwork

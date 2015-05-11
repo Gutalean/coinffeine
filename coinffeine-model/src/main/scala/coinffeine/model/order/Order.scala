@@ -1,9 +1,10 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.{Bitcoin, Currency, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.{Exchange, ExchangeId, Role}
+import coinffeine.model.market.OrderBookEntry
 
 trait Order[C <: FiatCurrency] {
 

@@ -3,7 +3,8 @@ package coinffeine.gui.application.operations.validation
 import scalaz.NonEmptyList
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{OrderRequest, Spread}
+import coinffeine.model.market.Spread
+import coinffeine.model.order.OrderRequest
 
 /** Checks order pre-requirements */
 trait OrderValidation {

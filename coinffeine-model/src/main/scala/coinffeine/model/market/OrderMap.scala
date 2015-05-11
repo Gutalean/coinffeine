@@ -4,6 +4,7 @@ import scala.collection.immutable.{SortedMap, TreeMap}
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.{OrderType, LimitPrice, OrderPrice, Price}
 
 /** Data structure that holds orders sorted by price and, within a given price, keep
   * them sorted with a FIFO policy. */

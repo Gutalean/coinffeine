@@ -10,8 +10,8 @@ import akka.util.Timeout
 import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market.{ActiveOrder, OrderId, OrderRequest}
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.order.{OrderRequest, ActiveOrder, OrderId}
 import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor

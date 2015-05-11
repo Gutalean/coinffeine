@@ -1,7 +1,7 @@
 package coinffeine.model.network
 
 import coinffeine.model.exchange.AnyExchange
-import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
+import coinffeine.model.order.{OrderId, AnyCurrencyOrder}
 import coinffeine.model.properties._
 
 trait CoinffeineNetworkProperties {

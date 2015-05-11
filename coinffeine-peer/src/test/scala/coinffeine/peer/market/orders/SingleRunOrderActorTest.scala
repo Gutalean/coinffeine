@@ -3,7 +3,7 @@ package coinffeine.peer.market.orders
 import org.joda.time.DateTime
 
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market._
+import coinffeine.model.order.{CancelledOrder, CompletedOrder, NotStartedOrder}
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, InMarket, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection

@@ -14,6 +14,7 @@ import coinffeine.gui.control.{CurrencyTextField, GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.market._
+import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 

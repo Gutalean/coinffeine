@@ -3,10 +3,10 @@ package coinffeine.model.exchange
 import org.joda.time.DateTime
 
 import coinffeine.model.exchange.ExchangeStatus.{Exchanging, WaitingDepositConfirmation}
+import coinffeine.model.order.Price
 import coinffeine.model.{ActivityLog, Both}
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.model.market.Price
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 

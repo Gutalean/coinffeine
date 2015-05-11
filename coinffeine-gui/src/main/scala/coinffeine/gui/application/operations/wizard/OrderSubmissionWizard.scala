@@ -7,7 +7,7 @@ import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.Collec
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
-import coinffeine.model.market.{OrderPrice, OrderType}
+import coinffeine.model.order.{OrderType, OrderPrice}
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 

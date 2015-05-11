@@ -7,6 +7,7 @@ import akka.testkit._
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{Bid, Price}
 import coinffeine.peer.market.submission.SubmissionSupervisor.KeepSubmitting
 
 class MarketSubmissionActorTest extends AkkaSpec {

@@ -1,7 +1,7 @@
 package coinffeine.model.exchange
 
 import coinffeine.model.Both
-import coinffeine.model.market.{Ask, Bid, OrderType}
+import coinffeine.model.order.{Ask, Bid, OrderType}
 
 sealed trait Role {
   def select[A](both: Both[A]): A

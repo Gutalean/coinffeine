@@ -1,6 +1,6 @@
 package coinffeine.gui.scene.styles
 
-import coinffeine.model.market._
+import coinffeine.model.order._
 
 object OperationStyles {
 

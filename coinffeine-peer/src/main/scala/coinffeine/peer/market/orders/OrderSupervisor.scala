@@ -5,7 +5,7 @@ import akka.persistence.PersistentActor
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{ActiveOrder, OrderId}
+import coinffeine.model.order.{ActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 
 /** Manages orders */

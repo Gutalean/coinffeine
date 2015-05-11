@@ -10,8 +10,8 @@ import org.scalatest.concurrent.PatienceConfiguration.Timeout
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.market.OrderId
 import coinffeine.model.network._
+import coinffeine.model.order.OrderId
 import coinffeine.overlay.test.FakeOverlayNetwork
 import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway

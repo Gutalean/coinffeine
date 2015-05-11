@@ -1,7 +1,7 @@
 package coinffeine.headless.commands
 
 import coinffeine.model.currency.Euro
-import coinffeine.model.market._
+import coinffeine.model.order.{ActiveOrder, AnyCurrencyOrder, OrderId}
 import coinffeine.model.properties.MutablePropertyMap
 
 class MockCoinffeineNetwork extends DummyCoinffeineNetwork {

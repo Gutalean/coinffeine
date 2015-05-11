@@ -7,7 +7,7 @@ import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.exchange.Exchange.Amounts
-import coinffeine.model.market.{AnyCurrencyOrder, OrderId}
+import coinffeine.model.order.{OrderId, AnyCurrencyOrder}
 import coinffeine.peer.api.CoinffeineNetwork
 
 class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {

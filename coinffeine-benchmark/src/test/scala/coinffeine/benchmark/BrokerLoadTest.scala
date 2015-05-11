@@ -8,6 +8,7 @@ import coinffeine.benchmark.action.Predef._
 import coinffeine.benchmark.config.Predef._
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{Ask, Bid, Price}
 import coinffeine.protocol.messages.brokerage.{OpenOrders, OpenOrdersRequest}
 
 class BrokerLoadTest extends Simulation {
