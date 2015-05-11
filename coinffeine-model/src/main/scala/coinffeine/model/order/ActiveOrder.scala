@@ -22,13 +22,13 @@ import coinffeine.model.exchange._
   * @param log        Log of important order events
   */
 case class ActiveOrder[C <: FiatCurrency] private (
-    id: OrderId,
-    orderType: OrderType,
-    amount: Bitcoin.Amount,
-    price: OrderPrice[C],
-    inMarket: Boolean,
-    exchanges: Map[ExchangeId, Exchange[C]],
-    log: ActivityLog[OrderStatus]) extends Order[C] {
+    override val id: OrderId,
+    override val orderType: OrderType,
+    override val amount: Bitcoin.Amount,
+    override val price: OrderPrice[C],
+    override val inMarket: Boolean,
+    override val exchanges: Map[ExchangeId, Exchange[C]],
+    override val log: ActivityLog[OrderStatus]) extends Order[C] {
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
 
@@ -37,7 +37,6 @@ case class ActiveOrder[C <: FiatCurrency] private (
   def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
 
   override def status: OrderStatus = log.mostRecent.get.event
-  override def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
 
   /** Create a new copy of this order with the given exchange. */
   def withExchange(exchange: Exchange[C]): ActiveOrder[C] =
@@ -61,11 +60,6 @@ case class ActiveOrder[C <: FiatCurrency] private (
         log = recordCompletion(recordProgressStart(log))
       )
     }
-
-  /** Timestamp of the last recorded change */
-  def lastChange: DateTime = log.mostRecent.get.timestamp
-
-  override def createdOn = log.activities.head.timestamp
 }
 
 object ActiveOrder {
