@@ -1,0 +1,33 @@
+digraph {
+
+	fontname="Helvetica";
+	label="Exchange states\n\n";
+	labelloc=t;
+	node [fontname="Helvetica", shape="record", style="rounded"];
+	edge [fontname="Helvetica", fontsize=8];
+
+	ActiveExchange;
+
+	Handshaking [label="{Handshaking}|{id|role|counterpartId|amounts|parameters|createdOn}"];
+	DepositPending [label="{DepositPending}|{user|counterpart|timestamp}"];
+	Running[label="{Running}|{deposits|timestamp}"];
+	Successful[label="{Successful}|{timestamp}"];
+	Failed [label="{Failed}|{cause|userOpt|txOpt|timestamp}"];
+	Aborting [label="{Aborting}|{cause|user|refundTx|timestamp}"];
+
+	ActiveExchange -> Handshaking [label="  create(...)"];
+	Handshaking -> DepositPending [label="  handshake(...)"];
+	DepositPending -> Running [label="  startExchanging(...)"];
+	Running -> Successful [label="  complete(...)"];
+	Handshaking -> Aborting [label="  abort(cause, user, timestamp)"];
+	Aborting -> Failed [label="  broadcast(tx, timestamp)"];
+	Aborting -> Failed [label="  failedToBroadcast(timestamp)"];
+	Handshaking -> Failed [label="  cancel(cause, userOpt, timestamp)"];
+	DepositPending -> Failed [label="  cancel(cause, timestamp)"];
+	DepositPending -> Aborting [label="  abort(cause, refundTx, timestamp)"];
+	Running -> Failed [label="  panicked(tx, timestamp)"];
+	Running -> Failed [label="  stepFailure(step, cause, txOpt, timestamp)"];
+	Running -> Failed [label="  unexpectedBroadcast(tx, timestamp)"];
+	Running -> Failed [label="  noBroadcast(timestamp)"];
+	Running -> Running [label="  completeStep(step)"];
+}
