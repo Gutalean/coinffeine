@@ -11,12 +11,12 @@ case class DepositPendingExchange[C <: FiatCurrency](
     user: Exchange.PeerInfo,
     counterpart: Exchange.PeerInfo) extends AfterHandshakeExchange[C] {
 
-  override val status = ExchangeStatus.WaitingDepositConfirmation
+  override val status = ExchangeStatus.WaitingDepositConfirmation(user, counterpart)
   override val metadata = prev.metadata
   override val progress = Exchange.noProgress(currency)
   override val isCompleted = false
 
-  override lazy val log = prev.log.record(ExchangeStatus.WaitingDepositConfirmation, timestamp)
+  override lazy val log = prev.log.record(status, timestamp)
 
   def startExchanging(deposits: Exchange.Deposits, timestamp: DateTime): RunningExchange[C] =
     RunningExchange(this, deposits, timestamp)

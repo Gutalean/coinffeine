@@ -2,6 +2,7 @@ package coinffeine.model.exchange
 
 import org.joda.time.DateTime
 
+import coinffeine.model.exchange.ExchangeStatus.{Exchanging, WaitingDepositConfirmation}
 import coinffeine.model.{ActivityLog, Both}
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
@@ -31,6 +32,9 @@ trait Exchange[C <: FiatCurrency] {
   def counterpartId: PeerId = metadata.counterpartId
   def amounts: Exchange.Amounts[C] = metadata.amounts
   def parameters: Exchange.Parameters = metadata.parameters
+  def depositsIds: Option[Both[Hash]] = log.activities.collectFirst {
+    case ActivityLog.Entry(Exchanging(ids), _) => ids
+  }
 }
 
 object Exchange {
