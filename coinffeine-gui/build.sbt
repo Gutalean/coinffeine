@@ -39,7 +39,7 @@ jfxSettings
 
 JFX.vendor := "Coinffeine S.L."
 
-JFX.copyright := "Copyright (c) 2013, 2014 Coinffeine S.L."
+JFX.copyright := "Copyright (c) 2013-2015 Coinffeine S.L."
 
 JFX.license := "Coinffeine License"
 
