@@ -12,10 +12,10 @@ class PaymentProcessorWidget(settingsForm: PaymentProcessorSettingsForm)
   extends HBox with NodeStyles.HExpand {
 
   id = "payment-processor"
-  content = Seq(
+  children = Seq(
     new VBox {
       styleClass += "legend"
-      content = Seq(
+      children = Seq(
         new Label("PAYMENT PROCESSOR"),
         new Label("OKPAY") {
           styleClass += "name"

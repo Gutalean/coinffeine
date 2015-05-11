@@ -20,17 +20,16 @@ object SplashScreen {
       fill = Color.Transparent
       root = new VBox {
         id = "splash-root"
-        content = Seq(
+        children = Seq(
           new Spinner(autoPlay = true),
-          new HBox {
-            content = Seq(
-              new Label("Copyright (C) 2014-2015 Coinffeine S.L.") {
-                id = "copyright-note"
-              },
-              new Label(s"Version ${CoinffeineVersion.Current}") {
-                id = "version-note"
-              })
-          })
+          new HBox(
+            new Label("Copyright (C) 2014-2015 Coinffeine S.L.") {
+              id = "copyright-note"
+            },
+            new Label(s"Version ${CoinffeineVersion.Current}") {
+              id = "version-note"
+            }
+          ))
       }
     }
     stage.show()

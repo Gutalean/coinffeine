@@ -26,13 +26,13 @@ class AlarmInfoDialog(alarm: Alarm) extends Stage(StageStyle.UTILITY) {
   scene = new CoinffeineScene(Stylesheets.Alarms) {
     root = new VBox {
       styleClass += "alarm-info"
-      content = Seq(whatHappenedSection, howToFixItSection, acceptButton)
+      children = Seq(whatHappenedSection, howToFixItSection, acceptButton)
     }
   }
 
   private def createSection(title: String, body: String): Node = new VBox {
     styleClass += "section"
-    content = Seq(new Label(title) { styleClass += "title" }, Label(body))
+    children = Seq(new Label(title) { styleClass += "title" }, Label(body))
   }
 }
 

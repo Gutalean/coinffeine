@@ -13,7 +13,7 @@ class Spinner(autoPlay: Boolean = false) extends HBox(spacing = 3) {
     height = 6
   })
   private val animations = bars.zip(Spinner.AnimationDelays).map(Spinner.animate _ tupled)
-  content = bars
+  children = bars
   hgrow = Priority.Always
   vgrow = Priority.Always
   fillHeight = true

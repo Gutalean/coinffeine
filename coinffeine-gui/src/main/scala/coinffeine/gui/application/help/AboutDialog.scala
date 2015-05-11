@@ -16,15 +16,15 @@ import coinffeine.gui.scene.styles.Stylesheets
 
 class AboutDialog extends Includes {
 
-  private val content = new VBox() {
+  private val rootContent = new VBox() {
     id = "about-pane"
-    content = Seq(
+    children = Seq(
       new HBox() {
         hgrow = Priority.Always
-        content = Seq(
+        children = Seq(
           new VBox() {
             styleClass += "productinfo"
-            content = Seq(
+            children = Seq(
               new Label("Coinffeine") {
                 styleClass += "title"
               },
@@ -35,7 +35,7 @@ class AboutDialog extends Includes {
           },
           new VBox() {
             styleClass += "authorinfo"
-            content = Seq(
+            children = Seq(
               new Label("Coinffeine was created, coded and maintained by:"),
               new GridPane() {
                 styleClass += "author-list"
@@ -59,7 +59,7 @@ class AboutDialog extends Includes {
     resizable = false
     initModality(Modality.APPLICATION_MODAL)
     scene = new CoinffeineScene(Stylesheets.About) {
-      root = AboutDialog.this.content
+      root = rootContent
     }
     centerOnScreen()
   }
@@ -80,7 +80,7 @@ class AboutDialog extends Includes {
     }
     new VBox() {
       styleClass += "avatar"
-      content = Seq(avatarCircle, nameLabel)
+      children = Seq(avatarCircle, nameLabel)
     }
   }
 }

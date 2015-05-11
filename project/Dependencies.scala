@@ -53,8 +53,8 @@ object Dependencies {
   lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.6.1"
   lazy val reflections = "org.reflections" % "reflections" % "0.9.9"
   lazy val scalafx = Seq(
-    "org.scalafx" %% "scalafx" % "8.0.20-R6",
-    "org.controlsfx" % "controlsfx" % "8.0.6"
+    "org.scalafx" %% "scalafx" % "8.0.40-R8",
+    "org.controlsfx" % "controlsfx" % "8.20.8"
   )
   lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.12.2"
   lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.4"

@@ -13,7 +13,7 @@ import coinffeine.model.market._
 class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) extends HBox(0) {
   styleClass += "summary"
 
-  content = Seq(
+  children = Seq(
     new Label {
       text <== stringBinding(summarize)
     },
@@ -31,7 +31,7 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
       case LimitPrice(price) =>
         val amount = price.of(order.amount)
         new HBox {
-          content = Seq(
+          children = Seq(
             new Label(amount.format(Currency.NoSymbol)) with TextStyles.CurrencyAmount,
             new Label(amount.currency.toString) with TextStyles.CurrencySymbol
           )

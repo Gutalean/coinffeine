@@ -48,7 +48,7 @@ class OperationsView(app: CoinffeineApp,
       val textInside = p.progressProperty < ProgressThreshold
 
       val progress = new HBox {
-        content = new StackPane {
+        children = new StackPane {
           styleClass += "progress"
           minWidth <== barWidth
           visible <== progressVisible
@@ -58,7 +58,7 @@ class OperationsView(app: CoinffeineApp,
       val progressText = new HBox {
         styleClass += "progress-text"
         visible <== progressVisible
-        content = new Label {
+        children = new Label {
           private val textInsideInsets = barWidth.delegate.map { size =>
             Insets(0, 0, 0, size.doubleValue() + ProgressTextPadding).delegate
           }
@@ -75,7 +75,7 @@ class OperationsView(app: CoinffeineApp,
 
       val controls = new HBox {
         p.orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
-        content = Seq(
+        children = Seq(
           new GlyphLabel {
             styleClass += "icon"
             icon <== p.typeProperty.delegate.map {
@@ -97,7 +97,7 @@ class OperationsView(app: CoinffeineApp,
           },
           new HBox with PaneStyles.ButtonRow {
             styleClass += "buttons"
-            content = Seq(
+            children = Seq(
               new Button with ButtonStyles.Details {
                 onAction = { e: Event =>
                   val dialog = new OrderPropertiesDialog(p)
@@ -114,14 +114,14 @@ class OperationsView(app: CoinffeineApp,
           }
         )
       }
-      content = Seq(progress, progressText, controls)
+      children = Seq(progress, progressText, controls)
     }
   }
 
   private val operationsTable = new VBox {
     val sortedList = new ObservableBuffer(new SortedList[OrderProperties](
       props.ordersProperty.delegate, new CreationTimestampComparator))
-    sortedList.bindToList(content)(lineFor)
+    sortedList.bindToList(children)(lineFor)
   }
 
   override def name: String = "Operations"

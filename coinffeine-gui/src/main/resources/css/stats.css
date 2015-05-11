@@ -1,8 +1,8 @@
 /* This file defines the styles for the stats view. */
 
-#stats-center-pane .axis {
-   -fx-tick-label-fill: derive(-cf-background, -50%);
-}
+#stats-center-pane .axis { -fx-tick-label-fill: derive(-cf-background, -50%); }
+
+#stats-center-pane .chart-plot-background { -fx-background-color: white; }
 
 #stats-center-pane .default-color0.chart-area-symbol { -fx-background-color: -cf-main1, white; }
 #stats-center-pane .default-color1.chart-area-symbol { -fx-background-color: -cf-main2, white; }

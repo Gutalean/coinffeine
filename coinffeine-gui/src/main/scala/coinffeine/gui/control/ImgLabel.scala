@@ -16,5 +16,5 @@ class ImgLabel(initialImage: Image, initialText: String) extends HBox {
   val image = img.image
   val text = label.text
 
-  content = Seq(img, label)
+  children = Seq(img, label)
 }

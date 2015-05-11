@@ -81,6 +81,7 @@
     -fx-alignment: center;
     -fx-min-height: 35px;
     -fx-padding: 5px;
+    -fx-background-color: transparent;
 }
 
 .spinner > .bar { -fx-fill: -fx-color; }

@@ -17,10 +17,14 @@ class ObservableBufferPimp[A](buffer: ObservableBuffer[A]) {
         case ObservableBuffer.Remove(pos, elems: Traversable[A]) =>
           other.remove(pos, pos + elems.size)
         case ObservableBuffer.Reorder(start, end, perm) =>
-          for (i <- start to end) {
+          for (i <- start to (end - 1)) {
             val tmp = other.get(i)
             other.set(i, other.get(perm(i)))
             other.set(perm(i), tmp)
+          }
+        case ObservableBuffer.Update(start, end) =>
+          for (i <- start to (end - 1)) {
+            other.set(i, f(buffer.get(i)))
           }
       }
     }

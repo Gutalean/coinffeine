@@ -45,20 +45,19 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   val topBar = new HBox {
     id = "top-bar"
-    content = new PaymentProcessorWidget(settingsForm)
+    children = new PaymentProcessorWidget(settingsForm)
   }
 
   val balancePane = new VBox {
     id = "balance-pane"
-    content = Seq(
-      new HBox with PaneStyles.MinorSpacing {
-        content = Seq(
-          new Label("AVAILABLE") { styleClass += "title-amount" },
-          new Label("BALANCE") { styleClass += "title-suffix" })
-      },
+    children = Seq(
+      new HBox(
+        new Label("AVAILABLE") { styleClass += "title-amount" },
+        new Label("BALANCE") { styleClass += "title-suffix" }
+      ) with PaneStyles.MinorSpacing,
       new HBox {
         styleClass += "currency"
-        content = Seq(
+        children = Seq(
           new Label with TextStyles.CurrencyAmount {
             text <== balances.fiat.delegate.mapToString {
               case Some(b) => b.amount.format(Currency.NoSymbol)
@@ -69,7 +68,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
       },
       new HBox {
         styleClass += "currency"
-        content = Seq(
+        children = Seq(
           new Label with TextStyles.CurrencyAmount {
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
@@ -83,33 +82,33 @@ class ApplicationScene(balances: ApplicationScene.Balances,
 
   val viewSelectorPane = new HBox with NodeStyles.HExpand {
     id = "view-selector-pane"
-    content = viewSelector
+    children = viewSelector
   }
 
   val controlPane = new StackPane {
     id = "control-pane"
-    currentView.delegate.bindToList(content) { p => Seq(p.controlPane) }
+    currentView.delegate.bindToList(children) { p => Seq(p.controlPane) }
   }
 
   val controlBar = new HBox {
     id = "control-bar"
-    content = Seq(balancePane, viewSelectorPane, controlPane)
+    children = Seq(balancePane, viewSelectorPane, controlPane)
   }
 
   private val statusBarPane = new HBox with PaneStyles.StatusBar {
     id = "status"
     prefHeight = 25
-    content = statusBarWidgets
+    children = statusBarWidgets
   }
 
   private val centerPane = new StackPane {
     id = "center-pane"
-    content = new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) }
+    children = new BorderPane { center <== currentView.delegate.map(_.centerPane.delegate) }
   }
 
   root = new BorderPane {
     id = "main-root-pane"
-    top = new VBox { content = Seq(topBar, controlBar) }
+    top = new VBox(topBar, controlBar)
     center = centerPane
     bottom = statusBarPane
   }

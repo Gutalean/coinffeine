@@ -27,7 +27,7 @@ class WalletControlPane(wallet: CoinffeineWallet, properties: WalletProperties) 
 
     private val noQrCode: Node = new Label("No public address available")
 
-    wallet.primaryAddress.bindToList(content) { address =>
+    wallet.primaryAddress.bindToList(children) { address =>
       Seq(address.fold(noQrCode)(qrCodeImage))
     }
   }
@@ -55,9 +55,8 @@ class WalletControlPane(wallet: CoinffeineWallet, properties: WalletProperties) 
     }
   }
 
-  private val buttons = new VBox with PaneStyles.ButtonColumn {
-    content = Seq(fundsButton, copyToClipboardButton, sendButton)
-  }
+  private val buttons =
+    new VBox(fundsButton, copyToClipboardButton, sendButton) with PaneStyles.ButtonColumn
 
-  content = Seq(qrCodePane, buttons)
+  children = Seq(qrCodePane, buttons)
 }

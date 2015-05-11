@@ -8,7 +8,7 @@ import scalafx.scene.layout._
 import scalafx.stage.{Modality, Stage, StageStyle}
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{SupportWidget, CurrencyTextField}
+import coinffeine.gui.control.{CurrencyTextField, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
 import coinffeine.model.bitcoin.{Address, WalletProperties}
@@ -31,7 +31,7 @@ class SendFundsForm(props: WalletProperties) {
       amount <== currencyValue
     }
 
-    content = Seq(
+    children = Seq(
       selectLabel("amount to send", "send-amount"),
       new Button("Max") with ButtonStyles.Action {
         text <== props.balance.map { balance =>
@@ -57,7 +57,7 @@ class SendFundsForm(props: WalletProperties) {
 
   private val footer = new HBox {
     styleClass += "footer"
-    content = Seq(
+    children = Seq(
       new Button("Cancel") with ButtonStyles.Action {
         onAction = close _
       },
@@ -72,14 +72,14 @@ class SendFundsForm(props: WalletProperties) {
     )
   }
 
-  private val content = new VBox() {
+  private val dialogueContent = new VBox() {
     styleClass += "wallet-send"
-    content = Seq(formData, footer)
+    children = Seq(formData, footer)
   }
 
   private def selectLabel(name: String, helpTopic: String) = new HBox() {
     styleClass += "line"
-    content = Seq(
+    children = Seq(
       new Label("Select the "),
       new Label(name) with TextStyles.Emphasis,
       new SupportWidget(helpTopic)
@@ -93,7 +93,7 @@ class SendFundsForm(props: WalletProperties) {
     title = "Send funds"
     initModality(Modality.APPLICATION_MODAL)
     scene = new CoinffeineScene(Stylesheets.Wallet) {
-      root = SendFundsForm.this.content
+      root = dialogueContent
     }
     centerOnScreen()
   }

@@ -40,7 +40,7 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
     }
     val symbol = new Label(Euro.toString) with TextStyles.CurrencySymbol
 
-    content = Seq(prelude, amount, symbol)
+    children = Seq(prelude, amount, symbol)
   }
 
   private val newOrderButton = new Button("New order") with ButtonStyles.Action {
@@ -56,7 +56,7 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
     }
   }
 
-  content = Seq(bitcoinPrice, newOrderButton)
+  children = Seq(bitcoinPrice, newOrderButton)
 }
 
 object OperationsControlPane {

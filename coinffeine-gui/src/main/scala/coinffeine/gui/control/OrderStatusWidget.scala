@@ -30,13 +30,13 @@ class OrderStatusWidget extends VBox {
       styleClass += s"section${index + 1}"
     }
   }
-  sections.head.content.add(spinner)
+  sections.head.children.add(spinner)
 
   styleClass += "order-status"
   visible <== status.delegate.mapToBool(_ != Completed).and(online)
-  content = Seq(label, new HBox {
+  children = Seq(label, new HBox {
     styleClass += "bar"
-    content = sections
+    children = sections
   })
 
   status.onChange { (observable, prevStatus, nextStatus) =>
@@ -57,8 +57,8 @@ class OrderStatusWidget extends VBox {
   }
 
   private def moveSpinner(prevSection: Option[Int], nextSection: Option[Int]): Unit = {
-    prevSection.foreach(index => sections(index).content.clear())
-    nextSection.foreach(index => sections(index).content.add(spinner))
+    prevSection.foreach(index => sections(index).children.clear())
+    nextSection.foreach(index => sections(index).children.add(spinner))
   }
 
   private def updateAnimation(prevSection: Option[Int], nextSection: Option[Int]): Unit =

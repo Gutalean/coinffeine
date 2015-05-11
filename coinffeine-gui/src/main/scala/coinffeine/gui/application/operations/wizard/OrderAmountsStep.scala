@@ -52,10 +52,10 @@ class OrderAmountsStep(marketStats: MarketStats,
     val limitDetails = new VBox {
       styleClass += "details"
       disable <== !limitButton.selected
-      content = Seq(
+      children = Seq(
         new HBox {
           styleClass += "price-line"
-          content = Seq(
+          children = Seq(
             new Label {
               text <== data.orderType.delegate.mapToString {
                 case Bid => "For no more than"
@@ -68,7 +68,7 @@ class OrderAmountsStep(marketStats: MarketStats,
         },
         new HBox {
           styleClass += "disclaimer"
-          content = Seq(
+          children = Seq(
             new Label {
               val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
               text = s"(Maximum allowed fiat per order is $maxFiat)"
@@ -84,7 +84,7 @@ class OrderAmountsStep(marketStats: MarketStats,
     val marketPriceDetails = new HBox {
       styleClass += "details"
       disable <== !marketPriceButton.selected
-      content = Seq(marketPrice, new SupportWidget("market-price"))
+      children = Seq(marketPrice, new SupportWidget("market-price"))
     }
 
     val messages = new Label {
@@ -99,7 +99,7 @@ class OrderAmountsStep(marketStats: MarketStats,
       }
     }
 
-    content = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails, messages)
+    children = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails, messages)
   }
 
   private def styleClassFor(result: OrderValidation.Result): Option[String] = result match {
@@ -116,9 +116,9 @@ class OrderAmountsStep(marketStats: MarketStats,
     bindOutputData()
   }
 
-  content = new VBox {
+  children = new VBox {
     styleClass += "order-amounts"
-    content = Seq(action, btcAmount, MarketSelection)
+    children = Seq(action, btcAmount, MarketSelection)
   }
 
   private def bindActionText(): Unit = {

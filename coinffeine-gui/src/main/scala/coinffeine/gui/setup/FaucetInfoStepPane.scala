@@ -36,7 +36,7 @@ private[setup] class FaucetInfoStepPane(address: String)
 
   private val addressLine = new HBox {
     styleClass += "address"
-    content = Seq(
+    children = Seq(
       addressTextField,
       new Button("Copy to clipboard") {
         handleEvent(ActionEvent.Action) { () => copyAddressToClipboard() }
@@ -48,9 +48,9 @@ private[setup] class FaucetInfoStepPane(address: String)
     handleEvent(ActionEvent.Action) { () => openFaucet()}
   }
 
-  content = new VBox {
+  children = new VBox {
     styleClass += "faucet-pane"
-    content = Seq(title, par1, par2, new SupportWidget("setup-faucet"), addressLine, gotoFaucetLine)
+    children = Seq(title, par1, par2, new SupportWidget("setup-faucet"), addressLine, gotoFaucetLine)
   }
 
   private def openFaucet(): Unit = {
