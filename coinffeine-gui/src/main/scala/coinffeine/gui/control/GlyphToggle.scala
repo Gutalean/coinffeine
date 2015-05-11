@@ -34,7 +34,7 @@ class GlyphToggle(initialText: String = "") extends VBox {
 
   val label = new Label { text <== _text }
 
-  content = Seq(toggle, label)
+  children = Seq(toggle, label)
 
   toggle.selected.onChange { (_, _, newValue) =>
     delegate.pseudoClassStateChanged(PseudoClass("selected"), newValue)

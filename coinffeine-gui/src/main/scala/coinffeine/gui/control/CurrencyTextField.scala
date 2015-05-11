@@ -29,7 +29,7 @@ class CurrencyTextField[C <: Currency](
   private val currencySymbol = new StackPane() {
     styleClass = Seq("symbol")
     margin = Insets(5, 0, 5, 0) // cannot be set in CSS
-    content = new Label(currency.toString)
+    children = new Label(currency.toString)
   }
 
   val currencyValue: ReadOnlyObjectProperty[CurrencyAmount[C]] = _currencyValue

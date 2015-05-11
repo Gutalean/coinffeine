@@ -17,7 +17,7 @@ private[setup] class OkPayWalletDataPane(
 
   private val subtitle = new HBox {
     styleClass += "subtitle"
-    content = Seq(
+    children = Seq(
       new Label("Please insert your OKPay API information"),
       new SupportWidget("setup-credentials")
     )
@@ -33,7 +33,7 @@ private[setup] class OkPayWalletDataPane(
 
   private val dataPane = new VBox {
     styleClass += "data"
-    content = Seq(accountIdLabel, accountIdField, tokenLabel, tokenField)
+    children = Seq(accountIdLabel, accountIdField, tokenLabel, tokenField)
   }
 
   canContinue <== accountIdField.text.delegate.mapToBool(validAccountId) and
@@ -43,9 +43,9 @@ private[setup] class OkPayWalletDataPane(
     (id, address) => OkPayWalletAccess(id, address)
   }
 
-  content = new VBox {
+  children = new VBox {
     styleClass += "okpay-pane"
-    content = Seq(title, subtitle, dataPane)
+    children = Seq(title, subtitle, dataPane)
   }
 
   private def validAccountId(text: String) = {

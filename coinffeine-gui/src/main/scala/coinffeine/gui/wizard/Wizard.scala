@@ -48,7 +48,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
   private val wizardHeader = new HBox {
     styleClass += "header"
-    content = steps.zipWithIndex.flatMap { case (step, index) =>
+    children = steps.zipWithIndex.flatMap { case (step, index) =>
       val stepNumber = index + 1
       Seq(stepIcon(stepNumber, step)) ++ (stepNumber < stepsCount).option(separator(stepNumber))
     }
@@ -99,7 +99,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
   private val wizardFooter = new HBox {
     styleClass += "footer"
-    content = Seq(cancelButton, nextButton)
+    children = Seq(cancelButton, nextButton)
   }
 
   private val rootWizardPane: BorderPane = new BorderPane {

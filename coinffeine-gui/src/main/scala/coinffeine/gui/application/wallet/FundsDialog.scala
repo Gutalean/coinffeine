@@ -17,10 +17,10 @@ class FundsDialog(props: WalletProperties) {
   private val dialogScene = new CoinffeineScene(Stylesheets.Wallet) {
     root = new VBox {
       styleClass += "wallet-funds"
-      content = Seq(
+      children = Seq(
         new HBox {
           styleClass += "header"
-          content = Seq(
+          children = Seq(
             new Label("Wallet "),
             new Label("Funds") with TextStyles.Emphasis,
             new SupportWidget("funds-dialog")
@@ -39,7 +39,7 @@ class FundsDialog(props: WalletProperties) {
 
   private def makeAmountLabel(normalText: String, emphasizedText: String) = new HBox {
     styleClass += "amount-label"
-    content = Seq(
+    children = Seq(
       new Label(normalText + ' '),
       new Label(emphasizedText + ':') with TextStyles.Emphasis
     )
@@ -47,7 +47,7 @@ class FundsDialog(props: WalletProperties) {
 
   private def makeAmount(selector: BitcoinBalance => Option[Bitcoin.Amount]) = new HBox {
     styleClass += "amount"
-    content = Seq(
+    children = Seq(
       new Label {
         text <== props.balance.delegate.mapToString { maybeBalance =>
           maybeBalance.flatMap(selector).fold("__.________")(_.format(Currency.NoSymbol))

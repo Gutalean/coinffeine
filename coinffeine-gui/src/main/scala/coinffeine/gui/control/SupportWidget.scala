@@ -21,7 +21,7 @@ class SupportWidget(helpId: String) extends StackPane with LazyLogging {
   SupportWidget.Links.get(helpId).fold(warnOnMissingLink())(showSupportIcon)
 
   private def showSupportIcon(link: URI): Unit = {
-    content = new GlyphLabel {
+    children = new GlyphLabel {
       styleClass += "support-icon"
       icon = GlyphIcon.Support
       onMouseClicked = () => {

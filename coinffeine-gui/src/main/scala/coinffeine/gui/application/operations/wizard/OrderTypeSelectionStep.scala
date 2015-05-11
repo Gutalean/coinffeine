@@ -18,7 +18,7 @@ class OrderTypeSelectionStep(
 
   val question = new HBox {
     styleClass += "question"
-    content = Seq(
+    children = Seq(
       new Label("Choose the type of order\nyou want to perform"),
       new SupportWidget("create-order")
     )
@@ -40,7 +40,7 @@ class OrderTypeSelectionStep(
       toggle.userData = Ask
     }
 
-    content = Seq(buy, sell)
+    children = Seq(buy, sell)
   }
 
   onActivation = { e: StepPaneEvent  =>
@@ -50,7 +50,5 @@ class OrderTypeSelectionStep(
     canContinue <== Buttons.group.selectedToggle.delegate.mapToBool(_ != null)
   }
 
-  content = new VBox {
-    content = Seq(question, Buttons)
-  }
+  children = new VBox(question, Buttons)
 }

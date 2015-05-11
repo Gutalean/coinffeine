@@ -22,13 +22,13 @@ class LicenseAgreementPane extends StackPane with StepPane[SetupConfig] {
     canContinue <== selected
   }
 
-  content = new VBox() {
+  children = new VBox() {
     styleClass += "license-pane"
-    content = Seq(
+    children = Seq(
       Label("You must accept the Coinffeine End-User License Agreement before continuing"),
       new StackPane {
         styleClass += "license-text"
-        content = licenseText
+        children = licenseText
       },
       licenseAccepted)
   }

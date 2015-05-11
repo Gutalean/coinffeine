@@ -45,8 +45,8 @@ class OrderConfirmationStep(
     }
   }
 
-  content = new VBox {
+  children = new VBox {
     styleClass += "order-confirmation"
-    content = Seq(summary, orderTypeIcon)
+    children = Seq(summary, orderTypeIcon)
   }
 }

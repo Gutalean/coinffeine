@@ -12,7 +12,7 @@ import coinffeine.gui.beans.Implicits._
 class ConnectionStatusWidget(
     status: ReadOnlyObjectProperty[ConnectionStatus]) extends HBox with PaneStyles.MinorSpacing {
 
-  content = Seq(
+  children = Seq(
     new StatusDisc() {
       failure <== status.delegate.mapToBool(!_.connected)
     },

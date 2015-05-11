@@ -2,8 +2,8 @@ package coinffeine.gui.pane
 
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.scene.Node
-import scalafx.scene.control.{ScrollPane, Label}
-import scalafx.scene.layout.{Pane, HBox, VBox}
+import scalafx.scene.control.{Label, ScrollPane}
+import scalafx.scene.layout.{HBox, Pane, VBox}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.NodeStyles
@@ -23,10 +23,10 @@ class PagePane(initialHeaderText: String = "",
 
   private val header = new HBox {
     styleClass += "header"
-    content = new Label { text <== _headerText }
+    children = new Label { text <== _headerText }
   }
 
-  _pageContent.delegate.bindToList(content) { pc =>
+  _pageContent.delegate.bindToList(children) { pc =>
     val scroll = new ScrollPane() with NodeStyles.VExpand { content = pc }
     Seq(header, scroll)
   }

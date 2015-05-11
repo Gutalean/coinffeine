@@ -25,7 +25,7 @@ class StatusDisc extends StackPane {
     icon <== when(failure) choose (GlyphIcon.Cross: GlyphIcon) otherwise (GlyphIcon.Mark: GlyphIcon)
   }
 
-  content = Seq(disc)
+  children = Seq(disc)
 }
 
 object StatusDisc {

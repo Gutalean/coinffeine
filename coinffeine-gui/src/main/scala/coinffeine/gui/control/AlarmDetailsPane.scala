@@ -3,7 +3,6 @@ package coinffeine.gui.control
 import scalafx.Includes._
 import scalafx.geometry.Orientation
 import scalafx.scene.control.{Separator, Label}
-import scalafx.scene.input.MouseEvent
 import scalafx.scene.layout.{GridPane, VBox}
 
 import coinffeine.alarms.Alarm
@@ -14,7 +13,7 @@ class AlarmDetailsPane(alarms: Property[Set[Alarm]]) extends VBox {
 
   styleClass += "alarm-details"
 
-  alarms.bindToList(content) { activeAlarms =>
+  alarms.bindToList(children) { activeAlarms =>
     val title = Label(activeAlarms.size match {
       case 0 => "There is no active alarm"
       case 1 => "There is 1 active alarm"
@@ -30,13 +29,13 @@ class AlarmDetailsPane(alarms: Property[Set[Alarm]]) extends VBox {
       activeAlarms.zipWithIndex.foreach { case (a, i) =>
         val severity = Label(a.severity.toString.capitalize)
         val summary = new Label(a.summary) { styleClass += "clickable" }
-        summary.onMouseClicked = { e: MouseEvent => AlarmInfoDialog.showFor(a) }
+        summary.onMouseClicked = () => { AlarmInfoDialog.showFor(a) }
         add(severity, 0, i + 1)
         add(summary, 1, i + 1)
       }
     }
 
-    if (activeAlarms.size > 0) Seq(title, sep, alarmList)
+    if (activeAlarms.nonEmpty) Seq(title, sep, alarmList)
     else Seq(title)
   }
 

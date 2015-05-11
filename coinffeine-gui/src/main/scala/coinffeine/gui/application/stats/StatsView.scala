@@ -20,6 +20,5 @@ class StatsView(app: CoinffeineApp) extends ApplicationView {
     pageContent = orderBookChart
   }
 
-  // TODO: provide a valid control pane
-  override def controlPane: Pane = new Pane
+  override def controlPane = new Pane
 }

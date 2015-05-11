@@ -38,10 +38,10 @@ class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends
     styleClass += "transactions"
     val sortedList = new ObservableBuffer(new SortedList[WalletActivityEntryProperties](
       properties.transactions.delegate, new TransactionTimestampComparator))
-    sortedList.bindToList(content) { tx =>
+    sortedList.bindToList(children) { tx =>
       new HBox {
         styleClass += "line"
-        content = Seq(
+        children = Seq(
           new GlyphLabel {
             styleClass += "icon"
             icon = iconFor(tx)
@@ -52,7 +52,7 @@ class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends
           new Label(dateFor(tx)) { styleClass += "date" },
           new HBox {
             styleClass += "buttons"
-            content = Seq(
+            children = Seq(
               new Button with ButtonStyles.Details {
                 onAction = () => {
                   Browser.default.browse(WalletView.detailsOfTransaction(tx.hash.value.toString))

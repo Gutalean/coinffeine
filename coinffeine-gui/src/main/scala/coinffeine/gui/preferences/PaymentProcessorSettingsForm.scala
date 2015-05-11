@@ -25,10 +25,10 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
   private val formScene = new CoinffeineScene(Stylesheets.Preferences) {
     root = new VBox() {
       styleClass += "payment-processor-preferences"
-      content = Seq(
+      children = Seq(
         new HBox {
           styleClass += "header"
-          content = Seq(
+          children = Seq(
             new Label("This is your "),
             new Label("OKPay account") with TextStyles.Emphasis)
         },
@@ -37,7 +37,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
         labeledField(tokenField, "Token"),
         new HBox {
           styleClass += "footer"
-          content = new Button("Apply") {
+          children = new Button("Apply") {
             styleClass += "action-button"
             onAction = { e: ActionEvent => close() }
           }
@@ -48,7 +48,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
 
   private def labeledField(field: TextField, label: String) = new VBox {
     styleClass += "labeled-field"
-    content = Seq(
+    children = Seq(
       new Label(label) with TextStyles.Emphasis,
       field
     )

@@ -33,7 +33,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
 
   private val lines = new VBox {
     styleClass += "lines"
-    content = Seq(
+    children = Seq(
       makeStatusLine(
         props.statusProperty.delegate.mapToString(_.name.capitalize), props.orderProperty),
       makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
@@ -49,7 +49,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
 
   private val root: Parent = new VBox with PaneStyles.Centered {
     styleClass += "order-props"
-    content = Seq(icon, summary, lines)
+    children = Seq(icon, summary, lines)
   }
 
   def show(parentWindow: Window): Unit = {
@@ -69,9 +69,9 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private def makeStatusLine(status: ObservableStringValue,
                              orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) =  new HBox {
     orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
-    content = Seq(
+    children = Seq(
       new VBox {
-        content = Seq(
+        children = Seq(
           new Label("Status") { styleClass += "prop-name" },
           new Label {
             styleClass += "prop-value"
@@ -88,8 +88,8 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private def makeLine(title: String,
                        value: ObservableStringValue): Node = new HBox {
     styleClass += "line"
-    content = new VBox {
-      content = Seq(
+    children = new VBox {
+      children = Seq(
         new Label(title) { styleClass += "prop-name" },
         new Label {
           styleClass += "prop-value"
@@ -101,6 +101,6 @@ class OrderPropertiesDialog(props: OrderProperties) {
 
   private def makeFooter(): Node = new HBox {
     styleClass ++= Seq("line", "footer")
-    content = new SupportWidget("order-props")
+    children = new SupportWidget("order-props")
   }
 }
