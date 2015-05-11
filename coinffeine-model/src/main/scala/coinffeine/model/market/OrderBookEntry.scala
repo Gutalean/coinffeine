@@ -1,6 +1,7 @@
 package coinffeine.model.market
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.order._
 
 /** Request for an interchange. */
 case class OrderBookEntry[C <: FiatCurrency](

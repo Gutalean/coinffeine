@@ -3,9 +3,10 @@ package coinffeine.gui.application.properties
 import scalafx.beans.property._
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.market._
 import org.joda.time.DateTime
+
+import coinffeine.model.currency.Bitcoin
+import coinffeine.model.order._
 
 trait OrderProperties {
   def orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]

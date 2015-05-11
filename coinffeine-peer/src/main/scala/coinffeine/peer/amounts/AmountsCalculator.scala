@@ -2,7 +2,8 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.market.{OrderRequest, Spread}
+import coinffeine.model.market.Spread
+import coinffeine.model.order.OrderRequest
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 trait AmountsCalculator {

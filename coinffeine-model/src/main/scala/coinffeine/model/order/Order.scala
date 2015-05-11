@@ -1,9 +1,11 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 import org.joda.time.DateTime
 
+import coinffeine.model.ActivityLog
 import coinffeine.model.currency.{Bitcoin, Currency, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.{Exchange, ExchangeId, Role}
+import coinffeine.model.market.OrderBookEntry
 
 trait Order[C <: FiatCurrency] {
 
@@ -13,12 +15,16 @@ trait Order[C <: FiatCurrency] {
   def price: OrderPrice[C]
   def inMarket: Boolean
   def exchanges: Map[ExchangeId, Exchange[C]]
-  def createdOn: DateTime
+  def log: ActivityLog[OrderStatus]
   def status: OrderStatus
-  def cancelled: Boolean
 
   def role = Role.fromOrderType(orderType)
   def amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
+  def createdOn: DateTime = log.activities.head.timestamp
+  def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
+
+  /** Timestamp of the last recorded change */
+  def lastChange: DateTime = log.mostRecent.get.timestamp
 
   /** Retrieve the total amount of bitcoins that were already transferred.
     *

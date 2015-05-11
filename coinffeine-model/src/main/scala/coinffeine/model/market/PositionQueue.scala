@@ -2,6 +2,7 @@ package coinffeine.model.market
 
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.OrderType
 
 private[market] case class PositionQueue[T <: OrderType, C <: FiatCurrency](
     positions: Seq[Position[T, C]]) {

@@ -3,8 +3,8 @@ package coinffeine.peer.api
 import scala.concurrent.Future
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market._
 import coinffeine.model.network.CoinffeineNetworkProperties
+import coinffeine.model.order._
 
 /** Represents how the app takes part on the P2P network */
 trait CoinffeineNetwork extends CoinffeineNetworkProperties {

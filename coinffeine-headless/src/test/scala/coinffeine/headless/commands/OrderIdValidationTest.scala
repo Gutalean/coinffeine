@@ -3,8 +3,8 @@ package coinffeine.headless.commands
 import scalaz.syntax.validation._
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.market._
 import coinffeine.model.currency._
+import coinffeine.model.order.{ActiveOrder, Bid, OrderId, Price}
 
 class OrderIdValidationTest extends UnitTest {
 

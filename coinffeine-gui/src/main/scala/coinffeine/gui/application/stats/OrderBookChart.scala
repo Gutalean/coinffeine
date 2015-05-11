@@ -13,6 +13,7 @@ import com.typesafe.scalalogging.LazyLogging
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
+import coinffeine.model.order.{Ask, Bid, OrderType}
 import coinffeine.peer.api.MarketStats
 
 class OrderBookChart[C <: FiatCurrency](stats: MarketStats,

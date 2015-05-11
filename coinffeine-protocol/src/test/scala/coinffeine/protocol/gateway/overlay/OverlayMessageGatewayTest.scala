@@ -12,8 +12,8 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.Both
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.market.OrderId
 import coinffeine.model.network._
+import coinffeine.model.order.OrderId
 import coinffeine.overlay.OverlayId
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ProtocolMismatchAlarm, Subscribe}

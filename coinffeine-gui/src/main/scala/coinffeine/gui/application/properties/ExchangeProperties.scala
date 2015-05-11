@@ -5,7 +5,7 @@ import scalafx.beans.property._
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{AnyExchange, ExchangeId}
-import coinffeine.model.market.{AnyOrderPrice, LimitPrice}
+import coinffeine.model.order.{AnyOrderPrice, LimitPrice}
 
 class ExchangeProperties(exchange: AnyExchange) {
 

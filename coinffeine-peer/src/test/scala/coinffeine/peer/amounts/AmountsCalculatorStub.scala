@@ -2,7 +2,8 @@ package coinffeine.peer.amounts
 
 import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.Exchange.Amounts
-import coinffeine.model.market.{OrderRequest, Spread}
+import coinffeine.model.market.Spread
+import coinffeine.model.order.OrderRequest
 
 class AmountsCalculatorStub[C <: FiatCurrency](cannedValues: Amounts[C]*) extends AmountsCalculator {
 

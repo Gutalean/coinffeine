@@ -4,7 +4,8 @@ import scalaz.syntax.std.option._
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.market.{Spread, Market, Price}
+import coinffeine.model.market.{Spread, Market}
+import coinffeine.model.order.Price
 import coinffeine.protocol.messages.brokerage.Quote
 
 class OperationsControlPaneTest extends UnitTest {

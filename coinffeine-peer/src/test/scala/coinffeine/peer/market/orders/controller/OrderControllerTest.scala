@@ -9,6 +9,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.exchange.protocol.MockExchangeProtocol

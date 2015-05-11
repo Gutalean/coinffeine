@@ -1,4 +1,4 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 

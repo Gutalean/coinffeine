@@ -4,8 +4,8 @@ import org.joda.time.DateTime
 
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{BuyerRole, Exchange, ExchangeId}
-import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order.{ActiveOrder, Bid, Price}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsComponent {

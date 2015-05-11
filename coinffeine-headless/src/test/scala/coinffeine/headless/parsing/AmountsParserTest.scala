@@ -4,7 +4,7 @@ import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.market.Price
+import coinffeine.model.order.Price
 
 class AmountsParserTest extends UnitTest with OptionValues {
 

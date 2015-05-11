@@ -11,6 +11,7 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
 import coinffeine.model.market._
+import coinffeine.model.order.{OrderRequest, OrderId, Bid, LimitPrice}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor

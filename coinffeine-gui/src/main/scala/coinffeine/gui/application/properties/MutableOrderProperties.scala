@@ -3,11 +3,12 @@ package coinffeine.gui.application.properties
 import scalafx.beans.property._
 import scalafx.collections.ObservableBuffer
 
+import org.joda.time.DateTime
+
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.AnyExchange
-import coinffeine.model.market._
-import org.joda.time.DateTime
+import coinffeine.model.order._
 
 class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProperties {
 

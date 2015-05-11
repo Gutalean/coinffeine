@@ -13,6 +13,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{PeerId, BrokerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.orders.controller._

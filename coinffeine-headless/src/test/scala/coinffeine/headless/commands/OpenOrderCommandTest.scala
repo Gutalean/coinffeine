@@ -5,7 +5,7 @@ import scala.concurrent.Future
 import org.scalatest.Inside
 
 import coinffeine.model.currency._
-import coinffeine.model.market._
+import coinffeine.model.order._
 
 class OpenOrderCommandTest extends CommandTest with Inside {
 

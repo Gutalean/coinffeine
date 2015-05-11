@@ -3,7 +3,8 @@ package coinffeine.peer.market.submission
 import akka.actor.ActorRef
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market.{OrderId, Market, OrderBookEntry}
+import coinffeine.model.market.{Market, OrderBookEntry}
+import coinffeine.model.order.OrderId
 import coinffeine.protocol.messages.brokerage.PeerPositions
 
 /** Collection of entries to be submitted and requester actors */

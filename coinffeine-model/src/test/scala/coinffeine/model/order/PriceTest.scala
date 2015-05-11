@@ -1,4 +1,4 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._

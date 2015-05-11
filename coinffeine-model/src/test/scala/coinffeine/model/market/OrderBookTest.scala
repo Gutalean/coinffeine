@@ -6,6 +6,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order._
 
 class OrderBookTest extends UnitTest with OptionValues {
 

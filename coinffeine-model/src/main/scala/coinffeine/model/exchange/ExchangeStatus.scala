@@ -1,5 +1,8 @@
 package coinffeine.model.exchange
 
+import coinffeine.model.Both
+import coinffeine.model.bitcoin.Hash
+
 sealed trait ExchangeStatus {
   def name: String
 }
@@ -10,11 +13,12 @@ object ExchangeStatus {
     override def name = "handshaking"
   }
 
-  case object WaitingDepositConfirmation extends ExchangeStatus {
+  case class WaitingDepositConfirmation(user: Exchange.PeerInfo,
+                                        counterpart: Exchange.PeerInfo) extends ExchangeStatus {
     override def name = "waiting deposit confirmation"
   }
 
-  case object Exchanging extends ExchangeStatus {
+  case class Exchanging(deposits: Both[Hash]) extends ExchangeStatus {
     override def name = "exchanging"
   }
 

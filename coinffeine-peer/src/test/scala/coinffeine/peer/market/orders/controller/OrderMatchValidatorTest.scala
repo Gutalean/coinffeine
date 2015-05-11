@@ -9,8 +9,8 @@ import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
-import coinffeine.model.market._
 import coinffeine.model.network.PeerId
+import coinffeine.model.order._
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.protocol.messages.brokerage.OrderMatch
 

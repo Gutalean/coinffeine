@@ -1,7 +1,8 @@
 package coinffeine.protocol.messages.brokerage
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.market.{Market, Price, Spread}
+import coinffeine.model.market.{Market, Spread}
+import coinffeine.model.order.Price
 import coinffeine.protocol.messages.PublicMessage
 
 case class Quote[C <: FiatCurrency](

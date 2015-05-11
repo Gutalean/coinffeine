@@ -1,8 +1,9 @@
-package coinffeine.model.market
+package coinffeine.model.order
 
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.market.Spread
 
 case class OrderRequest[C <: FiatCurrency](orderType: OrderType,
                                            amount: Bitcoin.Amount,

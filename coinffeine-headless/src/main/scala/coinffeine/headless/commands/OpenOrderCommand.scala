@@ -8,7 +8,7 @@ import coinffeine.headless.parsing.{AmountsParser, Tokenizer}
 import coinffeine.headless.prompt.ANSIText.Red
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.market._
+import coinffeine.model.order.{LimitPrice, OrderRequest, OrderType, Price}
 import coinffeine.peer.api.CoinffeineNetwork
 
 class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends Command {

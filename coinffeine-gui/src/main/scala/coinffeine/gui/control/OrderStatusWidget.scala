@@ -8,7 +8,7 @@ import scalafx.scene.layout.{HBox, StackPane, VBox}
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.NodeStyles
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.market._
+import coinffeine.model.order._
 
 /** Interactively shows the status of an order if you bind the {{{status}}} property. */
 class OrderStatusWidget extends VBox {
