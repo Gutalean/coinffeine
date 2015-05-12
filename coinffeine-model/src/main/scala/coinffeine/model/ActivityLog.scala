@@ -38,5 +38,8 @@ object ActivityLog {
   def apply[Event](event: Event, timestamp: DateTime = DateTime.now()): ActivityLog[Event] =
     empty.record(event, timestamp)
 
+  def fromEvents[Event](events: (DateTime, Event)*): ActivityLog[Event] =
+    ActivityLog(events.map { case (ts, event) => Entry(event, ts) })
+
   case class Entry[+Event](event: Event, timestamp: DateTime)
 }
