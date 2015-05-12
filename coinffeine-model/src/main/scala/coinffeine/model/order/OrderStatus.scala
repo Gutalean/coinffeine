@@ -11,6 +11,17 @@ sealed trait OrderStatus {
   override def toString: String = name
 }
 
+object OrderStatus {
+
+  def parse(str: String): Option[OrderStatus] = str match {
+    case NotStartedOrder.name => Some(NotStartedOrder)
+    case InProgressOrder.name => Some(InProgressOrder)
+    case CompletedOrder.name => Some(CompletedOrder)
+    case CancelledOrder.name => Some(CancelledOrder)
+    case _ => None
+  }
+}
+
 case object NotStartedOrder extends OrderStatus {
   override val name = "not started"
   override val isActive = true
