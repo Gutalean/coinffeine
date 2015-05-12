@@ -6,7 +6,8 @@ import coinffeine.model.ActivityLog
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 
-case class HandshakingExchange[C <: FiatCurrency](metadata: ExchangeMetadata[C]) extends Exchange[C] {
+case class HandshakingExchange[C <: FiatCurrency](metadata: ExchangeMetadata[C])
+  extends ActiveExchange[C] {
 
   override val status = ExchangeStatus.Handshaking
   override val progress = Exchange.noProgress(currency)

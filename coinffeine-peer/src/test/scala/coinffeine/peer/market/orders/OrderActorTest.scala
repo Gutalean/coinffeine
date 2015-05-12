@@ -13,11 +13,12 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
+import coinffeine.model.exchange.ActiveExchange.DepositAmounts
+import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
-import coinffeine.model.order.{ActiveOrder, Bid, AnyCurrencyOrder, Price}
+import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
@@ -46,7 +47,7 @@ abstract class OrderActorTest extends AkkaSpec
       lockTime = 400000L,
       exchange.counterpartId
     )
-    val halfOrderAmounts = Exchange.Amounts(
+    val halfOrderAmounts = ActiveExchange.Amounts(
       grossBitcoinExchanged = 5.006.BTC,
       grossFiatExchanged = 5.25.EUR,
       deposits = Both(
@@ -56,14 +57,14 @@ abstract class OrderActorTest extends AkkaSpec
       refunds = Both(buyer = 1.BTC, seller = 5.BTC),
       intermediateSteps = Seq.tabulate(5) { index =>
         val step = index + 1
-        Exchange.IntermediateStepAmounts(
+        ActiveExchange.IntermediateStepAmounts(
           depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
           fiatAmount = 1.EUR,
           fiatFee = 0.05.EUR,
           progress = Progress(Both(buyer = 1.BTC * step, seller = 1.BTC * step + 0.006.BTC))
         )
       },
-      finalStep = Exchange.FinalStepAmounts(
+      finalStep = ActiveExchange.FinalStepAmounts(
         depositSplit = Both(buyer = 7.002.BTC, seller = 1.BTC),
         progress = Progress(Both(buyer = 5.BTC, seller = 5.006.BTC))
       )

@@ -5,8 +5,8 @@ import scala.util.Try
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.exchange.Exchange._
-import coinffeine.model.exchange.{Exchange, RunningExchange}
+import coinffeine.model.exchange.ActiveExchange._
+import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
 trait MicroPaymentChannel[C <: FiatCurrency] {
@@ -55,7 +55,7 @@ object MicroPaymentChannel {
     @throws[IllegalArgumentException]("if this step is final")
     def next: Step
 
-    def select[C <: FiatCurrency](amounts: Exchange.Amounts[C]): Exchange.StepAmounts[C]
+    def select[C <: FiatCurrency](amounts: Amounts[C]): StepAmounts[C]
   }
 
   case class IntermediateStep(override val value: Int, breakdown: StepBreakdown) extends Step {
@@ -68,12 +68,11 @@ object MicroPaymentChannel {
       if (value == breakdown.intermediateSteps) FinalStep(breakdown) else copy(value = value + 1)
     override val toString = s"step $value/${breakdown.totalSteps}"
 
-    override def select[C <: FiatCurrency](
-        amounts: Exchange.Amounts[C]): Exchange.IntermediateStepAmounts[C] =
+    override def select[C <: FiatCurrency](amounts: Amounts[C]): IntermediateStepAmounts[C] =
       select(amounts.intermediateSteps)
 
     def select[C <: FiatCurrency](
-        amounts: Seq[Exchange.IntermediateStepAmounts[C]]): Exchange.IntermediateStepAmounts[C] =
+        amounts: Seq[IntermediateStepAmounts[C]]): IntermediateStepAmounts[C] =
       amounts(value - 1)
   }
 

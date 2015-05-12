@@ -6,7 +6,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.bitcoin.test.FixedBitcoinFee
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.Amounts
+import coinffeine.model.exchange.ActiveExchange.Amounts
 import coinffeine.model.payment.PaymentProcessor
 
 class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {

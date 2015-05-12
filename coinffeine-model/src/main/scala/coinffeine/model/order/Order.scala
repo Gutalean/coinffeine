@@ -3,9 +3,8 @@ package coinffeine.model.order
 import org.joda.time.DateTime
 
 import coinffeine.model.ActivityLog
-import coinffeine.model.currency.{Bitcoin, Currency, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.{Exchange, ExchangeId, Role}
-import coinffeine.model.market.OrderBookEntry
 
 trait Order[C <: FiatCurrency] {
 
@@ -19,7 +18,6 @@ trait Order[C <: FiatCurrency] {
   def status: OrderStatus
 
   def role = Role.fromOrderType(orderType)
-  def amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
   def createdOn: DateTime = log.activities.head.timestamp
   def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
 
@@ -43,11 +41,6 @@ trait Order[C <: FiatCurrency] {
     * @return
     */
   def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
-
-  def pendingOrderBookEntry: OrderBookEntry[C] =
-    OrderBookEntry(id, orderType, amounts.pending, price)
-
-  def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
 
   private def totalSum[A <: Currency](zero: CurrencyAmount[A])
                                      (f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =

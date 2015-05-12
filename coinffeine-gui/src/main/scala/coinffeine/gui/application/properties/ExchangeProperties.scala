@@ -5,7 +5,7 @@ import scalafx.beans.property._
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{AnyExchange, ExchangeId}
-import coinffeine.model.order.{AnyOrderPrice, LimitPrice}
+import coinffeine.model.order.{AnyOrderPrice, LimitPrice, Price}
 
 class ExchangeProperties(exchange: AnyExchange) {
 
@@ -28,7 +28,7 @@ class ExchangeProperties(exchange: AnyExchange) {
     new BooleanProperty(this, "isCancellable", false)
 
   val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
-    new ObjectProperty(this, "amount", exchange.role.select(exchange.amounts.exchangedBitcoin))
+    new ObjectProperty(this, "amount", exchange.role.select(exchange.exchangedBitcoin))
 
   val statusProperty: ReadOnlyStringProperty =
     new StringProperty(this, "status", exchange.status.name.capitalize)
@@ -36,7 +36,10 @@ class ExchangeProperties(exchange: AnyExchange) {
   val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
   val priceProperty: ReadOnlyObjectProperty[AnyOrderPrice] =
-    new ObjectProperty(this, "price", LimitPrice(exchange.amounts.price(exchange.role)))
+    new ObjectProperty(this, "price", LimitPrice(Price.whenExchanging(
+      exchange.role.select(exchange.exchangedBitcoin),
+      exchange.role.select(exchange.exchangedFiat))
+    ))
 
   val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")
@@ -47,7 +50,7 @@ class ExchangeProperties(exchange: AnyExchange) {
 
   private def progressOf(exchange: AnyExchange): Double = {
     val done = exchange.role.select(exchange.progress.bitcoinsTransferred).value
-    val total = exchange.role.select(exchange.amounts.exchangedBitcoin).value
+    val total = exchange.role.select(exchange.exchangedBitcoin).value
     (done / total).toDouble
   }
 }

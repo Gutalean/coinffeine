@@ -7,7 +7,7 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Progress
 
 case class FailedExchange[C <: FiatCurrency](
-    prev: Exchange[C],
+    prev: ActiveExchange[C],
     timestamp: DateTime,
     cause: FailureCause,
     user: Option[Exchange.PeerInfo] = None,

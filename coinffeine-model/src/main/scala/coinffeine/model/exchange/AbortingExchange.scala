@@ -5,11 +5,12 @@ import org.joda.time.DateTime
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 
-case class AbortingExchange[C <: FiatCurrency](prev: Exchange[C],
+case class AbortingExchange[C <: FiatCurrency](prev: ActiveExchange[C],
                                                timestamp: DateTime,
                                                cause: AbortionCause,
                                                user: Exchange.PeerInfo,
-                                               refundTx: ImmutableTransaction) extends Exchange[C] {
+                                               refundTx: ImmutableTransaction)
+  extends ActiveExchange[C] {
 
   override val status = ExchangeStatus.Aborting(cause)
   override val metadata = prev.metadata

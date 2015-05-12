@@ -6,8 +6,7 @@ import coinffeine.headless.prompt.ANSIText._
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.exchange.Exchange.Amounts
-import coinffeine.model.order.{OrderId, AnyCurrencyOrder}
+import coinffeine.model.order.{AnyCurrencyOrder, OrderId}
 import coinffeine.peer.api.CoinffeineNetwork
 
 class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
@@ -58,16 +57,16 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
 
     private def printExchangeDetails(exchange: Exchange[_ <: FiatCurrency]): Unit = {
       output.println(Bold("\t" + exchange.id))
-      printExchangeAmounts(exchange.amounts)
+      printExchangeAmounts(exchange)
       printStatus(exchange.status.name)
       printProgress((exchange.progress.bitcoinsTransferred(order.orderType).value /
-        exchange.amounts.exchangedBitcoin(order.orderType).value).doubleValue())
+        exchange.role.select(exchange.exchangedBitcoin).value).doubleValue())
     }
 
-    private def printExchangeAmounts(amounts: Amounts[_ <: FiatCurrency]): Unit = {
+    private def printExchangeAmounts(exchange: Exchange[_ <: FiatCurrency]): Unit = {
       output.format("\tAmounts: %s (%s net) by %s (%s net)%n",
-        amounts.exchangedBitcoin.seller, amounts.exchangedBitcoin.buyer,
-        amounts.exchangedFiat.buyer, amounts.exchangedFiat.seller
+        exchange.exchangedBitcoin.seller, exchange.exchangedBitcoin.buyer,
+        exchange.exchangedFiat.buyer, exchange.exchangedFiat.seller
       )
     }
 

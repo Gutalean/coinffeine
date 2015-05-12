@@ -19,7 +19,7 @@ class MockExchangeProtocol extends ExchangeProtocol {
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                amounts: Exchange.Amounts[_ <: FiatCurrency],
+                                amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
                                 requiredSignatures: Both[PublicKey],
                                 network: Network): Both[DepositValidation] =
     transactions.map {

@@ -3,6 +3,7 @@ package coinffeine.peer.exchange.protocol.impl
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, Network, PublicKey}
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.ActiveExchange.Amounts
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._
 
@@ -36,7 +37,7 @@ private[impl] class DefaultExchangeProtocol extends ExchangeProtocol {
     new DefaultMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                amounts: Exchange.Amounts[_ <: FiatCurrency],
+                                amounts: Amounts[_ <: FiatCurrency],
                                 requiredSignatures: Both[PublicKey],
                                 network: Network) =
     new DepositValidator(amounts, requiredSignatures, network).validate(transactions)

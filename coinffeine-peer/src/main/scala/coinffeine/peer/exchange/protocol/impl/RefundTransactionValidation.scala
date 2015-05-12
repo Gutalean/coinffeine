@@ -5,15 +5,16 @@ import scalaz.{Scalaz, ValidationNel}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ActiveExchange
 
 /** Validates a refund transaction.
   *
   * TODO: add missing validations
   */
-private class RefundTransactionValidation(parameters: Exchange.Parameters,
+private class RefundTransactionValidation(parameters: ActiveExchange.Parameters,
                                           expectedAmount: Bitcoin.Amount) {
   import Scalaz._
+
   import RefundTransactionValidation._
 
   def apply(refundTx: ImmutableTransaction): Result = {

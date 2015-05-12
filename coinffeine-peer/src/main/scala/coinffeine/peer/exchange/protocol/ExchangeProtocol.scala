@@ -19,7 +19,7 @@ trait ExchangeProtocol {
 
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
-                       amounts: Exchange.Amounts[_ <: FiatCurrency],
+                       amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
                        requiredSignatures: Both[PublicKey],
                        network: Network): Both[DepositValidation]
 

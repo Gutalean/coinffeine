@@ -7,7 +7,7 @@ import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.exchange._
 
-private[impl] class DepositValidator(amounts: Exchange.Amounts[_ <: FiatCurrency],
+private[impl] class DepositValidator(amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
                                      requiredSignatures: Both[PublicKey],
                                      network: Network) {
 

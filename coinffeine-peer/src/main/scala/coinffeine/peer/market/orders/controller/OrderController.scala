@@ -35,7 +35,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   /** Immutable snapshot of the order */
   def view: ActiveOrder[C] = _order
 
-  def updateExchange(exchange: Exchange[C]): Unit = {
+  def updateExchange(exchange: ActiveExchange[C]): Unit = {
     updateOrder(_.withExchange(exchange))
   }
 
@@ -75,12 +75,12 @@ private[orders] class OrderController[C <: FiatCurrency](
     val request = pendingFundRequests.getOrElse(exchangeId,
       throw new IllegalArgumentException(s"Cannot accept $exchangeId: no funds were blocked"))
     pendingFundRequests -= exchangeId
-    val newExchange = Exchange.create(
+    val newExchange = ActiveExchange.create(
       id = request.orderMatch.exchangeId,
       role = Role.fromOrderType(view.orderType),
       counterpartId = request.orderMatch.counterpart,
       amounts = amountsCalculator.exchangeAmountsFor(request.orderMatch),
-      parameters = Exchange.Parameters(request.orderMatch.lockTime, network),
+      parameters = ActiveExchange.Parameters(request.orderMatch.lockTime, network),
       createdOn = timestamp
     )
     updateExchange(newExchange)

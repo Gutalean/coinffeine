@@ -8,8 +8,8 @@ import org.scalatest.Inside
 import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.StepBreakdown
-import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ActiveExchange.{IntermediateStepAmounts, StepBreakdown}
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.exchange.micropayment.PaymentValidation._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
@@ -37,13 +37,13 @@ class PaymentValidationTest extends UnitTest with Inside {
     description = s"Payment for exchange ${exchangeId.value}, step 2"
   )
   private val amounts = Seq(
-    Exchange.IntermediateStepAmounts(
+    IntermediateStepAmounts(
       depositSplit = Both(0.BTC, 3.BTC),
       fiatAmount = 2.EUR,
       fiatFee = 0.2.EUR,
       progress = null
     ),
-    Exchange.IntermediateStepAmounts(
+    IntermediateStepAmounts(
       depositSplit = Both(2.BTC, 1.BTC),
       fiatAmount = 1.EUR,
       fiatFee = 0.1.EUR,

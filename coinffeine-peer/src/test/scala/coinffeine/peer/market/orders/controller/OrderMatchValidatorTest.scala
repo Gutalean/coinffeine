@@ -28,12 +28,12 @@ class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsCo
     lockTime = 37376,
     counterpart = PeerId.random()
   )
-  private val exchange = Exchange.create[Euro.type](
+  private val exchange = ActiveExchange.create[Euro.type](
     id = orderMatch.exchangeId,
     role = BuyerRole,
     counterpartId = orderMatch.counterpart,
     amounts = amountsCalculator.exchangeAmountsFor(orderMatch),
-    parameters = Exchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork),
+    parameters = ActiveExchange.Parameters(orderMatch.lockTime, network = CoinffeineUnitTestNetwork),
     createdOn = DateTime.now()
   )
   private val handshakeStartedOn = exchange.metadata.createdOn.plusSeconds(5)

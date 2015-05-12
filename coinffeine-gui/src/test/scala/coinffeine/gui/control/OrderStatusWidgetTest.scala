@@ -54,7 +54,7 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
   }
 
   private def randomExchange(amount: Bitcoin.Amount): HandshakingExchange[Euro.type] =
-    Exchange.create(
+    ActiveExchange.create(
       id = ExchangeId.random(),
       role = SellerRole,
       counterpartId = PeerId.random(),
