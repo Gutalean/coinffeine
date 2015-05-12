@@ -8,7 +8,6 @@ import scalafx.scene.layout.HBox
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.{NodeStyles, TextStyles}
 import coinffeine.model.currency.Currency
-import coinffeine.model.market._
 import coinffeine.model.order._
 
 class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) extends HBox(0) {
