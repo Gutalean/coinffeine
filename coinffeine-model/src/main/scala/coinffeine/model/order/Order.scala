@@ -19,7 +19,7 @@ trait Order[C <: FiatCurrency] {
 
   def role = Role.fromOrderType(orderType)
   def createdOn: DateTime = log.activities.head.timestamp
-  def cancelled: Boolean = log.lastTime(_ == CancelledOrder).isDefined
+  def cancelled: Boolean = log.lastTime(_ == OrderStatus.Cancelled).isDefined
 
   /** Timestamp of the last recorded change */
   def lastChange: DateTime = log.mostRecent.get.timestamp

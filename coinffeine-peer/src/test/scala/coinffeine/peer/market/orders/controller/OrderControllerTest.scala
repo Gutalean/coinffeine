@@ -53,10 +53,10 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
     order.fundsRequested(orderMatch, requiredFunds)
     order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
-    listener.lastStatus shouldBe InProgressOrder
+    listener.lastStatus shouldBe OrderStatus.InProgress
 
     order.completeExchange(complete(order.view.exchanges.values.head))
-    listener.lastStatus shouldBe CompletedOrder
+    listener.lastStatus shouldBe OrderStatus.Completed
   }
 
   it should "stop publishing orders upon cancellation" in new Fixture {
@@ -68,12 +68,12 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     order.fundsRequested(orderMatch, requiredFunds)
     order.startExchange(orderMatch.exchangeId, ExchangeTimestamps.creation)
     order.completeExchange(complete(order.view.exchanges.values.head))
-    listener.lastStatus shouldBe CompletedOrder
+    listener.lastStatus shouldBe OrderStatus.Completed
   }
 
   it should "notify termination upon cancellation" in new Fixture {
     order.cancel(ExchangeTimestamps.completion)
-    listener.lastStatus shouldBe CancelledOrder
+    listener.lastStatus shouldBe OrderStatus.Cancelled
   }
 
   it should "accept order matches during other exchange" in new Fixture {
@@ -111,7 +111,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     order.fundsRequested(secondHalfMatch, halfRequiredFunds)
     order.startExchange(secondHalfMatch.exchangeId, ExchangeTimestamps.creation.plusHours(1))
     order.completeExchange(complete(order.view.exchanges.values.last))
-    listener.lastStatus shouldBe CompletedOrder
+    listener.lastStatus shouldBe OrderStatus.Completed
     listener should not be 'inMarket
   }
 

@@ -44,7 +44,7 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) exte
 
   private def summarize(order: AnyCurrencyOrder): String = {
     val action = order.status match {
-      case CancelledOrder => OrderSummary.Cancelled
+      case OrderStatus.Cancelled => OrderSummary.Cancelled
       case active if active.isActive => OrderSummary.InProgress
       case _ => OrderSummary.Completed
     }
