@@ -114,7 +114,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       spawnDepositWatcher(rawExchange, deposit, refundTx)
       spawnBroadcaster(refundTx)
       startAbortion(exchange.abort(
-        cause = AbortionCause.HandshakeWithCommitmentFailed(cause),
+        cause = AbortionCause.HandshakeCommitmentsFailure,
         user = user,
         refundTx = refundTx,
         timestamp = failedOn
