@@ -1,7 +1,6 @@
 package coinffeine.peer.market.orders.archive.h2.serialization
 
 import scala.language.implicitConversions
-import scala.util.parsing.combinator.JavaTokenParsers
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.{Hash, PublicKey}
@@ -10,11 +9,7 @@ import coinffeine.model.exchange._
 
 private[h2] object ExchangeStatusParser {
 
-  private object Parser extends JavaTokenParsers {
-
-    implicit class ObjectPimp[T <: Product with Singleton](val obj: T) extends AnyVal {
-      def parser: Parser[T] = obj.productPrefix ^^ { _ => obj }
-    }
+  private object Parser extends Parsers[ExchangeStatus] {
 
     val quotedString: Parser[String] = stringLiteral ^^ unquote
 
@@ -87,7 +82,7 @@ private[h2] object ExchangeStatusParser {
     val aborting: Parser[ExchangeStatus.Aborting] =
       ("Aborting" ~> "(" ~> abortionCause <~ ")") ^^ ExchangeStatus.Aborting.apply
 
-    val exchangeStatusParser: Parser[ExchangeStatus] = ExchangeStatus.Handshaking.parser |
+    override val mainParser = ExchangeStatus.Handshaking.parser |
       waitingForDeposits |
       exchangingStatus |
       ExchangeStatus.Successful.parser |
@@ -98,8 +93,5 @@ private[h2] object ExchangeStatusParser {
       quotedString.substring(1, quotedString.length - 1)
   }
 
-  def parse(input: String): Option[ExchangeStatus] =
-    Parser.parseAll(Parser.exchangeStatusParser, input)
-      .map(Some.apply)
-      .getOrElse(None)
+  def parse(input: String): Option[ExchangeStatus] = Parser.parse(input)
 }
