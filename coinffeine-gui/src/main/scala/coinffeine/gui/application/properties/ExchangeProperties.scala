@@ -5,7 +5,7 @@ import scalafx.beans.property._
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.currency.Bitcoin
 import coinffeine.model.exchange.{AnyExchange, ExchangeId}
-import coinffeine.model.order.{AnyOrderPrice, LimitPrice, Price}
+import coinffeine.model.order.{AnyPrice, Price}
 
 class ExchangeProperties(exchange: AnyExchange) {
 
@@ -35,11 +35,10 @@ class ExchangeProperties(exchange: AnyExchange) {
 
   val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
-  val priceProperty: ReadOnlyObjectProperty[AnyOrderPrice] =
-    new ObjectProperty(this, "price", LimitPrice(Price.whenExchanging(
+  val priceProperty: ReadOnlyObjectProperty[AnyPrice] =
+    new ObjectProperty(this, "price", Price.whenExchanging(
       exchange.role.select(exchange.exchangedBitcoin),
-      exchange.role.select(exchange.exchangedFiat))
-    ))
+      exchange.role.select(exchange.exchangedFiat)))
 
   val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")
