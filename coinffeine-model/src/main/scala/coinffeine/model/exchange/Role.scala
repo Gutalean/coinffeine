@@ -13,6 +13,8 @@ sealed trait Role {
 
 object Role {
 
+  val Values: Set[Role] = Set(BuyerRole, SellerRole)
+
   def of[A](both: Both[A], elem: A): Option[Role] = elem match {
     case both.`buyer` => Some(BuyerRole)
     case both.`seller` => Some(SellerRole)
@@ -23,6 +25,8 @@ object Role {
     case Bid => BuyerRole
     case Ask => SellerRole
   }
+
+  def fromString(str: String): Option[Role] = Values.find(_.toString == str)
 }
 
 case object BuyerRole extends Role {
