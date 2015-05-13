@@ -30,7 +30,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenSuccessfulUserInfoLookup()
     startActor()
     inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
-      case FailureCause.Cancellation(CancellationCause.CannotStartHandshake(_)) =>
+      case FailureCause.Cancellation(CancellationCause.CannotStartHandshake) =>
     }
     listener.expectTerminated(actor)
   }

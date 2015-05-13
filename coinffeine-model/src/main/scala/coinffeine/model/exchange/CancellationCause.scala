@@ -5,14 +5,14 @@ sealed trait CancellationCause
 object CancellationCause {
 
   case object UserCancellation extends CancellationCause {
-    override val toString = "cancelled by user"
+    override def toString = "cancelled by user"
   }
 
-  case class CannotStartHandshake(cause: Throwable) extends CancellationCause {
-    override val toString = "cancelled by handshake start issues"
+  case object CannotStartHandshake extends CancellationCause {
+    override def toString = "cancelled by handshake start issues"
   }
 
   case class HandshakeFailed(cause: Throwable) extends CancellationCause {
-    override val toString = "handshake failed"
+    override def toString = "handshake failed"
   }
 }

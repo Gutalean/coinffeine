@@ -79,7 +79,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case Status.Failure(cause) =>
       log.error(cause, "Cannot start handshake of {}", exchange.id)
       finishWith(ExchangeFailure(exchange.cancel(
-        cause = CancellationCause.CannotStartHandshake(cause),
+        cause = CancellationCause.CannotStartHandshake,
         user = None,
         timestamp = DateTime.now()
       )))
