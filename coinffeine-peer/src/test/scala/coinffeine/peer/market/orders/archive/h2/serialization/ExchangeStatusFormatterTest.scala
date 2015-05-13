@@ -8,7 +8,7 @@ import coinffeine.model.{Both, bitcoin}
 
 class ExchangeStatusFormatterTest extends UnitTest {
 
-  "An exchange status formater" should "format handshaking status" in {
+  "An exchange status formatter" should "format handshaking status" in {
     ExchangeStatusFormatter.format(ExchangeStatus.Handshaking) shouldBe "Handshaking"
   }
 
