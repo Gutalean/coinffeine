@@ -29,10 +29,9 @@ case class RunningExchange[C <: FiatCurrency](
   }
 
   def stepFailure(step: Int,
-                  cause: Throwable,
                   transaction: Option[ImmutableTransaction],
                   timestamp: DateTime): FailedExchange[C] = FailedExchange(
-    this, timestamp, FailureCause.StepFailed(step, cause), Some(prev.user), transaction)
+    this, timestamp, FailureCause.StepFailed(step), Some(prev.user), transaction)
 
   def unexpectedBroadcast(actualTransaction: ImmutableTransaction,
                           timestamp: DateTime): FailedExchange[C] = {

@@ -58,7 +58,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
 
     startActor()
     inside(listener.expectMsgType[ExchangeFailure].exchange.cause) {
-      case FailureCause.StepFailed(1, _) =>
+      case FailureCause.StepFailed(1) =>
     }
     listener.expectTerminated(actor)
   }

@@ -50,7 +50,6 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5).stepFailure(
         step = 5,
-        cause = new Exception("something went wrong"),
         transaction = None,
         timestamp = DateTime.now()
       ))
@@ -82,7 +81,6 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5).stepFailure(
         step = 5,
-        cause = new Exception("something went wrong"),
         transaction = None,
         timestamp = DateTime.now()
       ))

@@ -156,7 +156,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
       txBroadcaster ! PublishBestTransaction
-      context.become(failingAtStep(runningExchange, step, cause))
+      context.become(failingAtStep(runningExchange, step))
 
     case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx, DateTime.now())))
@@ -186,22 +186,19 @@ class DefaultExchangeActor[C <: FiatCurrency](
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast(DateTime.now())))
   }
 
-  private def failingAtStep(runningExchange: RunningExchange[C],
-                            step: Int,
-                            stepFailure: Throwable): Receive = {
+  private def failingAtStep(runningExchange: RunningExchange[C], step: Int): Receive = {
     case DepositSpent(tx, destination) =>
       val expectedDestination = ChannelAtStep(step)
       if (destination != expectedDestination) {
         log.warning("Expected broadcast of {} but got {} for exchange {} (tx = {})",
           expectedDestination, destination, exchange.id, tx)
       }
-      finishWith(ExchangeFailure(runningExchange.stepFailure(
-        step, stepFailure, Some(tx), DateTime.now())))
+      finishWith(ExchangeFailure(runningExchange.stepFailure(step, Some(tx), DateTime.now())))
 
     case FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast any recovery transaction")
-      finishWith(ExchangeFailure(runningExchange.stepFailure(
-        step, stepFailure, transaction = None, timestamp = DateTime.now())))
+      finishWith(ExchangeFailure(
+        runningExchange.stepFailure(step, transaction = None, timestamp = DateTime.now())))
   }
 
   private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
