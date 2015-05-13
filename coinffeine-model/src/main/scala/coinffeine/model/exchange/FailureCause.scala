@@ -16,7 +16,7 @@ object FailureCause {
     override val toString = "panic blocked reached"
   }
 
-  case class StepFailed(step: Int, cause: Throwable) extends FailureCause {
+  case class StepFailed(step: Int) extends FailureCause {
     override val toString = s"step $step failed"
   }
 
@@ -26,9 +26,5 @@ object FailureCause {
 
   case object NoBroadcast extends FailureCause {
     override val toString = "missing transaction broadcast"
-  }
-
-  case class HandshakeFailed(cause: Throwable) extends FailureCause {
-    override val toString = "handshake failed"
   }
 }

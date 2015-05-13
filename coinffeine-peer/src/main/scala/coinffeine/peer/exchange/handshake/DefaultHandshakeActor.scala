@@ -13,6 +13,7 @@ import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.FiatCurrency
+import coinffeine.model.exchange.HandshakeFailureCause.CannotCreateDeposits
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
@@ -98,7 +99,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case createdHandshake: Handshake[C] =>
       persist(HandshakeStarted(createdHandshake))(onHandshakeStarted)
 
-    case Status.Failure(cause) => finishWith(HandshakeFailure(cause, DateTime.now()))
+    case Status.Failure(cause) =>
+      log.error(cause, "Handshake {}: cannot create deposits", exchange.info.id)
+      finishWith(HandshakeFailure(CannotCreateDeposits, DateTime.now()))
   }
 
   private def onHandshakeStarted(event: HandshakeStarted[C]): Unit = {
@@ -287,16 +290,16 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   private val abortOnSignatureTimeout: Receive = {
     case RequestSignatureTimeout =>
-      val cause = RefundSignatureTimeoutException(exchange.info.id)
+      log.error("Handshake {}: timeout waiting for a valid refund signature", exchange.info.id)
       collaborators.gateway ! ForwardMessage(
         ExchangeRejection(exchange.info.id, ExchangeRejection.CounterpartTimeout), BrokerId)
-      finishWith(HandshakeFailure(cause, DateTime.now()))
+      finishWith(HandshakeFailure(HandshakeFailureCause.SignatureTimeout, DateTime.now()))
   }
 
   private val abortOnBrokerNotification: Receive = {
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
-      log.info("Handshake {}: aborted by the broker: {}", exchange.info.id, reason.message)
-      finishWith(HandshakeFailure(HandshakeAbortedException(exchange.info.id, reason), DateTime.now()))
+      log.error("Handshake {}: aborted by the broker: {}", exchange.info.id, reason.message)
+      finishWith(HandshakeFailure(HandshakeFailureCause.BrokerAbortion, DateTime.now()))
   }
 
   private def subscribeToMessages(): Unit = {

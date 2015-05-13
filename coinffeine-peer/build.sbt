@@ -9,8 +9,8 @@ libraryDependencies ++= Dependencies.loggingBackend ++ Dependencies.akka ++ Seq(
   Dependencies.htmlunit,
   Dependencies.netty,
   Dependencies.scalacheck % "test",
+  Dependencies.scalaParser,
   // Support libraries for scalaxb
   Dependencies.dispatch,
-  Dependencies.scalaParser,
   Dependencies.scalaXml
 )

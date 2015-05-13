@@ -33,7 +33,8 @@ case class ActiveOrder[C <: FiatCurrency] private (
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
 
-  def cancel(timestamp: DateTime): ActiveOrder[C] = copy(log = log.record(CancelledOrder, timestamp))
+  def cancel(timestamp: DateTime): ActiveOrder[C] =
+    copy(log = log.record(OrderStatus.Cancelled, timestamp))
   def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
   def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
 
@@ -56,11 +57,11 @@ case class ActiveOrder[C <: FiatCurrency] private (
 
       def recordProgressStart(log: ActivityLog[OrderStatus]) =
         if (amounts.progressMade || !nextAmounts.progressMade) log
-        else log.record(InProgressOrder, timestamp)
+        else log.record(OrderStatus.InProgress, timestamp)
 
       def recordCompletion(log: ActivityLog[OrderStatus]) =
         if (amounts.completed || !nextAmounts.completed) log
-        else log.record(CompletedOrder, timestamp)
+        else log.record(OrderStatus.Completed, timestamp)
 
       copy(
         inMarket = false,
@@ -115,7 +116,7 @@ object ActiveOrder {
                                amount: Bitcoin.Amount,
                                price: OrderPrice[C],
                                timestamp: DateTime): ActiveOrder[C] = {
-    val log = ActivityLog(NotStartedOrder, timestamp)
+    val log = ActivityLog(OrderStatus.NotStarted, timestamp)
     ActiveOrder(id, orderType, amount, price, inMarket = false, exchanges = Map.empty, log)
   }
 

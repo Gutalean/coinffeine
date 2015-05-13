@@ -6,8 +6,8 @@ object OperationStyles {
 
   def stylesFor(order: AnyCurrencyOrder): Seq[String] = {
     val statusStyle = order.status match {
-      case CompletedOrder => "completed"
-      case NotStartedOrder | InProgressOrder => "running"
+      case OrderStatus.Completed => "completed"
+      case OrderStatus.NotStarted | OrderStatus.InProgress => "running"
       case _ => "failed"
     }
     val orderTypeStyle = order.orderType match {

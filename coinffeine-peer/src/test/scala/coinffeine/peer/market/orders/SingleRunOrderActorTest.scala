@@ -3,9 +3,9 @@ package coinffeine.peer.market.orders
 import org.joda.time.DateTime
 
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.order.{CancelledOrder, CompletedOrder, NotStartedOrder}
+import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, InMarket, StopSubmitting}
+import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
 class SingleRunOrderActorTest extends OrderActorTest {
@@ -25,7 +25,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
       case KeepSubmitting(_) => false
       case StopSubmitting(order.id) => true
     }
-    expectProperty { _.status shouldBe CancelledOrder }
+    expectProperty { _.status shouldBe OrderStatus.Cancelled }
   }
 
   it should "reject order matches after being cancelled" in new Fixture {
@@ -43,11 +43,11 @@ class SingleRunOrderActorTest extends OrderActorTest {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
-      expectProperty { _.status should not be NotStartedOrder }
+      expectProperty { _.status should not be OrderStatus.NotStarted }
       expectProperty { _.progress shouldBe 0.0 }
       exchangeActor.probe.send(actor,
         ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
-      expectProperty { _.status shouldBe CompletedOrder }
+      expectProperty { _.status shouldBe OrderStatus.Completed }
     }
 
   it should "spawn an exchange upon matching" in new Fixture {

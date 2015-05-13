@@ -26,7 +26,7 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       require(orderMatch.counterpart != peerId, MatchRejected("Self-cross"))
 
     def requireUnfinishedOrder: MatchValidation = {
-      val isFinished = Seq(CancelledOrder, CompletedOrder).contains(order.status)
+      val isFinished = Seq(OrderStatus.Cancelled, OrderStatus.Completed).contains(order.status)
       require(!isFinished, MatchRejected("Order already finished"))
     }
 

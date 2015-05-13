@@ -1,13 +1,13 @@
 package coinffeine.gui.application.properties
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
 import org.joda.time.DateTime
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.{Span, Seconds, Millis}
+import org.scalatest.time.{Millis, Seconds, Span}
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
@@ -58,7 +58,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       network.orders.set(order.id, order.withExchange(randomExchange(order)))
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.statusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe OrderStatus.InProgress
         }
       }
     }
@@ -71,14 +71,14 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       println(order.withExchange(exchange).amounts.progressMade)
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
-          orderProps.statusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe OrderStatus.InProgress
           orderProps.exchanges shouldBe 'empty
         }
       }
       network.orders.set(order.id, order.withExchange(randomlyHandshake(exchange)))
       eventually {
         inside(orders.toSeq) {  case Seq(orderProps) =>
-          orderProps.statusProperty.value shouldBe InProgressOrder
+          orderProps.statusProperty.value shouldBe OrderStatus.InProgress
           inside(orderProps.exchanges.toSeq) { case Seq(ex) =>
             ex.exchangeIdProperty.value shouldBe exchange.id
           }

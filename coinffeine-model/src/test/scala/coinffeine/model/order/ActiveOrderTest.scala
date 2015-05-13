@@ -50,7 +50,6 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5).stepFailure(
         step = 5,
-        cause = new Exception("something went wrong"),
         transaction = None,
         timestamp = DateTime.now()
       ))
@@ -74,7 +73,7 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5))
     order.amounts shouldBe ActiveOrder.Amounts(exchanged = 10.BTC, exchanging = 10.BTC, pending = 80.BTC)
-    order.status shouldBe InProgressOrder
+    order.status shouldBe OrderStatus.InProgress
   }
 
   it must "consider failed exchange amounts" in {
@@ -82,19 +81,18 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
       .withExchange(createSuccessfulExchange())
       .withExchange(createExchangeInProgress(5).stepFailure(
         step = 5,
-        cause = new Exception("something went wrong"),
         transaction = None,
         timestamp = DateTime.now()
       ))
     order.amounts shouldBe ActiveOrder.Amounts(exchanged = 15.BTC, exchanging = 0.BTC, pending = 85.BTC)
-    order.status shouldBe InProgressOrder
+    order.status shouldBe OrderStatus.InProgress
   }
 
   it must "detect completion when exchanges complete the order" in {
     val order = ActiveOrder.randomLimit(Bid, 20.BTC, Price(1.EUR))
       .withExchange(createSuccessfulExchange())
       .withExchange(createSuccessfulExchange())
-    order.status shouldBe CompletedOrder
+    order.status shouldBe OrderStatus.Completed
   }
 
   it must "become offline when the pending amount changes" in {
