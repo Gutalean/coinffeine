@@ -12,7 +12,7 @@ object CancellationCause {
     override def toString = "cancelled by handshake start issues"
   }
 
-  case class HandshakeFailed(cause: Throwable) extends CancellationCause {
+  case class HandshakeFailed(cause: HandshakeFailureCause) extends CancellationCause {
     override def toString = "handshake failed"
   }
 }

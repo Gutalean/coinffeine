@@ -103,7 +103,6 @@ class DefaultExchangeActor[C <: FiatCurrency](
       ))
 
     case HandshakeFailure(cause, failedOn) =>
-      log.error(cause, "Handshake for exchange {} failed!", exchange.id)
       finishWith(ExchangeFailure(exchange.cancel(
         cause = CancellationCause.HandshakeFailed(cause),
         user = Some(user),

@@ -13,6 +13,7 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.PeerInfo
+import coinffeine.model.exchange.HandshakeFailureCause.SignatureTimeout
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
@@ -153,9 +154,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       Props(new HandshakeStub(handshakeSuccess))
     }
 
-    def failure = {
-      val exception = new scala.Exception("injected handshake failure") with NoStackTrace
-      Props(new HandshakeStub(HandshakeFailure(exception, ExchangeTimestamps.completion)))
-    }
+    def failure =
+      Props(new HandshakeStub(HandshakeFailure(SignatureTimeout, ExchangeTimestamps.completion)))
   }
 }
