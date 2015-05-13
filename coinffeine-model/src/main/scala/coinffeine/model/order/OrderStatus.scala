@@ -46,12 +46,4 @@ object OrderStatus {
     override val name = "cancelled"
     override val isActive = false
   }
-
-  def parse(str: String): Option[OrderStatus] = str match {
-    case NotStarted.name => Some(NotStarted)
-    case InProgress.name => Some(InProgress)
-    case Completed.name => Some(Completed)
-    case Cancelled.name => Some(Cancelled)
-    case _ => None
-  }
 }
