@@ -72,6 +72,11 @@ class ExchangeStatusParserTest extends UnitTest {
       ExchangeStatus.Failed(FailureCause.UnexpectedBroadcast).some
   }
 
+  it should "parse failed status because of step failure" in {
+    ExchangeStatusParser.parse("Failed(StepFailed(13))") shouldBe
+      ExchangeStatus.Failed(FailureCause.StepFailed(13)).some
+  }
+
   it should "parse aborting status" in {
     ExchangeStatusParser.parse("Aborting(HandshakeCommitmentsFailure)") shouldBe
       ExchangeStatus.Aborting(AbortionCause.HandshakeCommitmentsFailure).some

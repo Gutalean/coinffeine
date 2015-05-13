@@ -77,6 +77,11 @@ class ExchangeStatusFormatterTest extends UnitTest {
       "Failed(UnexpectedBroadcast)"
   }
 
+  it should "format failed status because of failed step" in {
+    ExchangeStatusFormatter.format(ExchangeStatus.Failed(FailureCause.StepFailed(3))) shouldBe
+      "Failed(StepFailed(3))"
+  }
+
   it should "format aborting status" in {
     ExchangeStatusFormatter.format(
       ExchangeStatus.Aborting(AbortionCause.HandshakeCommitmentsFailure)) shouldBe

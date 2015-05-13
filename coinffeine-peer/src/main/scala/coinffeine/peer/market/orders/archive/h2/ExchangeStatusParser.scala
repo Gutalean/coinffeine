@@ -69,11 +69,17 @@ object ExchangeStatusParser {
     val abortionParser: Parser[FailureCause.Abortion] =
       ("Abortion" ~> "(" ~> abortionCause <~ ")") ^^ FailureCause.Abortion.apply
 
+    val stepFailed: Parser[FailureCause.StepFailed] =
+      ("StepFailed" ~> "(" ~> "\\d{1,5}".r <~ ")") ^^ { step =>
+        FailureCause.StepFailed(step.toInt)
+      }
+
     val failureCause: Parser[FailureCause] = cancellation |
       FailureCause.PanicBlockReached.parser |
       abortionParser |
       FailureCause.UnexpectedBroadcast.parser |
-      FailureCause.NoBroadcast.parser
+      FailureCause.NoBroadcast.parser |
+      stepFailed
 
     val failed: Parser[ExchangeStatus.Failed] =
       ("Failed" ~> "(" ~> failureCause <~ ")") ^^ ExchangeStatus.Failed.apply
