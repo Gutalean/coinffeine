@@ -1,10 +1,10 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import scala.util.parsing.combinator.JavaTokenParsers
 
 import coinffeine.model.order._
 
-object OrderStatusParser {
+private[h2] object OrderStatusParser {
 
   private object Parser extends JavaTokenParsers {
 

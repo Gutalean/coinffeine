@@ -1,4 +1,4 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import scalaz.syntax.std.option._
 
@@ -9,7 +9,7 @@ import org.scalatest.prop.PropertyChecks
 import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.exchange.AbortionCause.{InvalidCommitments, HandshakeCommitmentsFailure}
+import coinffeine.model.exchange.AbortionCause.{HandshakeCommitmentsFailure, InvalidCommitments}
 import coinffeine.model.exchange.CancellationCause._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange.ExchangeStatus

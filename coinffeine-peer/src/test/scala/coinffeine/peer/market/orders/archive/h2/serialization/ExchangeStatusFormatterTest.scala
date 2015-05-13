@@ -1,10 +1,10 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.{bitcoin, Both}
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
+import coinffeine.model.{Both, bitcoin}
 
 class ExchangeStatusFormatterTest extends UnitTest {
 

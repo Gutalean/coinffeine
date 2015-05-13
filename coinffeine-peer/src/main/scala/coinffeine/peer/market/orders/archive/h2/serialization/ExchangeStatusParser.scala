@@ -1,4 +1,4 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import scala.language.implicitConversions
 import scala.util.parsing.combinator.JavaTokenParsers
@@ -8,7 +8,7 @@ import coinffeine.model.bitcoin.{Hash, PublicKey}
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
 
-object ExchangeStatusParser {
+private[h2] object ExchangeStatusParser {
 
   private object Parser extends JavaTokenParsers {
 

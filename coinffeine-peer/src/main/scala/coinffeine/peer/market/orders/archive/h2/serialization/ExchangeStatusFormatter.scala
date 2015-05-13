@@ -1,13 +1,13 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import coinffeine.model.Both
 import coinffeine.model.exchange.AbortionCause.InvalidCommitments
 import coinffeine.model.exchange.CancellationCause.HandshakeFailed
 import coinffeine.model.exchange.Exchange.PeerInfo
-import coinffeine.model.exchange.FailureCause.{StepFailed, Abortion, Cancellation}
+import coinffeine.model.exchange.FailureCause.{Abortion, Cancellation, StepFailed}
 import coinffeine.model.exchange.{AbortionCause, CancellationCause, ExchangeStatus}
 
-object ExchangeStatusFormatter {
+private[h2] object ExchangeStatusFormatter {
 
   def format(exchangeStatus: ExchangeStatus): String = exchangeStatus match {
 

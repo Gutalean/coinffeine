@@ -1,4 +1,4 @@
-package coinffeine.peer.market.orders.archive.h2
+package coinffeine.peer.market.orders.archive.h2.serialization
 
 import scalaz.syntax.std.option._
 
