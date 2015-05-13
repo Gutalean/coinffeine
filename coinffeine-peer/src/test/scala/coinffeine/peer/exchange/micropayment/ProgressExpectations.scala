@@ -4,13 +4,13 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.ActiveExchange
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 
 trait ProgressExpectations[C <: FiatCurrency] { this: AkkaSpec =>
 
   protected def listener: TestProbe
-  protected def exchange: Exchange[C]
+  protected def exchange: ActiveExchange[C]
 
   def expectProgress(signatures: Int): Unit = {
     val progress = listener.expectMsgType[ExchangeUpdate].exchange.progress

@@ -18,7 +18,7 @@ case class DepositPendingExchange[C <: FiatCurrency](
 
   override lazy val log = prev.log.record(status, timestamp)
 
-  def startExchanging(deposits: Exchange.Deposits, timestamp: DateTime): RunningExchange[C] =
+  def startExchanging(deposits: ActiveExchange.Deposits, timestamp: DateTime): RunningExchange[C] =
     RunningExchange(this, deposits, timestamp)
 
   def cancel(cause: CancellationCause, timestamp: DateTime): FailedExchange[C] =

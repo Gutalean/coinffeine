@@ -8,7 +8,7 @@ import coinffeine.model.currency.FiatCurrency
 case class RunningExchange[C <: FiatCurrency](
     prev: DepositPendingExchange[C],
     timestamp: DateTime,
-    deposits: Exchange.Deposits,
+    deposits: ActiveExchange.Deposits,
     progress: Exchange.Progress) extends AfterHandshakeExchange[C] {
 
   override val status = ExchangeStatus.Exchanging(deposits.map(_.get.getHash))
@@ -50,7 +50,7 @@ case class RunningExchange[C <: FiatCurrency](
 object RunningExchange {
 
   def apply[C <: FiatCurrency](prev: DepositPendingExchange[C],
-                               deposits: Exchange.Deposits,
+                               deposits: ActiveExchange.Deposits,
                                timestamp: DateTime): RunningExchange[C] =
     RunningExchange(prev, timestamp, deposits, prev.progress)
 }

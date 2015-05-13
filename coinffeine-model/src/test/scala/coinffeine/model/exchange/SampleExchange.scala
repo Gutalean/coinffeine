@@ -6,7 +6,8 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{KeyPair, PublicKey}
 import coinffeine.model.currency._
-import coinffeine.model.exchange.Exchange.{DepositAmounts, Progress}
+import coinffeine.model.exchange.ActiveExchange._
+import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.network.PeerId
 
 trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
@@ -26,7 +27,7 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
 
   val peerIds = Both(buyer = PeerId.hashOf("buyer"), seller = PeerId.hashOf("seller"))
 
-  val amounts = Exchange.Amounts(
+  val amounts = Amounts(
     grossBitcoinExchanged = 10.006.BTC,
     grossFiatExchanged = 10.5.EUR,
     deposits = Both(
@@ -36,21 +37,21 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     refunds = Both(buyer = 1.BTC, seller = 10.BTC),
     intermediateSteps = Seq.tabulate(10) { index =>
       val step = index + 1
-      Exchange.IntermediateStepAmounts(
+      IntermediateStepAmounts(
         depositSplit = Both(buyer = 1.BTC * step + 0.002.BTC, seller = 10.BTC - 1.BTC * step),
         fiatAmount = 1.EUR,
         fiatFee = 0.05.EUR,
         progress = Progress(Both(buyer = 1.BTC * step, seller = 1.BTC * step + 0.006.BTC))
       )
     },
-    finalStep = Exchange.FinalStepAmounts(
+    finalStep = FinalStepAmounts(
       depositSplit = Both(buyer = 12.002.BTC, seller = 1.BTC),
       progress = Progress(Both(buyer = 10.BTC, seller = 10.006.BTC))
     )
   )
 
   val exchangeId = ExchangeId("id")
-  val parameters = Exchange.Parameters(lockTime = 25, network)
+  val parameters = ActiveExchange.Parameters(lockTime = 25, network)
   object ExchangeTimestamps {
     val creation = DateTime.parse("2014-04-05T12:00+01:00")
     val handshakingStart = creation.plusMinutes(1)
@@ -58,14 +59,14 @@ trait SampleExchange extends CoinffeineUnitTestNetwork.Component {
     val completion = channelStart.plusMinutes(10)
   }
 
-  val buyerExchange = Exchange.create(
+  val buyerExchange = ActiveExchange.create(
     exchangeId, BuyerRole, peerIds.seller, amounts, parameters, ExchangeTimestamps.creation)
   val buyerHandshakingExchange = buyerExchange.handshake(
     user = participants.buyer,
     counterpart = participants.seller,
     timestamp = ExchangeTimestamps.handshakingStart)
 
-  val sellerExchange = Exchange.create(
+  val sellerExchange = ActiveExchange.create(
     exchangeId, SellerRole, peerIds.buyer, amounts, parameters, ExchangeTimestamps.creation)
   val sellerHandshakingExchange = sellerExchange.handshake(
     user = participants.seller,

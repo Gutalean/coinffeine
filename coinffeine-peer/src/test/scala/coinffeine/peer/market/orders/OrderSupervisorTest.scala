@@ -7,11 +7,10 @@ import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
-import coinffeine.model.market._
 import coinffeine.model.order._
 import coinffeine.peer.CoinffeinePeerActor._
-import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 import coinffeine.peer.market.orders.OrderSupervisor.Delegates
+import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 
 class OrderSupervisorTest extends AkkaSpec {
 

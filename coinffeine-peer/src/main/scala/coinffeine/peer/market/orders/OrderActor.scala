@@ -4,7 +4,7 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.event.Logging
-import akka.persistence.{RecoveryCompleted, PersistentActor}
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
@@ -12,7 +12,7 @@ import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.{PeerId, BrokerId, MutableCoinffeineNetworkProperties}
+import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
 import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
@@ -110,7 +110,7 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeUpdate(exchange) if exchange.currency == currency =>
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
-      order.updateExchange(exchange.asInstanceOf[Exchange[C]])
+      order.updateExchange(exchange.asInstanceOf[ActiveExchange[C]])
 
     case ExchangeActor.ExchangeSuccess(exchange) if exchange.currency == currency =>
       completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])

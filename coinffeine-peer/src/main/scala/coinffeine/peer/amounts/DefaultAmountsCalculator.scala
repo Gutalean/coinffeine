@@ -5,6 +5,7 @@ import scala.util.Try
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -59,7 +60,7 @@ private[amounts] class DefaultAmountsCalculator(
       }
       for {
         (payment, split, progress) <- (fiatBreakdown, depositSplits, stepProgress).zipped
-      } yield Exchange.IntermediateStepAmounts[C](split, payment.netAmount, payment.fee, progress)
+      } yield IntermediateStepAmounts[C](split, payment.netAmount, payment.fee, progress)
     }.toSeq
 
     val escrowAmounts = Both(
@@ -75,7 +76,7 @@ private[amounts] class DefaultAmountsCalculator(
       )
     )
 
-    val finalStep = Exchange.FinalStepAmounts[C](
+    val finalStep = FinalStepAmounts[C](
       depositSplit = Both(
         buyer = netBitcoinAmount + escrowAmounts.buyer + txFee,
         seller = escrowAmounts.seller
@@ -85,12 +86,11 @@ private[amounts] class DefaultAmountsCalculator(
 
     val refunds = deposits.map(_.input - maxBitcoinStepSize)
 
-    Exchange.Amounts(
-      grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
+    Amounts(grossBitcoinAmount, grossFiatAmount, deposits, refunds, intermediateSteps, finalStep)
   }
 
   override def estimateAmountsFor[C <: FiatCurrency](
-      order: OrderRequest[C], spread: Spread[C]): Option[Exchange.Amounts[C]] =
+      order: OrderRequest[C], spread: Spread[C]): Option[Amounts[C]] =
     order.estimatedPrice(spread).flatMap { price =>
       val grossBitcoinAmount = order.orderType match {
         case Bid => order.amount + bitcoinFeeCalculator.defaultTransactionFee * HappyPathTransactions

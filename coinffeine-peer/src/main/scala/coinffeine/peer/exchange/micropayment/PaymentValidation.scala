@@ -6,13 +6,14 @@ import scalaz.Scalaz._
 import coinffeine.model.Both
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{IntermediateStep, FinalStep, Step}
 
 private class PaymentValidation[C <: FiatCurrency](
     exchangeId: ExchangeId,
-    amounts: Seq[Exchange.IntermediateStepAmounts[C]],
+    amounts: Seq[IntermediateStepAmounts[C]],
     participants: Both[AccountId]) {
   import PaymentValidation._
 

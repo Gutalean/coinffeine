@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 import coinffeine.model.ActivityLog
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
+import coinffeine.model.market.OrderBookEntry
 
 /** An order represents a process initiated by a peer to bid (buy) or ask(sell) bitcoins in
   * the Coinffeine market.
@@ -27,7 +28,7 @@ case class ActiveOrder[C <: FiatCurrency] private (
     override val amount: Bitcoin.Amount,
     override val price: OrderPrice[C],
     override val inMarket: Boolean,
-    override val exchanges: Map[ExchangeId, Exchange[C]],
+    override val exchanges: Map[ExchangeId, ActiveExchange[C]],
     override val log: ActivityLog[OrderStatus]) extends Order[C] {
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
@@ -38,8 +39,15 @@ case class ActiveOrder[C <: FiatCurrency] private (
 
   override def status: OrderStatus = log.mostRecent.get.event
 
+  def amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
+
+  def pendingOrderBookEntry: OrderBookEntry[C] =
+    OrderBookEntry(id, orderType, amounts.pending, price)
+
+  def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
+
   /** Create a new copy of this order with the given exchange. */
-  def withExchange(exchange: Exchange[C]): ActiveOrder[C] =
+  def withExchange(exchange: ActiveExchange[C]): ActiveOrder[C] =
     if (exchanges.get(exchange.id).contains(exchange)) this
     else {
       val nextExchanges = exchanges + (exchange.id -> exchange)
@@ -74,8 +82,8 @@ object ActiveOrder {
   object Amounts {
     def fromExchanges[C <: FiatCurrency](amount: Bitcoin.Amount,
                                          role: Role,
-                                         exchanges: Map[ExchangeId, Exchange[C]]): Amounts = {
-      def totalSum(exchanges: Iterable[Exchange[C]]): Bitcoin.Amount = exchanges.map {
+                                         exchanges: Map[ExchangeId, ActiveExchange[C]]): Amounts = {
+      def totalSum(exchanges: Iterable[ActiveExchange[C]]): Bitcoin.Amount = exchanges.map {
         case ex: SuccessfulExchange[_] => ex.progress.bitcoinsTransferred
         case ex: FailedExchange[_] => ex.progress.bitcoinsTransferred
         case ex => ex.amounts.exchangedBitcoin

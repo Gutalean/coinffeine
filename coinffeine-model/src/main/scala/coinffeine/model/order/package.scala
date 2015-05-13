@@ -1,7 +1,6 @@
 package coinffeine.model
 
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.market._
 
 package object order {
   type AnyCurrencyActiveOrder = ActiveOrder[_ <: FiatCurrency]

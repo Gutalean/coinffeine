@@ -7,11 +7,12 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ActiveExchange.Parameters
 import coinffeine.model.exchange._
 
 class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTestNetwork.Component {
 
-  val exchangeParameters = Exchange.Parameters(10, network)
+  val exchangeParameters = Parameters(10, network)
   val dummyDeposits = Both.fill(ImmutableTransaction(new MutableTransaction(network)))
 
   "An order" must "require its amount to be strictly positive" in {
@@ -137,5 +138,6 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
 
   private def createRandomExchange(
       timestamp: DateTime = DateTime.now()): HandshakingExchange[Euro.type] =
-    Exchange.create(ExchangeId.random(), BuyerRole, peerIds.seller, amounts, parameters, timestamp)
+    ActiveExchange.create(
+      ExchangeId.random(), BuyerRole, peerIds.seller, amounts, parameters, timestamp)
 }

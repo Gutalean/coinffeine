@@ -13,6 +13,8 @@ sealed trait OrderType {
 
 object OrderType {
   val values = Seq(Bid, Ask)
+
+  def parse(str: String): Option[OrderType] = values.find(_.shortName == str)
 }
 
 /** Trying to buy bitcoins */

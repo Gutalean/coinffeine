@@ -7,6 +7,15 @@ import coinffeine.model.currency._
 
 class OrderTypeTest extends UnitTest {
 
+  "Order type" should "parse from string" in {
+    OrderType.parse("bid") shouldBe Some(Bid)
+    OrderType.parse("ask") shouldBe Some(Ask)
+  }
+
+  it should "fail to parse from invalid string" in {
+    OrderType.parse("compra") shouldBe None
+  }
+
   "Bid order type" should "order prices in descending order" in {
     val prices = Seq[OrderPrice[Euro.type]](
       MarketPrice(Euro),
