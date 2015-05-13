@@ -27,8 +27,4 @@ object FailureCause {
   case object NoBroadcast extends FailureCause {
     override val toString = "missing transaction broadcast"
   }
-
-  case class HandshakeFailed(cause: Throwable) extends FailureCause {
-    override val toString = "handshake failed"
-  }
 }
