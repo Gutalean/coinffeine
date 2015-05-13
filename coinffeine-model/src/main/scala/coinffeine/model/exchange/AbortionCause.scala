@@ -10,10 +10,10 @@ object AbortionCause {
     override def toString = "aborted by failed handshake commitment"
   }
 
-  case class InvalidCommitments(validation: Both[DepositValidation]) extends AbortionCause {
-    require(validation.toSeq.count(_.isFailure) > 0)
+  case class InvalidCommitments(invalidCommitments: Both[Boolean]) extends AbortionCause {
+    require(invalidCommitments.toSeq.exists(!_), "At least one invalid commitment is required")
 
-    override def toString = "aborted by invalid " + (validation.map(_.isFailure) match {
+    override def toString = "aborted by invalid " + (invalidCommitments match {
       case Both(true, true) => "commitments"
       case Both(true, _) => "buyer commitment"
       case _ => "seller commitment"

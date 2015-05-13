@@ -1,7 +1,5 @@
 package coinffeine.peer.exchange
 
-import scalaz.{Failure, Success}
-
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.exchange._
@@ -55,9 +53,8 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       listener.expectNoMsg()
       notifyDepositDestination(DepositRefund)
-      inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
-        case FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(Failure(_), Success(_)))) =>
-      }
+      listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe
+        FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(true, false)))
       listener.expectTerminated(actor)
     }
 

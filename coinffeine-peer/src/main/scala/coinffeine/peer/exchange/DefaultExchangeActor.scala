@@ -96,11 +96,14 @@ class DefaultExchangeActor[C <: FiatCurrency](
         handshakingExchange.parameters.network)
       if (validationResult.forall(_.isSuccess))
         startMicropaymentChannel(commitments, committedOn, handshakingExchange)
-      else startAbortion(handshakingExchange.abort(
-        cause = AbortionCause.InvalidCommitments(validationResult),
-        refundTx = refundTx,
-        timestamp = DateTime.now()
-      ))
+      else {
+        log.error("Invalid commitments: {}", validationResult)
+        startAbortion(handshakingExchange.abort(
+          cause = AbortionCause.InvalidCommitments(validationResult.map(_.isFailure)),
+          refundTx = refundTx,
+          timestamp = DateTime.now()
+        ))
+      }
 
     case HandshakeFailure(cause, failedOn) =>
       finishWith(ExchangeFailure(exchange.cancel(
