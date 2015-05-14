@@ -2,6 +2,7 @@ package coinffeine.peer.market.orders
 
 import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.exchange.AnyExchange
+import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
@@ -46,5 +47,18 @@ class PersistentOrderActorTest extends OrderActorTest {
     restartOrder()
     expectNoMsg(idleTime)
     shouldRejectAnOrderMatch(ExchangeRejection.InvalidOrderMatch)
+  }
+
+  it should "delete its event-log after successfully being archived" in new Fixture {
+    givenASuccessfulPerfectMatchExchange()
+    archiveProbe.expectMsgType[ArchiveOrder]
+    archiveProbe.send(actor, OrderArchived(order.id))
+    expectTerminated(actor)
+    fundsBlocker.expectStop()
+
+    startOrder()
+    gatewayProbe.expectSubscription()
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
   }
 }

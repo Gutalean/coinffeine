@@ -5,6 +5,7 @@ import org.joda.time.DateTime
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor
+import coinffeine.peer.market.orders.archive.OrderArchive.{CannotArchive, ArchiveOrder, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
@@ -83,5 +84,19 @@ class SingleRunOrderActorTest extends OrderActorTest {
     gatewayProbe.expectNoMsg(idleTime)
     gatewayProbe.relayMessageFromBroker(halfOrderMatch.copy(exchangeId = ExchangeId.random()))
     gatewayProbe.expectNoMsg(idleTime)
+  }
+
+  it should "archive and stop itself after success" in new Fixture {
+    givenASuccessfulPerfectMatchExchange()
+    archiveProbe.expectMsgType[ArchiveOrder]
+    archiveProbe.send(actor, OrderArchived(order.id))
+    expectTerminated(actor)
+  }
+
+  it should "not stop itself if archiving fails" in new Fixture {
+    givenASuccessfulPerfectMatchExchange()
+    archiveProbe.expectMsgType[ArchiveOrder]
+    archiveProbe.send(actor, CannotArchive(order.id))
+    expectAlive(actor)
   }
 }

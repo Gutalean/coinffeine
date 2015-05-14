@@ -4,10 +4,12 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.event.Logging
+import akka.pattern._
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -16,6 +18,7 @@ import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, P
 import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
+import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, CannotArchive, OrderArchived}
 import coinffeine.peer.market.orders.controller._
 import coinffeine.peer.market.orders.funds.FundsBlockerActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -117,6 +120,13 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
       completeExchange(exchange.asInstanceOf[FailedExchange[C]])
+
+    case OrderArchived(`orderId`) =>
+      deleteMessages(lastSequenceNr, permanent = true)
+      context.stop(self)
+
+    case CannotArchive(`orderId`) =>
+      log.error("{}: Cannot archive myself. Keeping awake.", orderId)
   }
 
   private def resumeOrder(): Unit = {
@@ -154,6 +164,9 @@ class OrderActor[C <: FiatCurrency](
           }
           coinffeineProperties.orders.set(newOrder.id, newOrder)
           updatePublisher(newOrder)
+          if (!newOrder.status.isActive) {
+            requestArchivation()
+          }
         }
       }
     })
@@ -179,6 +192,13 @@ class OrderActor[C <: FiatCurrency](
   private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
     context.actorOf(delegates.fundsBlocker(exchangeId, funds))
   }
+
+  private def requestArchivation(): Unit = {
+    import context.dispatcher
+    AskPattern(collaborators.archive, ArchiveOrder(order.view), s"Failed to archive $orderId")
+      .withImmediateReply()
+      .pipeTo(self)
+  }
 }
 
 object OrderActor {
@@ -187,7 +207,8 @@ object OrderActor {
                            submissionSupervisor: ActorRef,
                            gateway: ActorRef,
                            bitcoinPeer: ActorRef,
-                           blockchain: ActorRef)
+                           blockchain: ActorRef,
+                           archive: ActorRef)
 
   trait Delegates[C <: FiatCurrency] {
     def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext): Props
