@@ -1,45 +1,80 @@
 package coinffeine.peer.market.orders
 
 import akka.actor._
-import akka.persistence.PersistentActor
+import akka.pattern._
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.order.{ActiveOrder, OrderId}
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.order.{AnyCurrencyActiveOrder, ActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
+import coinffeine.peer.market.orders.archive.OrderArchive
 
 /** Manages orders */
 private[this] class OrderSupervisor(override val persistenceId: String,
-                                    delegates: OrderSupervisor.Delegates)
-  extends PersistentActor with ActorLogging {
+                                    delegates: OrderSupervisor.Delegates,
+                                    properties: MutableCoinffeineNetworkProperties)
+  extends PersistentActor with Stash with ActorLogging {
 
   import OrderSupervisor.OrderCreated
 
   private val submission = context.actorOf(delegates.submissionProps, "submission")
   private val archive = context.actorOf(delegates.archiveProps, "archive")
-  private var orders = Map.empty[OrderId, ActorRef]
+  private var orders = Map.empty[OrderId, AnyCurrencyActiveOrder]
+  private var orderRefs = Map.empty[OrderId, ActorRef]
 
   override val receiveRecover: Receive = {
     case event: OrderCreated => onOrderCreated(event)
+    case RecoveryCompleted => retrieveArchivedOrders()
   }
 
-  override val receiveCommand: Receive = {
+  override val receiveCommand: Receive = retrievingArchivedOrders
 
+  private def retrieveArchivedOrders(): Unit = {
+    import context.dispatcher
+    AskPattern(archive, OrderArchive.Query(), "cannot retrieve archived orders")
+      .withImmediateReply[Any]()
+      .pipeTo(self)
+  }
+
+  private def retrievingArchivedOrders: Receive = {
+    case OrderArchive.QueryResponse(archivedOrders) =>
+      archivedOrders.foreach(order => properties.orders.set(order.id, order))
+      val archivedIds = archivedOrders.map(_.id).toSet
+      orders = orders.filterKeys(!archivedIds.contains(_))
+      orders.values.foreach(spawn)
+      context.become(supervisingOrders)
+      unstashAll()
+
+    case OrderArchive.QueryError() =>
+      throw new RuntimeException("Cannot retrieve archived orders")
+
+    case OpenOrder(_) | CancelOrder(_) => stash()
+  }
+
+  private def supervisingOrders: Receive = {
     case OpenOrder(request) =>
       persist(OrderCreated(request.create())){ event =>
         onOrderCreated(event)
+        spawn(event.order)
         sender() ! OrderOpened(event.order)
       }
 
     case CancelOrder(orderId) =>
-      orders.get(orderId).foreach(_ ! OrderActor.CancelOrder)
-      orders = orders.filterNot(_._1 == orderId)
+      orderRefs.get(orderId).foreach(_ ! OrderActor.CancelOrder)
+      orderRefs = orderRefs.filterNot(_._1 == orderId)
   }
 
   private def onOrderCreated(event: OrderCreated): Unit = {
-    val props = delegates.orderActorProps(event.order, submission, archive)
-    val ref = context.actorOf(props, s"order-${event.order.id.value}")
-    orders += event.order.id -> ref
+    orders += event.order.id -> event.order
+  }
+
+  private def spawn(order: AnyCurrencyActiveOrder): Unit = {
+    val props = delegates.orderActorProps(order, submission, archive)
+    val ref = context.actorOf(props, s"order-${order.id.value}")
+    orderRefs += order.id -> ref
   }
 }
 
@@ -54,10 +89,13 @@ object OrderSupervisor {
     val archiveProps: Props
   }
 
-  def props(delegates: Delegates): Props = props(DefaultPersistenceId, delegates)
+  def props(delegates: Delegates, properties: MutableCoinffeineNetworkProperties): Props =
+    props(DefaultPersistenceId, delegates, properties)
 
-  def props(persistenceId: String, delegates: Delegates): Props =
-    Props(new OrderSupervisor(persistenceId, delegates))
+  def props(persistenceId: String,
+            delegates: Delegates,
+            properties: MutableCoinffeineNetworkProperties): Props =
+    Props(new OrderSupervisor(persistenceId, delegates, properties))
 
   private case class OrderCreated(order: ActiveOrder[_ <: FiatCurrency]) extends PersistentEvent
 }

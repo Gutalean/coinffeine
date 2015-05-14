@@ -207,6 +207,6 @@ object CoinffeinePeerActor {
         override val submissionProps = SubmissionSupervisor.props(gateway, protocolConstants)
 
         override val archiveProps: Props = ???
-      })
+      }, coinffeineNetworkProperties)
   }
 }
