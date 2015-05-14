@@ -53,12 +53,12 @@ class PersistentOrderActorTest extends OrderActorTest {
     givenASuccessfulPerfectMatchExchange()
     archiveProbe.expectMsgType[ArchiveOrder]
     archiveProbe.send(actor, OrderArchived(order.id))
+    submissionProbe.ignoreMsg { case _ => true }
     expectTerminated(actor)
     fundsBlocker.expectStop()
 
+    submissionProbe.ignoreNoMsg()
     startOrder()
-    gatewayProbe.expectSubscription()
-    gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
+    submissionProbe.expectMsgType[KeepSubmitting]
   }
 }
