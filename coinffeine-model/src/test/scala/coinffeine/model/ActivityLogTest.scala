@@ -19,7 +19,7 @@ class ActivityLogTest extends UnitTest with OptionValues {
   }
 
   "An activity log" should "have no activities when empty" in {
-    ActivityLog.empty.activities should have size 0
+    ActivityLog.empty.activities shouldBe 'empty
   }
 
   it should "record an activity" in {

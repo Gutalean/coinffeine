@@ -17,10 +17,14 @@ case class ActivityLog[+Event] private (activities: Seq[ActivityLog.Entry[Event]
     */
   @throws[IllegalArgumentException]("for non-increasing timestamps")
   def record[Event2 >: Event](event: Event2,
-                              timestamp: DateTime = DateTime.now()): ActivityLog[Event2] = {
-    require(activities.lastOption.forall(!_.timestamp.isAfter(timestamp)),
-      s"Cannot add an event with timestamp $timestamp to $this")
-    ActivityLog(activities :+ ActivityLog.Entry(event, timestamp))
+                              timestamp: DateTime = DateTime.now()): ActivityLog[Event2] =
+    record(ActivityLog.Entry(event, timestamp))
+
+  @throws[IllegalArgumentException]("for non-increasing timestamps")
+  def record[Event2 >: Event](entry: ActivityLog.Entry[Event2]): ActivityLog[Event2] = {
+    require(activities.lastOption.forall(!_.timestamp.isAfter(entry.timestamp)),
+      s"Cannot add an event with timestamp ${entry.timestamp} to $this")
+    ActivityLog(activities :+ entry)
   }
 
   /** Most recent entry if any */
@@ -33,7 +37,7 @@ case class ActivityLog[+Event] private (activities: Seq[ActivityLog.Entry[Event]
 }
 
 object ActivityLog {
-  val empty = new ActivityLog[Nothing](Seq.empty)
+  def empty[Event] = new ActivityLog[Event](Seq.empty)
 
   def apply[Event](event: Event, timestamp: DateTime = DateTime.now()): ActivityLog[Event] =
     empty.record(event, timestamp)
