@@ -195,7 +195,9 @@ object CoinffeinePeerActor {
       OrderSupervisor.props(new OrderSupervisor.Delegates {
         import orderSupervisorCollaborators._
 
-        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef) = {
+        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+                                     submission: ActorRef,
+                                     archive: ActorRef) = {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
             gateway, bitcoinPeer, blockchain)
           OrderActor.props(exchangeActorProps, network, amountsCalculator, order,
@@ -203,6 +205,8 @@ object CoinffeinePeerActor {
         }
 
         override val submissionProps = SubmissionSupervisor.props(gateway, protocolConstants)
+
+        override val archiveProps: Props = ???
       })
   }
 }

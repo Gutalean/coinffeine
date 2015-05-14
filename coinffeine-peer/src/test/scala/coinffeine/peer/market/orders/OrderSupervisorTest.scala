@@ -53,15 +53,19 @@ class OrderSupervisorTest extends AkkaSpec {
   trait Fixture extends ProtocolConstants.DefaultComponent {
     val id = Random.nextInt().toHexString
     val createdOrdersProbe = TestProbe()
-    val submissionProbe = new MockSupervisedActor()
+    val submissionProbe, archiveProbe = new MockSupervisedActor()
     private val delegates = new Delegates {
-      def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef) =
+      def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+                          submission: ActorRef,
+                          archive: ActorRef) =
         MockOrderActor.props(order, createdOrdersProbe)
       val submissionProps = submissionProbe.props()
+      val archiveProps = archiveProbe.props()
     }
     private val props = OrderSupervisor.props(id, delegates)
     var actor: ActorRef = _
     startActor()
+    archiveProbe.expectCreation()
 
     def startActor(): Unit = {
       actor = system.actorOf(props)

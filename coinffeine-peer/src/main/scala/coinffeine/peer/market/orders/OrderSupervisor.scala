@@ -16,6 +16,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
   import OrderSupervisor.OrderCreated
 
   private val submission = context.actorOf(delegates.submissionProps, "submission")
+  private val archive = context.actorOf(delegates.archiveProps, "archive")
   private var orders = Map.empty[OrderId, ActorRef]
 
   override val receiveRecover: Receive = {
@@ -36,8 +37,8 @@ private[this] class OrderSupervisor(override val persistenceId: String,
   }
 
   private def onOrderCreated(event: OrderCreated): Unit = {
-    val ref = context.actorOf(
-      delegates.orderActorProps(event.order, submission), s"order-${event.order.id.value}")
+    val props = delegates.orderActorProps(event.order, submission, archive)
+    val ref = context.actorOf(props, s"order-${event.order.id.value}")
     orders += event.order.id -> ref
   }
 }
@@ -47,7 +48,10 @@ object OrderSupervisor {
 
   trait Delegates {
     val submissionProps: Props
-    def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef): Props
+    def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+                        submission: ActorRef,
+                        archive: ActorRef): Props
+    val archiveProps: Props
   }
 
   def props(delegates: Delegates): Props = props(DefaultPersistenceId, delegates)
