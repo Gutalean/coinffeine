@@ -12,6 +12,8 @@ import coinffeine.model.currency.{Currency, Bitcoin, CurrencyAmount, FiatCurrenc
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
+import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.market.orders.archive.OrderArchive
 import coinffeine.peer.market.orders.archive.OrderArchive._
 import coinffeine.peer.market.orders.archive.h2.serialization.{ExchangeStatusParser, ExchangeStatusFormatter, OrderStatusFormatter, OrderStatusParser}
 
@@ -251,5 +253,12 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
 }
 
 object H2OrderArchive {
+  val DefaultFilename = "archive"
+
   def props(dbFile: File) = Props(new H2OrderArchive(dbFile))
+
+  trait Component extends OrderArchive.Component { this: ConfigComponent =>
+
+    override def orderArchiveProps: Props = props(new File(configProvider.dataPath, DefaultFilename))
+  }
 }
