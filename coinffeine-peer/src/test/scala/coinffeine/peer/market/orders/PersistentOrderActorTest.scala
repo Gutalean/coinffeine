@@ -28,6 +28,16 @@ class PersistentOrderActorTest extends OrderActorTest {
       fundsBlocker.expectCreation()
     }
 
+  it should "recreate the funds blocker after a restart" in new Fixture {
+    givenInMarketOrder()
+    gatewayProbe.relayMessageFromBroker(orderMatch)
+    fundsBlocker.expectCreation()
+
+    restartOrder()
+    fundsBlocker.expectStop()
+    fundsBlocker.expectCreation()
+  }
+
   it should "remember that an exchange was started" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
