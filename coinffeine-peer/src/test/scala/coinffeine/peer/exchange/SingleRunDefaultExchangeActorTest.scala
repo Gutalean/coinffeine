@@ -15,9 +15,10 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelSuccess()
     notifyDepositDestination(CompletedChannel)
     walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
-    listener.expectMsgPF() {
-      case ExchangeSuccess(ex) => ex shouldBe 'success
+    listener.expectMsgPF(hint = "successful exchange") {
+      case ExchangeSuccess(ex) if ex.isSuccess =>
     }
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -37,6 +38,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingUserInfoLookup()
     startActor()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -44,6 +46,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingHandshake()
     startActor()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -55,6 +58,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       notifyDepositDestination(DepositRefund)
       listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe
         FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(true, false)))
+      listener.reply(ExchangeActor.FinishExchange)
       listener.expectTerminated(actor)
     }
 
@@ -68,6 +72,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     notifyDepositDestination(ChannelAtStep(1))
 
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -76,6 +81,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     startActor()
     givenMicropaymentChannelSuccess()
     listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -93,6 +99,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       inside(listener.expectMsgType[ExchangeFailure].exchange) {
         case FailedExchange(_, _, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
       }
+      listener.reply(ExchangeActor.FinishExchange)
       listener.expectTerminated(actor)
     }
 
@@ -113,6 +120,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       failedExchange.cause shouldBe FailureCause.PanicBlockReached
       failedExchange.transaction.value shouldBe midWayTx
       failedExchange.progress.bitcoinsTransferred.buyer shouldBe 'positive
+      listener.reply(ExchangeActor.FinishExchange)
       listener.expectTerminated(actor)
     }
 
@@ -120,6 +128,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingUserInfoLookup()
     startActor()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
     walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
   }

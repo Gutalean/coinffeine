@@ -14,10 +14,12 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     val originalSuccess = listener.expectMsgPF(hint = "a completed exchange") {
       case result: ExchangeSuccess if result.exchange.id == exchange.id => result
     }
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     startActor()
     listener.expectMsg(originalSuccess)
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -25,6 +27,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingUserInfoLookup()
     startActor()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     givenSuccessfulUserInfoLookup()
@@ -32,6 +35,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
       case FailureCause.Cancellation(CancellationCause.CannotStartHandshake) =>
     }
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -39,12 +43,14 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingHandshake()
     startActor()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     startActor()
     inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
       case FailureCause.Cancellation(CancellationCause.HandshakeFailed(_)) =>
     }
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -54,12 +60,14 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     micropaymentChannelActor.probe.send(actor, ChannelFailure(1, new Error("exchange failure")))
     notifyDepositDestination(ChannelAtStep(1))
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     startActor()
     inside(listener.expectMsgType[ExchangeFailure].exchange.cause) {
       case FailureCause.StepFailed(1) =>
     }
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -68,10 +76,12 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     startActor()
     givenMicropaymentChannelSuccess()
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     startActor()
     listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -81,10 +91,14 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelCreation()
     notifyDepositDestination(ChannelAtStep(3))
     listener.expectMsgType[ExchangeFailure]
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
 
     startActor()
     listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.PanicBlockReached
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
+
+  // TODO: brainwhashed after FinishExchange
 }

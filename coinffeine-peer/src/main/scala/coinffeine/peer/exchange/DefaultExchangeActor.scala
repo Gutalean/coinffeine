@@ -57,7 +57,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def onExchangeFinished(event: ExchangeFinished): Unit = {
     collaborators.listener ! event.result
     unblockFunds()
-    context.stop(self)
+    context.become(finishing)
   }
 
   private def unblockFunds(): Unit = {
@@ -223,6 +223,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def finishWith(result: ExchangeResult): Unit = {
     persist(ExchangeFinished(result))(onExchangeFinished)
   }
+
+  private def finishing: Receive = {
+    case ExchangeActor.FinishExchange => context.stop(self)
+  }
 }
 
 object DefaultExchangeActor {
@@ -283,6 +287,7 @@ object DefaultExchangeActor {
   }
 
   private case object ResumeExchange
-  private case class RetrievedPeerInfo(user: Exchange.PeerInfo, timestamp: DateTime) extends PersistentEvent
+  private case class RetrievedPeerInfo(user: Exchange.PeerInfo, timestamp: DateTime)
+    extends PersistentEvent
   private case class ExchangeFinished(result: ExchangeResult) extends PersistentEvent
 }
