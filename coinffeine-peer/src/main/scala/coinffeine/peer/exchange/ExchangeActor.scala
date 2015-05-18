@@ -29,6 +29,9 @@ object ExchangeActor {
   /** This is a message sent to the listener to indicate that an exchange failed */
   case class ExchangeFailure(exchange: FailedExchange[_ <: FiatCurrency]) extends ExchangeResult
 
+  /** Acknowledge the exchange result and allow the exchange to terminate */
+  case object FinishExchange
+
   trait Component {
     def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
                            collaborators: Collaborators): Props

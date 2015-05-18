@@ -6,7 +6,6 @@ import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.exchange._
 import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.ExchangeFailure
 import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
@@ -37,7 +36,7 @@ class PersistentOrderActorTest extends OrderActorTest {
     exchange.id shouldBe orderMatch.exchangeId
 
     restartOrder()
-    exchangeActor.probe.expectMsgType[MockStopped]
+    exchangeActor.expectStop()
     exchangeActor.expectCreation() shouldBe Seq(exchange)
   }
 
@@ -46,13 +45,18 @@ class PersistentOrderActorTest extends OrderActorTest {
     gatewayProbe.relayMessageFromBroker(orderMatch)
     givenSuccessfulFundsBlocking(orderMatch.exchangeId)
     val Seq(exchange: HandshakingExchange[_]) = exchangeActor.expectCreation()
-    exchangeActor.probe.send(actor,
-      ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
+    actor.tell(
+      msg = ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())),
+      sender = exchangeActor.ref
+    )
     expectProperty(_.exchanges(exchange.id).isCompleted)
     properties.orders.set(order.id, null)
+    exchangeActor.expectMsg(ExchangeActor.FinishExchange)
 
     restartOrder()
     expectProperty { _.status shouldBe OrderStatus.Completed }
+    exchangeActor.expectStop()
+    exchangeActor.expectNoMsg()
   }
 
   it should "remember that the order was cancelled" in new Fixture {

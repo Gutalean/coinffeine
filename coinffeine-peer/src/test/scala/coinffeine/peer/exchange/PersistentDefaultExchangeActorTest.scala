@@ -14,10 +14,10 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     val originalSuccess = listener.expectMsgPF(hint = "a completed exchange") {
       case result: ExchangeSuccess if result.exchange.id == exchange.id => result
     }
-    listener.expectTerminated(actor)
 
-    startActor()
+    restartActor()
     listener.expectMsg(originalSuccess)
+    listener.reply(ExchangeActor.FinishExchange)
     listener.expectTerminated(actor)
   }
 
@@ -25,27 +25,23 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenFailingUserInfoLookup()
     startActor()
     listener.expectMsgType[ExchangeFailure]
-    listener.expectTerminated(actor)
 
     givenSuccessfulUserInfoLookup()
-    startActor()
-    inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
+    restartActor()
+    inside (expectFailureTermination().exchange.cause) {
       case FailureCause.Cancellation(CancellationCause.CannotStartHandshake) =>
     }
-    listener.expectTerminated(actor)
   }
 
   it should "remember that the handshake failed" in new Fixture {
     givenFailingHandshake()
     startActor()
     listener.expectMsgType[ExchangeFailure]
-    listener.expectTerminated(actor)
 
-    startActor()
-    inside (listener.expectMsgType[ExchangeFailure].exchange.cause) {
+    restartActor()
+    inside (expectFailureTermination().exchange.cause) {
       case FailureCause.Cancellation(CancellationCause.HandshakeFailed(_)) =>
     }
-    listener.expectTerminated(actor)
   }
 
   it should "remember that the actual exchange failed" in new Fixture {
@@ -54,13 +50,11 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     micropaymentChannelActor.probe.send(actor, ChannelFailure(1, new Error("exchange failure")))
     notifyDepositDestination(ChannelAtStep(1))
     listener.expectMsgType[ExchangeFailure]
-    listener.expectTerminated(actor)
 
-    startActor()
-    inside(listener.expectMsgType[ExchangeFailure].exchange.cause) {
+    restartActor()
+    inside(expectFailureTermination().exchange.cause) {
       case FailureCause.StepFailed(1) =>
     }
-    listener.expectTerminated(actor)
   }
 
   it should "remember that publication failed" in new Fixture {
@@ -68,11 +62,9 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     startActor()
     givenMicropaymentChannelSuccess()
     listener.expectMsgType[ExchangeFailure]
-    listener.expectTerminated(actor)
 
-    startActor()
-    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
-    listener.expectTerminated(actor)
+    restartActor()
+    expectFailureTermination().exchange.cause shouldBe FailureCause.NoBroadcast
   }
 
   it should "remember that it panicked publishing the best available transaction" in new Fixture {
@@ -81,10 +73,18 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelCreation()
     notifyDepositDestination(ChannelAtStep(3))
     listener.expectMsgType[ExchangeFailure]
-    listener.expectTerminated(actor)
 
+    restartActor()
+    expectFailureTermination().exchange.cause shouldBe FailureCause.PanicBlockReached
+  }
+
+  it should "delete its event-log after being finished with FinishExchange" in new Fixture {
+    givenFailingHandshake()
     startActor()
-    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.PanicBlockReached
-    listener.expectTerminated(actor)
+    expectFailureTermination()
+
+    givenHandshakeWillSucceed()
+    startActor()
+    micropaymentChannelActor.expectCreation() // As if nothing has happened
   }
 }

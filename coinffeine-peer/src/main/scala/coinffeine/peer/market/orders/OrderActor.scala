@@ -1,5 +1,6 @@
 package coinffeine.peer.market.orders
 
+import scala.annotation.tailrec
 import scala.util.{Failure, Success}
 
 import akka.actor._
@@ -64,7 +65,9 @@ class OrderActor[C <: FiatCurrency](
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {
     val exchange = order.startExchange(event.exchangeId, event.timestamp)
-    context.actorOf(delegates.exchangeActor(exchange), exchange.id.value)
+    if (!recoveryRunning) {
+      spawnExchangeActor(exchange)
+    }
   }
 
   private def onCannotBlockFunds(event: CannotBlockFunds): Unit = {
@@ -140,7 +143,25 @@ class OrderActor[C <: FiatCurrency](
     val currentOrder = order.view
     coinffeineProperties.orders.set(currentOrder.id, currentOrder)
     updatePublisher(currentOrder)
+    for (exchange <- currentOrder.exchanges.values if !exchange.isCompleted) {
+      spawnExchangeActor(exchange)
+    }
   }
+
+  private def spawnExchangeActor(exchange: ActiveExchange[C]): ActorRef = {
+    context.actorOf(delegates.exchangeActor(handshakingExchangeOf(exchange)), exchange.id.value)
+  }
+
+  @tailrec
+  private def handshakingExchangeOf(exchange: ActiveExchange[C]): HandshakingExchange[C] =
+    exchange match {
+      case ex: HandshakingExchange[C] => ex
+      case ex: DepositPendingExchange[C] => ex.prev
+      case ex: RunningExchange[C] => ex.prev.prev
+      case ex: SuccessfulExchange[C] => ex.prev.prev.prev
+      case ex: AbortingExchange[C] => handshakingExchangeOf(ex.prev)
+      case ex: FailedExchange[C] => handshakingExchangeOf(ex.prev)
+    }
 
   override def inMarket(): Unit = { order.becomeInMarket() }
   override def offline(): Unit = { order.becomeOffline() }
@@ -192,7 +213,10 @@ class OrderActor[C <: FiatCurrency](
   private def completeExchange(exchange: CompletedExchange[C]): Unit = {
     val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
     log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
-    persist(ExchangeFinished(exchange))(onCompletedExchange)
+    persist(ExchangeFinished(exchange)) { event =>
+      onCompletedExchange(event)
+      sender() ! ExchangeActor.FinishExchange
+    }
   }
 
   private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
