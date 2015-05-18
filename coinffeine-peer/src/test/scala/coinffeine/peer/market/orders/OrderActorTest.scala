@@ -5,6 +5,8 @@ import scala.util.{Failure, Success}
 
 import akka.actor.{ActorContext, ActorRef, Props}
 import akka.testkit._
+import akka.pattern._
+import org.joda.time.DateTime
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
@@ -82,7 +84,8 @@ abstract class OrderActorTest extends AkkaSpec
     )
     val gatewayProbe = new MockGateway()
     val fundsBlocker, exchangeActor = new MockSupervisedActor()
-    val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe, walletProbe = TestProbe()
+    val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe,
+      walletProbe, archiveProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
     val properties = new MutableCoinffeineNetworkProperties
@@ -100,7 +103,8 @@ abstract class OrderActorTest extends AkkaSpec
       },
       properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
-        submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref)
+        submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref,
+        archiveProbe.ref)
     ))
     var actor: ActorRef = _
 
@@ -132,12 +136,6 @@ abstract class OrderActorTest extends AkkaSpec
       expectProperty { _.inMarket shouldBe true }
     }
 
-    def givenASuccessfulPerfectMatchExchange(): Unit = {
-      gatewayProbe.relayMessageFromBroker(orderMatch)
-      exchangeActor.expectCreation()
-      exchangeActor.probe.send(actor, ExchangeActor.ExchangeSuccess(completedExchange))
-    }
-
     def shouldRejectAnOrderMatch(cause: ExchangeRejection.Cause): Unit = {
       val otherExchangeId = ExchangeId.random()
       gatewayProbe.relayMessageFromBroker(orderMatch.copy(exchangeId = otherExchangeId))
@@ -155,10 +153,26 @@ abstract class OrderActorTest extends AkkaSpec
         Failure(new Exception("intended lack of funds"))))
     }
 
+    def givenASuccessfulPerfectMatchExchange(): Unit = {
+      givenInMarketOrder()
+      gatewayProbe.relayMessageFromBroker(orderMatch)
+      givenSuccessfulFundsBlocking(orderMatch.exchangeId)
+      exchangeActor.probe.send(actor,
+        ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
+    }
+
     def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
       eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }
+    }
+
+    def expectAlive(ref: ActorRef, after: FiniteDuration = 500.millis.dilated): Unit = {
+      import system.dispatcher
+      Thread.sleep(after.toMillis)
+      val lookupTimeout = 1.second.dilated
+      system.actorSelection(ref.path).resolveOne(lookupTimeout).pipeTo(self)
+      expectMsg(lookupTimeout, "Actor is not alive", ref)
     }
   }
 }

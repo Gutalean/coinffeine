@@ -16,7 +16,7 @@ object Dependencies {
   )
   lazy val akkaTest = Seq(
     "com.typesafe.akka" %% "akka-testkit" % Versions.akka,
-    "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.0"
+    "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.1"
   )
   lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
   lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.3"

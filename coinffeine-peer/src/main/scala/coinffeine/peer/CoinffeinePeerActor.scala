@@ -19,6 +19,7 @@ import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market._
+import coinffeine.peer.market.orders.archive.OrderArchive
 import coinffeine.peer.market.orders.{OrderActor, OrderSupervisor}
 import coinffeine.peer.market.submission.SubmissionSupervisor
 import coinffeine.peer.payment.MutablePaymentProcessorProperties
@@ -176,7 +177,8 @@ object CoinffeinePeerActor {
     with ProtocolConstants.Component
     with MutablePaymentProcessorProperties.Component
     with MutableCoinffeineNetworkProperties.Component
-    with AmountsComponent =>
+    with AmountsComponent
+    with OrderArchive.Component =>
 
     lazy val peerProps: Props = {
       val props = PropsCatalogue(
@@ -195,14 +197,18 @@ object CoinffeinePeerActor {
       OrderSupervisor.props(new OrderSupervisor.Delegates {
         import orderSupervisorCollaborators._
 
-        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency], submission: ActorRef) = {
+        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+                                     submission: ActorRef,
+                                     archive: ActorRef) = {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
-            gateway, bitcoinPeer, blockchain)
+            gateway, bitcoinPeer, blockchain, archive)
           OrderActor.props(exchangeActorProps, network, amountsCalculator, order,
             coinffeineNetworkProperties, collaborators, configProvider.messageGatewaySettings().peerId)
         }
 
         override val submissionProps = SubmissionSupervisor.props(gateway, protocolConstants)
-      })
+
+        override val archiveProps = orderArchiveProps
+      }, coinffeineNetworkProperties)
   }
 }
