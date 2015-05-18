@@ -39,13 +39,13 @@ class MockSupervisedActor(implicit system: ActorSystem) extends ShouldMatchers {
   }
 
   def expectMsg(message: Any): Unit = {
-    probe.expectMsgPF() {
+    probe.expectMsgPF(hint = message.toString) {
       case MockActor.MockReceived(_, _, `message`) =>
     }
   }
 
-  def expectMsgPF[T](pattern: PartialFunction[Any, T]): Unit = {
-    probe.expectMsgPF() {
+  def expectMsgPF[T](pattern: PartialFunction[Any, T], hint: String = ""): Unit = {
+    probe.expectMsgPF(hint = hint) {
       case MockActor.MockReceived(_, _, message) if pattern.isDefinedAt(message) => pattern(message)
     }
   }
