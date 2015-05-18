@@ -53,6 +53,8 @@ class OrderActor[C <: FiatCurrency](
     case event: FundsBlocked => onFundsBlocked(event)
     case event: CannotBlockFunds => onCannotBlockFunds(event)
     case event: CancelledOrder => onCancelledOrder(event)
+    case event: ExchangeFinished[_] =>
+      onCompletedExchange(event.asInstanceOf[ExchangeFinished[C]])
     case RecoveryCompleted => self ! ResumeOrder
   }
 
@@ -71,6 +73,10 @@ class OrderActor[C <: FiatCurrency](
 
   private def onCancelledOrder(event: CancelledOrder): Unit = {
     order.cancel(event.timestamp)
+  }
+
+  private def onCompletedExchange(event: ExchangeFinished[C]): Unit = {
+    order.completeExchange(event.exchange)
   }
 
   override def receiveCommand = publisher.receiveSubmissionEvents orElse {
@@ -186,7 +192,7 @@ class OrderActor[C <: FiatCurrency](
   private def completeExchange(exchange: CompletedExchange[C]): Unit = {
     val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
     log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
-    order.completeExchange(exchange)
+    persist(ExchangeFinished(exchange))(onCompletedExchange)
   }
 
   private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
@@ -246,7 +252,10 @@ object OrderActor {
   private case object ResumeOrder
   private case class FundsRequested[C <: FiatCurrency](
       orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
-  private case class FundsBlocked(exchangeId: ExchangeId, timestamp: DateTime) extends PersistentEvent
+  private case class FundsBlocked(exchangeId: ExchangeId, timestamp: DateTime)
+    extends PersistentEvent
   private case class CannotBlockFunds(exchangeId: ExchangeId) extends PersistentEvent
   private case class CancelledOrder(timestamp: DateTime) extends PersistentEvent
+  private case class ExchangeFinished[C <: FiatCurrency](exchange: CompletedExchange[C])
+    extends PersistentEvent
 }
