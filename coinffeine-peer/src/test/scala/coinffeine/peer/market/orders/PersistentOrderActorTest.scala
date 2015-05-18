@@ -6,7 +6,6 @@ import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.exchange._
 import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.exchange.ExchangeActor.ExchangeFailure
 import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
