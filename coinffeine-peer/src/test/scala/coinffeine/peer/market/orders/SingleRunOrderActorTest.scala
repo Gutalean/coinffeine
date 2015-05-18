@@ -5,7 +5,7 @@ import org.joda.time.DateTime
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor
-import coinffeine.peer.market.orders.archive.OrderArchive.{CannotArchive, ArchiveOrder, OrderArchived}
+import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, CannotArchive, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
@@ -46,8 +46,12 @@ class SingleRunOrderActorTest extends OrderActorTest {
       }
       expectProperty { _.status should not be OrderStatus.NotStarted }
       expectProperty { _.progress shouldBe 0.0 }
-      exchangeActor.probe.send(actor,
-        ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
+      exchangeActor.expectCreation()
+      actor.tell(
+        msg = ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())),
+        sender = exchangeActor.ref
+      )
+      exchangeActor.expectMsg(ExchangeActor.FinishExchange)
       expectProperty { _.status shouldBe OrderStatus.Completed }
     }
 

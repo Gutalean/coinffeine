@@ -192,7 +192,10 @@ class OrderActor[C <: FiatCurrency](
   private def completeExchange(exchange: CompletedExchange[C]): Unit = {
     val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
     log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
-    persist(ExchangeFinished(exchange))(onCompletedExchange)
+    persist(ExchangeFinished(exchange)) { event =>
+      onCompletedExchange(event)
+      sender() ! ExchangeActor.FinishExchange
+    }
   }
 
   private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
