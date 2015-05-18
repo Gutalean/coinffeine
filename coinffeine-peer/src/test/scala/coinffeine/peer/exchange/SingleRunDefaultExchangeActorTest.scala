@@ -37,17 +37,13 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
   it should "report a failure if the handshake couldn't even start" in new Fixture {
     givenFailingUserInfoLookup()
     startActor()
-    listener.expectMsgType[ExchangeFailure]
-    listener.reply(ExchangeActor.FinishExchange)
-    listener.expectTerminated(actor)
+    expectFailureTermination()
   }
 
   it should "report a failure if the handshake fails" in new Fixture {
     givenFailingHandshake()
     startActor()
-    listener.expectMsgType[ExchangeFailure]
-    listener.reply(ExchangeActor.FinishExchange)
-    listener.expectTerminated(actor)
+    expectFailureTermination()
   }
 
   it should "report a failure and ask the broadcaster publish the refund if commitments are invalid" in
@@ -56,10 +52,8 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       listener.expectNoMsg()
       notifyDepositDestination(DepositRefund)
-      listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe
+      expectFailureTermination().exchange.cause shouldBe
         FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(true, false)))
-      listener.reply(ExchangeActor.FinishExchange)
-      listener.expectTerminated(actor)
     }
 
   it should "report a failure if the actual exchange fails" in new Fixture {
@@ -70,19 +64,14 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
     notifyDepositDestination(ChannelAtStep(1))
-
-    listener.expectMsgType[ExchangeFailure]
-    listener.reply(ExchangeActor.FinishExchange)
-    listener.expectTerminated(actor)
+    expectFailureTermination()
   }
 
   it should "report a failure if the broadcast failed" in new Fixture {
     givenBroadcasterWillFail()
     startActor()
     givenMicropaymentChannelSuccess()
-    listener.expectMsgType[ExchangeFailure].exchange.cause shouldBe FailureCause.NoBroadcast
-    listener.reply(ExchangeActor.FinishExchange)
-    listener.expectTerminated(actor)
+    expectFailureTermination().exchange.cause shouldBe FailureCause.NoBroadcast
   }
 
   it should "report a failure if the broadcast succeeds with an unexpected transaction" in
@@ -96,11 +85,9 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
-      inside(listener.expectMsgType[ExchangeFailure].exchange) {
+      inside(expectFailureTermination().exchange) {
         case FailedExchange(_, _, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
       }
-      listener.reply(ExchangeActor.FinishExchange)
-      listener.expectTerminated(actor)
     }
 
   it should "report a failure if the broadcast is forcefully finished because it took too long" in
@@ -116,20 +103,16 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       micropaymentChannelActor.probe.send(actor, ExchangeUpdate(runningExchange.completeStep(1)))
       listener.expectMsgType[ExchangeUpdate]
       notifyDepositDestination(DepositRefund, midWayTx)
-      val failedExchange = listener.expectMsgType[ExchangeFailure].exchange
+      val failedExchange = expectFailureTermination().exchange
       failedExchange.cause shouldBe FailureCause.PanicBlockReached
       failedExchange.transaction.value shouldBe midWayTx
       failedExchange.progress.bitcoinsTransferred.buyer shouldBe 'positive
-      listener.reply(ExchangeActor.FinishExchange)
-      listener.expectTerminated(actor)
     }
 
   it should "unblock funds when finishing with error" in new Fixture {
     givenFailingUserInfoLookup()
     startActor()
-    listener.expectMsgType[ExchangeFailure]
-    listener.reply(ExchangeActor.FinishExchange)
-    listener.expectTerminated(actor)
+    expectFailureTermination()
     walletActor.expectMsg(WalletActor.UnblockBitcoins(currentExchange.id))
   }
 

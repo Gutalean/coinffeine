@@ -17,7 +17,7 @@ import coinffeine.model.exchange.HandshakeFailureCause.SignatureTimeout
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
-import coinffeine.peer.exchange.ExchangeActor.Collaborators
+import coinffeine.peer.exchange.ExchangeActor.{ExchangeFailure, Collaborators}
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.protocol.{MicroPaymentChannel, MockExchangeProtocol}
@@ -133,6 +133,13 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
         BlockchainActor.RetrieveTransaction(deposits.buyer),
         BlockchainActor.RetrieveTransaction(deposits.seller)
       )
+    }
+
+    protected def expectFailureTermination(): ExchangeFailure = {
+      val failure = listener.expectMsgType[ExchangeFailure]
+      listener.reply(ExchangeActor.FinishExchange)
+      listener.expectTerminated(actor)
+      failure
     }
   }
 
