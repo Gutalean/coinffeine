@@ -78,5 +78,13 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     expectFailureTermination().exchange.cause shouldBe FailureCause.PanicBlockReached
   }
 
-  // TODO: brainwhashed after FinishExchange
+  it should "delete its event-log after being finished with FinishExchange" in new Fixture {
+    givenFailingHandshake()
+    startActor()
+    expectFailureTermination()
+
+    givenHandshakeWillSucceed()
+    startActor()
+    micropaymentChannelActor.expectCreation() // As if nothing has happened
+  }
 }

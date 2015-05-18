@@ -225,7 +225,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def finishing: Receive = {
-    case ExchangeActor.FinishExchange => context.stop(self)
+    case ExchangeActor.FinishExchange =>
+      deleteMessages(lastSequenceNr, permanent = true)
+      context.stop(self)
   }
 }
 
