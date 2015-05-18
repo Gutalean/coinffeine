@@ -3,8 +3,7 @@ package coinffeine.gui.setup
 import java.net.URI
 import scalafx.event.ActionEvent
 import scalafx.scene.control.{Button, Label, TextField}
-import scalafx.scene.input.{Clipboard, ClipboardContent}
-import scalafx.scene.layout.{HBox, Priority, StackPane, VBox}
+import scalafx.scene.layout.{Priority, StackPane, VBox}
 
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.Browser
@@ -30,18 +29,7 @@ private[setup] class FaucetInfoStepPane(address: String)
   }
 
   private val par2 = new Label {
-    text = "Please, copy the Bitcoin address below to the clipboard and use it in our " +
-      "faucet site to obtain your credentials."
-  }
-
-  private val addressLine = new HBox {
-    styleClass += "address"
-    children = Seq(
-      addressTextField,
-      new Button("Copy to clipboard") {
-        handleEvent(ActionEvent.Action) { () => copyAddressToClipboard() }
-      }
-    )
+    text = "Please, use our faucet site to obtain your testing credentials."
   }
 
   private val gotoFaucetLine = new Button("Go to Faucet Site") {
@@ -50,17 +38,12 @@ private[setup] class FaucetInfoStepPane(address: String)
 
   children = new VBox {
     styleClass += "faucet-pane"
-    children = Seq(title, par1, par2, new SupportWidget("setup-faucet"), addressLine, gotoFaucetLine)
+    children = Seq(title, par1, par2, new SupportWidget("setup-faucet"), gotoFaucetLine)
   }
 
   private def openFaucet(): Unit = {
-    Browser.default.browse(FaucetInfoStepPane.FaucetUrl)
-  }
-
-  private def copyAddressToClipboard(): Unit = {
-    val content = new ClipboardContent()
-    content.putString(addressTextField.text.value)
-    Clipboard.systemClipboard.setContent(content)
+    val location = URI.create(s"${FaucetInfoStepPane.FaucetUrl}index.html?address=$address")
+    Browser.default.browse(location)
   }
 }
 
