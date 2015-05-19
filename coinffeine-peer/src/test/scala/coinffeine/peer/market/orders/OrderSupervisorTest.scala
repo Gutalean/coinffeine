@@ -9,6 +9,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.ActivityLog
 import coinffeine.model.currency._
@@ -68,6 +69,18 @@ class OrderSupervisorTest
     startActor()
     val order1 = shouldCreateOrder(request1)
     val order2 = shouldCreateOrder(request2)
+    restartActor()
+    createdOrdersProbe.expectMsgAllOf(order1, order2)
+  }
+
+  it should "remember created order actors after a snapshot recovery" in new Fixture {
+    givenNoArchivedOrders()
+    startActor()
+    val order1 = shouldCreateOrder(request1)
+    val order2 = shouldCreateOrder(request2)
+    actor ! PeriodicSnapshot.CreateSnapshot
+    expectNoMsg(100.millis.dilated)
+
     restartActor()
     createdOrdersProbe.expectMsgAllOf(order1, order2)
   }

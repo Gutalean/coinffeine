@@ -4,10 +4,10 @@ import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
 import akka.actor.{Address => _, _}
-import akka.persistence.PersistentActor
+import akka.persistence.{SnapshotOffer, PersistentActor}
 import org.bitcoinj.core.TransactionOutPoint
 
-import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.model.exchange.ExchangeId
@@ -17,11 +17,11 @@ import coinffeine.peer.bitcoin.wallet.WalletActor._
 private class DefaultWalletActor(properties: MutableWalletProperties,
                                  wallet: SmartWallet,
                                  override val persistenceId: String)
-  extends PersistentActor with ActorLogging {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging {
 
   import DefaultWalletActor._
 
-  private val blockedOutputs = new BlockedOutputs()
+  private var blockedOutputs = new BlockedOutputs()
   private var listeners = Set.empty[ActorRef]
 
   override def preStart(): Unit = {
@@ -42,6 +42,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case event: FundsUnblocked => onFundsUnblocked(event)
     case event: DepositCreated => onDepositCreated(event)
     case event: DepositCancelled => onDepositCancelled(event)
+    case SnapshotOffer(_, snapshot: BlockedOutputs) => blockedOutputs = snapshot
   }
 
   override def receiveCommand: Receive = {
@@ -111,6 +112,8 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
     case Terminated(listener) =>
       listeners -= listener
+
+    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(blockedOutputs)
   }
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {

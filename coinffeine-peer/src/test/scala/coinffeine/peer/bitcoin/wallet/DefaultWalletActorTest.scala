@@ -3,9 +3,11 @@ package coinffeine.peer.bitcoin.wallet
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import scala.concurrent.duration._
 
+import akka.actor.ActorRef
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
@@ -139,6 +141,19 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     expectMsg(WalletActor.BlockedBitcoins(funds3))
   }
 
+  it must "recover its previous state from snapshot" in new Fixture {
+    instance ! WalletActor.BlockBitcoins(funds1, 1.BTC)
+    expectMsgType[WalletActor.BlockedBitcoins]
+    instance ! PeriodicSnapshot.CreateSnapshot
+    instance ! WalletActor.CreateKeyPair
+    expectMsgType[WalletActor.KeyPairCreated]
+    system.stop(instance)
+
+    start()
+    instance ! WalletActor.CreateDeposit(funds1, requiredSignatures, 0.1.BTC, 0.001.BTC)
+    expectMsgType[WalletActor.DepositCreated]
+  }
+
   var lastPersistenceId = 0
 
   trait Fixture {
@@ -158,8 +173,13 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     }
     lazy val wallet = buildWallet()
     val properties = new MutableWalletProperties()
-    val instance = system.actorOf(DefaultWalletActor.props(properties, wallet, persistenceId))
     val someAddress = new KeyPair().toAddress(network)
+    var instance: ActorRef = _
+    start()
+
+    def start(): Unit = {
+      instance = system.actorOf(DefaultWalletActor.props(properties, wallet, persistenceId))
+    }
 
     def givenBlockedFunds(amount: Bitcoin.Amount): ExchangeId = {
       val fundsId = ExchangeId.random()

@@ -2,13 +2,13 @@ package coinffeine.peer.market.orders
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.{PersistentActor, RecoveryCompleted}
+import akka.persistence.{SnapshotOffer, PersistentActor, RecoveryCompleted}
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
-import coinffeine.model.order.{AnyCurrencyActiveOrder, ActiveOrder, OrderId}
+import coinffeine.model.order.{ActiveOrder, AnyCurrencyActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.orders.archive.OrderArchive
 
@@ -16,7 +16,7 @@ import coinffeine.peer.market.orders.archive.OrderArchive
 private[this] class OrderSupervisor(override val persistenceId: String,
                                     delegates: OrderSupervisor.Delegates,
                                     properties: MutableCoinffeineNetworkProperties)
-  extends PersistentActor with Stash with ActorLogging {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging {
 
   import OrderSupervisor.OrderCreated
 
@@ -27,6 +27,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   override val receiveRecover: Receive = {
     case event: OrderCreated => onOrderCreated(event)
+    case SnapshotOffer(_, snapshot: OrderSupervisor.Snapshot) => orders = snapshot.orders
     case RecoveryCompleted => retrieveArchivedOrders()
   }
 
@@ -65,6 +66,8 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case CancelOrder(orderId) =>
       orderRefs.get(orderId).foreach(_ ! OrderActor.CancelOrder)
       orderRefs = orderRefs.filterNot(_._1 == orderId)
+
+    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(OrderSupervisor.Snapshot(orders))
   }
 
   private def onOrderCreated(event: OrderCreated): Unit = {
@@ -80,6 +83,8 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
 object OrderSupervisor {
   val DefaultPersistenceId = "orders"
+
+  private case class Snapshot(orders: Map[OrderId, AnyCurrencyActiveOrder])
 
   trait Delegates {
     val submissionProps: Props
