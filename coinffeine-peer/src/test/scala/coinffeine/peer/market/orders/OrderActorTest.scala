@@ -11,6 +11,7 @@ import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
@@ -116,7 +117,7 @@ abstract class OrderActorTest extends AkkaSpec
 
     def restartOrder(): Unit = {
       if (useSnapshots) {
-        actor ! OrderActor.CreateSnapshot
+        actor ! PeriodicSnapshot.CreateSnapshot
       }
       system.stop(actor)
       expectTerminated(actor)
