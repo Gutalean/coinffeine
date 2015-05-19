@@ -7,6 +7,7 @@ import scalaz.syntax.validation._
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted}
+import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
@@ -20,13 +21,12 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
       id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
-
+    val timestamp = DateTime.now()
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
 
   private val balances = new MultipleBalance()
   private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
-  private var arrivalOrder: Seq[ExchangeId] = Seq.empty
   private val fundsAvailability = new BlockedFundsAvailability()
 
   override def receiveRecover: Receive = {
@@ -70,7 +70,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
-    arrivalOrder :+= event.fundsId
     funds += event.fundsId -> BlockedFundsInfo(event.fundsId, event.amount)
     fundsAvailability.addFunds(event.fundsId)
     updateBackedFunds()
@@ -86,7 +85,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def onFundsUnblocked(event: FundsUnblockedEvent): Unit = {
-    arrivalOrder = arrivalOrder.filter(_ != event.fundsId)
     funds -= event.fundsId
     fundsAvailability.removeFunds(event.fundsId)
     updateBackedFunds()
@@ -137,7 +135,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       .filter(_.remainingAmount.currency == currency)
       .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
       .toSeq
-      .sortBy(f => arrivalOrder.indexOf(f.id))
+      .sortBy(_.timestamp.getMillis)
     val fundsThatCanBeBacked =
       eligibleFunds.scanLeft(CurrencyAmount.zero(currency))(_ + _.remainingAmount)
         .takeWhile(_ <= availableBalance)
