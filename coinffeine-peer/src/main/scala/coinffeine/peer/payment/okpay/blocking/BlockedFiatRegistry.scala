@@ -6,7 +6,7 @@ import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 
 import akka.actor.{ActorLogging, Props}
-import akka.persistence.{PersistentActor, RecoveryCompleted}
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
@@ -19,12 +19,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   import BlockedFiatRegistry._
 
-  private case class BlockedFundsInfo[C <: FiatCurrency](
-      id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
-    val timestamp = DateTime.now()
-    def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
-  }
-
   private val balances = new MultipleBalance()
   private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
   private val fundsAvailability = new BlockedFundsAvailability()
@@ -33,7 +27,14 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case event: FundsBlockedEvent => onFundsBlocked(event)
     case event: FundsUsedEvent => onFundsUsed(event)
     case event: FundsUnblockedEvent => onFundsUnblocked(event)
+    case SnapshotOffer(_, snapshot: Snapshot) => restoreSnapshot(snapshot)
     case RecoveryCompleted => notifyAvailabilityChanges()
+  }
+
+  private def restoreSnapshot(snapshot: Snapshot): Unit = {
+    funds = snapshot.funds
+    funds.keys.foreach(fundsAvailability.addFunds)
+    updateBackedFunds()
   }
 
   override def receiveCommand: Receive = {
@@ -67,6 +68,8 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
     case PaymentProcessorActor.UnblockFunds(fundsId) =>
       persist(FundsUnblockedEvent(fundsId))(onFundsUnblocked)
+
+    case CreateSnapshot => saveSnapshot(Snapshot(funds))
   }
 
   private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
@@ -181,6 +184,16 @@ private[okpay] object BlockedFiatRegistry {
   private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
   private case class FundsUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
   private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvent
+
+  private case class BlockedFundsInfo[C <: FiatCurrency](
+      id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
+    val timestamp = DateTime.now()
+    def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
+  }
+
+  case object CreateSnapshot
+  private case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]])
+    extends PersistentEvent
 
   def props = Props(new BlockedFiatRegistry(PersistenceId))
 }

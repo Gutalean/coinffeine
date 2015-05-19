@@ -1,12 +1,13 @@
 package coinffeine.peer.payment.okpay.blocking
 
-import akka.actor.Props
+import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry.TotalBlockedFunds
 
 class BlockedFiatRegistryTest extends AkkaSpec {
 
@@ -189,43 +190,67 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     expectBecomingUnavailable(funds1)
     setBalance(100.EUR)
     expectBecomingAvailable(funds1)
-    actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-    expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
+    currentTotalBlockedFunds(Euro) shouldBe TotalBlockedFunds(40.EUR)
     system.stop(actor)
   }
 
-  private abstract class WithBlockingFundsActor(persistentId: Int = freshId()) {
-    val actor = system.actorOf(Props(new BlockedFiatRegistry(persistentId.toString)))
+  it must "recover its previous state from snapshot" in
+    new WithBlockingFundsActor(persistentId = lastId) {
+      expectBecomingUnavailable(funds1)
+      actor ! BlockedFiatRegistry.CreateSnapshot
+      currentTotalBlockedFunds(Euro)
+      system.stop(actor)
 
-    def givenBlockedFunds(amount: FiatAmount): ExchangeId = {
+      start()
+      expectBecomingUnavailable(funds1)
+      setBalance(100.EUR)
+      expectBecomingAvailable(funds1)
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
+      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
+    }
+
+  private abstract class WithBlockingFundsActor(persistentId: Int = freshId()) {
+    var actor: ActorRef = _
+    start()
+
+    protected def start(): Unit = {
+      actor = system.actorOf(Props(new BlockedFiatRegistry(persistentId.toString)))
+    }
+
+    protected def givenBlockedFunds(amount: FiatAmount): ExchangeId = {
       val fundsId = ExchangeId.random()
       actor ! PaymentProcessorActor.BlockFunds(fundsId, amount)
       expectMsg(PaymentProcessorActor.BlockedFunds(fundsId))
       fundsId
     }
 
-    def givenAvailableFunds(amount: FiatAmount): ExchangeId = {
+    protected def givenAvailableFunds(amount: FiatAmount): ExchangeId = {
       val fundsId = givenBlockedFunds(amount)
       expectBecomingAvailable(fundsId)
       fundsId
     }
 
-    def givenUnavailableFunds(amount: FiatAmount): ExchangeId = {
+    protected def givenUnavailableFunds(amount: FiatAmount): ExchangeId = {
       val fundsId = givenBlockedFunds(amount)
       expectBecomingUnavailable(fundsId)
       fundsId
     }
 
-    def setBalance(balance: FiatAmount): Unit = {
+    protected def setBalance(balance: FiatAmount): Unit = {
       actor ! BlockedFiatRegistry.BalancesUpdate(Seq(balance))
     }
 
-    def expectBecomingAvailable(fundsId: ExchangeId): Unit = {
+    protected def expectBecomingAvailable(fundsId: ExchangeId): Unit = {
       eventProbe.expectMsg(PaymentProcessorActor.AvailableFunds(fundsId))
     }
 
-    def expectBecomingUnavailable(fundsId: ExchangeId): Unit = {
+    protected def expectBecomingUnavailable(fundsId: ExchangeId): Unit = {
       eventProbe.expectMsg(PaymentProcessorActor.UnavailableFunds(fundsId))
+    }
+
+    protected def currentTotalBlockedFunds[C <: FiatCurrency](currency: C): TotalBlockedFunds[C] = {
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(currency)
+      expectMsgType[TotalBlockedFunds[C]]
     }
   }
 
