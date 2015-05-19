@@ -9,13 +9,13 @@ import akka.actor.{ActorLogging, Props}
 import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.joda.time.DateTime
 
-import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
 private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
-  extends PersistentActor with ActorLogging {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging {
 
   import BlockedFiatRegistry._
 
@@ -69,7 +69,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case PaymentProcessorActor.UnblockFunds(fundsId) =>
       persist(FundsUnblockedEvent(fundsId))(onFundsUnblocked)
 
-    case CreateSnapshot => saveSnapshot(Snapshot(funds))
+    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(Snapshot(funds))
   }
 
   private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
@@ -191,7 +191,6 @@ private[okpay] object BlockedFiatRegistry {
     def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
   }
 
-  case object CreateSnapshot
   private case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]])
     extends PersistentEvent
 

@@ -3,6 +3,7 @@ package coinffeine.peer.payment.okpay.blocking
 import akka.actor.{ActorRef, Props}
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
@@ -197,7 +198,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
   it must "recover its previous state from snapshot" in
     new WithBlockingFundsActor(persistentId = lastId) {
       expectBecomingUnavailable(funds1)
-      actor ! BlockedFiatRegistry.CreateSnapshot
+      actor ! PeriodicSnapshot.CreateSnapshot
       currentTotalBlockedFunds(Euro)
       system.stop(actor)
 
