@@ -2,8 +2,8 @@ package coinffeine.gui.setup
 
 import java.net.URI
 import scalafx.event.ActionEvent
-import scalafx.scene.control.{Button, Label, TextField}
-import scalafx.scene.layout.{Priority, StackPane, VBox}
+import scalafx.scene.control.{Button, Label}
+import scalafx.scene.layout.{StackPane, VBox}
 
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.Browser
@@ -13,13 +13,6 @@ private[setup] class FaucetInfoStepPane(address: String)
   extends StackPane with StepPane[SetupConfig] {
 
   override val icon = GlyphIcon.Number2
-
-  private val addressTextField = new TextField {
-    hgrow = Priority.Always
-    id = "address"
-    text = address
-    editable = false
-  }
 
   private val title = new Label("Obtain Technical Preview credentials") { styleClass += "title" }
 

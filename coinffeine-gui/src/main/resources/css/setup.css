@@ -22,7 +22,7 @@
 
 .wizard .faucet-pane {
     -fx-alignment: center;
-    -fx-padding: 25;
+    -fx-padding: 25 50;
     -fx-spacing: 30;
 }
 
@@ -38,13 +38,6 @@
     -fx-font-size: 22;
     -fx-font-weight: 400;
 }
-
-.wizard .faucet-pane .address {
-    -fx-alignment: center;
-    -fx-spacing: 20;
-}
-
-.wizard .faucet-pane .address .text-field { -fx-font-size: 16; }
 
 .wizard .faucet-pane .support-icon { -fx-font-size: 30; }
 
