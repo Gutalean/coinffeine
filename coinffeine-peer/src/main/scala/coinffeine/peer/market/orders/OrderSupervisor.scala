@@ -31,6 +31,9 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case RecoveryCompleted => retrieveArchivedOrders()
   }
 
+  override protected def createSnapshot: Option[PersistentEvent] =
+    Some(OrderSupervisor.Snapshot(orders))
+
   override val receiveCommand: Receive = retrievingArchivedOrders
 
   private def retrieveArchivedOrders(): Unit = {
@@ -55,7 +58,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case OpenOrder(_) | CancelOrder(_) => stash()
   }
 
-  private def supervisingOrders: Receive = {
+  private def supervisingOrders: Receive = managingSnapshots orElse {
     case OpenOrder(request) =>
       persist(OrderCreated(request.create())){ event =>
         onOrderCreated(event)
@@ -66,8 +69,6 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case CancelOrder(orderId) =>
       orderRefs.get(orderId).foreach(_ ! OrderActor.CancelOrder)
       orderRefs = orderRefs.filterNot(_._1 == orderId)
-
-    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(OrderSupervisor.Snapshot(orders))
   }
 
   private def onOrderCreated(event: OrderCreated): Unit = {
@@ -84,7 +85,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 object OrderSupervisor {
   val DefaultPersistenceId = "orders"
 
-  private case class Snapshot(orders: Map[OrderId, AnyCurrencyActiveOrder])
+  private case class Snapshot(orders: Map[OrderId, AnyCurrencyActiveOrder]) extends PersistentEvent
 
   trait Delegates {
     val submissionProps: Props

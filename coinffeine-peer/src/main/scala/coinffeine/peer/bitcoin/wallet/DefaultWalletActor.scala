@@ -42,10 +42,12 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case event: FundsUnblocked => onFundsUnblocked(event)
     case event: DepositCreated => onDepositCreated(event)
     case event: DepositCancelled => onDepositCancelled(event)
-    case SnapshotOffer(_, snapshot: BlockedOutputs) => blockedOutputs = snapshot
+    case SnapshotOffer(_, snapshot: Snapshot) => blockedOutputs = snapshot.blockedOutputs
   }
 
-  override def receiveCommand: Receive = {
+  override protected def createSnapshot: Option[PersistentEvent] = Some(Snapshot(blockedOutputs))
+
+  override def receiveCommand: Receive = managingSnapshots orElse {
 
     case request @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       blockedOutputs.canUse(coinsId, amount + transactionFee) match {
@@ -112,8 +114,6 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
     case Terminated(listener) =>
       listeners -= listener
-
-    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(blockedOutputs)
   }
 
   private def onFundsBlocked(event: FundsBlocked): Unit = {
@@ -218,4 +218,5 @@ object DefaultWalletActor {
   private case class DepositCreated(request: CreateDeposit, outputs: Set[Output])
     extends PersistentEvent
   private case class DepositCancelled(tx: ImmutableTransaction) extends PersistentEvent
+  private case class Snapshot(blockedOutputs: BlockedOutputs) extends PersistentEvent
 }

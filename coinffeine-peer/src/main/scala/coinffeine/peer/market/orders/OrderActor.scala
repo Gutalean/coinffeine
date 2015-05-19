@@ -6,12 +6,11 @@ import scala.util.{Failure, Success}
 import akka.actor._
 import akka.event.Logging
 import akka.pattern._
-import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.persistence._
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.common.akka.persistence.PeriodicSnapshot.CreateSnapshot
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -57,9 +56,7 @@ class OrderActor[C <: FiatCurrency](
     case event: FundsBlocked => onFundsBlocked(event)
     case event: CannotBlockFunds => onCannotBlockFunds(event)
     case event: CancelledOrder => onCancelledOrder(event)
-    case event: ExchangeFinished[_] =>
-      onCompletedExchange(event.asInstanceOf[ExchangeFinished[C]])
-
+    case event: ExchangeFinished[_] => onCompletedExchange(event.asInstanceOf[ExchangeFinished[C]])
     case RecoveryCompleted => self ! ResumeOrder
   }
 
@@ -86,7 +83,10 @@ class OrderActor[C <: FiatCurrency](
     order.completeExchange(event.exchange)
   }
 
-  override def receiveCommand = publisher.receiveSubmissionEvents orElse {
+  override protected def createSnapshot: Option[PersistentEvent] =
+    Some(Snapshot(order.view, order.pendingFundRequests))
+
+  override def receiveCommand = managingSnapshots orElse publisher.receiveSubmissionEvents orElse {
     case ResumeOrder => resumeOrder()
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
@@ -134,10 +134,9 @@ class OrderActor[C <: FiatCurrency](
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
       completeExchange(exchange.asInstanceOf[FailedExchange[C]])
 
-    case CreateSnapshot => saveSnapshot(Snapshot(order.view, order.pendingFundRequests))
-
     case OrderArchived(`orderId`) =>
-      deleteMessages(lastSequenceNr, permanent = true)
+      deleteMessages(lastSequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria.Latest)
       context.stop(self)
 
     case CannotArchive(`orderId`) =>
@@ -240,7 +239,7 @@ class OrderActor[C <: FiatCurrency](
 object OrderActor {
   private case class Snapshot[C <: FiatCurrency](
     order: ActiveOrder[C],
-    pendingFunds: Map[ExchangeId, OrderController.FundsRequest[C]])
+    pendingFunds: Map[ExchangeId, OrderController.FundsRequest[C]]) extends PersistentEvent
 
   case class Collaborators(wallet: ActorRef,
                            paymentProcessor: ActorRef,

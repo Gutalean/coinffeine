@@ -31,13 +31,15 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case RecoveryCompleted => notifyAvailabilityChanges()
   }
 
+  override protected def createSnapshot: Option[PersistentEvent] = Some(Snapshot(funds))
+
   private def restoreSnapshot(snapshot: Snapshot): Unit = {
     funds = snapshot.funds
     funds.keys.foreach(fundsAvailability.addFunds)
     updateBackedFunds()
   }
 
-  override def receiveCommand: Receive = {
+  override def receiveCommand: Receive = managingSnapshots orElse {
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
@@ -68,8 +70,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
     case PaymentProcessorActor.UnblockFunds(fundsId) =>
       persist(FundsUnblockedEvent(fundsId))(onFundsUnblocked)
-
-    case PeriodicSnapshot.CreateSnapshot => saveSnapshot(Snapshot(funds))
   }
 
   private def onFundsBlocked(event: FundsBlockedEvent): Unit = {
