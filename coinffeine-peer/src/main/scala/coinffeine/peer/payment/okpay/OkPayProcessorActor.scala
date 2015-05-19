@@ -140,7 +140,7 @@ private class OkPayProcessorActor(
   }
 
   private def updateBalance[C <: FiatCurrency](balance: FiatBalance[C]): Unit = {
-    if (properties.balance.get(balance.amount.currency) != Some(balance)) {
+    if (!properties.balance.get(balance.amount.currency).contains(balance)) {
       properties.balance.set(balance.amount.currency, balance)
     }
   }
