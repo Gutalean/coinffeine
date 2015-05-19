@@ -86,7 +86,7 @@ class OrderActor[C <: FiatCurrency](
     order.completeExchange(event.exchange)
   }
 
-  override def receiveCommand = publisher.receiveSubmissionEvents orElse {
+  override def receiveCommand = deletingSnapshots orElse publisher.receiveSubmissionEvents orElse {
     case ResumeOrder => resumeOrder()
 
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>

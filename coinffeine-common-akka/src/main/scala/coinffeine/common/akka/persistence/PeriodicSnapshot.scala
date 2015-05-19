@@ -2,11 +2,11 @@ package coinffeine.common.akka.persistence
 
 import scala.concurrent.duration._
 
-import akka.actor.Cancellable
-import akka.persistence.PersistentActor
+import akka.actor.{ActorLogging, Cancellable}
+import akka.persistence.{PersistentActor, SaveSnapshotSuccess, SnapshotSelectionCriteria}
 
 /** Mixin for getting periodic messages to trigger snapshot creation */
-trait PeriodicSnapshot extends PersistentActor {
+trait PeriodicSnapshot extends PersistentActor with ActorLogging {
 
   private var snapshotsTimer: Cancellable = _
 
@@ -28,6 +28,14 @@ trait PeriodicSnapshot extends PersistentActor {
       receiver = self,
       message = PeriodicSnapshot.CreateSnapshot
     )
+  }
+
+  protected def deletingSnapshots: Receive = {
+    case SaveSnapshotSuccess(metadata) =>
+      log.debug("Snapshot {}/{} saved successfully, removing older ones",
+        metadata.persistenceId, metadata.sequenceNr)
+      deleteMessages(metadata.sequenceNr)
+      deleteSnapshots(SnapshotSelectionCriteria(metadata.sequenceNr - 1, metadata.timestamp))
   }
 }
 

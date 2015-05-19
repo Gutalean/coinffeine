@@ -55,7 +55,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     case OpenOrder(_) | CancelOrder(_) => stash()
   }
 
-  private def supervisingOrders: Receive = {
+  private def supervisingOrders: Receive = deletingSnapshots orElse {
     case OpenOrder(request) =>
       persist(OrderCreated(request.create())){ event =>
         onOrderCreated(event)

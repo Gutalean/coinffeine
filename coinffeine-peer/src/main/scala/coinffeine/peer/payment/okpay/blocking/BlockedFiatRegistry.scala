@@ -37,7 +37,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     updateBackedFunds()
   }
 
-  override def receiveCommand: Receive = {
+  override def receiveCommand: Receive = deletingSnapshots orElse {
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)

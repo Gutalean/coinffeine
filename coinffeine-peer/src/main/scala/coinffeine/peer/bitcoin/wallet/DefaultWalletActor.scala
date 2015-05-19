@@ -45,7 +45,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case SnapshotOffer(_, snapshot: BlockedOutputs) => blockedOutputs = snapshot
   }
 
-  override def receiveCommand: Receive = {
+  override def receiveCommand: Receive = deletingSnapshots orElse {
 
     case request @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       blockedOutputs.canUse(coinsId, amount + transactionFee) match {
