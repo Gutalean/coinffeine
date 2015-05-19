@@ -25,15 +25,20 @@ private[orders] class OrderController[C <: FiatCurrency](
     network: Network,
     initialOrder: ActiveOrder[C]) {
 
-  private case class FundsRequest(orderMatch: OrderMatch[C], funds: RequiredFunds[C])
+  import OrderController._
 
   private val orderMatchValidator = new OrderMatchValidator(peerId, amountsCalculator)
   private var listeners = Seq.empty[OrderController.Listener[C]]
   private var _order = initialOrder
-  private var pendingFundRequests = Map.empty[ExchangeId, FundsRequest]
+  private var _pendingFundRequests = Map.empty[ExchangeId, FundsRequest[C]]
 
   /** Immutable snapshot of the order */
   def view: ActiveOrder[C] = _order
+
+  def reset(order: ActiveOrder[C], pendingFundsRequests: Map[ExchangeId, FundsRequest[C]]): Unit = {
+    _order = order
+    _pendingFundRequests = pendingFundsRequests
+  }
 
   def updateExchange(exchange: ActiveExchange[C]): Unit = {
     updateOrder(_.withExchange(exchange))
@@ -53,28 +58,30 @@ private[orders] class OrderController[C <: FiatCurrency](
 
   private def totalPendingFundsAmount: Bitcoin.Amount = {
     val role = Role.fromOrderType(_order.orderType)
-    pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
+    _pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
   }
 
-  def pendingFunds: Map[ExchangeId, RequiredFunds[C]] = pendingFundRequests.mapValues(_.funds)
+  def pendingFundRequests: Map[ExchangeId, FundsRequest[C]] = _pendingFundRequests
 
-  def hasPendingFunds(exchangeId: ExchangeId): Boolean = pendingFundRequests.contains(exchangeId)
+  def pendingFunds: Map[ExchangeId, RequiredFunds[C]] = _pendingFundRequests.mapValues(_.funds)
+
+  def hasPendingFunds(exchangeId: ExchangeId): Boolean = _pendingFundRequests.contains(exchangeId)
 
   /** Mark exchange required funds as being requested */
   def fundsRequested(orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]): Unit = {
-    pendingFundRequests += orderMatch.exchangeId -> FundsRequest(orderMatch, requiredFunds)
+    _pendingFundRequests += orderMatch.exchangeId -> FundsRequest(orderMatch, requiredFunds)
   }
 
   /** Resolve as failed the funds for an exchange */
   def fundsRequestFailed(exchangeId: ExchangeId): Unit = {
-    pendingFundRequests -= exchangeId
+    _pendingFundRequests -= exchangeId
   }
 
   /** Start an exchange. You should have called [[fundsRequested()]] previously. */
   def startExchange(exchangeId: ExchangeId, timestamp: DateTime): HandshakingExchange[C] = {
-    val request = pendingFundRequests.getOrElse(exchangeId,
+    val request = _pendingFundRequests.getOrElse(exchangeId,
       throw new IllegalArgumentException(s"Cannot accept $exchangeId: no funds were blocked"))
-    pendingFundRequests -= exchangeId
+    _pendingFundRequests -= exchangeId
     val newExchange = ActiveExchange.create(
       id = request.orderMatch.exchangeId,
       role = Role.fromOrderType(view.orderType),
@@ -108,4 +115,6 @@ private[orders] object OrderController {
   trait Listener[C <: FiatCurrency] {
     def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit
   }
+
+  case class FundsRequest[C <: FiatCurrency](orderMatch: OrderMatch[C], funds: RequiredFunds[C])
 }

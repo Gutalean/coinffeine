@@ -38,6 +38,7 @@ abstract class OrderActorTest extends AkkaSpec
 
   protected val idleTime = 100.millis.dilated
   private implicit val patience = PatienceConfig(idleTime * 10, idleTime)
+  protected def useSnapshots = false
 
   protected trait Fixture {
     val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(2.EUR))
@@ -114,6 +115,9 @@ abstract class OrderActorTest extends AkkaSpec
     }
 
     def restartOrder(): Unit = {
+      if (useSnapshots) {
+        actor ! OrderActor.CreateSnapshot
+      }
       system.stop(actor)
       expectTerminated(actor)
       startOrder()
@@ -157,6 +161,7 @@ abstract class OrderActorTest extends AkkaSpec
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
       givenSuccessfulFundsBlocking(orderMatch.exchangeId)
+      expectProperty(_.exchanges.contains(orderMatch.exchangeId))
       exchangeActor.probe.send(actor,
         ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
     }
