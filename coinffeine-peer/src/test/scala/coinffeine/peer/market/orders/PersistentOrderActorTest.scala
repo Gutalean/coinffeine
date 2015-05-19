@@ -2,7 +2,6 @@ package coinffeine.peer.market.orders
 
 import org.joda.time.DateTime
 
-import coinffeine.common.akka.test.MockActor.MockStopped
 import coinffeine.model.exchange._
 import coinffeine.model.order.OrderStatus
 import coinffeine.peer.exchange.ExchangeActor

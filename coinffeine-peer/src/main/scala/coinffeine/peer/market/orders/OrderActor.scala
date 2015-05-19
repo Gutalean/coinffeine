@@ -1,7 +1,6 @@
 package coinffeine.peer.market.orders
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor._
@@ -12,7 +11,8 @@ import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.common.akka.persistence.PersistentEvent
+import coinffeine.common.akka.persistence.PeriodicSnapshot.CreateSnapshot
+import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -34,7 +34,7 @@ class OrderActor[C <: FiatCurrency](
     delegates: OrderActor.Delegates[C],
     coinffeineProperties: MutableCoinffeineNetworkProperties,
     collaborators: OrderActor.Collaborators)
-  extends PersistentActor with ActorLogging with OrderPublisher.Listener {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging with OrderPublisher.Listener {
 
   import OrderActor._
 
@@ -42,19 +42,12 @@ class OrderActor[C <: FiatCurrency](
   override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
   private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
-  private var snapshotsTimer: Cancellable = _
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
     subscribeToOrderMatches()
     subscribeToOrderChanges()
-    scheduleSnapshots()
     super.preStart()
-  }
-
-  override def postStop(): Unit = {
-    super.postStop()
-    snapshotsTimer.cancel()
   }
 
   override def receiveRecover: Receive = {
@@ -212,16 +205,6 @@ class OrderActor[C <: FiatCurrency](
     })
   }
 
-  private def scheduleSnapshots(): Unit = {
-    import context.dispatcher
-    snapshotsTimer = context.system.scheduler.schedule(
-      initialDelay = SnapshotInterval,
-      interval = SnapshotInterval,
-      receiver = self,
-      message = CreateSnapshot
-    )
-  }
-
   private def updatePublisher(order: ActiveOrder[C]): Unit = {
     if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
     else publisher.stopPublishing()
@@ -255,12 +238,6 @@ class OrderActor[C <: FiatCurrency](
 }
 
 object OrderActor {
-  /** Interval between snapshots */
-  private val SnapshotInterval = 1.minute
-
-  /** Snapshot-trigger self-message */
-  private[orders] case object CreateSnapshot
-
   private case class Snapshot[C <: FiatCurrency](
     order: ActiveOrder[C],
     pendingFunds: Map[ExchangeId, OrderController.FundsRequest[C]])
