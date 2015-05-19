@@ -3,12 +3,13 @@ package coinffeine.common.akka.persistence
 import scala.concurrent.duration._
 
 import akka.actor.{ActorLogging, Cancellable}
-import akka.persistence.{PersistentActor, SaveSnapshotSuccess, SnapshotSelectionCriteria}
+import akka.persistence._
 
 /** Mixin for getting periodic messages to trigger snapshot creation */
 trait PeriodicSnapshot extends PersistentActor with ActorLogging {
 
   private var snapshotsTimer: Cancellable = _
+  private var lastSnapshotNr: Option[Long] = None
 
   override def preStart(): Unit = {
     scheduleSnapshots()
@@ -30,12 +31,27 @@ trait PeriodicSnapshot extends PersistentActor with ActorLogging {
     )
   }
 
-  protected def deletingSnapshots: Receive = {
+  protected def createSnapshot: Option[PersistentEvent]
+
+  protected def managingSnapshots: Receive = {
+
+    case PeriodicSnapshot.CreateSnapshot if lastSnapshotNr.forall(_ < lastSequenceNr) =>
+      createSnapshot.foreach { snapshot =>
+        log.debug("Saving snapshot {} for {}", lastSequenceNr, persistenceId)
+        saveSnapshot(snapshot)
+      }
+
     case SaveSnapshotSuccess(metadata) =>
-      log.debug("Snapshot {}/{} saved successfully, removing older ones",
-        metadata.persistenceId, metadata.sequenceNr)
+      log.debug("Snapshot {} for {} saved successfully, removing older ones",
+        metadata.sequenceNr, metadata.persistenceId)
+      lastSnapshotNr = Some(metadata.sequenceNr)
       deleteMessages(metadata.sequenceNr)
-      deleteSnapshots(SnapshotSelectionCriteria(metadata.sequenceNr - 1, metadata.timestamp))
+      if (metadata.sequenceNr > 0) {
+        deleteSnapshots(SnapshotSelectionCriteria(metadata.sequenceNr - 1, metadata.timestamp))
+      }
+
+    case SaveSnapshotFailure(metadata, cause) =>
+      log.error(cause, "Cannot save snapshot {}", metadata)
   }
 }
 
