@@ -78,12 +78,16 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent
       blockchain.reply(TransactionFound(tx.get.getHash, tx))
     }
     listener.expectMsgType[HandshakeSuccess]
-    listener.expectTerminated(actor)
   }
 
-  it should "remember how it ended and resubmit the final notification" in {
-    startActor()
-    listener.expectMsgType[HandshakeSuccess]
+  it should "terminate under request" in {
+    actor ! HandshakeActor.Finish
     listener.expectTerminated(actor)
+    listener.expectNoMsg(100.millis.dilated)
+  }
+
+  it should "remember nothing after journal is deleted" in {
+    startActor()
+    shouldForwardPeerHandshake()
   }
 }

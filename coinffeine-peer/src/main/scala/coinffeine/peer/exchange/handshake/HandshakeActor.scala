@@ -37,4 +37,7 @@ object HandshakeActor {
        exchangeId: ExchangeId, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
+
+  /** A response to a [[HandshakeResult]] indicating the handshake actor must terminate. */
+  case object Finish
 }
