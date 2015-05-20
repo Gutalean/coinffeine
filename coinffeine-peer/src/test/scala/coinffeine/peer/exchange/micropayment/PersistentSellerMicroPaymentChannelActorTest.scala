@@ -1,6 +1,9 @@
 package coinffeine.peer.exchange.micropayment
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import akka.testkit._
 
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
@@ -49,5 +52,13 @@ class PersistentSellerMicroPaymentChannelActorTest extends SellerMicroPaymentCha
   it should "send a notification to the listeners once the exchange has finished" in {
     gateway.relayMessage(MicropaymentChannelClosed(exchangeId), counterpartId)
     listener.expectMsg(ChannelSuccess(None))
+  }
+
+  it should "finish by request and remove its journal" in {
+    actor ! MicroPaymentChannelActor.Finish
+    expectNoMsg(100.millis.dilated)
+
+    restartActor()
+    expectProgress(signatures = 1)
   }
 }

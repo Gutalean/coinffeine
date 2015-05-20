@@ -129,7 +129,14 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
   private def onChannelClosed(): Unit = {
     notifyListeners(ChannelSuccess(None))
-    context.stop(self)
+    context.become(finishing)
+  }
+
+  private val finishing: Receive = {
+    case MicroPaymentChannelActor.Finish =>
+      log.debug("Finishing and deleting journal by request")
+      deleteMessages(Long.MaxValue)
+      context.stop(self)
   }
 
   private def lookupPayment(paymentId: String): Future[FindPaymentResponse] = {
