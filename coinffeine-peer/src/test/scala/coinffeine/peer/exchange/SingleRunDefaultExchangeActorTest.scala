@@ -68,7 +68,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
   }
 
   it should "report a failure if the broadcast failed" in new Fixture {
-    givenBroadcasterWillFail()
+    broadcaster.givenBroadcasterWillFail()
     startActor()
     givenMicropaymentChannelSuccess()
     expectFailureTermination().exchange.cause shouldBe FailureCause.NoBroadcast
@@ -81,7 +81,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
         newTx.setLockTime(40)
         newTx
       }
-      givenBroadcasterWillSucceed(unexpectedTx)
+      broadcaster.givenBroadcasterWillSucceed(unexpectedTx)
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
@@ -97,7 +97,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
         newTx.setLockTime(40)
         newTx
       }
-      givenBroadcasterWillPanic(midWayTx)
+      broadcaster.givenBroadcasterWillPanic(midWayTx)
       startActor()
       givenMicropaymentChannelCreation()
       micropaymentChannelActor.probe.send(actor, ExchangeUpdate(runningExchange.completeStep(1)))

@@ -58,7 +58,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
   }
 
   it should "remember that publication failed" in new Fixture {
-    givenBroadcasterWillFail()
+    broadcaster.givenBroadcasterWillFail()
     startActor()
     givenMicropaymentChannelSuccess()
     listener.expectMsgType[ExchangeFailure]
@@ -68,7 +68,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
   }
 
   it should "remember that it panicked publishing the best available transaction" in new Fixture {
-    givenBroadcasterWillPanic(dummyTx)
+    broadcaster.givenBroadcasterWillPanic(dummyTx)
     startActor()
     givenMicropaymentChannelCreation()
     notifyDepositDestination(ChannelAtStep(3))
@@ -78,13 +78,20 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     expectFailureTermination().exchange.cause shouldBe FailureCause.PanicBlockReached
   }
 
-  it should "delete its event-log after being finished with FinishExchange" in new Fixture {
-    givenFailingHandshake()
-    startActor()
-    expectFailureTermination()
+  it should "delete its event-log and finish delegates after being finished itself" in
+    new Fixture {
+      startActor()
+      givenMicropaymentChannelSuccess()
+      notifyDepositDestination(CompletedChannel)
+      val originalSuccess = listener.expectMsgPF(hint = "a completed exchange") {
+        case result: ExchangeSuccess if result.exchange.id == exchange.id => result
+      }
+      listener.reply(ExchangeActor.FinishExchange)
+      listener.expectTerminated(actor)
+      broadcaster.expectFinished()
+      micropaymentChannelActor.expectStop()
 
-    givenHandshakeWillSucceed()
-    startActor()
-    micropaymentChannelActor.expectCreation() // As if nothing has happened
-  }
+      startActor()
+      micropaymentChannelActor.expectCreation() // As if nothing has happened
+    }
 }

@@ -63,6 +63,12 @@ private class PersistentTransactionBroadcaster(
       finishWith(FailedBroadcast(err))
   }
 
+  private val finished: Receive = {
+    case TransactionBroadcaster.Finish =>
+      deleteMessages(lastSequenceNr)
+      self ! PoisonPill
+  }
+
   private def broadcastIfNeeded(): Unit = {
     if (policy.shouldBroadcast) {
       collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
@@ -83,7 +89,7 @@ private class PersistentTransactionBroadcaster(
 
   private def onFinished(event: FinishedWithResult): Unit = {
     collaborators.listener ! event.result
-    self ! PoisonPill
+    context.become(finished)
   }
 }
 

@@ -31,4 +31,7 @@ object TransactionBroadcaster {
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
     "The exchange finished with a successful broadcast, but the transaction that was published was" +
       s"not the one that was being expected: $unexpectedTx")
+
+  /** Response to an [[BroadcastResult]] to acknowledge completion and terminate the broadcaster */
+  case object Finish
 }
