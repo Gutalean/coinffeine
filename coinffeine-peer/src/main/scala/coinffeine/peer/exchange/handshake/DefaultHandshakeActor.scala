@@ -307,8 +307,6 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
       log.debug("Finishing by request, deleting journal")
       deleteMessages(Long.MaxValue)
       context.stop(self)
-    case msg =>
-      log.warning("Unexpected message received while expecting to finish: {}", msg)
   }
 
   private def subscribeToMessages(): Unit = {
