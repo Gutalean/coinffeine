@@ -21,7 +21,8 @@ class BrokerAbortionHandshakeActorTest extends DefaultHandshakeActorTest("broker
     listener.expectMsgType[HandshakeFailure].cause shouldBe HandshakeFailureCause.BrokerAbortion
   }
 
-  it should "terminate the handshake" in {
+  it should "terminate the handshake under request" in {
+    actor ! HandshakeActor.Finish
     listener.expectTerminated(actor)
   }
 }

@@ -21,7 +21,6 @@ class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signat
       case _: PeerHandshake =>
     }
     listener.expectMsgClass(classOf[HandshakeFailure])
-    listener.expectTerminated(actor)
   }
 
   it must "notify the broker that the exchange is rejected" in {
@@ -29,5 +28,10 @@ class RefundUnsignedHandshakeActorTest extends DefaultHandshakeActorTest("signat
     gateway.expectForwardingToPF(BrokerId) {
       case ExchangeRejection(`id`, _) =>
     }
+  }
+
+  it must "terminate under request" in {
+    actor ! HandshakeActor.Finish
+    listener.expectTerminated(actor)
   }
 }

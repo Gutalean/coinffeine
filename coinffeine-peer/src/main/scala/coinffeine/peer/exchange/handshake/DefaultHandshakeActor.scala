@@ -125,7 +125,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   private def onFinishedWith(event: FinishedWith): Unit = {
     collaborators.listener ! event.result
-    context.stop(self)
+    context.become(finishing)
   }
 
   private def createDeposit(exchange: DepositPendingExchange[C]): Future[ImmutableTransaction] = {
@@ -300,6 +300,15 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case ReceiveMessage(ExchangeAborted(_, reason), _) =>
       log.error("Handshake {}: aborted by the broker: {}", exchange.info.id, reason.message)
       finishWith(HandshakeFailure(HandshakeFailureCause.BrokerAbortion, DateTime.now()))
+  }
+
+  private val finishing: Receive = {
+    case HandshakeActor.Finish =>
+      log.debug("Finishing by request, deleting journal")
+      deleteMessages(Long.MaxValue)
+      context.stop(self)
+    case msg =>
+      log.warning("Unexpected message received while expecting to finish: {}", msg)
   }
 
   private def subscribeToMessages(): Unit = {

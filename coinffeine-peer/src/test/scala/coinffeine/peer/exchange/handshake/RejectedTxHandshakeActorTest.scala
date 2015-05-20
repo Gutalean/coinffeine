@@ -35,7 +35,8 @@ class RejectedTxHandshakeActorTest extends DefaultHandshakeActorTest("rejected-t
       s"transaction ${handshake.counterpartCommitmentTransaction.getHash} (counterpart) was rejected")
   }
 
-  it should "terminate" in {
+  it should "terminate under request" in {
+    actor ! HandshakeActor.Finish
     listener.expectTerminated(actor)
   }
 }

@@ -90,7 +90,8 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
     }
   }
 
-  it should "finally terminate himself" in {
+  it should "finally terminate himself under request" in {
+    actor ! HandshakeActor.Finish
     listener.expectTerminated(actor)
   }
 }
