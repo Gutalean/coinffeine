@@ -32,9 +32,9 @@ digraph {
 	ExchangeActor -> HandshakeActor, 
 		         BuyerMicroPaymentChannelActor, 
 		         SellerMicroPaymentChannelActor, 
-			 TransactionBroadcastActor;
+			 TransactionBroadcaster;
 	HandshakeActor -> ProtoRpcMessageGateway1, BlockchainActor1 [style=dotted];
-	TransactionBroadcastActor -> BitcoinPeerActor1 [style=dotted];
+	TransactionBroadcaster -> BitcoinPeerActor1 [style=dotted];
 	BuyerMicroPaymentChannelActor -> ProtoRpcMessageGateway1, PaymentProcessor [style=dotted];
 	SellerMicroPaymentChannelActor -> ProtoRpcMessageGateway1, PaymentProcessor [style=dotted];
 

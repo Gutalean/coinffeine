@@ -10,7 +10,7 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor._
   * will be broadcast as soon as its timelock expires if there are no better alternatives (like
   * broadcasting the successful exchange transaction).
   */
-object ExchangeTransactionBroadcaster {
+object TransactionBroadcaster {
 
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction

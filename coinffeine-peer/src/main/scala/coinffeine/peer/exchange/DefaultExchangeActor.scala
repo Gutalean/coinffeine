@@ -15,8 +15,8 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.broadcast.DefaultExchangeTransactionBroadcaster
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
+import coinffeine.peer.exchange.broadcast.PersistentTransactionBroadcaster
+import coinffeine.peer.exchange.broadcast.TransactionBroadcaster._
 import coinffeine.peer.exchange.handshake.DefaultHandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
@@ -127,7 +127,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
     txBroadcaster =
-      context.actorOf(delegates.transactionBroadcaster(refund), TransactionBroadcastActorName)
+      context.actorOf(delegates.transactionBroadcaster(refund), BroadcasterActorName)
   }
 
   private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
@@ -252,9 +252,9 @@ object DefaultExchangeActor {
 
       val delegates = new Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
-          DefaultExchangeTransactionBroadcaster.props(
+          PersistentTransactionBroadcaster.props(
             refund,
-            DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            PersistentTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 
         def handshake(user: Exchange.PeerInfo,

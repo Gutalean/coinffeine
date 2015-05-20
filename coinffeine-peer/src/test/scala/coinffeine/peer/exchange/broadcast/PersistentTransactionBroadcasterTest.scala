@@ -11,19 +11,19 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, Trans
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.exchange.broadcast.DefaultExchangeTransactionBroadcaster.Collaborators
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
+import coinffeine.peer.exchange.broadcast.PersistentTransactionBroadcaster.Collaborators
+import coinffeine.peer.exchange.broadcast.TransactionBroadcaster._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
-class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
+class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
 
   private val refundLockTime = 20
   private val someLastOffer = ImmutableTransaction(new MutableTransaction(network))
   private val protocolConstants = ProtocolConstants()
   private val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
 
-  "An exchange transaction broadcast actor" should
+  "A persistent transaction broadcast actor" should
     "broadcast the refund transaction if it becomes valid" in new Fixture {
       expectRelevantHeightsSubscription()
       givenHeightNotification(panicBlock)
@@ -101,7 +101,7 @@ class DefaultExchangeTransactionBroadcasterTest extends CoinffeineClientTest("tx
       }
     lastRefundTx = refundTx
     val peerActor, blockchain, terminationListener = TestProbe()
-    val instance = system.actorOf(DefaultExchangeTransactionBroadcaster.props(
+    val instance = system.actorOf(PersistentTransactionBroadcaster.props(
       refundTx, Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))
     terminationListener.watch(instance)
 

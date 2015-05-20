@@ -8,7 +8,7 @@ import akka.actor.{Actor, Props, ReceiveTimeout}
 
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.bitcoin.BitcoinPeerActor.TransactionPublished
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
+import coinffeine.peer.exchange.broadcast.TransactionBroadcaster._
 
 class BroadcasterStub(transaction: Try[ImmutableTransaction], timeout: Duration) extends Actor {
 

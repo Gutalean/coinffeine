@@ -8,14 +8,14 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
+import coinffeine.peer.exchange.broadcast.TransactionBroadcaster._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 
-private class DefaultExchangeTransactionBroadcaster(
+private class PersistentTransactionBroadcaster(
      refund: ImmutableTransaction,
-     collaborators: DefaultExchangeTransactionBroadcaster.Collaborators,
+     collaborators: PersistentTransactionBroadcaster.Collaborators,
      constants: ProtocolConstants) extends PersistentActor with ActorLogging {
-  import DefaultExchangeTransactionBroadcaster._
+  import PersistentTransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
   private val policy = new BroadcastPolicy(refund, constants.refundSafetyBlockCount)
@@ -39,7 +39,7 @@ private class DefaultExchangeTransactionBroadcaster(
       collaborators.blockchain ! BlockchainActor.RetrieveBlockchainHeight
   }
 
-  override val receiveCommand: Receive =  {
+  override val receiveCommand: Receive = {
     case LastBroadcastableOffer(tx) =>
       persist(OfferAdded(tx))(onOfferAdded)
 
@@ -87,12 +87,13 @@ private class DefaultExchangeTransactionBroadcaster(
   }
 }
 
-object DefaultExchangeTransactionBroadcaster {
+object PersistentTransactionBroadcaster {
 
   case class Collaborators(bitcoinPeer: ActorRef, blockchain: ActorRef, listener: ActorRef)
 
-  def props(refund: ImmutableTransaction, collaborators: Collaborators, constants: ProtocolConstants) =
-    Props(new DefaultExchangeTransactionBroadcaster(refund, collaborators, constants))
+  def props(
+      refund: ImmutableTransaction, collaborators: Collaborators, constants: ProtocolConstants) =
+    Props(new PersistentTransactionBroadcaster(refund, collaborators, constants))
 
   private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
   private case object PublicationRequested extends PersistentEvent
