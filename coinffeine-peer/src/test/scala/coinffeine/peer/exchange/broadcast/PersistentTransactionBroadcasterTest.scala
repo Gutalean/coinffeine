@@ -72,6 +72,7 @@ class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroad
 
     val result = givenSuccessfulBroadcast(someLastOffer)
     expectTerminationWithResult(SuccessfulBroadcast(result))
+    expectNoMsg(100.millis.dilated)
   }
 
   it should "delete its journal after being finished" in new Fixture {
