@@ -32,5 +32,8 @@ object MicroPaymentChannelActor {
   /** Sent to the listeners to notify about what the last broadcastable offer is */
   case class LastBroadcastableOffer(transaction: ImmutableTransaction)
 
+  /** Receive when actor must finish and delete its journal. */
+  case object Finish
+
   private[micropayment] case object StepSignatureTimeout
 }
