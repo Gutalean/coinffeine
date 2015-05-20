@@ -69,6 +69,17 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
     listener.expectMsg(ChannelSuccess(Some(expectedLastOffer)))
   }
 
+  it should "remove its journal after finish request" in {
+    actor ! MicroPaymentChannelActor.Finish
+    listener.expectNoMsg(100.millis.dilated)
+
+    restartActor()
+    actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
+    listener.expectMsgType[LastBroadcastableOffer]
+    paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
+    expectProgress(signatures = 1)
+  }
+
   def paymentConfirmation(paymentId: String) = PaymentProcessorActor.Paid(Payment(
     paymentId, "sender", "receiver", 1.EUR, DateTime.now(), "description", completed = true
   ))

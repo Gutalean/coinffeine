@@ -127,12 +127,17 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
       notifyListeners(result)
       forwardClosedChannel()
     }
-    context.become {
-      case ResumeMicroPaymentChannel =>
-        notifyListeners(result)
-        forwardClosedChannel()
-      case ReceiveMessage(_: StepSignatures, _) => forwardClosedChannel()
-    }
+    context.become(finishing(result))
+  }
+
+  private def finishing(result: ChannelResult): Receive = {
+    case ResumeMicroPaymentChannel =>
+      notifyListeners(result)
+      forwardClosedChannel()
+    case ReceiveMessage(_: StepSignatures, _) => forwardClosedChannel()
+    case MicroPaymentChannelActor.Finish =>
+      log.debug("Deleting journal after finish request")
+      deleteMessages(Long.MaxValue)
   }
 
   private def notifyProgress(): Unit = {
