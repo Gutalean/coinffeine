@@ -88,6 +88,7 @@ class PersistentOrderActorTest extends OrderActorTest {
     submissionProbe.ignoreMsg { case _ => true }
     expectTerminated(actor)
     fundsBlocker.expectStop()
+    expectNoMsg(idleTime)
 
     submissionProbe.ignoreNoMsg()
     startOrder()
