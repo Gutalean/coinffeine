@@ -10,7 +10,7 @@ import coinffeine.peer.bitcoin.BitcoinPeerActor._
   * will be broadcast as soon as its timelock expires if there are no better alternatives (like
   * broadcasting the successful exchange transaction).
   */
-object ExchangeTransactionBroadcaster {
+object TransactionBroadcaster {
 
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction
@@ -31,4 +31,7 @@ object ExchangeTransactionBroadcaster {
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
     "The exchange finished with a successful broadcast, but the transaction that was published was" +
       s"not the one that was being expected: $unexpectedTx")
+
+  /** Response to an [[BroadcastResult]] to acknowledge completion and terminate the broadcaster */
+  case object Finish
 }

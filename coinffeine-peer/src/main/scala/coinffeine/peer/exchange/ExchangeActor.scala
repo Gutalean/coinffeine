@@ -9,7 +9,7 @@ import coinffeine.model.exchange._
 object ExchangeActor {
   val HandshakeActorName = "handshake"
   val ChannelActorName = "exchange"
-  val TransactionBroadcastActorName = "transactionBroadcast"
+  val BroadcasterActorName = "broadcaster"
 
   case class Collaborators(wallet: ActorRef,
                            paymentProcessor: ActorRef,

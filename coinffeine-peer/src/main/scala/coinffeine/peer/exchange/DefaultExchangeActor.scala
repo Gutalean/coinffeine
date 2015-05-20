@@ -2,7 +2,7 @@ package coinffeine.peer.exchange
 
 import akka.actor._
 import akka.pattern._
-import akka.persistence.{RecoveryCompleted, PersistentActor}
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.PersistentEvent
@@ -15,8 +15,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.broadcast.DefaultExchangeTransactionBroadcaster
-import coinffeine.peer.exchange.broadcast.ExchangeTransactionBroadcaster._
+import coinffeine.peer.exchange.broadcast.{PersistentTransactionBroadcaster, TransactionBroadcaster}
 import coinffeine.peer.exchange.handshake.DefaultHandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
@@ -127,7 +126,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
     txBroadcaster =
-      context.actorOf(delegates.transactionBroadcaster(refund), TransactionBroadcastActorName)
+      context.actorOf(delegates.transactionBroadcaster(refund), BroadcasterActorName)
   }
 
   private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
@@ -149,7 +148,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.id)
-      txBroadcaster ! PublishBestTransaction
+      txBroadcaster ! TransactionBroadcaster.PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
     case DepositSpent(broadcastTx, CompletedChannel) =>
@@ -158,7 +157,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
-      txBroadcaster ! PublishBestTransaction
+      txBroadcaster ! TransactionBroadcaster.PublishBestTransaction
       context.become(failingAtStep(runningExchange, step))
 
     case DepositSpent(broadcastTx, _) =>
@@ -171,7 +170,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
     log.warning("Exchange {}: starting abortion", exchange.id)
-    txBroadcaster ! PublishBestTransaction
+    txBroadcaster ! TransactionBroadcaster.PublishBestTransaction
     context.become(aborting(abortingExchange))
   }
 
@@ -184,7 +183,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
         abortingExchange.id, tx)
       finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
 
-    case FailedBroadcast(cause) =>
+    case TransactionBroadcaster.FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast the refund transaction")
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast(DateTime.now())))
   }
@@ -198,7 +197,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       }
       finishWith(ExchangeFailure(runningExchange.stepFailure(step, Some(tx), DateTime.now())))
 
-    case FailedBroadcast(cause) =>
+    case TransactionBroadcaster.FailedBroadcast(cause) =>
       log.error(cause, "Cannot broadcast any recovery transaction")
       finishWith(ExchangeFailure(
         runningExchange.stepFailure(step, transaction = None, timestamp = DateTime.now())))
@@ -215,7 +214,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
         destination, exchange.id)
       finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx, DateTime.now())))
 
-    case FailedBroadcast(cause) =>
+    case TransactionBroadcaster.FailedBroadcast(cause) =>
       log.error(cause, "The finishing transaction could not be broadcast")
       finishWith(ExchangeFailure(runningExchange.noBroadcast(DateTime.now())))
   }
@@ -227,7 +226,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def finishing: Receive = {
     case ExchangeActor.FinishExchange =>
       deleteMessages(lastSequenceNr, permanent = true)
-      context.stop(self)
+      Option(txBroadcaster).foreach(_ ! TransactionBroadcaster.Finish)
+      self ! PoisonPill
   }
 }
 
@@ -252,9 +252,9 @@ object DefaultExchangeActor {
 
       val delegates = new Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
-          DefaultExchangeTransactionBroadcaster.props(
+          PersistentTransactionBroadcaster.props(
             refund,
-            DefaultExchangeTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            PersistentTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 
         def handshake(user: Exchange.PeerInfo,
