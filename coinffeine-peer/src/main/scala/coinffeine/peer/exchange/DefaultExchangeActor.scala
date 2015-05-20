@@ -56,7 +56,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def onExchangeFinished(event: ExchangeFinished): Unit = {
     collaborators.listener ! event.result
     unblockFunds()
-    context.become(finishing)
+    context.become(waitingForFinishExchange)
   }
 
   private def unblockFunds(): Unit = {
@@ -127,6 +127,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
     txBroadcaster =
       context.actorOf(delegates.transactionBroadcaster(refund), BroadcasterActorName)
+    context.watch(txBroadcaster)
   }
 
   private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
@@ -223,11 +224,18 @@ class DefaultExchangeActor[C <: FiatCurrency](
     persist(ExchangeFinished(result))(onExchangeFinished)
   }
 
-  private def finishing: Receive = {
+  private def waitingForFinishExchange: Receive = {
     case ExchangeActor.FinishExchange =>
       deleteMessages(lastSequenceNr, permanent = true)
       Option(txBroadcaster).foreach(_ ! TransactionBroadcaster.Finish)
-      self ! PoisonPill
+      stopAfterTerminationOf(Option(txBroadcaster).toSet)
+  }
+
+  private def stopAfterTerminationOf(pendingTerminations: Set[ActorRef]): Unit = {
+    if (pendingTerminations.isEmpty) self ! PoisonPill
+    else context.become {
+      case Terminated(ref) => stopAfterTerminationOf(pendingTerminations - ref)
+    }
   }
 }
 

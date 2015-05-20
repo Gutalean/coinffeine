@@ -38,6 +38,7 @@ class MockedBroadcaster(implicit system: ActorSystem) {
 
       case TransactionBroadcaster.Finish =>
         probe.ref ! TransactionBroadcaster.Finish
+        self ! PoisonPill
     }
   }
 
