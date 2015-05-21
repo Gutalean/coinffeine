@@ -18,11 +18,11 @@ private object ArchiveSchema {
     """
       |create table if not exists order_log(
       |  id long not null auto_increment,
-      |  order_id varchar(64) not null,
+      |  owner_id varchar(64) not null,
       |  timestamp datetime not null,
       |  event varchar(20) not null,
       |  primary key(id),
-      |  foreign key(order_id) references `order`(id) on delete cascade
+      |  foreign key(owner_id) references `order`(id) on delete cascade
       |);
     """.stripMargin,
     """
@@ -45,11 +45,11 @@ private object ArchiveSchema {
     """
       |create table if not exists exchange_log(
       |  id long not null auto_increment,
-      |  exchange_id varchar(64) not null,
+      |  owner_id varchar(64) not null,
       |  timestamp datetime not null,
       |  event varchar(1024) not null,
       |  primary key(id),
-      |  foreign key(exchange_id) references exchange(id) on delete cascade
+      |  foreign key(owner_id) references exchange(id) on delete cascade
       |);
     """.stripMargin
   )

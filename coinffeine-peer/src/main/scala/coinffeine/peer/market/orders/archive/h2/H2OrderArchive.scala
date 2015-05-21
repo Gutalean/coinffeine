@@ -1,21 +1,22 @@
 package coinffeine.peer.market.orders.archive.h2
 
 import java.io.File
-import java.sql.{ResultSet, DriverManager, Timestamp, Types}
+import java.sql.{DriverManager, ResultSet, Timestamp}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import org.joda.time.DateTime
+import anorm.SqlParser._
+import anorm._
 
-import coinffeine.model.{Both, ActivityLog}
-import coinffeine.model.currency.{Currency, Bitcoin, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange._
-import coinffeine.model.network.PeerId
 import coinffeine.model.order._
+import coinffeine.model.{ActivityLog, Both}
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.market.orders.archive.OrderArchive
 import coinffeine.peer.market.orders.archive.OrderArchive._
-import coinffeine.peer.market.orders.archive.h2.serialization.{ExchangeStatusParser, ExchangeStatusFormatter, OrderStatusFormatter, OrderStatusParser}
+import coinffeine.peer.market.orders.archive.h2.serialization._
+import coinffeine.peer.market.orders.archive.h2.{FieldParsers => p}
 
 class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
 
@@ -60,29 +61,31 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
   }
 
   private def insertOrderRecord(order: AnyCurrencyOrder): Unit = {
-    val st = conn.prepareStatement(
-      "insert into `order`(id, order_type, amount, price, currency) values (?, ?, ?, ?, ?)")
-    st.setString(1, order.id.value)
-    st.setString(2, order.orderType.shortName)
-    st.setBigDecimal(3, order.amount.value.underlying())
-    order.price match {
-      case LimitPrice(price) =>
-        st.setBigDecimal(4, price.value.underlying())
-      case MarketPrice(_) =>
-        st.setNull(4, Types.BIGINT)
-    }
-    st.setString(5, order.price.currency.javaCurrency.getCurrencyCode)
-    if (st.executeUpdate() != 1) throw new scala.RuntimeException(s"Cannot insert $order")
+    val query = SQL(
+      """insert into `order`(id, order_type, amount, price, currency)
+        |values ({id}, {order_type}, {amount}, {price}, {currency})""".stripMargin
+    ).on(
+      "id" -> order.id.value,
+      "order_type" -> order.orderType.shortName,
+      "amount" -> order.amount.value,
+      "price" -> order.price.toOption.map(_.value),
+      "currency" -> order.price.currency.javaCurrency.getCurrencyCode
+    )
+    if (query.executeUpdate()(conn) != 1)
+      throw new scala.RuntimeException(s"Cannot insert $order")
   }
 
   private def insertExchangeEvent(id: ExchangeId,
                                   entry: ActivityLog.Entry[ExchangeStatus]): Unit = {
-    val st = conn.prepareStatement(
-      "insert into exchange_log(exchange_id, timestamp, event) values (?, ?, ?)")
-    st.setString(1, id.value)
-    st.setTimestamp(2, new Timestamp(entry.timestamp.getMillis))
-    st.setString(3, ExchangeStatusFormatter.format(entry.event))
-    if (st.executeUpdate() != 1)
+    val query = SQL(
+      """insert into exchange_log(owner_id, timestamp, event)
+        |values ({owner_id}, {timestamp}, {event})""".stripMargin
+    ).on(
+      "owner_id" -> id.value,
+      "timestamp" -> new Timestamp(entry.timestamp.getMillis),
+      "event" -> ExchangeStatusFormatter.format(entry.event)
+    )
+    if (query.executeUpdate()(conn) != 1)
       throw new scala.RuntimeException(s"Cannot insert order event $entry for $id")
   }
 
@@ -92,164 +95,119 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
   }
 
   private def insertExchangeRecord(orderId: OrderId, exchange: AnyExchange): Unit = {
-    val st = conn.prepareStatement(
+    val query = SQL(
       """insert into exchange(
-        | id, order_id, role, buyer_bitcoin, seller_bitcoin,
-        | buyer_fiat, seller_fiat, counterpart, lock_time, buyer_progress, seller_progress)
-        |values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""".stripMargin)
-    st.setString(1, exchange.id.value)
-    st.setString(2, orderId.value)
-    st.setString(3, exchange.role.toString)
-    st.setBigDecimal(4, exchange.exchangedBitcoin.buyer.value.underlying())
-    st.setBigDecimal(5, exchange.exchangedBitcoin.seller.value.underlying())
-    st.setBigDecimal(6, exchange.exchangedFiat.buyer.value.underlying())
-    st.setBigDecimal(7, exchange.exchangedFiat.seller.value.underlying())
-    st.setString(8, exchange.counterpartId.value)
-    st.setLong(9, exchange.lockTime)
-    st.setBigDecimal(10, exchange.progress.bitcoinsTransferred.buyer.value.underlying())
-    st.setBigDecimal(11, exchange.progress.bitcoinsTransferred.seller.value.underlying())
-    if (st.executeUpdate() != 1) throw new scala.RuntimeException(s"Cannot insert $exchange")
+        |  id, order_id, role, buyer_bitcoin, seller_bitcoin,
+        |  buyer_fiat, seller_fiat, counterpart, lock_time, buyer_progress, seller_progress)
+        |values ({id}, {order_id}, {role}, {buyer_bitcoin}, {seller_bitcoin},
+        |  {buyer_fiat}, {seller_fiat}, {counterpart}, {lock_time}, {buyer_progress},
+        |  {seller_progress})""".stripMargin
+    ).on(
+      "id" -> exchange.id.value,
+      "order_id" -> orderId.value,
+      "role" -> exchange.role.toString,
+      "buyer_bitcoin" -> exchange.exchangedBitcoin.buyer.value,
+      "seller_bitcoin" -> exchange.exchangedBitcoin.seller.value,
+      "buyer_fiat" -> exchange.exchangedFiat.buyer.value,
+      "seller_fiat" -> exchange.exchangedFiat.seller.value,
+      "counterpart" -> exchange.counterpartId.value,
+      "lock_time" -> exchange.lockTime,
+      "buyer_progress" -> exchange.progress.bitcoinsTransferred.buyer.value,
+      "seller_progress" -> exchange.progress.bitcoinsTransferred.seller.value
+    )
+    if (query.executeUpdate()(conn) != 1)
+      throw new scala.RuntimeException(s"Cannot insert $exchange")
   }
 
   private def insertOrderEvent(id: OrderId, entry: ActivityLog.Entry[OrderStatus]): Unit = {
-    val st = conn.prepareStatement(
-      "insert into order_log(order_id, timestamp, event) values (?, ?, ?)")
-    st.setString(1, id.value)
-    st.setTimestamp(2, new Timestamp(entry.timestamp.getMillis))
-    st.setString(3, OrderStatusFormatter.format(entry.event))
-    if (st.executeUpdate() != 1)
+    val query = SQL(
+      """insert into order_log(owner_id, timestamp, event)
+        |values ({owner_id}, {timestamp}, {event})""".stripMargin
+    ).on(
+      "owner_id" -> id.value,
+      "timestamp" -> new Timestamp(entry.timestamp.getMillis),
+      "event" -> OrderStatusFormatter.format(entry.event)
+    )
+    if (query.executeUpdate()(conn) != 1)
       throw new scala.RuntimeException(s"Cannot insert order event $entry for $id")
   }
 
   private def listOrders(): Try[Seq[AnyCurrencyOrder]] = Try {
-    listOrderIds().map(retrieveOrder)
+    listOrderIds().flatMap(retrieveOrder)
   }
 
-  private def listOrderIds(): Seq[OrderId] = {
-    val st = conn.prepareStatement("select id from `order` order by id")
-    toStream(st.executeQuery()) { row =>
-      OrderId(row.getString(1))
-    }.toList
-  }
+  private def listOrderIds(): Seq[OrderId] =
+    SQL("select id from `order` order by id").as(p.orderId("id") *)(conn).toSeq
 
-  private def retrieveOrder(orderId: OrderId): AnyCurrencyOrder = {
-    val st = conn.prepareStatement(
-      "select order_type, amount, price, currency from `order` where id = ?")
-    st.setString(1, orderId.value)
-    singleRow(st.executeQuery()) { row =>
-      val currency = FiatCurrency(row.getString(4))
-      val exchanges = retrieveExchanges[currency.type](orderId, currency)
-      ArchivedOrder[currency.type](
-        id = orderId,
-        orderType = parseOrderType(row.getString(1)),
-        amount = Bitcoin.exactAmount(row.getBigDecimal(2)),
-        price = parsePrice(Option(row.getBigDecimal(3)), currency),
-        exchanges = exchanges.map(ex => ex.id -> ex).toMap,
-        log = retrieveOrderLog(orderId)
-      )
+  private def retrieveOrder(orderId: OrderId): Option[AnyCurrencyOrder] = {
+    val orderParser =
+      p.orderType("order_type") ~ p.bitcoinAmount("amount") ~ p.price("price", "currency") map {
+        case orderType ~ amount ~ price =>
+          ArchivedOrder(
+            id = orderId,
+            orderType = orderType,
+            amount = amount,
+            price = price,
+            exchanges = retrieveExchanges(orderId, price.currency),
+            log = retrieveOrderLog(orderId)
+          )
     }
+    SQL("select order_type, amount, price, currency from `order` where id = {id}")
+      .on("id" -> orderId.value)
+      .as(orderParser.singleOpt)(conn)
   }
 
-  private def parseOrderType(orderType: String): OrderType =
-    OrderType.parse(orderType).getOrElse(
-      throw new scala.RuntimeException(s"unexpected order type $orderType"))
+  private def retrieveOrderLog(orderId: OrderId): ActivityLog[OrderStatus] =
+    retrieveActivityLog(orderId.value, "order_log", p.orderStatus)
 
-  private def parsePrice[C <: FiatCurrency](decimalOpt: Option[java.math.BigDecimal],
-                                            currency: C): OrderPrice[C] =
-    decimalOpt.fold[OrderPrice[C]](MarketPrice(currency)) { amount =>
-      LimitPrice(CurrencyAmount.exactAmount(amount, currency))
+  private def retrieveExchanges[C <: FiatCurrency](
+      orderId: OrderId, currency: C): Map[ExchangeId, ArchivedExchange[C]] = (for {
+    id <- listExchangeIds(orderId)
+    exchange <- retrieveExchange(id, currency)
+  } yield id -> exchange).toMap
+
+  private def listExchangeIds(orderId: OrderId): Seq[ExchangeId] =
+    SQL("select id from exchange where order_id = {order_id} order by id")
+      .on("order_id" -> orderId.value)
+      .as(p.exchangeId("id") *)(conn)
+      .toSeq
+
+  private def retrieveExchange[C <: FiatCurrency](
+      exchangeId: ExchangeId, currency: C): Option[ArchivedExchange[C]] =
+    SQL("""select role, buyer_bitcoin, seller_bitcoin, buyer_fiat, seller_fiat, counterpart,
+          |  lock_time, buyer_progress, seller_progress
+          |  from exchange where id = {id}""".stripMargin)
+      .on("id" -> exchangeId.value)
+      .as(p.role("role") ~
+        p.both(p.bitcoinAmount, Both("buyer_bitcoin", "seller_bitcoin")) ~
+        p.both(p.fiatAmount(currency, _), Both("buyer_fiat", "seller_fiat")) ~
+        p.peerId("counterpart") ~
+        long("lock_time") ~
+        p.progress(Both("buyer_progress", "seller_progress")) singleOpt)(conn)
+      .map { case role ~ exchangedBitcoin ~ exchangedFiat ~ counterpartId ~ lockTime ~ progress =>
+        ArchivedExchange(
+          exchangeId,
+          role,
+          exchangedBitcoin,
+          exchangedFiat,
+          counterpartId,
+          lockTime,
+          retrieveExchangeLog(exchangeId),
+          progress
+        )
+      }
+
+  private def retrieveExchangeLog(exchangeId: ExchangeId): ActivityLog[ExchangeStatus] =
+    retrieveActivityLog(exchangeId.value, "exchange_log", p.exchangeStatus)
+
+  private def retrieveActivityLog[T](
+    id: String, table: String, eventParser: String => RowParser[T]): ActivityLog[T] =
+    SQL(s"select timestamp, event from $table where owner_id = {id} order by id")
+      .on("id" -> id)
+      .as(p.timestamp("timestamp") ~ eventParser("event") *)(conn)
+      .foldLeft(ActivityLog.empty[T]) { case (log, timestamp ~ event) =>
+      log.record(event, timestamp)
     }
-
-  private def retrieveOrderLog(orderId: OrderId): ActivityLog[OrderStatus] = {
-    val st = conn.prepareStatement(
-      "select timestamp, event from order_log where order_id = ? order by id")
-    st.setString(1, orderId.value)
-    toStream(st.executeQuery()) { row =>
-      ActivityLog.Entry(
-        timestamp = new DateTime(row.getTimestamp(1).getTime),
-        event = parseOrderStatus(row.getString(2))
-      )
-    }.foldLeft(ActivityLog.empty[OrderStatus])(_ record _)
-  }
-
-  private def parseOrderStatus(orderStatus: String): OrderStatus =
-    OrderStatusParser.parse(orderStatus).getOrElse(
-      throw new scala.RuntimeException(s"unexpected order status $orderStatus"))
-
-  private def retrieveExchanges[C <: FiatCurrency](orderId: OrderId,
-                                                   currency: C): Seq[ArchivedExchange[C]] =
-    listExchangeIds(orderId).map(id => retrieveExchange(id, currency))
-
-  private def listExchangeIds(orderId: OrderId): Seq[ExchangeId] = {
-    val st = conn.prepareStatement("select id from exchange where order_id = ? order by id")
-    st.setString(1, orderId.value)
-    toStream(st.executeQuery()) { row =>
-      ExchangeId(row.getString(1))
-    }.toList
-  }
-
-  private def retrieveExchange[C <: FiatCurrency](exchangeId: ExchangeId,
-                                                  currency: C): ArchivedExchange[C] = {
-    val st = conn.prepareStatement(
-      """select role, buyer_bitcoin, seller_bitcoin, buyer_fiat, seller_fiat, counterpart,
-        |  lock_time, buyer_progress, seller_progress
-        |from exchange where id = ?""".stripMargin)
-    st.setString(1, exchangeId.value)
-    singleRow(st.executeQuery()) { row =>
-      ArchivedExchange(
-        id = exchangeId,
-        role = parseRole(row.getString(1)),
-        exchangedBitcoin =
-          parseBothCurrencyAmounts(Bitcoin, row.getBigDecimal(2), row.getBigDecimal(3)),
-        exchangedFiat =
-          parseBothCurrencyAmounts(currency, row.getBigDecimal(4), row.getBigDecimal(5)),
-        counterpartId = PeerId(row.getString(6)),
-        lockTime = row.getLong(7),
-        progress = Exchange.Progress(
-          parseBothCurrencyAmounts(Bitcoin, row.getBigDecimal(8), row.getBigDecimal(9))),
-        log = retrieveExchangeLog(exchangeId)
-      )
-    }
-  }
-
-  private def parseBothCurrencyAmounts[C <: Currency](
-      currency: C, buyer: java.math.BigDecimal, seller: java.math.BigDecimal): Both[CurrencyAmount[C]] =
-    Both(
-      buyer = parseCurrencyAmount(currency, buyer),
-      seller = parseCurrencyAmount(currency, seller)
-    )
-
-  private def parseCurrencyAmount[C <: Currency](currency: C,
-                                                 value: java.math.BigDecimal): CurrencyAmount[C] =
-    CurrencyAmount.exactAmount(BigDecimal(value), currency)
-
-  private def parseRole[C <: FiatCurrency](role: String): Role =
-    Role.fromString(role).getOrElse(throw new scala.RuntimeException(s"Cannot parse role from $role"))
-
-  private def retrieveExchangeLog(exchangeId: ExchangeId): ActivityLog[ExchangeStatus] = {
-    val st = conn.prepareStatement(
-      "select timestamp, event from exchange_log where exchange_id = ? order by id")
-    st.setString(1, exchangeId.value)
-    toStream(st.executeQuery()) { row =>
-      ActivityLog.Entry(
-        timestamp = new DateTime(row.getTimestamp(1).getTime),
-        event = parseExchangeStatus(row.getString(2))
-      )
-    }.foldLeft(ActivityLog.empty[ExchangeStatus])(_ record _)
-  }
-
-  private def parseExchangeStatus(exchangeStatus: String): ExchangeStatus =
-    ExchangeStatusParser.parse(exchangeStatus).getOrElse(
-      throw new scala.RuntimeException(s"unexpected exchange status $exchangeStatus"))
-
-  private def singleRow[T](rs: ResultSet)(f: ResultSet => T): T = {
-    val rows = toStream(rs)(f)
-    if (rows.tail.nonEmpty) throw new RuntimeException("Multiple rows but only one was expected")
-    rows.headOption.getOrElse(throw new RuntimeException("No results were found, one was expected"))
-  }
-
-  private def toStream[T](rs: ResultSet)(f: ResultSet => T): Stream[T] =
-    if (rs.next()) f(rs) #:: toStream(rs)(f) else Stream.empty
 }
 
 object H2OrderArchive {
