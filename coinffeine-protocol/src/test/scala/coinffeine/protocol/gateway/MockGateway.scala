@@ -92,7 +92,7 @@ class MockGateway(brokerId: PeerId = PeerId.hashOf("broker"))(implicit system: A
   def expectForwarding(payload: PublicMessage,
                        dest: NodeId,
                        timeout: Duration = Duration.Undefined): Unit = {
-    messagesProbe.expectMsgPF(timeout) {
+    messagesProbe.expectMsgPF(max = timeout, hint = payload.toString) {
       case message@ForwardMessage(`payload`, `dest`) => message
       case message@ForwardMessage(`payload`, BrokerId) if isBroker(dest) => message
     }
