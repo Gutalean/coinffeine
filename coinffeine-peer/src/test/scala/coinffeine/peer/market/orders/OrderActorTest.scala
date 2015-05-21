@@ -162,7 +162,7 @@ abstract class OrderActorTest extends AkkaSpec
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
       givenSuccessfulFundsBlocking(orderMatch.exchangeId)
-      expectProperty(_.exchanges.contains(orderMatch.exchangeId))
+      expectProperty(_.exchanges.get(orderMatch.exchangeId).exists(_.isCompleted))
       exchangeActor.probe.send(actor,
         ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
     }
