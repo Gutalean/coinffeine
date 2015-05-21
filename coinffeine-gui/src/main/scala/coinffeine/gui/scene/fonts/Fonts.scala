@@ -13,7 +13,7 @@ object Fonts {
     openSansExtraBold
   }
 
-  def coinffeineGlyphs = fromResource("fonts/coinffeineiconography.ttf")
+  def coinffeineGlyphs = fromResource("fonts/CoinffeineIconography.ttf")
 
   def openSansLight = fromResource("fonts/OpenSans-Light.ttf")
   def openSansRegular = fromResource("fonts/OpenSans-Regular.ttf")
