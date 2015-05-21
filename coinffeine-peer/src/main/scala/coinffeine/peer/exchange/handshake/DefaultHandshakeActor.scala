@@ -41,7 +41,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   override val persistenceId = s"handshake/${exchange.info.id.value}"
   private var timers = Seq.empty[Cancellable]
-  private val forwarding = MessageForwarder.Factory(collaborators.gateway)
+  private val forwarding = MessageForwarder.Factory(
+    collaborators.gateway,
+    RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout))
   private val counterpartRefundSigner =
     context.actorOf(CounterpartRefundSigner.props(collaborators.gateway, exchange.info))
 
@@ -63,12 +65,12 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   private def sendPeerHandshakeUntilFirstSignatureRequest(): Unit = {
-    forwarding.forward(
-      msg = PeerHandshake(exchange.info.id, exchange.user.bitcoinKey.publicKey,
-        exchange.user.paymentProcessorAccount),
-      destination = exchange.info.counterpartId,
-      retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
-    ) {
+    val peerHandshake = PeerHandshake(
+      exchange.info.id,
+      exchange.user.bitcoinKey.publicKey,
+      exchange.user.paymentProcessorAccount
+    )
+    forwarding.forward(ForwardMessage(peerHandshake, exchange.info.counterpartId)) {
       case RefundSignatureRequest(id, _) if exchange.info.id == id =>
     }
   }
@@ -155,11 +157,10 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     }
 
     def requestRefundSignature() = {
-      forwarding.forward(
-        msg = RefundSignatureRequest(exchange.info.id, handshake.myUnsignedRefund),
-        destination = exchange.info.counterpartId,
-        retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
-      ) {
+      forwarding.forward(ForwardMessage(
+        RefundSignatureRequest(exchange.info.id, handshake.myUnsignedRefund),
+        exchange.info.counterpartId
+      )) {
         case RefundSignatureResponse(id, herSignature) if id == exchange.info.id &&
             validCounterpartSignature(herSignature) =>
           handshake.signMyRefund(herSignature)
@@ -205,11 +206,9 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
   }
 
   private def forwardMyCommitment(): Unit = {
-    forwarding.forward(
-      msg = ExchangeCommitment(exchange.info.id, exchange.user.bitcoinKey.publicKey, handshake.myDeposit),
-      destination = BrokerId,
-      retry = RetrySettings.continuouslyEvery(protocol.constants.resubmitHandshakeMessagesTimeout)
-    ) {
+    val commitment = ExchangeCommitment(
+      exchange.info.id, exchange.user.bitcoinKey.publicKey, handshake.myDeposit)
+    forwarding.forward(ForwardMessage(commitment, BrokerId)) {
       case commitments: CommitmentNotification if commitments.exchangeId == exchange.info.id =>
         commitments
     }
@@ -306,7 +305,7 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
     case HandshakeActor.Finish =>
       log.debug("Finishing by request, deleting journal")
       deleteMessages(Long.MaxValue)
-      context.stop(self)
+      self ! PoisonPill
   }
 
   private def subscribeToMessages(): Unit = {

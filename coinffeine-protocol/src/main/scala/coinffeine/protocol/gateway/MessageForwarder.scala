@@ -5,8 +5,8 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.util.Timeout
 
-import coinffeine.model.network.NodeId
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
+import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.PublicMessage
 
 /** A message forwarder actor.
@@ -27,51 +27,47 @@ import coinffeine.protocol.messages.PublicMessage
   */
 class MessageForwarder[A](requester: ActorRef,
                           messageGateway: ActorRef,
-                          message: PublicMessage,
-                          destination: NodeId,
+                          message: ForwardMessage[_ <: PublicMessage],
                           confirmation: PartialFunction[PublicMessage, A],
                           retry: RetrySettings = MessageForwarder.DefaultRetrySettings)
     extends Actor with ActorLogging {
-
-  import MessageForwarder._
-  import MessageGateway._
 
   override val receive = waitForConfirmation(retry.maxRetries)
 
   override def preStart() = {
     subscribeToDestinationMessages()
-    forwardMessageToDestination()
+    forwardMessage()
     setReceptionTimeout()
   }
 
   private def subscribeToDestinationMessages(): Unit = {
     messageGateway ! Subscribe {
-      case ReceiveMessage(msg, `destination`) if confirmation.isDefinedAt(msg) =>
+      case ReceiveMessage(msg, message.`dest`) if confirmation.isDefinedAt(msg) =>
     }
   }
 
-  private def forwardMessageToDestination(): Unit = {
-    messageGateway ! ForwardMessage(message, destination)
+  private def forwardMessage(): Unit = {
+    messageGateway ! message
   }
 
   private def setReceptionTimeout(): Unit = {
     context.setReceiveTimeout(retry.timeout.duration)
   }
 
-  private def terminate(): Unit = {
-    context.stop(self)
-  }
-
   private def waitForConfirmation(remainingRetries: Int): Receive = {
-    case ReceiveMessage(response, `destination`) if confirmation.isDefinedAt(response) =>
+    case ReceiveMessage(response, message.`dest`) if confirmation.isDefinedAt(response) =>
       requester ! confirmation(response)
       terminate()
     case ReceiveTimeout if remainingRetries > 0 =>
-      forwardMessageToDestination()
+      forwardMessage()
       context.become(waitForConfirmation(remainingRetries - 1))
     case ReceiveTimeout =>
-      requester ! ConfirmationFailed(message)
+      requester ! MessageForwarder.ConfirmationFailed(message.message)
       terminate()
+  }
+
+  private def terminate(): Unit = {
+    self ! PoisonPill
   }
 }
 
@@ -95,29 +91,27 @@ object MessageForwarder {
 
   def props[A](requester: ActorRef,
                messageGateway: ActorRef,
-               msg: PublicMessage,
-               destination: NodeId,
+               msg: ForwardMessage[_ <: PublicMessage],
                confirmation: PartialFunction[PublicMessage, A],
                retry: RetrySettings = MessageForwarder.DefaultRetrySettings): Props =
-    Props(new MessageForwarder(requester, messageGateway, msg, destination, confirmation, retry))
+    Props(new MessageForwarder(requester, messageGateway, msg, confirmation, retry))
 
   /** A factory of forward messages that operates with a fixed message gateway and actor context.
     *
     * It is specially useful instantiated once in an actor and used many times to forward
     * indicating only the message, the destination and the confirmation.
     */
-  class Factory(messageGateway: ActorRef, context: ActorContext) {
+  class Factory(messageGateway: ActorRef, context: ActorContext, retry: RetrySettings) {
 
-    def forward[A](msg: PublicMessage,
-                   destination: NodeId,
-                   retry: RetrySettings = MessageForwarder.DefaultRetrySettings)
+    def forward[A](msg: ForwardMessage[_ <: PublicMessage])
                   (confirmation: PartialFunction[PublicMessage, A]) : ActorRef =
-      context.actorOf(props(context.self, messageGateway, msg, destination, confirmation, retry))
+      context.actorOf(props(context.self, messageGateway, msg, confirmation, retry))
   }
 
   object Factory {
-
-    def apply(messageGateway: ActorRef)(implicit context: ActorContext): Factory =
-      new Factory(messageGateway, context)
+    def apply(messageGateway: ActorRef,
+              retry: RetrySettings = MessageForwarder.DefaultRetrySettings)
+             (implicit context: ActorContext): Factory =
+      new Factory(messageGateway, context, retry)
   }
 }
