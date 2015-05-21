@@ -2,7 +2,8 @@ package coinffeine.gui.scene
 
 import scalafx.scene.Scene
 
-import coinffeine.gui.scene.styles.{ButtonStyles, TextStyles, PaneStyles, Stylesheets}
+import coinffeine.gui.scene.fonts.Fonts
+import coinffeine.gui.scene.styles.{ButtonStyles, PaneStyles, Stylesheets, TextStyles}
 
 /** A scene that loads the Coinffeine style sheets and applies specific ones. */
 class CoinffeineScene(additionalStyles: String*) extends Scene {
@@ -20,4 +21,6 @@ class CoinffeineScene(additionalStyles: String*) extends Scene {
   stylesheets.add(Stylesheets.Popup)
 
   additionalStyles.foreach(style => stylesheets.add(style))
+
+  Fonts.loadAll()
 }
