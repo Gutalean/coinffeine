@@ -83,7 +83,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent
   it should "terminate under request" in {
     actor ! HandshakeActor.Finish
     listener.expectTerminated(actor)
-    listener.expectNoMsg(100.millis.dilated)
+    expectNoMsg(250.millis.dilated)
   }
 
   it should "remember nothing after journal is deleted" in {

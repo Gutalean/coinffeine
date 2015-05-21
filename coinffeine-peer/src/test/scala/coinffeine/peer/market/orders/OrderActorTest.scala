@@ -118,6 +118,7 @@ abstract class OrderActorTest extends AkkaSpec
     def restartOrder(): Unit = {
       if (useSnapshots) {
         actor ! PeriodicSnapshot.CreateSnapshot
+        expectNoMsg(250.millis.dilated)
       }
       system.stop(actor)
       expectTerminated(actor)
