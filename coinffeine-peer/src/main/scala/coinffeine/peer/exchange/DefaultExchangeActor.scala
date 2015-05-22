@@ -16,7 +16,7 @@ import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.{PersistentTransactionBroadcaster, TransactionBroadcaster}
-import coinffeine.peer.exchange.handshake.DefaultHandshakeActor
+import coinffeine.peer.exchange.handshake.{HandshakeActor, DefaultHandshakeActor}
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
@@ -33,7 +33,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   override def persistenceId: String = s"exchange-${exchange.id.value}"
 
-  private var txBroadcaster: Option[ActorRef] = None
+  private var txBroadcasterRef: Option[ActorRef] = None
+  private var handshakeRef: Option[ActorRef] = None
 
   override def preStart(): Unit = {
     log.info("Starting {}", exchange.id)
@@ -49,7 +50,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   override def receiveCommand: Receive = waitingForUserInfo
 
   private def onRetrievedPeerInfo(event: RetrievedPeerInfo): Unit = {
-    context.actorOf(delegates.handshake(event.user, event.timestamp, self), HandshakeActorName)
+    handshakeRef = Some(
+      context.actorOf(delegates.handshake(event.user, event.timestamp, self), HandshakeActorName))
+    context.watch(handshakeRef.get)
     context.become(inHandshake(event.user))
   }
 
@@ -125,9 +128,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   }
 
   private def spawnBroadcaster(refund: ImmutableTransaction): Unit = {
-    txBroadcaster = Some(
+    txBroadcasterRef = Some(
       context.actorOf(delegates.transactionBroadcaster(refund), BroadcasterActorName))
-    context.watch(txBroadcaster.get)
+    context.watch(txBroadcasterRef.get)
   }
 
   private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
@@ -141,7 +144,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
                                        handshakingExchange: DepositPendingExchange[C]): Unit = {
     val runningExchange = handshakingExchange.startExchanging(commitments, commitmentsConfirmedOn)
     val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
-    val resultListeners = Set(self, txBroadcaster.get)
+    val resultListeners = Set(self, txBroadcasterRef.get)
     context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName)
     context.become(inMicropaymentChannel(runningExchange))
   }
@@ -149,7 +152,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.id)
-      txBroadcaster.get ! TransactionBroadcaster.PublishBestTransaction
+      txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
     case DepositSpent(broadcastTx, CompletedChannel) =>
@@ -158,7 +161,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
-      txBroadcaster.get ! TransactionBroadcaster.PublishBestTransaction
+      txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
       context.become(failingAtStep(runningExchange, step))
 
     case DepositSpent(broadcastTx, _) =>
@@ -171,7 +174,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
     log.warning("Exchange {}: starting abortion", exchange.id)
-    txBroadcaster.get ! TransactionBroadcaster.PublishBestTransaction
+    txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
     context.become(aborting(abortingExchange))
   }
 
@@ -227,8 +230,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def waitingForFinishExchange: Receive = {
     case ExchangeActor.FinishExchange =>
       deleteMessages(lastSequenceNr)
-      txBroadcaster.foreach(_ ! TransactionBroadcaster.Finish)
-      stopAfterTerminationOf(txBroadcaster.toSet)
+      txBroadcasterRef.foreach(_ ! TransactionBroadcaster.Finish)
+      handshakeRef.foreach(_ ! HandshakeActor.Finish)
+      stopAfterTerminationOf((txBroadcasterRef ++ handshakeRef).toSet)
   }
 
   private def stopAfterTerminationOf(pendingTerminations: Set[ActorRef]): Unit = {

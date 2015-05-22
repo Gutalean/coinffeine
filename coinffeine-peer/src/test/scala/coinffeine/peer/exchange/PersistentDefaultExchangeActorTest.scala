@@ -89,6 +89,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
       listener.reply(ExchangeActor.FinishExchange)
       listener.expectTerminated(actor)
       broadcaster.expectFinished()
+      handshakeActor.expectFinished()
       micropaymentChannelActor.expectStop()
 
       startActor()

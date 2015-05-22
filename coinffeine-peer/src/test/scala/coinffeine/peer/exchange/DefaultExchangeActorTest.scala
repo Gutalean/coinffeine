@@ -12,12 +12,10 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.PeerInfo
-import coinffeine.model.exchange.HandshakeFailureCause.SignatureTimeout
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor.{Collaborators, ExchangeFailure}
-import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
 import coinffeine.peer.exchange.protocol.{MicroPaymentChannel, MockExchangeProtocol}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
@@ -35,7 +33,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
     protected val micropaymentChannelActor, depositWatcherActor = new MockSupervisedActor()
     protected val broadcaster = new MockedBroadcaster()
     private val peerInfoLookup = new PeerInfoLookupStub()
-    private var handshakeProps: Props = _
+    protected val handshakeActor = new MockedHandshakeActor(DefaultExchangeActorTest.this)
     private def props = Props(new DefaultExchangeActor(
       new MockExchangeProtocol,
       currentExchange,
@@ -43,7 +41,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       new DefaultExchangeActor.Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)
                                   (implicit context: ActorContext) = broadcaster.props
-        def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeProps
+        def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
                                 resultListeners: Set[ActorRef]) =
           micropaymentChannelActor.props(channel, resultListeners)
@@ -82,16 +80,15 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
 
     protected def givenHandshakeWillSucceed(
         commitments: Both[ImmutableTransaction] = Both.fill(dummyTx)): Unit = {
-      handshakeProps = HandshakeStub.successful(commitments)
+      handshakeActor.givenHandshakeWillSucceed(commitments, dummyTx)
     }
 
     protected def givenFailingHandshake(): Unit = {
-      handshakeProps = HandshakeStub.failure
+      handshakeActor.givenFailingHandshake(ExchangeTimestamps.completion)
     }
 
     protected def givenHandshakeWillSucceedWithInvalidCounterpartCommitment(): Unit = {
-      val commitments = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = dummyTx)
-      givenHandshakeWillSucceed(commitments)
+      handshakeActor.givenHandshakeWillSucceedWithInvalidCounterpartCommitment(dummyTx)
     }
 
     protected def notifyDepositDestination(destination: DepositDestination = CompletedChannel,
@@ -129,27 +126,5 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       listener.expectTerminated(actor)
       failure
     }
-  }
-
-  private class HandshakeStub(result: HandshakeResult) extends Actor {
-    override def preStart(): Unit = {
-      context.parent ! result
-    }
-    override val receive: Receive = Map.empty
-  }
-
-  private object HandshakeStub {
-    def successful(commitments: Both[ImmutableTransaction]) = {
-      val handshakeSuccess = HandshakeSuccess(
-        exchange = exchange.handshake(user, counterpart, ExchangeTimestamps.handshakingStart),
-        bothCommitments = commitments,
-        refundTx = dummyTx,
-        timestamp = ExchangeTimestamps.completion
-      )
-      Props(new HandshakeStub(handshakeSuccess))
-    }
-
-    def failure =
-      Props(new HandshakeStub(HandshakeFailure(SignatureTimeout, ExchangeTimestamps.completion)))
   }
 }
