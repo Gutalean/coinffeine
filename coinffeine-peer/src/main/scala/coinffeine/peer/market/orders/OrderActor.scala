@@ -5,12 +5,10 @@ import scala.util.{Failure, Success}
 
 import akka.actor._
 import akka.event.Logging
-import akka.pattern._
 import akka.persistence._
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
-import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -47,6 +45,11 @@ class OrderActor[C <: FiatCurrency](
     subscribeToOrderMatches()
     subscribeToOrderChanges()
     super.preStart()
+  }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    log.info("Stopped order actor for {}", orderId)
   }
 
   override def receiveRecover: Receive = {
@@ -136,9 +139,10 @@ class OrderActor[C <: FiatCurrency](
       completeExchange(exchange.asInstanceOf[FailedExchange[C]])
 
     case OrderArchived(`orderId`) =>
+      log.info("{}: archived and stopping", orderId)
       deleteMessages(lastSequenceNr)
       deleteSnapshots(SnapshotSelectionCriteria.Latest)
-      context.stop(self)
+      self ! PoisonPill
 
     case CannotArchive(`orderId`) =>
       log.error("{}: Cannot archive myself. Keeping awake.", orderId)
@@ -230,10 +234,7 @@ class OrderActor[C <: FiatCurrency](
   }
 
   private def requestArchivation(): Unit = {
-    import context.dispatcher
-    AskPattern(collaborators.archive, ArchiveOrder(order.view), s"Failed to archive $orderId")
-      .withImmediateReply()
-      .pipeTo(self)
+    collaborators.archive ! ArchiveOrder(order.view)
   }
 }
 
