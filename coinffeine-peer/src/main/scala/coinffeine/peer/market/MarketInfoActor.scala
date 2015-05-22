@@ -7,6 +7,7 @@ import coinffeine.model.market.Market
 import coinffeine.model.network.BrokerId
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage._
 
@@ -21,6 +22,7 @@ private class MarketInfoActor(gateway: ActorRef) extends Actor {
 
     protected val request: PublicMessage
     protected val responseMatcher: PartialFunction[PublicMessage, Unit]
+    private val forwarding = MessageForwarder.Factory(gateway, RetryPolicy)
 
     def addListener(listener: ActorRef): Unit = {
       listeners = listeners + listener
@@ -31,7 +33,7 @@ private class MarketInfoActor(gateway: ActorRef) extends Actor {
     }
 
     def startForwarding(): Unit = {
-      MessageForwarder.Factory(gateway).forward(request, BrokerId, RetryPolicy) {
+      forwarding.forward(ForwardMessage(request, BrokerId)) {
         case message if responseMatcher.isDefinedAt(message) => message
       }
     }

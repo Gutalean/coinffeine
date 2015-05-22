@@ -10,6 +10,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, Offline}
 import coinffeine.protocol.gateway.MessageForwarder
 import coinffeine.protocol.gateway.MessageForwarder.RetrySettings
+import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsReceived}
 
 /** An actor that submits the order positions.
@@ -35,9 +36,10 @@ private class PeerPositionsSubmitter[C <: FiatCurrency](
 
   override def preStart() = {
     log.debug("Submitting and watching peer positions with nonce {}", nonce)
-    MessageForwarder.Factory(gateway).forward(peerPositions, BrokerId, retryPolicy) {
-      case confirmation @ PeerPositionsReceived(`nonce`) => Status.Success
-    }
+    MessageForwarder.Factory(gateway, retryPolicy)
+      .forward(ForwardMessage(peerPositions, BrokerId)) {
+        case confirmation @ PeerPositionsReceived(`nonce`) => Status.Success
+      }
   }
 
   override def receive = {
