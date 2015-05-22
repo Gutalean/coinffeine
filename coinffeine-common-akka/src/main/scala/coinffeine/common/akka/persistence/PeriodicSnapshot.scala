@@ -21,6 +21,10 @@ trait PeriodicSnapshot extends PersistentActor with ActorLogging {
     snapshotsTimer.cancel()
   }
 
+  protected def setLastSnapshot(snapshotNr: Long): Unit = {
+    lastSnapshotNr = Some(snapshotNr)
+  }
+
   private def scheduleSnapshots(): Unit = {
     import context.dispatcher
     snapshotsTimer = context.system.scheduler.schedule(

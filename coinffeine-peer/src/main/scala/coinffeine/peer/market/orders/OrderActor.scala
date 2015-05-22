@@ -51,6 +51,7 @@ class OrderActor[C <: FiatCurrency](
 
   override def receiveRecover: Receive = {
     case SnapshotOffer(metadata, snapshot: Snapshot[C]) =>
+      setLastSnapshot(metadata.sequenceNr)
       order.reset(snapshot.order, snapshot.pendingFunds)
     case event: FundsRequested[_] => onFundsRequested(event.asInstanceOf[FundsRequested[C]])
     case event: FundsBlocked => onFundsBlocked(event)

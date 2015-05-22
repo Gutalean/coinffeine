@@ -42,7 +42,9 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case event: FundsUnblocked => onFundsUnblocked(event)
     case event: DepositCreated => onDepositCreated(event)
     case event: DepositCancelled => onDepositCancelled(event)
-    case SnapshotOffer(_, snapshot: Snapshot) => blockedOutputs = snapshot.blockedOutputs
+    case SnapshotOffer(metadata, snapshot: Snapshot) =>
+      setLastSnapshot(metadata.sequenceNr)
+      blockedOutputs = snapshot.blockedOutputs
   }
 
   override protected def createSnapshot: Option[PersistentEvent] = Some(Snapshot(blockedOutputs))

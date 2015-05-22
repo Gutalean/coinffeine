@@ -30,7 +30,9 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   override val receiveRecover: Receive = {
     case event: OrderCreated => onOrderCreated(event)
-    case SnapshotOffer(_, snapshot: OrderSupervisor.Snapshot) => orders = snapshot.orders
+    case SnapshotOffer(metadata, snapshot: OrderSupervisor.Snapshot) =>
+      setLastSnapshot(metadata.sequenceNr)
+      orders = snapshot.orders
     case RecoveryCompleted => retrieveArchivedOrders()
   }
 
