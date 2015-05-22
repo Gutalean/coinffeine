@@ -27,7 +27,9 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case event: FundsBlockedEvent => onFundsBlocked(event)
     case event: FundsUsedEvent => onFundsUsed(event)
     case event: FundsUnblockedEvent => onFundsUnblocked(event)
-    case SnapshotOffer(_, snapshot: Snapshot) => restoreSnapshot(snapshot)
+    case SnapshotOffer(metadata, snapshot: Snapshot) =>
+      setLastSnapshot(metadata.sequenceNr)
+      restoreSnapshot(snapshot)
     case RecoveryCompleted => notifyAvailabilityChanges()
   }
 
