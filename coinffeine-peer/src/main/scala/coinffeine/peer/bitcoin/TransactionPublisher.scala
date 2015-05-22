@@ -10,11 +10,11 @@ import org.bitcoinj.core.TransactionBroadcaster
 import coinffeine.common.GuavaFutureImplicits
 import coinffeine.model.bitcoin.ImmutableTransaction
 
-private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
-                           transactionBroadcaster: TransactionBroadcaster,
-                           listener: ActorRef,
-                           rebroadcastTimeout: FiniteDuration)
-  extends Actor with ActorLogging with GuavaFutureImplicits {
+private[bitcoin] class TransactionPublisher(
+  originalTx: ImmutableTransaction,
+  transactionBroadcaster: TransactionBroadcaster,
+  listener: ActorRef,
+  rebroadcastTimeout: FiniteDuration) extends Actor with ActorLogging with GuavaFutureImplicits {
 
   import context.dispatcher
   import TransactionPublisher.MaxAttempts
@@ -68,6 +68,7 @@ private[bitcoin] class TransactionPublisher(originalTx: ImmutableTransaction,
   }
 
   private def attemptToBroadcast(): Unit = {
+    log.info("Attempt {} of broadcasting {}", currentAttempt, originalTx)
     val attempt = currentAttempt
     transactionBroadcaster.broadcastTransaction(originalTx.get).toScala
       .map(broadcastTx => AttemptSuccess(ImmutableTransaction(broadcastTx)))
