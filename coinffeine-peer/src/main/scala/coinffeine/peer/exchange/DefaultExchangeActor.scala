@@ -42,6 +42,10 @@ class DefaultExchangeActor[C <: FiatCurrency](
     super.preStart()
   }
 
+  override def postStop(): Unit = {
+    log.info("Stopping {}", exchange.id)
+  }
+
   override def receiveRecover: Receive = {
     case event: RetrievedPeerInfo => onRetrievedPeerInfo(event)
     case event: ExchangeFinished => onExchangeFinished(event)
@@ -232,6 +236,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def waitingForFinishExchange: Receive = {
     case ExchangeActor.FinishExchange =>
+      log.debug("{}: deleting journal and finishing delegates", exchange.id)
       deleteMessages(lastSequenceNr)
       txBroadcasterRef.foreach(_ ! TransactionBroadcaster.Finish)
       handshakeRef.foreach(_ ! HandshakeActor.Finish)

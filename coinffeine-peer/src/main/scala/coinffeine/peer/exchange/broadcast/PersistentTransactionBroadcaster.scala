@@ -39,19 +39,25 @@ private class PersistentTransactionBroadcaster(
       collaborators.blockchain ! BlockchainActor.RetrieveBlockchainHeight
   }
 
-  override val receiveCommand: Receive = {
+  private val finishing: Receive = {
+    case TransactionBroadcaster.Finish =>
+      deleteMessages(lastSequenceNr)
+      self ! PoisonPill
+  }
+
+  override val receiveCommand: Receive = finishing orElse {
     case LastBroadcastableOffer(tx) =>
       persist(OfferAdded(tx))(onOfferAdded)
 
     case PublishBestTransaction =>
       persist(PublicationRequested) { _ =>
         onPublicationRequested()
-        broadcastIfNeeded()
+        broadcastIfNeeded("requested publication")
       }
 
     case BlockchainActor.BlockchainHeightReached(height) =>
       policy.updateHeight(height)
-      broadcastIfNeeded()
+      broadcastIfNeeded(s"$height reached")
 
     case msg @ TransactionPublished(tx, _) if tx == policy.bestTransaction =>
       finishWith(SuccessfulBroadcast(msg))
@@ -63,14 +69,9 @@ private class PersistentTransactionBroadcaster(
       finishWith(FailedBroadcast(err))
   }
 
-  private val finished: Receive = {
-    case TransactionBroadcaster.Finish =>
-      deleteMessages(lastSequenceNr)
-      self ! PoisonPill
-  }
-
-  private def broadcastIfNeeded(): Unit = {
+  private def broadcastIfNeeded(trigger: String): Unit = {
     if (policy.shouldBroadcast) {
+      log.info("Publishing {}: {}", policy.bestTransaction, trigger)
       collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
     }
   }
@@ -89,7 +90,7 @@ private class PersistentTransactionBroadcaster(
 
   private def onFinished(event: FinishedWithResult): Unit = {
     collaborators.listener ! event.result
-    context.become(finished)
+    context.become(finishing)
   }
 }
 
