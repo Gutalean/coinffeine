@@ -145,6 +145,10 @@ class MockGateway(brokerId: PeerId = PeerId.hashOf("broker"))(implicit system: A
   def expectNoMsg(timeout: FiniteDuration = defaultTimeout): Unit = {
     messagesProbe.expectNoMsg(timeout)
   }
+
+  def dropPreviousMessages(max: FiniteDuration): Unit = {
+    messagesProbe.receiveWhile(max) { case _ => }
+  }
 }
 
 object MockGateway {
