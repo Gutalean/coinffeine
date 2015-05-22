@@ -87,6 +87,7 @@ class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent
   }
 
   it should "remember nothing after journal is deleted" in {
+    gateway.dropPreviousMessages(max = 100.millis.dilated)
     startActor()
     shouldForwardPeerHandshake()
   }
