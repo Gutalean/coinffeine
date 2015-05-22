@@ -1,8 +1,11 @@
 package coinffeine.peer.market.orders
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.pattern._
-import akka.persistence.{SnapshotOffer, PersistentActor, RecoveryCompleted}
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
+import akka.util.Timeout
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
@@ -38,8 +41,9 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   private def retrieveArchivedOrders(): Unit = {
     import context.dispatcher
+    implicit val timeout = Timeout(OrderSupervisor.QueryTimeout)
     AskPattern(archive, OrderArchive.Query(), "cannot retrieve archived orders")
-      .withImmediateReply[Any]()
+      .withReply[Any]()
       .pipeTo(self)
   }
 
@@ -49,11 +53,15 @@ private[this] class OrderSupervisor(override val persistenceId: String,
       val archivedIds = archivedOrders.map(_.id).toSet
       orders = orders.filterKeys(!archivedIds.contains(_))
       orders.values.foreach(spawn)
+      log.info("Start accepting new orders")
       context.become(supervisingOrders)
       unstashAll()
 
     case OrderArchive.QueryError() =>
       throw new RuntimeException("Cannot retrieve archived orders")
+
+    case Status.Failure(ex) =>
+      throw new RuntimeException("Cannot retrieve archived orders", ex)
 
     case OpenOrder(_) | CancelOrder(_) => stash()
   }
@@ -84,6 +92,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
 object OrderSupervisor {
   val DefaultPersistenceId = "orders"
+  val QueryTimeout = 20.seconds
 
   private case class Snapshot(orders: Map[OrderId, AnyCurrencyActiveOrder]) extends PersistentEvent
 
