@@ -3,7 +3,7 @@ package coinffeine.common.akka.test
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
 import akka.testkit.TestProbe
 import org.scalatest.ShouldMatchers
 
@@ -66,6 +66,10 @@ class MockSupervisedActor(implicit system: ActorSystem) extends ShouldMatchers {
       case MockActor.MockReceived(_, sender, message) if reply.isDefinedAt(message) =>
         sender ! reply(message)
     }
+  }
+
+  def stop(): Unit = {
+    ref ! PoisonPill
   }
 
   def throwException(exception: Throwable): Unit = {

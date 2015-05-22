@@ -35,6 +35,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private var txBroadcasterRef: Option[ActorRef] = None
   private var handshakeRef: Option[ActorRef] = None
+  private var paymentChannelRef: Option[ActorRef] = None
 
   override def preStart(): Unit = {
     log.info("Starting {}", exchange.id)
@@ -145,7 +146,9 @@ class DefaultExchangeActor[C <: FiatCurrency](
     val runningExchange = handshakingExchange.startExchanging(commitments, commitmentsConfirmedOn)
     val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val resultListeners = Set(self, txBroadcasterRef.get)
-    context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName)
+    paymentChannelRef = Some(
+      context.actorOf(delegates.micropaymentChannel(channel, resultListeners), ChannelActorName))
+    context.watch(paymentChannelRef.get)
     context.become(inMicropaymentChannel(runningExchange))
   }
 
@@ -232,7 +235,8 @@ class DefaultExchangeActor[C <: FiatCurrency](
       deleteMessages(lastSequenceNr)
       txBroadcasterRef.foreach(_ ! TransactionBroadcaster.Finish)
       handshakeRef.foreach(_ ! HandshakeActor.Finish)
-      stopAfterTerminationOf((txBroadcasterRef ++ handshakeRef).toSet)
+      paymentChannelRef.foreach(_ ! MicroPaymentChannelActor.Finish)
+      stopAfterTerminationOf((txBroadcasterRef ++ handshakeRef ++ paymentChannelRef).toSet)
   }
 
   private def stopAfterTerminationOf(pendingTerminations: Set[ActorRef]): Unit = {

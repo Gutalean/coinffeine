@@ -87,10 +87,10 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
         case result: ExchangeSuccess if result.exchange.id == exchange.id => result
       }
       listener.reply(ExchangeActor.FinishExchange)
-      listener.expectTerminated(actor)
       broadcaster.expectFinished()
       handshakeActor.expectFinished()
-      micropaymentChannelActor.expectStop()
+      expectMicropaymentChannelFinish()
+      listener.expectTerminated(actor)
 
       startActor()
       micropaymentChannelActor.expectCreation() // As if nothing has happened

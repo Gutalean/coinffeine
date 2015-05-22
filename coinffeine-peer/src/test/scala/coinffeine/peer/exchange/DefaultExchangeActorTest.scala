@@ -120,11 +120,19 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       )
     }
 
-    protected def expectFailureTermination(): ExchangeFailure = {
+    protected def expectFailureTermination(
+        finishMicropaymentChannel: Boolean = false): ExchangeFailure = {
       val failure = listener.expectMsgType[ExchangeFailure]
       listener.reply(ExchangeActor.FinishExchange)
+      if (finishMicropaymentChannel) { expectMicropaymentChannelFinish() }
       listener.expectTerminated(actor)
       failure
+    }
+
+    protected def expectMicropaymentChannelFinish(): Unit = {
+      micropaymentChannelActor.expectMsg(MicroPaymentChannelActor.Finish)
+      micropaymentChannelActor.stop()
+      micropaymentChannelActor.expectStop()
     }
   }
 }
