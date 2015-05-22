@@ -19,6 +19,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       case ExchangeSuccess(ex) if ex.isSuccess =>
     }
     listener.reply(ExchangeActor.FinishExchange)
+    expectMicropaymentChannelFinish()
     listener.expectTerminated(actor)
   }
 
@@ -64,14 +65,15 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
     notifyDepositDestination(ChannelAtStep(1))
-    expectFailureTermination()
+    expectFailureTermination(finishMicropaymentChannel = true)
   }
 
   it should "report a failure if the broadcast failed" in new Fixture {
     broadcaster.givenBroadcasterWillFail()
     startActor()
     givenMicropaymentChannelSuccess()
-    expectFailureTermination().exchange.cause shouldBe FailureCause.NoBroadcast
+    val result = expectFailureTermination(finishMicropaymentChannel = true)
+    result.exchange.cause shouldBe FailureCause.NoBroadcast
   }
 
   it should "report a failure if the broadcast succeeds with an unexpected transaction" in
@@ -85,7 +87,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
-      inside(expectFailureTermination().exchange) {
+      inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
         case FailedExchange(_, _, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
       }
     }
@@ -103,7 +105,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       micropaymentChannelActor.probe.send(actor, ExchangeUpdate(runningExchange.completeStep(1)))
       listener.expectMsgType[ExchangeUpdate]
       notifyDepositDestination(DepositRefund, midWayTx)
-      val failedExchange = expectFailureTermination().exchange
+      val failedExchange = expectFailureTermination(finishMicropaymentChannel = true).exchange
       failedExchange.cause shouldBe FailureCause.PanicBlockReached
       failedExchange.transaction.value shouldBe midWayTx
       failedExchange.progress.bitcoinsTransferred.buyer shouldBe 'positive
