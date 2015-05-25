@@ -4,6 +4,8 @@ import scala.language.implicitConversions
 
 import org.bitcoinj.core.Coin
 
+import coinffeine.model.currency.Implicits.Units
+
 trait Implicits {
 
   implicit val bitcoinIsNumeric = Bitcoin.numeric
@@ -14,9 +16,9 @@ trait Implicits {
     def asSatoshi = (btc.value * Bitcoin.OneBtcInSatoshi).toBigIntExact().get.underlying()
   }
 
-  implicit def pimpMyDouble(i: Double) = new Implicits.Units(i)
-  implicit def pimpMyDecimal(i: BigDecimal) = new Implicits.Units(i)
-  implicit def pimpMyInt(i: Int) = new Implicits.Units(i)
+  implicit def pimpMyDouble(i: Double): Units = new Implicits.Units(i)
+  implicit def pimpMyDecimal(i: BigDecimal): Units = new Implicits.Units(i)
+  implicit def pimpMyInt(i: Int): Units = new Implicits.Units(i)
 
   implicit def convertToBitcoinjCoin(amount: Bitcoin.Amount): Coin = Coin.valueOf(amount.units)
   implicit def convertToBitcoinAmount(amount: Coin): Bitcoin.Amount =
