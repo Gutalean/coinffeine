@@ -7,6 +7,19 @@ sealed trait OrderPrice[C <: FiatCurrency] {
   def isLimited: Boolean
   def toOption: Option[Price[C]]
   def currency: C
+
+  def outbids(otherPrice: OrderPrice[C]): Boolean = (this, otherPrice) match {
+    case (_, MarketPrice(_)) => false
+    case (MarketPrice(_), _) => true
+    case (LimitPrice(left), LimitPrice(right)) => left.outbids(right)
+  }
+
+  def outbidsOrMatches(otherPrice: OrderPrice[C]): Boolean =
+    this == otherPrice || this.outbids(otherPrice)
+
+  def underbids(otherPrice: OrderPrice[C]): Boolean = !this.outbidsOrMatches(otherPrice)
+
+  def underbidsOrMatches(otherPrice: OrderPrice[C]): Boolean = !this.outbids(otherPrice)
 }
 
 /** Accept the current market price */
