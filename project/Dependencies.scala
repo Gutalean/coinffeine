@@ -4,7 +4,7 @@ object Dependencies {
   object Versions {
     val akka = "2.3.11"
     val dispatch = "0.11.2"
-    val lift = "2.6"
+    val lift = "2.6.2"
     val logback = "1.1.3"
   }
 
@@ -19,7 +19,7 @@ object Dependencies {
     "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.1"
   )
   lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
-  lazy val anorm = "com.typesafe.play" %% "anorm" % "2.4.0-M3"
+  lazy val anorm = "com.typesafe.play" %% "anorm" % "2.4.0-RC3"
   lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.3"
   lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
@@ -29,7 +29,7 @@ object Dependencies {
   )
   lazy val h2 = "com.h2database" % "h2" % "1.3.176"
   lazy val htmlunit = "net.sourceforge.htmlunit" % "htmlunit" % "2.15"
-  lazy val guava = "com.google.guava" % "guava" % "16.0.1"
+  lazy val guava = "com.google.guava" % "guava" % "18.0"
   lazy val janino = "org.codehaus.janino" % "janino" % "2.7.8"
   lazy val jaxws = "com.sun.xml.ws" % "jaxws-rt" % "2.2.8"
   lazy val jetty = Seq(
@@ -58,7 +58,7 @@ object Dependencies {
     "org.controlsfx" % "controlsfx" % "8.20.8"
   )
   lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.12.2"
-  lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.4"
+  lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.5"
   lazy val scalaParser = "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4"
   lazy val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "1.0.4"
   lazy val scalaz = "org.scalaz" %% "scalaz-core" % "7.1.2"
