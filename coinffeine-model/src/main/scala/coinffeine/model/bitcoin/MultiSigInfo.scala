@@ -16,8 +16,12 @@ object MultiSigInfo {
   private def requireMultisigChunks(script: Script): Option[Seq[ScriptChunk]] =
     if (script.isSentToMultiSig) Some(script.getChunks) else None
 
+  /** Extract keys from script chunks
+    *
+    * First chunk is number of required keys and therefore discarded.
+    * Last two chunks are number of keys and OP_CHECKMULTISIG, also discarded.
+    */
   private def decodeKeys(chunks: Seq[ScriptChunk]): Seq[PublicKey] = chunks
-    .take(chunks.size - 2) // Last two chunks are number of keys and OP_CHECKMULTISIG
-    .drop(1) // First chunk is number of required keys
+    .slice(1, chunks.size - 2)
     .map(chunk => PublicKey(chunk.data))
 }

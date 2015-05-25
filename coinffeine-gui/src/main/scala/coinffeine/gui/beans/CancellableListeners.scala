@@ -11,7 +11,7 @@ private[beans] class CancellableListeners[L] {
   }
 
   def cancel(listener: L): Unit = {
-    listeners.get(listener).map(_.cancel())
+    listeners.get(listener).foreach(_.cancel())
     listeners -= listener
   }
 }

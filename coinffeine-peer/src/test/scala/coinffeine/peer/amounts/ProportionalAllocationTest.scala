@@ -44,8 +44,8 @@ class ProportionalAllocationTest extends UnitTest with PropertyChecks {
 
   def shouldBeAFairDistribution(weights: Vector[Long], amounts: Vector[Long]): Unit = {
     for {
-      i <- 0 to (weights.size - 1)
-      j <- 0 to (weights.size - 1)
+      i <- weights.indices
+      j <- weights.indices
       if weights(i) > weights(j)
     } withClue(s"Comparing $i and $j of $amounts generated from weights $weights") {
       amounts(i) should be >= amounts(j)

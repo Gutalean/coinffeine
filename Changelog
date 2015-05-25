@@ -17,7 +17,7 @@ v0.8.0:
    * Fix overflow during wire protocol serialization
 
 v0.7.0:
- - Trigger alarms on OKPay balance availabity issues
+ - Trigger alarms on OKPay balance availability issues
  - Improve SOAP failure logging
  - Adapt setup wizard to Coinffeine Technical Preview
 
