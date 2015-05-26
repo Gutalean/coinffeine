@@ -21,26 +21,30 @@ import coinffeine.peer.payment.okpay.{OkPayClient, TokenGenerator}
   *
   * @constructor
   * @param service              Web service to use
+  * @param cachedToken          Cache of security tokens
   * @param accountId            Account, also known as wallet ID in OKPay terms
   * @param tokenGenerator       Generator of valid request tokens
   */
 class OkPayWebServiceClient(
     service: OkPayWebService.Service,
+    cachedToken: AtomicReference[Option[String]],
     override val accountId: String,
     tokenGenerator: TokenGenerator) extends OkPayClient with StrictLogging {
 
   import OkPayWebServiceClient._
 
-  private val cachedToken = new AtomicReference[Option[String]](None)
-
   /** Alternative web service client constructor
     *
     * @param service              Web service to use
+    * @param cachedToken          Cache of security tokens
     * @param accountId            Account, also known as wallet ID in OKPay terms
     * @param seedToken            Token used to generate request tokens
     */
-  def this(service: OkPayWebService.Service, accountId: String, seedToken: String) =
-    this(service, accountId, new TokenGenerator(seedToken))
+  def this(
+      service: OkPayWebService.Service,
+      cachedToken: AtomicReference[Option[String]],
+      accountId: String,
+      seedToken: String) = this(service, cachedToken, accountId, new TokenGenerator(seedToken))
 
   override implicit protected val executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
