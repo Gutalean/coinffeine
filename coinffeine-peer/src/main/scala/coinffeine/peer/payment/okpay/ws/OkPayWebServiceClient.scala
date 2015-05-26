@@ -1,10 +1,12 @@
 package coinffeine.peer.payment.okpay.ws
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 import scalaxb.Soap11Fault
 
+import com.typesafe.scalalogging.StrictLogging
+import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.joda.time.{DateTime, DateTimeZone}
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
@@ -25,9 +27,11 @@ import coinffeine.peer.payment.okpay.{OkPayClient, TokenGenerator}
 class OkPayWebServiceClient(
     service: OkPayWebService.Service,
     override val accountId: String,
-    tokenGenerator: TokenGenerator) extends OkPayClient {
+    tokenGenerator: TokenGenerator) extends OkPayClient with StrictLogging {
 
-  import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient._
+  import OkPayWebServiceClient._
+
+  private val cachedToken = new AtomicReference[Option[String]](None)
 
   /** Alternative web service client constructor
     *
@@ -42,20 +46,25 @@ class OkPayWebServiceClient(
     scala.concurrent.ExecutionContext.Implicits.global
 
   override def sendPayment[C <: FiatCurrency](
-      to: AccountId, amount: CurrencyAmount[C], comment: String, feePolicy: FeePolicy): Future[Payment[C]] =
-    service.send_Money(
-      walletID = Some(Some(accountId)),
-      securityToken = Some(Some(buildCurrentToken())),
-      receiver = Some(Some(to)),
-      currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
-      amount = Some(amount.value),
-      comment = Some(Some(comment)),
-      isReceiverPaysFees = Some(feePolicy match {
-        case PaidByReceiver => true
-        case PaidBySender => false
-      }),
-      invoice = None
-    ).map { response =>
+      to: AccountId,
+      amount: CurrencyAmount[C],
+      comment: String,
+      feePolicy: FeePolicy): Future[Payment[C]] =
+    authenticatedRequest { token =>
+      service.send_Money(
+        walletID = Some(Some(accountId)),
+        securityToken = Some(Some(token)),
+        receiver = Some(Some(to)),
+        currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
+        amount = Some(amount.value),
+        comment = Some(Some(comment)),
+        isReceiverPaysFees = Some(feePolicy match {
+          case PaidByReceiver => true
+          case PaidBySender => false
+        }),
+        invoice = None
+      )
+    }.map { response =>
       parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
     }.mapSoapFault {
       case UnsupportedPaymentMethodFault => UnsupportedPaymentMethod
@@ -63,22 +72,26 @@ class OkPayWebServiceClient(
     }
 
   override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
-    service.transaction_Get(
-      walletID = Some(Some(accountId)),
-      securityToken = Some(Some(buildCurrentToken())),
-      txnID = Some(paymentId.toLong),
-      invoice = None
-    ).map { result =>
+    authenticatedRequest { token =>
+      service.transaction_Get(
+        walletID = Some(Some(accountId)),
+        securityToken = Some(Some(token)),
+        txnID = Some(paymentId.toLong),
+        invoice = None
+      )
+    }.map { result =>
       result.Transaction_GetResult.flatten.map(parsePayment)
     }.recover {
       case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
     }.mapSoapFault()
 
   override def currentBalances(): Future[Seq[FiatAmount]] =
-    service.wallet_Get_Balance(
-      walletID = Some(Some(accountId)),
-      securityToken = Some(Some(buildCurrentToken()))
-    ).map { response =>
+    authenticatedRequest { token =>
+      service.wallet_Get_Balance(
+        walletID = Some(Some(accountId)),
+        securityToken = Some(Some(token))
+      )
+    }.map { response =>
       (for {
         arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
       } yield parseBalances(arrayOfBalances)).getOrElse(
@@ -125,7 +138,32 @@ class OkPayWebServiceClient(
     }
   }
 
-  private def buildCurrentToken() = tokenGenerator.build(DateTime.now(DateTimeZone.UTC))
+  /** Wraps a request that needs an authentication token and makes sure that it is
+    * retried in case of authentication fails once.
+    */
+  private def authenticatedRequest[A](block: String => Future[A]): Future[A] = {
+    val attempt = currentToken().flatMap(block)
+    attempt.recoverWith { case AuthenticationFailed(_, _) => attempt }
+  }
+
+  private def currentToken(): Future[String] =
+    cachedToken.get().map(Future.successful)
+      .getOrElse(createFreshToken())
+
+  private def createFreshToken(): Future[String] = for {
+    time <- lookupServerTime()
+  } yield {
+    val token = tokenGenerator.build(time)
+    cachedToken.set(Some(token))
+    logger.info("Generated new security token with server time {}", time)
+    token
+  }
+
+  private def lookupServerTime(): Future[DateTime] =
+    service.get_Date_Time().map { response =>
+      response.Get_Date_TimeResult.flatten
+        .fold(throw new PaymentProcessorException("Empty getDateTime response"))(DateFormat.parseDateTime)
+    }.mapSoapFault()
 
   implicit class PimpMyFuture[A](future: Future[A]) {
 
@@ -134,7 +172,9 @@ class OkPayWebServiceClient(
     def mapSoapFault(specificFaultMapper: SoapFaultMapper = Map.empty): Future[A] = {
       val generalFaultMapper: SoapFaultMapper = {
         case AccountNotFoundFault => AccountNotFound(accountId, _)
-        case AuthenticationFailedFault => AuthenticationFailed(accountId, _)
+        case AuthenticationFailedFault =>
+          expireToken()
+          AuthenticationFailed(accountId, _)
         case CurrencyDisabledFault => CurrencyDisabled
         case NotEnoughMoneyFault => NotEnoughMoney(accountId, _)
         case InternalErrorFault => InternalError
@@ -146,11 +186,16 @@ class OkPayWebServiceClient(
       }
     }
   }
+
+  private def expireToken(): Unit = {
+    logger.info("Security token expired")
+    cachedToken.set(None)
+  }
 }
 
 object OkPayWebServiceClient {
 
-  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
+  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZoneUTC()
 
   private val AccountNotFoundFault = "Account_Not_Found"
   private val AuthenticationFailedFault = "Authentication_Failed"
