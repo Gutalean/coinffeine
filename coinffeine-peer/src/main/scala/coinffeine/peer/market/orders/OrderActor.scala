@@ -93,6 +93,9 @@ class OrderActor[C <: FiatCurrency](
   override def receiveCommand = managingSnapshots orElse publisher.receiveSubmissionEvents orElse {
     case ResumeOrder => resumeOrder()
 
+    case ReceiveMessage(message: OrderMatch[_], _) if order.hasPendingFunds(message.exchangeId) =>
+      log.warning("Already blocking funds for {}, should take so long", message.exchangeId)
+
     case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
       val orderMatch = message.asInstanceOf[OrderMatch[C]]
       order.shouldAcceptOrderMatch(orderMatch) match {
