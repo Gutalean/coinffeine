@@ -150,7 +150,7 @@ class OkPayWebServiceClient(
 
 object OkPayWebServiceClient {
 
-  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss")
+  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZoneUTC()
 
   private val AccountNotFoundFault = "Account_Not_Found"
   private val AuthenticationFailedFault = "Authentication_Failed"
