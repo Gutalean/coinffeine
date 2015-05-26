@@ -87,8 +87,10 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
 
   private def connected: Receive = {
     case PublishTransaction(tx) =>
-      val name = s"broadcast-${tx.get.getHash}-${System.currentTimeMillis()}"
-      context.actorOf(delegates.transactionPublisher(platform.peerGroup, tx, sender()), name)
+      val name = s"broadcast-${tx.get.getHash}"
+      if (context.child(name).isEmpty) {
+        context.actorOf(delegates.transactionPublisher(platform.peerGroup, tx, sender()), name)
+      }
   }
 
   private def commonHandling: Receive = {
