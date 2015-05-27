@@ -2,8 +2,11 @@ Changelog
 =========
 
 v0.9.0:
+ - Use snapshots to reduce time and space while saving state of running
+   processes
  - Make wire protocol error conditions more specific
- - Reduce CPU consumption of some UI animations
+ - Bug fixing
+   * Reduce CPU consumption of some UI animations
 
 v0.8.1:
  - Show warnings and errors in the new order wizard
