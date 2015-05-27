@@ -67,12 +67,12 @@ class OkPayWebServiceClient(
           case PaidBySender => false
         }),
         invoice = None
-      )
-    }.map { response =>
-      parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
-    }.mapSoapFault {
-      case UnsupportedPaymentMethodFault => UnsupportedPaymentMethod
-      case ReceiverNotFoundFault => ReceiverNotFound(to, _)
+      ).map { response =>
+        parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
+      }.mapSoapFault {
+        case UnsupportedPaymentMethodFault => UnsupportedPaymentMethod
+        case ReceiverNotFoundFault => ReceiverNotFound(to, _)
+      }
     }
 
   override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
@@ -82,25 +82,25 @@ class OkPayWebServiceClient(
         securityToken = Some(Some(token)),
         txnID = Some(paymentId.toLong),
         invoice = None
-      )
-    }.map { result =>
-      result.Transaction_GetResult.flatten.map(parsePayment)
-    }.recover {
-      case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
-    }.mapSoapFault()
+      ).map { result =>
+        result.Transaction_GetResult.flatten.map(parsePayment)
+      }.recover {
+        case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
+      }.mapSoapFault()
+    }
 
   override def currentBalances(): Future[Seq[FiatAmount]] =
     authenticatedRequest { token =>
       service.wallet_Get_Balance(
         walletID = Some(Some(accountId)),
         securityToken = Some(Some(token))
-      )
-    }.map { response =>
-      (for {
-        arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
-      } yield parseBalances(arrayOfBalances)).getOrElse(
-          throw new PaymentProcessorException(s"Cannot parse balances in $response"))
-    }.mapSoapFault()
+      ).map { response =>
+        (for {
+          arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
+        } yield parseBalances(arrayOfBalances)).getOrElse(
+            throw new PaymentProcessorException(s"Cannot parse balances in $response"))
+      }.mapSoapFault()
+    }
 
   private def parsePaymentOfCurrency[C <: FiatCurrency](
      txInfo: TransactionInfo, expectedCurrency: C): Payment[C] = {
@@ -176,9 +176,10 @@ class OkPayWebServiceClient(
     def mapSoapFault(specificFaultMapper: SoapFaultMapper = Map.empty): Future[A] = {
       val generalFaultMapper: SoapFaultMapper = {
         case AccountNotFoundFault => AccountNotFound(accountId, _)
-        case AuthenticationFailedFault =>
+        case AuthenticationFailedFault => (cause: Throwable) => {
           expireToken()
-          AuthenticationFailed(accountId, _)
+          AuthenticationFailed(accountId, cause)
+        }
         case CurrencyDisabledFault => CurrencyDisabled
         case NotEnoughMoneyFault => NotEnoughMoney(accountId, _)
         case InternalErrorFault => InternalError

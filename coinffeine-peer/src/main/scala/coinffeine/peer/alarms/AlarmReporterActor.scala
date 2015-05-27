@@ -21,19 +21,19 @@ class AlarmReporterActor(global: MutableGlobalProperties) extends Actor
   }
 
   def processingAlarms: Receive = {
-    case AlarmMessage.Alert(alarm) =>
+    case AlarmMessage.Alert(alarm) if !global.alarms.get.contains(alarm) =>
       logger.info("Received a new alert for alarm {}", alarm)
       global.alarms.update(_ + alarm)
-    case AlarmMessage.Recover(alarm) =>
+    case AlarmMessage.Recover(alarm) if global.alarms.get.contains(alarm) =>
       logger.info("Received a recovery for alarm {}", alarm)
       global.alarms.update(_ - alarm)
   }
 }
 
 object AlarmReporterActor {
-  
+
   def props(global: MutableGlobalProperties): Props = Props(new AlarmReporterActor(global))
-  
+
   trait Component { this: MutableGlobalProperties.Component =>
     def alarmReporterProps = props(globalProperties)
   }
