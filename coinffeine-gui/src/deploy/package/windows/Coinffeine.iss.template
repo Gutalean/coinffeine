@@ -33,6 +33,10 @@ ArchitecturesInstallIn64BitMode=x64
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
+[InstallDelete]
+Type: filesandordirs; Name: "{app}\app"
+Type: filesandordirs; Name: "{app}\runtime"
+
 [Files]
 Source: "Coinffeine\Coinffeine.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "Coinffeine\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
