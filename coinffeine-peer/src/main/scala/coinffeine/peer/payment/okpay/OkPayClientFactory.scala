@@ -1,5 +1,6 @@
 package coinffeine.peer.payment.okpay
 
+import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 
@@ -12,6 +13,7 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
   extends OkPayProcessorActor.ClientFactory {
 
   private val okPay = new OkPayWebService(Some(lookupSettings().serverEndpoint))
+  private val tokenCache = new AtomicReference[Option[String]](None)
 
   object NotConfiguredClient extends OkPayClient {
     private val error = new IllegalStateException(
@@ -30,7 +32,7 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
     (for {
       accountId <- settings.userAccount
       seedToken <- settings.seedToken
-    } yield new OkPayWebServiceClient(okPay.service, accountId, seedToken))
+    } yield new OkPayWebServiceClient(okPay.service, tokenCache, accountId, seedToken))
       .getOrElse(NotConfiguredClient)
   }
 
