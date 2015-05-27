@@ -44,7 +44,7 @@ object Spinner {
   }
 
   private def animate(bar: Rectangle, animationDelay: Duration): Animation = new Timeline {
-    cycleCount = AnimationCycle.toMillis.toInt
+    cycleCount = Animation.Indefinite
     keyFrames = Seq.tabulate(FramesPerCycle) { i =>
       val instant = Duration(i * AnimationCycle.toMillis / FramesPerCycle)
       makeFrame(bar, instant, animationDelay)
