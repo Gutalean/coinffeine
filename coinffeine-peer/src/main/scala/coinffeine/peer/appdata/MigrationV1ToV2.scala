@@ -9,7 +9,7 @@ import org.apache.commons.io.FileUtils
 
 import coinffeine.peer.appdata.Migration.Context
 
-object MigrationV0M8ToV0M9 extends Migration {
+object MigrationV1ToV2 extends Migration {
 
   private val ExplanationTitle = "Order data migration"
 
