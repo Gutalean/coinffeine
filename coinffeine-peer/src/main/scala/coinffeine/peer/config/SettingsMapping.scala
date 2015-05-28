@@ -48,7 +48,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def toConfig(settings: GeneralSettings, config: Config) = config
       .withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
       .withValue("coinffeine.dataVersion",
-        configValue(settings.dataVersion.fold("")(_.value.toString)))
+        configValue(settings.dataVersion.fold[Any]("")(_.value)))
       .withValue("coinffeine.serviceStartStopTimeout",
         configDuration(settings.serviceStartStopTimeout))
   }
