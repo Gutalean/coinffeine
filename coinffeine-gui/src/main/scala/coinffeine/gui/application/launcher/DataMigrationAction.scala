@@ -22,6 +22,8 @@ class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
       new Alert(AlertType.Confirmation) {
         headerText = titleText
         contentText = question
+        width = 300
+        height = 450
       }.showAndWait().contains(ButtonType.OK)
     }
   }
