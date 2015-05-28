@@ -11,18 +11,18 @@ import coinffeine.common.test.{TempDir, UnitTest}
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.config.user.UserFileConfigProvider
 
-class MigrationV0M8ToV0M9Test extends UnitTest with Inside {
+class MigrationV1ToV2Test extends UnitTest with Inside {
 
   "Migration from 0.8 to 0.9" should "abort if user doesn't approve the migration" in
     new Fixture {
       context.givenUserDisapproval()
-      MigrationV0M8ToV0M9.apply(context) shouldBe Migration.Aborted.left
+      MigrationV1ToV2.apply(context) shouldBe Migration.Aborted.left
     }
 
   it should "rename journal and snapshot directories if the user approves it" in new Fixture {
     context.givenUserApproval()
     context.givenEventSourcingDirectories()
-    MigrationV0M8ToV0M9.apply(context) shouldBe Migration.Success
+    MigrationV1ToV2.apply(context) shouldBe Migration.Success
     context.expectNoEventSourcingDirectories()
     context.expectEventSourcingBackup()
   }
@@ -31,7 +31,7 @@ class MigrationV0M8ToV0M9Test extends UnitTest with Inside {
     context.givenUserApproval()
     context.givenEventSourcingDirectories()
     context.givenPreviousEventSourcingBackup()
-    inside(MigrationV0M8ToV0M9.apply(context)) {
+    inside(MigrationV1ToV2.apply(context)) {
       case -\/(Migration.Failed(cause)) => cause.getMessage should include("already exists")
     }
   }
