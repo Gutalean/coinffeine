@@ -5,6 +5,7 @@ import scala.util.Success
 import scala.util.control.NonFatal
 
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
+import coinffeine.peer.appdata.Migrations
 import coinffeine.peer.log.LogConfigurator
 import coinffeine.peer.pid.PidFile
 
@@ -18,6 +19,10 @@ object Main {
     acquirePidFile(coinffeine.configProvider.dataPath)
     if (!coinffeine.configProvider.generalSettings().licenseAccepted) {
       println("You should run the wizard or configure manually the application")
+      System.exit(-1)
+    }
+    if (Migrations.plan(coinffeine.configProvider.generalSettings()).nonEmpty) {
+      println("You should run the data migrations or update manually")
       System.exit(-1)
     }
     try {
