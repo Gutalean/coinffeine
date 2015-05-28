@@ -13,6 +13,7 @@ import coinffeine.common.test.UnitTest
 import coinffeine.model.network.PeerId
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
+import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -25,21 +26,29 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
   "General settings mapping" should "map from config" in {
     val baseConfig = makeConfig("coinffeine.serviceStartStopTimeout" -> "30s")
-    fromConfig[GeneralSettings](baseConfig).licenseAccepted shouldBe false
-    fromConfig[GeneralSettings](baseConfig).serviceStartStopTimeout shouldBe 30.seconds
+    val baseSettings = fromConfig[GeneralSettings](baseConfig)
+    baseSettings.licenseAccepted shouldBe false
+    baseSettings.dataVersion shouldBe 'empty
+    baseSettings.serviceStartStopTimeout shouldBe 30.seconds
+
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> false))
       .licenseAccepted shouldBe false
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> true))
       .licenseAccepted shouldBe true
+
+    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.dataVersion" -> "42"))
+      .dataVersion shouldBe Some(DataVersion(42))
   }
 
   it should "map to config" in {
     val settings = GeneralSettings(
       licenseAccepted = false,
+      dataVersion = Some(DataVersion(42)),
       serviceStartStopTimeout = 30.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getBoolean("coinffeine.licenseAccepted") shouldBe false
+    cfg.getString("coinffeine.dataVersion") shouldBe "42"
     cfg.getDuration("coinffeine.serviceStartStopTimeout", TimeUnit.SECONDS) shouldBe 30
   }
 

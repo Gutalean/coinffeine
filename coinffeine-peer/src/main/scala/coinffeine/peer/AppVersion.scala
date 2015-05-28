@@ -7,7 +7,7 @@ case class AppVersion(major: Int, minor: Int, revision: Int, tag: Option[String]
 
   override def toString = {
     val printableTag = tag.map("-" + _).getOrElse("")
-    s"v$major.$minor.$revision$printableTag"
+    s"$major.$minor.$revision$printableTag"
   }
 
   def isNewerThan(other: AppVersion): Boolean = compareTo(other) == GT

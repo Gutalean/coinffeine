@@ -12,6 +12,7 @@ import coinffeine.common.TypesafeConfigImplicits
 import coinffeine.model.network.PeerId
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
+import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
@@ -40,11 +41,14 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
     override def fromConfig(configPath: File, config: Config) = GeneralSettings(
       licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
+      dataVersion = config.getIntOpt("coinffeine.dataVersion").map(DataVersion.apply),
       serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
     )
 
     override def toConfig(settings: GeneralSettings, config: Config) = config
       .withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
+      .withValue("coinffeine.dataVersion",
+        configValue(settings.dataVersion.fold("")(_.value.toString)))
       .withValue("coinffeine.serviceStartStopTimeout",
         configDuration(settings.serviceStartStopTimeout))
   }
