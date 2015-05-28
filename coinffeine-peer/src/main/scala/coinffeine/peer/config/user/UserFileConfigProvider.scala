@@ -9,7 +9,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
 import coinffeine.peer.config.ConfigProvider
 
-private class UserFileConfigProvider(
+class UserFileConfigProvider(
     override val dataPath: File,
     filename: String = UserFileConfigProvider.DefaultUserSettingsFilename) extends ConfigProvider {
 

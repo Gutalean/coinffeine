@@ -5,11 +5,10 @@ import scalafx.scene.control.Label
 import scalafx.scene.layout._
 import scalafx.scene.paint.Color
 import scalafx.stage.StageStyle
-
-import coinffeine.gui.application.updates.CoinffeineVersion
 import coinffeine.gui.control.Spinner
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.Stylesheets
+import coinffeine.peer.AppVersion
 
 object SplashScreen {
 
@@ -26,7 +25,7 @@ object SplashScreen {
             new Label("Copyright (C) 2014-2015 Coinffeine S.L.") {
               id = "copyright-note"
             },
-            new Label(s"Version ${CoinffeineVersion.Current}") {
+            new Label(s"Version ${AppVersion.Current}") {
               id = "version-note"
             }
           ))

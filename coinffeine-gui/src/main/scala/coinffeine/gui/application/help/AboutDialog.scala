@@ -9,10 +9,9 @@ import scalafx.scene.image.Image
 import scalafx.scene.layout._
 import scalafx.scene.shape.Circle
 import scalafx.stage.{Modality, Stage, StageStyle}
-
-import coinffeine.gui.application.updates.CoinffeineVersion
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.Stylesheets
+import coinffeine.peer.AppVersion
 
 class AboutDialog extends Includes {
 
@@ -29,7 +28,7 @@ class AboutDialog extends Includes {
                 styleClass += "title"
               },
               new StackPane { styleClass += "logo" },
-              new Label(s"Version ${CoinffeineVersion.Current}"),
+              new Label(s"Version ${AppVersion.Current}"),
               new Label("Copyright (C) 2014-2015 Coinffeine S.L.")
             )
           },

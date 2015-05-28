@@ -9,6 +9,8 @@ class PimpTypesafeConfig(val config: Config) extends AnyVal {
 
   def getBooleanOpt(key: String): Option[Boolean] = getOptional(config.getBoolean(key))
 
+  def getIntOpt(key: String): Option[Int] = getOptional(config.getInt(key))
+
   def getStringOpt(key: String): Option[String] = getOptional(config.getString(key))
 
   def getNonEmptyStringOpt(key: String): Option[String] =

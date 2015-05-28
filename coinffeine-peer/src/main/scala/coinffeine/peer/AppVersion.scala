@@ -1,20 +1,18 @@
-package coinffeine.gui.application.updates
+package coinffeine.peer
 
 import scalaz.Ordering._
 import scalaz.Scalaz._
 
-import coinffeine.gui.application.BuildInfo
-
-case class CoinffeineVersion(major: Int, minor: Int, revision: Int, tag: Option[String] = None) {
+case class AppVersion(major: Int, minor: Int, revision: Int, tag: Option[String] = None) {
 
   override def toString = {
     val printableTag = tag.map("-" + _).getOrElse("")
-    s"v$major.$minor.$revision$printableTag"
+    s"$major.$minor.$revision$printableTag"
   }
 
-  def isNewerThan(other: CoinffeineVersion): Boolean = compareTo(other) == GT
+  def isNewerThan(other: AppVersion): Boolean = compareTo(other) == GT
 
-  def compareTo(other: CoinffeineVersion): scalaz.Ordering =
+  def compareTo(other: AppVersion): scalaz.Ordering =
     (this.major ?|? other.major) |+|
     (this.minor ?|? other.minor) |+|
     (this.revision ?|? other.revision) |+|
@@ -30,15 +28,15 @@ case class CoinffeineVersion(major: Int, minor: Int, revision: Int, tag: Option[
     }
 }
 
-object CoinffeineVersion {
+object AppVersion {
 
   private val VersionPattern = """(\d+)\.(\d+)(?:\.(\d+))?(?:-(.*))?""".r
 
-  def apply(major: Int, minor: Int, revision: Int, tag: String): CoinffeineVersion =
-    CoinffeineVersion(major, minor, revision, Some(tag))
+  def apply(major: Int, minor: Int, revision: Int, tag: String): AppVersion =
+    AppVersion(major, minor, revision, Some(tag))
 
-  def apply(version: String): CoinffeineVersion = version match {
-    case VersionPattern(major, minor, optionalRevision, optionalBuild) => CoinffeineVersion(
+  def apply(version: String): AppVersion = version match {
+    case VersionPattern(major, minor, optionalRevision, optionalBuild) => AppVersion(
       major = major.toInt,
       minor = minor.toInt,
       revision = Option(optionalRevision).map(_.toInt).getOrElse(0),
@@ -48,5 +46,5 @@ object CoinffeineVersion {
       throw new IllegalArgumentException(s"Cannot parse '$version' as a version number")
   }
 
-  val Current = CoinffeineVersion(BuildInfo.version)
+  val Current = AppVersion(BuildInfo.version)
 }

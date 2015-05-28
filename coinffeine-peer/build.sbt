@@ -4,6 +4,14 @@ name := "coinffeine-peer"
 
 ScoverageKeys.coverageExcludedPackages := "scalaxb;soapenvelope11;.*generated.*"
 
+buildInfoSettings
+
+sourceGenerators in Compile <+= buildInfo
+
+buildInfoKeys := Seq[BuildInfoKey](name, version)
+
+buildInfoPackage := "coinffeine.peer"
+
 libraryDependencies ++= Dependencies.loggingBackend ++ Dependencies.akka ++ Seq(
   Dependencies.anorm,
   Dependencies.h2,
