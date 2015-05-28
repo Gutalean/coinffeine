@@ -22,6 +22,10 @@ class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
       new Alert(AlertType.Confirmation) {
         headerText = titleText
         contentText = question
+        // FIXME: remove this dirty fix when dialog auto-sizing is fixed in Linux
+        //        See https://javafx-jira.kenai.com/browse/RT-40230
+        resizable = true
+        dialogPane.value.setPrefSize(450, 300)
       }.showAndWait().contains(ButtonType.OK)
     }
   }

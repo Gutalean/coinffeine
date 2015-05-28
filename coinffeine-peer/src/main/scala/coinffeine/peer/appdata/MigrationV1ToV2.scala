@@ -13,11 +13,10 @@ object MigrationV1ToV2 extends Migration {
 
   private val ExplanationTitle = "Order data migration"
 
-  private val Explanation =
-    """Saved order data corresponds to an older Coinffeine version.
-      |We have no means to update it so it will be pruned (a backup will be made).
-      |Do you want to continue?
-    """.stripMargin
+  private val Explanation = "Saved order data corresponds to an older Coinffeine version. " +
+    "Orders in progress cannot be continued with this version so they will be pruned " +
+    "(a backup will be made).\n\n" +
+    "Do you want to continue?"
 
   override def apply(context: Context) =
     if (context.confirm(ExplanationTitle, Explanation)) moveEventSourcingDirectories(context)
