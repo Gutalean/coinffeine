@@ -8,7 +8,7 @@ import scalafx.scene.control.Alert.AlertType
 
 import com.typesafe.scalalogging.LazyLogging
 
-import coinffeine.gui.application.launcher.{AcquirePidFileAction, AppLauncher}
+import coinffeine.gui.application.launcher.{DataMigrationAction, AcquirePidFileAction, AppLauncher}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.Wizard
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
@@ -23,7 +23,7 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
   launchApp(stage).onComplete {
     case Success(s) =>
       s.show()
-    case Failure(_: Wizard.CancelledByUser) =>
+    case Failure(_: Wizard.CancelledByUser | DataMigrationAction.AbortedByUser) =>
       logger.info("Exiting after wizard cancellation.")
       System.exit(0)
     case Failure(AcquirePidFileAction.AlreadyRunning(pid)) =>

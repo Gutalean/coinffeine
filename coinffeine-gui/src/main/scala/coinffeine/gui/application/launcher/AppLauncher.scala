@@ -21,6 +21,7 @@ trait AppLauncher { this: ProductionCoinffeineComponent =>
     for {
       _ <- new ConfigureLogAction(configProvider).apply()
       _ <- new AcquirePidFileAction(configProvider.dataPath).apply()
+      _ <- new DataMigrationAction(configProvider).apply()
       _ <- new RunWizardAction(configProvider, stage.scene.value.getWindow, network).apply()
       _ <- new AppStartAction(app).apply()
       _ <- new CheckForUpdatesAction().apply()
