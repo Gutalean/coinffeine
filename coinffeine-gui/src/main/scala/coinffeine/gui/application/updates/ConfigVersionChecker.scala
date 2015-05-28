@@ -6,8 +6,10 @@ import scala.util.control.NonFatal
 
 import com.typesafe.config.Config
 
-class ConfigVersionChecker(
-    configProvider: ConfigVersionChecker.ConfigProvider) extends VersionChecker {
+import coinffeine.peer.AppVersion
+
+class ConfigVersionChecker(configProvider: ConfigVersionChecker.ConfigProvider)
+  extends VersionChecker {
 
   override def latestStableVersion()(implicit executor: ExecutionContext) = {
     configProvider().map { config =>
@@ -20,7 +22,7 @@ class ConfigVersionChecker(
 
   override def shutdown() = configProvider.shutdown()
 
-  private def extractCurrent(config: Config): CoinffeineVersion = CoinffeineVersion(
+  private def extractCurrent(config: Config) = AppVersion(
     major = config.getInt("latest-stable.major"),
     minor = config.getInt("latest-stable.minor"),
     revision = config.getInt("latest-stable.revision"),
@@ -29,7 +31,6 @@ class ConfigVersionChecker(
 }
 
 object ConfigVersionChecker {
-
   trait ConfigProvider {
     def apply(): Future[Config]
     def shutdown(): Unit

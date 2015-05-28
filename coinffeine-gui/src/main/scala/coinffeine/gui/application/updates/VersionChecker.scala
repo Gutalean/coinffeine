@@ -2,13 +2,15 @@ package coinffeine.gui.application.updates
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import coinffeine.peer.AppVersion
+
 trait VersionChecker {
 
-  def latestStableVersion()(implicit executor: ExecutionContext): Future[CoinffeineVersion]
+  def latestStableVersion()(implicit executor: ExecutionContext): Future[AppVersion]
 
-  def canUpdateTo()(implicit executor: ExecutionContext): Future[Option[CoinffeineVersion]] =
+  def canUpdateTo()(implicit executor: ExecutionContext): Future[Option[AppVersion]] =
     latestStableVersion().map { v =>
-      if (v.isNewerThan(CoinffeineVersion.Current)) Some(v)
+      if (v.isNewerThan(AppVersion.Current)) Some(v)
       else None
     }
 
