@@ -14,14 +14,6 @@ unmanagedJars in Compile += Attributed.blank(file(scala.util.Properties.javaHome
 
 fork := true
 
-buildInfoSettings
-
-sourceGenerators in Compile <+= buildInfo
-
-buildInfoKeys := Seq[BuildInfoKey](name, version)
-
-buildInfoPackage := "coinffeine.gui.application"
-
 // Generate an iss file with the current version interpolated. This should be upgraded to a
 // full-fledged sbt plugin if more files or variables are needed
 
