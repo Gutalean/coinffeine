@@ -1,7 +1,5 @@
 package coinffeine.peer.appdata
 
-import scala.annotation.tailrec
-
 import coinffeine.peer.config.GeneralSettings
 
 /** Selects migrations to update saved data.

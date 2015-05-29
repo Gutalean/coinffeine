@@ -1,9 +1,9 @@
 package coinffeine.peer.appdata
 
-import scalaz.Scalaz._
-import java.io.{IOException, File}
-
+import java.io.File
 import scalaz.\/
+import scalaz.syntax.either._
+import scalaz.syntax.monad._
 
 import org.apache.commons.io.FileUtils
 
@@ -28,12 +28,14 @@ object MigrationV1ToV2 extends Migration {
       "akka.persistence.snapshot-store.local.dir"
     ).map(setting => new File(context.config.enrichedConfig.getString(setting)))
 
-    eventSourcingDirectories.foldLeft[Migration.Result](Migration.Success) { (accum, sourceDir) =>
-      accum >> {
-        val destDir = new File(sourceDir.getAbsolutePath + ".v0.8")
-        \/.fromTryCatchNonFatal(FileUtils.moveDirectory(sourceDir, destDir))
-          .leftMap(Migration.Failed.apply)
-      }
+    eventSourcingDirectories.foldLeft(Migration.Success) { (accum, sourceDir) =>
+      accum >> { moveDirectory(sourceDir) }
     }
+  }
+
+  private def moveDirectory(sourceDir: File): Migration.Result = {
+    val destDir = new File(sourceDir.getAbsolutePath + ".v0.8")
+    \/.fromTryCatchNonFatal(FileUtils.moveDirectory(sourceDir, destDir))
+      .leftMap(Migration.Failed.apply)
   }
 }

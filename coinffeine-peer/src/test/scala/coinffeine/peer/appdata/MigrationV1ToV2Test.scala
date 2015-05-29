@@ -1,9 +1,8 @@
 package coinffeine.peer.appdata
 
 import java.io.File
-
 import scalaz.-\/
-import scalaz.syntax.all._
+import scalaz.syntax.either._
 
 import org.scalatest.Inside
 
