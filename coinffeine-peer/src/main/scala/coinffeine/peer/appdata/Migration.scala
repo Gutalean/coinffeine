@@ -12,7 +12,7 @@ trait Migration {
 object Migration {
 
   type Result = Error \/ Unit
-  val Success = ().right
+  val Success: Result = ().right
 
   sealed trait Error
   case object Aborted extends Error

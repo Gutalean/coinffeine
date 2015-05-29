@@ -19,7 +19,7 @@ object Dependencies {
     "com.github.dnvriend" %% "akka-persistence-inmemory" % "1.0.3"
   )
   lazy val akkaRemote = "com.typesafe.akka" %% "akka-remote" % Versions.akka
-  lazy val anorm = "com.typesafe.play" %% "anorm" % "2.4.0-RC3"
+  lazy val anorm = "com.typesafe.play" %% "anorm" % "2.4.0"
   lazy val bitcoinj = "org.bitcoinj" % "bitcoinj-core" % "0.12.3"
   lazy val commonsIo = "org.apache.commons" % "commons-io" % "1.3.2"
   lazy val dispatch = "net.databinder.dispatch" %% "dispatch-core" % Versions.dispatch
