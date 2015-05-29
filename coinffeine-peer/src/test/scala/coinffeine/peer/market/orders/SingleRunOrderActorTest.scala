@@ -39,14 +39,13 @@ class SingleRunOrderActorTest extends OrderActorTest {
     new Fixture {
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
-      givenSuccessfulFundsBlocking(orderMatch.exchangeId)
+      givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
       submissionProbe.fishForMessage() {
         case StopSubmitting(orderId) if orderId == order.id => true
         case _ => false
       }
       expectProperty { _.status should not be OrderStatus.NotStarted }
       expectProperty { _.progress shouldBe 0.0 }
-      exchangeActor.expectCreation()
       actor.tell(
         msg = ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())),
         sender = exchangeActor.ref
@@ -58,15 +57,13 @@ class SingleRunOrderActorTest extends OrderActorTest {
   it should "spawn an exchange upon matching" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
-    exchangeActor.expectCreation()
+    givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
   }
 
   it should "accept new order matches if an exchange is active" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(halfOrderMatch)
-    givenSuccessfulFundsBlocking(halfOrderMatch.exchangeId)
-    exchangeActor.expectCreation()
+    givenSuccessfulFundsBlockingAndExchangeCreation(halfOrderMatch.exchangeId)
 
     gatewayProbe.relayMessageFromBroker(halfOrderMatch.copy(exchangeId = ExchangeId.random()))
     gatewayProbe.expectNoMsg(idleTime)
@@ -75,8 +72,7 @@ class SingleRunOrderActorTest extends OrderActorTest {
   it should "not reject resubmissions of already accepted order matches" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    givenSuccessfulFundsBlocking(orderMatch.exchangeId)
-    exchangeActor.expectCreation()
+    givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
 
     gatewayProbe.relayMessageFromBroker(orderMatch)
     gatewayProbe.expectNoMsg(idleTime)

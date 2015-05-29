@@ -139,7 +139,7 @@ abstract class OrderActorTest extends AkkaSpec
     def givenInMarketOrder(): Unit = {
       givenOfflineOrder()
       submissionProbe.send(actor, InMarket(entry))
-      expectProperty { _.inMarket shouldBe true }
+      expectProperty { _ shouldBe 'inMarket }
     }
 
     def shouldRejectAnOrderMatch(cause: ExchangeRejection.Cause): Unit = {
@@ -148,9 +148,10 @@ abstract class OrderActorTest extends AkkaSpec
       gatewayProbe.expectForwardingToBroker(ExchangeRejection(otherExchangeId, cause))
     }
 
-    def givenSuccessfulFundsBlocking(exchangeId: ExchangeId): Unit = {
+    def givenSuccessfulFundsBlockingAndExchangeCreation(exchangeId: ExchangeId): Any = {
       fundsBlocker.expectCreation()
       fundsBlocker.probe.send(actor, FundsBlockerActor.BlockingResult(exchangeId, Success {}))
+      exchangeActor.expectCreation()
     }
 
     def givenFailedFundsBlocking(): Unit = {
@@ -162,17 +163,16 @@ abstract class OrderActorTest extends AkkaSpec
     def givenASuccessfulPerfectMatchExchange(): Unit = {
       givenInMarketOrder()
       gatewayProbe.relayMessageFromBroker(orderMatch)
-      givenSuccessfulFundsBlocking(orderMatch.exchangeId)
-      expectProperty(_.exchanges.get(orderMatch.exchangeId).exists(_.isCompleted))
+      givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
+      expectProperty(_.exchanges.keys should contain (orderMatch.exchangeId))
       exchangeActor.probe.send(actor,
         ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
     }
 
-    def expectProperty(f: AnyCurrencyOrder => Unit): Unit = {
+    def expectProperty[A](f: AnyCurrencyOrder => A): A =
       eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }
-    }
 
     def expectAlive(ref: ActorRef, after: FiniteDuration = 500.millis.dilated): Unit = {
       import system.dispatcher
