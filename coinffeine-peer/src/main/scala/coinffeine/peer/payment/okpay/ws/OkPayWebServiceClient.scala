@@ -70,8 +70,8 @@ class OkPayWebServiceClient(
       ).map { response =>
         parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
       }.mapSoapFault {
-        case UnsupportedPaymentMethodFault => UnsupportedPaymentMethod
-        case ReceiverNotFoundFault => ReceiverNotFound(to, _)
+        case OkPayFault(OkPayFault.UnsupportedPaymentMethod) => UnsupportedPaymentMethod
+        case OkPayFault(OkPayFault.ReceiverNotFound) => ReceiverNotFound(to, _)
       }
     }
 
@@ -85,7 +85,7 @@ class OkPayWebServiceClient(
       ).map { result =>
         result.Transaction_GetResult.flatten.map(parsePayment)
       }.recover {
-        case Soap11Fault(Fault(_, TransactionNotFoundFault, _, _), _, _) => None
+        case Soap11Fault(Fault(_, OkPayFault(OkPayFault.TransactionNotFound), _, _), _, _) => None
       }.mapSoapFault()
     }
 
@@ -175,15 +175,16 @@ class OkPayWebServiceClient(
 
     def mapSoapFault(specificFaultMapper: SoapFaultMapper = Map.empty): Future[A] = {
       val generalFaultMapper: SoapFaultMapper = {
-        case AccountNotFoundFault => AccountNotFound(accountId, _)
-        case AuthenticationFailedFault => (cause: Throwable) => {
+        case OkPayFault(OkPayFault.ClientNotFound) => ClientNotFound(accountId, _)
+        case OkPayFault(OkPayFault.AuthenticationFailed) => (cause: Throwable) => {
           expireToken()
           AuthenticationFailed(accountId, cause)
         }
-        case CurrencyDisabledFault => CurrencyDisabled
-        case NotEnoughMoneyFault => NotEnoughMoney(accountId, _)
-        case InternalErrorFault => InternalError
-        case e => UnexpectedError
+        case OkPayFault(OkPayFault.NotEnoughMoney) => NotEnoughMoney(accountId, _)
+        case OkPayFault(OkPayFault.DisabledCurrency) => DisabledCurrency
+        case OkPayFault(OkPayFault.InternalError) => InternalError
+        case OkPayFault(unexpectedFault) => UnexpectedError(unexpectedFault, _)
+        case unknownFault => UnsupportedError(unknownFault, _)
       }
       future.recoverWith {
         case e @ Soap11Fault(Fault(_, fault, _, _), _, _) =>
@@ -201,15 +202,6 @@ class OkPayWebServiceClient(
 object OkPayWebServiceClient {
 
   val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZoneUTC()
-
-  private val AccountNotFoundFault = "Account_Not_Found"
-  private val AuthenticationFailedFault = "Authentication_Failed"
-  private val CurrencyDisabledFault = "Currency_Disabled"
-  private val NotEnoughMoneyFault = "Not_Enough_Money"
-  private val TransactionNotFoundFault = "Transaction_Not_Found"
-  private val UnsupportedPaymentMethodFault = "Payment_Method_Not_Supported"
-  private val ReceiverNotFoundFault = "Receiver_Not_Found"
-  private val InternalErrorFault = "Internal_Error"
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten
