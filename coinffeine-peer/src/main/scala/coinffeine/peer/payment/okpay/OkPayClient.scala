@@ -7,6 +7,7 @@ import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment.PaymentProcessorException
 import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidBySender}
+import coinffeine.peer.payment.okpay.ws.OkPayFault.OkPayFault
 
 trait OkPayClient {
 
@@ -41,13 +42,13 @@ object OkPayClient {
   abstract class Error(msg: String, cause: Throwable)
     extends Exception(s"invalid OKPay client operation: $msg", cause)
 
-  case class AccountNotFound(account: AccountId, cause: Throwable)
+  case class ClientNotFound(account: AccountId, cause: Throwable)
     extends Error(s"account `$account` not found", cause)
 
   case class AuthenticationFailed(account: AccountId, cause: Throwable)
     extends Error(s"authentication failed for account `$account`", cause)
 
-  case class CurrencyDisabled(cause: Throwable)
+  case class DisabledCurrency(cause: Throwable)
     extends Error("currency is disabled", cause)
 
   case class NotEnoughMoney(account: AccountId, cause: Throwable)
@@ -65,6 +66,9 @@ object OkPayClient {
   case class InternalError(cause: Throwable)
     extends Error("internal error", cause)
 
-  case class UnexpectedError(cause: Throwable)
-    extends Error("unexpected error", cause)
+  case class UnexpectedError(fault: OkPayFault, cause: Throwable)
+    extends Error(s"unexpected $fault", cause)
+
+  case class UnsupportedError(unknownFault: String, cause: Throwable)
+    extends Error(s"unsupported fault '$unknownFault' error", cause)
 }
