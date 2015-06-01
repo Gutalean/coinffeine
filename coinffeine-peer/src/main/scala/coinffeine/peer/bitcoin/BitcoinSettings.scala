@@ -27,7 +27,6 @@ object BitcoinSettings {
     override def name = "mainnet"
   }
 
-  def parseNetwork(name: String): Network =
-    Seq(PublicTestnet, IntegrationRegnet, MainNet).find(_.toString == name).getOrElse(
-      throw new IllegalArgumentException(s"Unknown bitcoin network: '$name'"))
+  def parseNetwork(name: String): Option[Network] =
+    Seq(PublicTestnet, IntegrationRegnet, MainNet).find(_.toString == name)
 }

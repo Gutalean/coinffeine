@@ -14,6 +14,7 @@ import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.bitcoin.BitcoinSettings.MainNet
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
@@ -56,7 +57,9 @@ object SettingsMapping extends TypesafeConfigImplicits {
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(configPath: File, config: Config) = {
-      val network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
+      val network = config.getStringOpt("coinffeine.bitcoin.network")
+        .flatMap(BitcoinSettings.parseNetwork)
+        .getOrElse(MainNet)
       BitcoinSettings(
         connectionRetryInterval = config.getSeconds("coinffeine.bitcoin.connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
