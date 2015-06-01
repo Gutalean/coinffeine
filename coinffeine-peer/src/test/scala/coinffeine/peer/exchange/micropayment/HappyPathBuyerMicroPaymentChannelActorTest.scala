@@ -29,7 +29,7 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
       expectProgress(signatures = i)
       paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
       paymentProcessor.reply(PaymentProcessorActor.Paid(
-        Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description",
+        Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description", "invoice",
           completed = true)
       ))
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)

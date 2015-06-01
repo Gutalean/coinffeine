@@ -29,6 +29,7 @@ class PaymentValidationTest extends UnitTest with Inside {
     amount = 2.EUR,
     date = null,
     description = s"Payment for exchange ${exchangeId.value}, step 1",
+    invoice = s"${exchangeId.value}@1",
     completed = true
   )
   private val payment2 = payment1.copy(

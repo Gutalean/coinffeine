@@ -72,7 +72,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     client.setPaymentResult(Future.successful(payment))
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
     givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
-    requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
+    requester.send(processor,
+      PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
     fundsRegistry.expectAskWithReply {
       case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
         BlockedFiatRegistry.FundsUsed(funds, amountPlusFee)
@@ -83,10 +84,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     response.receiverId shouldBe receiverAccount
     response.amount shouldBe amount
     response.description shouldBe "comment"
+    response.invoice shouldBe "invoice"
 
     withClue("the fee has been taken into account") {
       requester.send(
-        processor, PaymentProcessorActor.Pay(funds, receiverAccount, 0.01.USD, "comment"))
+        processor,
+        PaymentProcessorActor.Pay(funds, receiverAccount, 0.01.USD, "comment", "invoice"))
       requester.expectMsgPF() {
         case PaymentProcessorActor.PaymentFailed(_, ex) =>
           ex.toString should include ("fail to use funds")
@@ -96,7 +99,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    requester.send(processor, PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment"))
+    requester.send(processor,
+      PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
     fundsRegistry.expectAskWithReply {
       case BlockedFiatRegistry.UseFunds(_, requested) =>
         BlockedFiatRegistry.CannotUseFunds(funds, requested, "not enough!")
@@ -108,7 +112,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     client.setPaymentResult(Future.failed(cause))
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
     givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
-    val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment")
+    val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice")
     requester.send(processor, payRequest)
     fundsRegistry.expectAskWithReply {
       case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
@@ -161,6 +165,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       amount = amount,
       date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
       description = "comment",
+      invoice = "invoice",
       completed = true
     )
     val funds = ExchangeId.random()
