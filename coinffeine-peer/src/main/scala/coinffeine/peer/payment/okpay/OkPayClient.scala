@@ -16,7 +16,8 @@ trait OkPayClient {
   def sendPayment[C <: FiatCurrency](to: AccountId,
                                      amount: CurrencyAmount[C],
                                      comment: String,
-                                     feePolicy: FeePolicy = PaidBySender): Future[Payment[C]]
+                                     feePolicy: FeePolicy = PaidBySender,
+                                     invoice: String = ""): Future[Payment[C]]
 
   def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]]
 

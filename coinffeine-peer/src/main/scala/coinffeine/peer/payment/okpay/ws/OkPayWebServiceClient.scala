@@ -53,7 +53,8 @@ class OkPayWebServiceClient(
       to: AccountId,
       amount: CurrencyAmount[C],
       comment: String,
-      feePolicy: FeePolicy): Future[Payment[C]] =
+      feePolicy: FeePolicy,
+      invoice: String): Future[Payment[C]] =
     authenticatedRequest { token =>
       service.send_Money(
         walletID = Some(Some(accountId)),
@@ -66,7 +67,7 @@ class OkPayWebServiceClient(
           case PaidByReceiver => true
           case PaidBySender => false
         }),
-        invoice = None
+        invoice = Some(Some(invoice))
       ).map { response =>
         parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
       }.mapSoapFault {
