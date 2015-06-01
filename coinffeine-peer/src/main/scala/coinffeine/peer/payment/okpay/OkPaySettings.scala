@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 case class OkPaySettings(
     userAccount: Option[String],
     seedToken: Option[String],
-    serverEndpoint: URI,
+    serverEndpointOverride: Option[URI],
     pollingInterval: FiniteDuration) {
 
   require(

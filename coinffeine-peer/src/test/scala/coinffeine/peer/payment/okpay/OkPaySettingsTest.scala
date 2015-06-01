@@ -1,6 +1,5 @@
 package coinffeine.peer.payment.okpay
 
-import java.net.URI
 import scala.concurrent.duration._
 import scalaz.syntax.std.option._
 
@@ -12,7 +11,7 @@ class OkPaySettingsTest extends UnitTest {
     val settingsWithNoAccount = OkPaySettings(
       userAccount = None,
       seedToken = None,
-      serverEndpoint = new URI("http://foo.bar"),
+      serverEndpointOverride = None,
       pollingInterval = 10.seconds
     )
     an [IllegalArgumentException] shouldBe thrownBy {

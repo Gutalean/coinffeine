@@ -140,14 +140,15 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = OkPaySettings(
       userAccount = config.getStringOpt("coinffeine.okpay.id"),
       seedToken = config.getStringOpt("coinffeine.okpay.token"),
-      serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
+      serverEndpointOverride = config.getStringOpt("coinffeine.okpay.endpoint").map(URI.create),
       pollingInterval = config.getSeconds("coinffeine.okpay.pollingInterval")
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
       .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
-      .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
+      .withValue("coinffeine.okpay.endpoint",
+        configValue(settings.serverEndpointOverride.fold("")(_.toString)))
       .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))
   }
 

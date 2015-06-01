@@ -12,7 +12,7 @@ import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 class OkPayClientFactory(lookupSettings: () => OkPaySettings)
   extends OkPayProcessorActor.ClientFactory {
 
-  private val okPay = new OkPayWebService(Some(lookupSettings().serverEndpoint))
+  private val okPay = new OkPayWebService(lookupSettings().serverEndpointOverride)
   private val tokenCache = new AtomicReference[Option[String]](None)
 
   object NotConfiguredClient extends OkPayClient {
