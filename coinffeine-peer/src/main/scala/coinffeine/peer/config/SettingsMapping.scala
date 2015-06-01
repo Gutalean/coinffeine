@@ -14,6 +14,7 @@ import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.bitcoin.BitcoinSettings.MainNet
 import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
@@ -56,7 +57,9 @@ object SettingsMapping extends TypesafeConfigImplicits {
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(configPath: File, config: Config) = {
-      val network = BitcoinSettings.parseNetwork(config.getString("coinffeine.bitcoin.network"))
+      val network = config.getStringOpt("coinffeine.bitcoin.network")
+        .flatMap(BitcoinSettings.parseNetwork)
+        .getOrElse(MainNet)
       BitcoinSettings(
         connectionRetryInterval = config.getSeconds("coinffeine.bitcoin.connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
@@ -137,14 +140,15 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = OkPaySettings(
       userAccount = config.getStringOpt("coinffeine.okpay.id"),
       seedToken = config.getStringOpt("coinffeine.okpay.token"),
-      serverEndpoint = URI.create(config.getString("coinffeine.okpay.endpoint")),
+      serverEndpointOverride = config.getStringOpt("coinffeine.okpay.endpoint").map(URI.create),
       pollingInterval = config.getSeconds("coinffeine.okpay.pollingInterval")
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
       .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
-      .withValue("coinffeine.okpay.endpoint", configValue(settings.serverEndpoint.toString))
+      .withValue("coinffeine.okpay.endpoint",
+        configValue(settings.serverEndpointOverride.fold("")(_.toString)))
       .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))
   }
 

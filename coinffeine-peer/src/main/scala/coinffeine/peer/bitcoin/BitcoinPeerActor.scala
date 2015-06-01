@@ -10,6 +10,7 @@ import akka.pattern._
 import com.google.common.util.concurrent.Service.State
 import com.google.common.util.concurrent._
 import org.bitcoinj.core._
+import org.bitcoinj.net.discovery.DnsDiscovery
 
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.bitcoin._
@@ -59,7 +60,8 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
   private def joining: Receive = {
 
     case SeedPeers(addresses) =>
-      addresses.foreach(platform.peerGroup.addAddress)
+      if (addresses.nonEmpty) addresses.foreach(platform.peerGroup.addAddress)
+      else platform.peerGroup.addPeerDiscovery(new DnsDiscovery(networkComponent.network))
       platform.peerGroup.startAsync()
 
     case CannotResolveSeedPeers(cause) =>

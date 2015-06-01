@@ -166,22 +166,22 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val settings = fromConfig[OkPaySettings](conf)
     settings.userAccount shouldBe Some("id")
     settings.seedToken shouldBe Some("token")
-    settings.serverEndpoint shouldBe new URI("http://example.com/death-star")
+    settings.serverEndpointOverride shouldBe Some(new URI("http://example.com/death-star"))
     settings.pollingInterval shouldBe 50.seconds
 
     val settings2 = fromConfig[OkPaySettings](makeConfig(
-      "coinffeine.okpay.endpoint" -> "http://example.com/death-star",
       "coinffeine.okpay.pollingInterval" -> "50s"
     ))
     settings2.userAccount shouldBe 'empty
     settings2.seedToken shouldBe 'empty
+    settings2.serverEndpointOverride shouldBe 'empty
   }
 
   it should "map to config" in {
     val settings = OkPaySettings(
       userAccount = Some("skywalker"),
       seedToken = Some("lightsaber"),
-      serverEndpoint = new URI("http://example.com/x-wing"),
+      serverEndpointOverride = Some(new URI("http://example.com/x-wing")),
       pollingInterval = 15.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)

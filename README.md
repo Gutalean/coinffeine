@@ -55,7 +55,7 @@ Generating release binaries
 To generate all module binaries that can be generated on the host platform (you wont generate Win-64 binaries from Mac)
 just run:
 
-    sbt release
+    sbt -DTECH_PREVIEW=<bool> release
 
 And you will find the binaries at `target/release/<version>`.
 
