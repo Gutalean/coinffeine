@@ -35,7 +35,8 @@ class PaymentValidationTest extends UnitTest with Inside {
   private val payment2 = payment1.copy(
     id = "payment2",
     amount = 1.EUR,
-    description = s"Payment for exchange ${exchangeId.value}, step 2"
+    description = s"Payment for exchange ${exchangeId.value}, step 2",
+    invoice = s"${exchangeId.value}@2"
   )
   private val amounts = Seq(
     IntermediateStepAmounts(
@@ -74,9 +75,9 @@ class PaymentValidationTest extends UnitTest with Inside {
       InvalidAccounts(actual = Both("wrong", "ids"), expected = participants).failureNel
   }
 
-  it should "require have a valid description" in {
-    validate(firstStep, payment1.copy(description = "invalid")) shouldBe
-      InvalidDescription(actual = "invalid", expected = payment1.description).failureNel
+  it should "require have a valid invoice" in {
+    validate(firstStep, payment1.copy(invoice = "invalid")) shouldBe
+      InvalidInvoice(actual = "invalid", expected = payment1.invoice).failureNel
   }
 
   it should "require the payment to be completed" in {
@@ -93,7 +94,8 @@ class PaymentValidationTest extends UnitTest with Inside {
       amount = 0.1.EUR,
       senderId = "other sender",
       receiverId = "not me",
-      description = "invalid description",
+      description = "some description",
+      invoice = "invalid invoice",
       completed = false
     )
     inside(validate(firstStep, veryWrongPayment)) {

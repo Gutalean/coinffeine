@@ -36,16 +36,16 @@ private class PaymentValidation[C <: FiatCurrency](
       else InvalidAccounts(actualParticipants, participants).failureNel
     }
 
-    val descriptionValidation: Result = {
-      val expectedDescription = PaymentFields.description(exchangeId, step)
-      if (payment.description == expectedDescription) ().successNel
-      else InvalidDescription(payment.description, expectedDescription).failureNel
+    val invoiceValidation: Result = {
+      val expectedInvoice = PaymentFields.invoice(exchangeId, step)
+      if (payment.invoice == expectedInvoice) ().successNel
+      else InvalidInvoice(payment.invoice, expectedInvoice).failureNel
     }
 
     val completenessValidation: Result =
       if (payment.completed) ().successNel else IncompletePayment.failureNel
 
-    (amountValidation |@| accountsValidation |@| descriptionValidation |@| completenessValidation) {
+    (amountValidation |@| accountsValidation |@| invoiceValidation |@| completenessValidation) {
       _ |+| _ |+| _ |+| _
     }
   }
@@ -73,8 +73,8 @@ private object PaymentValidation {
       s" but was from ${actual.buyer} to ${actual.seller}"
   }
 
-  case class InvalidDescription(actual: String, expected: String) extends Error {
-    override def message = s"Invalid description '$actual' where '$expected' was expected"
+  case class InvalidInvoice(actual: String, expected: String) extends Error {
+    override def message = s"Invalid invoice '$actual' where '$expected' was expected"
   }
 
   case object IncompletePayment extends Error {

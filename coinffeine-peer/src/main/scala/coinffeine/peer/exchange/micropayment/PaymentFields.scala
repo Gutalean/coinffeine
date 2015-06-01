@@ -10,5 +10,5 @@ private[micropayment] object PaymentFields {
     s"Payment for $exchangeId, step ${step.value}"
 
   def invoice(exchangeId: ExchangeId, step: IntermediateStep): String =
-    s"$exchangeId@$step"
+    s"${exchangeId.value}@${step.value}"
 }
