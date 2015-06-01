@@ -3,10 +3,11 @@ package coinffeine.gui.application.launcher
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, ButtonType}
+import scalafx.scene.control.ButtonType
 
 import com.typesafe.scalalogging.LazyLogging
 
+import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.appdata.{DataVersion, Migration, Migrations}
 import coinffeine.peer.config.ConfigProvider
@@ -19,13 +20,9 @@ class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
     override val config = configProvider
 
     override def confirm(titleText: String, question: String): Boolean = {
-      new Alert(AlertType.Confirmation) {
+      new CoinffeineAlert(AlertType.Confirmation, prefSize = Some(450, 300)) {
         headerText = titleText
         contentText = question
-        // FIXME: remove this dirty fix when dialog auto-sizing is fixed in Linux
-        //        See https://javafx-jira.kenai.com/browse/RT-40230
-        resizable = true
-        dialogPane.value.setPrefSize(450, 300)
       }.showAndWait().contains(ButtonType.OK)
     }
   }

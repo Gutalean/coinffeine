@@ -5,6 +5,7 @@ object Stylesheets {
   val Palette = "/css/palette.css"
 
   val Controls = "/css/controls.css"
+  val Dialogs = "/css/dialogs.css"
 
   val Main = "/css/main.css"
   val Popup = "/css/popup.css"

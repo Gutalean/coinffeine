@@ -3,12 +3,12 @@ package coinffeine.gui.util
 import java.net.URI
 import scala.sys.process._
 import scala.util.Try
-import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.Platform
+import coinffeine.gui.scene.CoinffeineAlert
 
 trait Browser {
   /** Use default desktop browser to get to the passed URI */
@@ -29,7 +29,7 @@ object Browser {
       def tryBrowser(browser: String) = Try(Seq(browser, location.toString).run())
 
       def cannotFindBrowser(): Unit = {
-        new Alert(AlertType.Error) {
+        new CoinffeineAlert(AlertType.Error) {
           title = "Cannot open a browser"
           headerText = "Cannot find the default browser"
           contentText = location.toString

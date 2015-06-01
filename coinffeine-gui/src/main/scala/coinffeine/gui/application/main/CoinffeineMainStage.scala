@@ -1,10 +1,10 @@
 package coinffeine.gui.application.main
 
 import scalafx.Includes._
-import scalafx.scene.control.{ButtonType, Alert}
 import scalafx.scene.control.Alert.AlertType
+import scalafx.scene.control.ButtonType
 import scalafx.scene.image.Image
-import scalafx.stage.{WindowEvent, Stage, StageStyle}
+import scalafx.stage.{Stage, StageStyle, WindowEvent}
 
 import coinffeine.gui.application.operations.OperationsView
 import coinffeine.gui.application.operations.validation.DefaultOrderValidation
@@ -12,6 +12,7 @@ import coinffeine.gui.application.stats.StatsView
 import coinffeine.gui.application.wallet.WalletView
 import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.ConnectionStatusWidget
+import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
@@ -40,8 +41,8 @@ class CoinffeineMainStage(app: CoinffeineApp,
   icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-256x256.png")))
 
   onCloseRequest = { event: WindowEvent =>
-    if (!app.network.exchanges.forall(_.isCompleted)) {
-      val opt = new Alert(AlertType.Confirmation) {
+    if (true) {
+      val opt = new CoinffeineAlert(AlertType.Confirmation) {
         title = "Close Coinffeine"
         headerText = "Some exchanges are still running"
         contentText =
@@ -52,10 +53,6 @@ class CoinffeineMainStage(app: CoinffeineApp,
           "It is highly recommended to wait for the exchanges to complete before closing " +
           "the application.\n\n" +
           "Do you really want to close Coinffeine?"
-        // FIXME: remove this dirty fix when dialog auto-sizing is fixed in Linux
-        //        See https://javafx-jira.kenai.com/browse/RT-40230
-        resizable = true
-        dialogPane.value.setPrefSize(450, 300)
       }.showAndWait()
       if (!opt.contains(ButtonType.OK)) { event.consume() }
     }

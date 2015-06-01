@@ -3,12 +3,12 @@ package coinffeine.gui
 import scala.util.{Failure, Success}
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
-import scalafx.scene.control.Alert
 import scalafx.scene.control.Alert.AlertType
 
 import com.typesafe.scalalogging.LazyLogging
 
-import coinffeine.gui.application.launcher.{DataMigrationAction, AcquirePidFileAction, AppLauncher}
+import coinffeine.gui.application.launcher.{AcquirePidFileAction, AppLauncher, DataMigrationAction}
+import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.Wizard
 import coinffeine.peer.api.impl.ProductionCoinffeineComponent
@@ -27,14 +27,14 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
       logger.info("Exiting after wizard cancellation.")
       System.exit(0)
     case Failure(AcquirePidFileAction.AlreadyRunning(pid)) =>
-      new Alert(AlertType.Information) {
+      new CoinffeineAlert(AlertType.Information) {
         title = "Cannot start"
         headerText = "Coinffeine is already running"
         contentText = s"Process id: $pid"
       }.showAndWait()
       System.exit(-1)
     case Failure(exception) =>
-      new Alert(AlertType.Error) {
+      new CoinffeineAlert(AlertType.Error) {
         title = "Cannot start"
         headerText =
           "An unexpected error was thrown while starting Coinffeine app"
