@@ -58,7 +58,7 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
       id = paymentId,
       senderId = participants.buyer.paymentProcessorAccount,
       receiverId = participants.seller.paymentProcessorAccount,
-      description = PaymentDescription(exchange.id, step),
+      description = PaymentFields.description(exchange.id, step),
       amount = step.select(exchange.amounts).fiatAmount,
       date = DateTime.now(),
       completed = completed

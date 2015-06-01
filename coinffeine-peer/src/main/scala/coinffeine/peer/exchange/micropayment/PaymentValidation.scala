@@ -1,15 +1,15 @@
 package coinffeine.peer.exchange.micropayment
 
-import scalaz.ValidationNel
 import scalaz.Scalaz._
+import scalaz.ValidationNel
 
 import coinffeine.model.Both
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
-import coinffeine.model.exchange.{Exchange, ExchangeId}
 import coinffeine.model.exchange.ActiveExchange._
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{IntermediateStep, FinalStep, Step}
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep, Step}
 
 private class PaymentValidation[C <: FiatCurrency](
     exchangeId: ExchangeId,
@@ -37,7 +37,7 @@ private class PaymentValidation[C <: FiatCurrency](
     }
 
     val descriptionValidation: Result = {
-      val expectedDescription = PaymentDescription(exchangeId, step)
+      val expectedDescription = PaymentFields.description(exchangeId, step)
       if (payment.description == expectedDescription) ().successNel
       else InvalidDescription(payment.description, expectedDescription).failureNel
     }
