@@ -4,11 +4,12 @@ import java.net.URI
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.control.NonFatal
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, ButtonType}
+import scalafx.scene.control.ButtonType
 
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.gui.application.updates.HttpConfigVersionChecker
+import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.{Browser, FxExecutor}
 import coinffeine.peer.AppVersion
 
@@ -35,7 +36,7 @@ class CheckForUpdatesAction extends LazyLogging {
 
   private def suggestDownloading(version: AppVersion): Unit = {
     logger.info("Coinffeine app is outdated: {} is available", version)
-    val dialog = new Alert(AlertType.Confirmation) {
+    val dialog = new CoinffeineAlert(AlertType.Confirmation, prefSize = Some(450, 300)) {
       title = "New version available"
       headerText = "New version available"
       contentText = s"There is a new version available ($version). Do you want to download it?"

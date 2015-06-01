@@ -2,9 +2,10 @@ package coinffeine.gui.setup
 
 import scalafx.Includes._
 import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.{Alert, ButtonType}
+import scalafx.scene.control.ButtonType
 import scalafx.stage.WindowEvent
 
+import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
 
@@ -21,7 +22,7 @@ class SetupWizard(walletAddress: String,
     additionalStyles = Seq(Stylesheets.Setup)) {
 
   private def onCloseAction(ev: WindowEvent): Unit = {
-    val dialog = new Alert(AlertType.Confirmation) {
+    val dialog = new CoinffeineAlert(AlertType.Confirmation) {
       title = "Quit Coinffeine"
       headerText = "You will exit Coinffeine. Are you sure?"
       buttonTypes = Seq(ButtonType.Yes, ButtonType.No)
