@@ -47,9 +47,12 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       serviceStartStopTimeout = 30.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
-    cfg.getBoolean("coinffeine.licenseAccepted") shouldBe false
+    cfg.hasPath("coinffeine.licenseAccepted") shouldBe false
     cfg.getString("coinffeine.dataVersion") shouldBe "42"
     cfg.getDuration("coinffeine.serviceStartStopTimeout", TimeUnit.SECONDS) shouldBe 30
+
+    SettingsMapping.toConfig(settings.copy(licenseAccepted = true))
+      .getBoolean("coinffeine.licenseAccepted") shouldBe true
   }
 
   "Bitcoins settings mapping" should "map from config" in {
@@ -191,8 +194,8 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS) shouldBe 15
 
     val cfg2 = SettingsMapping.toConfig(settings.copy(userAccount = None, seedToken = None))
-    cfg2.getString("coinffeine.okpay.id") shouldBe 'empty
-    cfg2.getString("coinffeine.okpay.token") shouldBe 'empty
+    cfg2.hasPath("coinffeine.okpay.id") shouldBe false
+    cfg2.hasPath("coinffeine.okpay.token") shouldBe false
   }
 
   private def makeConfig(items: (String, Any)*): Config =
