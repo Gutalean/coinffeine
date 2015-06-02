@@ -10,10 +10,10 @@ import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.{StepPane, Wizard}
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard private (steps: Seq[StepPane[SetupConfig]], data: SetupConfig)
+class SetupWizard private (okPaySteps: Seq[StepPane[SetupConfig]], data: SetupConfig)
   extends Wizard[SetupConfig](
     wizardTitle = "Initial setup",
-    steps = steps,
+    steps = new LicenseAgreementPane +: okPaySteps,
     data = data,
     additionalStyles = Seq(Stylesheets.Setup)) {
 
@@ -34,15 +34,18 @@ class SetupWizard private (steps: Seq[StepPane[SetupConfig]], data: SetupConfig)
 
 object SetupWizard {
 
-  def apply(walletAddress: String, useFaucet: Boolean): SetupWizard = {
+  def forTechnicalPreview(walletAddress: String): SetupWizard = {
     val data = new SetupConfig
-    val okPaySteps =
-      if (useFaucet) Seq(
-        new FaucetInfoStepPane(walletAddress),
-        new OkPayWalletDataPane(data)
-      ) else Seq(
-        new TopUpStepPane(walletAddress)
-      )
-    new SetupWizard(new LicenseAgreementPane +: okPaySteps, data)
+    new SetupWizard(Seq(
+      new FaucetInfoStepPane(walletAddress),
+      new OkPayWalletDataPane(data)
+    ), data)
+  }
+
+  def default(walletAddress: String): SetupWizard = {
+    val data = new SetupConfig
+    new SetupWizard(Seq(
+      new TopUpStepPane(walletAddress)
+    ), data)
   }
 }
