@@ -31,8 +31,10 @@ class RunWizardAction(configProvider: ConfigProvider, window: Window, network: =
     } yield persistSetupConfiguration(config)
   }
 
-  private def invokeSetupWizard(walletAddress: String): Future[SetupConfig] =
-    Future(new SetupWizard(walletAddress).run(Some(window)))(FxExecutor.asContext)
+  private def invokeSetupWizard(walletAddress: String): Future[SetupConfig] = {
+    val useFaucet = configProvider.generalSettings().techPreview
+    Future(SetupWizard(walletAddress, useFaucet).run(Some(window)))(FxExecutor.asContext)
+  }
 
   private def loadOrCreateWallet(): Future[SmartWallet] = Future {
     val walletFile = configProvider.bitcoinSettings().walletFile

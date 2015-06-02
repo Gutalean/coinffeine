@@ -7,17 +7,13 @@ import scalafx.stage.WindowEvent
 
 import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.scene.styles.Stylesheets
-import coinffeine.gui.wizard.Wizard
+import coinffeine.gui.wizard.{StepPane, Wizard}
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard(walletAddress: String,
-                  data: SetupConfig = new SetupConfig) extends Wizard[SetupConfig](
+class SetupWizard private (steps: Seq[StepPane[SetupConfig]], data: SetupConfig)
+  extends Wizard[SetupConfig](
     wizardTitle = "Initial setup",
-    steps = Seq(
-      new LicenseAgreementPane,
-      new FaucetInfoStepPane(walletAddress),
-      new OkPayWalletDataPane(data)
-    ),
+    steps = steps,
     data = data,
     additionalStyles = Seq(Stylesheets.Setup)) {
 
@@ -34,4 +30,19 @@ class SetupWizard(walletAddress: String,
   }
 
   onCloseRequest = onCloseAction _
+}
+
+object SetupWizard {
+
+  def apply(walletAddress: String, useFaucet: Boolean): SetupWizard = {
+    val data = new SetupConfig
+    val okPaySteps =
+      if (useFaucet) Seq(
+        new FaucetInfoStepPane(walletAddress),
+        new OkPayWalletDataPane(data)
+      ) else Seq(
+        // TODO: add alternative panes
+      )
+    new SetupWizard(new LicenseAgreementPane +: okPaySteps, data)
+  }
 }
