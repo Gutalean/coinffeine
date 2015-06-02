@@ -98,10 +98,10 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     case ResumeMicroPaymentChannel if !waitingForPaymentResult =>
       pay(buyer.paymentRequest.get)
 
-    case paymentId: String =>
+    case PaymentProcessorActor.Paid(payment) =>
       waitingForPaymentResult = false
-      persist(CompletedPayment(paymentId)) { event =>
-        log.debug("Exchange {}: payment {} for {} done", exchange.id, paymentId, buyer.currentStep)
+      persist(CompletedPayment(payment.id)) { event =>
+        log.debug("Exchange {}: payment {} for {} done", exchange.id, payment.id, buyer.currentStep)
         onCompletedPayment(event)
         resubmitTimer.reset()
         forwardLastPaymentProof()
@@ -152,7 +152,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     AskPattern(collaborators.paymentProcessor, request, errorMessage = s"Cannot pay with $request")
       .withReplyOrError[PaymentProcessorActor.Paid[C],
                         PaymentProcessorActor.PaymentFailed[C]](_.error)
-      .map(_.payment.id)
       .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
       .pipeTo(self)
   }
