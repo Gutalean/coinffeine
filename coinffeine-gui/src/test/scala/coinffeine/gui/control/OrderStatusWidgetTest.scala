@@ -28,16 +28,23 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
     Status.fromOrder(order) shouldBe Matching
   }
 
-  it should "be in progress for orders with any order making progress" in {
+  it should "be in progress for orders with any exchange making progress" in {
     val order = randomOrder(1.BTC).withExchange(randomInProgressExchange(0.5.BTC, 2))
     Status.fromOrder(order) shouldBe InProgress
   }
 
-  it should "be matching for orders with completed exchanges but remaining amount to exchange" in {
+  it should "be in market for online orders with completed exchanges but remaining amount to exchange" in {
     val order = randomOrder(1.BTC)
       .withExchange(randomCompletedExchange(0.5.BTC))
-      .withExchange(randomExchange(0.5.BTC))
-    Status.fromOrder(order) shouldBe Matching
+      .becomeInMarket
+    Status.fromOrder(order) shouldBe InMarket
+  }
+
+  it should "be in market for offline orders with completed exchanges but remaining amount to exchange" in {
+    val order = randomOrder(1.BTC)
+      .withExchange(randomCompletedExchange(0.5.BTC))
+      .becomeOffline
+    Status.fromOrder(order) shouldBe Submitting
   }
 
   it should "be completed for successfully completed orders" in {

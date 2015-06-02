@@ -79,12 +79,18 @@ object OrderStatusWidget {
   object Status {
     def fromOrder(order: AnyCurrencyOrder): Status =
       order.status match {
-        case OrderStatus.NotStarted if !order.inMarket => Submitting
-        case OrderStatus.NotStarted => InMarket
+        case OrderStatus.NotStarted => submittingStatus(order)
+        case OrderStatus.InProgress if !hasActiveExchanges(order) => submittingStatus(order)
         case OrderStatus.InProgress =>
           if (order.exchanges.values.exists(isInProgress)) InProgress else Matching
         case OrderStatus.Completed | OrderStatus.Cancelled => Completed
       }
+
+    private def hasActiveExchanges(order: AnyCurrencyOrder) =
+      order.exchanges.values.exists(!_.isCompleted)
+
+    private def submittingStatus(order: AnyCurrencyOrder) =
+      if (!order.inMarket) Submitting else InMarket
 
     private def isInProgress(exchange: Exchange[_]): Boolean =
       !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
