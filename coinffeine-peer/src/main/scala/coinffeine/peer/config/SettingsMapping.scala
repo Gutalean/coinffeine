@@ -1,5 +1,6 @@
 package coinffeine.peer.config
 
+import scalaz.syntax.std.boolean._
 import java.io.File
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -43,7 +44,8 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = GeneralSettings(
       licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
       dataVersion = config.getIntOpt("coinffeine.dataVersion").map(DataVersion.apply),
-      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
+      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout"),
+      techPreview = config.getBooleanOpt("coinffeine.techPreview").getOrElse(false)
     )
 
     override def toConfig(settings: GeneralSettings, config: Config) = config
@@ -53,6 +55,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
         settings.dataVersion.map(v => configValue(v.value)))
       .withValue("coinffeine.serviceStartStopTimeout",
         configDuration(settings.serviceStartStopTimeout))
+      .withOptValue("coinffeine.techPreview", settings.techPreview.option(configValue(true)))
   }
 
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
