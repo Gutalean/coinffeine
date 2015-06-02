@@ -64,6 +64,9 @@ object OkPayClient {
   case class ReceiverNotFound(receiver: AccountId, cause: Throwable)
     extends Error(s"receiver `$receiver` not found", cause)
 
+  case class DuplicatedPayment(receiver: AccountId, invoice: String, cause: Throwable)
+    extends Error(s"invoice `$invoice` already exists for receiver `$receiver`", cause)
+
   case class InternalError(cause: Throwable)
     extends Error("internal error", cause)
 

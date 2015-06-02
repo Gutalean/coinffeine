@@ -73,6 +73,7 @@ class OkPayWebServiceClient(
       }.mapSoapFault {
         case OkPayFault(OkPayFault.UnsupportedPaymentMethod) => UnsupportedPaymentMethod
         case OkPayFault(OkPayFault.ReceiverNotFound) => ReceiverNotFound(to, _)
+        case OkPayFault(OkPayFault.DuplicatePayment) => DuplicatedPayment(to, invoice, _)
       }
     }
 
