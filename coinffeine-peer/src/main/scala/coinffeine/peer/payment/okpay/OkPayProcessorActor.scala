@@ -71,7 +71,7 @@ private class OkPayProcessorActor(
   private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
     (for {
       _ <- useFunds(pay)
-      payment <- clientFactory.build().sendPayment(pay.to, pay.amount, pay.comment)
+      payment <- clientFactory.build().sendPayment(pay.to, pay.amount, pay.comment, pay.invoice)
     } yield payment).onComplete {
       case Success(payment) =>
         requester ! Paid(payment)

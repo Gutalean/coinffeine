@@ -23,7 +23,7 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
     override def currentBalances() = Future.failed(error)
     override def sendPayment[C <: FiatCurrency](
         to: AccountId, amount: CurrencyAmount[C], comment: String,
-        feePolicy: FeePolicy, invoice: String) =
+        invoice: String, feePolicy: FeePolicy) =
       Future.failed(error)
     override protected def executionContext = throw error
   }
