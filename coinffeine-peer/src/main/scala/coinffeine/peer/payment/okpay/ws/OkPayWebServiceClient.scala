@@ -53,6 +53,7 @@ class OkPayWebServiceClient(
       to: AccountId,
       amount: CurrencyAmount[C],
       comment: String,
+      invoice: String,
       feePolicy: FeePolicy): Future[Payment[C]] =
     authenticatedRequest { token =>
       service.send_Money(
@@ -66,12 +67,13 @@ class OkPayWebServiceClient(
           case PaidByReceiver => true
           case PaidBySender => false
         }),
-        invoice = None
+        invoice = Some(Some(invoice))
       ).map { response =>
         parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
       }.mapSoapFault {
         case OkPayFault(OkPayFault.UnsupportedPaymentMethod) => UnsupportedPaymentMethod
         case OkPayFault(OkPayFault.ReceiverNotFound) => ReceiverNotFound(to, _)
+        case OkPayFault(OkPayFault.DuplicatePayment) => DuplicatedPayment(to, invoice, _)
       }
     }
 
@@ -121,7 +123,7 @@ class OkPayWebServiceClient(
           Flatten(rawDate),
           _,
           Some(paymentId),
-          _,
+          Flatten(invoice),
           Some(net),
           _,
           Flatten(WalletId(receiverId)),
@@ -130,7 +132,7 @@ class OkPayWebServiceClient(
         val amount = FiatAmount(net, txInfo.Currency.get.get)
         val date = DateFormat.parseDateTime(rawDate)
         val isCompleted = statusOpt.getOrElse(NoneType) == Completed
-        Payment(paymentId.toString, senderId, receiverId, amount, date, description, isCompleted)
+        Payment(paymentId.toString, senderId, receiverId, amount, date, description, invoice, isCompleted)
 
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }

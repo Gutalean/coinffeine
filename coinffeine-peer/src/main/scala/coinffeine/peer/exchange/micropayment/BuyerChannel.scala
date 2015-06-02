@@ -52,7 +52,8 @@ class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) ex
         fundsId = channel.exchange.id,
         to = channel.exchange.counterpart.paymentProcessorAccount,
         amount = step.select(channel.exchange.amounts).fiatAmount,
-        comment = PaymentDescription(channel.exchange.id, step)
+        comment = PaymentFields.description(channel.exchange.id, step),
+        invoice = PaymentFields.invoice(channel.exchange.id, step)
       ))
   }
 

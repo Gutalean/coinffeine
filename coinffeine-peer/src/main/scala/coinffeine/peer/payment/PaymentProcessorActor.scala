@@ -60,7 +60,8 @@ object PaymentProcessorActor {
   case class Pay[C <: FiatCurrency](fundsId: ExchangeId,
                                     to: AccountId,
                                     amount: CurrencyAmount[C],
-                                    comment: String)
+                                    comment: String,
+                                    invoice: String)
 
   /** A message sent by the payment processor in order to notify of a successful payment. */
   case class Paid[C <: FiatCurrency](payment: Payment[C])

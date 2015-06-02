@@ -22,6 +22,7 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
   override def sendPayment[C <: FiatCurrency](to: AccountId,
                                               amount: CurrencyAmount[C],
                                               comment: String,
+                                              invoice: String,
                                               feePolicy: FeePolicy): Future[Payment[C]] =
     paymentResult.asInstanceOf[Future[Payment[C]]]
 

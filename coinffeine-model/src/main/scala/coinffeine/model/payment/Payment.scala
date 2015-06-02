@@ -11,5 +11,6 @@ case class Payment[C <: FiatCurrency](
   amount: CurrencyAmount[C],
   date: DateTime,
   description: String,
+  invoice: String,
   completed: Boolean
 )
