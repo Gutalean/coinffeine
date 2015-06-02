@@ -3,7 +3,7 @@ package coinffeine.common
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
-import com.typesafe.config.{Config, ConfigException}
+import com.typesafe.config.{Config, ConfigException, ConfigValue}
 
 class PimpTypesafeConfig(val config: Config) extends AnyVal {
 
@@ -24,4 +24,9 @@ class PimpTypesafeConfig(val config: Config) extends AnyVal {
   private def getOptional[T](extractor: => T): Option[T] =
     try Some(extractor)
     catch { case _: ConfigException.Missing => None }
+
+  def withOptValue(key: String, maybeValue: Option[ConfigValue]): Config =
+    maybeValue.fold(config) { value =>
+      config.withValue(key, value)
+    }
 }

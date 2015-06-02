@@ -1,5 +1,6 @@
 package coinffeine.peer.config
 
+import scalaz.syntax.std.boolean._
 import java.io.File
 import java.net.URI
 import java.util.concurrent.TimeUnit
@@ -43,15 +44,18 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = GeneralSettings(
       licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
       dataVersion = config.getIntOpt("coinffeine.dataVersion").map(DataVersion.apply),
-      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
+      serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout"),
+      techPreview = config.getBooleanOpt("coinffeine.techPreview").getOrElse(false)
     )
 
     override def toConfig(settings: GeneralSettings, config: Config) = config
-      .withValue("coinffeine.licenseAccepted", configValue(settings.licenseAccepted))
-      .withValue("coinffeine.dataVersion",
-        configValue(settings.dataVersion.fold[Any]("")(_.value)))
+      .withOptValue("coinffeine.licenseAccepted",
+        settings.licenseAccepted.option(configValue(true)))
+      .withOptValue("coinffeine.dataVersion",
+        settings.dataVersion.map(v => configValue(v.value)))
       .withValue("coinffeine.serviceStartStopTimeout",
         configDuration(settings.serviceStartStopTimeout))
+      .withOptValue("coinffeine.techPreview", settings.techPreview.option(configValue(true)))
   }
 
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
@@ -145,10 +149,10 @@ object SettingsMapping extends TypesafeConfigImplicits {
     )
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
-      .withValue("coinffeine.okpay.id", configValue(settings.userAccount.getOrElse("")))
-      .withValue("coinffeine.okpay.token", configValue(settings.seedToken.getOrElse("")))
-      .withValue("coinffeine.okpay.endpoint",
-        configValue(settings.serverEndpointOverride.fold("")(_.toString)))
+      .withOptValue("coinffeine.okpay.id", settings.userAccount.map(configValue))
+      .withOptValue("coinffeine.okpay.token", settings.seedToken.map(configValue))
+      .withOptValue("coinffeine.okpay.endpoint",
+        settings.serverEndpointOverride.map(url => configValue(url.toString)))
       .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))
   }
 
