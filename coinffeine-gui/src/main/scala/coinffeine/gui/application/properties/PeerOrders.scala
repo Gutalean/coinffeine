@@ -12,9 +12,7 @@ class PeerOrders(coinffeineNetwork: CoinffeineNetwork,
 
   coinffeineNetwork.orders.onNewValue { (id, order) =>
     find(_.idProperty.value == id) match {
-      case Some(orderProp) =>
-        orderProp.update(order)
-        update(indexOf(orderProp), orderProp)
+      case Some(orderProp) => orderProp.update(order)
       case None => this += new MutableOrderProperties(order)
     }
   }
