@@ -41,7 +41,7 @@ object SetupWizard {
         new FaucetInfoStepPane(walletAddress),
         new OkPayWalletDataPane(data)
       ) else Seq(
-        // TODO: add alternative panes
+        new TopUpStepPane(walletAddress)
       )
     new SetupWizard(new LicenseAgreementPane +: okPaySteps, data)
   }

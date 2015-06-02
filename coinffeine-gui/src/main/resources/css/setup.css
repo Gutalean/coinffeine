@@ -53,10 +53,12 @@
     -fx-wrap-text: true;
 }
 
-.wizard .okpay-pane .subtitle {
+.wizard .okpay-pane .subtitle,
+.wizard .topup-pane .subtitle {
     -fx-alignment: center;
 }
 
+.wizard .topup-pane .support-icon,
 .wizard .okpay-pane .support-icon { -fx-font-size: 20; }
 
 .wizard .okpay-pane .title {
@@ -64,7 +66,8 @@
     -fx-font-weight: 400;
 }
 
-.wizard .okpay-pane .data {
+.wizard .okpay-pane .data,
+.wizard .topup-pane .data {
     -fx-alignment: center;
     -fx-padding: 10 100 0 100;
     -fx-spacing: 15;
@@ -72,3 +75,18 @@
 
 .wizard .okpay-pane .text-field { -fx-font-size: 16; }
 
+.wizard .topup-pane {
+    -fx-alignment: center;
+    -fx-padding: 20 50 20 50;
+}
+
+.wizard .topup-pane .label {
+    -fx-text-alignment: center;
+    -fx-font-size: 16;
+}
+
+.wizard .topup-pane .title {
+    -fx-font-size: 22;
+    -fx-font-weight: 400;
+    -fx-padding: 0 0 10 0;
+}
