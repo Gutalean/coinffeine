@@ -107,9 +107,9 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
   }
 
   it must "not be in market when the exchange is finished" in {
-    val exchange = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
-    exchange.cancel(DateTime.now()) should not be 'shouldBeOnMarket
-    exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
+    order.cancel(DateTime.now()) should not be 'shouldBeOnMarket
+    order.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 
   it must "be in market despite an exchange is running" in {
