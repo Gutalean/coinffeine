@@ -12,6 +12,7 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
+import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
 import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
@@ -124,22 +125,25 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "be able to retrieve an existing payment" in new WithOkPayProcessor {
     client.givenExistingPayment(payment)
     givenPaymentProcessorIsInitialized()
-    requester.send(processor, PaymentProcessorActor.FindPayment(payment.id))
+    requester.send(
+      processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id)))
     requester.expectMsgType[PaymentProcessorActor.PaymentFound]
   }
 
   it must "be able to check a payment does not exist"  in new WithOkPayProcessor {
     client.givenNonExistingPayment(payment.id)
     givenPaymentProcessorIsInitialized()
-    requester.send(processor, PaymentProcessorActor.FindPayment(payment.id))
-    requester.expectMsg(PaymentProcessorActor.PaymentNotFound(payment.id))
+    val query = PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id))
+    requester.send(processor, query)
+    requester.expectMsg(PaymentProcessorActor.PaymentNotFound(query.criterion))
   }
 
   it must "report failure to retrieve a payment" in new WithOkPayProcessor {
     client.givenPaymentCannotBeRetrieved(payment.id, cause)
     givenPaymentProcessorIsInitialized()
-    requester.send(processor, PaymentProcessorActor.FindPayment(payment.id))
-    requester.expectMsg(PaymentProcessorActor.FindPaymentFailed(payment.id, cause))
+    val query = PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id))
+    requester.send(processor, query)
+    requester.expectMsg(PaymentProcessorActor.FindPaymentFailed(query.criterion, cause))
   }
 
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {

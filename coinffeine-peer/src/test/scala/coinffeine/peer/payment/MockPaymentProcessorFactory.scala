@@ -7,6 +7,7 @@ import org.joda.time.DateTime
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.{AnyPayment, Payment}
+import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 
 class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
 
@@ -23,16 +24,20 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
         sender ! PaymentProcessorActor.RetrievedAccountId(id)
       case pay: PaymentProcessorActor.Pay[_] =>
         sendPayment(sender(), pay)
-      case PaymentProcessorActor.FindPayment(paymentId) =>
-        findPayment(sender(), paymentId)
+      case PaymentProcessorActor.FindPayment(criterion) =>
+        findPayment(sender(), criterion)
       case PaymentProcessorActor.RetrieveBalance(currency) =>
         currentBalance(sender(), currency)
     }
 
-    private def findPayment(requester: ActorRef, paymentId: String): Unit = {
-      payments.find(_.id == paymentId) match {
+    private def findPayment(requester: ActorRef, criterion: FindPaymentCriterion): Unit = {
+      def predicate(payment: AnyPayment) = criterion match {
+        case FindPaymentCriterion.ById(paymentId) => payment.id == paymentId
+        case FindPaymentCriterion.ByInvoice(invoice) => payment.invoice == invoice
+      }
+      payments.find(predicate) match {
         case Some(payment) => requester ! PaymentProcessorActor.PaymentFound(payment)
-        case None => requester ! PaymentProcessorActor.PaymentNotFound(paymentId)
+        case None => requester ! PaymentProcessorActor.PaymentNotFound(criterion)
       }
     }
 

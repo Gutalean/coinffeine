@@ -3,7 +3,7 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.{ExecutionContext, Future}
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
+import coinffeine.model.payment.PaymentProcessor.{Invoice, AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment.PaymentProcessorException
 import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidBySender}
@@ -16,10 +16,12 @@ trait OkPayClient {
   def sendPayment[C <: FiatCurrency](to: AccountId,
                                      amount: CurrencyAmount[C],
                                      comment: String,
-                                     invoice: String,
+                                     invoice: Invoice,
                                      feePolicy: FeePolicy = PaidBySender): Future[Payment[C]]
 
-  def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]]
+  def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]]
+
+  def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]]
 
   def currentBalances(): Future[Seq[FiatAmount]]
 
@@ -64,7 +66,7 @@ object OkPayClient {
   case class ReceiverNotFound(receiver: AccountId, cause: Throwable)
     extends Error(s"receiver `$receiver` not found", cause)
 
-  case class DuplicatedPayment(receiver: AccountId, invoice: String, cause: Throwable)
+  case class DuplicatedPayment(receiver: AccountId, invoice: Invoice, cause: Throwable)
     extends Error(s"invoice `$invoice` already exists for receiver `$receiver`", cause)
 
   case class InternalError(cause: Throwable)

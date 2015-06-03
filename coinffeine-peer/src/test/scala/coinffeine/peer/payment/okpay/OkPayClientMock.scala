@@ -1,28 +1,35 @@
 package coinffeine.peer.payment.okpay
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
-import coinffeine.model.currency.{FiatAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.model.payment.{AnyPayment, Payment}
-import coinffeine.model.payment.PaymentProcessor.{PaymentId, AccountId}
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
   private var balances: Future[Seq[FiatAmount]] = _
   private var paymentResult: Future[AnyPayment] = _
-  private var payments: Map[PaymentId, Future[Option[AnyPayment]]] = Map.empty
+  private var payments: Map[PaymentId, Try[Option[AnyPayment]]] = Map.empty
 
   override val executionContext = ExecutionContext.global
 
   override def currentBalances(): Future[Seq[FiatAmount]] = balances
 
-  override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] = payments(paymentId)
+  override def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]] =
+    Future.fromTry(payments(paymentId))
+
+  override def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]] =
+    Future.successful(payments.values.collectFirst {
+      case Success(Some(payment)) if payment.invoice == invoice => payment
+    })
 
   override def sendPayment[C <: FiatCurrency](to: AccountId,
                                               amount: CurrencyAmount[C],
                                               comment: String,
-                                              invoice: String,
+                                              invoice: Invoice,
                                               feePolicy: FeePolicy): Future[Payment[C]] =
     paymentResult.asInstanceOf[Future[Payment[C]]]
 
@@ -37,11 +44,11 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
     synchronized { paymentResult = result }
 
   def givenExistingPayment(payment: AnyPayment): Unit =
-    synchronized { payments += payment.id -> Future.successful(Some(payment)) }
+    synchronized { payments += payment.id -> Success(Some(payment)) }
 
   def givenNonExistingPayment(paymentId: PaymentId): Unit =
-    synchronized { payments += paymentId -> Future.successful(None) }
+    synchronized { payments += paymentId -> Success(None) }
 
   def givenPaymentCannotBeRetrieved(paymentId: PaymentId, error: Throwable): Unit =
-    synchronized { payments += paymentId -> Future.failed(error) }
+    synchronized { payments += paymentId -> Failure(error) }
 }

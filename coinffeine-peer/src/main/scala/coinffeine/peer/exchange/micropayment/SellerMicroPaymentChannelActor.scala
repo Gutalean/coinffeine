@@ -83,10 +83,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       validatePayment(channel.currentStep, payment.asInstanceOf[Payment[C]])
         .fold(fail = rejectPayment, succ = _ => acceptPayment(payment))
 
-    case PaymentNotFound(paymentId) =>
+    case PaymentNotFound(FindPaymentCriterion.ById(paymentId)) =>
       log.error("Exchange {}: no payment with id {} found", exchange.id, paymentId)
 
-    case FindPaymentFailed(paymentId, error) =>
+    case FindPaymentFailed(FindPaymentCriterion.ById(paymentId), error) =>
       log.error(error, "Exchange {}: cannot look up payment {}", exchange.id, paymentId)
   }
 
@@ -143,7 +143,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     implicit val timeout = PaymentProcessorActor.RequestTimeout
     AskPattern(
       to = collaborators.paymentProcessor,
-      request = FindPayment(paymentId),
+      request = FindPayment(FindPaymentCriterion.ById(paymentId)),
       errorMessage = s"cannot find payment $paymentId"
     ).withReply[FindPaymentResponse]
   }

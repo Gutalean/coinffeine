@@ -28,4 +28,7 @@ object PaymentProcessor {
 
   /** The ID type of a payment registered by the payment processor. */
   type PaymentId = String
+
+  /** The type of a invoice associated with a transaction in the payment processor. */
+  type Invoice = String
 }

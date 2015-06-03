@@ -12,7 +12,6 @@ import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
-import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
@@ -54,8 +53,8 @@ private class OkPayProcessorActor(
       sender ! RetrievedAccountId(clientFactory.build().accountId)
     case pay: Pay[_] =>
       sendPayment(sender(), pay)
-    case FindPayment(paymentId) =>
-      findPayment(sender(), paymentId)
+    case FindPayment(criterion) =>
+      findPayment(sender(), criterion)
     case RetrieveBalance(currency) =>
       currentBalance(sender(), currency)
     case PollBalances =>
@@ -92,11 +91,16 @@ private class OkPayProcessorActor(
       .map(_ => {})
   }
 
-  private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
-    clientFactory.build().findPayment(paymentId).onComplete {
+  private def findPayment(requester: ActorRef, criterion: FindPaymentCriterion): Unit = {
+    (criterion match {
+      case FindPaymentCriterion.ById(paymentId) =>
+        clientFactory.build().findPaymentById(paymentId)
+      case FindPaymentCriterion.ByInvoice(invoice) =>
+        clientFactory.build().findPaymentByInvoice(invoice)
+    }).onComplete {
       case Success(Some(payment)) => requester ! PaymentFound(payment)
-      case Success(None) => requester ! PaymentNotFound(paymentId)
-      case Failure(error) => requester ! FindPaymentFailed(paymentId, error)
+      case Success(None) => requester ! PaymentNotFound(criterion)
+      case Failure(error) => requester ! FindPaymentFailed(criterion, error)
     }
   }
 

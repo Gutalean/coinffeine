@@ -10,7 +10,7 @@ import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
+import coinffeine.model.payment.PaymentProcessor.{Invoice, AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
@@ -53,7 +53,7 @@ class OkPayWebServiceClient(
       to: AccountId,
       amount: CurrencyAmount[C],
       comment: String,
-      invoice: String,
+      invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment[C]] =
     authenticatedRequest { token =>
       service.send_Money(
@@ -77,13 +77,19 @@ class OkPayWebServiceClient(
       }
     }
 
-  override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
+  override def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]] =
+    findPayment(Left(paymentId))
+
+  override def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]] =
+    findPayment(Right(invoice))
+
+  private def findPayment(params: Either[PaymentId, Invoice]) =
     authenticatedRequest { token =>
       service.transaction_Get(
         walletID = Some(Some(accountId)),
         securityToken = Some(Some(token)),
-        txnID = Some(paymentId.toLong),
-        invoice = None
+        txnID = params.left.toOption.map(_.toLong),
+        invoice = params.right.toOption.map(Some(_))
       ).map { result =>
         result.Transaction_GetResult.flatten.map(parsePayment)
       }.recover {
