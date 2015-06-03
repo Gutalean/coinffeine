@@ -105,7 +105,7 @@ class OperationsView(app: CoinffeineApp,
                 }
               },
               new Button with ButtonStyles.Close {
-                visible <== p.statusProperty.delegate.mapToBool(_.isActive)
+                visible <== p.orderProperty.delegate.mapToBool(_.cancellable)
                 onAction = { e: Event =>
                   app.network.cancelOrder(p.idProperty.value)
                 }

@@ -145,6 +145,14 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
     an [IllegalArgumentException] shouldBe thrownBy { order.cancel(DateTime.now()) }
   }
 
+  it must "fail to be cancelled if already completed" in {
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
+      .withExchange(createSuccessfulExchange())
+    order.status shouldBe OrderStatus.Completed
+    order should not be 'cancellable
+    an [IllegalArgumentException] shouldBe thrownBy { order.cancel(DateTime.now()) }
+  }
+
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete(DateTime.now())
 
   private def createExchangeInProgress(stepsCompleted: Int) = {

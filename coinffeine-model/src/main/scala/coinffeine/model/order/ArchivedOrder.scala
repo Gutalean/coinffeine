@@ -14,5 +14,6 @@ case class ArchivedOrder[C <: FiatCurrency](
     override val log: ActivityLog[OrderStatus]) extends Order[C] {
   require(log.activities.nonEmpty, "Log of activities should not be empty")
   override val inMarket = false
+  override val cancellable = false
   override def status = log.mostRecent.get.event
 }

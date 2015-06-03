@@ -38,7 +38,7 @@ case class ActiveOrder[C <: FiatCurrency] private (
       id, exchanges.values.filterNot(_.isCompleted).map(_.id)))
     copy(log = log.record(OrderStatus.Cancelled, timestamp))
   }
-  def cancellable: Boolean = exchanges.values.forall(_.isCompleted)
+  override def cancellable: Boolean = status.isActive && exchanges.values.forall(_.isCompleted)
 
   def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
   def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
