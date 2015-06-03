@@ -46,6 +46,7 @@ object SetupWizard {
     val data = new SetupConfig
     new SetupWizard(Seq(
       new OkPayCredentialsStepPane(data),
+      new OkPaySeedTokenRetrievalPane(data),
       new TopUpStepPane(walletAddress)
     ), data)
   }

@@ -9,7 +9,7 @@ import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.wizard.StepPane
 
 class TopUpStepPane(address: String) extends StepPane[SetupConfig] {
-  override val icon = GlyphIcon.Number3
+  override val icon = GlyphIcon.Number4
 
   private val title = new Label("Add bitcoins to your Coinffeine wallet") {
     styleClass += "title"
