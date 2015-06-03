@@ -40,7 +40,7 @@ private[setup] class OkPayWalletDataPane(
     tokenField.text.delegate.mapToBool(_.nonEmpty)
 
   data.okPayWalletAccess <== accountIdField.text.delegate.zip(tokenField.text) {
-    (id, address) => OkPayWalletAccess(id, address)
+    (id, address) => Some(OkPayWalletAccess(id, address))
   }
 
   children = new VBox {

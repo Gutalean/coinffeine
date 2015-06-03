@@ -46,8 +46,8 @@ class OkPayCredentialsStepPane(data: SetupConfig) extends StepPane[SetupConfig] 
   data.okPayCredentials <==
     emailField.text.delegate.zip(passwordField.text)(OkPayCredentials.apply)
 
-  canContinue <== (emailField.text.isEmpty and passwordField.text.isEmpty) or
-    (emailField.text.delegate.mapToBool(validEmail) and passwordField.text.isEmpty.not)
+  canContinue <== emailField.text.delegate.mapToBool(validEmail) and
+    passwordField.text.isEmpty.not
 
   private def validEmail(email: String): Boolean =
     email.matches("""^[\w-\.]+@([\w-]+\.)+\w+$""")

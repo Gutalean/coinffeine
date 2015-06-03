@@ -59,8 +59,8 @@ class RunWizardAction(configProvider: ConfigProvider, window: Window, network: =
     val access = setupConfig.okPayWalletAccess.value
     val okPaySettings = configProvider.okPaySettings()
     configProvider.saveUserSettings(okPaySettings.copy(
-      userAccount = Some(access.walletId.trim),
-      seedToken = Some(access.seedToken.trim)
+      userAccount = access.map(_.walletId.trim),
+      seedToken = access.map(_.seedToken.trim)
     ))
   }
 }

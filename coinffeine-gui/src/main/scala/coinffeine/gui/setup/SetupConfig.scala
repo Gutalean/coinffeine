@@ -8,9 +8,8 @@ class SetupConfig {
 
   val password: StringProperty = new StringProperty(this, "password")
 
-  val okPayCredentials: ObjectProperty[OkPayCredentials] =
-    new ObjectProperty(this, "okPayCredentials")
+  val okPayCredentials = new ObjectProperty[OkPayCredentials](this, "okPayCredentials")
 
-  val okPayWalletAccess: ObjectProperty[OkPayWalletAccess] =
-    new ObjectProperty[OkPayWalletAccess](this, "okPayWalletAccess")
+  val okPayWalletAccess = new ObjectProperty[Option[OkPayWalletAccess]](
+    this, "okPayWalletAccess", None)
 }
