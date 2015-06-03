@@ -74,8 +74,16 @@ object PaymentProcessorActor {
     */
   case class PaymentFailed[C <: FiatCurrency](request: Pay[C], error: Throwable)
 
+  /** A criterion to find a payment. */
+  sealed trait FindPaymentCriterion
+
+  object FindPaymentCriterion {
+    case class ById(id: PaymentId) extends FindPaymentCriterion
+    case class ByInvoice(invoice: Invoice) extends FindPaymentCriterion
+  }
+
   /** A message sent to the payment processor in order to find a payment. */
-  case class FindPayment(payment: PaymentId)
+  case class FindPayment(criterion: FindPaymentCriterion)
 
   sealed trait FindPaymentResponse
 
@@ -83,10 +91,11 @@ object PaymentProcessorActor {
   case class PaymentFound(payment: Payment[_ <: FiatCurrency]) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify a not found payment. */
-  case class PaymentNotFound(payment: PaymentId) extends FindPaymentResponse
+  case class PaymentNotFound(criterion: FindPaymentCriterion) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify an error while finding a payment. */
-  case class FindPaymentFailed(payment: PaymentId, error: Throwable) extends FindPaymentResponse
+  case class FindPaymentFailed(criterion: FindPaymentCriterion,
+                               error: Throwable) extends FindPaymentResponse
 
   /** A message sent to the payment processor to retrieve the current balance
     * in the given currency.

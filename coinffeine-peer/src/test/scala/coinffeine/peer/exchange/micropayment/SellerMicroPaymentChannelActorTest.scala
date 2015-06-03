@@ -15,7 +15,7 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, PaymentFound}
+import coinffeine.peer.payment.PaymentProcessorActor.{FindPaymentCriterion, FindPayment, PaymentFound}
 import coinffeine.protocol.messages.exchange._
 
 abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
@@ -53,7 +53,7 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
   }
 
   protected def expectPaymentLookup(step: IntermediateStep, completed: Boolean = true): Unit = {
-    val FindPayment(paymentId) = paymentProcessor.expectMsgType[FindPayment]
+    val FindPayment(FindPaymentCriterion.ById(paymentId)) = paymentProcessor.expectMsgType[FindPayment]
     paymentProcessor.reply(PaymentFound(Payment(
       id = paymentId,
       senderId = participants.buyer.paymentProcessorAccount,
