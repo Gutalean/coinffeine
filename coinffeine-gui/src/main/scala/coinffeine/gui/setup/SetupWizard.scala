@@ -45,6 +45,8 @@ object SetupWizard {
   def default(walletAddress: String): SetupWizard = {
     val data = new SetupConfig
     new SetupWizard(Seq(
+      new OkPayCredentialsStepPane(data),
+      new OkPaySeedTokenRetrievalPane(data),
       new TopUpStepPane(walletAddress)
     ), data)
   }

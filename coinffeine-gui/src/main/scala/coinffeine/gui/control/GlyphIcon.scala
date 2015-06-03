@@ -27,10 +27,13 @@ object GlyphIcon {
   case object Number1 extends GlyphIcon { override val letter = 'z' }
   case object Number2 extends GlyphIcon { override val letter = 'x' }
   case object Number3 extends GlyphIcon { override val letter = 'c' }
+  case object Warning extends GlyphIcon { override val letter = 'v' }
+  case object Number4 extends GlyphIcon { override val letter = 'b' }
 
   val Numbers = Map(
     1 -> Number1,
     2 -> Number2,
-    3 -> Number3
+    3 -> Number3,
+    4 -> Number4
   )
 }

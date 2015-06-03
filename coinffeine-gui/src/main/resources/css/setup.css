@@ -75,6 +75,10 @@
 
 .wizard .okpay-pane .text-field { -fx-font-size: 16; }
 
+.wizard .okpay-pane .progress-bar.error {
+    -fx-accent: red;
+}
+
 .wizard .topup-pane {
     -fx-alignment: center;
     -fx-padding: 20 50 20 50;
