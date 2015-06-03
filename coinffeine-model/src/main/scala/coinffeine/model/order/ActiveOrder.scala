@@ -33,8 +33,13 @@ case class ActiveOrder[C <: FiatCurrency] private (
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
 
-  def cancel(timestamp: DateTime): ActiveOrder[C] =
+  def cancel(timestamp: DateTime): ActiveOrder[C] = {
+    require(cancellable, "Cannot cancel %s with active exchanges %s".format(
+      id, exchanges.values.filterNot(_.isCompleted).map(_.id)))
     copy(log = log.record(OrderStatus.Cancelled, timestamp))
+  }
+  override def cancellable: Boolean = status.isActive && exchanges.values.forall(_.isCompleted)
+
   def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
   def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
 

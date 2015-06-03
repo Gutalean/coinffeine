@@ -107,9 +107,9 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
   }
 
   it must "not be in market when the exchange is finished" in {
-    val exchange = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
-    exchange.cancel(DateTime.now()) should not be 'shouldBeOnMarket
-    exchange.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
+    order.cancel(DateTime.now()) should not be 'shouldBeOnMarket
+    order.withExchange(createSuccessfulExchange()) should not be 'shouldBeOnMarket
   }
 
   it must "be in market despite an exchange is running" in {
@@ -123,6 +123,34 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
     val order = ActiveOrder.randomLimit(Bid, 20.BTC, Price(1.EUR), createdOn)
     order.lastChange shouldBe createdOn
     order.withExchange(createRandomExchange(matchedOn)).lastChange shouldBe matchedOn
+  }
+
+  it must "be cancellable right away in absence of exchanges" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+    order shouldBe 'cancellable
+    order.cancel(DateTime.now()).status shouldBe OrderStatus.Cancelled
+  }
+
+  it must "be cancellable right away if existing exchanges are finished" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+      .withExchange(createSuccessfulExchange())
+    order shouldBe 'cancellable
+    order.cancel(DateTime.now()).status shouldBe OrderStatus.Cancelled
+  }
+
+  it must "fail to be cancelled if there are active exchanges" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+      .withExchange(createExchangeInProgress(10))
+    order should not be 'cancellable
+    an [IllegalArgumentException] shouldBe thrownBy { order.cancel(DateTime.now()) }
+  }
+
+  it must "fail to be cancelled if already completed" in {
+    val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(1.EUR))
+      .withExchange(createSuccessfulExchange())
+    order.status shouldBe OrderStatus.Completed
+    order should not be 'cancellable
+    an [IllegalArgumentException] shouldBe thrownBy { order.cancel(DateTime.now()) }
   }
 
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete(DateTime.now())

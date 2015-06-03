@@ -42,6 +42,9 @@ trait Order[C <: FiatCurrency] {
     */
   def progress: Double = (bitcoinsTransferred.value / amount.value).toDouble
 
+  /** Whether the order can be cancelled */
+  def cancellable: Boolean
+
   private def totalSum[A <: Currency](zero: CurrencyAmount[A])
                                      (f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
     exchanges.values.map(f).foldLeft(zero)(_ + _)
