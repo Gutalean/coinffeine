@@ -6,6 +6,7 @@ import scala.util.control.NoStackTrace
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
+import coinffeine.model.payment._
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
@@ -23,7 +24,7 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
     override def currentBalances() = Future.failed(error)
     override def sendPayment[C <: FiatCurrency](
         to: AccountId, amount: CurrencyAmount[C], comment: String,
-        invoice: String, feePolicy: FeePolicy) =
+        invoice: Invoice, feePolicy: FeePolicy) =
       Future.failed(error)
     override protected def executionContext = throw error
   }

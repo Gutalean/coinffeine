@@ -3,8 +3,8 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.{ExecutionContext, Future}
 
 import coinffeine.model.currency.{FiatAmount, CurrencyAmount, FiatCurrency}
+import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.model.payment.{AnyPayment, Payment}
-import coinffeine.model.payment.PaymentProcessor.{PaymentId, AccountId}
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
@@ -22,7 +22,7 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
   override def sendPayment[C <: FiatCurrency](to: AccountId,
                                               amount: CurrencyAmount[C],
                                               comment: String,
-                                              invoice: String,
+                                              invoice: Invoice,
                                               feePolicy: FeePolicy): Future[Payment[C]] =
     paymentResult.asInstanceOf[Future[Payment[C]]]
 

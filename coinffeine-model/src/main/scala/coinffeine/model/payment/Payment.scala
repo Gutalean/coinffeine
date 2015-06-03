@@ -3,6 +3,7 @@ package coinffeine.model.payment
 import org.joda.time.DateTime
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.payment.PaymentProcessor._
 
 case class Payment[C <: FiatCurrency](
   id: String,
@@ -11,6 +12,6 @@ case class Payment[C <: FiatCurrency](
   amount: CurrencyAmount[C],
   date: DateTime,
   description: String,
-  invoice: String,
+  invoice: Invoice,
   completed: Boolean
 )

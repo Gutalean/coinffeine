@@ -10,7 +10,7 @@ import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
 import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.{AccountId, PaymentId}
+import coinffeine.model.payment.PaymentProcessor.{Invoice, AccountId, PaymentId}
 import coinffeine.model.payment.{AnyPayment, Payment}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
@@ -53,7 +53,7 @@ class OkPayWebServiceClient(
       to: AccountId,
       amount: CurrencyAmount[C],
       comment: String,
-      invoice: String,
+      invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment[C]] =
     authenticatedRequest { token =>
       service.send_Money(
