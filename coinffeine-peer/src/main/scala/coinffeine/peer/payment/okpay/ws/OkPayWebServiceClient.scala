@@ -77,13 +77,19 @@ class OkPayWebServiceClient(
       }
     }
 
-  override def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]] =
+  override def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]] =
+    findPayment(Left(paymentId))
+
+  override def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]] =
+    findPayment(Right(invoice))
+
+  private def findPayment(params: Either[PaymentId, Invoice]) =
     authenticatedRequest { token =>
       service.transaction_Get(
         walletID = Some(Some(accountId)),
         securityToken = Some(Some(token)),
-        txnID = Some(paymentId.toLong),
-        invoice = None
+        txnID = params.left.toOption.map(_.toLong),
+        invoice = params.right.toOption.map(Some(_))
       ).map { result =>
         result.Transaction_GetResult.flatten.map(parsePayment)
       }.recover {

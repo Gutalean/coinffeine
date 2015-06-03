@@ -19,7 +19,9 @@ trait OkPayClient {
                                      invoice: Invoice,
                                      feePolicy: FeePolicy = PaidBySender): Future[Payment[C]]
 
-  def findPayment(paymentId: PaymentId): Future[Option[AnyPayment]]
+  def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]]
+
+  def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]]
 
   def currentBalances(): Future[Seq[FiatAmount]]
 

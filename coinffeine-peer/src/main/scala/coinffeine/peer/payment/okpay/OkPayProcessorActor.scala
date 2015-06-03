@@ -93,7 +93,7 @@ private class OkPayProcessorActor(
   }
 
   private def findPayment(requester: ActorRef, paymentId: PaymentId): Unit = {
-    clientFactory.build().findPayment(paymentId).onComplete {
+    clientFactory.build().findPaymentById(paymentId).onComplete {
       case Success(Some(payment)) => requester ! PaymentFound(payment)
       case Success(None) => requester ! PaymentNotFound(paymentId)
       case Failure(error) => requester ! FindPaymentFailed(paymentId, error)

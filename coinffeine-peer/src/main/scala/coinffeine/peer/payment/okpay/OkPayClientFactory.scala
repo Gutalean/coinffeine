@@ -20,7 +20,8 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
     private val error = new IllegalStateException(
       "OKPay's user id and/or seed token are not configured") with NoStackTrace
     override lazy val accountId: AccountId = throw error
-    override def findPayment(paymentId: PaymentId) = Future.failed(error)
+    override def findPaymentById(paymentId: PaymentId) = Future.failed(error)
+    override def findPaymentByInvoice(invoice: Invoice) = Future.failed(error)
     override def currentBalances() = Future.failed(error)
     override def sendPayment[C <: FiatCurrency](
         to: AccountId, amount: CurrencyAmount[C], comment: String,
