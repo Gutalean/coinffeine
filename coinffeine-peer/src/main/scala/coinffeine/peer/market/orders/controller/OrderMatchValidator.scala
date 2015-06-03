@@ -14,9 +14,10 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator) {
 
-  def shouldAcceptOrderMatch[C <: FiatCurrency](order: ActiveOrder[C],
-                                                orderMatch: OrderMatch[C],
-                                                alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
+  def shouldAcceptOrderMatch[C <: FiatCurrency](
+    order: ActiveOrder[C],
+    orderMatch: OrderMatch[C],
+    alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
 
     type MatchValidation = Validation[MatchResult[C], Unit]
 
@@ -26,8 +27,7 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       require(orderMatch.counterpart != peerId, MatchRejected("Self-cross"))
 
     def requireUnfinishedOrder: MatchValidation = {
-      val isFinished = Seq(OrderStatus.Cancelled, OrderStatus.Completed).contains(order.status)
-      require(!isFinished, MatchRejected("Order already finished"))
+      require(order.status.isActive, MatchRejected("Order already finished"))
     }
 
     def requireNotAcceptedPreviously: MatchValidation =
