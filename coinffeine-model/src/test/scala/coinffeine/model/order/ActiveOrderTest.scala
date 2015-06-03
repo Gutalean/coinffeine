@@ -125,6 +125,26 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
     order.withExchange(createRandomExchange(matchedOn)).lastChange shouldBe matchedOn
   }
 
+  it must "be cancellable right away in absence of exchanges" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+    order shouldBe 'cancellable
+    order.cancel(DateTime.now()).status shouldBe OrderStatus.Cancelled
+  }
+
+  it must "be cancellable right away if existing exchanges are finished" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+      .withExchange(createSuccessfulExchange())
+    order shouldBe 'cancellable
+    order.cancel(DateTime.now()).status shouldBe OrderStatus.Cancelled
+  }
+
+  it must "fail to be cancelled if there are active exchanges" in {
+    val order = ActiveOrder.randomLimit(Bid, 11.BTC, Price(1.EUR))
+      .withExchange(createExchangeInProgress(10))
+    order should not be 'cancellable
+    an [IllegalArgumentException] shouldBe thrownBy { order.cancel(DateTime.now()) }
+  }
+
   private def createSuccessfulExchange() = createExchangeInProgress(10).complete(DateTime.now())
 
   private def createExchangeInProgress(stepsCompleted: Int) = {
