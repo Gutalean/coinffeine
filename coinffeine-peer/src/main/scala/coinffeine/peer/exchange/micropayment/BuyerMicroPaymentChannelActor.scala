@@ -25,7 +25,8 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, StepSig
 private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     initialChannel: MicroPaymentChannel[C],
     constants: ProtocolConstants,
-    collaborators: Collaborators)
+    collaborators: Collaborators,
+    delegates: BuyerMicroPaymentChannelActor.Delegates)
   extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
 
   import BuyerMicroPaymentChannelActor._
@@ -167,10 +168,15 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
 
 object BuyerMicroPaymentChannelActor {
 
+  trait Delegates {
+    def payer(): Props
+  }
+
   def props(initialChannel: MicroPaymentChannel[_ <: FiatCurrency],
             constants: ProtocolConstants,
-            collaborators: Collaborators) =
-    Props(new BuyerMicroPaymentChannelActor(initialChannel, constants, collaborators))
+            collaborators: Collaborators,
+            delegates: Delegates) =
+    Props(new BuyerMicroPaymentChannelActor(initialChannel, constants, collaborators, delegates))
 
   private case class AcceptedSignatures(signatures: Both[TransactionSignature]) extends PersistentEvent
   private case class CompletedPayment(paymentId: String) extends PersistentEvent

@@ -18,7 +18,7 @@ import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.{PersistentTransactionBroadcaster, TransactionBroadcaster}
 import coinffeine.peer.exchange.handshake.{HandshakeActor, DefaultHandshakeActor}
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
+import coinffeine.peer.exchange.micropayment.{PayerActor, BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -287,12 +287,13 @@ object DefaultExchangeActor {
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
-                                resultListeners: Set[ActorRef]): Props = {
-          val propsFactory = exchange.role match {
-            case BuyerRole => BuyerMicroPaymentChannelActor.props _
-            case SellerRole => SellerMicroPaymentChannelActor.props _
-          }
-          propsFactory(channel, protocolConstants,
+                                resultListeners: Set[ActorRef]): Props = exchange.role match {
+          case BuyerRole => BuyerMicroPaymentChannelActor.props(channel, protocolConstants,
+            MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners),
+            new BuyerMicroPaymentChannelActor.Delegates {
+              override def payer() = PayerActor.props()
+            })
+          case SellerRole => SellerMicroPaymentChannelActor.props(channel, protocolConstants,
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners))
         }
 

@@ -1,5 +1,7 @@
 package coinffeine.peer.exchange.micropayment
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.util.Timeout
 
@@ -85,6 +87,8 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
 
 object PayerActor {
 
+  val DefaultRetryTimeout = Timeout(30.seconds)
+
   /** A message sent to the payer actor requesting it to ensure a payment is made. */
   case class EnsurePayment[C <: FiatCurrency](
     request: PaymentProcessorActor.Pay[C],
@@ -96,5 +100,5 @@ object PayerActor {
   /** A response sent by payer actor after [[EnsurePayment]] indicating the payment couldn't be ensured. */
   case class CannotEnsurePayment[C <: FiatCurrency](request: PaymentProcessorActor.Pay[C])
 
-  def props(retryTimeout: Timeout): Props = Props(new PayerActor(retryTimeout))
+  def props(retryTimeout: Timeout = DefaultRetryTimeout): Props = Props(new PayerActor(retryTimeout))
 }

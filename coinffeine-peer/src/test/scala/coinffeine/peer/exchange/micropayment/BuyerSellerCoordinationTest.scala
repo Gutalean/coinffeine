@@ -2,6 +2,7 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
@@ -18,6 +19,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val paymentProcFactory = new MockPaymentProcessorFactory()
   val exchangeProtocol = new MockExchangeProtocol()
   val gateways = new LinkedMessageGateways(PeerId.hashOf("broker"), peerIds.buyer, peerIds.seller)
+  val payerActor = new MockSupervisedActor()
 
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
     participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))
@@ -27,7 +29,10 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     exchangeProtocol.createMicroPaymentChannel(buyerRunningExchange),
     protocolConstants,
     MicroPaymentChannelActor.Collaborators(
-      gateways.leftGateway, buyerPaymentProc, Set(buyerListener.ref))
+      gateways.leftGateway, buyerPaymentProc, Set(buyerListener.ref)),
+    new BuyerMicroPaymentChannelActor.Delegates {
+      override def payer() = payerActor.props()
+    }
   )
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
