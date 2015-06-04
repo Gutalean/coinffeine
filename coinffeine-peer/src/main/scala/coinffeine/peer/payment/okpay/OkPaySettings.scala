@@ -9,6 +9,11 @@ case class OkPaySettings(
     serverEndpointOverride: Option[URI],
     pollingInterval: FiniteDuration) {
 
+  def apiCredentials: Option[OkPayApiCredentials] = for {
+    walletId <- userAccount
+    token <- seedToken
+  } yield OkPayApiCredentials(walletId, token)
+
   require(
     userAccount.forall(_.matches(OkPaySettings.AccountIdPattern)),
     s"Invalid OKPay account ID $userAccount")

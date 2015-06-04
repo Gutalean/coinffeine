@@ -2,7 +2,7 @@ package coinffeine.gui.setup
 
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 
-import coinffeine.peer.payment.okpay.{OkPayWalletAccess, OkPayCredentials}
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
 class SetupConfig {
 
@@ -10,6 +10,6 @@ class SetupConfig {
 
   val okPayCredentials = new ObjectProperty[OkPayCredentials](this, "okPayCredentials")
 
-  val okPayWalletAccess = new ObjectProperty[Option[OkPayWalletAccess]](
+  val okPayWalletAccess = new ObjectProperty[Option[OkPayApiCredentials]](
     this, "okPayWalletAccess", None)
 }
