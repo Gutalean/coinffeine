@@ -6,7 +6,6 @@ import scalafx.scene.layout.{VBox, HBox}
 
 import coinffeine.gui.control.{SupportWidget, GlyphIcon}
 import coinffeine.gui.wizard.StepPane
-import coinffeine.peer.payment.okpay.OkPayCredentials
 
 class OkPayCredentialsStepPane(data: SetupConfig) extends StepPane[SetupConfig] {
   override val icon = GlyphIcon.Number2

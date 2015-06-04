@@ -6,7 +6,6 @@ import scala.util.control.NoStackTrace
 
 import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.model.payment._
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
@@ -32,11 +31,10 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
 
   override def build(): OkPayClient = {
     val settings = lookupSettings()
-    (for {
-      accountId <- settings.userAccount
-      seedToken <- settings.seedToken
-    } yield new OkPayWebServiceClient(okPay.service, tokenCache, accountId, seedToken))
-      .getOrElse(NotConfiguredClient)
+    settings.apiCredentials.fold[OkPayClient](NotConfiguredClient) { credentials =>
+      new OkPayWebServiceClient(
+        okPay.service, tokenCache, credentials.walletId, credentials.seedToken)
+    }
   }
 
   override def shutdown(): Unit = {

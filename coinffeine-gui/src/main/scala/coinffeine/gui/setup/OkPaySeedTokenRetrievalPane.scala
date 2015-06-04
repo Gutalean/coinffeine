@@ -10,7 +10,8 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.peer.payment.okpay.{OkPayProfileExtractor, OkPayWalletAccess}
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
+import coinffeine.peer.payment.okpay.profile.OkPayProfileConfigurator
 
 class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfig] {
   import OkPaySeedTokenRetrievalPane._
@@ -62,10 +63,9 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfi
     implicit val context = FxExecutor.asContext
     retrievalStatus.set(InProgress)
     val credentials = data.okPayCredentials.value
-    val extractor = new OkPayProfileExtractor(credentials.id, credentials.password)
+    val extractor = new OkPayProfileConfigurator(credentials.id, credentials.password)
     extractor.configureProfile().onComplete {
-      case Success(profile) =>
-        val accessData = new OkPayWalletAccess(profile.walletId, profile.token)
+      case Success(accessData) =>
         retrievalStatus.set(SuccessfulRetrieval(accessData))
       case Failure(ex) =>
         retrievalStatus.set(FailedRetrieval(ex))
@@ -93,7 +93,7 @@ object OkPaySeedTokenRetrievalPane {
     override def failed = true
   }
 
-  case class SuccessfulRetrieval(accessData: OkPayWalletAccess) extends RetrievalStatus {
+  case class SuccessfulRetrieval(accessData: OkPayApiCredentials) extends RetrievalStatus {
     override def hint = "Token retrieved successfully"
     override def progress = 1
     override def failed = false

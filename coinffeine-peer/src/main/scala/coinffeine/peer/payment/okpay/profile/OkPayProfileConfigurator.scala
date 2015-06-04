@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.peer.payment.okpay.profile
 
 import java.net.URL
 import scala.collection.JavaConversions._
@@ -11,9 +11,11 @@ import com.gargoylesoftware.htmlunit.html._
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.util.ajax.JSON
 
-class OkPayProfileExtractor(username: String, password: String) extends LazyLogging {
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
-  import coinffeine.peer.payment.okpay.OkPayProfileExtractor._
+class OkPayProfileConfigurator(username: String, password: String) extends LazyLogging {
+
+  import OkPayProfileConfigurator._
 
   private val client = {
     val result = new WebClient(BrowserVersion.INTERNET_EXPLORER_11)
@@ -21,19 +23,19 @@ class OkPayProfileExtractor(username: String, password: String) extends LazyLogg
     result
   }
 
-  def configureProfile(): Future[OkPayProfile] = Future {
+  def configureProfile(): Future[OkPayApiCredentials] = Future {
     login()
     ensureBusinessMode()
     val walletId = lookupWalletId()
     enableAPI(walletId)
-    OkPayProfile(configureSeedToken(walletId), walletId)
+    OkPayApiCredentials(walletId, configureSeedToken(walletId))
   }
 
   def accountMode(): AccountMode = {
     val profilePage = retrieveProfilePage("general/account-type.html")
     val radioButtonMerchant =
       profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
-    if(radioButtonMerchant.isChecked) BusinessMode else ClientMode
+    if(radioButtonMerchant.isChecked) AccountMode.Business else AccountMode.Client
   }
 
   private def login(): Unit = {
@@ -62,7 +64,7 @@ class OkPayProfileExtractor(username: String, password: String) extends LazyLogg
   }
 
   private def ensureBusinessMode(): Unit = {
-    if (accountMode() != BusinessMode) switchToBusinessMode()
+    if (accountMode() != AccountMode.Business) switchToBusinessMode()
     else logger.info("Profile already in business mode")
   }
 
@@ -92,6 +94,8 @@ class OkPayProfileExtractor(username: String, password: String) extends LazyLogg
     val settingsPage = retrieveProfilePage("wallet/" + walletId)
     val settingsForm = getForm(settingsPage)
     val token = generateSeedToken(settingsForm)
+    require(token.length == SeedTokenLength,
+      s"Received a token which size is not $SeedTokenLength: $token (size ${token.length}})")
     fillInField(settingsForm, "ctl00$ctl00$MainContent$MainContent$hidEnrPass", token)
     submitForm(settingsForm, "ctl00$ctl00$MainContent$MainContent$IntegrationSettings_btnSave")
     token
@@ -161,19 +165,10 @@ class OkPayProfileExtractor(username: String, password: String) extends LazyLogg
       }
 }
 
-object OkPayProfileExtractor {
+object OkPayProfileConfigurator {
 
   private val OkPayBaseUrl = "https://www.okpay.com"
   private val SeedTokenLength = 25
-
-  sealed trait AccountMode
-  case object BusinessMode extends AccountMode
-  case object ClientMode extends AccountMode
-
-  case class OkPayProfile(token: String, walletId: String) {
-    require(token.length == SeedTokenLength,
-      s"Received a token which size is not $SeedTokenLength: $token (size ${token.length}})")
-  }
 
   case class ProfileConfigurationException(message: String, cause: Throwable = null)
     extends Exception(message, cause)
