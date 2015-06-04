@@ -20,19 +20,25 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
   "A persistent buyer exchange actor" should "persist the valid signatures received" in {
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
-    paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
+    payerActor.expectCreation()
+    payerActor.expectMsgType[PayerActor.EnsurePayment[_]]
     expectProgress(signatures = 1)
   }
 
   it should "remember the signatures after a restart" in {
-    restartActor()
+    restartActor(expectPayerStop = true)
     listener.expectMsgType[LastBroadcastableOffer]
     expectProgress(signatures = 1)
   }
 
   it should "persist payments performed" in {
-    paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
-    paymentProcessor.reply(paymentConfirmation("payment1"))
+    payerActor.expectCreation()
+    payerActor.expectAskWithReply {
+      case PayerActor.EnsurePayment(_, pp) if pp == paymentProcessor.ref =>
+        PayerActor.PaymentEnsured(paymentConfirmation("payment1"))
+    }
+    payerActor.stop()
+    payerActor.expectStop()
     gateway.expectForwarding(PaymentProof(exchange.id, s"payment1", 1), counterpartId)
   }
 
@@ -48,8 +54,13 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       listener.expectMsgType[LastBroadcastableOffer]
       expectProgress(signatures = i)
-      paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
-      paymentProcessor.reply(paymentConfirmation(s"payment$i"))
+      payerActor.expectCreation()
+      payerActor.expectAskWithReply {
+        case PayerActor.EnsurePayment(_, pp) if pp == paymentProcessor.ref =>
+          PayerActor.PaymentEnsured(paymentConfirmation(s"payment$i"))
+      }
+      payerActor.stop()
+      payerActor.expectStop()
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
     }
   }
@@ -76,7 +87,8 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
     restartActor()
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
-    paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
+    payerActor.expectCreation()
+    payerActor.expectMsgType[PayerActor.EnsurePayment[_]]
     expectProgress(signatures = 1)
   }
 

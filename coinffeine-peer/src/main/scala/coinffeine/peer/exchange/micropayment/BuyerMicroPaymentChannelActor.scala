@@ -1,15 +1,12 @@
 package coinffeine.peer.exchange.micropayment
 
-import scala.util.control.NonFatal
-
 import akka.actor._
-import akka.pattern._
 import akka.persistence.RecoveryCompleted
 import org.bitcoinj.crypto.TransactionSignature
 
+import coinffeine.common.akka.ResubmitTimer
 import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
-import coinffeine.common.akka.{AskPattern, ResubmitTimer}
 import coinffeine.model.Both
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.ProtocolConstants
@@ -99,16 +96,16 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     case ResumeMicroPaymentChannel if !waitingForPaymentResult =>
       pay(buyer.paymentRequest.get)
 
-    case PaymentProcessorActor.Paid(payment) =>
+    case PayerActor.PaymentEnsured(paid) =>
       waitingForPaymentResult = false
-      persist(CompletedPayment(payment.id)) { event =>
-        log.debug("Exchange {}: payment {} for {} done", exchange.id, payment.id, buyer.currentStep)
+      persist(CompletedPayment(paid.payment.id)) { event =>
+        log.debug("Exchange {}: payment {} for {} done", exchange.id, paid.payment.id, buyer.currentStep)
         onCompletedPayment(event)
         resubmitTimer.reset()
         forwardLastPaymentProof()
       }
 
-    case PaymentProcessorActor.PaymentFailed(_, cause) =>
+    case PayerActor.CannotEnsurePayment(_, cause) =>
       waitingForPaymentResult = false
       persist(PaymentFailed(cause))(onPaymentFailed)
   }
@@ -119,7 +116,6 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private def onPaymentFailed(event: PaymentFailed): Unit = {
-    // TODO: look more carefully to the error and consider retrying
     completeWith(ChannelFailure(buyer.currentStep.value, event.cause))
   }
 
@@ -147,14 +143,9 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
   }
 
   private def pay(request: PaymentProcessorActor.Pay[C]): Unit = {
-    import context.dispatcher
-    implicit val timeout = PaymentProcessorActor.RequestTimeout
+    val payer = context.actorOf(delegates.payer())
+    payer ! PayerActor.EnsurePayment(request, collaborators.paymentProcessor)
     waitingForPaymentResult = true
-    AskPattern(collaborators.paymentProcessor, request, errorMessage = s"Cannot pay with $request")
-      .withReplyOrError[PaymentProcessorActor.Paid[C],
-                        PaymentProcessorActor.PaymentFailed[C]](_.error)
-      .recover { case NonFatal(cause) => PaymentProcessorActor.PaymentFailed(request, cause) }
-      .pipeTo(self)
   }
 
   private def forwardLastPaymentProof(): Unit = {

@@ -23,12 +23,14 @@ class BuyerMicroPaymentChannelActorFailureTest extends BuyerMicroPaymentChannelA
     listener.expectMsgType[LastBroadcastableOffer]
     expectProgress(signatures = 1)
 
-    val request = paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_ <: FiatCurrency]]
     val cause = new Exception("test error")
-    paymentProcessor.reply(PaymentProcessorActor.PaymentFailed(request, cause))
+    payerActor.expectCreation()
+    payerActor.expectAskWithReply {
+      case PayerActor.EnsurePayment(req, pp) if pp == paymentProcessor.ref =>
+        PayerActor.CannotEnsurePayment(req, cause)
+    }
     listener.expectMsgPF() {
-      case ChannelFailure(1, error) =>
-        error.getCause shouldBe cause
+      case ChannelFailure(1, error) => error shouldBe cause
     }
   }
 

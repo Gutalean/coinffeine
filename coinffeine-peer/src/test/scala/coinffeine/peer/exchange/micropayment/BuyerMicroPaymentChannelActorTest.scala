@@ -44,8 +44,9 @@ abstract class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("b
     listener.watch(actor)
   }
 
-  def restartActor(): Unit = {
+  def restartActor(expectPayerStop: Boolean = false): Unit = {
     system.stop(actor)
+    if (expectPayerStop) { payerActor.expectStop() }
     listener.expectTerminated(actor)
     startActor()
   }
