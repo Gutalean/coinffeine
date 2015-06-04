@@ -7,17 +7,17 @@ import com.gargoylesoftware.htmlunit._
 import com.gargoylesoftware.htmlunit.html._
 import org.eclipse.jetty.util.ajax.JSON
 
-class ScrappingProfile private (val client: WebClient) {
+class ScrappingProfile private (val client: WebClient) extends Profile {
   import ScrappingProfile._
 
-  def accountMode: AccountMode = {
+  override def accountMode: AccountMode = {
     val profilePage = retrieveProfilePage("general/account-type.html")
     val radioButtonMerchant =
       profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
     if(radioButtonMerchant.isChecked) AccountMode.Business else AccountMode.Client
   }
 
-  def accountMode_=(newAccountMode: AccountMode): Unit = {
+  override def accountMode_=(newAccountMode: AccountMode): Unit = {
     ProfileException.wrap(s"Cannot configure $newAccountMode") {
       val profilePage = retrieveProfilePage("general/account-type.html")
       val accountTypeForm = getForm(profilePage)
@@ -28,11 +28,11 @@ class ScrappingProfile private (val client: WebClient) {
     }
   }
 
-  def walletId(): String = lookupWalletsIds().headOption.getOrElse {
+  override def walletId(): String = lookupWalletsIds().headOption.getOrElse {
     throw new ProfileException("No wallet was found")
   }
 
-  def enableAPI(walletId: String): Unit = {
+  override def enableAPI(walletId: String): Unit = {
     ProfileException.wrap(s"Cannot enable API for wallet $walletId") {
       val settingsPage = retrieveProfilePage(s"wallet/$walletId")
       val settingsForm = getForm(settingsPage)
@@ -55,7 +55,7 @@ class ScrappingProfile private (val client: WebClient) {
     } yield cellContent
   }
 
-  def configureSeedToken(walletId: String): String = {
+  override def configureSeedToken(walletId: String): String = {
     val settingsPage = retrieveProfilePage("wallet/" + walletId)
     val settingsForm = getForm(settingsPage)
     val token = generateSeedToken(settingsForm)

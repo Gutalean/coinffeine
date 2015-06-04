@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
-class OkPayProfileConfigurator(profile: ScrappingProfile) extends LazyLogging {
+class OkPayProfileConfigurator(profile: Profile) extends LazyLogging {
 
   def configure(): Future[OkPayApiCredentials] = Future {
     ensureBusinessMode()
