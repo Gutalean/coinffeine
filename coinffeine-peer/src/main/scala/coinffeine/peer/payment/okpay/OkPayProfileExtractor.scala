@@ -8,11 +8,12 @@ import scala.util.control.NonFatal
 
 import com.gargoylesoftware.htmlunit._
 import com.gargoylesoftware.htmlunit.html._
+import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.util.ajax.JSON
 
-class OkPayProfileExtractor(username: String, password: String) {
+class OkPayProfileExtractor(username: String, password: String) extends LazyLogging {
 
-  import OkPayProfileExtractor._
+  import coinffeine.peer.payment.okpay.OkPayProfileExtractor._
 
   private val client = {
     val result = new WebClient(BrowserVersion.INTERNET_EXPLORER_11)
@@ -22,10 +23,17 @@ class OkPayProfileExtractor(username: String, password: String) {
 
   def configureProfile(): Future[OkPayProfile] = Future {
     login()
-    configureBusinessMode()
+    ensureBusinessMode()
     val walletId = lookupWalletId()
     enableAPI(walletId)
     OkPayProfile(configureSeedToken(walletId), walletId)
+  }
+
+  def accountMode(): AccountMode = {
+    val profilePage = retrieveProfilePage("general/account-type.html")
+    val radioButtonMerchant =
+      profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
+    if(radioButtonMerchant.isChecked) BusinessMode else ClientMode
   }
 
   private def login(): Unit = {
@@ -53,16 +61,21 @@ class OkPayProfileExtractor(username: String, password: String) {
     } yield cellContent
   }
 
-  private def configureBusinessMode(): Unit =
+  private def ensureBusinessMode(): Unit = {
+    if (accountMode() != BusinessMode) switchToBusinessMode()
+    else logger.info("Profile already in business mode")
+  }
+
+  private def switchToBusinessMode(): Unit = {
     withWrappedExceptions("Cannot configure the business mode") {
-      val accountTypeForm = getForm(retrieveProfilePage("general/account-type.html"))
+      val profilePage = retrieveProfilePage("general/account-type.html")
+      val accountTypeForm = getForm(profilePage)
       val radioButtonMerchant =
-        accountTypeForm.getRadioButtonsByName("ctl00$ctl00$MainContent$MainContent$client")(1)
-      if(!radioButtonMerchant.isChecked) {
-        radioButtonMerchant.setChecked(true)
-        submitForm(accountTypeForm, "ctl00$ctl00$MainContent$MainContent$Button_Continue")
-      }
+        profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
+      radioButtonMerchant.setChecked(true)
+      submitForm(accountTypeForm, "ctl00$ctl00$MainContent$MainContent$Button_Continue")
     }
+  }
 
   private def enableAPI(walletId: String): Unit =
     withWrappedExceptions(s"Cannot enable API for wallet $walletId") {
@@ -152,6 +165,10 @@ object OkPayProfileExtractor {
 
   private val OkPayBaseUrl = "https://www.okpay.com"
   private val SeedTokenLength = 25
+
+  sealed trait AccountMode
+  case object BusinessMode extends AccountMode
+  case object ClientMode extends AccountMode
 
   case class OkPayProfile(token: String, walletId: String) {
     require(token.length == SeedTokenLength,
