@@ -11,7 +11,7 @@ import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
-import coinffeine.peer.payment.okpay.profile.OkPayProfileConfigurator
+import coinffeine.peer.payment.okpay.profile.{ScrappingProfile, OkPayProfileConfigurator}
 
 class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfig] {
   import OkPaySeedTokenRetrievalPane._
@@ -63,7 +63,8 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfi
     implicit val context = FxExecutor.asContext
     retrievalStatus.set(InProgress)
     val credentials = data.okPayCredentials.value
-    val extractor = new OkPayProfileConfigurator(credentials.id, credentials.password)
+    val profile = ScrappingProfile.login(credentials.id, credentials.password)
+    val extractor = new OkPayProfileConfigurator(profile)
     extractor.configure().onComplete {
       case Success(accessData) =>
         retrievalStatus.set(SuccessfulRetrieval(accessData))
