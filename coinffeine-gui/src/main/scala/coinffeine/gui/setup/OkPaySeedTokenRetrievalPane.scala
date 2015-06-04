@@ -64,7 +64,7 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfi
     retrievalStatus.set(InProgress)
     val credentials = data.okPayCredentials.value
     val extractor = new OkPayProfileConfigurator(credentials.id, credentials.password)
-    extractor.configureProfile().onComplete {
+    extractor.configure().onComplete {
       case Success(accessData) =>
         retrievalStatus.set(SuccessfulRetrieval(accessData))
       case Failure(ex) =>
