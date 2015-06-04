@@ -1,5 +1,7 @@
 package coinffeine.peer.exchange.micropayment
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.util.Timeout
 
@@ -67,9 +69,9 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
       requester ! PaymentEnsured(PaymentProcessorActor.Paid(foundPayment))
       context.stop(self)
     case PaymentNotFound(_) =>
-      log.error("payment not found for invoice {} after duplicated payment error",
-        payment.request.invoice)
-      requester ! CannotEnsurePayment(payment.request)
+      val msg = s"payment not found for invoice ${payment.request.invoice} after duplicated payment error"
+      log.error(msg)
+      requester ! CannotEnsurePayment(payment.request, new IllegalStateException(msg))
       context.stop(self)
     case FindPaymentFailed(_, cause) =>
       log.error("cannot find payment for invoice {} after duplicated payment error: {}",
@@ -85,6 +87,8 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
 
 object PayerActor {
 
+  val DefaultRetryTimeout = Timeout(30.seconds)
+
   /** A message sent to the payer actor requesting it to ensure a payment is made. */
   case class EnsurePayment[C <: FiatCurrency](
     request: PaymentProcessorActor.Pay[C],
@@ -94,7 +98,8 @@ object PayerActor {
   case class PaymentEnsured[C <: FiatCurrency](response: PaymentProcessorActor.Paid[C])
 
   /** A response sent by payer actor after [[EnsurePayment]] indicating the payment couldn't be ensured. */
-  case class CannotEnsurePayment[C <: FiatCurrency](request: PaymentProcessorActor.Pay[C])
+  case class CannotEnsurePayment[C <: FiatCurrency](request: PaymentProcessorActor.Pay[C],
+                                                    cause: Throwable)
 
-  def props(retryTimeout: Timeout): Props = Props(new PayerActor(retryTimeout))
+  def props(retryTimeout: Timeout = DefaultRetryTimeout): Props = Props(new PayerActor(retryTimeout))
 }

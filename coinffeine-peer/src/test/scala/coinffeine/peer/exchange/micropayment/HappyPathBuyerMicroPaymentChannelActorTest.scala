@@ -27,11 +27,14 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
       actor ! fromCounterpart(StepSignatures(exchange.id, i, signatures))
       listener.expectMsgType[LastBroadcastableOffer]
       expectProgress(signatures = i)
-      paymentProcessor.expectMsgType[PaymentProcessorActor.Pay[_]]
-      paymentProcessor.reply(PaymentProcessorActor.Paid(
-        Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description", "invoice",
-          completed = true)
-      ))
+      payerActor.expectCreation()
+      payerActor.expectAskWithReply {
+        case PayerActor.EnsurePayment(_, pp) if pp == paymentProcessor.ref =>
+          PayerActor.PaymentEnsured(PaymentProcessorActor.Paid(
+            Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description", "invoice",
+              completed = true)
+        ))
+      }
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
       gateway.expectNoMsg(100.millis.dilated)
     }

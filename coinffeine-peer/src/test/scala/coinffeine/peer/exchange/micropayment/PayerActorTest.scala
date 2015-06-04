@@ -4,11 +4,10 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.testkit._
-import akka.util.Timeout
 import org.joda.time.DateTime
 
-import coinffeine.model.currency._
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -61,7 +60,7 @@ class PayerActorTest extends AkkaSpec {
     paymentProcessor.reply(dupPaymentFailed)
     paymentProcessor.expectMsg(FindPayment(findPaymentCriterion))
     paymentProcessor.reply(PaymentNotFound(findPaymentCriterion))
-    requester.expectMsg(PayerActor.CannotEnsurePayment(request))
+    requester.expectMsgType[PayerActor.CannotEnsurePayment[_]]
   }
 
   it should "retry payment retrieval by invoice if first attempt fails" in new Fixture {

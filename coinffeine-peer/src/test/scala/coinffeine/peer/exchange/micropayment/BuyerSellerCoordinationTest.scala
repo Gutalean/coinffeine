@@ -1,7 +1,10 @@
 package coinffeine.peer.exchange.micropayment
 
+import akka.actor.{Actor, Props}
+import akka.pattern._
 import akka.testkit.TestProbe
 
+import coinffeine.common.akka.AskPattern
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.ProtocolConstants
@@ -9,7 +12,7 @@ import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.{ChannelSuccess, LastBroadcastableOffer}
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.test.CoinffeineClientTest
-import coinffeine.peer.payment.MockPaymentProcessorFactory
+import coinffeine.peer.payment.{MockPaymentProcessorFactory, PaymentProcessorActor}
 import coinffeine.protocol.gateway.LinkedMessageGateways
 
 class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") {
@@ -27,7 +30,19 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
     exchangeProtocol.createMicroPaymentChannel(buyerRunningExchange),
     protocolConstants,
     MicroPaymentChannelActor.Collaborators(
-      gateways.leftGateway, buyerPaymentProc, Set(buyerListener.ref))
+      gateways.leftGateway, buyerPaymentProc, Set(buyerListener.ref)),
+    new BuyerMicroPaymentChannelActor.Delegates {
+      override def payer() = Props(new Actor {
+        override def receive = {
+          case PayerActor.EnsurePayment(req, pp) if pp == buyerPaymentProc =>
+            implicit val executionContext = context.dispatcher
+            AskPattern(pp, req)
+              .withImmediateReply[PaymentProcessorActor.Paid[_ <: FiatCurrency]]
+              .map(paid => PayerActor.PaymentEnsured(paid))
+              .pipeTo(sender())
+        }
+      })
+    }
   )
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
