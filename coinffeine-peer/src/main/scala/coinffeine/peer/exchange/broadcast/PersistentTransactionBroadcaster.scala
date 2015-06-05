@@ -37,6 +37,7 @@ private class PersistentTransactionBroadcaster(
     case event: FinishedWithResult => onFinished(event)
     case RecoveryCompleted =>
       collaborators.blockchain ! BlockchainActor.RetrieveBlockchainHeight
+      broadcastIfNeeded("preventive broadcast after recovery")
   }
 
   private val finishing: Receive = {
@@ -89,6 +90,7 @@ private class PersistentTransactionBroadcaster(
   }
 
   private def onFinished(event: FinishedWithResult): Unit = {
+    policy.done()
     collaborators.listener ! event.result
     context.become(finishing)
   }
