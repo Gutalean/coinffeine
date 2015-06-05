@@ -6,14 +6,15 @@ import coinffeine.alarms.Alarm
 import coinffeine.gui.beans.Implicits._
 import coinffeine.model.properties.Property
 
-class AlarmSummaryWidget(alarms: Property[Set[Alarm]]) extends ImgLabel(AlarmSummaryWidget.OkImg, "") {
+class AlarmSummaryWidget(alarms: Property[Set[Alarm]])
+  extends ImgLabel(AlarmSummaryWidget.OkImg, "") {
 
   styleClass += "alarm-summary"
   text <== alarms.map { a =>
-    if (a.size > 0) s"${a.size} active alarms" else "No active alarms"
+    if (a.nonEmpty) s"${a.size} active alarms" else "No active alarms"
   }
   image <== alarms.map { a =>
-    if (a.size == 0) AlarmSummaryWidget.OkImg.delegate
+    if (a.isEmpty) AlarmSummaryWidget.OkImg.delegate
     else AlarmSummaryWidget.WarningImg.delegate
   }
 }

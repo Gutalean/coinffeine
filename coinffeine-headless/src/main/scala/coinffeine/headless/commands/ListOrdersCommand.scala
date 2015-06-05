@@ -4,8 +4,7 @@ import java.io.PrintWriter
 
 import coinffeine.headless.prompt.ANSIText.Bold
 import coinffeine.headless.shell.Command
-import coinffeine.model.market._
-import coinffeine.model.order.{OrderId, OrderType, AnyCurrencyOrder}
+import coinffeine.model.order.{AnyCurrencyOrder, OrderId, OrderType}
 import coinffeine.model.properties.PropertyMap
 
 class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
