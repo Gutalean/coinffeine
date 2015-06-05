@@ -40,21 +40,27 @@ class CoinffeineMainStage(app: CoinffeineApp,
   )
   icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-256x256.png")))
 
-  onCloseRequest = { event: WindowEvent =>
-    if (true) {
-      val opt = new CoinffeineAlert(AlertType.Confirmation) {
-        title = "Close Coinffeine"
-        headerText = "Some exchanges are still running"
-        contentText =
-          "There are some orders that have running exchanges. If you quit the application " +
+  onCloseRequest = (event: WindowEvent) => {
+    if (exchangesRunning && !confirmQuittingWithRunningExchanges()) {
+      event.consume()
+    }
+  }
+
+  private def exchangesRunning: Boolean = app.network.exchanges.exists(!_.isCompleted)
+
+  private def confirmQuittingWithRunningExchanges(): Boolean = {
+    new CoinffeineAlert(AlertType.Confirmation) {
+      title = "Close Coinffeine"
+      headerText = "Some exchanges are still running"
+      contentText =
+        "There are some orders that have running exchanges. If you quit the application " +
           "the exchanges will not continue until the application is launched again. If it is " +
           "not launched again after several hours, the exchange will be timed out and you " +
           "will loose the deposits.\n\n" +
           "It is highly recommended to wait for the exchanges to complete before closing " +
           "the application.\n\n" +
           "Do you really want to close Coinffeine?"
-      }.showAndWait()
-      if (!opt.contains(ButtonType.OK)) { event.consume() }
-    }
+    }.showAndWait()
+      .contains(ButtonType.OK)
   }
 }
