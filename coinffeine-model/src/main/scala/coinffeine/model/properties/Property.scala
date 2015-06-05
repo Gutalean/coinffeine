@@ -1,6 +1,6 @@
 package coinffeine.model.properties
 
-import scala.concurrent.{Promise, Future, ExecutionContext}
+import scala.concurrent.ExecutionContext
 
 /** A property that encapsulates some meaningful data in Coinffeine. */
 trait Property[A] {
