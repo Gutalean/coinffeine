@@ -50,16 +50,18 @@ class ServerActorTest
   }
 
   it should "send an updated status message upon identification" in new BoundServer {
-    val client1, client2 = expectClientConnection()
+    val client1 = expectClientConnection()
     client1.identifyAs(OverlayId(1))
     client1.lastStatus.value.networkSize shouldBe 1
+    val client2 = expectClientConnection()
     client2.identifyAs(OverlayId(2))
     client2.lastStatus.value.networkSize shouldBe 2
   }
 
   it should "relay messages between clients" in new BoundServer {
-    val client1, client2 = expectClientConnection()
+    val client1 = expectClientConnection()
     client1.identifyAs(OverlayId(1))
+    val client2 = expectClientConnection()
     client2.identifyAs(OverlayId(2))
 
     client1.sendMessage(client2, "hello")
@@ -74,37 +76,44 @@ class ServerActorTest
     }
   }
 
+  it should "disconnect clients sending a malformed identification frame" in new BoundServer {
+    val client = expectClientConnection()
+    client.sendMalformedFrame()
+    client.expectDisconnection()
+  }
+
   it should "disconnect clients sending malformed frames" in new BoundServer {
-    val client1, client2 = expectClientConnection()
+    val client = expectClientConnection()
+    client.identifyAs(OverlayId(2))
+    client.sendMalformedFrame()
+    client.expectDisconnection()
+  }
 
-    client1.sendMalformedFrame()
-    client1.expectDisconnection()
-
-    client2.identifyAs(OverlayId(2))
-    client2.sendMalformedFrame()
-    client2.expectDisconnection()
+  it should "disconnect clients sending too big identification frames" in new BoundServer {
+    val client = expectClientConnection()
+    client.sendFrameOfSize(config.maxFrameBytes + 1)
+    client.expectDisconnection()
   }
 
   it should "disconnect clients sending too big frames" in new BoundServer {
-    val client1, client2 = expectClientConnection()
-
-    client1.sendFrameOfSize(config.maxFrameBytes + 1)
-    client1.expectDisconnection()
-
-    client2.identifyAs(OverlayId(2))
-    client2.sendFrameOfSize(config.maxFrameBytes + 1)
-    client2.expectDisconnection()
+    val client = expectClientConnection()
+    client.identifyAs(OverlayId(2))
+    client.sendFrameOfSize(config.maxFrameBytes + 1)
+    client.expectDisconnection()
   }
 
+  it should "disconnect clients sending invalid protobuf identification messages" in
+    new BoundServer {
+      val client = expectClientConnection()
+      client.sendMalformedProtobuf()
+      client.expectDisconnection()
+    }
+
   it should "disconnect clients sending invalid protobuf messages" in new BoundServer {
-    val client1, client2 = expectClientConnection()
-
-    client1.sendMalformedProtobuf()
-    client1.expectDisconnection()
-
-    client2.identifyAs(OverlayId(2))
-    client2.sendMalformedProtobuf()
-    client2.expectDisconnection()
+    val client = expectClientConnection()
+    client.identifyAs(OverlayId(2))
+    client.sendMalformedProtobuf()
+    client.expectDisconnection()
   }
 
   it should "disconnect clients whose initial message is other than join" in new BoundServer {
@@ -132,15 +141,17 @@ class ServerActorTest
     client1.expectDisconnection()
   }
 
-  it should "send network status messages when the size of the network changes" in new BoundServer {
-    val client1, client2 = expectClientConnection()
-    client1.identifyAs(OverlayId(1))
-    client2.identifyAs(OverlayId(2))
-    expectNoMsg(idleTime)
+  it should "send network status messages when the size of the network changes" in
+    new BoundServer {
+      val client1 = expectClientConnection()
+      client1.identifyAs(OverlayId(1))
+      val client2 = expectClientConnection()
+      client2.identifyAs(OverlayId(2))
+      expectNoMsg(idleTime)
 
-    client1.disconnect()
-    client2.expectStatusUpdate(networkSize = 1)
-  }
+      client1.disconnect()
+      client2.expectStatusUpdate(networkSize = 1)
+    }
 
   it should "send network status messages no faster than a configured rate" in new BoundServer {
     val statusListener = expectClientConnection()
