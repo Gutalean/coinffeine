@@ -18,8 +18,13 @@ import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
 import coinffeine.peer.api.CoinffeineWallet
+import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, PublicTestnet}
 
-class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends ApplicationView {
+class WalletView(
+    network: BitcoinSettings.Network,
+    wallet: CoinffeineWallet,
+    properties: WalletProperties) extends ApplicationView {
 
   override val name = "Wallet"
 
@@ -29,10 +34,8 @@ class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends
   private def actionFor(tx: WalletActivityEntryProperties): String =
     if (tx.amount.value.isNegative) "withdrawn from" else "added to"
 
-  private def dateFor(tx: WalletActivityEntryProperties): String = {
-    val date = tx.time.value
-    WalletView.DateFormat.print(date)
-  }
+  private def dateFor(tx: WalletActivityEntryProperties): String =
+    WalletView.DateFormat.print(tx.time.value)
 
   private val transactionsTable = new VBox {
     styleClass += "transactions"
@@ -54,9 +57,8 @@ class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends
             styleClass += "buttons"
             children = Seq(
               new Button with ButtonStyles.Details {
-                onAction = () => {
-                  Browser.default.browse(WalletView.detailsOfTransaction(tx.hash.value.toString))
-                }
+                onAction = () =>
+                  Browser.default.browse(detailsOfTransaction(tx.hash.value.toString))
               }
             )
           }
@@ -72,16 +74,20 @@ class WalletView(wallet: CoinffeineWallet, properties: WalletProperties) extends
   }
 
   override def controlPane = new WalletControlPane(wallet, properties)
+
+  private def detailsOfTransaction(txHash: String): URI =
+    new URL(WalletView.TransactionDetailsURLFormat(network).format(txHash)).toURI
 }
 
 object WalletView {
 
-  private val TransactionInfoBaseUri = new URL("http://testnet.trial.coinffeine.com/tx/")
+  private val TransactionDetailsURLFormat = Map[BitcoinSettings.Network, String](
+    PublicTestnet -> "http://testnet.trial.coinffeine.com/tx/%s",
+    IntegrationRegnet -> "http://testnet.test.coinffeine.com/tx/%s",
+    MainNet -> "https://blockchain.info/tx/%s"
+  )
 
   private val DateFormat = DateTimeFormat
     .forPattern("ddMMMyyyy HH:mm:ss")
     .withLocale(Locale.US)
-
-  private def detailsOfTransaction(txHash: String): URI =
-    new URL(TransactionInfoBaseUri, txHash).toURI
 }
