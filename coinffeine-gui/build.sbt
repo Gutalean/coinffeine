@@ -1,8 +1,8 @@
 import CoinffeineKeys._
 
-name := "Coinffeine"
-
 techPreview := System.getProperty("TECH_PREVIEW", "true").toLowerCase == "true"
+
+name := (if (techPreview.value) "CoinffeineTP" else "Coinffeine")
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 
