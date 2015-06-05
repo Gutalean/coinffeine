@@ -68,7 +68,6 @@ class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroad
   it should "restore its state" in new Fixture {
     override def useLastRefundTx = true
     expectRelevantHeightsSubscription()
-    blockchain.reply(BlockchainActor.BlockchainHeightReached(panicBlock - 2))
 
     val result = givenSuccessfulBroadcast(someLastOffer)
     expectTerminationWithResult(SuccessfulBroadcast(result))
@@ -99,9 +98,9 @@ class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroad
         tx
       }
     lastRefundTx = refundTx
-    protected val peerActor, blockchain, terminationListener = TestProbe()
+    protected val bitcoinPeer, blockchain, terminationListener = TestProbe()
     protected val instance = system.actorOf(PersistentTransactionBroadcaster.props(
-      refundTx, Collaborators(peerActor.ref, blockchain.ref, listener = self), protocolConstants))
+      refundTx, Collaborators(bitcoinPeer.ref, blockchain.ref, listener = self), protocolConstants))
     terminationListener.watch(instance)
 
     protected def expectRelevantHeightsSubscription(): Unit = {
@@ -113,9 +112,9 @@ class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroad
     }
 
     protected def givenSuccessfulBroadcast(tx: ImmutableTransaction): TransactionPublished = {
-      peerActor.expectMsg(PublishTransaction(tx))
+      bitcoinPeer.expectMsg(PublishTransaction(tx))
       val result = TransactionPublished(tx, tx)
-      peerActor.reply(result)
+      bitcoinPeer.reply(result)
       result
     }
 
