@@ -22,6 +22,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   import DefaultWalletActor._
 
   private var blockedOutputs = new BlockedOutputs()
+  private var deposits = Map.empty[Hash, ExchangeId]
   private var listeners = Set.empty[ActorRef]
 
   override def preStart(): Unit = {
@@ -45,9 +46,11 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     case SnapshotOffer(metadata, snapshot: Snapshot) =>
       setLastSnapshot(metadata.sequenceNr)
       blockedOutputs = snapshot.blockedOutputs
+      deposits = snapshot.deposits
   }
 
-  override protected def createSnapshot: Option[PersistentEvent] = Some(Snapshot(blockedOutputs))
+  override protected def createSnapshot: Option[PersistentEvent] =
+    Some(Snapshot(blockedOutputs, deposits))
 
   override def receiveCommand: Receive = managingSnapshots orElse {
 
@@ -132,6 +135,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
     val outPoints = toOutPoints(event.outputs)
     val tx = wallet.findTransactionSpendingOutput(outPoints.head).getOrElse(
       wallet.createMultisignTransaction(outPoints, requiredSignatures, amount, transactionFee))
+    deposits += tx.get.getHash -> coinsId
     log.debug(s"Creating deposit for $coinsId using outputs ${event.outputs} and having TX $tx")
     tx
   }
@@ -144,7 +148,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
   private def updateActivity(): Unit = {
     val transactions = wallet.delegate.getTransactionsByTime
-    properties.activity.set(WalletActivity(wallet.delegate, transactions: _*))
+    properties.activity.set(WalletActivity(deposits, wallet.delegate, transactions: _*))
   }
 
   private def updateBalance(): Unit = {
@@ -220,5 +224,6 @@ object DefaultWalletActor {
   private case class DepositCreated(request: CreateDeposit, outputs: Set[Output])
     extends PersistentEvent
   private case class DepositCancelled(tx: ImmutableTransaction) extends PersistentEvent
-  private case class Snapshot(blockedOutputs: BlockedOutputs) extends PersistentEvent
+  private case class Snapshot(
+      blockedOutputs: BlockedOutputs, deposits: Map[Hash, ExchangeId]) extends PersistentEvent
 }
