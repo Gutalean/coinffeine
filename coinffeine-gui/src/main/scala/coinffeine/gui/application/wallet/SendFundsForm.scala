@@ -11,10 +11,10 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{CurrencyTextField, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
-import coinffeine.model.bitcoin.{Address, WalletProperties}
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address, WalletProperties}
 import coinffeine.model.currency._
 
-class SendFundsForm(props: WalletProperties) {
+class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator) {
 
   import SendFundsForm._
 

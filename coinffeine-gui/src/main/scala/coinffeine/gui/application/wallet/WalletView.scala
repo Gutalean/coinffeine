@@ -19,6 +19,7 @@ import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.WalletActivity.EntryType
 import coinffeine.model.bitcoin.{Hash, WalletActivity}
+import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.peer.api.CoinffeineWallet
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, PublicTestnet}
@@ -26,6 +27,7 @@ import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, Publ
 class WalletView(
     network: BitcoinSettings.Network,
     wallet: CoinffeineWallet,
+    feeCalculator: BitcoinFeeCalculator,
     properties: WalletProperties) extends ApplicationView {
 
   import WalletView._
@@ -75,7 +77,7 @@ class WalletView(
     pageContent = walletActivity
   }
 
-  override def controlPane = new WalletControlPane(wallet, properties)
+  override def controlPane = new WalletControlPane(wallet, feeCalculator, properties)
 
   private def detailsOfTransaction(tx: Hash): URI =
     new URL(TransactionDetailsURLFormats(network).format(tx)).toURI
