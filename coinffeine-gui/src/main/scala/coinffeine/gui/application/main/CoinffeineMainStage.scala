@@ -31,7 +31,11 @@ class CoinffeineMainStage(app: CoinffeineApp,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
       new StatsView(app),
-      new WalletView(configProvider.bitcoinSettings().network, app.wallet, properties.wallet)
+      new WalletView(
+        configProvider.bitcoinSettings().network,
+        app.wallet,
+        app.utils.bitcoinFeeCalculator,
+        properties.wallet)
     ),
     statusBarWidgets = Seq(
       new ConnectionStatusWidget(properties.connectionStatusProperty)

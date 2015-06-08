@@ -11,10 +11,12 @@ import coinffeine.gui.application.properties.WalletProperties
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.scene.styles.PaneStyles
-import coinffeine.model.bitcoin.Address
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address}
 import coinffeine.peer.api.CoinffeineWallet
 
-class WalletControlPane(wallet: CoinffeineWallet, properties: WalletProperties) extends HBox {
+class WalletControlPane(wallet: CoinffeineWallet,
+                        feeCalculator: BitcoinFeeCalculator,
+                        properties: WalletProperties) extends HBox {
   id = "wallet-control-pane"
 
   private val fundsDialog = new FundsDialog(properties)
@@ -48,7 +50,7 @@ class WalletControlPane(wallet: CoinffeineWallet, properties: WalletProperties) 
   private val sendButton = new Button("Send") {
     disable <== noPrimaryAddress || noAvailableFunds
     onAction = () => {
-      new SendFundsForm(wallet).show() match {
+      new SendFundsForm(wallet, feeCalculator).show() match {
         case SendFundsForm.Send(amount, to) => wallet.transfer(amount, to)
         case SendFundsForm.CancelSend => // Do nothing
       }
