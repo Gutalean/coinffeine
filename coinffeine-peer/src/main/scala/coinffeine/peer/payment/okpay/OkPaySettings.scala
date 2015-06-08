@@ -14,6 +14,11 @@ case class OkPaySettings(
     token <- seedToken
   } yield OkPayApiCredentials(walletId, token)
 
+  def withApiCredentials(apiCredentials: OkPayApiCredentials) = copy(
+    userAccount = Some(apiCredentials.walletId),
+    seedToken = Some(apiCredentials.seedToken)
+  )
+
   require(
     userAccount.forall(_.matches(OkPaySettings.AccountIdPattern)),
     s"Invalid OKPay account ID $userAccount")

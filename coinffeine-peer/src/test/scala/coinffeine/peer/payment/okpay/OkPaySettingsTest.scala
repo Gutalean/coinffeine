@@ -7,15 +7,22 @@ import coinffeine.common.test.UnitTest
 
 class OkPaySettingsTest extends UnitTest {
 
+  val settingsWithNoCredentials = OkPaySettings(
+    userAccount = None,
+    seedToken = None,
+    serverEndpointOverride = None,
+    pollingInterval = 10.seconds
+  )
+
   "OKPay settings" should "contain valid account ids when present" in {
-    val settingsWithNoAccount = OkPaySettings(
-      userAccount = None,
-      seedToken = None,
-      serverEndpointOverride = None,
-      pollingInterval = 10.seconds
-    )
     an [IllegalArgumentException] shouldBe thrownBy {
-      settingsWithNoAccount.copy(userAccount = "%&&   invalid  :?¿".some)
+      settingsWithNoCredentials.copy(userAccount = "%&&   invalid  :?¿".some)
     }
+  }
+
+  it should "update and provide API credentials" in {
+    val credentials = OkPayApiCredentials("ID1234", "Token5678")
+    val completeSettings = settingsWithNoCredentials.withApiCredentials(credentials)
+    completeSettings.apiCredentials shouldBe Some(credentials)
   }
 }
