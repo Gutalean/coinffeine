@@ -26,6 +26,13 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
 
+  private val isValidAmount = amount.delegate.zip(props.balance) {
+    case (a, Some(b)) => a.isPositive && a <= maxWithdraw(b)
+    case _ => false
+  }.mapToBool(identity)
+
+  private val isValidAddress = address.delegate.mapToBool(_.isDefined)
+
   private val formData = new VBox() {
     styleClass += "form-data"
 
@@ -41,7 +48,7 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
         }
         onAction = () => {
           props.balance.get.foreach { balance =>
-            currencyField.text.value = maxWithdraw(balance).value.toString
+            currencyField.text.value = maxWithdraw(balance).value.toString()
           }
         }
       },
@@ -67,8 +74,7 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
         onAction = close _
       },
       new Button("Send") with ButtonStyles.Action {
-        disable <== amount.delegate.mapToBool(a => !isValidAmount(a)) ||
-          address.delegate.mapToBool(addr => addr.isEmpty)
+        disable <== isValidAmount.not() or isValidAddress.not()
         onAction = () => {
           submit.value = true
           close()
@@ -96,10 +102,7 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
   }
 
   private def maxWithdraw(balance: BitcoinBalance) =
-    balance.available - feeCalculator.defaultTransactionFee
-
-  private def isValidAmount(amount: Bitcoin.Amount): Boolean =
-    amount.isPositive && amount <= maxWithdraw(props.balance.get.get)
+    (balance.available - feeCalculator.defaultTransactionFee).max(0.BTC)
 
   private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "Send funds"
