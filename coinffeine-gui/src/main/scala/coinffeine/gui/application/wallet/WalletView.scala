@@ -17,6 +17,8 @@ import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
+import coinffeine.model.bitcoin.WalletActivity.EntryType
+import coinffeine.model.bitcoin.{Hash, WalletActivity}
 import coinffeine.peer.api.CoinffeineWallet
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, PublicTestnet}
@@ -26,65 +28,77 @@ class WalletView(
     wallet: CoinffeineWallet,
     properties: WalletProperties) extends ApplicationView {
 
+  import WalletView._
+
   override val name = "Wallet"
 
-  private def iconFor(tx: WalletActivityEntryProperties): GlyphIcon =
-    if (tx.amount.value.isNegative) GlyphIcon.BitcoinOutflow else GlyphIcon.BitcoinInflow
-
-  private def actionFor(tx: WalletActivityEntryProperties): String =
-    if (tx.amount.value.isNegative) "withdrawn from" else "added to"
-
-  private def dateFor(tx: WalletActivityEntryProperties): String =
-    WalletView.DateFormat.print(tx.time.value)
-
-  private val transactionsTable = new VBox {
-    styleClass += "transactions"
-    val sortedList = new ObservableBuffer(new SortedList[WalletActivityEntryProperties](
-      properties.transactions.delegate, new TransactionTimestampComparator))
-    sortedList.bindToList(children) { tx =>
+  private class WalletActivityRow(activity: WalletActivityEntryProperties) extends HBox {
+    styleClass += "line"
+    children = Seq(
+      new GlyphLabel {
+        styleClass += "icon"
+        icon <== activity.entry.delegate.map(entry => ActionIcons(entry.entryType))
+      },
+      new Label {
+        styleClass += "summary"
+        text <== activity.entry.delegate.mapToString(summarize)
+      },
+      new Label {
+        styleClass += "date"
+        text <== activity.time.delegate.mapToString(WalletView.DateFormat.print)
+      },
       new HBox {
-        styleClass += "line"
+        styleClass += "buttons"
         children = Seq(
-          new GlyphLabel {
-            styleClass += "icon"
-            icon = iconFor(tx)
-          },
-          new Label(s"${tx.amount.value} ${actionFor(tx)} your wallet") {
-            styleClass += "summary"
-          },
-          new Label(dateFor(tx)) { styleClass += "date" },
-          new HBox {
-            styleClass += "buttons"
-            children = Seq(
-              new Button with ButtonStyles.Details {
-                onAction = () =>
-                  Browser.default.browse(detailsOfTransaction(tx.hash.value.toString))
-              }
-            )
+          new Button with ButtonStyles.Details {
+            onAction = () =>
+              Browser.default.browse(detailsOfTransaction(activity.hash.value))
           }
         )
-      }.delegate
-    }
+      }
+    )
+
+    private def summarize(entry: WalletActivity.Entry): String =
+      s"${entry.amount} ${ActionDescriptions(entry.entryType)}"
+  }
+
+  private val walletActivity = new VBox {
+    styleClass += "transactions"
+    val sortedList = new ObservableBuffer(new SortedList[WalletActivityEntryProperties](
+      properties.activities.delegate, new TransactionTimestampComparator))
+    sortedList.bindToList(children) { activity => new WalletActivityRow(activity).delegate }
   }
 
   override val centerPane = new PagePane {
     id = "wallet-center-pane"
-    headerText = "WALLET TRANSACTIONS"
-    pageContent = transactionsTable
+    headerText = "WALLET ACTIVITY"
+    pageContent = walletActivity
   }
 
   override def controlPane = new WalletControlPane(wallet, properties)
 
-  private def detailsOfTransaction(txHash: String): URI =
-    new URL(WalletView.TransactionDetailsURLFormat(network).format(txHash)).toURI
+  private def detailsOfTransaction(tx: Hash): URI =
+    new URL(TransactionDetailsURLFormats(network).format(tx)).toURI
 }
 
 object WalletView {
 
-  private val TransactionDetailsURLFormat = Map[BitcoinSettings.Network, String](
+  private val TransactionDetailsURLFormats = Map[BitcoinSettings.Network, String](
     PublicTestnet -> "http://testnet.trial.coinffeine.com/tx/%s",
     IntegrationRegnet -> "http://testnet.test.coinffeine.com/tx/%s",
     MainNet -> "https://blockchain.info/tx/%s"
+  )
+
+  private val ActionIcons = Map[EntryType, GlyphIcon](
+    EntryType.Deposit -> GlyphIcon.ExchangeTypes,
+    EntryType.OutFlow -> GlyphIcon.BitcoinOutflow,
+    EntryType.InFlow -> GlyphIcon.BitcoinInflow
+  )
+
+  private val ActionDescriptions = Map[EntryType, String](
+    EntryType.Deposit -> "locked for an exchange",
+    EntryType.OutFlow -> "withdrawn from your wallet",
+    EntryType.InFlow -> "added to your wallet"
   )
 
   private val DateFormat = DateTimeFormat
