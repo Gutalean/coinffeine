@@ -75,6 +75,10 @@ class SendFundsForm(props: WalletProperties) {
   private val dialogueContent = new VBox() {
     styleClass += "wallet-send"
     children = Seq(formData, footer)
+    // Dirty hack: for some unknown reason (likely a JavaFX bug) this VBox is not resized
+    // to its children dimensions. We must indicate by code (in CSS doesn't work) its min size.
+    minWidth = 500
+    minHeight = 450
   }
 
   private def selectLabel(name: String, helpTopic: String) = new HBox() {
@@ -91,6 +95,7 @@ class SendFundsForm(props: WalletProperties) {
 
   private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "Send funds"
+    resizable = false
     initModality(Modality.APPLICATION_MODAL)
     scene = new CoinffeineScene(Stylesheets.Wallet) {
       root = dialogueContent
