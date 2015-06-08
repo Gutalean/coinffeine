@@ -20,6 +20,8 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
 
   require(props.balance.get.isDefined, "cannot run send funds form when balance is not defined")
 
+  private val txFee = s"${feeCalculator.defaultTransactionFee.value}BTC"
+
   private val amount = new ObjectProperty[Bitcoin.Amount](this, "amount", 0.BTC)
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
@@ -35,11 +37,11 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
       selectLabel("amount to send", "send-amount"),
       new Button("Max") with ButtonStyles.Action {
         text <== props.balance.map { balance =>
-          s"Max (${balance.get.available.format})"
+          s"Max (${maxWithdraw(balance.get)})"
         }
         onAction = () => {
           props.balance.get.foreach { balance =>
-            currencyField.text.value = balance.available.value.toString()
+            currencyField.text.value = maxWithdraw(balance).value.toString
           }
         }
       },
@@ -51,6 +53,9 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
         address <== text.delegate.map { addr =>
           Try(new Address(null, addr)).toOption
         }
+      },
+      new Label(s"A fee of $txFee will be paid to Bitcoin miners") {
+        styleClass += "disclaimer"
       }
     )
   }
@@ -78,7 +83,7 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
     // Dirty hack: for some unknown reason (likely a JavaFX bug) this VBox is not resized
     // to its children dimensions. We must indicate by code (in CSS doesn't work) its min size.
     minWidth = 500
-    minHeight = 450
+    minHeight = 500
   }
 
   private def selectLabel(name: String, helpTopic: String) = new HBox() {
@@ -90,8 +95,11 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
     )
   }
 
+  private def maxWithdraw(balance: BitcoinBalance) =
+    balance.available - feeCalculator.defaultTransactionFee
+
   private def isValidAmount(amount: Bitcoin.Amount): Boolean =
-    amount.isPositive && amount <= props.balance.get.get.amount
+    amount.isPositive && amount <= maxWithdraw(props.balance.get.get)
 
   private val stage = new Stage(style = StageStyle.UTILITY) {
     title = "Send funds"
