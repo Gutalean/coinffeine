@@ -8,7 +8,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.Service
-import coinffeine.model.bitcoin.BitcoinProperties
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, BitcoinProperties}
 import coinffeine.model.network.CoinffeineNetworkProperties
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
@@ -25,6 +25,7 @@ class DefaultCoinffeineApp(name: String,
                            lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator,
+                           bitcoinFeeCalculator: BitcoinFeeCalculator,
                            configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
 
   private val system = ActorSystem(name, configProvider.enrichedConfig)
@@ -41,7 +42,7 @@ class DefaultCoinffeineApp(name: String,
   override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(
     lookupAccountId, peerRef, properties.paymentProcessor)
 
-  override val utils = new DefaultCoinffeineUtils(amountsCalculator)
+  override val utils = new DefaultCoinffeineUtils(amountsCalculator, bitcoinFeeCalculator)
 
   override val global = properties.global
 
@@ -90,7 +91,7 @@ object DefaultCoinffeineApp {
     override lazy val app = {
       val name = SystemName.choose(accountId())
       new DefaultCoinffeineApp(
-        name, properties, accountId, peerProps, amountsCalculator, configProvider)
+        name, properties, accountId, peerProps, amountsCalculator, bitcoinFeeCalculator, configProvider)
     }
   }
 }
