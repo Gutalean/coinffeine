@@ -1,25 +1,28 @@
 package coinffeine.gui.preferences
 
 import scalafx.Includes._
+import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.control.{Button, Label, TextField}
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.{Modality, Stage, StageStyle}
 
 import coinffeine.gui.scene.CoinffeineScene
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.peer.config.SettingsProvider
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
 class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
 
-  private val okPaySettings = settingsProvider.okPaySettings()
+  private val walletIdField = new TextField
+  private val seedTokenField = new TextField
 
-  private val accountIdField = new TextField {
-    text = okPaySettings.userAccount.getOrElse("")
-  }
+  private val credentials =
+    new ObjectProperty[Option[OkPayApiCredentials]](this, "credentials", None)
 
-  private val tokenField = new TextField {
-    text = okPaySettings.seedToken.getOrElse("")
+  credentials <== walletIdField.text.delegate.zip(seedTokenField.text) { (walletId, seedToken) =>
+    Some(OkPayApiCredentials(walletId.trim, seedToken.trim))
   }
 
   private val formScene = new CoinffeineScene(Stylesheets.Preferences) {
@@ -33,10 +36,11 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
             new Label("OKPay account") with TextStyles.Emphasis)
         },
         new Label("Please fill in your OKPay account details"),
-        labeledField(accountIdField, "Account ID"),
-        labeledField(tokenField, "Token"),
+        labeledField(walletIdField, "Account ID"),
+        labeledField(seedTokenField, "Token"),
         new HBox {
           styleClass += "footer"
+          disable <== credentials.delegate.mapToBool(_.isEmpty)
           children = new Button("Apply") {
             styleClass += "action-button"
             onAction = { e: ActionEvent => close() }
@@ -63,19 +67,19 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) {
   }
 
   private def close(): Unit = {
-    saveSettings()
+    saveCredentials()
     formStage.close()
   }
 
-  private def saveSettings(): Unit = {
+  private def saveCredentials(): Unit = {
     settingsProvider.saveUserSettings(
-      okPaySettings.copy(
-        userAccount = Some(accountIdField.text.value),
-        seedToken = Some(tokenField.text.value)
-      ))
+      settingsProvider.okPaySettings().withApiCredentials(credentials.value))
   }
 
   def show(): Unit = {
+    val credentials = settingsProvider.okPaySettings().apiCredentials
+    walletIdField.text = credentials.fold("")(_.walletId)
+    seedTokenField.text = credentials.fold("")(_.seedToken)
     formStage.showAndWait()
   }
 }
