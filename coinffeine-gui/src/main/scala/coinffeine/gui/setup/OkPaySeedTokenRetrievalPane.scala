@@ -1,5 +1,6 @@
 package coinffeine.gui.setup
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control._
@@ -62,15 +63,19 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfi
   private def startTokenRetrieval(): Unit = {
     implicit val context = FxExecutor.asContext
     retrievalStatus.set(InProgress)
-    val credentials = data.okPayCredentials.value
-    val profile = ScrappingProfile.login(credentials.id, credentials.password)
-    val extractor = new OkPayProfileConfigurator(profile)
-    extractor.configure().onComplete {
-      case Success(accessData) =>
-        retrievalStatus.set(SuccessfulRetrieval(accessData))
-      case Failure(ex) =>
-        retrievalStatus.set(FailedRetrieval(ex))
+    configureProfile(data.okPayCredentials.value).onComplete {
+      case Success(accessData) => retrievalStatus.set(SuccessfulRetrieval(accessData))
+      case Failure(ex) => retrievalStatus.set(FailedRetrieval(ex))
     }
+  }
+
+  private def configureProfile(credentials: OkPayCredentials): Future[OkPayApiCredentials] = {
+    implicit val context = scala.concurrent.ExecutionContext.global
+    for {
+      profile <- ScrappingProfile.login(credentials.id, credentials.password)
+      configurator = new OkPayProfileConfigurator(profile)
+      accessData <- configurator.configure()
+    } yield accessData
   }
 }
 

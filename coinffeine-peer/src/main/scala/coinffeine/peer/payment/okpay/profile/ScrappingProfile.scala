@@ -2,6 +2,7 @@ package coinffeine.peer.payment.okpay.profile
 
 import java.net.URL
 import scala.collection.JavaConversions._
+import scala.concurrent.{ExecutionContext, Future}
 
 import com.gargoylesoftware.htmlunit._
 import com.gargoylesoftware.htmlunit.html._
@@ -11,7 +12,7 @@ class ScrappingProfile private (val client: WebClient) extends Profile {
   import ScrappingProfile._
 
   override def accountMode: AccountMode = {
-    val profilePage = retrieveProfilePage("general/account-type.html")
+    val profilePage = retrieveProfilePage(AccountTypeLocation)
     val radioButtonMerchant =
       profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
     if(radioButtonMerchant.isChecked) AccountMode.Business else AccountMode.Client
@@ -19,7 +20,7 @@ class ScrappingProfile private (val client: WebClient) extends Profile {
 
   override def accountMode_=(newAccountMode: AccountMode): Unit = {
     ProfileException.wrap(s"Cannot configure $newAccountMode") {
-      val profilePage = retrieveProfilePage("general/account-type.html")
+      val profilePage = retrieveProfilePage(AccountTypeLocation)
       val accountTypeForm = getForm(profilePage)
       val radioButtonMerchant = profilePage.getElementById[HtmlRadioButtonInput](
         AccountModeButtons(newAccountMode), false)
@@ -129,8 +130,10 @@ object ScrappingProfile {
     AccountMode.Business -> "cbxMerchant",
     AccountMode.Client -> "cbxBuyer"
   )
+  private val AccountTypeLocation = "general/account-type.html"
 
-  def login(username: String, password: String): ScrappingProfile = {
+  def login(username: String, password: String)
+           (implicit context: ExecutionContext): Future[ScrappingProfile] = Future {
     val profile = new ScrappingProfile(createClient)
     profile.login(username, password)
     profile
