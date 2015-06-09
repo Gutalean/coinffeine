@@ -7,6 +7,8 @@ import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, VBox}
 import scalaz.syntax.std.boolean._
 
+import com.typesafe.scalalogging.LazyLogging
+
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.FxExecutor
@@ -14,7 +16,9 @@ import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
 import coinffeine.peer.payment.okpay.profile.{ScrappingProfile, OkPayProfileConfigurator}
 
-class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfig] {
+class OkPaySeedTokenRetrievalPane(data: SetupConfig)
+  extends StepPane[SetupConfig] with LazyLogging {
+
   import OkPaySeedTokenRetrievalPane._
 
   override val icon = GlyphIcon.Number3
@@ -65,7 +69,9 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig) extends StepPane[SetupConfi
     retrievalStatus.set(InProgress)
     configureProfile(data.okPayCredentials.value).onComplete {
       case Success(accessData) => retrievalStatus.set(SuccessfulRetrieval(accessData))
-      case Failure(ex) => retrievalStatus.set(FailedRetrieval(ex))
+      case Failure(ex) =>
+        logger.error("Cannot configure OKPay profile and retrieve API credentials", ex)
+        retrievalStatus.set(FailedRetrieval(ex))
     }
   }
 
