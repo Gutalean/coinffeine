@@ -6,26 +6,34 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import com.gargoylesoftware.htmlunit._
 import com.gargoylesoftware.htmlunit.html._
+import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.util.ajax.JSON
 
-class ScrappingProfile private (val client: WebClient) extends Profile {
+class ScrappingProfile private (val client: WebClient) extends Profile with LazyLogging {
   import ScrappingProfile._
 
   override def accountMode: AccountMode = {
     val profilePage = retrieveProfilePage(AccountTypeLocation)
-    val radioButtonMerchant =
-      profilePage.getElementById[HtmlRadioButtonInput]("cbxMerchant", false)
+    val radioButtonMerchant = profilePage.getElementById[HtmlRadioButtonInput](
+      AccountModeButtons(AccountMode.Business), false)
     if(radioButtonMerchant.isChecked) AccountMode.Business else AccountMode.Client
   }
 
   override def accountMode_=(newAccountMode: AccountMode): Unit = {
     ProfileException.wrap(s"Cannot configure $newAccountMode") {
-      val profilePage = retrieveProfilePage(AccountTypeLocation)
-      val accountTypeForm = getForm(profilePage)
-      val radioButtonMerchant = profilePage.getElementById[HtmlRadioButtonInput](
-        AccountModeButtons(newAccountMode), false)
-      radioButtonMerchant.setChecked(true)
-      submitForm(accountTypeForm, "ctl00$ctl00$MainContent$MainContent$Button_Continue")
+      setAccountMode(retrieveProfilePage(AccountTypeLocation), newAccountMode)
+    }
+  }
+
+  private def setAccountMode(
+      accountTypePage: HtmlPage, newAccountMode: AccountMode): HtmlPage = {
+    val accountTypeForm = getForm(accountTypePage)
+    accountTypePage
+      .getElementById[HtmlRadioButtonInput](AccountModeButtons(newAccountMode), false)
+      .click[HtmlPage]()
+    ProfileException.wrap(accountTypeForm, s"Cannot submit form") {
+      accountTypeForm.getInputByName[HtmlSubmitInput](
+        "ctl00$ctl00$MainContent$MainContent$Button_Continue").click[HtmlPage]()
     }
   }
 
@@ -82,12 +90,13 @@ class ScrappingProfile private (val client: WebClient) extends Profile {
     }
 
   private def login(username: String, password: String): Unit = {
-    val loginForm = getForm(retrievePage(s"$OkPayBaseUrl/es/account/login.html"))
+    val loginForm = getForm(retrievePage(s"$OkPayBaseUrl/en/account/login.html"))
     fillInField(loginForm, "ctl00$MainContent$txtLogin", username)
     fillInField(loginForm, "ctl00$MainContent$txtPassword", password)
     val result = submitForm(loginForm, "ctl00$MainContent$btnLogin")
     ProfileException.wrap(result, "Login failed") {
       require(!result.getUrl.toString.endsWith("account/login.html"))
+      logger.info("Logged in and redirected to {}", result.getUrl)
     }
   }
 
@@ -96,7 +105,7 @@ class ScrappingProfile private (val client: WebClient) extends Profile {
   }
 
   private def retrieveProfilePage(relativePath: String): HtmlPage =
-    retrievePage(s"$OkPayBaseUrl/es/account/profile/$relativePath")
+    retrievePage(s"$OkPayBaseUrl/en/account/profile/$relativePath")
 
   private def getForm(page: HtmlPage): HtmlForm =
     ProfileException.wrap(s"No form found in page content: ${page.asText()}") {
@@ -142,6 +151,7 @@ object ScrappingProfile {
   private def createClient: WebClient = {
     val result = new WebClient(BrowserVersion.INTERNET_EXPLORER_11)
     result.getOptions.setUseInsecureSSL(true)
+    result.getOptions.setCssEnabled(false)
     result
   }
 }
