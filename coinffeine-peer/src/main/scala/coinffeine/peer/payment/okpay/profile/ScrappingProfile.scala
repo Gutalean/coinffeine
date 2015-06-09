@@ -85,9 +85,9 @@ class ScrappingProfile private (val client: WebClient) extends Profile {
     val loginForm = getForm(retrievePage(s"$OkPayBaseUrl/es/account/login.html"))
     fillInField(loginForm, "ctl00$MainContent$txtLogin", username)
     fillInField(loginForm, "ctl00$MainContent$txtPassword", password)
-    val dashboardPage = submitForm(loginForm, "ctl00$MainContent$btnLogin")
-    ProfileException.wrap(dashboardPage, "Login failed, the page returned is not the dashboard") {
-      require(dashboardPage.getFirstByXPath("//div[@id='activity']") != null)
+    val result = submitForm(loginForm, "ctl00$MainContent$btnLogin")
+    ProfileException.wrap(result, "Login failed") {
+      require(!result.getUrl.toString.endsWith("account/login.html"))
     }
   }
 

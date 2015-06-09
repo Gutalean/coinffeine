@@ -15,10 +15,10 @@ object ProfileException {
   }
 
   def wrap[T](form: HtmlForm, message: String)(block: => T): T =
-    wrap(s"$message. Form content: ${form.asXml()}")(block)
+    wrap(s"$message.\nForm content: ${form.asXml()}")(block)
 
   def wrap[T](page: HtmlPage, message: String)(block: => T): T =
-    wrap(s"$message. ${errorMessageOrFullPage(page)}")(block)
+    wrap(s"$message.\nLocation: ${page.getUrl}\n${errorMessageOrFullPage(page)}")(block)
 
   private def errorMessageOrFullPage(page: HtmlPage): String =
     Option(page.getFirstByXPath[HtmlDivision]("//div[@class='strong-error-block']"))
