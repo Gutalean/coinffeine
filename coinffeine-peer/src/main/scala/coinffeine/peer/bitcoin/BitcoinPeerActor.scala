@@ -20,7 +20,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.platform.BitcoinPlatform
 import coinffeine.peer.bitcoin.wallet.{DefaultWalletActor, SmartWallet}
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.events.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
+import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
                        platformBuilder: BitcoinPlatform.Builder,

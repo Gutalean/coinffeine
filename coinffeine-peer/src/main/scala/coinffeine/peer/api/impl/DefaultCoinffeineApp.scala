@@ -17,7 +17,8 @@ import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.global.GlobalProperties
 import coinffeine.peer.payment.PaymentProcessorProperties
-import coinffeine.peer.properties.{DefaultBitcoinNetworkProperties, DefaultCoinffeinePropertiesComponent}
+import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
+import coinffeine.peer.properties.bitcoin.DefaultNetworkProperties
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
@@ -33,7 +34,7 @@ class DefaultCoinffeineApp(name: String,
 
   override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
 
-  override val bitcoinNetwork = new DefaultBitcoinNetwork(new DefaultBitcoinNetworkProperties)
+  override val bitcoinNetwork = new DefaultBitcoinNetwork(new DefaultNetworkProperties)
 
   override lazy val wallet = new DefaultCoinffeineWallet(properties.bitcoin.wallet, peerRef)
 
