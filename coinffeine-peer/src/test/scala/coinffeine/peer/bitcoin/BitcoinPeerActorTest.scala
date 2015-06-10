@@ -76,10 +76,9 @@ class BitcoinPeerActorTest extends AkkaSpec with Eventually {
     protected def connectionRetryInterval = 1.minute
     protected val blockchainActor, walletActor, transactionPublisher = new MockSupervisedActor()
 
-    private val properties = new MutableNetworkProperties
     private val platformBuilder = new DefaultBitcoinPlatformBuilder().setNetwork(network)
 
-    protected val actor = system.actorOf(Props(new BitcoinPeerActor(properties,
+    protected val actor = system.actorOf(Props(new BitcoinPeerActor(
       new Delegates {
         override def transactionPublisher(
             peerGroup: PeerGroup, tx: ImmutableTransaction, listener: ActorRef): Props =
