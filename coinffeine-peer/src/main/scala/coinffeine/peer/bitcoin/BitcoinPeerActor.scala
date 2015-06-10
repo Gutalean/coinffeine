@@ -117,17 +117,17 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
   }
 
   private def publishBlockchainStatus(status: BlockchainStatus): Unit = {
-    publish(BlockchainStatusChanged.Topic, BlockchainStatusChanged(status))
+    publish(BlockchainStatusChanged(status))
   }
 
   private object ConnectedPeersListener extends AbstractPeerEventListener {
 
     override def onPeerConnected(peer: Peer, peerCount: Int): Unit = {
-      publish(ActiveBitcoinPeersChanged.Topic, ActiveBitcoinPeersChanged(peerCount))
+      publish(ActiveBitcoinPeersChanged(peerCount))
     }
 
     override def onPeerDisconnected(peer: Peer, peerCount: Int): Unit = {
-      publish(ActiveBitcoinPeersChanged.Topic, ActiveBitcoinPeersChanged(peerCount))
+      publish(ActiveBitcoinPeersChanged(peerCount))
     }
   }
 
