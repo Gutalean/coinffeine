@@ -7,17 +7,18 @@ import akka.actor.{Address => _, _}
 import akka.persistence.{SnapshotOffer, PersistentActor}
 import org.bitcoinj.core.TransactionOutPoint
 
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.BlockedOutputs.Output
 import coinffeine.peer.bitcoin.wallet.WalletActor._
+import coinffeine.peer.events.bitcoin.{PrimaryAddressChanged, BitcoinBalanceChanged, WalletActivityChanged}
 
-private class DefaultWalletActor(properties: MutableWalletProperties,
-                                 wallet: SmartWallet,
+private class DefaultWalletActor(wallet: SmartWallet,
                                  override val persistenceId: String)
-  extends PersistentActor with PeriodicSnapshot with ActorLogging {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging with CoinffeineEventProducer {
 
   import DefaultWalletActor._
 
@@ -148,17 +149,19 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 
   private def updateActivity(): Unit = {
     val transactions = wallet.delegate.getTransactionsByTime
-    properties.activity.set(WalletActivity(deposits, wallet.delegate, transactions: _*))
+    val activity = WalletActivity(deposits, wallet.delegate, transactions: _*)
+    publish(WalletActivityChanged.Topic, WalletActivityChanged(activity))
   }
 
   private def updateBalance(): Unit = {
     blockedOutputs.setSpendCandidates(computeSpendCandidates)
-    properties.balance.set(Some(BitcoinBalance(
+    val balance = BitcoinBalance(
       estimated = wallet.estimatedBalance,
       available = wallet.availableBalance,
       minOutput = blockedOutputs.minOutput,
       blocked = blockedOutputs.blocked
-    )))
+    )
+    publish(BitcoinBalanceChanged.Topic, BitcoinBalanceChanged(balance))
   }
 
   private def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = {
@@ -187,7 +190,7 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
-    properties.primaryAddress.set(Some(wallet.currentReceiveAddress))
+    publish(PrimaryAddressChanged.Topic, PrimaryAddressChanged(wallet.currentReceiveAddress))
   }
 
   private def subscribeToWalletChanges(): Unit = {
@@ -212,10 +215,9 @@ private class DefaultWalletActor(properties: MutableWalletProperties,
 object DefaultWalletActor {
   val PersistenceId = "wallet"
 
-  def props(properties: MutableWalletProperties,
-            wallet: SmartWallet,
+  def props(wallet: SmartWallet,
             persistenceId: String = PersistenceId) =
-    Props(new DefaultWalletActor(properties, wallet, persistenceId))
+    Props(new DefaultWalletActor(wallet, persistenceId))
 
   private case object InternalWalletChanged
 

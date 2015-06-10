@@ -9,6 +9,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.{Interval, Timeout}
 import org.scalatest.time.{Millis, Second, Span}
 
+import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.{FutureMatchers, UnitTest}
 
 class MutablePropertyTest extends UnitTest with Eventually with FutureMatchers {

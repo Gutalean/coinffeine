@@ -1,4 +1,4 @@
-package coinffeine.model.properties
+package coinffeine.common.properties
 
 import scala.concurrent.ExecutionContext
 

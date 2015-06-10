@@ -3,6 +3,7 @@ package coinffeine.model.properties
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.common.test.{FutureMatchers, UnitTest}
 
 class MutablePropertyMapTest extends UnitTest with FutureMatchers {

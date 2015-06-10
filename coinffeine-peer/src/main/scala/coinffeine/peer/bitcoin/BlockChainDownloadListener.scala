@@ -4,11 +4,12 @@ import com.typesafe.scalalogging.LazyLogging
 import org.bitcoinj.core.{AbstractPeerEventListener, Block, Peer}
 
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.properties.MutableProperty
 
 /** Update a BlockchainStatus property with callbacks invoked by bitcoinj */
-private class BlockchainDownloadListener(status: MutableProperty[BlockchainStatus])
+private class BlockchainDownloadListener(publish: BlockchainStatus => Unit)
   extends AbstractPeerEventListener with LazyLogging {
+
+  private var lastStatus: BlockchainStatus = BlockchainStatus.NotDownloading
 
   override def onChainDownloadStarted(peer: Peer, blocksLeft: Int): Unit = {
     logger.debug(
@@ -21,13 +22,15 @@ private class BlockchainDownloadListener(status: MutableProperty[BlockchainStatu
   }
 
   def reportDownloadProgress(remainingBlocks: Int): Unit = {
-    status.set(status.get match {
+    val newStatus = lastStatus match {
       case _ if remainingBlocks == 0 =>
         BlockchainStatus.NotDownloading
       case downloading @ BlockchainStatus.Downloading(blocks, _) if blocks >= remainingBlocks =>
         downloading.copy(remainingBlocks = remainingBlocks)
       case _ =>
         BlockchainStatus.Downloading(remainingBlocks, remainingBlocks)
-    })
+    }
+    publish(newStatus)
+    lastStatus = newStatus
   }
 }

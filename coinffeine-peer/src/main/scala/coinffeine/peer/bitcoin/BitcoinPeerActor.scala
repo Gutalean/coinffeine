@@ -12,20 +12,21 @@ import com.google.common.util.concurrent._
 import org.bitcoinj.core._
 import org.bitcoinj.net.discovery.DnsDiscovery
 
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.bitcoin._
 import coinffeine.model.network.NetworkEndpoint
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.platform.BitcoinPlatform
-import coinffeine.peer.bitcoin.wallet.{SmartWallet, DefaultWalletActor}
+import coinffeine.peer.bitcoin.wallet.{DefaultWalletActor, SmartWallet}
 import coinffeine.peer.config.ConfigComponent
+import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
 
-class BitcoinPeerActor(properties: MutableNetworkProperties,
-                       delegates: BitcoinPeerActor.Delegates,
+class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
                        platformBuilder: BitcoinPlatform.Builder,
                        networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
-  extends Actor with ServiceLifecycle[Unit] with ActorLogging {
+  extends Actor with ServiceLifecycle[Unit] with ActorLogging with CoinffeineEventProducer {
 
   import BitcoinPeerActor._
 
@@ -71,7 +72,7 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
     case PeerGroupStartResult(Success(_)) =>
       log.info("Connected to peer group, starting blockchain download")
       platform.peerGroup.startBlockChainDownload(
-        new BlockchainDownloadListener(properties.blockchainStatus))
+        new BlockchainDownloadListener(publishBlockchainStatus))
       become(connected orElse commonHandling)
 
     case PeerGroupStartResult(Failure(_)) =>
@@ -115,14 +116,18 @@ class BitcoinPeerActor(properties: MutableNetworkProperties,
       .pipeTo(self)
   }
 
+  private def publishBlockchainStatus(status: BlockchainStatus): Unit = {
+    publish(BlockchainStatusChanged.Topic, BlockchainStatusChanged(status))
+  }
+
   private object ConnectedPeersListener extends AbstractPeerEventListener {
 
     override def onPeerConnected(peer: Peer, peerCount: Int): Unit = {
-      properties.activePeers.set(peerCount)
+      publish(ActiveBitcoinPeersChanged.Topic, ActiveBitcoinPeersChanged(peerCount))
     }
 
     override def onPeerDisconnected(peer: Peer, peerCount: Int): Unit = {
-      properties.activePeers.set(peerCount)
+      publish(ActiveBitcoinPeersChanged.Topic, ActiveBitcoinPeersChanged(peerCount))
     }
   }
 
@@ -218,20 +223,18 @@ object BitcoinPeerActor {
 
   trait Component {
 
-    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent
-      with MutableBitcoinProperties.Component =>
+    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent =>
 
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
-        bitcoinProperties.network,
         new Delegates {
           override def transactionPublisher(peerGroup: PeerGroup,
                                             tx: ImmutableTransaction,
                                             listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
           override def walletActor(wallet: SmartWallet) =
-            DefaultWalletActor.props(bitcoinProperties.wallet, wallet)
+            DefaultWalletActor.props(wallet)
           override def blockchainActor(platform: BitcoinPlatform) =
             BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
         },

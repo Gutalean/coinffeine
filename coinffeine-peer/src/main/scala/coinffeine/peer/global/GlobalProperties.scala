@@ -1,7 +1,7 @@
 package coinffeine.peer.global
 
 import coinffeine.alarms.Alarm
-import coinffeine.model.properties.{MutableProperty, Property}
+import coinffeine.common.properties.{MutableProperty, Property}
 
 trait GlobalProperties {
   val alarms: Property[Set[Alarm]]

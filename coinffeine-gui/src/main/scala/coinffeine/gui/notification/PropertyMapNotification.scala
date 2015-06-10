@@ -1,6 +1,6 @@
 package coinffeine.gui.notification
 
-import coinffeine.model.properties.PropertyMap
+import coinffeine.common.properties.PropertyMap
 
 class PropertyMapNotification[K, V](property: PropertyMap[K, V],
                                     mapping: PropertyMapNotification.Mapping[K, V]) {

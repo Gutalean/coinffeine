@@ -7,7 +7,7 @@ import javafx.beans.binding._
 import javafx.beans.value.ObservableValue
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.model.properties.{Property, PropertyMap}
+import coinffeine.common.properties.{PropertyMap, Property}
 
 object Implicits {
 

@@ -2,11 +2,11 @@ package coinffeine.headless.prompt
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
+import coinffeine.common.properties.Property
 import coinffeine.headless.prompt.ANSIText._
 import coinffeine.headless.shell.Prompt
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.bitcoin.BlockchainStatus.{Downloading, NotDownloading}
-import coinffeine.model.properties.Property
 import coinffeine.peer.api.CoinffeineApp
 
 class ConnectionStatusPrompt(connectionStatus: Property[PromptStatus])

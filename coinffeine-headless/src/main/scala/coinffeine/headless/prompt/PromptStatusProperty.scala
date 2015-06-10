@@ -2,7 +2,7 @@ package coinffeine.headless.prompt
 
 import scala.concurrent.ExecutionContext
 
-import coinffeine.model.properties.{Cancellable, Property, MutableProperty}
+import coinffeine.common.properties.{Cancellable, MutableProperty, Property}
 import coinffeine.peer.api.CoinffeineApp
 
 class PromptStatusProperty(app: CoinffeineApp)

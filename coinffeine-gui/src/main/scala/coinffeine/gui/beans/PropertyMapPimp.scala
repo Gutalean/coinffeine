@@ -3,8 +3,7 @@ package coinffeine.gui.beans
 import java.util.concurrent.Callable
 import javafx.beans.binding.{Bindings, ObjectBinding}
 import javafx.beans.{InvalidationListener, Observable}
-
-import coinffeine.model.properties.PropertyMap
+import coinffeine.common.properties.PropertyMap
 import coinffeine.gui.util.FxExecutor._
 
 class PropertyMapPimp[K, V](property: PropertyMap[K, V]) extends Observable {

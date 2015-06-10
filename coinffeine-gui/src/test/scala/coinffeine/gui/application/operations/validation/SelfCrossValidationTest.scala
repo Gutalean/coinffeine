@@ -4,12 +4,12 @@ import scalaz.NonEmptyList
 
 import org.scalatest.Inside
 
+import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.order._
-import coinffeine.model.properties.MutablePropertyMap
 
 class SelfCrossValidationTest extends UnitTest with Inside {
 

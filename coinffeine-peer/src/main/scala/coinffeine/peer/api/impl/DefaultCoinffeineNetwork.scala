@@ -5,10 +5,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import akka.actor.ActorRef
 
 import coinffeine.common.akka.AskPattern
+import coinffeine.common.properties.{PropertyMap, Property}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.{CoinffeineNetworkProperties, PeerId}
 import coinffeine.model.order.{ActiveOrder, AnyCurrencyOrder, OrderId, OrderRequest}
-import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, OrderOpened}
 import coinffeine.peer.api.CoinffeineNetwork
 

@@ -18,6 +18,7 @@ import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.global.GlobalProperties
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
+import coinffeine.peer.properties.bitcoin.{DefaultWalletProperties, DefaultNetworkProperties}
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
@@ -28,14 +29,14 @@ class DefaultCoinffeineApp(name: String,
                            bitcoinFeeCalculator: BitcoinFeeCalculator,
                            configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
 
-  private val system = ActorSystem(name, configProvider.enrichedConfig)
+  private implicit val system = ActorSystem(name, configProvider.enrichedConfig)
   private val peerRef = system.actorOf(peerProps, "peer")
 
   override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
 
-  override val bitcoinNetwork = new DefaultBitcoinNetwork(properties.bitcoin.network)
+  override val bitcoinNetwork = new DefaultBitcoinNetwork(new DefaultNetworkProperties)
 
-  override lazy val wallet = new DefaultCoinffeineWallet(properties.bitcoin.wallet, peerRef)
+  override lazy val wallet = new DefaultCoinffeineWallet(new DefaultWalletProperties, peerRef)
 
   override val marketStats = new DefaultMarketStats(peerRef)
 

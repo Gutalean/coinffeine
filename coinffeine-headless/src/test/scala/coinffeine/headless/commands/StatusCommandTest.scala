@@ -1,13 +1,12 @@
 package coinffeine.headless.commands
 
 import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
 
+import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, PropertyMap}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.payment.PaymentProcessor.AccountId
-import coinffeine.model.properties.{MutableProperty, MutablePropertyMap, PropertyMap}
 import coinffeine.peer.api._
 
 class StatusCommandTest extends CommandTest {
