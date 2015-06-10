@@ -25,4 +25,6 @@ class MutablePropertyMap[K, V] extends PropertyMap[K, V] {
       listeners.invoke(handler => handler(key, prevValue, value))
     }
   }
+
+  def remove(key: K): Unit = synchronized { map -= key }
 }
