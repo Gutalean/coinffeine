@@ -16,7 +16,8 @@ class OkPayCredentialsStepPane(data: SetupConfig) extends StepPane[SetupConfig] 
     styleClass += "subtitle"
     children = Seq(
       new Label("We will use this credentials once to create an API token that will be " +
-        "stored locally and never will be shared"),
+        "stored locally and never will be shared. Double factor authentication should be " +
+        "disabled during this process"),
       new SupportWidget("setup-credentials")
     )
   }
