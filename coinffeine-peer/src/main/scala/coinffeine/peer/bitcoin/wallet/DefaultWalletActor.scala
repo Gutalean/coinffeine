@@ -150,7 +150,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
   private def updateActivity(): Unit = {
     val transactions = wallet.delegate.getTransactionsByTime
     val activity = WalletActivity(deposits, wallet.delegate, transactions: _*)
-    publish(WalletActivityChanged.Topic, WalletActivityChanged(activity))
+    publish(WalletActivityChanged(activity))
   }
 
   private def updateBalance(): Unit = {
@@ -161,7 +161,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
       minOutput = blockedOutputs.minOutput,
       blocked = blockedOutputs.blocked
     )
-    publish(BitcoinBalanceChanged.Topic, BitcoinBalanceChanged(balance))
+    publish(BitcoinBalanceChanged(balance))
   }
 
   private def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = {
@@ -190,7 +190,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
   }
 
   private def updateWalletPrimaryKeys(): Unit = {
-    publish(PrimaryAddressChanged.Topic, PrimaryAddressChanged(wallet.currentReceiveAddress))
+    publish(PrimaryAddressChanged(wallet.currentReceiveAddress))
   }
 
   private def subscribeToWalletChanges(): Unit = {
