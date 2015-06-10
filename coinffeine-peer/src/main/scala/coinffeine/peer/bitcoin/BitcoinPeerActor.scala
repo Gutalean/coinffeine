@@ -223,8 +223,7 @@ object BitcoinPeerActor {
 
   trait Component {
 
-    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent
-      with MutableBitcoinProperties.Component =>
+    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent =>
 
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
@@ -235,7 +234,7 @@ object BitcoinPeerActor {
                                             listener: ActorRef): Props =
             Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
           override def walletActor(wallet: SmartWallet) =
-            DefaultWalletActor.props(bitcoinProperties.wallet, wallet)
+            DefaultWalletActor.props(wallet)
           override def blockchainActor(platform: BitcoinPlatform) =
             BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
         },

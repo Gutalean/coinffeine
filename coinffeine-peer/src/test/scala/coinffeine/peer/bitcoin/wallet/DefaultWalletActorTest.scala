@@ -11,10 +11,11 @@ import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair, MutableWalletProperties}
+import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
+import coinffeine.peer.properties.bitcoin.DefaultWalletProperties
 
 class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTest with Eventually {
 
@@ -172,13 +173,13 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
       new SmartWallet(wallet)
     }
     lazy val wallet = buildWallet()
-    val properties = new MutableWalletProperties()
+    val properties = new DefaultWalletProperties()
     val someAddress = new KeyPair().toAddress(network)
     var instance: ActorRef = _
     start()
 
     def start(): Unit = {
-      instance = system.actorOf(DefaultWalletActor.props(properties, wallet, persistenceId))
+      instance = system.actorOf(DefaultWalletActor.props(wallet, persistenceId))
     }
 
     def givenBlockedFunds(amount: Bitcoin.Amount): ExchangeId = {
