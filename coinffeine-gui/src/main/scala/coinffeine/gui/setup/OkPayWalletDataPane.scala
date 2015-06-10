@@ -25,11 +25,11 @@ private[setup] class OkPayWalletDataPane(
 
   private val accountIdLabel = new Label("Your account ID")
 
-  private val accountIdField = new TextField {}
+  private val accountIdField = new TextField
 
   private val tokenLabel = new Label("Your token")
 
-  private val tokenField = new TextField {}
+  private val tokenField = new TextField
 
   private val dataPane = new VBox {
     styleClass += "data"
