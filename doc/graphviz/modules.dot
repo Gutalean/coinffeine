@@ -12,4 +12,5 @@ digraph {
     okpaymock -> model, peer, commonAkka;
     commonAkka -> common;
     benchmark -> peer, commonAkka;
+    model -> common;
 }
