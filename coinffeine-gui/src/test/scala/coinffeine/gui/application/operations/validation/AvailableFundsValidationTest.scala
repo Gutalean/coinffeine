@@ -4,12 +4,12 @@ import scalaz.NonEmptyList
 
 import org.scalatest.Inside
 
+import coinffeine.common.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.order.{OrderRequest, Bid, LimitPrice}
-import coinffeine.model.properties.{MutableProperty, MutablePropertyMap}
+import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent with Inside {

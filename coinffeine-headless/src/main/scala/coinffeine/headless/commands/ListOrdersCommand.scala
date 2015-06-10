@@ -2,10 +2,10 @@ package coinffeine.headless.commands
 
 import java.io.PrintWriter
 
+import coinffeine.common.properties.PropertyMap
 import coinffeine.headless.prompt.ANSIText.Bold
 import coinffeine.headless.shell.Command
 import coinffeine.model.order.{AnyCurrencyOrder, OrderId, OrderType}
-import coinffeine.model.properties.PropertyMap
 
 class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
   override val keyword = "list"

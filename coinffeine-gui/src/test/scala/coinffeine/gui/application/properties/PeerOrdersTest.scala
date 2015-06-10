@@ -9,13 +9,13 @@ import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
+import coinffeine.common.properties.{MutablePropertyMap, Property}
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
-import coinffeine.model.properties.{MutablePropertyMap, Property}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.api.CoinffeineNetwork
 

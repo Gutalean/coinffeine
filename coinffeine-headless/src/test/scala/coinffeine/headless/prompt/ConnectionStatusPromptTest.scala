@@ -1,9 +1,9 @@
 package coinffeine.headless.prompt
 
+import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.UnitTest
 import coinffeine.headless.prompt.ANSIText._
 import coinffeine.model.bitcoin.BlockchainStatus.{Downloading, NotDownloading}
-import coinffeine.model.properties.MutableProperty
 
 class ConnectionStatusPromptTest extends UnitTest {
 

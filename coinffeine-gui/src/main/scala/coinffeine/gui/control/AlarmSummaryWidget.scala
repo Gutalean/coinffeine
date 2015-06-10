@@ -3,8 +3,8 @@ package coinffeine.gui.control
 import scalafx.scene.image.Image
 
 import coinffeine.alarms.Alarm
+import coinffeine.common.properties.Property
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.properties.Property
 
 class AlarmSummaryWidget(alarms: Property[Set[Alarm]])
   extends ImgLabel(AlarmSummaryWidget.OkImg, "") {

@@ -3,8 +3,8 @@ package coinffeine.peer.bitcoin
 import com.typesafe.scalalogging.LazyLogging
 import org.bitcoinj.core.{AbstractPeerEventListener, Block, Peer}
 
+import coinffeine.common.properties.MutableProperty
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.properties.MutableProperty
 
 /** Update a BlockchainStatus property with callbacks invoked by bitcoinj */
 private class BlockchainDownloadListener(status: MutableProperty[BlockchainStatus])

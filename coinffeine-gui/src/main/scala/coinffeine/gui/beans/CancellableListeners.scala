@@ -1,6 +1,6 @@
 package coinffeine.gui.beans
 
-import coinffeine.model.properties.Cancellable
+import coinffeine.common.properties.Cancellable
 
 private[beans] class CancellableListeners[L] {
 

@@ -2,10 +2,10 @@ package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
 
+import coinffeine.common.properties.{PropertyMap, Property}
 import coinffeine.model.currency._
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
-import coinffeine.model.properties.{Property, PropertyMap}
 import coinffeine.peer.amounts.AmountsCalculator
 
 private class AvailableFundsValidation(

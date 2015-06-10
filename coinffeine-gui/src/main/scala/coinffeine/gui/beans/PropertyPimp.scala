@@ -6,8 +6,8 @@ import javafx.beans.binding.{BooleanBinding, Bindings, ObjectBinding}
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.collections.ObservableList
 
+import coinffeine.common.properties.Property
 import coinffeine.gui.util.FxExecutor._
-import coinffeine.model.properties.Property
 
 class PropertyPimp[A](property: Property[A]) extends ObservableValue[A] {
 

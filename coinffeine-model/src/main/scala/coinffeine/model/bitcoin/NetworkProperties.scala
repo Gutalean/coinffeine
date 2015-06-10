@@ -1,6 +1,6 @@
 package coinffeine.model.bitcoin
 
-import coinffeine.model.properties.{Property, MutableProperty}
+import coinffeine.common.properties.{MutableProperty, Property}
 
 trait NetworkProperties {
 

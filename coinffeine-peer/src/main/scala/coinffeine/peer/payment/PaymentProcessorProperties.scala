@@ -1,7 +1,7 @@
 package coinffeine.peer.payment
 
+import coinffeine.common.properties.{MutablePropertyMap, PropertyMap}
 import coinffeine.model.currency._
-import coinffeine.model.properties.{MutablePropertyMap, PropertyMap}
 
 trait PaymentProcessorProperties {
   val balance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]]

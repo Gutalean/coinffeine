@@ -6,8 +6,8 @@ import scalafx.scene.control.{Separator, Label}
 import scalafx.scene.layout.{GridPane, VBox}
 
 import coinffeine.alarms.Alarm
+import coinffeine.common.properties.Property
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.properties.Property
 
 class AlarmDetailsPane(alarms: Property[Set[Alarm]]) extends VBox {
 

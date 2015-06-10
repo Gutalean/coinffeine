@@ -67,7 +67,7 @@ object Build extends sbt.Build {
   )
 
   lazy val model = (subModule("model")
-    dependsOn(commonTest % "test->compile")
+    dependsOn(common, commonTest % "test->compile")
   )
 
   lazy val common = subModule("common").dependsOn(commonTest)

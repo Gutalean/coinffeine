@@ -3,9 +3,9 @@ package coinffeine.peer.api.impl
 import scala.concurrent.Future
 
 import coinffeine.common.akka.test.AkkaSpec
+import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.model.bitcoin.{Address, MutableNetworkProperties, WalletActivity}
 import coinffeine.model.currency._
-import coinffeine.model.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
