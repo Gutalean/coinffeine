@@ -1,6 +1,7 @@
 package coinffeine.gui.application.properties
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.language.reflectiveCalls
 
 import org.bitcoinj.core.ECKey
 import org.bitcoinj.params.TestNet3Params
@@ -9,7 +10,7 @@ import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.{Millis, Seconds, Span}
 
-import coinffeine.common.properties.{MutablePropertyMap, Property}
+import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
@@ -17,7 +18,7 @@ import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
 import coinffeine.peer.amounts.DefaultAmountsComponent
-import coinffeine.peer.api.CoinffeineNetwork
+import coinffeine.peer.api.CoinffeineOperations
 
 class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
@@ -31,7 +32,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
   it should "add a new element when new order is present in the network" in new Fixture {
     val orderId = OrderId("order-01")
     val order = ActiveOrder(orderId, Bid, 1.BTC, Price(100.EUR))
-    network.orders.set(orderId, order)
+    operations.orders.set(orderId, order)
     eventually {
       inside(orders.toSeq) { case Seq(orderProps) =>
         orderProps.idProperty.get shouldBe orderId
@@ -55,7 +56,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
   it should "replace an existing element when order is modified in the network" in new Fixture {
     withNewOrder("order-01") { order =>
-      network.orders.set(order.id, order.withExchange(randomExchange(order)))
+      operations.orders.set(order.id, order.withExchange(randomExchange(order)))
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
           orderProps.statusProperty.value shouldBe OrderStatus.InProgress
@@ -67,7 +68,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
   it should "not replace an existing element until new exchanges are consolidated" in new Fixture {
     withNewOrder("order-01") { order =>
       val exchange = randomExchange(order)
-      network.orders.set(order.id, order.withExchange(exchange))
+      operations.orders.set(order.id, order.withExchange(exchange))
       println(order.withExchange(exchange).amounts.progressMade)
       eventually {
         inside(orders.toSeq) { case Seq(orderProps) =>
@@ -75,7 +76,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
           orderProps.exchanges shouldBe 'empty
         }
       }
-      network.orders.set(order.id, order.withExchange(randomlyHandshake(exchange)))
+      operations.orders.set(order.id, order.withExchange(randomlyHandshake(exchange)))
       eventually {
         inside(orders.toSeq) {  case Seq(orderProps) =>
           orderProps.statusProperty.value shouldBe OrderStatus.InProgress
@@ -89,22 +90,20 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
   trait Fixture extends DefaultAmountsComponent {
 
-    val network = new CoinffeineNetwork {
+    val operations = new CoinffeineOperations {
       override def cancelOrder(order: OrderId) = {}
       override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) =
         Future.successful(request.create())
-      override val brokerId: Property[Option[PeerId]] = null
-      override val activePeers: Property[Int] = null
       override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] =
         new MutablePropertyMap[OrderId, AnyCurrencyOrder]
     }
 
-    val orders = new PeerOrders(network, ExecutionContext.global)
+    val orders = new PeerOrders(operations, ExecutionContext.global)
 
     def withNewOrder(id: String)(action: ActiveOrder[Euro.type] => Unit): Unit = {
       val orderId = OrderId(id)
       val order = ActiveOrder(orderId, Bid, 1.BTC, Price(100.EUR))
-      network.orders.set(orderId, order)
+      operations.orders.set(orderId, order)
       eventually {
         orders.find(_.idProperty.get == orderId) shouldBe 'defined
       }

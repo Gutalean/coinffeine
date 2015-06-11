@@ -11,6 +11,7 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.operations.MutableOperationsProperties
 import coinffeine.model.order.{ActiveOrder, AnyCurrencyActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.orders.archive.OrderArchive
@@ -18,7 +19,7 @@ import coinffeine.peer.market.orders.archive.OrderArchive
 /** Manages orders */
 private[this] class OrderSupervisor(override val persistenceId: String,
                                     delegates: OrderSupervisor.Delegates,
-                                    properties: MutableCoinffeineNetworkProperties)
+                                    properties: MutableOperationsProperties)
   extends PersistentActor with PeriodicSnapshot with ActorLogging {
 
   import OrderSupervisor.OrderCreated
@@ -106,12 +107,12 @@ object OrderSupervisor {
     val archiveProps: Props
   }
 
-  def props(delegates: Delegates, properties: MutableCoinffeineNetworkProperties): Props =
+  def props(delegates: Delegates, properties: MutableOperationsProperties): Props =
     props(DefaultPersistenceId, delegates, properties)
 
   def props(persistenceId: String,
             delegates: Delegates,
-            properties: MutableCoinffeineNetworkProperties): Props =
+            properties: MutableOperationsProperties): Props =
     Props(new OrderSupervisor(persistenceId, delegates, properties))
 
   private case class OrderCreated(order: ActiveOrder[_ <: FiatCurrency]) extends PersistentEvent

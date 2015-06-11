@@ -23,11 +23,11 @@ object CoinffeineInterpreter {
   private def commands(app: CoinffeineApp): Seq[Command] = {
     val actions = Seq(
       new StatusCommand(app),
-      new ListOrdersCommand(app.network.orders),
-      new ShowOrderDetailsCommand(app.network),
-      new OpenOrderCommand(Bid, app.network),
-      new OpenOrderCommand(Ask, app.network),
-      new CancelOrderCommand(app.network)
+      new ListOrdersCommand(app.operations.orders),
+      new ShowOrderDetailsCommand(app.operations),
+      new OpenOrderCommand(Bid, app.operations),
+      new OpenOrderCommand(Ask, app.operations),
+      new CancelOrderCommand(app.operations)
     )
     actions :+ new HelpCommand(actions)
   }

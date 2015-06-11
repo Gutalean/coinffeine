@@ -10,6 +10,7 @@ import com.typesafe.scalalogging.LazyLogging
 import coinffeine.common.akka.Service
 import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.network.CoinffeineNetworkProperties
+import coinffeine.model.operations.OperationsProperties
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
@@ -32,7 +33,9 @@ class DefaultCoinffeineApp(name: String,
   private implicit val system = ActorSystem(name, configProvider.enrichedConfig)
   private val peerRef = system.actorOf(peerProps, "peer")
 
-  override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
+  override val network = new DefaultCoinffeineNetwork(properties.network)
+
+  override val operations = new DefaultCoinffeineOperations(properties.operations, peerRef)
 
   override val bitcoinNetwork = new DefaultBitcoinNetwork(new DefaultNetworkProperties)
 
@@ -76,6 +79,7 @@ class DefaultCoinffeineApp(name: String,
 
 object DefaultCoinffeineApp {
   case class Properties(network: CoinffeineNetworkProperties,
+                        operations: OperationsProperties,
                         paymentProcessor: PaymentProcessorProperties,
                         global: GlobalProperties)
 
@@ -85,7 +89,8 @@ object DefaultCoinffeineApp {
 
     private def accountId() = configProvider.okPaySettings().userAccount
 
-    private val properties = Properties(coinffeineNetworkProperties, paymentProcessorProperties, globalProperties)
+    private val properties = Properties(
+      coinffeineNetworkProperties, operationProperties, paymentProcessorProperties, globalProperties)
 
     override lazy val app = {
       val name = SystemName.choose(accountId())

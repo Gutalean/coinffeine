@@ -4,10 +4,11 @@ import scalaz.Validation
 import scalaz.Validation.FlatMap._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
-import coinffeine.model.order.OrderId
-import coinffeine.peer.api.CoinffeineNetwork
 
-class OrderIdValidation(network: CoinffeineNetwork) {
+import coinffeine.model.order.OrderId
+import coinffeine.peer.api.CoinffeineOperations
+
+class OrderIdValidation(operations: CoinffeineOperations) {
 
   def requireExistingOrderId(text: String): Validation[String, OrderId] = for {
     _ <- requireNonEmpty(text)
@@ -22,5 +23,5 @@ class OrderIdValidation(network: CoinffeineNetwork) {
     OrderId.parse(text).toSuccess(s"invalid order id: '$text'")
 
   private def requireExistingOrder(id: OrderId) =
-    network.orders.get(id).toSuccess("order not found")
+    operations.orders.get(id).toSuccess("order not found")
 }

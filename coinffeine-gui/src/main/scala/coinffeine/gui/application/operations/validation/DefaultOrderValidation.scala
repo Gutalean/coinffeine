@@ -10,7 +10,7 @@ class DefaultOrderValidation(app: CoinffeineApp) extends OrderValidation {
   private val amountsCalculator = app.utils.exchangeAmountsCalculator
 
   private val validations = Seq(
-    new SelfCrossValidation(app.network.orders),
+    new SelfCrossValidation(app.operations.orders),
     new MaximumFiatValidation(amountsCalculator),
     new AvailableFundsValidation(
       amountsCalculator, app.paymentProcessor.balance, app.wallet.balance)

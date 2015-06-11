@@ -14,6 +14,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.operations.MutableOperationsProperties
 import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.exchange.ExchangeActor
@@ -29,7 +30,7 @@ class OrderActor[C <: FiatCurrency](
     initialOrder: ActiveOrder[C],
     order: OrderController[C],
     delegates: OrderActor.Delegates[C],
-    coinffeineProperties: MutableCoinffeineNetworkProperties,
+    properties: MutableOperationsProperties,
     collaborators: OrderActor.Collaborators)
   extends PersistentActor with PeriodicSnapshot with ActorLogging with OrderPublisher.Listener {
 
@@ -154,7 +155,7 @@ class OrderActor[C <: FiatCurrency](
   private def resumeOrder(): Unit = {
     reRequestPendingFunds()
     val currentOrder = order.view
-    coinffeineProperties.orders.set(currentOrder.id, currentOrder)
+    properties.orders.set(currentOrder.id, currentOrder)
     updatePublisher(currentOrder)
     for (exchange <- currentOrder.exchanges.values if !exchange.isCompleted) {
       spawnExchangeActor(exchange)
@@ -202,7 +203,7 @@ class OrderActor[C <: FiatCurrency](
           if (newOrder.progress != oldOrder.progress) {
             log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
           }
-          coinffeineProperties.orders.set(newOrder.id, newOrder)
+          properties.orders.set(newOrder.id, newOrder)
           updatePublisher(newOrder)
           if (!newOrder.status.isActive) {
             requestArchivation()
@@ -265,7 +266,7 @@ object OrderActor {
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
                                order: ActiveOrder[C],
-                               coinffeineProperties: MutableCoinffeineNetworkProperties,
+                               properties: MutableOperationsProperties,
                                collaborators: Collaborators,
                                peerId: PeerId): Props = {
     import collaborators._
@@ -282,7 +283,7 @@ object OrderActor {
       order,
       new OrderController(peerId, amountsCalculator, network, order),
       delegates,
-      coinffeineProperties,
+      properties,
       collaborators
     ))
   }

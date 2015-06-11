@@ -6,17 +6,20 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.model.bitcoin.{Address, MutableNetworkProperties, WalletActivity}
 import coinffeine.model.currency._
+import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.peer.amounts.DefaultAmountsComponent
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
-import coinffeine.peer.api.mock.MockCoinffeineNetwork
+import coinffeine.peer.api.mock.MockCoinffeineOperations
 import coinffeine.peer.payment.MockPaymentProcessorFactory
 
 class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
 
-  override val network = new MockCoinffeineNetwork
+  override val network = new DefaultCoinffeineNetwork(new MutableCoinffeineNetworkProperties)
 
   override def bitcoinNetwork = new DefaultBitcoinNetwork(new MutableNetworkProperties)
+
+  override def operations = new MockCoinffeineOperations
 
   override def wallet: CoinffeineWallet = new CoinffeineWallet {
     override val balance: Property[Option[BitcoinBalance]] =

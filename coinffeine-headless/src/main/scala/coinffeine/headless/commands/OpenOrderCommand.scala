@@ -9,9 +9,9 @@ import coinffeine.headless.prompt.ANSIText.Red
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.order.{LimitPrice, OrderRequest, OrderType, Price}
-import coinffeine.peer.api.CoinffeineNetwork
+import coinffeine.peer.api.CoinffeineOperations
 
-class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends Command {
+class OpenOrderCommand(orderType: OrderType, operations: CoinffeineOperations) extends Command {
 
   override val keyword = orderType.shortName
   override val description = "allows opening new orders"
@@ -33,7 +33,7 @@ class OpenOrderCommand(orderType: OrderType, network: CoinffeineNetwork) extends
 
     def openOrder(amount: Bitcoin.Amount, price: Price[_ <: FiatCurrency]): Unit = {
       val order = Await.result(
-        network.submitOrder(OrderRequest(orderType, amount, LimitPrice(price))), Duration.Inf)
+        operations.submitOrder(OrderRequest(orderType, amount, LimitPrice(price))), Duration.Inf)
       output.format("Created order %s%n", order.id.value)
     }
 

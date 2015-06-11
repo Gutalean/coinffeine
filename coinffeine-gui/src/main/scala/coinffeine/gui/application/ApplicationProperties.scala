@@ -15,7 +15,7 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
 
   import coinffeine.gui.util.FxExecutor.asContext
 
-  val ordersProperty = new PeerOrders(app.network, executor)
+  val ordersProperty = new PeerOrders(app.operations, executor)
 
   val wallet = new WalletProperties(app.wallet)
 

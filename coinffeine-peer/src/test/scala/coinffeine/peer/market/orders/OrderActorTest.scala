@@ -4,8 +4,8 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor.{ActorContext, ActorRef, Props}
-import akka.testkit._
 import akka.pattern._
+import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
@@ -20,7 +20,7 @@ import coinffeine.model.exchange.ActiveExchange.DepositAmounts
 import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
+import coinffeine.model.operations.MutableOperationsProperties
 import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculatorStub
 import coinffeine.peer.exchange.ExchangeActor
@@ -90,7 +90,7 @@ abstract class OrderActorTest extends AkkaSpec
       walletProbe, archiveProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
-    val properties = new MutableCoinffeineNetworkProperties
+    val properties = new MutableOperationsProperties
     private val props = Props(new OrderActor[Euro.type](
       order,
       new OrderController(myRole.select(peerIds), calculatorStub, network, order),
