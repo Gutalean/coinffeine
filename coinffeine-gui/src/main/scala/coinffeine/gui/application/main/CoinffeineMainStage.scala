@@ -50,7 +50,7 @@ class CoinffeineMainStage(app: CoinffeineApp,
     }
   }
 
-  private def exchangesRunning: Boolean = app.network.exchanges.exists(!_.isCompleted)
+  private def exchangesRunning: Boolean = app.operations.exchanges.exists(!_.isCompleted)
 
   private def confirmQuittingWithRunningExchanges(): Boolean = {
     new CoinffeineAlert(AlertType.Confirmation) {

@@ -19,6 +19,7 @@ import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.{ProtocolMismatchAlarm, Subscribe}
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 import coinffeine.protocol.serialization.ProtocolMismatch
 import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
 import coinffeine.protocol.{MessageGatewaySettings, Version}
@@ -142,9 +143,9 @@ class OverlayMessageGatewayTest
       connectionRetryInterval = 1.second.dilated
     )
     val overlay = new MockOverlayNetwork(protocolSerialization)
-    val properties = new MutableCoinffeineNetworkProperties
+    val properties = new DefaultCoinffeineNetworkProperties
     val gateway = system.actorOf(Props(
-      new OverlayMessageGateway(settings, overlay, protocolSerialization, properties)))
+      new OverlayMessageGateway(settings, overlay, protocolSerialization)))
 
     def expectSuccessfulStart(): Unit = {
       gateway ! Service.Start {}

@@ -4,16 +4,13 @@ import scala.concurrent.Future
 
 import org.joda.time.DateTime
 
-import coinffeine.common.properties.{MutableProperty, MutablePropertyMap}
+import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.network.PeerId
 import coinffeine.model.order.{AnyCurrencyActiveOrder, AnyCurrencyOrder, OrderId, OrderRequest}
-import coinffeine.peer.api.CoinffeineNetwork
+import coinffeine.peer.api.CoinffeineOperations
 
-class MockCoinffeineNetwork extends CoinffeineNetwork {
+class MockCoinffeineOperations extends CoinffeineOperations {
 
-  override val activePeers: MutableProperty[Int] = new MutableProperty(0)
-  override val brokerId: MutableProperty[Option[PeerId]] = new MutableProperty(None)
   override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] = new MutablePropertyMap
 
   override def cancelOrder(orderId: OrderId): Unit = {

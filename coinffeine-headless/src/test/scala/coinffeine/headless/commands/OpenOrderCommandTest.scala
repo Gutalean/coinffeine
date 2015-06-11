@@ -18,7 +18,7 @@ class OpenOrderCommandTest extends CommandTest with Inside {
 
   it should "open a bid order" in new Fixture {
     val output = executeCommand(bidCommand, "10.00BTC 50EUR")
-    val order = network.submissions.head
+    val order = operations.submissions.head
     order.orderType shouldBe Bid
     order.amount shouldBe 10.BTC
     order.price shouldBe LimitPrice(Price(50.EUR))
@@ -27,16 +27,16 @@ class OpenOrderCommandTest extends CommandTest with Inside {
 
   it should "open an ask order" in new Fixture {
     val output = executeCommand(askCommand, "10.00BTC 50EUR")
-    network.submissions.head.orderType shouldBe Ask
+    operations.submissions.head.orderType shouldBe Ask
   }
 
   trait Fixture {
-    protected val network = new CoinffeineNetworkSpy
-    protected val bidCommand = new OpenOrderCommand(Bid, network)
-    protected val askCommand = new OpenOrderCommand(Ask, network)
+    protected val operations = new CoinffeineOperationsSpy
+    protected val bidCommand = new OpenOrderCommand(Bid, operations)
+    protected val askCommand = new OpenOrderCommand(Ask, operations)
   }
 
-  class CoinffeineNetworkSpy extends DummyCoinffeineNetwork {
+  class CoinffeineOperationsSpy extends DummyCoinffeineOperations {
     private var _submissions = Seq.empty[AnyCurrencyActiveOrder]
 
     def submissions: Seq[AnyCurrencyActiveOrder] = _submissions

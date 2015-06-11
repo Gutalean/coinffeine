@@ -8,8 +8,7 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.Service
-import coinffeine.model.bitcoin.{BitcoinFeeCalculator, BitcoinProperties}
-import coinffeine.model.network.CoinffeineNetworkProperties
+import coinffeine.model.bitcoin.BitcoinFeeCalculator
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
@@ -18,7 +17,9 @@ import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.global.GlobalProperties
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
-import coinffeine.peer.properties.bitcoin.{DefaultWalletProperties, DefaultNetworkProperties}
+import coinffeine.peer.properties.bitcoin.{DefaultNetworkProperties, DefaultWalletProperties}
+import coinffeine.peer.properties.operations.DefaultOperationsProperties
+import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
@@ -32,7 +33,9 @@ class DefaultCoinffeineApp(name: String,
   private implicit val system = ActorSystem(name, configProvider.enrichedConfig)
   private val peerRef = system.actorOf(peerProps, "peer")
 
-  override val network = new DefaultCoinffeineNetwork(properties.network, peerRef)
+  override val network = new DefaultCoinffeineNetwork(new DefaultCoinffeineNetworkProperties)
+
+  override val operations = new DefaultCoinffeineOperations(new DefaultOperationsProperties, peerRef)
 
   override val bitcoinNetwork = new DefaultBitcoinNetwork(new DefaultNetworkProperties)
 
@@ -75,10 +78,7 @@ class DefaultCoinffeineApp(name: String,
 }
 
 object DefaultCoinffeineApp {
-  case class Properties(bitcoin: BitcoinProperties,
-                        network: CoinffeineNetworkProperties,
-                        paymentProcessor: PaymentProcessorProperties,
-                        global: GlobalProperties)
+  case class Properties(paymentProcessor: PaymentProcessorProperties, global: GlobalProperties)
 
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent
@@ -86,8 +86,7 @@ object DefaultCoinffeineApp {
 
     private def accountId() = configProvider.okPaySettings().userAccount
 
-    private val properties = Properties(
-      bitcoinProperties, coinffeineNetworkProperties, paymentProcessorProperties, globalProperties)
+    private val properties = Properties(paymentProcessorProperties, globalProperties)
 
     override lazy val app = {
       val name = SystemName.choose(accountId())

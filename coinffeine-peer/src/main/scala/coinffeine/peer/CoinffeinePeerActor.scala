@@ -10,8 +10,7 @@ import akka.util.Timeout
 import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
-import coinffeine.model.order.{OrderRequest, ActiveOrder, OrderId}
+import coinffeine.model.order.{ActiveOrder, OrderId, OrderRequest}
 import coinffeine.peer.alarms.AlarmReporterActor
 import coinffeine.peer.amounts.AmountsComponent
 import coinffeine.peer.bitcoin.BitcoinPeerActor
@@ -35,8 +34,9 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTimeout: FiniteDuration)
   extends Actor with ActorLogging with ServiceLifecycle[Unit] {
 
-  import CoinffeinePeerActor._
   import context.dispatcher
+
+  import CoinffeinePeerActor._
 
   private val alarmReporterRef = context.actorOf(props.alarmReporter, "alarmReporter")
   private val gatewayRef = context.actorOf(props.gateway(context.system), "gateway")
@@ -176,7 +176,6 @@ object CoinffeinePeerActor {
     with NetworkComponent
     with ProtocolConstants.Component
     with MutablePaymentProcessorProperties.Component
-    with MutableCoinffeineNetworkProperties.Component
     with AmountsComponent
     with OrderArchive.Component =>
 
@@ -203,12 +202,12 @@ object CoinffeinePeerActor {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
             gateway, bitcoinPeer, blockchain, archive)
           OrderActor.props(exchangeActorProps, network, amountsCalculator, order,
-            coinffeineNetworkProperties, collaborators, configProvider.messageGatewaySettings().peerId)
+            collaborators, configProvider.messageGatewaySettings().peerId)
         }
 
         override val submissionProps = SubmissionSupervisor.props(gateway, protocolConstants)
 
         override val archiveProps = orderArchiveProps
-      }, coinffeineNetworkProperties)
+      })
   }
 }

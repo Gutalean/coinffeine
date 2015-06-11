@@ -4,7 +4,7 @@ import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.model.currency.Euro
 import coinffeine.model.order.{ActiveOrder, AnyCurrencyOrder, OrderId}
 
-class MockCoinffeineNetwork extends DummyCoinffeineNetwork {
+class MockCoinffeineOperations extends DummyCoinffeineOperations {
 
   override val orders = new MutablePropertyMap[OrderId, AnyCurrencyOrder]
 

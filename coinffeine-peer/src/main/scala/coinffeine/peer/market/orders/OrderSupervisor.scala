@@ -8,18 +8,18 @@ import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import akka.util.Timeout
 
 import coinffeine.common.akka.AskPattern
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.model.order.{ActiveOrder, AnyCurrencyActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
+import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.market.orders.archive.OrderArchive
 
 /** Manages orders */
 private[this] class OrderSupervisor(override val persistenceId: String,
-                                    delegates: OrderSupervisor.Delegates,
-                                    properties: MutableCoinffeineNetworkProperties)
-  extends PersistentActor with PeriodicSnapshot with ActorLogging {
+                                    delegates: OrderSupervisor.Delegates)
+  extends PersistentActor with PeriodicSnapshot with ActorLogging with CoinffeineEventProducer {
 
   import OrderSupervisor.OrderCreated
 
@@ -51,7 +51,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   private def retrievingArchivedOrders: Receive = {
     case OrderArchive.QueryResponse(archivedOrders) =>
-      archivedOrders.foreach(order => properties.orders.set(order.id, order))
+      archivedOrders.foreach(order => publish(OrderChanged(order)))
       val archivedIds = archivedOrders.map(_.id).toSet
       orders = orders.filterKeys(!archivedIds.contains(_))
       orders.values.foreach(spawn)
@@ -106,13 +106,10 @@ object OrderSupervisor {
     val archiveProps: Props
   }
 
-  def props(delegates: Delegates, properties: MutableCoinffeineNetworkProperties): Props =
-    props(DefaultPersistenceId, delegates, properties)
+  def props(delegates: Delegates): Props = props(DefaultPersistenceId, delegates)
 
-  def props(persistenceId: String,
-            delegates: Delegates,
-            properties: MutableCoinffeineNetworkProperties): Props =
-    Props(new OrderSupervisor(persistenceId, delegates, properties))
+  def props(persistenceId: String, delegates: Delegates): Props =
+    Props(new OrderSupervisor(persistenceId, delegates))
 
   private case class OrderCreated(order: ActiveOrder[_ <: FiatCurrency]) extends PersistentEvent
 }

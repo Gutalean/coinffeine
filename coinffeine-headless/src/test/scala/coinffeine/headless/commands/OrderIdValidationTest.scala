@@ -8,8 +8,8 @@ import coinffeine.model.order.{ActiveOrder, Bid, OrderId, Price}
 
 class OrderIdValidationTest extends UnitTest {
 
-  val network = new MockCoinffeineNetwork
-  val validator = new OrderIdValidation(network)
+  val operations = new MockCoinffeineOperations
+  val validator = new OrderIdValidation(operations)
 
   "Order id validation" should "fail for empty inputs" in {
     validator.requireExistingOrderId("") shouldBe "missing order id".failure
@@ -26,7 +26,7 @@ class OrderIdValidationTest extends UnitTest {
 
   it should "accept well-formed ids of existing orders" in {
     val order = ActiveOrder.randomLimit(Bid, 1.BTC, Price(1.EUR))
-    network.givenOrderExists(order)
+    operations.givenOrderExists(order)
     val input = order.id.value
     validator.requireExistingOrderId(input) shouldBe order.id.success
   }

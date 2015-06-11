@@ -10,8 +10,8 @@ import coinffeine.peer.amounts.DefaultAmountsComponent
 
 class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsComponent {
 
-  val network = new MockCoinffeineNetwork
-  val command = new ShowOrderDetailsCommand(network)
+  val operations = new MockCoinffeineOperations
+  val command = new ShowOrderDetailsCommand(operations)
 
   "The show order details command" should "require a well formed order id" in {
     executeCommand(command, "random text") should include("invalid order id")
@@ -29,7 +29,7 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
     )
     val order = ActiveOrder.randomLimit(Bid, 1.BTC, Price(100.EUR), orderCreation).withExchange(exchange)
 
-    network.givenOrderExists(order)
+    operations.givenOrderExists(order)
     executeCommand(command, order.id.value) should (
       include(order.id.value) and include("Bid") and include(order.status.toString) and
        include(exchange.id.toString) and include("0%"))

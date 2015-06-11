@@ -11,13 +11,13 @@ class CancelOrderCommandTest extends CommandTest {
 
   it should "cancel existing orders" in new Fixture {
     val order = ActiveOrder.randomLimit(Bid, 10.BTC, Price(10.EUR))
-    network.givenOrderExists(order)
+    operations.givenOrderExists(order)
     executeCommand(command, order.id.value.toString)
-    network.cancellations shouldBe Seq(order.id)
+    operations.cancellations shouldBe Seq(order.id)
   }
 
   private trait Fixture {
-    val network = new MockCoinffeineNetwork
-    val command = new CancelOrderCommand(network)
+    val operations = new MockCoinffeineOperations
+    val command = new CancelOrderCommand(operations)
   }
 }

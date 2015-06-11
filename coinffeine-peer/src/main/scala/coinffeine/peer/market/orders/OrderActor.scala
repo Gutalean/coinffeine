@@ -9,13 +9,15 @@ import akka.persistence._
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.{BrokerId, MutableCoinffeineNetworkProperties, PeerId}
+import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.model.order.ActiveOrder
 import coinffeine.peer.amounts.AmountsCalculator
+import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, CannotArchive, OrderArchived}
 import coinffeine.peer.market.orders.controller._
@@ -29,9 +31,9 @@ class OrderActor[C <: FiatCurrency](
     initialOrder: ActiveOrder[C],
     order: OrderController[C],
     delegates: OrderActor.Delegates[C],
-    coinffeineProperties: MutableCoinffeineNetworkProperties,
     collaborators: OrderActor.Collaborators)
-  extends PersistentActor with PeriodicSnapshot with ActorLogging with OrderPublisher.Listener {
+  extends PersistentActor with PeriodicSnapshot with ActorLogging
+  with OrderPublisher.Listener with CoinffeineEventProducer {
 
   import OrderActor._
 
@@ -154,7 +156,7 @@ class OrderActor[C <: FiatCurrency](
   private def resumeOrder(): Unit = {
     reRequestPendingFunds()
     val currentOrder = order.view
-    coinffeineProperties.orders.set(currentOrder.id, currentOrder)
+    publish(OrderChanged(currentOrder))
     updatePublisher(currentOrder)
     for (exchange <- currentOrder.exchanges.values if !exchange.isCompleted) {
       spawnExchangeActor(exchange)
@@ -202,7 +204,7 @@ class OrderActor[C <: FiatCurrency](
           if (newOrder.progress != oldOrder.progress) {
             log.debug("Order {} progress: {}%", orderId, (100 * newOrder.progress).formatted("%5.2f"))
           }
-          coinffeineProperties.orders.set(newOrder.id, newOrder)
+          publish(OrderChanged(newOrder))
           updatePublisher(newOrder)
           if (!newOrder.status.isActive) {
             requestArchivation()
@@ -265,7 +267,6 @@ object OrderActor {
                                network: NetworkParameters,
                                amountsCalculator: AmountsCalculator,
                                order: ActiveOrder[C],
-                               coinffeineProperties: MutableCoinffeineNetworkProperties,
                                collaborators: Collaborators,
                                peerId: PeerId): Props = {
     import collaborators._
@@ -282,7 +283,6 @@ object OrderActor {
       order,
       new OrderController(peerId, amountsCalculator, network, order),
       delegates,
-      coinffeineProperties,
       collaborators
     ))
   }

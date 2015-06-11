@@ -4,13 +4,14 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 import akka.actor.{ActorContext, ActorRef, Props}
-import akka.testkit._
 import akka.pattern._
+import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
+import coinffeine.common.akka.event.EventProbe
 import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
@@ -20,15 +21,16 @@ import coinffeine.model.exchange.ActiveExchange.DepositAmounts
 import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
 import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculatorStub
+import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 import coinffeine.peer.market.orders.OrderActor.Delegates
 import coinffeine.peer.market.orders.controller.OrderController
 import coinffeine.peer.market.orders.funds.FundsBlockerActor
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting}
+import coinffeine.peer.properties.operations.DefaultOperationsProperties
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
@@ -90,7 +92,8 @@ abstract class OrderActorTest extends AkkaSpec
       walletProbe, archiveProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)
     private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
-    val properties = new MutableCoinffeineNetworkProperties
+    val properties = new DefaultOperationsProperties
+    val eventProbe = new EventProbe(OrderChanged.Topic)
     private val props = Props(new OrderActor[Euro.type](
       order,
       new OrderController(myRole.select(peerIds), calculatorStub, network, order),
@@ -103,7 +106,6 @@ abstract class OrderActorTest extends AkkaSpec
                                  (implicit context: ActorContext): Props =
           Fixture.this.fundsBlocker.props(id)
       },
-      properties,
       OrderActor.Collaborators(walletProbe.ref, paymentProcessorProbe.ref,
         submissionProbe.ref, gatewayProbe.ref, bitcoinPeerProbe.ref, blockchainProbe.ref,
         archiveProbe.ref)

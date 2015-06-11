@@ -20,7 +20,6 @@ class EventObservedProperty[T](topic: String, mapping: PartialFunction[Any, T], 
 
     override def receive = {
       case event if mapping.isDefinedAt(event) => delegate.set(mapping(event))
-      case other => println(s"ignoring event $other")
     }
   }
 

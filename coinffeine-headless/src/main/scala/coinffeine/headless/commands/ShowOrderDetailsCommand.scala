@@ -7,9 +7,9 @@ import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.order.{AnyCurrencyOrder, OrderId}
-import coinffeine.peer.api.CoinffeineNetwork
+import coinffeine.peer.api.CoinffeineOperations
 
-class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
+class ShowOrderDetailsCommand(operations: CoinffeineOperations) extends Command {
   override val keyword = "show"
   override val description = "print order details"
   override val usage =
@@ -18,7 +18,7 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
       |  where order id is an UUID similar to 0bb816cc-2acc-443e-a7e7-7b54a07e2d9c
     """.stripMargin
 
-  private val validator = new OrderIdValidation(network)
+  private val validator = new OrderIdValidation(operations)
 
   override def apply(output: PrintWriter, args: String): Unit = {
     def reportError(message: String): Unit = {
@@ -26,7 +26,7 @@ class ShowOrderDetailsCommand(network: CoinffeineNetwork) extends Command {
     }
 
     def printOrderDetails(id: OrderId): Unit = {
-      val order = network.orders(id)
+      val order = operations.orders(id)
       new OrderDetailsPrinter(output, order).print()
     }
 

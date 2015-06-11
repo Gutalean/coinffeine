@@ -9,6 +9,7 @@ import coinffeine.peer.global.GlobalProperties
 trait CoinffeineApp {
 
   def network: CoinffeineNetwork
+  def operations: CoinffeineOperations
   def bitcoinNetwork: BitcoinNetwork
   def wallet: CoinffeineWallet
   def paymentProcessor: CoinffeinePaymentProcessor
