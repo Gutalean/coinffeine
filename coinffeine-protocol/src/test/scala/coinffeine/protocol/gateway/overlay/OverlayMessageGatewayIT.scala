@@ -104,10 +104,10 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
     f.peerProbe.expectMsg(Service.Stopped)
   }
 
-  override type FixtureParam = FreshBrokerAndPeer
+  override type FixtureParam = Fixture
   
   override protected def withFixture(test: OneArgTest) = {
-    val fixture = new FreshBrokerAndPeer
+    val fixture = new Fixture
     try {
       test(fixture)
     } finally {
@@ -115,7 +115,7 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
     }
   }
 
-  trait Fixture extends TestProtocolSerializationComponent
+  class Fixture extends TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component {
 
     val brokerTestKit = new TestKit(ActorSystem("broker"))
@@ -166,9 +166,7 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
       brokerTestKit.shutdown()
       peerTestKit.shutdown()
     }
-  }
 
-  class FreshBrokerAndPeer extends Fixture {
     val (brokerGateway, brokerProbe) = createBrokerGateway()
     val (peerGateway, peerProbe) = createPeerGateway()
 
