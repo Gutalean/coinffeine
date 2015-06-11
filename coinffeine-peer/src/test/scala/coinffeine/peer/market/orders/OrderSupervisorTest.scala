@@ -13,12 +13,11 @@ import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.ActivityLog
 import coinffeine.model.currency._
-import coinffeine.model.network.MutableCoinffeineNetworkProperties
-import coinffeine.model.operations.MutableOperationsProperties
 import coinffeine.model.order._
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.market.orders.OrderSupervisor.Delegates
 import coinffeine.peer.market.orders.archive.OrderArchive
+import coinffeine.peer.properties.operations.DefaultOperationsProperties
 import coinffeine.peer.{CoinffeinePeerActor, ProtocolConstants}
 
 class OrderSupervisorTest
@@ -114,7 +113,7 @@ class OrderSupervisorTest
     val id = Random.nextInt().toHexString
     val createdOrdersProbe = TestProbe()
     val submissionProbe, archiveProbe = new MockSupervisedActor()
-    val operationsProperties = new MutableOperationsProperties
+    val operationsProperties = new DefaultOperationsProperties()
     private val delegates = new Delegates {
       def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
                           submission: ActorRef,
@@ -124,7 +123,7 @@ class OrderSupervisorTest
       val archiveProps = archiveProbe.props()
     }
     private var archiveBehavior: PartialFunction[Any, Any] = _
-    private val props = OrderSupervisor.props(id, delegates, operationsProperties)
+    private val props = OrderSupervisor.props(id, delegates)
     var actor: ActorRef = _
 
     def givenNoArchivedOrders(): Unit = {

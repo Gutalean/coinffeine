@@ -52,7 +52,7 @@ case class CoinffeineProtocol(
     Await.result(Service.askStart(gatewayActor.get), 20.seconds)
 
     // This is not the code fragment I'm most proud of
-    while (!GatewayComponent.coinffeineNetworkProperties.isConnected) {
+    while (!GatewayComponent.app.network.isConnected) {
       logger.info("Waiting for Coinffeine message gateway to be connected... ")
       Thread.sleep(1000)
     }

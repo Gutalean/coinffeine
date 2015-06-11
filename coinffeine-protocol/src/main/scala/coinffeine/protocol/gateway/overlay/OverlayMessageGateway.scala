@@ -4,11 +4,13 @@ import akka.actor._
 
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.ServiceLifecycle
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.model.network._
 import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.OverlayNetwork.NetworkStatus
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
+import coinffeine.protocol.events.{BrokerIdChanged, ActiveCoinffeinePeersChanged}
 import coinffeine.protocol.{Version, MessageGatewaySettings}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
@@ -19,17 +21,16 @@ import coinffeine.protocol.serialization._
 private class OverlayMessageGateway(
     settings: MessageGatewaySettings,
     overlay: OverlayNetwork,
-    serialization: ProtocolSerialization,
-    properties: MutableCoinffeineNetworkProperties) extends Actor with ServiceLifecycle[Unit]
-  with EventStreamReporting with ActorLogging with IdConversions {
+    serialization: ProtocolSerialization) extends Actor with ServiceLifecycle[Unit]
+  with EventStreamReporting with ActorLogging with IdConversions with CoinffeineEventProducer {
 
   import context.dispatcher
 
   private val subscriptions = context.actorOf(SubscriptionManagerActor.props)
 
   override def preStart(): Unit = {
-    properties.activePeers.set(0)
-    properties.brokerId.set(Some(PeerId("f" * 40)))
+    publish(ActiveCoinffeinePeersChanged(0))
+    publish(BrokerIdChanged(PeerId("f" * 40)))
   }
 
   override protected def onStart(args: Unit) = new ServiceExecution().start()
@@ -65,7 +66,7 @@ private class OverlayMessageGateway(
 
     private def joined: Receive = countingActivePeers orElse delegateSubscriptionManagement orElse {
       case leave: OverlayNetwork.Leaved =>
-        properties.activePeers.set(0)
+        publish(ActiveCoinffeinePeersChanged(0))
         scheduleReconnection(s"Unexpected disconnection: ${leave.cause}")
 
       case MessageGateway.ForwardMessage(message, dest) =>
@@ -90,7 +91,7 @@ private class OverlayMessageGateway(
       client ! OverlayNetwork.Leave
       BecomeStopping {
         case OverlayNetwork.Leaved(_, _) =>
-          properties.activePeers.set(0)
+          publish(ActiveCoinffeinePeersChanged(0))
           completeStop()
       }
     }
@@ -103,7 +104,7 @@ private class OverlayMessageGateway(
 
       case OverlayNetwork.Joined(_, NetworkStatus(networkSize)) =>
         log.info("Joined as {} to a network of size {}", settings.peerId, networkSize)
-        properties.activePeers.set(networkSize - 1)
+        publish(ActiveCoinffeinePeersChanged(networkSize - 1))
         become(joined, stopWhenJoined _)
     }
 
@@ -154,7 +155,7 @@ private class OverlayMessageGateway(
   private def countingActivePeers: Receive = {
     case OverlayNetwork.NetworkStatus(networkSize) =>
       log.debug("Network size {}", networkSize)
-      properties.activePeers.set(networkSize - 1)
+      publish(ActiveCoinffeinePeersChanged(networkSize - 1))
   }
 }
 
@@ -162,7 +163,7 @@ object OverlayMessageGateway {
   private case object Rejoin
 
   trait Component extends MessageGateway.Component {
-    this: ProtocolSerializationComponent with MutableCoinffeineNetworkProperties.Component =>
+    this: ProtocolSerializationComponent =>
 
     override def messageGatewayProps(messageGatewaySettings: MessageGatewaySettings,
                                      relayClientSettings: RelayClientSettings)
@@ -170,8 +171,7 @@ object OverlayMessageGateway {
       Props(new OverlayMessageGateway(
         messageGatewaySettings,
         new RelayNetwork(relayClientSettings, system),
-        protocolSerialization,
-        coinffeineNetworkProperties)
+        protocolSerialization)
       )
   }
 }

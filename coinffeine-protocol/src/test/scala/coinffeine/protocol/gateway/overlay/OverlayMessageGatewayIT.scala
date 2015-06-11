@@ -2,13 +2,13 @@ package coinffeine.protocol.gateway.overlay
 
 import scala.concurrent.duration._
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.testkit._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
+import org.scalatest.{ShouldMatchers, fixture}
 
 import coinffeine.common.akka.Service
-import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.network._
 import coinffeine.model.order.OrderId
@@ -17,125 +17,136 @@ import coinffeine.protocol.MessageGatewaySettings
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway._
 import coinffeine.protocol.messages.brokerage.OrderMatch
+import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
 
-class OverlayMessageGatewayIT
-  extends AkkaSpec(AkkaSpec.systemWithLoggingInterception("MessageGatewaySystem")) with Eventually {
+class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with Eventually {
 
-  private val connectionTimeout = 5.seconds.dilated
   private val subscribeToOrderMatches = MessageGateway.Subscribe {
     case ReceiveMessage(_: OrderMatch[_], _) =>
   }
-
-  "Overlay message gateway" must "send a message to a remote peer" in
-    new FreshBrokerAndPeer {
-      val msg = randomOrderMatch()
-      peerGateway ! ForwardMessage(msg, BrokerId)
-      brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
-    }
-
-  it must "send a message twice reusing the connection to the remote peer" in
-    new FreshBrokerAndPeer {
-      val (msg1, msg2) = (randomOrderMatch(), randomOrderMatch())
-      peerGateway ! ForwardMessage(msg1, BrokerId)
-      peerGateway ! ForwardMessage(msg2, BrokerId)
-      brokerProbe.expectMsgAllOf(ReceiveMessage(msg1, peerId), ReceiveMessage(msg2, peerId))
-    }
-
-  it must "deliver messages to subscribers when filter match" in new FreshBrokerAndPeer {
-    val msg = randomOrderMatch()
-    peerGateway ! subscribeToOrderMatches
-    brokerGateway ! ForwardMessage(msg, peerId)
-    expectMsg(ReceiveMessage(msg, BrokerId))
+  
+  "Overlay message gateway" must "send a message to a remote peer" in { f =>
+    val msg = f.randomOrderMatch()
+    f.peerProbe.send(f.peerGateway, ForwardMessage(msg, BrokerId))
+    f.brokerProbe.expectMsg(ReceiveMessage(msg, f.peerId))
   }
 
-  it must "support multiple subscriptions from the same actor" in new FreshBrokerAndPeer {
-    val msg1 = randomOrderMatch().copy(orderId = OrderId("1"))
+  it must "send a message twice reusing the connection to the remote peer" in { f =>
+    val (msg1, msg2) = (f.randomOrderMatch(), f.randomOrderMatch())
+    f.peerProbe.send(f.peerGateway, ForwardMessage(msg1, BrokerId))
+    f.peerGateway ! ForwardMessage(msg2, BrokerId)
+    f.brokerProbe.expectMsgAllOf(ReceiveMessage(msg1, f.peerId), ReceiveMessage(msg2, f.peerId))
+  }
+
+  it must "deliver messages to subscribers when filter match" in { f =>
+    val msg = f.randomOrderMatch()
+    f.peerProbe.send(f.peerGateway, subscribeToOrderMatches)
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(msg, f.peerId))
+    f.peerProbe.expectMsg(ReceiveMessage(msg, BrokerId))
+  }
+
+  it must "support multiple subscriptions from the same actor" in { f =>
+    val msg1 = f.randomOrderMatch().copy(orderId = OrderId("1"))
     val msg2 = msg1.copy(orderId = OrderId("2"))
-    peerGateway ! Subscribe {
-      case ReceiveMessage(OrderMatch(OrderId("1"), _, _, _, _, _), _) =>
-    }
-    peerGateway ! Subscribe {
-      case ReceiveMessage(OrderMatch(OrderId("2"), _, _, _, _, _), _) =>
-    }
-    brokerGateway ! ForwardMessage(msg1, peerId)
-    expectMsg(ReceiveMessage(msg1, BrokerId))
-    brokerGateway ! ForwardMessage(msg2, peerId)
-    expectMsg(ReceiveMessage(msg2, BrokerId))
+    val probe = f.createPeerProbe()
+    probe.send(f.peerGateway, Subscribe {
+      case ReceiveMessage(orderMatch: OrderMatch[_], _) if orderMatch.orderId == OrderId("1") =>
+    })
+    probe.send(f.peerGateway, Subscribe {
+      case ReceiveMessage(orderMatch: OrderMatch[_], _) if orderMatch.orderId == OrderId("2") =>
+    })
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(msg1, f.peerId))
+    probe.expectMsg(ReceiveMessage(msg1, BrokerId))
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(msg2, f.peerId))
+    probe.expectMsg(ReceiveMessage(msg2, BrokerId))
   }
 
-  it must "do not deliver messages to subscribers when filter doesn't match" in
-    new FreshBrokerAndPeer {
-      peerGateway ! Subscribe(Map.empty)
-      brokerGateway ! ForwardMessage(randomOrderMatch(), peerId)
-      expectNoMsg(100.millis)
-    }
+  it must "do not deliver messages to subscribers when filter doesn't match" in { f =>
+    val probe = f.createPeerProbe()
+    probe.send(f.peerGateway, Subscribe(Map.empty))
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(f.randomOrderMatch(), f.peerId))
+    probe.expectNoMsg(100.millis)
+  }
 
-  it must "deliver messages to several subscribers when filter match" in new FreshBrokerAndPeer {
-    val msg = randomOrderMatch()
-    val subs = for (i <- 1 to 5) yield TestProbe()
-    subs.foreach(_.send(peerGateway, subscribeToOrderMatches))
-    brokerGateway ! ForwardMessage(msg, peerId)
+  it must "deliver messages to several subscribers when filter match" in { f =>
+    val msg = f.randomOrderMatch()
+    val subs = Seq.fill(5)(f.createPeerProbe())
+    subs.foreach(_.send(f.peerGateway, subscribeToOrderMatches))
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(msg, f.peerId))
     subs.foreach(_.expectMsg(ReceiveMessage(msg, BrokerId)))
   }
 
-  it must "set the connection status properties" in new FreshBrokerAndPeer {
+  it must "set the connection status properties" in { f =>
     eventually {
-      peerNetworkProperties.activePeers.get shouldBe 1
-      peerNetworkProperties.brokerId.get shouldBe 'defined
+      f.peerNetworkProperties.activePeers.get shouldBe 1
+      f.peerNetworkProperties.brokerId.get shouldBe 'defined
     }
   }
 
-  it must "subscribe to broker messages" in new FreshBrokerAndPeer {
-    val probe = TestProbe()
-    probe.send(peerGateway, Subscribe.fromBroker {
+  it must "subscribe to broker messages" in { f =>
+    f.peerProbe.send(f.peerGateway, Subscribe.fromBroker {
       case _: OrderMatch[_] =>
     })
-    val message = randomOrderMatch()
-    brokerGateway ! ForwardMessage(message, peerId)
-    probe.expectMsg(ReceiveMessage(message, BrokerId))
+    val message = f.randomOrderMatch()
+    f.brokerProbe.send(f.brokerGateway, ForwardMessage(message, f.peerId))
+    f.peerProbe.expectMsg(ReceiveMessage(message, BrokerId))
   }
 
-  it must "forward messages to the broker" in new FreshBrokerAndPeer {
-    val msg = randomOrderMatch()
-    peerGateway ! ForwardMessage(msg, BrokerId)
-    brokerProbe.expectMsg(ReceiveMessage(msg, peerId))
+  it must "forward messages to the broker" in { f =>
+    val msg = f.randomOrderMatch()
+    f.peerProbe.send(f.peerGateway, ForwardMessage(msg, BrokerId))
+    f.brokerProbe.expectMsg(ReceiveMessage(msg, f.peerId))
   }
 
-  it must "stop successfully" in new FreshBrokerAndPeer {
-    peerGateway ! Service.Stop
-    expectMsg(Service.Stopped)
+  it must "stop successfully" in { f =>
+    f.peerProbe.send(f.peerGateway, Service.Stop)
+    f.peerProbe.expectMsg(Service.Stopped)
+  }
+
+  override type FixtureParam = FreshBrokerAndPeer
+  
+  override protected def withFixture(test: OneArgTest) = {
+    val fixture = new FreshBrokerAndPeer
+    try {
+      test(fixture)
+    } finally {
+      fixture.shutdown()
+    }
   }
 
   trait Fixture extends TestProtocolSerializationComponent
       with CoinffeineUnitTestNetwork.Component {
 
+    val brokerTestKit = new TestKit(ActorSystem("broker"))
+    val peerTestKit = new TestKit(ActorSystem("peer"))
+
+    private val connectionTimeout = 5.seconds.dilated(brokerTestKit.system)
     private val subscribeToAnything = Subscribe { case _ => }
-    private val overlay = FakeOverlayNetwork(connectionFailureRate = 0.1)
+    private val overlay = FakeOverlayNetwork(connectionFailureRate = 0.1)(brokerTestKit.system)
 
-    val peerNetworkProperties = new MutableCoinffeineNetworkProperties
-    val brokerNetworkProperties = new MutableCoinffeineNetworkProperties
-    val connectionRetryInterval = 100.millis.dilated
+    val peerNetworkProperties = new DefaultCoinffeineNetworkProperties()(peerTestKit.system)
+    val brokerNetworkProperties = new DefaultCoinffeineNetworkProperties()(brokerTestKit.system)
+    val connectionRetryInterval = 100.millis.dilated(brokerTestKit.system)
 
-    def createMessageGateway(networkProperties: MutableCoinffeineNetworkProperties,
-                             settings: MessageGatewaySettings): ActorRef =
+    def createMessageGateway(settings: MessageGatewaySettings, system: ActorSystem): ActorRef =
       system.actorOf(Props(
-        new OverlayMessageGateway(settings, overlay, protocolSerialization, networkProperties)))
+        new OverlayMessageGateway(settings, overlay, protocolSerialization)))
 
     def createPeerGateway() =
-      createGateway(PeerId.random(), peerNetworkProperties, minConnections = 1)
+      createGateway(PeerId.random(), peerTestKit.system, peerNetworkProperties, minConnections = 1)
     def createBrokerGateway() =
-      createGateway(PeerId("f" * 40), brokerNetworkProperties, minConnections = 0)
+      createGateway(PeerId("f" * 40), brokerTestKit.system, brokerNetworkProperties, minConnections = 0)
 
     def createGateway(peerId: PeerId,
-                      networkProperties: MutableCoinffeineNetworkProperties,
+                      system: ActorSystem,
+                      networkProperties: DefaultCoinffeineNetworkProperties,
                       minConnections: Int): (ActorRef, TestProbe) = {
-      val ref = createMessageGateway(
-        networkProperties, MessageGatewaySettings(peerId, connectionRetryInterval))
-      ref ! Service.Start {}
-      expectMsg(Service.Started)
+      val probe = TestProbe()(system)
+      val ref = createMessageGateway(MessageGatewaySettings(peerId, connectionRetryInterval), system)
+      probe.send(ref, Service.Start {})
+      probe.expectMsg(Service.Started)
       waitForConnections(networkProperties, minConnections)
-      val probe = TestProbe()
       probe.send(ref, subscribeToAnything)
       (ref, probe)
     }
@@ -146,9 +157,18 @@ class OverlayMessageGatewayIT
         properties.brokerId.get shouldBe 'defined
       }
     }
+
+    def createPeerProbe(): TestProbe = {
+      TestProbe()(peerTestKit.system)
+    }
+
+    def shutdown(): Unit = {
+      brokerTestKit.shutdown()
+      peerTestKit.shutdown()
+    }
   }
 
-  trait FreshBrokerAndPeer extends Fixture {
+  class FreshBrokerAndPeer extends Fixture {
     val (brokerGateway, brokerProbe) = createBrokerGateway()
     val (peerGateway, peerProbe) = createPeerGateway()
 
@@ -157,4 +177,5 @@ class OverlayMessageGatewayIT
     private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch[_]]]
     val peerId = msg.sender
   }
+
 }

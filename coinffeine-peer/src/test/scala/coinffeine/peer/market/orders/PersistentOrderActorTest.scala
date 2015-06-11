@@ -4,6 +4,7 @@ import org.joda.time.DateTime
 
 import coinffeine.model.exchange._
 import coinffeine.model.order.OrderStatus
+import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.market.orders.archive.OrderArchive.{ArchiveOrder, OrderArchived}
 import coinffeine.peer.market.submission.SubmissionSupervisor.{KeepSubmitting, StopSubmitting}
@@ -50,6 +51,7 @@ class PersistentOrderActorTest extends OrderActorTest {
   }
 
   it should "remember how an exchange finished" in new Fixture {
+    eventProbe.ignoreMsg { case _ => true }
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
     val Seq(exchange: HandshakingExchange[_]) =
@@ -59,11 +61,13 @@ class PersistentOrderActorTest extends OrderActorTest {
       sender = exchangeActor.ref
     )
     expectProperty(_.exchanges(exchange.id).isCompleted)
-    properties.orders.set(order.id, null)
+    eventProbe.ignoreNoMsg()
     exchangeActor.expectMsg(ExchangeActor.FinishExchange)
 
     restartOrder()
-    expectProperty { _.status shouldBe OrderStatus.Completed }
+    eventProbe.fishForMessage() {
+      case OrderChanged(changedOrder) => changedOrder.status == OrderStatus.Completed
+    }
     exchangeActor.expectStop()
     exchangeActor.expectNoMsg()
   }
