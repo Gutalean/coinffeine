@@ -3,7 +3,8 @@ package coinffeine.peer.api
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 
-import coinffeine.peer.global.GlobalProperties
+import coinffeine.alarms.Alarm
+import coinffeine.common.properties.Property
 
 /** Coinffeine application interface */
 trait CoinffeineApp {
@@ -15,7 +16,8 @@ trait CoinffeineApp {
   def paymentProcessor: CoinffeinePaymentProcessor
   def marketStats: MarketStats
   def utils: CoinffeineUtils
-  def global: GlobalProperties
+
+  def alarms: Property[Set[Alarm]]
 
   def start(): Future[Unit]
   def stop(): Future[Unit]
