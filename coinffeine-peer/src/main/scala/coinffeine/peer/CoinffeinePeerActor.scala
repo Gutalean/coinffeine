@@ -21,7 +21,6 @@ import coinffeine.peer.market._
 import coinffeine.peer.market.orders.archive.OrderArchive
 import coinffeine.peer.market.orders.{OrderActor, OrderSupervisor}
 import coinffeine.peer.market.submission.SubmissionSupervisor
-import coinffeine.peer.payment.MutablePaymentProcessorProperties
 import coinffeine.peer.payment.PaymentProcessorActor.RetrieveBalance
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
@@ -175,7 +174,6 @@ object CoinffeinePeerActor {
     with ConfigComponent
     with NetworkComponent
     with ProtocolConstants.Component
-    with MutablePaymentProcessorProperties.Component
     with AmountsComponent
     with OrderArchive.Component =>
 
@@ -187,7 +185,7 @@ object CoinffeinePeerActor {
         MarketInfoActor.props,
         orderSupervisorProps,
         bitcoinPeerProps,
-        OkPayProcessorActor.props(configProvider.okPaySettings, paymentProcessorProperties)
+        OkPayProcessorActor.props(configProvider.okPaySettings)
       )
       Props(new CoinffeinePeerActor(props, configProvider.generalSettings().serviceStartStopTimeout))
     }
