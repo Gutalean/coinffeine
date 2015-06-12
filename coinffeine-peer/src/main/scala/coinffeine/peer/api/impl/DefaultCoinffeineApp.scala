@@ -14,8 +14,7 @@ import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
 import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
-import coinffeine.peer.global.GlobalProperties
-import coinffeine.peer.properties.DefaultCoinffeinePropertiesComponent
+import coinffeine.peer.properties.alarms.EventObservedAlarmsProperty
 import coinffeine.peer.properties.bitcoin.{DefaultNetworkProperties, DefaultWalletProperties}
 import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 import coinffeine.peer.properties.operations.DefaultOperationsProperties
@@ -23,7 +22,6 @@ import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 
 /** Implements the coinffeine application API as an actor system. */
 class DefaultCoinffeineApp(name: String,
-                           properties: DefaultCoinffeineApp.Properties,
                            lookupAccountId: () => Option[AccountId],
                            peerProps: Props,
                            amountsCalculator: AmountsCalculator,
@@ -48,7 +46,7 @@ class DefaultCoinffeineApp(name: String,
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator, bitcoinFeeCalculator)
 
-  override val global = properties.global
+  override val alarms = new EventObservedAlarmsProperty
 
   override def start(): Future[Unit] = {
     import system.dispatcher
@@ -78,20 +76,17 @@ class DefaultCoinffeineApp(name: String,
 }
 
 object DefaultCoinffeineApp {
-  case class Properties(global: GlobalProperties)
 
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent
-      with DefaultAmountsComponent with DefaultCoinffeinePropertiesComponent =>
+      with DefaultAmountsComponent =>
 
     private def accountId() = configProvider.okPaySettings().userAccount
-
-    private val properties = Properties(globalProperties)
 
     override lazy val app = {
       val name = SystemName.choose(accountId())
       new DefaultCoinffeineApp(
-        name, properties, accountId, peerProps, amountsCalculator, bitcoinFeeCalculator, configProvider)
+        name, accountId, peerProps, amountsCalculator, bitcoinFeeCalculator, configProvider)
     }
   }
 }
