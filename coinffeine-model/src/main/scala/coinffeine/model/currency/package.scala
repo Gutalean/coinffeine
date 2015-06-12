@@ -6,4 +6,6 @@ package object currency extends Implicits {
     def apply(value: BigDecimal, currencyCode: String): FiatAmount =
       CurrencyAmount.exactAmount(value, FiatCurrency(currencyCode))
   }
+
+  type AnyFiatBalance = FiatBalance[_ <: FiatCurrency]
 }

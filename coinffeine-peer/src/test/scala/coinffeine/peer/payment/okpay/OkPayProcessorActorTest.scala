@@ -12,11 +12,12 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
+import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
 import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
-import coinffeine.peer.payment.{MutablePaymentProcessorProperties, PaymentProcessorActor}
+import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
@@ -176,14 +177,14 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     val cause = new Exception("Sample error")
     val client = new OkPayClientMock(senderAccount)
     var processor: ActorRef = _
-    val properties = new MutablePaymentProcessorProperties
+    val properties = new DefaultPaymentProcessorProperties
     private val clientFactory = new ClientFactory {
       override def build(): OkPayClient = client
       override def shutdown(): Unit = {}
     }
     val fundsRegistry = new MockSupervisedActor()
     val processorProps = Props(new OkPayProcessorActor(
-      clientFactory, fundsRegistry.props(), pollingInterval, properties))
+      clientFactory, fundsRegistry.props(), pollingInterval))
     val eventsProbe, requester = TestProbe()
     system.eventStream.subscribe(
       eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])

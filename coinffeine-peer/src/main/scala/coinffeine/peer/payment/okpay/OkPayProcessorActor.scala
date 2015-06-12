@@ -9,9 +9,11 @@ import akka.actor._
 import akka.pattern._
 
 import coinffeine.alarms.akka.EventStreamReporting
+import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.peer.events.fiat.BalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
@@ -20,9 +22,9 @@ import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry._
 private class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
     registryProps: Props,
-    pollingInterval: FiniteDuration,
-    properties: MutablePaymentProcessorProperties)
-  extends Actor with ActorLogging with ServiceLifecycle[Unit] with EventStreamReporting {
+    pollingInterval: FiniteDuration)
+  extends Actor with ActorLogging with ServiceLifecycle[Unit]
+  with EventStreamReporting with CoinffeineEventProducer {
 
   import context.dispatcher
   import OkPayProcessorActor._
@@ -30,6 +32,7 @@ private class OkPayProcessorActor(
   private val registry = context.actorOf(registryProps, "funds")
 
   private var timer: Cancellable = _
+  private var balances = Map.empty[FiatCurrency, AnyFiatBalance]
 
   override def onStart(args: Unit) = {
     pollBalances()
@@ -59,8 +62,8 @@ private class OkPayProcessorActor(
       currentBalance(sender(), currency)
     case PollBalances =>
       pollBalances()
-    case UpdateBalances(balances) =>
-      updateBalances(balances)
+    case UpdateBalances(newBalances) =>
+      updateBalances(newBalances)
     case BalanceUpdateFailed(cause) =>
       notifyBalanceUpdateFailure(cause)
     case msg @ (_: BlockFunds | _: UnblockFunds) =>
@@ -138,15 +141,14 @@ private class OkPayProcessorActor(
   private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
     alert(OkPayPollingAlarm)
-    for (balance <- properties.balance.values) {
+    for (balance <- balances.values) {
       updateBalance(balance.copy(hasExpired = true))
     }
   }
 
   private def updateBalance[C <: FiatCurrency](balance: FiatBalance[C]): Unit = {
-    if (!properties.balance.get(balance.amount.currency).contains(balance)) {
-      properties.balance.set(balance.amount.currency, balance)
-    }
+    balances += balance.amount.currency -> balance
+    publish(BalanceChanged(balance))
   }
 
   private def pollBalances(): Unit = {
@@ -174,8 +176,8 @@ object OkPayProcessorActor {
   /** Self-message to report balance polling failures */
   private case class BalanceUpdateFailed(cause: Throwable)
 
-  def props(lookupSettings: () => OkPaySettings, properties: MutablePaymentProcessorProperties) = {
+  def props(lookupSettings: () => OkPaySettings) = {
     Props(new OkPayProcessorActor(new OkPayClientFactory(lookupSettings), BlockedFiatRegistry.props,
-      lookupSettings().pollingInterval, properties))
+      lookupSettings().pollingInterval))
   }
 }
