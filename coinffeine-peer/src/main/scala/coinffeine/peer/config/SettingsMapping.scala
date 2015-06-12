@@ -67,7 +67,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
       BitcoinSettings(
         connectionRetryInterval = config.getSeconds("coinffeine.bitcoin.connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
-        blockchainFile = new File(configPath, s"${network.name}.h2.db"),
+        blockchainFile = new File(configPath, s"${network.name}.spvchain"),
         rebroadcastTimeout = config.getSeconds("coinffeine.bitcoin.rebroadcastTimeout"),
         network = network
       )

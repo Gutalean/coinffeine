@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.scalalogging.StrictLogging
 import org.bitcoinj.core._
-import org.bitcoinj.store.{FullPrunedBlockStore, H2FullPrunedBlockStore, MemoryFullPrunedBlockStore}
+import org.bitcoinj.store._
 
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
@@ -38,27 +38,21 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     require(network != null, "Network should be defined")
     val shouldReplayWallet = exists(walletFile) && !exists(blockchainFile)
     val blockchain = buildBlockchain()
-    blockchain.setRunScripts(false)
     val peerGroup = buildPeerGroup(blockchain)
     val wallet = buildWallet(blockchain, peerGroup, shouldReplayWallet)
     new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
   }
 
   private def buildBlockchain() = {
-    val store = blockchainFile.fold[FullPrunedBlockStore](
+    val store = blockchainFile.fold[BlockStore](
       buildInMemoryBlockStore())(buildFileBackedBlockStore)
-    new FullPrunedBlockChain(network, store)
+    new BlockChain(network, store)
   }
 
-  private def buildInMemoryBlockStore() = new MemoryFullPrunedBlockStore(network, FullStoredDepth)
+  private def buildInMemoryBlockStore() =
+    new MemoryFullPrunedBlockStore(network, FullStoredDepth)
 
-  private def buildFileBackedBlockStore(file: File) =
-    new H2FullPrunedBlockStore(network, toH2Scheme(file), FullStoredDepth)
-
-  private def toH2Scheme(file: File): String = file.toString match {
-    case H2FileName(prefix) => s"file:$prefix"
-    case other => throw new scala.IllegalArgumentException(s"Invalid H2 filename: $other")
-  }
+  private def buildFileBackedBlockStore(file: File) = new SPVBlockStore(network, file)
 
   private def buildPeerGroup(blockchain: AbstractBlockChain) = {
     val pg = new PeerGroup(network, blockchain)

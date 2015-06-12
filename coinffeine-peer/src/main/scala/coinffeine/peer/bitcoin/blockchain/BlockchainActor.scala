@@ -15,9 +15,11 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
   import BlockchainActor._
 
   private val notifier = new BlockchainNotifier(blockchain.getBestChainHeight)
+  private val walletListener = new WalletNotifier
 
   override def preStart(): Unit = {
-    blockchain.addListener(notifier)
+    blockchain.addListener(notifier, context.dispatcher)
+    wallet.addEventListener(walletListener, context.dispatcher)
   }
 
   override val receive: Receive = {
@@ -70,8 +72,9 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
     Option(wallet.getTransaction(txHash))
 
   private def subscribeToOutput(output: MutableTransactionOutput, listener: OutputListener) = {
+    log.debug("Output {} not already spent, subscribing...", output)
     addressesOf(output).foreach(wallet.addWatchedAddress)
-    notifier.watchOutput(output.getOutPointFor, listener)
+    walletListener.watchOutput(output.getOutPointFor, listener)
   }
 
   private def addressesOf(output: MutableTransactionOutput): Seq[Address] = output match {
@@ -98,7 +101,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
   }
 
   private class OutputListener(output: MutableTransactionOutput, requester: ActorRef)
-    extends BlockchainNotifier.OutputListener {
+    extends WalletNotifier.OutputListener {
 
     override def outputSpent(tx: ImmutableTransaction): Unit = {
       requester ! OutputSpent(output, tx)

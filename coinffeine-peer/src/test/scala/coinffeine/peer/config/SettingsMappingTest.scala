@@ -70,7 +70,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
       connectionRetryInterval = 30.seconds,
       walletFile = new File(basePath, "mainnet.wallet"),
-      blockchainFile = new File(basePath, "mainnet.h2.db"),
+      blockchainFile = new File(basePath, "mainnet.spvchain"),
       rebroadcastTimeout = 1.minute,
       network = BitcoinSettings.MainNet
     )
