@@ -52,13 +52,13 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       balances.resetTo(newBalances)
       updateBackedFunds()
 
-    case UseFunds(fundsId, amount) =>
+    case MarkUsed(fundsId, amount) =>
       canUseFunds(fundsId, amount).fold(
         succ = funds => persist(FundsUsedEvent(fundsId, amount)) { event =>
           onFundsUsed(event)
-          sender() ! FundsUsed(fundsId, amount)
+          sender() ! FundsMarkedUsed(fundsId, amount)
         },
-        fail = reason => sender() ! CannotUseFunds(fundsId, amount, reason)
+        fail = reason => sender() ! CannotMarkUsed(fundsId, amount, reason)
       )
 
     case PaymentProcessorActor.BlockFunds(fundsId, _) if funds.contains(fundsId) =>
@@ -178,9 +178,13 @@ private[okpay] object BlockedFiatRegistry {
 
   case class BalancesUpdate(balances: Seq[FiatAmount])
 
-  case class UseFunds(funds: ExchangeId, amount: FiatAmount)
-  case class FundsUsed(funds: ExchangeId, amount: FiatAmount)
-  case class CannotUseFunds(funds: ExchangeId, amount: FiatAmount, reason: String)
+  /** Request funds for immediate use.
+    *
+    * To be replied with either [[FundsMarkedUsed]] or [[CannotMarkUsed]]
+    */
+  case class MarkUsed(funds: ExchangeId, amount: FiatAmount)
+  case class FundsMarkedUsed(funds: ExchangeId, amount: FiatAmount)
+  case class CannotMarkUsed(funds: ExchangeId, amount: FiatAmount, reason: String)
 
   private sealed trait StateEvent extends PersistentEvent
   private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent

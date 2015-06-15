@@ -77,8 +77,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     requester.send(processor,
       PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
     fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
-        BlockedFiatRegistry.FundsUsed(funds, amountPlusFee)
+      case BlockedFiatRegistry.MarkUsed(`funds`, `amountPlusFee`) =>
+        BlockedFiatRegistry.FundsMarkedUsed(funds, amountPlusFee)
     }
     val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
     response.id shouldBe payment.id
@@ -104,8 +104,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     requester.send(processor,
       PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
     fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.UseFunds(_, requested) =>
-        BlockedFiatRegistry.CannotUseFunds(funds, requested, "not enough!")
+      case BlockedFiatRegistry.MarkUsed(_, requested) =>
+        BlockedFiatRegistry.CannotMarkUsed(funds, requested, "not enough!")
     }
     requester.expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
   }
@@ -117,8 +117,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice")
     requester.send(processor, payRequest)
     fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.UseFunds(`funds`, `amountPlusFee`) =>
-        BlockedFiatRegistry.FundsUsed(funds, amountPlusFee)
+      case BlockedFiatRegistry.MarkUsed(`funds`, `amountPlusFee`) =>
+        BlockedFiatRegistry.FundsMarkedUsed(funds, amountPlusFee)
     }
     requester.expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
   }

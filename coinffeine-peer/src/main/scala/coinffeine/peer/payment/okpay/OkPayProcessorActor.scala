@@ -89,7 +89,7 @@ private class OkPayProcessorActor(
     log.debug(s"Using funds with id ${pay.fundsId}. " +
       s"Amount to use: ${OkPayPaymentProcessor.amountPlusFee(pay.amount)}")
     AskPattern(registry, request, "fail to use funds")
-      .withImmediateReplyOrError[FundsUsed, CannotUseFunds](
+      .withImmediateReplyOrError[FundsMarkedUsed, CannotMarkUsed](
         failure => throw new RuntimeException(failure.reason))
       .map(_ => {})
   }
