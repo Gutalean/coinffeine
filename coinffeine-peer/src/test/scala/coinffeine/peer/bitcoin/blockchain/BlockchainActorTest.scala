@@ -1,7 +1,7 @@
 package coinffeine.peer.bitcoin.blockchain
 
-import scala.concurrent.duration._
 import scala.collection.JavaConverters._
+import scala.concurrent.duration._
 
 import akka.actor.Props
 import akka.testkit._
@@ -17,76 +17,69 @@ import coinffeine.peer.bitcoin.wallet.SmartWallet
 class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjTest {
 
   "The blockchain actor" must "report transaction confirmation" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1))
-    expectNoMsg()
+    givenConfirmationSubscription(tx, 1)
     sendToBlockChain(tx)
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 1))
+    expectConfirmation(tx, 1)
   }
 
   it must "report multisigned transaction confirmation" in new Fixture {
     val (multisigTx, _) = createMultisigTransaction(0.1.BTC)
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(multisigTx.get.getHash, 1))
-    expectNoMsg()
+    givenConfirmationSubscription(multisigTx.get, 1)
     sendToBlockChain(multisigTx.get)
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(multisigTx.get.getHash, 1))
+    expectConfirmation(multisigTx.get, 1)
   }
 
   it must "report transaction confirmation when watching for it after the fact" in new Fixture {
     expectNoMsg()
     sendToBlockChain(tx)
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 1))
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 1))
+    expectAlreadyConfirmed(tx, 1)
   }
 
   it must "report transaction confirmation only once" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
-    expectNoMsg()
+    givenConfirmationSubscription(tx, 2)
     sendToBlockChain(tx)
     mineBlock()
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 2))
+    expectConfirmation(tx, 2)
     mineBlock()
     expectNoMsg()
   }
 
   it must "not report transaction confirmation when still unconfirmed" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 3))
-    expectNoMsg()
+    givenConfirmationSubscription(tx, 3)
     sendToBlockChain(tx)
     expectNoMsg()
   }
 
   it must "report transaction confirmation after blockchain fork including the tx" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
-    expectNoMsg()
+    givenConfirmationSubscription(tx, 2)
     val alternativeBranch = new Branch
     sendToBlockChain(tx)
     alternativeBranch.mineBlock(tx)
     alternativeBranch.mineBlock()
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 2))
+    expectConfirmation(tx, 2)
   }
 
   it must "report transaction confirmation after an attempt of blockchain fork" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
-    expectNoMsg()
+    givenConfirmationSubscription(tx, 2)
     val mainBranch, alternativeBranch = new Branch
     alternativeBranch.mineBlock(tx)
     mainBranch.mineBlock(tx)
     mainBranch.mineBlock()
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 2))
+    expectConfirmation(tx, 2)
   }
 
   it must "report concurrent transaction confirmations" in new Fixture {
     val otherTx = otherWallet.delegate.createSend(wallet.delegate.freshReceiveAddress(), 0.2.BTC)
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(otherTx.getHash, 3))
+    givenConfirmationSubscription(tx, 2)
+    givenConfirmationSubscription(otherTx, 3)
     expectNoMsg()
     val block = sendToBlockChain(tx, otherTx)
     mineBlock()
     expectBlockHavingConfirmations(block, 2)
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, 2))
+    expectConfirmation(tx, 2)
     mineBlock()
     expectBlockHavingConfirmations(block, 3)
-    requester.expectMsg(BlockchainActor.TransactionConfirmed(otherTx.getHash, 3))
+    expectConfirmation(otherTx, 3)
   }
 
   it must "retrieve existing transaction in blockchain" in new Fixture {
@@ -156,16 +149,17 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
   }
 
   trait Fixture {
-    val requester = TestProbe()
-    val wallet, otherWallet = new SmartWallet(createWallet(1.BTC))
-    val tx = createSendTransaction(0.1.BTC)
+    protected val requester = TestProbe()
+    protected val wallet, otherWallet = new SmartWallet(createWallet(1.BTC))
+    protected val tx = createSendTransaction(0.1.BTC)
 
-    val instance = system.actorOf(Props(new BlockchainActor(chain, wallet.delegate)))
+    protected val instance = system.actorOf(Props(new BlockchainActor(chain, wallet.delegate)))
 
-    def createSendTransaction(amount: Bitcoin.Amount): MutableTransaction =
+    protected def createSendTransaction(amount: Bitcoin.Amount): MutableTransaction =
       wallet.delegate.createSend(otherWallet.delegate.freshReceiveAddress(), amount)
 
-    def createMultisigTransaction(amount: Bitcoin.Amount): (ImmutableTransaction, Both[PublicKey]) = {
+    protected def createMultisigTransaction(
+        amount: Bitcoin.Amount): (ImmutableTransaction, Both[PublicKey]) = {
       val signatures = Both(
         buyer = wallet.delegate.freshReceiveKey(),
         seller = otherWallet.delegate.freshReceiveKey()
@@ -173,12 +167,29 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
       (wallet.createMultisignTransaction(signatures, 0.1.BTC), signatures.map(_.publicKey))
     }
 
-    def expectNoMsg(): Unit = {
+    protected def expectNoMsg(): Unit = {
       requester.expectNoMsg(100.millis.dilated)
     }
 
-    def outputWithValue(tx: MutableTransaction, value: Bitcoin.Amount) =
+    protected def outputWithValue(tx: MutableTransaction, value: Bitcoin.Amount) =
       tx.getOutputs.asScala.find(_.getValue.value == value.units).get
+
+    protected def givenConfirmationSubscription(
+        tx: MutableTransaction, confirmations: Int): Unit = {
+      requester.send(instance,
+        BlockchainActor.WatchTransactionConfirmation(tx.getHash, confirmations))
+      expectNoMsg()
+    }
+
+    protected def expectAlreadyConfirmed(tx: MutableTransaction, confirmations: Int): Unit ={
+      requester.send(instance,
+        BlockchainActor.WatchTransactionConfirmation(tx.getHash, confirmations))
+      expectConfirmation(tx, confirmations)
+    }
+
+    protected def expectConfirmation(tx: MutableTransaction, confirmations: Int): Unit = {
+      requester.expectMsg(BlockchainActor.TransactionConfirmed(tx.getHash, confirmations))
+    }
 
     class Branch {
       private var head = chainHead()
