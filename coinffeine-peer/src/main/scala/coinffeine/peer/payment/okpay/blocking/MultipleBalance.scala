@@ -11,6 +11,12 @@ private class MultipleBalance {
     byCurrency = newBalances.map(b => b.currency -> b).toMap
   }
 
+  def incrementBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
+    val prevAmount = balanceFor(amount.currency)
+    val newBalance = prevAmount + amount
+    byCurrency = byCurrency.updated(amount.currency, newBalance)
+  }
+
   def reduceBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
     val prevAmount = balanceFor(amount.currency)
     val zero = CurrencyAmount.zero(amount.currency)

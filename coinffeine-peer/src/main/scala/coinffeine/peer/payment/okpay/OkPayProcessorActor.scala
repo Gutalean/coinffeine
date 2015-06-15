@@ -85,9 +85,9 @@ private class OkPayProcessorActor(
   }
 
   private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] = {
-    val request = UseFunds(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
     log.debug(s"Using funds with id ${pay.fundsId}. " +
       s"Amount to use: ${OkPayPaymentProcessor.amountPlusFee(pay.amount)}")
+    val request = MarkUsed(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
     AskPattern(registry, request, "fail to use funds")
       .withImmediateReplyOrError[FundsMarkedUsed, CannotMarkUsed](
         failure => throw new RuntimeException(failure.reason))

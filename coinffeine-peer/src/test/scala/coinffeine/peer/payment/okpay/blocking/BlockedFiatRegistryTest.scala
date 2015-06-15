@@ -169,6 +169,20 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     expectBecomingUnavailable(funds2)
   }
 
+  it must "un-use funds" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    val funds1 = givenAvailableFunds(50.EUR)
+
+    // Mark and unmark funds
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
+    actor ! BlockedFiatRegistry.UnmarkUsed(funds1, 50.EUR)
+
+    // Mark again
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
+  }
+
   val funds1, funds2 = ExchangeId.random()
 
   it must "persist its state" in new WithBlockingFundsActor {

@@ -25,7 +25,8 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   override def receiveRecover: Receive = {
     case event: FundsBlockedEvent => onFundsBlocked(event)
-    case event: FundsUsedEvent => onFundsUsed(event)
+    case event: FundsMarkedUsedEvent => onFundsMarkedUsed(event)
+    case event: FundsUnmarkedUsedEvent => onFundsUnmarkedUsed(event)
     case event: FundsUnblockedEvent => onFundsUnblocked(event)
     case SnapshotOffer(metadata, snapshot: Snapshot) =>
       setLastSnapshot(metadata.sequenceNr)
@@ -53,12 +54,18 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       updateBackedFunds()
 
     case MarkUsed(fundsId, amount) =>
-      canUseFunds(fundsId, amount).fold(
-        succ = funds => persist(FundsUsedEvent(fundsId, amount)) { event =>
-          onFundsUsed(event)
+      canMarkUsed(fundsId, amount).fold(
+        succ = funds => persist(FundsMarkedUsedEvent(fundsId, amount)) { event =>
+          onFundsMarkedUsed(event)
           sender() ! FundsMarkedUsed(fundsId, amount)
         },
         fail = reason => sender() ! CannotMarkUsed(fundsId, amount, reason)
+      )
+
+    case UnmarkUsed(fundsId, amount) =>
+      canUnmarkUsed(fundsId, amount).fold(
+        succ = funds => persist(FundsUnmarkedUsedEvent(fundsId, amount))(onFundsUnmarkedUsed),
+        fail = reason => log.warning("cannot unmark funds {}: {}", fundsId, reason)
       )
 
     case PaymentProcessorActor.BlockFunds(fundsId, _) if funds.contains(fundsId) =>
@@ -80,12 +87,21 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     updateBackedFunds()
   }
 
-  private def onFundsUsed(event: FundsUsedEvent): Unit = {
+  private def onFundsMarkedUsed(event: FundsMarkedUsedEvent): Unit = {
     type C = event.amount.currency.type
     val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
     updateFunds(fundsToUse.copy(remainingAmount =
       fundsToUse.remainingAmount - event.amount.asInstanceOf[CurrencyAmount[C]]))
     balances.reduceBalance(event.amount)
+    updateBackedFunds()
+  }
+
+  private def onFundsUnmarkedUsed(event: FundsUnmarkedUsedEvent): Unit = {
+    type C = event.amount.currency.type
+    val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
+    updateFunds(fundsToUse.copy(remainingAmount =
+      fundsToUse.remainingAmount + event.amount.asInstanceOf[CurrencyAmount[C]]))
+    balances.incrementBalance(event.amount)
     updateBackedFunds()
   }
 
@@ -95,11 +111,16 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     updateBackedFunds()
   }
 
-  private def canUseFunds[C <: FiatCurrency](
+  private def canMarkUsed[C <: FiatCurrency](
       fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
     funds <- requireExistingFunds(fundsId, amount.currency)
     _ <- requireEnoughBalance(funds, amount)
     _ <- requiredBackedFunds(funds.id)
+  } yield funds
+
+  private def canUnmarkUsed[C <: FiatCurrency](
+      fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
+    funds <- requireExistingFunds(fundsId, amount.currency)
   } yield funds
 
   private def requireExistingFunds[C <: FiatCurrency](
@@ -186,9 +207,13 @@ private[okpay] object BlockedFiatRegistry {
   case class FundsMarkedUsed(funds: ExchangeId, amount: FiatAmount)
   case class CannotMarkUsed(funds: ExchangeId, amount: FiatAmount, reason: String)
 
+  /** Request funds to be unmarked. Don't expect any reply */
+  case class UnmarkUsed(funds: ExchangeId, amount: FiatAmount)
+
   private sealed trait StateEvent extends PersistentEvent
   private case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
-  private case class FundsUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  private case class FundsMarkedUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  private case class FundsUnmarkedUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
   private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvent
 
   private case class BlockedFundsInfo[C <: FiatCurrency](
