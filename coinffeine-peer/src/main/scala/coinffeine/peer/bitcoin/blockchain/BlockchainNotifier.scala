@@ -9,31 +9,29 @@ import org.bitcoinj.core._
 
 import coinffeine.model.bitcoin.Hash
 
-private[blockchain] class BlockchainNotifier(initialHeight: Int)
+private[blockchain] class BlockchainNotifier(blockChain: AbstractBlockChain)
   extends AbstractBlockChainListener with StrictLogging {
   import BlockchainNotifier._
-
-  private case class BlockIdentity(hash: Hash, height: Int)
 
   /** Subscription to the confirmation of a given transaction.
     *
     * @param txHash                 Hash of the transaction to observe
     * @param listener               Who to notify
     * @param requiredConfirmations  How deep the transaction should be
-    * @param foundInBlock           Block in which the transaction is included on the blockchain
-    *                               (if ever)
+    * @param foundAtHeights         Blocks in which the transaction has been included in the
+    *                               blockchain (if ever)
     */
   private case class ConfirmationSubscription(
       txHash: Hash,
       listener: ConfirmationListener,
       requiredConfirmations: Int,
-      foundInBlock: Option[BlockIdentity] = None)
+      foundAtHeights: Map[Hash, Int] = Map.empty)
 
   private case class HeightSubscription(height: Long, listener: HeightListener)
 
   private var confirmationSubscriptions: Map[Sha256Hash, ConfirmationSubscription] = Map.empty
   private var heightSubscriptions: Set[HeightSubscription] = Set.empty
-  private var currentHeight = initialHeight
+  private var currentHeight = blockChain.getBestChainHeight
 
   def watchTransactionConfirmation(tx: Hash,
                                    confirmations: Int,
@@ -90,7 +88,8 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int)
       logger.info(s"tx $tx found in block ${block.getHeight}: " +
         s"waiting for ${subscription.requiredConfirmations} confirmations")
       confirmationSubscriptions += tx -> subscription.copy(
-        foundInBlock = Some(BlockIdentity(block.getHeader.getHash, block.getHeight)))
+        foundAtHeights = subscription.foundAtHeights +
+          (block.getHeader.getHash -> block.getHeight))
     }
   }
 
@@ -98,15 +97,16 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int)
                                           block: StoredBlock,
                                           blockType: NewBlockType,
                                           relativityOffset: Int): Boolean = {
-    logger.trace(s"Transaction $txHash in block ${block.getHeader.getHashAsString} at height ${block.getHeight}")
+    logger.trace(s"Transaction $txHash in block ${block.getHeader.getHashAsString} " +
+      s"at height ${block.getHeight}")
     updateConfirmationSubscriptions(txHash, block)
     confirmationSubscriptions.contains(txHash)
   }
 
   private def notifyConfirmedTransactions(): Unit = {
     confirmationSubscriptions.foreach {
-      case (txHash, ConfirmationSubscription(_, listener, reqConf, Some(foundInBlock))) =>
-        val confirmations = (currentHeight - foundInBlock.height) + 1
+      case (txHash, ConfirmationSubscription(_, listener, reqConf, foundAtHeights)) =>
+        val confirmations = mainChainConfirmations(foundAtHeights).getOrElse(0)
         val event =
           s"""after new chain head $currentHeight, tx $txHash have $confirmations
              |confirmations out of $reqConf required""".stripMargin
@@ -121,6 +121,13 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int)
       case (_, subscription) => logger.trace(s"Still waiting for $subscription")
     }
   }
+
+  private def mainChainConfirmations(foundAtHeights: Map[Hash, Int]): Option[Int] =
+    foundAtHeights.collectFirst {
+      case (blockHash, seenAtHeight) if !blockChain.isOrphan(blockHash) =>
+        currentHeight - seenAtHeight + 1
+    }
+
 
   private def notifyHeight(): Unit = {
     heightSubscriptions.foreach { case subscription @ HeightSubscription(height, listener) =>

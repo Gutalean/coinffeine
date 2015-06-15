@@ -14,7 +14,7 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
 
   import BlockchainActor._
 
-  private val notifier = new BlockchainNotifier(blockchain.getBestChainHeight)
+  private val notifier = new BlockchainNotifier(blockchain)
   private val walletListener = new WalletNotifier
 
   override def preStart(): Unit = {
@@ -146,7 +146,9 @@ object BlockchainActor {
     * The blockchain actor will send an [[TransactionConfirmed]] when and if the
     * transaction gets confirmed.
     */
-  case class WatchTransactionConfirmation(transactionHash: Hash, confirmations: Int)
+  case class WatchTransactionConfirmation(transactionHash: Hash, confirmations: Int) {
+    require(confirmations > 0, s"At least one confirmation expected ($confirmations given)")
+  }
 
   /** A message sent by the blockchain actor to notify that the transaction has reached the
     * requested number of confirmations. */
