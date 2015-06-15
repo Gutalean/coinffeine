@@ -12,6 +12,7 @@ import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
+import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.events.fiat.BalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
@@ -72,29 +73,33 @@ private class OkPayProcessorActor(
 
   private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
     (for {
-      _ <- useFunds(pay)
+      _ <- markFundsUsed(pay)
       payment <- clientFactory.build().sendPayment(pay.to, pay.amount, pay.comment, pay.invoice)
     } yield payment).onComplete {
       case Success(payment) =>
         requester ! Paid(payment)
         pollBalances()
       case Failure(error) =>
+        unmarkFundsUsed(pay.fundsId, pay.amount)
         requester ! PaymentFailed(pay, error)
         pollBalances()
     }
   }
 
-  private def useFunds[C <: FiatCurrency](pay: Pay[C]): Future[Unit] = {
+  private def markFundsUsed[C <: FiatCurrency](pay: Pay[C]): Future[Unit] = {
     val request = MarkUsed(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
     log.debug("Using funds with id %s. Using %s for %s".format(
-      pay.fundsId,
-      OkPayPaymentProcessor.amountPlusFee(pay.amount),
-      pay.invoice
-    ))
+      pay.fundsId, request.amount, pay.invoice))
     AskPattern(registry, request, "fail to use funds")
       .withImmediateReplyOrError[FundsMarkedUsed, CannotMarkUsed](
         failure => throw new RuntimeException(failure.reason))
       .map(_ => {})
+  }
+
+  private def unmarkFundsUsed[C <: FiatCurrency](
+      fundsId: ExchangeId, amount: FiatAmount): Unit = {
+    log.debug("Unmarking funds with id {} as used", fundsId)
+    registry ! UnmarkUsed(fundsId, OkPayPaymentProcessor.amountPlusFee(amount))
   }
 
   private def findPayment(requester: ActorRef, criterion: FindPaymentCriterion): Unit = {

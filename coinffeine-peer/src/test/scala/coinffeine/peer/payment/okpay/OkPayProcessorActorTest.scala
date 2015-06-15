@@ -2,6 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit._
@@ -120,6 +121,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       case BlockedFiatRegistry.MarkUsed(`funds`, `amountPlusFee`) =>
         BlockedFiatRegistry.FundsMarkedUsed(funds, amountPlusFee)
     }
+    fundsRegistry.expectMsg(BlockedFiatRegistry.UnmarkUsed(funds, amountPlusFee))
     requester.expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
   }
 
@@ -131,7 +133,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     requester.expectMsgType[PaymentProcessorActor.PaymentFound]
   }
 
-  it must "be able to check a payment does not exist"  in new WithOkPayProcessor {
+  it must "be able to check a payment does not exist" in new WithOkPayProcessor {
     client.givenNonExistingPayment(payment.id)
     givenPaymentProcessorIsInitialized()
     val query = PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id))
@@ -154,7 +156,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     expectBalanceUpdate(120.EUR, timeout = 2.seconds.dilated)
     client.setBalances(Seq(140.EUR))
     expectBalanceUpdate(140.EUR, timeout = 2.seconds.dilated)
-    client.setBalances(Future.failed(new Exception("doesn't work")))
+    client.setBalances(Future.failed(new Exception("doesn't work") with NoStackTrace))
     expectBalanceUpdate(140.EUR, hasExpired = true, timeout = 2.seconds.dilated)
   }
 
@@ -174,7 +176,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       completed = true
     )
     val funds = ExchangeId.random()
-    val cause = new Exception("Sample error")
+    val cause = new Exception("Sample error") with NoStackTrace
     val client = new OkPayClientMock(senderAccount)
     var processor: ActorRef = _
     val properties = new DefaultPaymentProcessorProperties
