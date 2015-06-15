@@ -39,9 +39,9 @@ class BlockedFiatRegistryTest extends AkkaSpec {
   it must "retrieve blocked funds after using some" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     val funds = givenAvailableFunds(100.EUR)
-    actor ! BlockedFiatRegistry.UseFunds(funds, 60.EUR)
+    actor ! BlockedFiatRegistry.MarkUsed(funds, 60.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.FundsUsed(`funds`, _) =>
+      case BlockedFiatRegistry.FundsMarkedUsed(`funds`, _) =>
     }
     actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
     expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
@@ -122,25 +122,25 @@ class BlockedFiatRegistryTest extends AkkaSpec {
 
   it must "reject funds usage for unknown funds id" in new WithBlockingFundsActor {
     val unknownFunds = ExchangeId("unknown")
-    actor ! BlockedFiatRegistry.UseFunds(unknownFunds, 10.EUR)
-    expectMsgPF() { case BlockedFiatRegistry.CannotUseFunds(`unknownFunds`, _, _) => }
+    actor ! BlockedFiatRegistry.MarkUsed(unknownFunds, 10.EUR)
+    expectMsgPF() { case BlockedFiatRegistry.CannotMarkUsed(`unknownFunds`, _, _) => }
   }
 
   it must "reject funds usage when it exceeds blocked amount" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     val funds = givenAvailableFunds(50.EUR)
-    actor ! BlockedFiatRegistry.UseFunds(funds, 100.EUR)
+    actor ! BlockedFiatRegistry.MarkUsed(funds, 100.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.CannotUseFunds(`funds`, _, _) =>
+      case BlockedFiatRegistry.CannotMarkUsed(`funds`, _, _) =>
     }
   }
 
   it must "reject funds usage when block is unavailable" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     val funds = givenUnavailableFunds(150.EUR)
-    actor ! BlockedFiatRegistry.UseFunds(funds, 100.EUR)
+    actor ! BlockedFiatRegistry.MarkUsed(funds, 100.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.CannotUseFunds(`funds`, _, _) =>
+      case BlockedFiatRegistry.CannotMarkUsed(`funds`, _, _) =>
     }
   }
 
@@ -148,25 +148,39 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     new WithBlockingFundsActor {
       setBalance(100.EUR)
       val funds = givenAvailableFunds(50.EUR)
-      actor ! BlockedFiatRegistry.UseFunds(funds, 10.EUR)
-      expectMsg(BlockedFiatRegistry.FundsUsed(funds, 10.EUR))
+      actor ! BlockedFiatRegistry.MarkUsed(funds, 10.EUR)
+      expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds, 10.EUR))
     }
 
   it must "accept funds usage when amount is equals to blocked funds" in
     new WithBlockingFundsActor {
       setBalance(100.EUR)
       val funds = givenAvailableFunds(50.EUR)
-        actor ! BlockedFiatRegistry.UseFunds(funds, 50.EUR)
-        expectMsgPF() { case BlockedFiatRegistry.FundsUsed(`funds`, _) => }
+        actor ! BlockedFiatRegistry.MarkUsed(funds, 50.EUR)
+        expectMsgPF() { case BlockedFiatRegistry.FundsMarkedUsed(`funds`, _) => }
     }
 
   it must "consider new balance after funds are used" in new WithBlockingFundsActor {
     setBalance(100.EUR)
     val funds1 = givenAvailableFunds(50.EUR)
-    actor ! BlockedFiatRegistry.UseFunds(funds1, 10.EUR)
-    expectMsg(BlockedFiatRegistry.FundsUsed(funds1, 10.EUR))
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 10.EUR)
+    expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds1, 10.EUR))
     val funds2 = givenBlockedFunds(60.EUR)
     expectBecomingUnavailable(funds2)
+  }
+
+  it must "un-use funds" in new WithBlockingFundsActor {
+    setBalance(100.EUR)
+    val funds1 = givenAvailableFunds(50.EUR)
+
+    // Mark and unmark funds
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
+    actor ! BlockedFiatRegistry.UnmarkUsed(funds1, 50.EUR)
+
+    // Mark again
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
   }
 
   val funds1, funds2 = ExchangeId.random()
@@ -182,8 +196,8 @@ class BlockedFiatRegistryTest extends AkkaSpec {
       PaymentProcessorActor.BlockedFunds(funds2)
     )
     actor ! PaymentProcessorActor.UnblockFunds(funds2)
-    actor ! BlockedFiatRegistry.UseFunds(funds1, 20.EUR)
-    expectMsg(BlockedFiatRegistry.FundsUsed(funds1, 20.EUR))
+    actor ! BlockedFiatRegistry.MarkUsed(funds1, 20.EUR)
+    expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds1, 20.EUR))
     system.stop(actor)
   }
 

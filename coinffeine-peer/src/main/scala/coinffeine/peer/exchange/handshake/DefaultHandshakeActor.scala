@@ -116,7 +116,6 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
 
   private def onRefundCreated(event: RefundCreated): Unit = {
     refund = event.refund
-    log.info("Handshake {}: Got a valid refund TX signature", exchange.info.id)
     context.become(waitForPublication)
   }
 
@@ -179,7 +178,10 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
         requestRefundSignature()
 
       case signedRefund: ImmutableTransaction =>
-        persist(RefundCreated(signedRefund))(onRefundCreated)
+        persist(RefundCreated(signedRefund)) { event =>
+          log.info("Handshake {}: Got a valid refund TX signature", exchange.info.id)
+          onRefundCreated(event)
+        }
     }
 
     receiveRefundSignature orElse abortOnSignatureTimeout orElse abortOnBrokerNotification
