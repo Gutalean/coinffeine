@@ -233,14 +233,6 @@ private class DefaultHandshakeActor[C <: FiatCurrency](
           context.become(waitForPendingConfirmations(stillPending))
         }
 
-      case TransactionRejected(tx) =>
-        log.debug("Handshake {}: {} was rejected", exchange.info.id, tx)
-        val isOwn = tx == handshake.myDeposit.get.getHash
-        val cause = CommitmentTransactionRejectedException(exchange.info.id, tx, isOwn)
-        log.error("Handshake {}: {}", exchange.info.id, cause.getMessage)
-        finishWith(HandshakeFailureWithCommitment(
-          handshake.exchange, cause, handshake.myDeposit, refund, DateTime.now()))
-
       case ReceiveMessage(CommitmentNotification(_, bothCommitments), BrokerId) =>
         log.info("Handshake {}: commitment notification was received again; " +
           "seems like last ack was missed, retransmitting it to the broker",

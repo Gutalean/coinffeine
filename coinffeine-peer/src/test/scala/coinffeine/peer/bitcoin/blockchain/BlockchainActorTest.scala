@@ -55,16 +55,6 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
     expectNoMsg()
   }
 
-  it must "report transaction rejection when it's lost from the blockchain" in new Fixture {
-    requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 3))
-    expectNoMsg()
-    val alternativeBranch = new Branch
-    sendToBlockChain(tx)
-    alternativeBranch.mineBlock()
-    alternativeBranch.mineBlock()
-    requester.expectMsg(BlockchainActor.TransactionRejected(tx.getHash))
-  }
-
   it must "report transaction confirmation after blockchain fork including the tx" in new Fixture {
     requester.send(instance, BlockchainActor.WatchTransactionConfirmation(tx.getHash, 2))
     expectNoMsg()

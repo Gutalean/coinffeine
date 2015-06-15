@@ -88,10 +88,6 @@ private class BlockchainActor(blockchain: AbstractBlockChain, wallet: Wallet)
     override def confirmed(tx: Hash, confirmations: Int): Unit = {
       requester ! TransactionConfirmed(tx, confirmations)
     }
-
-    override def rejected(tx: Hash): Unit = {
-      requester ! TransactionRejected(tx)
-    }
   }
 
   private class HeightListener(requester: ActorRef) extends BlockchainNotifier.HeightListener {
@@ -147,17 +143,14 @@ object BlockchainActor {
   /** A message sent to the blockchain actor requesting to watch for confirmation of the
     * given block.
     *
-    * The blockchain actor will send either `TransactionConfirmed` or `TransactionRejected`
-    * as response.
+    * The blockchain actor will send an [[TransactionConfirmed]] when and if the
+    * transaction gets confirmed.
     */
   case class WatchTransactionConfirmation(transactionHash: Hash, confirmations: Int)
 
   /** A message sent by the blockchain actor to notify that the transaction has reached the
     * requested number of confirmations. */
   case class TransactionConfirmed(transactionHash: Hash, confirmations: Int)
-
-  /** A message sent by the blockchain actor to notify that the transaction has been rejected. */
-  case class TransactionRejected(transactionHash: Hash)
 
   /** A message sent to the blockchain actor requesting the current chain height. To be replied
     * with a [[BlockchainHeightReached]]. */

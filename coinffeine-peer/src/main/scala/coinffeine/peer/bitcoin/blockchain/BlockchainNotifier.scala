@@ -62,15 +62,6 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int)
   override def reorganize(splitPoint: StoredBlock, oldBlocks: util.List[StoredBlock],
                           newBlocks: util.List[StoredBlock]): Unit = synchronized {
     logger.warn(s"Blockchain reorganization from height ${splitPoint.getHeight}")
-    val seenTxs = confirmationSubscriptions.values.filter(_.foundInBlock.isDefined)
-    val rejectedTransactions = seenTxs.filterNot(tx =>
-      newBlocks.toSeq.exists(block => block.getHeader.getHash == tx.foundInBlock.get.hash))
-    rejectedTransactions.foreach { subscription =>
-      logger.warn("Tx {} is lost in blockchain reorganization; reporting to the observer",
-        subscription.txHash)
-      confirmationSubscriptions -= subscription.txHash
-      subscription.listener.rejected(subscription.txHash)
-    }
 
     /* It seems to be a bug in Bitcoinj that causes the newBlocks list to be in an arbitrary
      * order although the Javadoc of BlockChainListener says it follows a top-first order.
@@ -144,7 +135,6 @@ private[blockchain] class BlockchainNotifier(initialHeight: Int)
 
 private[blockchain] object BlockchainNotifier {
   trait ConfirmationListener {
-    def rejected(tx: Hash): Unit
     def confirmed(tx: Hash, confirmations: Int): Unit
   }
 
