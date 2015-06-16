@@ -18,6 +18,10 @@
     -fx-font-size: 24;
 }
 
+.payment-processor-preferences .description > * { -fx-alignment: bottom-center; }
+
+.payment-processor-preferences .support-icon  { -fx-font-size: 18; }
+
 .payment-processor-preferences .labeled-field {
     -fx-padding: 10 100 40 100;
 }

@@ -1,7 +1,13 @@
 /* This file defines the styles for the setup wizard. */
 
-.wizard .license-pane {
+.wizard .license-pane,
+.wizard .faucet-pane,
+.wizard .okpay-pane,
+.wizard .topup-pane {
     -fx-max-width: 600;
+}
+
+.wizard .license-pane {
     -fx-padding: 20 50 20 50;
     -fx-spacing: 25;
 }
@@ -45,6 +51,7 @@
     -fx-alignment: center;
     -fx-padding: 25;
     -fx-spacing: 30;
+    -fx-min-height: 480;
 }
 
 .wizard .okpay-pane .label {

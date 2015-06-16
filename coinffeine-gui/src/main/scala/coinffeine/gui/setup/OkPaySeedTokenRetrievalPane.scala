@@ -16,12 +16,12 @@ import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
 import coinffeine.peer.payment.okpay.profile.{OkPayProfileConfigurator, ScrappingProfile}
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
-class OkPaySeedTokenRetrievalPane(data: SetupConfig)
+class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
   extends StepPane[SetupConfig] with LazyLogging {
 
   import OkPaySeedTokenRetrievalPane._
 
-  override val icon = GlyphIcon.Number3
+  override val icon = GlyphIcon.Numbers(stepNumber)
 
   private val title = new Label("OKPay API token") { styleClass += "title" }
 

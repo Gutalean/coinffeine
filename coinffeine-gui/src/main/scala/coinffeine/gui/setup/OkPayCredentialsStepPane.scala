@@ -7,8 +7,10 @@ import scalafx.scene.layout.{VBox, HBox}
 import coinffeine.gui.control.{SupportWidget, GlyphIcon}
 import coinffeine.gui.wizard.StepPane
 
-class OkPayCredentialsStepPane(data: SetupConfig) extends StepPane[SetupConfig] {
-  override val icon = GlyphIcon.Number2
+class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
+  extends StepPane[SetupConfig] {
+
+  override val icon = GlyphIcon.Numbers(stepNumber)
 
   private val title = new Label("Configure your OKPay account") { styleClass += "title" }
 
