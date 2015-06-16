@@ -20,6 +20,7 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
   private var walletFile: Option[File] = None
   private var blockchainFile: Option[File] = None
   private var checkpoints: Option[URL] = None
+  private var spvEnabled: Boolean = true
 
   def setNetwork(value: Network with NetworkComponent.SeedPeers) = {
     network = value
@@ -33,6 +34,11 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
 
   def setBlockchainFile(file: File) = {
     blockchainFile = Some(file)
+    this
+  }
+
+  def enableSpv(enabled: Boolean) = {
+    spvEnabled = enabled
     this
   }
 
@@ -52,16 +58,29 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
   }
 
-  private def buildBlockchain(): BlockChain = {
-    val store = blockchainFile.fold[BlockStore](
-      buildInMemoryBlockStore())(buildFileBackedBlockStore)
-    new BlockChain(network, store)
+  private def buildBlockchain(): AbstractBlockChain = {
+    if (spvEnabled) buildSpvBlockchain() else buildH2FullBlockchain()
   }
 
-  private def buildInMemoryBlockStore() =
-    new MemoryFullPrunedBlockStore(network, FullStoredDepth)
+  private def buildSpvBlockchain(): BlockChain = {
+    def inMemoryStore = new MemoryFullPrunedBlockStore(network, FullStoredDepth)
+    def fileBackedStore(file: File) = new SPVBlockStore(network, file)
+    new BlockChain(network, blockchainFile.fold[BlockStore](inMemoryStore)(fileBackedStore))
+  }
 
-  private def buildFileBackedBlockStore(file: File) = new SPVBlockStore(network, file)
+  private def buildH2FullBlockchain(): FullPrunedBlockChain = {
+    val file = blockchainFile.getOrElse(throw new scala.IllegalArgumentException(
+      s"Cannot initialize an H2 store on path = $blockchainFile"))
+    val store = new H2FullPrunedBlockStore(network, toH2Scheme(file), Int.MaxValue)
+    val blockchain = new FullPrunedBlockChain(network, store)
+    blockchain.setRunScripts(false)
+    blockchain
+  }
+
+  private def toH2Scheme(file: File): String = file.toString match {
+    case H2FileName(prefix) => s"file:$prefix"
+    case other => throw new scala.IllegalArgumentException(s"Invalid H2 filename: $other")
+  }
 
   private def buildPeerGroup(blockchain: AbstractBlockChain) = {
     val pg = new PeerGroup(network, blockchain)
@@ -105,7 +124,8 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
       blockchain: AbstractBlockChain,
       earliestKeyTime: Long,
       preexistingChainFile: Boolean): Unit = {
-    if (preexistingChainFile) logger.debug("Skipping checkpointing: existing blockfile")
+    if (!spvEnabled) logger.debug("Skipping checkpointing: using a full blockchain")
+    else if (preexistingChainFile) logger.debug("Skipping checkpointing: existing blockfile")
     else if (checkpoints.isEmpty) logger.debug("Skipping checkpointing: no checkpoints file")
     else checkpoint(blockchain, earliestKeyTime)
   }
@@ -126,4 +146,5 @@ private object DefaultBitcoinPlatformBuilder {
   val AutoSaveInterval = 250.millis
   val FullStoredDepth = 1000
   val MinBroadcastConnections = 1
+  private val H2FileName = """(.*)\.h2\.db""".r
 }
