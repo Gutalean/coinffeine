@@ -14,7 +14,7 @@ buildInfoPackage := "coinffeine.peer"
 
 libraryDependencies ++= Dependencies.loggingBackend ++ Dependencies.akka ++ Seq(
   Dependencies.anorm,
-  Dependencies.h2 % "test",
+  Dependencies.h2,
   Dependencies.htmlunit,
   Dependencies.netty,
   Dependencies.scalacheck % "test",
