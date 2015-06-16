@@ -1,53 +1,51 @@
 package coinffeine.gui.setup
 
 import scalafx.Includes._
-import scalafx.scene.control.Alert.AlertType
-import scalafx.scene.control.ButtonType
 import scalafx.stage.WindowEvent
 
-import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.{StepPane, Wizard}
 
 /** Wizard to collect the initial configuration settings */
-class SetupWizard private (okPaySteps: Seq[StepPane[SetupConfig]], data: SetupConfig)
+class SetupWizard private (
+    steps: Seq[StepPane[SetupConfig]], data: SetupConfig, exitPolicy: ExitPolicy)
   extends Wizard[SetupConfig](
-    wizardTitle = "Initial setup",
-    steps = new LicenseAgreementPane +: okPaySteps,
-    data = data,
-    additionalStyles = Seq(Stylesheets.Setup)) {
+    steps, data, wizardTitle = "Initial setup", additionalStyles = Seq(Stylesheets.Setup)) {
 
-  private def onCloseAction(ev: WindowEvent): Unit = {
-    val dialog = new CoinffeineAlert(AlertType.Confirmation) {
-      title = "Quit Coinffeine"
-      headerText = "You will exit Coinffeine. Are you sure?"
-      buttonTypes = Seq(ButtonType.Yes, ButtonType.No)
-    }
-    dialog.showAndWait() match {
-      case Some(ButtonType.Yes) => cancel()
-      case _ => ev.consume()
-    }
+  onCloseRequest = (ev: WindowEvent) => {
+    if (exitPolicy.shouldClose()) cancel() else ev.consume()
   }
-
-  onCloseRequest = onCloseAction _
 }
 
 object SetupWizard {
 
   def forTechnicalPreview(walletAddress: String): SetupWizard = {
     val data = new SetupConfig
-    new SetupWizard(Seq(
+    val panes = Seq(
+      new LicenseAgreementPane,
       new FaucetInfoStepPane(walletAddress),
       new OkPayWalletDataPane(data)
-    ), data)
+    )
+    new SetupWizard(panes, data, ExitPolicy.Confirmed)
   }
 
   def default(walletAddress: String): SetupWizard = {
     val data = new SetupConfig
-    new SetupWizard(Seq(
-      new OkPayCredentialsStepPane(data),
-      new OkPaySeedTokenRetrievalPane(data),
+    val panes = Seq(
+      new LicenseAgreementPane,
+      new OkPayCredentialsStepPane(data, 2),
+      new OkPaySeedTokenRetrievalPane(data, 3),
       new TopUpStepPane(walletAddress)
-    ), data)
+    )
+    new SetupWizard(panes, data, ExitPolicy.Confirmed)
+  }
+
+  def okPaySetup: SetupWizard = {
+    val data = new SetupConfig
+    val panes = Seq(
+      new OkPayCredentialsStepPane(data, 1),
+      new OkPaySeedTokenRetrievalPane(data, 2)
+    )
+    new SetupWizard(panes, data, ExitPolicy.Unconfirmed)
   }
 }
