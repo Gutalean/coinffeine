@@ -8,7 +8,8 @@ case class BitcoinSettings(
   walletFile: File,
   blockchainFile: File,
   rebroadcastTimeout: FiniteDuration,
-  network: BitcoinSettings.Network
+  network: BitcoinSettings.Network,
+  spv: Boolean
 )
 
 object BitcoinSettings {

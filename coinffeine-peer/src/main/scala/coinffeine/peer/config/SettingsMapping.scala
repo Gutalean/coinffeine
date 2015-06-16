@@ -61,15 +61,19 @@ object SettingsMapping extends TypesafeConfigImplicits {
   implicit val bitcoin = new SettingsMapping[BitcoinSettings] {
 
     override def fromConfig(configPath: File, config: Config) = {
-      val network = config.getStringOpt("coinffeine.bitcoin.network")
+      val subConfig = config.getConfig("coinffeine.bitcoin")
+      val network = subConfig.getStringOpt("network")
         .flatMap(BitcoinSettings.parseNetwork)
         .getOrElse(MainNet)
+      val spv = subConfig.getBoolean("spv")
+      val chainFileExtension = if (spv) "spvchain" else "h2.db"
       BitcoinSettings(
-        connectionRetryInterval = config.getSeconds("coinffeine.bitcoin.connectionRetryInterval"),
+        connectionRetryInterval = subConfig.getSeconds("connectionRetryInterval"),
         walletFile = new File(configPath, s"${network.name}.wallet"),
-        blockchainFile = new File(configPath, s"${network.name}.spvchain"),
-        rebroadcastTimeout = config.getSeconds("coinffeine.bitcoin.rebroadcastTimeout"),
-        network = network
+        blockchainFile = new File(configPath, s"${network.name}.$chainFileExtension"),
+        rebroadcastTimeout = subConfig.getSeconds("rebroadcastTimeout"),
+        network,
+        spv
       )
     }
 
@@ -79,6 +83,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
       .withValue("coinffeine.bitcoin.rebroadcastTimeout",
         configDuration(settings.rebroadcastTimeout))
       .withValue("coinffeine.bitcoin.network", configValue(settings.network.toString))
+      .withValue("coinffeine.bitcoin.spv", configValue(settings.spv))
   }
 
   implicit object MessageGateway extends SettingsMapping[MessageGatewaySettings] {

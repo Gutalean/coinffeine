@@ -62,18 +62,25 @@ class SettingsMappingTest extends UnitTest with OptionValues {
   }
 
   "Bitcoins settings mapping" should "map from config" in {
-    val conf = makeConfig(
+    val spvConfig = makeConfig(
       "coinffeine.bitcoin.connectionRetryInterval" -> "30s",
       "coinffeine.bitcoin.rebroadcastTimeout" -> "60s",
-      "coinffeine.bitcoin.network" -> "mainnet"
+      "coinffeine.bitcoin.network" -> "mainnet",
+      "coinffeine.bitcoin.spv" -> true
     )
-    fromConfig[BitcoinSettings](conf) shouldBe BitcoinSettings(
+    fromConfig[BitcoinSettings](spvConfig) shouldBe BitcoinSettings(
       connectionRetryInterval = 30.seconds,
       walletFile = new File(basePath, "mainnet.wallet"),
       blockchainFile = new File(basePath, "mainnet.spvchain"),
       rebroadcastTimeout = 1.minute,
-      network = BitcoinSettings.MainNet
+      network = BitcoinSettings.MainNet,
+      spv = true
     )
+
+    val noSpvConfig = amendConfig(spvConfig, "coinffeine.bitcoin.spv" -> false)
+    val noSpvSettings = fromConfig[BitcoinSettings](noSpvConfig)
+    noSpvSettings.spv shouldBe false
+    noSpvSettings.blockchainFile shouldBe new File(basePath, "mainnet.h2.db")
   }
 
   it should "map to config" in {
@@ -82,12 +89,14 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       walletFile = new File("/tmp/user.wallet"),
       blockchainFile = new File("/tmp/foo"),
       rebroadcastTimeout = 60.seconds,
-      network = BitcoinSettings.PublicTestnet
+      network = BitcoinSettings.PublicTestnet,
+      spv = true
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getDuration("coinffeine.bitcoin.connectionRetryInterval", TimeUnit.SECONDS) shouldBe 50
     cfg.getDuration("coinffeine.bitcoin.rebroadcastTimeout", TimeUnit.SECONDS) shouldBe 60
     cfg.getString("coinffeine.bitcoin.network") shouldBe "public-testnet"
+    cfg.getBoolean("coinffeine.bitcoin.spv") shouldBe true
   }
 
   val messageGatewayBasicSettings = makeConfig(
