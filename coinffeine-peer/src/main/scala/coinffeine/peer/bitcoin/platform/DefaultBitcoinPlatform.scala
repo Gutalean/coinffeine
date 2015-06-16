@@ -18,7 +18,7 @@ object DefaultBitcoinPlatform {
 
   trait Component extends BitcoinPlatform.Component with NetworkComponent { this: ConfigComponent =>
 
-    private val networkSetting = configProvider.bitcoinSettings().network
+    private lazy val networkSetting = configProvider.bitcoinSettings().network
 
     lazy val network = networkSetting match {
       case BitcoinSettings.IntegrationRegnet => IntegrationTestNetwork
@@ -32,6 +32,7 @@ object DefaultBitcoinPlatform {
         .setNetwork(network)
         .setWalletFile(settings.walletFile)
         .setBlockchainFile(settings.blockchainFile)
+        .enableSpv(settings.spv)
         .setCheckpoints(Option(getClass.getResource(s"/${networkSetting.name}.checkpoints")))
     }
   }
