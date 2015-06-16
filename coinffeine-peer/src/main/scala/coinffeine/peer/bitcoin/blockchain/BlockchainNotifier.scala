@@ -91,6 +91,7 @@ private[blockchain] class BlockchainNotifier(blockChain: AbstractBlockChain)
         foundAtHeights = subscription.foundAtHeights +
           (block.getHeader.getHash -> block.getHeight))
     }
+    notifyConfirmedTransactions()
   }
 
   override def notifyTransactionIsInBlock(txHash: Sha256Hash,
