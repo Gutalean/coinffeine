@@ -1,6 +1,7 @@
 package coinffeine.peer.bitcoin.platform
 
 import java.io.File
+import java.net.URL
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 
@@ -18,6 +19,7 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
   private var network: Network with NetworkComponent.SeedPeers = _
   private var walletFile: Option[File] = None
   private var blockchainFile: Option[File] = None
+  private var checkpoints: Option[URL] = None
 
   def setNetwork(value: Network with NetworkComponent.SeedPeers) = {
     network = value
@@ -34,16 +36,23 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     this
   }
 
+  def setCheckpoints(url: Option[URL]) = {
+    checkpoints = url
+    this
+  }
+
   override def build(): BitcoinPlatform = {
     require(network != null, "Network should be defined")
+    val preexistingChainFile = blockchainFile.exists(_.exists())
     val shouldReplayWallet = exists(walletFile) && !exists(blockchainFile)
     val blockchain = buildBlockchain()
     val peerGroup = buildPeerGroup(blockchain)
     val wallet = buildWallet(blockchain, peerGroup, shouldReplayWallet)
+    setupCheckpoints(blockchain, wallet.delegate.getEarliestKeyCreationTime, preexistingChainFile)
     new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
   }
 
-  private def buildBlockchain() = {
+  private def buildBlockchain(): BlockChain = {
     val store = blockchainFile.fold[BlockStore](
       buildInMemoryBlockStore())(buildFileBackedBlockStore)
     new BlockChain(network, store)
@@ -91,11 +100,30 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
   }
 
   private def exists(maybeFile: Option[File]): Boolean = maybeFile.fold(false)(_.exists())
+
+  private def setupCheckpoints(
+      blockchain: AbstractBlockChain,
+      earliestKeyTime: Long,
+      preexistingChainFile: Boolean): Unit = {
+    if (preexistingChainFile) logger.debug("Skipping checkpointing: existing blockfile")
+    else if (checkpoints.isEmpty) logger.debug("Skipping checkpointing: no checkpoints file")
+    else checkpoint(blockchain, earliestKeyTime)
+  }
+
+  private def checkpoint(blockchain: AbstractBlockChain, earliestKeyTime: Long): Unit = {
+    logger.info(s"Checkpointing with ${checkpoints.get}")
+    val stream = checkpoints.get.openStream()
+    try {
+      CheckpointManager.checkpoint(
+        network, stream, blockchain.getBlockStore, earliestKeyTime)
+    } finally {
+      stream.close()
+    }
+  }
 }
 
 private object DefaultBitcoinPlatformBuilder {
   val AutoSaveInterval = 250.millis
   val FullStoredDepth = 1000
   val MinBroadcastConnections = 1
-  private val H2FileName = """(.*)\.h2\.db""".r
 }
