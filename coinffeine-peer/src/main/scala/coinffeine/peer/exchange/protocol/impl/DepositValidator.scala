@@ -24,36 +24,38 @@ private[impl] class DepositValidator(amounts: ActiveExchange.Amounts[_ <: FiatCu
 
   private def requireValidDeposit(role: Role,
                                   transaction: ImmutableTransaction): DepositValidation = {
-    Option(transaction.get.getOutput(0)).fold[DepositValidation](NoOutputs.failureNel) { funds =>
-      requireValidMultiSignature(funds) *> requireValidAmount(role, funds)
-    }
+    Option(transaction.get.getOutput(0))
+      .fold[DepositValidation](DepositValidationError.NoOutputs.failureNel) { funds =>
+        requireValidMultiSignature(funds) *> requireValidAmount(role, funds)
+      }
   }
 
   private def requireValidAmount(role: Role, funds: MutableTransactionOutput): DepositValidation = {
     val actualFunds: Bitcoin.Amount = funds.getValue
     val expectedFunds = role.select(amounts.deposits).output
     if (actualFunds == expectedFunds) ().successNel
-    else InvalidCommittedAmount(actualFunds, expectedFunds).failureNel
+    else DepositValidationError.InvalidCommittedAmount(actualFunds, expectedFunds).failureNel
   }
 
   private def requireValidMultiSignature(funds: MutableTransactionOutput): DepositValidation = {
     funds match {
       case MultiSigOutput(MultiSigInfo(possibleKeys, requiredKeyCount)) =>
         requireTwoOutOfTwoSignatures(requiredKeyCount) *> requireExpectedAddresses(possibleKeys)
-      case _ => NoMultiSig.failureNel
+      case _ => DepositValidationError.NoMultiSig.failureNel
     }
   }
 
   private def requireTwoOutOfTwoSignatures(requiredKeyCount: Int): DepositValidation = {
     if (requiredKeyCount == 2) ().successNel
-    else UnexpectedNumberOfRequiredSignatures(requiredKeyCount).failureNel
+    else DepositValidationError.UnexpectedNumberOfRequiredSignatures(requiredKeyCount).failureNel
   }
 
   private def requireExpectedAddresses(actualKeys: Seq[PublicKey]): DepositValidation = {
     val actualAddresses = actualKeys.map(toAddress)
     val expectedAddresses = requiredSignatures.map(toAddress)
     if (actualAddresses == expectedAddresses.toSeq) ().successNel
-    else UnexpectedSignatureAddresses(actualAddresses, expectedAddresses).failureNel
+    else DepositValidationError.UnexpectedSignatureAddresses(
+      actualAddresses, expectedAddresses).failureNel
   }
 
   private def toAddress(key: PublicKey) = key.toAddress(network)
