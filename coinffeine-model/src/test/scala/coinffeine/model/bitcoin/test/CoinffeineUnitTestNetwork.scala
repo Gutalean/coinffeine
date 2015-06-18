@@ -17,6 +17,11 @@ case object CoinffeineUnitTestNetwork extends UnitTestParams with NetworkCompone
   // No need of seed peers as we don't communicate with the external world
   override val seedPeers = Seq.empty
 
+  def setSpendableCoinbaseDepth(depth: Int): Unit = {
+    require(depth >= 0, "Spendable coinbase depth must not be negative")
+    spendableCoinbaseDepth = depth
+  }
+
   trait Component extends NetworkComponent {
     override val network = CoinffeineUnitTestNetwork
   }
