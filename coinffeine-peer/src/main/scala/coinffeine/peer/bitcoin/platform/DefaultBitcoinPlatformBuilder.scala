@@ -12,7 +12,7 @@ import org.bitcoinj.store._
 import coinffeine.model.bitcoin._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
-class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictLogging {
+class DefaultBitcoinPlatformBuilder extends StrictLogging {
 
   import DefaultBitcoinPlatformBuilder._
 
@@ -47,7 +47,7 @@ class DefaultBitcoinPlatformBuilder extends BitcoinPlatform.Builder with StrictL
     this
   }
 
-  override def build(): BitcoinPlatform = {
+  def build(): BitcoinPlatform = {
     require(network != null, "Network should be defined")
     val preexistingChainFile = blockchainFile.exists(_.exists())
     val shouldReplayWallet = exists(walletFile) && !exists(blockchainFile)

@@ -23,7 +23,7 @@ class MockExchangeProtocol extends ExchangeProtocol {
                                 requiredSignatures: Both[PublicKey],
                                 network: Network): Both[DepositValidation] =
     transactions.map {
-      case MockExchangeProtocol.InvalidDeposit => NoMultiSig.failureNel
+      case MockExchangeProtocol.InvalidDeposit => DepositValidationError.NoMultiSig.failureNel
       case _ => ().successNel
     }
 }
