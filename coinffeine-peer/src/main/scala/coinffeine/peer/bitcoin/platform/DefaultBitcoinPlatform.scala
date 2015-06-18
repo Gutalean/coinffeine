@@ -26,7 +26,7 @@ object DefaultBitcoinPlatform {
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 
-    override def bitcoinPlatformBuilder: BitcoinPlatform.Builder = {
+    override def bitcoinPlatform: BitcoinPlatform = {
       val settings = configProvider.bitcoinSettings()
       new DefaultBitcoinPlatformBuilder()
         .setNetwork(network)
@@ -34,6 +34,7 @@ object DefaultBitcoinPlatform {
         .setBlockchainFile(settings.blockchainFile)
         .enableSpv(settings.spv)
         .setCheckpoints(Option(getClass.getResource(s"/${networkSetting.name}.checkpoints")))
+        .build()
     }
   }
 }

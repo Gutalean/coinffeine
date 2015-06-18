@@ -23,14 +23,13 @@ import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
-                       platformBuilder: BitcoinPlatform.Builder,
+                       platform: BitcoinPlatform,
                        networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceLifecycle[Unit] with ActorLogging with CoinffeineEventProducer {
 
   import BitcoinPeerActor._
 
-  private val platform = platformBuilder.build()
   private val blockchainRef = context.actorOf(delegates.blockchainActor(platform), "blockchain")
   private val walletRef = context.actorOf(delegates.walletActor(platform.wallet), "wallet")
   private var retryTimer: Option[Cancellable] = None
@@ -238,7 +237,7 @@ object BitcoinPeerActor {
           override def blockchainActor(platform: BitcoinPlatform) =
             BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
         },
-        bitcoinPlatformBuilder,
+        bitcoinPlatform,
         this,
         settings.connectionRetryInterval
       ))

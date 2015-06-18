@@ -13,11 +13,7 @@ trait BitcoinPlatform {
 }
 
 object BitcoinPlatform {
-  trait Builder {
-    def build(): BitcoinPlatform
-  }
-
   trait Component {
-    def bitcoinPlatformBuilder: Builder
+    def bitcoinPlatform: BitcoinPlatform
   }
 }
