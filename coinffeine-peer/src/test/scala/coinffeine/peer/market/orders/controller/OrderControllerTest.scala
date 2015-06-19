@@ -12,7 +12,7 @@ import coinffeine.model.network.PeerId
 import coinffeine.model.order._
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.amounts.DefaultAmountsComponent
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
 class OrderControllerTest extends UnitTest with Inside with SampleExchange {
@@ -127,7 +127,7 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
       case notStarted: HandshakingExchange[Euro.type] =>
         val createdOn = notStarted.metadata.createdOn
         notStarted.handshake(participants.buyer, participants.seller, createdOn.plusSeconds(5))
-          .startExchanging(MockExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))
+          .startExchanging(FakeExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))
           .complete(createdOn.plusMinutes(20))
     }
   }

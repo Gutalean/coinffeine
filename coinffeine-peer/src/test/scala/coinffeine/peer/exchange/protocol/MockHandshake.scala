@@ -20,11 +20,11 @@ class MockHandshake[C <: FiatCurrency](override val exchange: DepositPendingExch
   val invalidRefundTransaction = dummyTransaction(6)
 
   override def signHerRefund(txToSign: ImmutableTransaction) =
-    if (txToSign.get == counterpartRefund) MockExchangeProtocol.CounterpartRefundSignature
+    if (txToSign.get == counterpartRefund) FakeExchangeProtocol.CounterpartRefundSignature
     else throw new InvalidRefundTransaction(txToSign, "Invalid refundSig")
 
   override def signMyRefund(sig: TransactionSignature) =
-    if (sig == MockExchangeProtocol.RefundSignature) mySignedRefund
+    if (sig == FakeExchangeProtocol.RefundSignature) mySignedRefund
     else throw new InvalidRefundSignature(myUnsignedRefund, sig)
 
   private def dummyImmutableTransaction(lockTime: Int) =

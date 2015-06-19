@@ -20,8 +20,8 @@ class MockMicroPaymentChannel[C <: FiatCurrency] private (
 
   override def validateCurrentTransactionSignatures(signatures: Both[TransactionSignature]) =
     signatures match {
-      case Both(MockExchangeProtocol.InvalidSignature, _) |
-           Both(_, MockExchangeProtocol.InvalidSignature) =>
+      case Both(FakeExchangeProtocol.InvalidSignature, _) |
+           Both(_, FakeExchangeProtocol.InvalidSignature) =>
         Failure(new Error("Invalid signature"))
       case _ => Success {}
     }
@@ -35,5 +35,5 @@ class MockMicroPaymentChannel[C <: FiatCurrency] private (
     ImmutableTransaction(tx)
   }
 
-  override def signCurrentTransaction = MockExchangeProtocol.DummySignatures
+  override def signCurrentTransaction = FakeExchangeProtocol.DummySignatures
 }
