@@ -16,10 +16,11 @@ import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.{PersistentTransactionBroadcaster, TransactionBroadcaster}
-import coinffeine.peer.exchange.handshake.{HandshakeActor, DefaultHandshakeActor}
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.micropayment.{PayerActor, BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, SellerMicroPaymentChannelActor}
+import coinffeine.peer.exchange.handshake.{DefaultHandshakeActor, HandshakeActor}
+import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, PayerActor, SellerMicroPaymentChannelActor}
 import coinffeine.peer.exchange.protocol._
+import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
 import coinffeine.peer.payment.PaymentProcessorActor
 
 class DefaultExchangeActor[C <: FiatCurrency](
@@ -265,7 +266,7 @@ object DefaultExchangeActor {
   }
 
   trait Component extends ExchangeActor.Component {
-    this: ExchangeProtocol.Component with ProtocolConstants.Component =>
+    this: ProtocolConstants.Component =>
 
     override def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
                                     collaborators: ExchangeActor.Collaborators) = {
@@ -283,7 +284,7 @@ object DefaultExchangeActor {
                       listener: ActorRef) = DefaultHandshakeActor.props(
           DefaultHandshakeActor.ExchangeToStart(exchange, timestamp, user),
           DefaultHandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
-          DefaultHandshakeActor.ProtocolDetails(exchangeProtocol, protocolConstants)
+          DefaultHandshakeActor.ProtocolDetails(new DefaultExchangeProtocol, protocolConstants)
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
@@ -306,7 +307,7 @@ object DefaultExchangeActor {
 
       val lookup = new DefaultPeerInfoLookup(wallet, paymentProcessor)
 
-      Props(new DefaultExchangeActor(exchangeProtocol, exchange, lookup, delegates, collaborators))
+      Props(new DefaultExchangeActor(new DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }
   }
 

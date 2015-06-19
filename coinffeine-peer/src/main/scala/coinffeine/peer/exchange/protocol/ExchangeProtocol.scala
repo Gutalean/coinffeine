@@ -30,9 +30,3 @@ trait ExchangeProtocol {
     */
   def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]): MicroPaymentChannel[C]
 }
-
-object ExchangeProtocol {
-  trait Component {
-    def exchangeProtocol: ExchangeProtocol
-  }
-}
