@@ -8,10 +8,10 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.Service
-import coinffeine.model.bitcoin.BitcoinFeeCalculator
+import coinffeine.model.bitcoin.{TransactionSizeFeeCalculator, BitcoinFeeCalculator}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
-import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsComponent}
+import coinffeine.peer.amounts.{DefaultAmountsCalculator, AmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.properties.alarms.EventObservedAlarmsProperty
@@ -78,15 +78,14 @@ class DefaultCoinffeineApp(name: String,
 object DefaultCoinffeineApp {
 
   trait Component extends CoinffeineAppComponent {
-    this: CoinffeinePeerActor.Component with ConfigComponent
-      with DefaultAmountsComponent =>
+    this: CoinffeinePeerActor.Component with ConfigComponent =>
 
     private def accountId() = configProvider.okPaySettings().userAccount
 
     override lazy val app = {
       val name = SystemName.choose(accountId())
-      new DefaultCoinffeineApp(
-        name, accountId, peerProps, amountsCalculator, bitcoinFeeCalculator, configProvider)
+      new DefaultCoinffeineApp(name, accountId, peerProps, new DefaultAmountsCalculator(),
+        TransactionSizeFeeCalculator, configProvider)
     }
   }
 }

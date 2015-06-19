@@ -6,9 +6,8 @@ import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.properties.MutableOrderProperties
 import coinffeine.model.currency._
 import coinffeine.model.order.{ActiveOrder, Bid}
-import coinffeine.peer.amounts.DefaultAmountsComponent
 
-class CreationTimestampComparatorTest extends UnitTest with DefaultAmountsComponent {
+class CreationTimestampComparatorTest extends UnitTest {
 
   private val baseTimestamp = DateTime.now().minusHours(1)
   val props1 = orderPropertiesFor(baseTimestamp)

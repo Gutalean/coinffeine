@@ -6,9 +6,9 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.{ActiveExchange, BuyerRole, ExchangeId}
 import coinffeine.model.network.PeerId
 import coinffeine.model.order.{ActiveOrder, Bid, Price}
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 
-class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsComponent {
+class ShowOrderDetailsCommandTest extends CommandTest {
 
   val operations = new MockCoinffeineOperations
   val command = new ShowOrderDetailsCommand(operations)
@@ -23,7 +23,7 @@ class ShowOrderDetailsCommandTest extends CommandTest with DefaultAmountsCompone
       id = ExchangeId.random(),
       role = BuyerRole,
       counterpartId = PeerId.hashOf("counterpart"),
-      amounts = amountsCalculator.exchangeAmountsFor(0.4.BTC, 50.EUR),
+      amounts = new DefaultAmountsCalculator().exchangeAmountsFor(0.4.BTC, 50.EUR),
       parameters = ActiveExchange.Parameters(lockTime = 1234, network = null),
       createdOn = orderCreation.plusMinutes(1)
     )

@@ -4,9 +4,9 @@ import scala.concurrent.Future
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Property}
-import coinffeine.model.bitcoin.{Address, WalletActivity}
+import coinffeine.model.bitcoin.{Address, TransactionSizeFeeCalculator, WalletActivity}
 import coinffeine.model.currency._
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
 import coinffeine.peer.api.mock.MockCoinffeineOperations
@@ -40,8 +40,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
   }
 
   override def utils = new CoinffeineUtils {
-    override def exchangeAmountsCalculator = new DefaultAmountsComponent {}.amountsCalculator
-    override def bitcoinFeeCalculator = new DefaultAmountsComponent {}.bitcoinFeeCalculator
+    override def exchangeAmountsCalculator = new DefaultAmountsCalculator()
+    override def bitcoinFeeCalculator = TransactionSizeFeeCalculator
   }
 
   override def alarms = ???

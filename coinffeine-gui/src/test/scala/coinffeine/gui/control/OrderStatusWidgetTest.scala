@@ -10,10 +10,10 @@ import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order.{ActiveOrder, Ask}
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 
-class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmountsComponent {
+class OrderStatusWidgetTest extends UnitTest with SampleExchange {
 
   "Order status" should "be submitting for not started offline orders" in {
     Status.fromOrder(randomOrder(1.BTC)) shouldBe Submitting
@@ -65,7 +65,7 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
       id = ExchangeId.random(),
       role = SellerRole,
       counterpartId = PeerId.random(),
-      amounts = amountsCalculator.exchangeAmountsFor(amount, 100.EUR),
+      amounts = new DefaultAmountsCalculator().exchangeAmountsFor(amount, 100.EUR),
       parameters = parameters,
       createdOn = DateTime.now()
     )

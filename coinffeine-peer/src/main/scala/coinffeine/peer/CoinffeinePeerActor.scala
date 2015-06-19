@@ -11,7 +11,7 @@ import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.order.{ActiveOrder, OrderId, OrderRequest}
-import coinffeine.peer.amounts.AmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.ConfigComponent
@@ -169,8 +169,9 @@ object CoinffeinePeerActor {
     with ConfigComponent
     with NetworkComponent
     with ProtocolConstants.Component
-    with AmountsComponent
     with OrderArchive.Component =>
+
+    private val amountsCalculator = new DefaultAmountsCalculator()
 
     lazy val peerProps: Props = {
       val props = PropsCatalogue(

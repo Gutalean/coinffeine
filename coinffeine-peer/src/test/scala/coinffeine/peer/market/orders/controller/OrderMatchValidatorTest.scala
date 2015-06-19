@@ -11,12 +11,13 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
-class OrderMatchValidatorTest extends UnitTest with Inside with DefaultAmountsComponent {
+class OrderMatchValidatorTest extends UnitTest with Inside {
 
   private val ownId = PeerId.random()
+  private val amountsCalculator = new DefaultAmountsCalculator()
   private val validator = new OrderMatchValidator(ownId, amountsCalculator)
   private val limitOrder = ActiveOrder.randomLimit(Bid, 0.9997.BTC, Price(110.263078923677103, Euro))
   private val marketPriceOrder = limitOrder.copy(price = MarketPrice(Euro))

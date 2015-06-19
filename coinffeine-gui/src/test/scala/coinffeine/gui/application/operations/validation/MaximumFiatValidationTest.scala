@@ -2,17 +2,19 @@ package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
 import scalaz.syntax.std.option._
+
 import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.order.{OrderRequest, Bid, LimitPrice, MarketPrice}
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.model.order.{Bid, LimitPrice, MarketPrice, OrderRequest}
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 
-class MaximumFiatValidationTest extends UnitTest with Inside with DefaultAmountsComponent {
+class MaximumFiatValidationTest extends UnitTest with Inside {
 
+  private val amountsCalculator = new DefaultAmountsCalculator()
   private val instance = new MaximumFiatValidation(amountsCalculator)
 
   "Maximum fiat requirement" should "reject orders above the limit" in {
