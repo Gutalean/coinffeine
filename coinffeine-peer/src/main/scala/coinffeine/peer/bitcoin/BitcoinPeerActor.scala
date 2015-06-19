@@ -90,7 +90,7 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
     case PublishTransaction(tx) =>
       val name = s"broadcast-${tx.get.getHash}"
       if (context.child(name).isEmpty) {
-        context.actorOf(delegates.transactionPublisher(platform.peerGroup, tx, sender()), name)
+        context.actorOf(delegates.transactionPublisher(tx, sender()), name)
       }
   }
 
@@ -212,9 +212,7 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Delegates {
-    def transactionPublisher(peerGroup: PeerGroup,
-                             tx: ImmutableTransaction,
-                             listener: ActorRef): Props
+    def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
     def walletActor(wallet: SmartWallet): Props
     def blockchainActor(platform: BitcoinPlatform): Props
   }
@@ -225,10 +223,10 @@ object BitcoinPeerActor {
       val settings = configProvider.bitcoinSettings()
       Props(new BitcoinPeerActor(
         new Delegates {
-          override def transactionPublisher(peerGroup: PeerGroup,
-                                            tx: ImmutableTransaction,
+          override def transactionPublisher(tx: ImmutableTransaction,
                                             listener: ActorRef): Props =
-            Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
+            Props(new TransactionPublisher(
+              tx, bitcoinPlatform.peerGroup, listener, settings.rebroadcastTimeout))
           override def walletActor(wallet: SmartWallet) =
             DefaultWalletActor.props(wallet)
           override def blockchainActor(platform: BitcoinPlatform) =
