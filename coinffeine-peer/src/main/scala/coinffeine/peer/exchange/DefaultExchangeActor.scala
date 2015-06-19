@@ -16,8 +16,8 @@ import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.TransactionBroadcaster
+import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.handshake.{DefaultHandshakeActor, HandshakeActor}
 import coinffeine.peer.exchange.micropayment._
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
@@ -281,10 +281,10 @@ object DefaultExchangeActor {
 
         def handshake(user: Exchange.PeerInfo,
                       timestamp: DateTime,
-                      listener: ActorRef) = DefaultHandshakeActor.props(
-          DefaultHandshakeActor.ExchangeToStart(exchange, timestamp, user),
-          DefaultHandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
-          DefaultHandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
+                      listener: ActorRef) = HandshakeActor.props(
+          HandshakeActor.ExchangeToStart(exchange, timestamp, user),
+          HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
+          HandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],

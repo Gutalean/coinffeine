@@ -6,7 +6,7 @@ import akka.testkit._
 
 import coinffeine.peer.ProtocolConstants
 
-class ReRequestsHandshakeActorTest extends DefaultHandshakeActorTest("retries") {
+class ReRequestsHandshakeActorTest extends HandshakeActorTest("retries") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
