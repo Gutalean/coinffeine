@@ -18,7 +18,7 @@ import coinffeine.protocol.messages.arbitration.{CommitmentNotification, Commitm
 import coinffeine.protocol.messages.handshake._
 
 /** Test fixture for testing the handshake actor interaction, one derived class per scenario. */
-abstract class DefaultHandshakeActorTest(systemName: String)
+abstract class HandshakeActorTest(systemName: String)
   extends CoinffeineClientTest(systemName) with SellerPerspective {
 
   def protocolConstants: ProtocolConstants
@@ -35,10 +35,10 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     RefundSignatureRequest(exchange.id, handshake.myUnsignedRefund)
 
   def startActor(): Unit = {
-    actor = system.actorOf(DefaultHandshakeActor.props(
-      DefaultHandshakeActor.ExchangeToStart(exchange, DateTime.now(), user),
-      DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-      DefaultHandshakeActor.ProtocolDetails(new FakeExchangeProtocol, protocolConstants)
+    actor = system.actorOf(HandshakeActor.props(
+      HandshakeActor.ExchangeToStart(exchange, DateTime.now(), user),
+      HandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
+      HandshakeActor.ProtocolDetails(new FakeExchangeProtocol, protocolConstants)
     ))
     listener.watch(actor)
   }

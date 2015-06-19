@@ -15,10 +15,10 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
-import coinffeine.peer.exchange.broadcast.{PersistentTransactionBroadcaster, TransactionBroadcaster}
+import coinffeine.peer.exchange.broadcast.TransactionBroadcaster
+import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.handshake.{DefaultHandshakeActor, HandshakeActor}
-import coinffeine.peer.exchange.micropayment.{BuyerMicroPaymentChannelActor, MicroPaymentChannelActor, PayerActor, SellerMicroPaymentChannelActor}
+import coinffeine.peer.exchange.micropayment._
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -274,17 +274,17 @@ object DefaultExchangeActor {
 
       val delegates = new Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
-          PersistentTransactionBroadcaster.props(
+          TransactionBroadcaster.props(
             refund,
-            PersistentTransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            TransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 
         def handshake(user: Exchange.PeerInfo,
                       timestamp: DateTime,
-                      listener: ActorRef) = DefaultHandshakeActor.props(
-          DefaultHandshakeActor.ExchangeToStart(exchange, timestamp, user),
-          DefaultHandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
-          DefaultHandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
+                      listener: ActorRef) = HandshakeActor.props(
+          HandshakeActor.ExchangeToStart(exchange, timestamp, user),
+          HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
+          HandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],

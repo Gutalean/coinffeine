@@ -10,7 +10,7 @@ import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.handshake._
 
-class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
+class HappyPathHandshakeActorTest extends HandshakeActorTest("happy-path") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

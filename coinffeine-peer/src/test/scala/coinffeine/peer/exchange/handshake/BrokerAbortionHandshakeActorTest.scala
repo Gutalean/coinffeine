@@ -7,7 +7,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.protocol.messages.handshake.ExchangeAborted
 
-class BrokerAbortionHandshakeActorTest extends DefaultHandshakeActorTest("broker-aborts") {
+class BrokerAbortionHandshakeActorTest extends HandshakeActorTest("broker-aborts") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,

@@ -10,7 +10,7 @@ import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
 
-class PersistentHandshakeActorTest extends DefaultHandshakeActorTest("persistent-handshake") {
+class PersistentHandshakeActorTest extends HandshakeActorTest("persistent-handshake") {
 
   override def protocolConstants = ProtocolConstants(
     commitmentConfirmations = 1,
