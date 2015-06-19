@@ -284,7 +284,7 @@ object DefaultExchangeActor {
                       listener: ActorRef) = DefaultHandshakeActor.props(
           DefaultHandshakeActor.ExchangeToStart(exchange, timestamp, user),
           DefaultHandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
-          DefaultHandshakeActor.ProtocolDetails(new DefaultExchangeProtocol, protocolConstants)
+          DefaultHandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
 
         def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
@@ -307,7 +307,7 @@ object DefaultExchangeActor {
 
       val lookup = new DefaultPeerInfoLookup(wallet, paymentProcessor)
 
-      Props(new DefaultExchangeActor(new DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
+      Props(new DefaultExchangeActor(DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }
   }
 

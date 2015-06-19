@@ -15,7 +15,7 @@ trait ExchangeTest extends BitcoinjTest {
 
   /** Fixture with just a fresh protocol object */
   trait FreshInstance extends SampleExchange with CoinffeineUnitTestNetwork.Component {
-    val protocol = new DefaultExchangeProtocol()
+    val protocol = DefaultExchangeProtocol
   }
 
   /** Fixture with a buyer handshake with the right amount of funds */

@@ -7,7 +7,7 @@ import coinffeine.model.exchange.ActiveExchange.Amounts
 import coinffeine.model.exchange._
 import coinffeine.peer.exchange.protocol._
 
-class DefaultExchangeProtocol extends ExchangeProtocol {
+object DefaultExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
       exchange: DepositPendingExchange[C],
