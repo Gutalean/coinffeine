@@ -12,7 +12,7 @@ import coinffeine.model.currency.Euro
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
-import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockMicroPaymentChannel}
+import coinffeine.peer.exchange.protocol.{FakeExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.peer.payment.PaymentProcessorActor.{FindPaymentCriterion, FindPayment, PaymentFound}
@@ -38,8 +38,8 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
 
   val firstStep = IntermediateStep(1, exchange.amounts.breakdown)
   val steps = exchange.amounts.breakdown.intermediateSteps
-  val firstSignatures = StepSignatures(exchange.id, 1, MockExchangeProtocol.DummySignatures)
-  val secondSignatures = StepSignatures(exchange.id, 2, MockExchangeProtocol.DummySignatures)
+  val firstSignatures = StepSignatures(exchange.id, 1, FakeExchangeProtocol.DummySignatures)
+  val secondSignatures = StepSignatures(exchange.id, 2, FakeExchangeProtocol.DummySignatures)
 
   protected def startActor(): Unit = {
     actor = system.actorOf(props)

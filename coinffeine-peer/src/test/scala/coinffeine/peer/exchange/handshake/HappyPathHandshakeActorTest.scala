@@ -7,7 +7,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor._
 import coinffeine.peer.exchange.handshake.HandshakeActor.HandshakeSuccess
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.handshake._
 
 class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path") {
@@ -42,7 +42,7 @@ class HappyPathHandshakeActorTest extends DefaultHandshakeActorTest("happy-path"
   }
 
   it should "don't be fooled by invalid refund TX or source" in {
-    val invalidReply = RefundSignatureResponse(exchange.id, MockExchangeProtocol.InvalidSignature)
+    val invalidReply = RefundSignatureResponse(exchange.id, FakeExchangeProtocol.InvalidSignature)
     gateway.relayMessage(invalidReply, counterpartId)
   }
 

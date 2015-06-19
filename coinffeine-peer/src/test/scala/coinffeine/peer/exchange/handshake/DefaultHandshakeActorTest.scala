@@ -11,7 +11,7 @@ import coinffeine.model.bitcoin._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
-import coinffeine.peer.exchange.protocol.{MockExchangeProtocol, MockHandshake}
+import coinffeine.peer.exchange.protocol.{FakeExchangeProtocol, MockHandshake}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
@@ -38,7 +38,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     actor = system.actorOf(DefaultHandshakeActor.props(
       DefaultHandshakeActor.ExchangeToStart(exchange, DateTime.now(), user),
       DefaultHandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
-      DefaultHandshakeActor.ProtocolDetails(new MockExchangeProtocol, protocolConstants)
+      DefaultHandshakeActor.ProtocolDetails(new FakeExchangeProtocol, protocolConstants)
     ))
     listener.watch(actor)
   }
@@ -57,7 +57,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
   }
 
   def givenValidRefundSignatureResponse() = {
-    val validSignature = RefundSignatureResponse(exchange.id, MockExchangeProtocol.RefundSignature)
+    val validSignature = RefundSignatureResponse(exchange.id, FakeExchangeProtocol.RefundSignature)
     gateway.relayMessage(validSignature, counterpartId)
   }
 
@@ -83,7 +83,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     val depositAmounts = exchange.amounts.deposits.seller
     request.amount shouldBe depositAmounts.output
     request.transactionFee shouldBe depositAmounts.fee
-    wallet.reply(WalletActor.DepositCreated(request, MockExchangeProtocol.DummyDeposit))
+    wallet.reply(WalletActor.DepositCreated(request, FakeExchangeProtocol.DummyDeposit))
   }
 
   def shouldForwardPeerHandshake(): Unit = {
@@ -102,7 +102,7 @@ abstract class DefaultHandshakeActorTest(systemName: String)
     val id = exchange.id
     gateway.fishForForwardingTo(counterpartId, hint = "counterpart refund signature") {
       case RefundSignatureRequest(_, _) => false
-      case RefundSignatureResponse(`id`, MockExchangeProtocol.CounterpartRefundSignature) => true
+      case RefundSignatureResponse(`id`, FakeExchangeProtocol.CounterpartRefundSignature) => true
     }
   }
 

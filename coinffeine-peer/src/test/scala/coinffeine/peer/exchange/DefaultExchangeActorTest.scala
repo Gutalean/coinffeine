@@ -17,7 +17,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor.{Collaborators, ExchangeFailure}
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor
-import coinffeine.peer.exchange.protocol.{MicroPaymentChannel, MockExchangeProtocol}
+import coinffeine.peer.exchange.protocol.{FakeExchangeProtocol, MicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
 
@@ -35,7 +35,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
     private val peerInfoLookup = new PeerInfoLookupStub()
     protected val handshakeActor = new MockedHandshakeActor(DefaultExchangeActorTest.this)
     private def props = Props(new DefaultExchangeActor(
-      new MockExchangeProtocol,
+      new FakeExchangeProtocol,
       currentExchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {

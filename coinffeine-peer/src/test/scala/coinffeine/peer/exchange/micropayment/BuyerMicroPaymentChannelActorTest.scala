@@ -8,7 +8,7 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.TransactionSignature
 import coinffeine.model.currency._
 import coinffeine.peer.ProtocolConstants
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 
@@ -17,7 +17,7 @@ abstract class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("b
 
   def protocolConstants = ProtocolConstants.Default
   val listener, paymentProcessor = TestProbe()
-  val exchangeProtocol = new MockExchangeProtocol
+  val exchangeProtocol = new FakeExchangeProtocol
   val signatures = Both(TransactionSignature.dummy, TransactionSignature.dummy)
   val lastStep = exchange.amounts.breakdown.intermediateSteps
   val expectedLastOffer = {

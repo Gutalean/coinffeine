@@ -6,14 +6,14 @@ import akka.testkit._
 
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.messages.exchange.StepSignatures
 
 class BuyerMicroPaymentChannelActorFailureTest extends BuyerMicroPaymentChannelActorTest {
 
   "The buyer exchange actor" should "ignore invalid signatures" in {
-    val invalidDeposits = signatures.copy(buyer = MockExchangeProtocol.InvalidSignature)
+    val invalidDeposits = signatures.copy(buyer = FakeExchangeProtocol.InvalidSignature)
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, invalidDeposits))
     listener.expectNoMsg(100.millis.dilated)
   }

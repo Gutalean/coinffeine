@@ -4,7 +4,7 @@ import scala.language.postfixOps
 
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.exchange._
 
 class HappyPathSellerMicroPaymentChannelActorTest extends SellerMicroPaymentChannelActorTest {
@@ -46,7 +46,7 @@ class HappyPathSellerMicroPaymentChannelActorTest extends SellerMicroPaymentChan
       gateway.relayMessage(PaymentProof(exchange.id, "PROOF!", i), counterpartId)
       expectPaymentLookup(step)
       expectProgress(signatures = i + 1)
-      val signatures = StepSignatures(exchange.id, i + 1, MockExchangeProtocol.DummySignatures)
+      val signatures = StepSignatures(exchange.id, i + 1, FakeExchangeProtocol.DummySignatures)
       gateway.expectForwarding(signatures, counterpartId)
     }
   }
@@ -56,7 +56,7 @@ class HappyPathSellerMicroPaymentChannelActorTest extends SellerMicroPaymentChan
     expectPaymentLookup(IntermediateStep(steps, exchange.amounts.breakdown))
     expectProgress(signatures = steps)
     val signatures = StepSignatures(
-      exchange.id, exchange.amounts.breakdown.totalSteps, MockExchangeProtocol.DummySignatures
+      exchange.id, exchange.amounts.breakdown.totalSteps, FakeExchangeProtocol.DummySignatures
     )
     gateway.expectForwarding(signatures, counterpartId)
   }

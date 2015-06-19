@@ -9,7 +9,7 @@ import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 
-class MockExchangeProtocol extends ExchangeProtocol {
+class FakeExchangeProtocol extends ExchangeProtocol {
 
   override def createHandshake[C <: FiatCurrency](
       exchange: DepositPendingExchange[C],
@@ -23,12 +23,12 @@ class MockExchangeProtocol extends ExchangeProtocol {
                                 requiredSignatures: Both[PublicKey],
                                 network: Network): Both[DepositValidation] =
     transactions.map {
-      case MockExchangeProtocol.InvalidDeposit => DepositValidationError.NoMultiSig.failureNel
+      case FakeExchangeProtocol.InvalidDeposit => DepositValidationError.NoMultiSig.failureNel
       case _ => ().successNel
     }
 }
 
-object MockExchangeProtocol {
+object FakeExchangeProtocol {
 
   val DummyDeposit = ImmutableTransaction(new MutableTransaction(CoinffeineUnitTestNetwork))
   val DummyDeposits = Both(DummyDeposit, DummyDeposit)

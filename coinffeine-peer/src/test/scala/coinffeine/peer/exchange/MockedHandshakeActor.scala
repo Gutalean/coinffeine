@@ -9,7 +9,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.exchange.HandshakeFailureCause.SignatureTimeout
 import coinffeine.peer.exchange.handshake.HandshakeActor
 import coinffeine.peer.exchange.handshake.HandshakeActor._
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest.Perspective
 
 class MockedHandshakeActor(perspective: Perspective)(implicit system: ActorSystem) {
@@ -47,7 +47,7 @@ class MockedHandshakeActor(perspective: Perspective)(implicit system: ActorSyste
 
   def givenHandshakeWillSucceedWithInvalidCounterpartCommitment(
      refundTx: ImmutableTransaction): Unit = {
-    val commitments = Both(buyer = MockExchangeProtocol.InvalidDeposit, seller = refundTx)
+    val commitments = Both(buyer = FakeExchangeProtocol.InvalidDeposit, seller = refundTx)
     givenHandshakeWillSucceed(commitments, refundTx)
   }
 

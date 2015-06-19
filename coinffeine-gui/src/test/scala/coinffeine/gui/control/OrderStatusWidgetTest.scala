@@ -11,7 +11,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order.{ActiveOrder, Ask}
 import coinffeine.peer.amounts.DefaultAmountsComponent
-import coinffeine.peer.exchange.protocol.MockExchangeProtocol
+import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 
 class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmountsComponent {
 
@@ -77,7 +77,7 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange with DefaultAmo
         user = PeerInfo("userAccount", new PublicKey),
         counterpart = PeerInfo("counterpartAccount", new PublicKey),
         timestamp = DateTime.now())
-      .startExchanging(MockExchangeProtocol.DummyDeposits, DateTime.now())
+      .startExchanging(FakeExchangeProtocol.DummyDeposits, DateTime.now())
       .completeStep(complededSteps)
 
   private def randomCompletedExchange(amount: Bitcoin.Amount): SuccessfulExchange[Euro.type] =
