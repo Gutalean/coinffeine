@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.broadcast
 
-import scala.util.Random
 import scala.concurrent.duration._
+import scala.util.Random
 
 import akka.testkit._
 import org.bitcoinj.core.TransactionInput
@@ -11,12 +11,11 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, Trans
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.BitcoinPeerActor._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
-import coinffeine.peer.exchange.broadcast.PersistentTransactionBroadcaster.Collaborators
 import coinffeine.peer.exchange.broadcast.TransactionBroadcaster._
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadcastableOffer
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 
-class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
+class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest") {
 
   private val refundLockTime = 20
   private val someLastOffer = ImmutableTransaction(new MutableTransaction(network))
@@ -99,7 +98,7 @@ class PersistentTransactionBroadcasterTest extends CoinffeineClientTest("txBroad
       }
     lastRefundTx = refundTx
     protected val bitcoinPeer, blockchain, terminationListener = TestProbe()
-    protected val instance = system.actorOf(PersistentTransactionBroadcaster.props(
+    protected val instance = system.actorOf(TransactionBroadcaster.props(
       refundTx, Collaborators(bitcoinPeer.ref, blockchain.ref, listener = self), protocolConstants))
     terminationListener.watch(instance)
 
