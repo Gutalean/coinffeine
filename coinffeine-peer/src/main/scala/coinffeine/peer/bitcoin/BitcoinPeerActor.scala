@@ -24,7 +24,6 @@ import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPee
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
                        platform: BitcoinPlatform,
-                       network: Network,
                        connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceLifecycle[Unit] with ActorLogging with CoinffeineEventProducer {
 
@@ -61,7 +60,7 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
 
     case SeedPeers(addresses) =>
       if (addresses.nonEmpty) addresses.foreach(platform.peerGroup.addAddress)
-      else platform.peerGroup.addPeerDiscovery(new DnsDiscovery(network))
+      else platform.peerGroup.addPeerDiscovery(new DnsDiscovery(platform.network))
       platform.peerGroup.startAsync()
 
     case CannotResolveSeedPeers(cause) =>
@@ -220,9 +219,7 @@ object BitcoinPeerActor {
     def blockchainActor(platform: BitcoinPlatform): Props
   }
 
-  trait Component {
-
-    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent =>
+  trait Component { this: BitcoinPlatform.Component with ConfigComponent =>
 
     lazy val bitcoinPeerProps: Props = {
       val settings = configProvider.bitcoinSettings()
@@ -238,7 +235,6 @@ object BitcoinPeerActor {
             BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
         },
         bitcoinPlatform,
-        network,
         settings.connectionRetryInterval
       ))
     }
