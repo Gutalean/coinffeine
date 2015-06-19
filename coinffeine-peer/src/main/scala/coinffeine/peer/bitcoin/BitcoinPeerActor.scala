@@ -20,7 +20,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.platform.BitcoinPlatform
 import coinffeine.peer.bitcoin.wallet.{DefaultWalletActor, SmartWallet}
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
+import coinffeine.peer.events.bitcoin.{ActiveBitcoinPeersChanged, BlockchainStatusChanged}
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
                        platform: BitcoinPlatform,
@@ -217,24 +217,24 @@ object BitcoinPeerActor {
     def blockchainActor(platform: BitcoinPlatform): Props
   }
 
-  trait Component { this: BitcoinPlatform.Component with ConfigComponent =>
+  def props(
+      delegates: BitcoinPeerActor.Delegates,
+      platform: BitcoinPlatform,
+      connectionRetryInterval: FiniteDuration): Props =
+    Props(new BitcoinPeerActor(delegates, platform, connectionRetryInterval))
 
-    lazy val bitcoinPeerProps: Props = {
-      val settings = configProvider.bitcoinSettings()
-      Props(new BitcoinPeerActor(
-        new Delegates {
-          override def transactionPublisher(tx: ImmutableTransaction,
-                                            listener: ActorRef): Props =
-            Props(new TransactionPublisher(
-              tx, bitcoinPlatform.peerGroup, listener, settings.rebroadcastTimeout))
-          override def walletActor(wallet: SmartWallet) =
-            DefaultWalletActor.props(wallet)
-          override def blockchainActor(platform: BitcoinPlatform) =
-            BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
-        },
-        bitcoinPlatform,
-        settings.connectionRetryInterval
-      ))
+  def props(platform: BitcoinPlatform, settings: BitcoinSettings): Props = {
+    val delegates = new Delegates {
+      override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+        Props(new TransactionPublisher(
+          tx, platform.peerGroup, listener, settings.rebroadcastTimeout))
+
+      override def walletActor(wallet: SmartWallet) =
+        DefaultWalletActor.props(wallet)
+
+      override def blockchainActor(platform: BitcoinPlatform) =
+        BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
     }
+    props(delegates, platform, settings.connectionRetryInterval)
   }
 }

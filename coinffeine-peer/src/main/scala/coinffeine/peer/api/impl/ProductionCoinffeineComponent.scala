@@ -1,6 +1,5 @@
 package coinffeine.peer.api.impl
 
-import coinffeine.peer.bitcoin._
 import coinffeine.peer.bitcoin.platform.DefaultBitcoinPlatform
 import coinffeine.peer.config.user.UserFileConfigComponent
 import coinffeine.peer.exchange.DefaultExchangeActor
@@ -14,7 +13,6 @@ trait ProductionCoinffeineComponent
     with CoinffeinePeerActor.Component
     with ProtocolConstants.DefaultComponent
     with DefaultExchangeActor.Component
-    with BitcoinPeerActor.Component
     with DefaultBitcoinPlatform.Component
     with OverlayMessageGateway.Component
     with ProtobufProtocolSerializationComponent
