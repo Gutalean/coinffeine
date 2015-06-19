@@ -3,18 +3,22 @@ package coinffeine.peer.amounts
 import scala.util.Try
 
 import coinffeine.model.Both
-import coinffeine.model.bitcoin.BitcoinFeeCalculator
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, TransactionSizeFeeCalculator}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
-import coinffeine.model.order.{OrderRequest, Ask, Bid}
+import coinffeine.model.order.{Ask, Bid, OrderRequest}
+import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
-private[amounts] class DefaultAmountsCalculator(
+class DefaultAmountsCalculator(
     stepwiseCalculator: StepwisePaymentCalculator,
     bitcoinFeeCalculator: BitcoinFeeCalculator) extends AmountsCalculator {
+
+  def this() = this(
+    new DefaultStepwisePaymentCalculator(OkPayPaymentProcessor), TransactionSizeFeeCalculator)
 
   override def maxFiatPerExchange[C <: FiatCurrency](currency: C) =
     stepwiseCalculator.maximumBreakableFiatAmount(currency)
@@ -110,6 +114,4 @@ private[amounts] class DefaultAmountsCalculator(
 private object DefaultAmountsCalculator {
   /** Amount of escrow deposits in terms of the amount exchanged on every step */
   private val EscrowSteps = Both(buyer = 2, seller = 1)
-
-  private val MaxEurosPerOrder = 500.EUR
 }

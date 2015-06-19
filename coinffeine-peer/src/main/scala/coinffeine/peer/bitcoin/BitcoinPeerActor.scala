@@ -20,11 +20,10 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.platform.BitcoinPlatform
 import coinffeine.peer.bitcoin.wallet.{DefaultWalletActor, SmartWallet}
 import coinffeine.peer.config.ConfigComponent
-import coinffeine.peer.events.bitcoin.{BlockchainStatusChanged, ActiveBitcoinPeersChanged}
+import coinffeine.peer.events.bitcoin.{ActiveBitcoinPeersChanged, BlockchainStatusChanged}
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
                        platform: BitcoinPlatform,
-                       networkComponent: NetworkComponent,
                        connectionRetryInterval: FiniteDuration)
   extends Actor with ServiceLifecycle[Unit] with ActorLogging with CoinffeineEventProducer {
 
@@ -61,7 +60,7 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
 
     case SeedPeers(addresses) =>
       if (addresses.nonEmpty) addresses.foreach(platform.peerGroup.addAddress)
-      else platform.peerGroup.addPeerDiscovery(new DnsDiscovery(networkComponent.network))
+      else platform.peerGroup.addPeerDiscovery(new DnsDiscovery(platform.network))
       platform.peerGroup.startAsync()
 
     case CannotResolveSeedPeers(cause) =>
@@ -91,7 +90,7 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
     case PublishTransaction(tx) =>
       val name = s"broadcast-${tx.get.getHash}"
       if (context.child(name).isEmpty) {
-        context.actorOf(delegates.transactionPublisher(platform.peerGroup, tx, sender()), name)
+        context.actorOf(delegates.transactionPublisher(tx, sender()), name)
       }
   }
 
@@ -213,34 +212,29 @@ object BitcoinPeerActor {
   case object NoPeersAvailable extends RuntimeException("There are no peers available")
 
   trait Delegates {
-    def transactionPublisher(peerGroup: PeerGroup,
-                             tx: ImmutableTransaction,
-                             listener: ActorRef): Props
+    def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props
     def walletActor(wallet: SmartWallet): Props
     def blockchainActor(platform: BitcoinPlatform): Props
   }
 
-  trait Component {
+  def props(
+      delegates: BitcoinPeerActor.Delegates,
+      platform: BitcoinPlatform,
+      connectionRetryInterval: FiniteDuration): Props =
+    Props(new BitcoinPeerActor(delegates, platform, connectionRetryInterval))
 
-    this: BitcoinPlatform.Component with NetworkComponent with ConfigComponent =>
+  def props(platform: BitcoinPlatform, settings: BitcoinSettings): Props = {
+    val delegates = new Delegates {
+      override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+        Props(new TransactionPublisher(
+          tx, platform.peerGroup, listener, settings.rebroadcastTimeout))
 
-    lazy val bitcoinPeerProps: Props = {
-      val settings = configProvider.bitcoinSettings()
-      Props(new BitcoinPeerActor(
-        new Delegates {
-          override def transactionPublisher(peerGroup: PeerGroup,
-                                            tx: ImmutableTransaction,
-                                            listener: ActorRef): Props =
-            Props(new TransactionPublisher(tx, peerGroup, listener, settings.rebroadcastTimeout))
-          override def walletActor(wallet: SmartWallet) =
-            DefaultWalletActor.props(wallet)
-          override def blockchainActor(platform: BitcoinPlatform) =
-            BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
-        },
-        bitcoinPlatform,
-        this,
-        settings.connectionRetryInterval
-      ))
+      override def walletActor(wallet: SmartWallet) =
+        DefaultWalletActor.props(wallet)
+
+      override def blockchainActor(platform: BitcoinPlatform) =
+        BlockchainActor.props(platform.blockchain, platform.wallet.delegate)
     }
+    props(delegates, platform, settings.connectionRetryInterval)
   }
 }

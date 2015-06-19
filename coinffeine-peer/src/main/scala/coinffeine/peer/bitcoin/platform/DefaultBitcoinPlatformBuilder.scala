@@ -55,7 +55,7 @@ class DefaultBitcoinPlatformBuilder extends StrictLogging {
     val peerGroup = buildPeerGroup(blockchain)
     val wallet = buildWallet(blockchain, peerGroup, shouldReplayWallet)
     setupCheckpoints(blockchain, wallet.delegate.getEarliestKeyCreationTime, preexistingChainFile)
-    new DefaultBitcoinPlatform(blockchain, peerGroup, wallet, network.seedPeers)
+    new DefaultBitcoinPlatform(network, blockchain, peerGroup, wallet, network.seedPeers)
   }
 
   private def buildBlockchain(): AbstractBlockChain = {

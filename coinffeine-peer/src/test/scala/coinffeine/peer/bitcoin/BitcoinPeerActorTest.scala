@@ -4,7 +4,6 @@ import scala.concurrent.duration._
 
 import akka.actor.{ActorRef, Props}
 import akka.testkit._
-import org.bitcoinj.core.PeerGroup
 import org.scalatest.concurrent.Eventually
 
 import coinffeine.common.akka.Service
@@ -78,15 +77,13 @@ class BitcoinPeerActorTest extends AkkaSpec with Eventually {
 
     protected val actor = system.actorOf(Props(new BitcoinPeerActor(
       new Delegates {
-        override def transactionPublisher(
-            peerGroup: PeerGroup, tx: ImmutableTransaction, listener: ActorRef): Props =
-          Fixture.this.transactionPublisher.props(peerGroup, tx, listener)
+        override def transactionPublisher(tx: ImmutableTransaction, listener: ActorRef): Props =
+          Fixture.this.transactionPublisher.props(tx, listener)
         override def walletActor(wallet: SmartWallet) = Fixture.this.walletActor.props(wallet)
         override def blockchainActor(platform: BitcoinPlatform) =
           Fixture.this.blockchainActor.props(platform)
       },
       new DefaultBitcoinPlatformBuilder().setNetwork(network).build(),
-      this,
       connectionRetryInterval
     )))
     walletActor.expectCreation()

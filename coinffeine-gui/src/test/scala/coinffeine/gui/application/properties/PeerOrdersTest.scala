@@ -17,7 +17,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.api.CoinffeineOperations
 
 class PeerOrdersTest extends UnitTest with Eventually with Inside {
@@ -88,7 +88,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
     }
   }
 
-  trait Fixture extends DefaultAmountsComponent {
+  trait Fixture {
 
     val operations = new CoinffeineOperations {
       override def cancelOrder(order: OrderId) = {}
@@ -114,7 +114,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       val id = ExchangeId.random()
       val counterpart = PeerId.random()
       val request = OrderRequest(order.orderType, order.amount, order.price)
-      val amounts = amountsCalculator.estimateAmountsFor(request, Spread.empty).get
+      val amounts = new DefaultAmountsCalculator().estimateAmountsFor(request, Spread.empty).get
       val params = ActiveExchange.Parameters(100, TestNet3Params.get())
       ActiveExchange.create(id, BuyerRole, counterpart, amounts, params, DateTime.now())
     }

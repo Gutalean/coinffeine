@@ -8,11 +8,12 @@ import akka.pattern._
 import akka.util.Timeout
 
 import coinffeine.common.akka._
-import coinffeine.model.bitcoin.{Address, ImmutableTransaction, NetworkComponent}
+import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
 import coinffeine.model.currency.{Bitcoin, FiatCurrency}
 import coinffeine.model.order.{ActiveOrder, OrderId, OrderRequest}
-import coinffeine.peer.amounts.AmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.bitcoin.BitcoinPeerActor
+import coinffeine.peer.bitcoin.platform.BitcoinPlatform
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.ExchangeActor
@@ -164,13 +165,13 @@ object CoinffeinePeerActor {
                             paymentProcessor: Props)
 
   trait Component { this: MessageGateway.Component
-    with BitcoinPeerActor.Component
     with ExchangeActor.Component
     with ConfigComponent
-    with NetworkComponent
+    with BitcoinPlatform.Component
     with ProtocolConstants.Component
-    with AmountsComponent
     with OrderArchive.Component =>
+
+    private val amountsCalculator = new DefaultAmountsCalculator()
 
     lazy val peerProps: Props = {
       val props = PropsCatalogue(
@@ -178,7 +179,7 @@ object CoinffeinePeerActor {
           configProvider.relaySettings().clientSettings),
         MarketInfoActor.props,
         orderSupervisorProps,
-        bitcoinPeerProps,
+        BitcoinPeerActor.props(bitcoinPlatform, configProvider.bitcoinSettings()),
         OkPayProcessorActor.props(configProvider.okPaySettings)
       )
       Props(new CoinffeinePeerActor(props, configProvider.generalSettings().serviceStartStopTimeout))
@@ -193,7 +194,7 @@ object CoinffeinePeerActor {
                                      archive: ActorRef) = {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
             gateway, bitcoinPeer, blockchain, archive)
-          OrderActor.props(exchangeActorProps, network, amountsCalculator, order,
+          OrderActor.props(exchangeActorProps, bitcoinPlatform.network, amountsCalculator, order,
             collaborators, configProvider.messageGatewaySettings().peerId)
         }
 

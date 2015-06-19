@@ -11,7 +11,7 @@ import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
 import coinffeine.model.payment.OkPayPaymentProcessor
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.brokerage.OrderMatch
 
@@ -115,20 +115,22 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
     listener should not be 'inMarket
   }
 
-  trait Fixture extends DefaultAmountsComponent {
-    val listener = new MockOrderControllerListener[Euro.type]
-    val order = new OrderController[Euro.type](
+  trait Fixture {
+    protected val amountsCalculator = new DefaultAmountsCalculator()
+    protected val listener = new MockOrderControllerListener[Euro.type]
+    protected val order = new OrderController[Euro.type](
       peerIds.buyer, amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
     order.addListener(listener)
 
-    def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] = exchange match {
-      case runningExchange: RunningExchange[Euro.type] =>
-        runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
-      case notStarted: HandshakingExchange[Euro.type] =>
-        val createdOn = notStarted.metadata.createdOn
-        notStarted.handshake(participants.buyer, participants.seller, createdOn.plusSeconds(5))
-          .startExchanging(FakeExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))
-          .complete(createdOn.plusMinutes(20))
-    }
+    protected def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] =
+      exchange match {
+        case runningExchange: RunningExchange[Euro.type] =>
+          runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
+        case notStarted: HandshakingExchange[Euro.type] =>
+          val createdOn = notStarted.metadata.createdOn
+          notStarted.handshake(participants.buyer, participants.seller, createdOn.plusSeconds(5))
+            .startExchanging(FakeExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))
+            .complete(createdOn.plusMinutes(20))
+      }
   }
 }

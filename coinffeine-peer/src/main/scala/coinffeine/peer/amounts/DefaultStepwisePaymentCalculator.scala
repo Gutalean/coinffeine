@@ -4,7 +4,7 @@ import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
-private[amounts] class DefaultStepwisePaymentCalculator(processor: PaymentProcessor)
+class DefaultStepwisePaymentCalculator(processor: PaymentProcessor)
   extends StepwisePaymentCalculator {
 
   override def maximumPaymentWithGrossAmount[C <: FiatCurrency](

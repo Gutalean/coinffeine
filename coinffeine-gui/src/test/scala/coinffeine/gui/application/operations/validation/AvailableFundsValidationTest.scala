@@ -10,9 +10,9 @@ import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
-import coinffeine.peer.amounts.DefaultAmountsComponent
+import coinffeine.peer.amounts.DefaultAmountsCalculator
 
-class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent with Inside {
+class AvailableFundsValidationTest extends UnitTest with Inside {
 
   private val newBid = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
   private val spread = Spread.empty[Euro.type]
@@ -67,6 +67,7 @@ class AvailableFundsValidationTest extends UnitTest with DefaultAmountsComponent
       hasExpired = false
     )
     val bitcoinBalance = new MutableProperty[Option[BitcoinBalance]](Some(initialBitcoinBalance))
-    val instance = new AvailableFundsValidation(amountsCalculator, fiatBalance, bitcoinBalance)
+    val instance =
+      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiatBalance, bitcoinBalance)
   }
 }
