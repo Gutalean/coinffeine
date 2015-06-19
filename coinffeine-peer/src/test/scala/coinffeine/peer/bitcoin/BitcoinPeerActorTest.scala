@@ -86,7 +86,7 @@ class BitcoinPeerActorTest extends AkkaSpec with Eventually {
           Fixture.this.blockchainActor.props(platform)
       },
       new DefaultBitcoinPlatformBuilder().setNetwork(network).build(),
-      this,
+      network,
       connectionRetryInterval
     )))
     walletActor.expectCreation()
