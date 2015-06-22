@@ -7,7 +7,7 @@ import scalafx.scene.layout.{HBox, StackPane, VBox}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.NodeStyles
-import coinffeine.model.exchange.Exchange
+import coinffeine.model.exchange.{AnyExchange, Exchange}
 import coinffeine.model.order._
 
 /** Interactively shows the status of an order if you bind the {{{status}}} property. */
@@ -82,15 +82,23 @@ object OrderStatusWidget {
         case OrderStatus.NotStarted => submittingStatus(order)
         case OrderStatus.InProgress if !hasActiveExchanges(order) => submittingStatus(order)
         case OrderStatus.InProgress =>
-          if (order.exchanges.values.exists(isInProgress)) InProgress else Matching
+          if (activeExchanges(order).forall(isWaitingForConfirmation)) WaitingForConfirmation
+          else if (order.exchanges.values.exists(isInProgress)) InProgress
+          else Matching
         case OrderStatus.Completed | OrderStatus.Cancelled => Completed
       }
 
     private def hasActiveExchanges(order: AnyCurrencyOrder) =
-      order.exchanges.values.exists(!_.isCompleted)
+      activeExchanges(order).nonEmpty
+
+    private def activeExchanges(order: AnyCurrencyOrder) =
+      order.exchanges.values.filterNot(_.isCompleted)
 
     private def submittingStatus(order: AnyCurrencyOrder) =
       if (!order.inMarket) Submitting else InMarket
+
+    private def isWaitingForConfirmation(exchange: AnyExchange): Boolean =
+      exchange.exchangedBitcoin.buyer == exchange.progress.bitcoinsTransferred.buyer
 
     private def isInProgress(exchange: Exchange[_]): Boolean =
       !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
@@ -115,6 +123,12 @@ object OrderStatusWidget {
 
   case object InProgress extends Status {
     override val message = "In progress"
+    override val spinnerSection = Some(2)
+    override val filledSections = 3
+  }
+
+  case object WaitingForConfirmation extends Status {
+    override val message = "Waiting confirmation"
     override val spinnerSection = Some(2)
     override val filledSections = 3
   }

@@ -4,7 +4,7 @@ import org.joda.time.DateTime
 
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.control.OrderStatusWidget._
-import coinffeine.model.bitcoin.PublicKey
+import coinffeine.model.bitcoin
 import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
@@ -29,7 +29,9 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
   }
 
   it should "be in progress for orders with any exchange making progress" in {
-    val order = randomOrder(1.BTC).withExchange(randomInProgressExchange(0.5.BTC, 2))
+    val order =randomOrder(2.BTC)
+      .withExchange(randomWaitingForConfirmationExchange(1.BTC))
+      .withExchange(randomInProgressExchange(0.5.BTC, completedSteps = 2))
     Status.fromOrder(order) shouldBe InProgress
   }
 
@@ -56,6 +58,13 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
     Status.fromOrder(randomOrder(1.BTC).cancel(DateTime.now())) shouldBe Completed
   }
 
+  it should "be waiting for confirmation if all active exchanges are also doing so" in {
+    val order = randomOrder(2.BTC)
+      .withExchange(randomCompletedExchange(1.BTC))
+      .withExchange(randomWaitingForConfirmationExchange(1.BTC))
+    Status.fromOrder(order) shouldBe WaitingForConfirmation
+  }
+
   private def randomOrder(amount: Bitcoin.Amount): ActiveOrder[Euro.type] = {
     ActiveOrder.randomMarketPrice(Ask, amount, Euro)
   }
@@ -70,16 +79,24 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
       createdOn = DateTime.now()
     )
 
-  private def randomInProgressExchange(amount: Bitcoin.Amount,
-                                       complededSteps: Int): RunningExchange[Euro.type] =
+  private def randomWaitingForConfirmationExchange(
+      amount: Bitcoin.Amount): RunningExchange[Euro.type] = {
+    val exchange = randomInProgressExchange(amount)
+    exchange.completeStep(exchange.amounts.intermediateSteps.size)
+  }
+
+  private def randomInProgressExchange(
+      amount: Bitcoin.Amount, completedSteps: Int): RunningExchange[Euro.type] =
+    randomInProgressExchange(amount).completeStep(completedSteps)
+
+  private def randomInProgressExchange(amount: Bitcoin.Amount): RunningExchange[Euro.type] =
     randomExchange(amount)
       .handshake(
-        user = PeerInfo("userAccount", new PublicKey),
-        counterpart = PeerInfo("counterpartAccount", new PublicKey),
+        user = PeerInfo("userAccount", new bitcoin.PublicKey),
+        counterpart = PeerInfo("counterpartAccount", new bitcoin.PublicKey),
         timestamp = DateTime.now())
       .startExchanging(FakeExchangeProtocol.DummyDeposits, DateTime.now())
-      .completeStep(complededSteps)
 
   private def randomCompletedExchange(amount: Bitcoin.Amount): SuccessfulExchange[Euro.type] =
-    randomInProgressExchange(amount, 1).complete(DateTime.now())
+    randomInProgressExchange(amount).complete(DateTime.now())
 }
