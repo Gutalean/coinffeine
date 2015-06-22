@@ -28,7 +28,7 @@ object DefaultBitcoinPlatform {
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 
-    override def bitcoinPlatform: BitcoinPlatform = {
+    override lazy val bitcoinPlatform: BitcoinPlatform = {
       val settings = configProvider.bitcoinSettings()
       new DefaultBitcoinPlatformBuilder()
         .setNetwork(network)
