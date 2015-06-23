@@ -1,5 +1,7 @@
 package coinffeine.gui.control
 
+import org.joda.time.DateTime
+
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
@@ -7,11 +9,12 @@ import coinffeine.model.network.PeerId
 class ConnectionStatusTest extends UnitTest {
 
   val bitcoinStatuses = Set(
-    ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading(lastBlock = None)),
     ConnectionStatus.Bitcoin(0, BlockchainStatus.Downloading(100, 50)),
-    ConnectionStatus.Bitcoin(1, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(1, BlockchainStatus.NotDownloading(lastBlock = None)),
     ConnectionStatus.Bitcoin(1, BlockchainStatus.Downloading(100, 50)),
-    ConnectionStatus.Bitcoin(2, BlockchainStatus.NotDownloading),
+    ConnectionStatus.Bitcoin(2, BlockchainStatus.NotDownloading(
+      lastBlock = Some(BlockchainStatus.BlockInfo(100, DateTime.now())))),
     ConnectionStatus.Bitcoin(3, BlockchainStatus.Downloading(100, 10))
   )
   val coinffeineStatuses = Set(
@@ -38,12 +41,18 @@ class ConnectionStatusTest extends UnitTest {
     }
   }
 
-  it should "report the blockchain syncing progress" in {
+  it should "report the blockchain details" in {
     forEveryStatus { status =>
-      if (status.bitcoin.blockchainStatus == BlockchainStatus.NotDownloading) {
-        status.description should not include "syncing blockchain"
-      } else {
-        status.description should include("syncing blockchain")
+      status.bitcoin.blockchainStatus match {
+        case BlockchainStatus.NotDownloading(None) =>
+          status.description should not include "last block"
+          status.description should not include "syncing blockchain"
+        case BlockchainStatus.NotDownloading(Some(_)) =>
+          status.description should include ("last block")
+          status.description should not include "syncing blockchain"
+        case _ =>
+          status.description should not include "last block"
+          status.description should include ("syncing blockchain")
       }
     }
   }

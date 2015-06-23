@@ -1,11 +1,15 @@
 package coinffeine.model.bitcoin
 
+import org.joda.time.DateTime
+
 sealed trait BlockchainStatus
 
 object BlockchainStatus {
 
+  case class BlockInfo(height: Long, date: DateTime)
+
   /** The blockchain is fully downloaded */
-  case object NotDownloading extends BlockchainStatus
+  case class NotDownloading(lastBlock: Option[BlockInfo]) extends BlockchainStatus
 
   /** Blockchain download is in progress.
     *

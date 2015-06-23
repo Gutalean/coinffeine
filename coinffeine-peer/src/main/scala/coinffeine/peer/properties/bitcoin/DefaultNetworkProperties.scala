@@ -13,7 +13,7 @@ class DefaultNetworkProperties(implicit system: ActorSystem) extends NetworkProp
   }
 
   override val blockchainStatus = EventObservedProperty[BlockchainStatus](
-      BlockchainStatusChanged.Topic, BlockchainStatus.NotDownloading) {
+      BlockchainStatusChanged.Topic, BlockchainStatus.NotDownloading(lastBlock = None)) {
     case BlockchainStatusChanged(to) => to
   }
 }

@@ -11,7 +11,7 @@ class ConnectionStatusPromptTest extends UnitTest {
     knownBroker = true,
     coinffeinePeers = 7,
     bitcoinPeers = 4,
-    blockchainStatus = NotDownloading
+    blockchainStatus = NotDownloading(lastBlock = None)
   )
   val property = new MutableProperty(connectedStatus)
   val prompt = new ConnectionStatusPrompt(property)

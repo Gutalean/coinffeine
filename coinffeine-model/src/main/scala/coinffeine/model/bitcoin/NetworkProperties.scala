@@ -12,5 +12,5 @@ class MutableNetworkProperties extends NetworkProperties {
 
   val activePeers: MutableProperty[Int] = new MutableProperty(0)
   val blockchainStatus: MutableProperty[BlockchainStatus] =
-    new MutableProperty(BlockchainStatus.NotDownloading)
+    new MutableProperty(BlockchainStatus.NotDownloading(lastBlock = None))
 }
