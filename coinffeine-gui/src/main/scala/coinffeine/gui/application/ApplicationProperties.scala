@@ -1,9 +1,14 @@
 package coinffeine.gui.application
 
-import scala.concurrent.ExecutionContext
+import javafx.beans.value.{ObservableValue, ChangeListener}
+import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.duration._
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
+import org.joda.time.DateTime
+
 import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, WalletProperties}
+import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.{Euro, FiatBalance}
@@ -14,6 +19,9 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
   type EuroBalance = FiatBalance[Euro.type]
 
   import coinffeine.gui.util.FxExecutor.asContext
+  import ApplicationProperties._
+
+  val now = PollingBean[DateTime](TimeComputingInterval)(Future.successful(DateTime.now()))
 
   val ordersProperty = new PeerOrders(app.operations, executor)
 
@@ -31,7 +39,15 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
     val status = new ObjectProperty(this, "connectionStatus",
       ConnectionStatus(
         ConnectionStatus.Coinffeine(0, None),
-        ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading(lastBlock = None))))
+        ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading(lastBlock = None)),
+        DateTime.now()))
+    now.addListener(new ChangeListener[Option[DateTime]] {
+      override def changed(observable: ObservableValue[_ <: Option[DateTime]],
+                           oldValue: Option[DateTime],
+                           newValue: Option[DateTime]) = {
+        status.value = status.value.copy(now = newValue.getOrElse(DateTime.now()))
+      }
+    })
     app.bitcoinNetwork.activePeers.onNewValue { newValue =>
       val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(
@@ -54,4 +70,8 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
     }
     status
   }
+}
+
+object ApplicationProperties {
+  val TimeComputingInterval = 10.seconds
 }

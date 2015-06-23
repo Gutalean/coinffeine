@@ -1,15 +1,16 @@
 package coinffeine.gui.control
 
-import org.joda.time.DateTime
-import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+import org.joda.time.{DateTime, Period}
 
+import coinffeine.gui.util.DateTimePrinter
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
 
 /** Combines Coinffeine and Bitcoin Connection status information */
 case class ConnectionStatus(
     coinffeine: ConnectionStatus.Coinffeine,
-    bitcoin: ConnectionStatus.Bitcoin) {
+    bitcoin: ConnectionStatus.Bitcoin,
+    now: DateTime) {
 
   val description: String = "%s, %s%s".format(
     formatPeerCount(coinffeine.activePeers, "coinffeine"),
@@ -28,9 +29,9 @@ case class ConnectionStatus(
     bitcoin.blockchainStatus match {
       case BlockchainStatus.NotDownloading(None) => ""
       case BlockchainStatus.NotDownloading(Some(lastBlock)) =>
-        val height = lastBlock.height
-        val on = DateTimeFormat.shortDateTime().print(lastBlock.date)
-        s", last block $height ($on)"
+        val dateTimePrinter = new DateTimePrinter
+        val elapsed = dateTimePrinter.printElapsed(lastBlock.date, new Period(lastBlock.date, now))
+        s", last block mined $elapsed"
       case download: BlockchainStatus.Downloading =>
         val percent = (download.progress * 100).toInt
         s", syncing blockchain ($percent%)"
