@@ -1,9 +1,10 @@
-package coinffeine.gui.application.operations
+package coinffeine.gui.util
+
+import org.joda.time.{DateTime, Period}
 
 import coinffeine.common.test.UnitTest
-import org.joda.time.{Period, DateTime}
 
-class DateTimePrinterTest extends UnitTest {
+class ElapsedTimePrinterTest extends UnitTest {
 
   "Date time printer" should "print a seconds-order period" in new Fixture {
     printElapsed(elapsed(now)) shouldBe "just now"
@@ -38,7 +39,7 @@ class DateTimePrinterTest extends UnitTest {
 
   trait Fixture {
     val now = DateTime.now()
-    val printer = new DateTimePrinter
+    val printer = new ElapsedTimePrinter
     val printElapsed = (printer.printElapsed _).tupled
     val printDate = printer.printDate _
 

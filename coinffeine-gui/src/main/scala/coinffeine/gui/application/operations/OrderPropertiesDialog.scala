@@ -12,15 +12,16 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
+import coinffeine.gui.util.ElapsedTimePrinter
 import coinffeine.model.order._
 
 class OrderPropertiesDialog(props: OrderProperties) {
 
-  private val dateTimePrinter = new DateTimePrinter
+  private val elapsedTimePrinter = new ElapsedTimePrinter
 
   private val action = if (props.typeProperty.value == Bid) "buying" else "selling"
   private val amount = props.amountProperty.value
-  private val date = dateTimePrinter.printDate(props.createdOnProperty.value)
+  private val date = elapsedTimePrinter.printDate(props.createdOnProperty.value)
 
   private val icon = new Pane {
     props.orderProperty.delegate.bindToList(styleClass)(OperationStyles.stylesFor(_) :+ "icon")

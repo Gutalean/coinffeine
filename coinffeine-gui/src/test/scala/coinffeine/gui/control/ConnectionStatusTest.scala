@@ -27,7 +27,7 @@ class ConnectionStatusTest extends UnitTest {
   val anyStatus = for {
     coinffeineStatus <- coinffeineStatuses
     bitcoinStatus <- bitcoinStatuses
-  } yield ConnectionStatus(coinffeineStatus, bitcoinStatus)
+  } yield ConnectionStatus(coinffeineStatus, bitcoinStatus, now = DateTime.now())
 
   "A combined connection status" should "report the number of coinffeine connected peers" in {
     forEveryStatus { status =>

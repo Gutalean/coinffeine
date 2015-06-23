@@ -1,11 +1,11 @@
-package coinffeine.gui.application.operations
+package coinffeine.gui.util
 
 import java.util.Locale
 
-import org.joda.time.{Period, DateTime}
 import org.joda.time.format.{DateTimeFormat, PeriodFormatterBuilder}
+import org.joda.time.{DateTime, Period}
 
-class DateTimePrinter {
+class ElapsedTimePrinter {
 
   private val shortElapsedFormatter = new PeriodFormatterBuilder()
     .appendHours().appendSuffix("h").appendSeparator(" ")
