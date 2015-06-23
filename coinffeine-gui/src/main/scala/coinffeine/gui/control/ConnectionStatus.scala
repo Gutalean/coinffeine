@@ -2,7 +2,7 @@ package coinffeine.gui.control
 
 import org.joda.time.{DateTime, Period}
 
-import coinffeine.gui.util.DateTimePrinter
+import coinffeine.gui.util.ElapsedTimePrinter
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
 
@@ -29,8 +29,8 @@ case class ConnectionStatus(
     bitcoin.blockchainStatus match {
       case BlockchainStatus.NotDownloading(None) => ""
       case BlockchainStatus.NotDownloading(Some(lastBlock)) =>
-        val dateTimePrinter = new DateTimePrinter
-        val elapsed = dateTimePrinter.printElapsed(lastBlock.date, new Period(lastBlock.date, now))
+        val printer = new ElapsedTimePrinter
+        val elapsed = printer.printElapsed(lastBlock.date, new Period(lastBlock.date, now))
         s", last block mined $elapsed"
       case download: BlockchainStatus.Downloading =>
         val percent = (download.progress * 100).toInt

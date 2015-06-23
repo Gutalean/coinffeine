@@ -22,7 +22,7 @@ import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
-import coinffeine.gui.util.DateTimePrinter
+import coinffeine.gui.util.ElapsedTimePrinter
 import coinffeine.model.order.{Ask, Bid}
 import coinffeine.peer.api.CoinffeineApp
 
@@ -34,7 +34,7 @@ class OperationsView(app: CoinffeineApp,
 
   private val now = PollingBean[DateTime](TimeComputingInterval)(Future.successful(DateTime.now()))
 
-  private val dateTimePrinter = new DateTimePrinter
+  private val elapsedTimePrinter = new ElapsedTimePrinter
 
   private def lineFor(p: OrderProperties): Node = {
     val createdOn = p.createdOnProperty.value
@@ -89,7 +89,7 @@ class OperationsView(app: CoinffeineApp,
             styleClass += "date"
             text <== now.mapToString { n =>
               val elapsed = new Period(createdOn, n.getOrElse(DateTime.now()))
-              dateTimePrinter.printElapsed(createdOn, elapsed)
+              elapsedTimePrinter.printElapsed(createdOn, elapsed)
             }
           },
           new OrderStatusWidget {
