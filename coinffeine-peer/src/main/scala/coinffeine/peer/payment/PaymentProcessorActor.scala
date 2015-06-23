@@ -11,12 +11,6 @@ import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessorActor {
 
-  /** A message sent to the payment processor in order to identify the user account. */
-  case object RetrieveAccountId
-
-  /** A message sent by the payment processor identifying the account id. */
-  case class RetrievedAccountId(id: AccountId)
-
   /** A message sent to the payment processor to reserve some funds for an exchange.
     * Availability will be notified via [[AvailableFunds]] and [[UnavailableFunds]] messages on the
     * event stream.

@@ -22,13 +22,7 @@ import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
-  "OKPayProcessor" must "identify itself" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized()
-    requester.send(processor, PaymentProcessorActor.RetrieveAccountId)
-    requester.expectMsg(PaymentProcessorActor.RetrievedAccountId(senderAccount))
-  }
-
-  it must "be able to get the current balance" in new WithOkPayProcessor {
+  "OKPayProcessor" must "be able to get the current balance" in new WithOkPayProcessor {
     givenPaymentProcessorIsInitialized(balances = Seq(amount))
     requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
     fundsRegistry.expectAskWithReply {

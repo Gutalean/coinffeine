@@ -17,11 +17,7 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       fiatAddress: String,
       initialBalances: Seq[FiatAmount]) extends Actor {
 
-    val id: String = "MockPay"
-
     override def receive: Receive = {
-      case PaymentProcessorActor.RetrieveAccountId =>
-        sender ! PaymentProcessorActor.RetrievedAccountId(id)
       case pay: PaymentProcessorActor.Pay[_] =>
         sendPayment(sender(), pay)
       case PaymentProcessorActor.FindPayment(criterion) =>

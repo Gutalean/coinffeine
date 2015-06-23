@@ -53,8 +53,6 @@ private class OkPayProcessorActor(
   }
 
   private def started: Receive = {
-    case PaymentProcessorActor.RetrieveAccountId =>
-      sender ! RetrievedAccountId(clientFactory.build().accountId)
     case pay: Pay[_] =>
       sendPayment(sender(), pay)
     case FindPayment(criterion) =>
