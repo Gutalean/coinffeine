@@ -35,16 +35,12 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private val lines = new VBox {
     styleClass += "lines"
     children = Seq(
-      makeStatusLine(
-        props.statusProperty.delegate.mapToString(_.name.capitalize), props.orderProperty),
-      makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
-      makeLine("Type", props.typeProperty.delegate.mapToString(_.toString)),
-      makeLine("Price", props.priceProperty.delegate.mapToString {
-        case LimitPrice(limit) => "Limit price at " + limit
-        case MarketPrice(currency) => s"$currency market price"
-      }),
-      makeLine("Order ID", props.idProperty.delegate.mapToString(_.value)),
-      makeFooter()
+      statusLine(),
+      amountLine(),
+      orderTypeLine(),
+      priceLine(),
+      orderIdLine(),
+      footer()
     )
   }
 
@@ -67,40 +63,57 @@ class OrderPropertiesDialog(props: OrderProperties) {
     stage.show()
   }
 
-  private def makeStatusLine(status: ObservableStringValue,
-                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) =  new HBox {
-    orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
+  private def statusLine() = new HBox {
+    props.orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
     children = Seq(
       new VBox {
         children = Seq(
-          new Label("Status") { styleClass += "prop-name" },
-          new Label {
-            styleClass += "prop-value"
-            text <== status
-          }
+          propName("Status"),
+          propValue(props.statusProperty.delegate.mapToString(_.name.capitalize))
         )
       },
       new OrderStatusWidget {
-        status <== orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
+        status <== props.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
       }
     )
   }
 
-  private def makeLine(title: String,
-                       value: ObservableStringValue): Node = new HBox {
+  private def amountLine() = {
+    simpleLine("Amount", props.amountProperty.delegate.mapToString(_.toString))
+  }
+
+  private def orderTypeLine() = {
+    simpleLine("Type", props.typeProperty.delegate.mapToString(_.toString))
+  }
+
+  private def priceLine() = {
+    val requiredPrice = props.priceProperty.delegate.mapToString {
+      case LimitPrice(limit) => "Limit price at " + limit
+      case MarketPrice(currency) => s"Taking $currency market price"
+    }
+    simpleLine("Price", requiredPrice)
+  }
+
+  private def orderIdLine() = {
+    simpleLine("Order ID", props.idProperty.delegate.mapToString(_.value))
+  }
+
+  private def simpleLine(
+      title: String, values: ObservableStringValue*): Node = new HBox {
     styleClass += "line"
     children = new VBox {
-      children = Seq(
-        new Label(title) { styleClass += "prop-name" },
-        new Label {
-          styleClass += "prop-value"
-          text <== value
-        }
-      )
+      children = propName(title) +: values.map(propValue)
     }
   }
 
-  private def makeFooter(): Node = new HBox {
+  private def propName(text: String) = new Label(text) { styleClass += "prop-name" }
+
+  private def propValue(value: ObservableStringValue) = new Label {
+    styleClass += "prop-value"
+    text <== value
+  }
+
+  private def footer(): Node = new HBox {
     styleClass ++= Seq("line", "footer")
     children = new SupportWidget("order-props")
   }
