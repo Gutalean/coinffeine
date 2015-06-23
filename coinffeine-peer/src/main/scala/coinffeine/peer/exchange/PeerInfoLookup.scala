@@ -2,19 +2,22 @@ package coinffeine.peer.exchange
 
 import scala.concurrent.Future
 
-import akka.actor.{ActorRef, ActorContext}
+import akka.actor.{ActorContext, ActorRef}
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.model.exchange.Exchange
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.payment.PaymentProcessorActor
+import coinffeine.peer.payment.okpay.OkPaySettings
 
 trait PeerInfoLookup {
   /** Lookup current peer info */
   def lookup()(implicit context: ActorContext): Future[Exchange.PeerInfo]
 }
 
-class PeerInfoLookupImpl(wallet: ActorRef, paymentProcessor: ActorRef) extends PeerInfoLookup {
+class PeerInfoLookupImpl(wallet: ActorRef, lookupSettings: () => OkPaySettings) extends PeerInfoLookup {
+
+  import PeerInfoLookupImpl._
 
   override def lookup()(implicit context: ActorContext): Future[Exchange.PeerInfo] = {
     import context.dispatcher
@@ -25,15 +28,16 @@ class PeerInfoLookupImpl(wallet: ActorRef, paymentProcessor: ActorRef) extends P
       errorMessage = "Cannot get a fresh key pair"
     ).withImmediateReply[WalletActor.KeyPairCreated]().map(_.keyPair)
 
-    val retrievingAccountId = AskPattern(
-      to = paymentProcessor,
-      request = PaymentProcessorActor.RetrieveAccountId,
-      errorMessage = "Cannot retrieve the user account id"
-    ).withImmediateReply[PaymentProcessorActor.RetrievedAccountId]().map(_.id)
+    val retrievingAccountId = lookupSettings().userAccount
+      .fold[Future[AccountId]](Future.failed(MissingOkPayWalletId))(Future.successful)
 
     for {
       keyPair <- creatingFreshKeyPair
       accountId <- retrievingAccountId
     } yield Exchange.PeerInfo(accountId, keyPair)
   }
+}
+
+object PeerInfoLookupImpl {
+  object MissingOkPayWalletId extends Exception("missing OKPay wallet ID in app config")
 }

@@ -13,6 +13,7 @@ import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
+import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.TransactionBroadcaster
@@ -266,7 +267,7 @@ object DefaultExchangeActor {
   }
 
   trait Component extends ExchangeActor.Component {
-    this: ProtocolConstants.Component =>
+    this: ProtocolConstants.Component with ConfigComponent =>
 
     override def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
                                     collaborators: ExchangeActor.Collaborators) = {
@@ -305,7 +306,7 @@ object DefaultExchangeActor {
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
-      val lookup = new PeerInfoLookupImpl(wallet, paymentProcessor)
+      val lookup = new PeerInfoLookupImpl(wallet, configProvider.okPaySettings)
 
       Props(new DefaultExchangeActor(DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }
