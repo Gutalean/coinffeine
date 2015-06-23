@@ -1,7 +1,8 @@
-package coinffeine.gui.application.operations
+package coinffeine.gui.util
+
+import org.joda.time.{DateTime, Period}
 
 import coinffeine.common.test.UnitTest
-import org.joda.time.{Period, DateTime}
 
 class DateTimePrinterTest extends UnitTest {
 

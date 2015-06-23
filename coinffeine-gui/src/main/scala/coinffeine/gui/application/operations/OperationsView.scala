@@ -22,6 +22,7 @@ import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
+import coinffeine.gui.util.DateTimePrinter
 import coinffeine.model.order.{Ask, Bid}
 import coinffeine.peer.api.CoinffeineApp
 
