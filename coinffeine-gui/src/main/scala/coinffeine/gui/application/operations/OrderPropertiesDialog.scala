@@ -1,7 +1,6 @@
 package coinffeine.gui.application.operations
 
 import javafx.beans.value.ObservableStringValue
-import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Pane, VBox}
 import scalafx.scene.{Node, Parent}
@@ -13,6 +12,7 @@ import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.gui.util.ElapsedTimePrinter
+import coinffeine.model.exchange.ExchangeStatus.Handshaking
 import coinffeine.model.order._
 
 class OrderPropertiesDialog(props: OrderProperties) {
@@ -87,11 +87,27 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def priceLine() = {
-    val requiredPrice = props.priceProperty.delegate.mapToString {
-      case LimitPrice(limit) => "Limit price at " + limit
-      case MarketPrice(currency) => s"Taking $currency market price"
+    val requestedPrice = props.priceProperty.delegate.mapToString(formatRequestedPrice)
+    val actualPrice = props.orderProperty.delegate.mapToString(formatAveragePrice)
+    simpleLine("Price", requestedPrice, actualPrice)
+  }
+
+  private def formatRequestedPrice(price: AnyOrderPrice): String = price match {
+    case LimitPrice(limit) => "Limit price at " + limit
+    case MarketPrice(currency) => s"Taking $currency market price"
+  }
+
+  def formatAveragePrice(order: AnyCurrencyOrder): String = {
+    val exchanges = order.exchanges.values.filter(_.status != Handshaking).toSeq
+    WeightedAveragePrice.average(exchanges).fold("") { price =>
+      "Average of %s from %s".format(price, formatCount(exchanges.size, "exchange"))
     }
-    simpleLine("Price", requiredPrice)
+  }
+
+  private def formatCount(number: Int, unit: String): String = number match {
+    case 0 => s"no ${unit}s"
+    case 1 => s"one $unit"
+    case _ => s"$number ${unit}s"
   }
 
   private def orderIdLine() = {
