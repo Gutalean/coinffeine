@@ -1,7 +1,6 @@
 package coinffeine.gui.application.operations
 
 import javafx.beans.value.ObservableStringValue
-import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control.Label
 import scalafx.scene.layout.{HBox, Pane, VBox}
 import scalafx.scene.{Node, Parent}
@@ -13,6 +12,7 @@ import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.gui.util.ElapsedTimePrinter
+import coinffeine.model.exchange.ExchangeStatus.Handshaking
 import coinffeine.model.order._
 
 class OrderPropertiesDialog(props: OrderProperties) {
@@ -35,16 +35,12 @@ class OrderPropertiesDialog(props: OrderProperties) {
   private val lines = new VBox {
     styleClass += "lines"
     children = Seq(
-      makeStatusLine(
-        props.statusProperty.delegate.mapToString(_.name.capitalize), props.orderProperty),
-      makeLine("Amount", props.amountProperty.delegate.mapToString(_.toString)),
-      makeLine("Type", props.typeProperty.delegate.mapToString(_.toString)),
-      makeLine("Price", props.priceProperty.delegate.mapToString {
-        case LimitPrice(limit) => "Limit price at " + limit
-        case MarketPrice(currency) => s"$currency market price"
-      }),
-      makeLine("Order ID", props.idProperty.delegate.mapToString(_.value)),
-      makeFooter()
+      statusLine(),
+      amountLine(),
+      orderTypeLine(),
+      priceLine(),
+      orderIdLine(),
+      footer()
     )
   }
 
@@ -67,40 +63,73 @@ class OrderPropertiesDialog(props: OrderProperties) {
     stage.show()
   }
 
-  private def makeStatusLine(status: ObservableStringValue,
-                             orderProperty: ReadOnlyObjectProperty[AnyCurrencyOrder]) =  new HBox {
-    orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
+  private def statusLine() = new HBox {
+    props.orderProperty.delegate.bindToList(styleClass)("line" +: OperationStyles.stylesFor(_))
     children = Seq(
       new VBox {
         children = Seq(
-          new Label("Status") { styleClass += "prop-name" },
-          new Label {
-            styleClass += "prop-value"
-            text <== status
-          }
+          propName("Status"),
+          propValue(props.statusProperty.delegate.mapToString(_.name.capitalize))
         )
       },
       new OrderStatusWidget {
-        status <== orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
+        status <== props.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
       }
     )
   }
 
-  private def makeLine(title: String,
-                       value: ObservableStringValue): Node = new HBox {
-    styleClass += "line"
-    children = new VBox {
-      children = Seq(
-        new Label(title) { styleClass += "prop-name" },
-        new Label {
-          styleClass += "prop-value"
-          text <== value
-        }
-      )
+  private def amountLine() = {
+    simpleLine("Amount", props.amountProperty.delegate.mapToString(_.toString))
+  }
+
+  private def orderTypeLine() = {
+    simpleLine("Type", props.typeProperty.delegate.mapToString(_.toString))
+  }
+
+  private def priceLine() = {
+    val requestedPrice = props.priceProperty.delegate.mapToString(formatRequestedPrice)
+    val actualPrice = props.orderProperty.delegate.mapToString(formatAveragePrice)
+    simpleLine("Price", requestedPrice, actualPrice)
+  }
+
+  private def formatRequestedPrice(price: AnyOrderPrice): String = price match {
+    case LimitPrice(limit) => "Limit price at " + limit
+    case MarketPrice(currency) => s"Taking $currency market price"
+  }
+
+  def formatAveragePrice(order: AnyCurrencyOrder): String = {
+    val exchanges = order.exchanges.values.filter(_.status != Handshaking).toSeq
+    WeightedAveragePrice.average(exchanges).fold("") { price =>
+      "Average of %s from %s".format(price, formatCount(exchanges.size, "exchange"))
     }
   }
 
-  private def makeFooter(): Node = new HBox {
+  private def formatCount(number: Int, unit: String): String = number match {
+    case 0 => s"no ${unit}s"
+    case 1 => s"one $unit"
+    case _ => s"$number ${unit}s"
+  }
+
+  private def orderIdLine() = {
+    simpleLine("Order ID", props.idProperty.delegate.mapToString(_.value))
+  }
+
+  private def simpleLine(
+      title: String, values: ObservableStringValue*): Node = new HBox {
+    styleClass += "line"
+    children = new VBox {
+      children = propName(title) +: values.map(propValue)
+    }
+  }
+
+  private def propName(text: String) = new Label(text) { styleClass += "prop-name" }
+
+  private def propValue(value: ObservableStringValue) = new Label {
+    styleClass += "prop-value"
+    text <== value
+  }
+
+  private def footer(): Node = new HBox {
     styleClass ++= Seq("line", "footer")
     children = new SupportWidget("order-props")
   }
