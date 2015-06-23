@@ -32,8 +32,8 @@ class ConnectionStatusPrompt(connectionStatus: Property[PromptStatus])
       if (status.bitcoinPeers == 0) "No peers"
       else "%s:%d".format(bitcoinMessage(status.blockchainStatus), status.bitcoinPeers)
     val color = status.blockchainStatus match {
-      case NotDownloading if status.bitcoinPeers > 0 => Green
-      case NotDownloading => Red
+      case NotDownloading(_) if status.bitcoinPeers > 0 => Green
+      case NotDownloading(_) => Red
       case Downloading(_, _) => Yellow
     }
     color(s"[B-$text]")

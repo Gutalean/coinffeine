@@ -1,5 +1,8 @@
 package coinffeine.gui.control
 
+import org.joda.time.DateTime
+import org.joda.time.format.{DateTimeFormat, DateTimeFormatter}
+
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.network.PeerId
 
@@ -11,7 +14,7 @@ case class ConnectionStatus(
   val description: String = "%s, %s%s".format(
     formatPeerCount(coinffeine.activePeers, "coinffeine"),
     formatPeerCount(bitcoin.activePeers, "bitcoin"),
-    formatBlockchainSyncing
+    formatDetails
   )
 
   val connected = coinffeine.connected && bitcoin.connected
@@ -21,9 +24,13 @@ case class ConnectionStatus(
     s"$count $name peer$pluralS"
   }
 
-  private def formatBlockchainSyncing: String = {
+  private def formatDetails: String = {
     bitcoin.blockchainStatus match {
-      case BlockchainStatus.NotDownloading => ""
+      case BlockchainStatus.NotDownloading(None) => ""
+      case BlockchainStatus.NotDownloading(Some(lastBlock)) =>
+        val height = lastBlock.height
+        val on = DateTimeFormat.shortDateTime().print(lastBlock.date)
+        s", last block $height ($on)"
       case download: BlockchainStatus.Downloading =>
         val percent = (download.progress * 100).toInt
         s", syncing blockchain ($percent%)"

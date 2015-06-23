@@ -31,7 +31,7 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
     val status = new ObjectProperty(this, "connectionStatus",
       ConnectionStatus(
         ConnectionStatus.Coinffeine(0, None),
-        ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading)))
+        ConnectionStatus.Bitcoin(0, BlockchainStatus.NotDownloading(lastBlock = None))))
     app.bitcoinNetwork.activePeers.onNewValue { newValue =>
       val bitcoinStatus = status.value.bitcoin
       status.value = status.value.copy(

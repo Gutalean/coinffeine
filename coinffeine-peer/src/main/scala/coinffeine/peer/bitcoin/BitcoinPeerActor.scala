@@ -70,7 +70,7 @@ class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,
     case PeerGroupStartResult(Success(_)) =>
       log.info("Connected to peer group, starting blockchain download")
       platform.peerGroup.startBlockChainDownload(
-        new BlockchainDownloadListener(publishBlockchainStatus))
+        new BlockchainDownloadListener(platform.blockchain, publishBlockchainStatus))
       become(connected orElse commonHandling)
 
     case PeerGroupStartResult(Failure(_)) =>
