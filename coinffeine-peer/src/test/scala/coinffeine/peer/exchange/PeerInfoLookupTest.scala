@@ -10,7 +10,7 @@ import coinffeine.model.exchange.Exchange
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.payment.PaymentProcessorActor
 
-class DefaultPeerInfoLookupTest extends AkkaSpec {
+class PeerInfoLookupTest extends AkkaSpec {
 
   "Looking peer info up" should "retrieve wallet id and a fresh key pair" in new Fixture {
     actor ! "retrieve"
@@ -35,7 +35,7 @@ class DefaultPeerInfoLookupTest extends AkkaSpec {
   trait Fixture {
     class TestActor(wallet: ActorRef, paymentProcessor: ActorRef) extends Actor {
       import context.dispatcher
-      val instance = new DefaultPeerInfoLookup(wallet, paymentProcessor)
+      val instance = new PeerInfoLookupImpl(wallet, paymentProcessor)
       override def receive: Receive = {
         case "retrieve" => instance.lookup().pipeTo(sender())
       }
