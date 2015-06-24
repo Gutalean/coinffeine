@@ -9,7 +9,7 @@ case class BitcoinBalance(
   estimated: Bitcoin.Amount,
   available: Bitcoin.Amount,
   minOutput: Option[Bitcoin.Amount],
-  blocked: Bitcoin.Amount = Bitcoin.Zero,
+  blocked: Bitcoin.Amount = Bitcoin.zero,
   hasExpired: Boolean = false) extends Balance[Bitcoin.type] {
 
   val amount = estimated

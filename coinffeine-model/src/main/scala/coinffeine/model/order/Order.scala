@@ -32,7 +32,7 @@ trait Order[C <: FiatCurrency] {
     * @return The amount of bitcoins that have been transferred
     */
   def bitcoinsTransferred: Bitcoin.Amount =
-    totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
+    totalSum(Bitcoin.zero)(e => role.select(e.progress.bitcoinsTransferred))
 
   /** Retrieve the progress of this order.
     *

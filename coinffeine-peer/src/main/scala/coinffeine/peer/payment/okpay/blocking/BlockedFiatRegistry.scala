@@ -46,7 +46,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
-        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.Zero)
+        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.zero)
       }
 
     case BalancesUpdate(newBalances) =>

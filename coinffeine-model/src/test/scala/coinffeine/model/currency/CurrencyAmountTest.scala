@@ -9,12 +9,12 @@ import coinffeine.common.test.UnitTest
 class CurrencyAmountTest extends UnitTest with PropertyChecks {
 
   val sampleAmounts = Table[CurrencyAmount[_ <: Currency]]("currency amount",
-    Euro.Zero,
+    Euro.zero,
     Euro(0.01),
     Euro(10.00),
     UsDollar(1234.56),
     UsDollar(-3.23),
-    Bitcoin.Zero,
+    Bitcoin.zero,
     Bitcoin(1.000123),
     Bitcoin.fromSatoshi(1)
   )
@@ -36,7 +36,7 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
   }
 
   it should "be numeric for statically known currencies" in {
-    10.BTC - 20.BTC should be <= Bitcoin.Zero
+    10.BTC - 20.BTC should be <= Bitcoin.zero
     1.USD + UsDollar.numeric.fromInt(150) shouldBe 2.5.USD
     Seq(1.EUR, 2.EUR, 3.EUR).sum shouldBe 6.EUR
   }
@@ -55,9 +55,9 @@ class CurrencyAmountTest extends UnitTest with PropertyChecks {
   }
 
   it should "be printable" in {
-    Euro.Zero.toString shouldBe "0.00EUR"
+    Euro.zero.toString shouldBe "0.00EUR"
     0.01.USD.toString shouldBe "0.01USD"
-    -2.2.EUR.toString shouldBe "-2.20EUR"
+    (-2.2).EUR.toString shouldBe "-2.20EUR"
     Bitcoin.fromSatoshi(-1).toString shouldBe "-0.00000001BTC"
   }
 

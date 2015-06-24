@@ -35,7 +35,7 @@ private class RefundTransactionValidation(parameters: ActiveExchange.Parameters,
   }
 
   private def requireValidRefundedAmount(tx: MutableTransaction): Result = {
-    val actualAmount = tx.getOutputs.asScala.foldLeft(Bitcoin.Zero)(_ + _.getValue)
+    val actualAmount = tx.getOutputs.asScala.foldLeft(Bitcoin.zero)(_ + _.getValue)
     if (actualAmount == expectedAmount) ().successNel
     else InvalidRefundedAmount(actualAmount, expectedAmount).failureNel
   }

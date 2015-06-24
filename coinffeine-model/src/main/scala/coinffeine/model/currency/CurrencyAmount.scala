@@ -18,7 +18,7 @@ case class CurrencyAmount[C <: Currency](units: Long, currency: C)
   extends Ordered[CurrencyAmount[C]] {
   require(currency.isValidAmount(value), s"Invalid amount for $currency: $value")
 
-  lazy val value: BigDecimal = BigDecimal(units) / currency.UnitsInOne
+  lazy val value: BigDecimal = BigDecimal(units) / currency.unitsInOne
 
   def +(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units + other.units)
   def -(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units - other.units)
@@ -80,7 +80,7 @@ object CurrencyAmount {
   private def toAmount[C <: Currency](value: BigDecimal,
                                       currency: C,
                                       roundingMode: RoundingMode.Value): CurrencyAmount[C] = {
-    val units = value.setScale(currency.precision, roundingMode) * currency.UnitsInOne
+    val units = value.setScale(currency.precision, roundingMode) * currency.unitsInOne
     CurrencyAmount(units.toLong, currency)
   }
 
@@ -89,7 +89,7 @@ object CurrencyAmount {
     val currency = amount.currency
     val units = amount.units
     val numbers = s"%s%d.%0${currency.precision}d".format(
-      if (units < 0) "-" else "", units.abs / currency.UnitsInOne, units.abs % currency.UnitsInOne)
+      if (units < 0) "-" else "", units.abs / currency.unitsInOne, units.abs % currency.unitsInOne)
     addSymbol(numbers, symbolPos, currency)
   }
 

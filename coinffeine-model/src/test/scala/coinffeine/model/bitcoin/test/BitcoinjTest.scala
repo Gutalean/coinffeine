@@ -34,7 +34,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   def withFees[A](body: => A) = {
     Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     val result = Try(body)
-    Wallet.defaultFeePerKb = Bitcoin.Zero
+    Wallet.defaultFeePerKb = Bitcoin.zero
     result.get
   }
 
@@ -151,7 +151,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   private def startBitcoinj(): Unit = {
     BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()
-    Wallet.defaultFeePerKb = Bitcoin.Zero
+    Wallet.defaultFeePerKb = Bitcoin.zero
     createH2BlockStore()
     chain = new FullPrunedBlockChain(network, blockStore)
   }

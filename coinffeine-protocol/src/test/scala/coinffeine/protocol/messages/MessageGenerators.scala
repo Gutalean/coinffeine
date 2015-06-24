@@ -46,7 +46,7 @@ trait MessageGenerators {
     Arbitrary(arbitrary[Long].map(n => Bitcoin.fromSatoshi(n.abs)))
 
   def amountOf[C <: Currency](currency: C): Gen[CurrencyAmount[C]] =
-    Gen.chooseNum[Long](0, currency.UnitsInOne * 10000, 1, currency.UnitsInOne).map { units =>
+    Gen.chooseNum[Long](0, currency.unitsInOne * 10000, 1, currency.unitsInOne).map { units =>
       CurrencyAmount(units, currency)
     }
 

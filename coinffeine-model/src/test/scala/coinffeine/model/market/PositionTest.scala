@@ -12,13 +12,13 @@ class PositionTest extends UnitTest {
 
   "A position" should "have a positive amount" in {
     an [IllegalArgumentException] shouldBe thrownBy {
-      Position.limitBid(Bitcoin.Zero, price, id)
+      Position.limitBid(Bitcoin.zero, price, id)
     }
   }
 
   it should "have a positive handshaking amount" in {
     an [IllegalArgumentException] shouldBe thrownBy {
-      Position.limitBid(Bitcoin.Zero, price, id).clearHandshake(1.BTC)
+      Position.limitBid(Bitcoin.zero, price, id).clearHandshake(1.BTC)
     }
   }
 

@@ -110,7 +110,7 @@ class SmartWallet(val delegate: Wallet) {
 
   def createMultisignTransaction(requiredSignatures: Both[PublicKey],
                                  amount: Bitcoin.Amount,
-                                 fee: Bitcoin.Amount = Bitcoin.Zero): ImmutableTransaction =
+                                 fee: Bitcoin.Amount = Bitcoin.zero): ImmutableTransaction =
     createMultisignTransaction(collectFunds(amount), requiredSignatures, amount, fee)
 
   def createMultisignTransaction(inputs: Inputs,
@@ -150,7 +150,7 @@ class SmartWallet(val delegate: Wallet) {
   private def collectFunds(amount: Bitcoin.Amount): Inputs = {
     val inputFundCandidates = spendCandidates
     val necessaryInputCount =
-      inputFundCandidates.view.scanLeft(Bitcoin.Zero)(_ + _.getValue)
+      inputFundCandidates.view.scanLeft(Bitcoin.zero)(_ + _.getValue)
         .takeWhile(_ < amount)
         .length
     inputFundCandidates.take(necessaryInputCount).map(_.getOutPointFor).toSet

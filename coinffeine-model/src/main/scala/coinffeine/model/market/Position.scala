@@ -9,7 +9,7 @@ case class Position[T <: OrderType, C <: FiatCurrency](
     amount: Bitcoin.Amount,
     price: OrderPrice[C],
     id: PositionId,
-    handshakingAmount: Bitcoin.Amount = Bitcoin.Zero) {
+    handshakingAmount: Bitcoin.Amount = Bitcoin.zero) {
   require(amount.isPositive && !handshakingAmount.isNegative && amount >= handshakingAmount,
     s"Invalid position amounts: $this")
 
@@ -22,7 +22,7 @@ case class Position[T <: OrderType, C <: FiatCurrency](
   }
 
   def clearHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
-    copy(handshakingAmount = (handshakingAmount - crossedAmount) max Bitcoin.Zero)
+    copy(handshakingAmount = (handshakingAmount - crossedAmount) max Bitcoin.zero)
 
   def startHandshake(crossedAmount: Bitcoin.Amount): Position[T, C] =
     copy(handshakingAmount = handshakingAmount + crossedAmount)
@@ -49,28 +49,28 @@ object Position {
       amount: Bitcoin.Amount,
       currency: C,
       requester: PositionId,
-      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): BidPosition[C] =
+      handshakingAmount: Bitcoin.Amount = Bitcoin.zero): BidPosition[C] =
     Position(Bid, amount, MarketPrice(currency), requester, handshakingAmount)
 
   def limitBid[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId,
-      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): BidPosition[C] =
+      handshakingAmount: Bitcoin.Amount = Bitcoin.zero): BidPosition[C] =
     Position(Bid, amount, LimitPrice(price), requester, handshakingAmount)
 
   def marketAsk[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       currency: C,
       requester: PositionId,
-      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): AskPosition[C] =
+      handshakingAmount: Bitcoin.Amount = Bitcoin.zero): AskPosition[C] =
     Position(Ask, amount, MarketPrice(currency), requester, handshakingAmount)
 
   def limitAsk[C <: FiatCurrency](
       amount: Bitcoin.Amount,
       price: Price[C],
       requester: PositionId,
-      handshakingAmount: Bitcoin.Amount = Bitcoin.Zero): AskPosition[C] =
+      handshakingAmount: Bitcoin.Amount = Bitcoin.zero): AskPosition[C] =
     Position(Ask, amount, LimitPrice(price), requester, handshakingAmount)
 }
 

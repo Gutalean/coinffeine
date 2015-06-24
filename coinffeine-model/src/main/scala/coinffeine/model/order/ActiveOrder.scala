@@ -99,7 +99,7 @@ object ActiveOrder {
         case _: SuccessfulExchange[_] => 'exchanged
         case _: FailedExchange[_] => 'exchanged
         case _ => 'exchanging
-      }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
+      }.mapValues(totalSum).withDefaultValue(Bitcoin.zero)
 
       ActiveOrder.Amounts(
         exchanged = exchangeGroups('exchanged),

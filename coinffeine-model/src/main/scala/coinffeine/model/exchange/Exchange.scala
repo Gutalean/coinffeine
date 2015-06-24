@@ -53,5 +53,5 @@ object Exchange {
       Progress(bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r })
   }
 
-  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.Zero))
+  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.zero))
 }
