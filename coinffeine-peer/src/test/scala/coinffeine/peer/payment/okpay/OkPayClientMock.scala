@@ -10,7 +10,7 @@ import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
-  private var balances: Future[Seq[FiatAmount]] = _
+  private var balances: Future[Seq[FiatAmount]] = Future.successful(Seq.empty)
   private var paymentResult: Future[AnyPayment] = _
   private var payments: Map[PaymentId, Try[Option[AnyPayment]]] = Map.empty
 

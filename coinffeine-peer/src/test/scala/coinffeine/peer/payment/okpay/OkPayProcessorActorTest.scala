@@ -12,7 +12,7 @@ import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
+import coinffeine.model.payment.{AnyPayment, OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
@@ -23,135 +23,111 @@ import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   "OKPayProcessor" must "be able to get the current balance" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
-    fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.RetrieveTotalBlockedFunds(UsDollar) =>
-        BlockedFiatRegistry.TotalBlockedFunds(13.USD)
-    }
-    requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(amount, 13.USD))
+    givenClientBalance(amount)
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
+    whenBalanceIsRequested(UsDollar)
+    expectRetrieveBlockedFunds(13.USD)
+    expectBalanceRetrieved(amount, 13.USD)
   }
 
   it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    val nextAmount = amount * 2
-    client.setBalances(Seq(nextAmount))
-    requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
-    fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.RetrieveTotalBlockedFunds(UsDollar) =>
-        BlockedFiatRegistry.TotalBlockedFunds(13.USD)
-    }
-    requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]]
-
-    expectBalanceUpdate(nextAmount)
+    givenClientBalance(amount)
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
+    givenClientBalance(amount * 2)
+    whenBalanceIsRequested(UsDollar)
+    expectRetrieveBlockedFunds(UsDollar)
+    expectBalancePropertyUpdated(amount * 2)
   }
 
   it must "report failure to get the current balance" in new WithOkPayProcessor {
-    client.setBalances(Future.failed(cause))
-    processor = system.actorOf(processorProps)
-    requester.send(processor, Service.Start {})
-    requester.expectMsg(Service.Started)
-    requester.send(processor, PaymentProcessorActor.RetrieveBalance(UsDollar))
-    requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(UsDollar, cause))
+    givenBalanceRetrievalFailure()
+    givenStartedPaymentProcessor()
+    whenBalanceIsRequested(UsDollar)
+    expectBalanceRetrievalFailure(UsDollar)
   }
 
-  it must "delegate funds blocking and unblocking" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized()
+  it must "delegate funds blocking" in new WithReadyOkPayProcessor {
     val blockRequest = PaymentProcessorActor.BlockFunds(funds, amount)
-    requester.send(processor, blockRequest)
-    fundsRegistry.expectForward(blockRequest, requester.ref)
+    whenFundsBlockingIsRequested(blockRequest)
+    expectForwardedToRegistry(blockRequest)
+  }
+
+  it must "delegate funds unblocking" in new WithReadyOkPayProcessor {
     val unblockRequest = PaymentProcessorActor.UnblockFunds(funds)
-    requester.send(processor, unblockRequest)
-    fundsRegistry.expectForward(unblockRequest, requester.ref)
+    whenFundsUnblockingIsRequested(unblockRequest)
+    expectForwardedToRegistry(unblockRequest)
   }
 
   it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
-    client.setPaymentResult(Future.successful(payment))
+    givenClientPaymentWillSucceedWith(payment)
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
-    requester.send(processor,
-      PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
-    fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.MarkUsed(`funds`, `amountPlusFee`) =>
-        BlockedFiatRegistry.FundsMarkedUsed(funds, amountPlusFee)
-    }
-    val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
-    response.id shouldBe payment.id
-    response.senderId shouldBe senderAccount
-    response.receiverId shouldBe receiverAccount
-    response.amount shouldBe amount
-    response.description shouldBe "comment"
-    response.invoice shouldBe "invoice"
+    givenClientBalance(amountPlusFee)
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
+    whenPaymentIsRequested(amount)
+    expectRegistryMarksUsed(amountPlusFee)
+    expectPaymentSuccess(amount)
 
-    withClue("the fee has been taken into account") {
-      requester.send(
-        processor,
-        PaymentProcessorActor.Pay(funds, receiverAccount, 0.01.USD, "comment", "invoice"))
-      requester.expectMsgPF() {
-        case PaymentProcessorActor.PaymentFailed(_, ex) =>
-          ex.toString should include ("fail to use funds")
-      }
+    withClue("amount and its fee are blocked and paid") {
+      whenPaymentIsRequested(0.01.USD)
+      expectPaymentFailed("fail to use funds")
     }
   }
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
-    givenPaymentProcessorIsInitialized(balances = Seq(amount))
-    requester.send(processor,
-      PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
-    fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.MarkUsed(_, requested) =>
-        BlockedFiatRegistry.CannotMarkUsed(funds, requested, "not enough!")
-    }
-    requester.expectMsgClass(classOf[PaymentProcessorActor.PaymentFailed[_]])
+    givenClientBalance(amount)
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
+    whenPaymentIsRequested(amount)
+    expectRegistryCannotMarkUsed()
+    expectPaymentFailed("fail to use funds")
   }
 
   it must "report failure to send a payment" in new WithOkPayProcessor {
-    client.setPaymentResult(Future.failed(cause))
+    givenClientPaymentWillFail()
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenPaymentProcessorIsInitialized(balances = Seq(amountPlusFee))
-    val payRequest = PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice")
-    requester.send(processor, payRequest)
-    fundsRegistry.expectAskWithReply {
-      case BlockedFiatRegistry.MarkUsed(`funds`, `amountPlusFee`) =>
-        BlockedFiatRegistry.FundsMarkedUsed(funds, amountPlusFee)
-    }
-    fundsRegistry.expectMsg(BlockedFiatRegistry.UnmarkUsed(funds, amountPlusFee))
-    requester.expectMsg(PaymentProcessorActor.PaymentFailed(payRequest, cause))
+    givenClientBalance(amountPlusFee)
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
+    whenPaymentIsRequested(amount)
+    expectRegistryMarksUsed(amountPlusFee)
+    expectRegistryMarksUnused(amountPlusFee)
+    expectPaymentFailed()
   }
 
   it must "be able to retrieve an existing payment" in new WithOkPayProcessor {
-    client.givenExistingPayment(payment)
-    givenPaymentProcessorIsInitialized()
-    requester.send(
-      processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id)))
-    requester.expectMsgType[PaymentProcessorActor.PaymentFound]
+    givenClientExistingPayment(payment)
+    givenStartedPaymentProcessor()
+    whenFindPaymentIsRequested(payment)
+    expectPaymentFound(payment)
   }
 
   it must "be able to check a payment does not exist" in new WithOkPayProcessor {
-    client.givenNonExistingPayment(payment.id)
-    givenPaymentProcessorIsInitialized()
-    val query = PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id))
-    requester.send(processor, query)
-    requester.expectMsg(PaymentProcessorActor.PaymentNotFound(query.criterion))
+    givenClientNonExistingPayment(payment)
+    givenStartedPaymentProcessor()
+    whenFindPaymentIsRequested(payment)
+    expectPaymentNotFound(payment)
   }
 
   it must "report failure to retrieve a payment" in new WithOkPayProcessor {
-    client.givenPaymentCannotBeRetrieved(payment.id, cause)
-    givenPaymentProcessorIsInitialized()
-    val query = PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id))
-    requester.send(processor, query)
-    requester.expectMsg(PaymentProcessorActor.FindPaymentFailed(query.criterion, cause))
+    givenClientPaymentCannotBeRetrieved(payment)
+    givenStartedPaymentProcessor()
+    whenFindPaymentIsRequested(payment)
+    expectFindPaymentFailed(payment)
   }
 
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
-    givenPaymentProcessorIsInitialized(balances = Seq(100.EUR))
-    client.setBalances(Seq(120.EUR))
-    expectBalanceUpdate(120.EUR, timeout = 2.seconds.dilated)
-    client.setBalances(Seq(140.EUR))
-    expectBalanceUpdate(140.EUR, timeout = 2.seconds.dilated)
-    client.setBalances(Future.failed(new Exception("doesn't work") with NoStackTrace))
-    expectBalanceUpdate(140.EUR, hasExpired = true, timeout = 2.seconds.dilated)
+    givenClientBalance(100.EUR)
+    givenStartedPaymentProcessor()
+    givenClientBalance(120.EUR)
+    expectBalancePropertyUpdated(120.EUR, timeout = 2.seconds.dilated)
+    givenClientBalance(140.EUR)
+    expectBalancePropertyUpdated(140.EUR, timeout = 2.seconds.dilated)
+    givenBalanceRetrievalFailure()
+    expectBalancePropertyUpdated(140.EUR, hasExpired = true, timeout = 2.seconds.dilated)
   }
 
   private trait WithOkPayProcessor {
@@ -185,21 +161,162 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     system.eventStream.subscribe(
       eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
 
-    def givenPaymentProcessorIsInitialized(balances: Seq[FiatAmount] = Seq.empty): Unit = {
-      client.setBalances(balances)
+    def givenPaymentProcessorCreated(): Unit = {
       processor = system.actorOf(processorProps)
-      fundsRegistry.expectCreation()
-      requester.send(processor, Service.Start({}))
+    }
+
+    def givenStartedPaymentProcessor(): Unit = {
+      givenPaymentProcessorCreated()
+      requester.send(processor, Service.Start {})
       requester.expectMsg(Service.Started)
+    }
+
+    def givenClientBalance(balance: FiatAmount): Unit = {
+      client.setBalances(Seq(balance))
+    }
+
+    def givenBalanceRetrievalFailure(): Unit = {
+      client.setBalances(Future.failed(cause))
+    }
+
+    def givenClientPaymentWillSucceedWith(payment: AnyPayment): Unit = {
+      client.setPaymentResult(Future.successful(payment))
+    }
+
+    def givenClientPaymentWillFail(): Unit = {
+      client.setPaymentResult(Future.failed(cause))
+    }
+
+    def givenClientExistingPayment(payment: AnyPayment): Unit = {
+      client.givenExistingPayment(payment)
+    }
+
+    def givenClientNonExistingPayment(payment: AnyPayment): Unit = {
+      client.givenNonExistingPayment(payment.id)
+    }
+
+    def givenClientPaymentCannotBeRetrieved(payment: AnyPayment): Unit = {
+      client.givenPaymentCannotBeRetrieved(payment.id, cause)
+    }
+
+    def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
+      requester.send(processor, PaymentProcessorActor.RetrieveBalance(currency))
+    }
+
+    def whenFundsBlockingIsRequested(request: PaymentProcessorActor.BlockFunds): Unit = {
+      requester.send(processor, request)
+    }
+
+    def whenFundsUnblockingIsRequested(request: PaymentProcessorActor.UnblockFunds): Unit = {
+      requester.send(processor, request)
+    }
+
+    def whenPaymentIsRequested(amount: FiatAmount): Unit = {
+      requester.send(processor,
+        PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
+    }
+
+    def whenFindPaymentIsRequested(payment: AnyPayment): Unit = {
+      requester.send(
+        processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id)))
+    }
+
+    def expectRegistryIsInitialized(): Unit = {
+      fundsRegistry.expectCreation()
       fundsRegistry.expectMsgType[BlockedFiatRegistry.BalancesUpdate]
     }
 
-    def expectBalanceUpdate(balance: FiatAmount,
-                            hasExpired: Boolean = false,
-                            timeout: FiniteDuration = 200.millis): Unit = {
+    def expectBalancePropertyUpdated(
+        balance: FiatAmount,
+        hasExpired: Boolean = false,
+        timeout: FiniteDuration = 200.millis): Unit = {
       eventually(PatienceConfiguration.Timeout(timeout)) {
         properties.balance(balance.currency) shouldBe FiatBalance(balance, hasExpired)
       }
     }
+
+    def expectRetrieveBlockedFunds(funds: FiatAmount): Unit = {
+      fundsRegistry.expectAskWithReply {
+        case BlockedFiatRegistry.RetrieveTotalBlockedFunds(funds.currency) =>
+          BlockedFiatRegistry.TotalBlockedFunds(funds)
+      }
+    }
+
+    def expectRetrieveBlockedFunds(currency: FiatCurrency): Unit = {
+      expectRetrieveBlockedFunds(currency(0))
+    }
+
+    def expectRegistryMarksUsed(amount: FiatAmount): Unit = {
+      fundsRegistry.expectAskWithReply {
+        case BlockedFiatRegistry.MarkUsed(`funds`, `amount`) =>
+          BlockedFiatRegistry.FundsMarkedUsed(funds, amount)
+      }
+    }
+
+    def expectRegistryCannotMarkUsed(): Unit = {
+      fundsRegistry.expectAskWithReply {
+        case BlockedFiatRegistry.MarkUsed(_, requested) =>
+          BlockedFiatRegistry.CannotMarkUsed(funds, requested, "not enough!")
+      }
+    }
+
+    def expectRegistryMarksUnused(amount: FiatAmount): Unit = {
+      fundsRegistry.expectMsg(BlockedFiatRegistry.UnmarkUsed(funds, amount))
+    }
+
+    def expectBalanceRetrieved[C <: FiatCurrency](
+        balance: CurrencyAmount[C], blocked: CurrencyAmount[C]): Unit = {
+      requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(balance, blocked))
+    }
+
+    def expectBalanceRetrieved(): Unit = {
+      requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]]
+    }
+
+    def expectBalanceRetrievalFailure(currency: FiatCurrency): Unit = {
+      requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(currency, cause))
+    }
+
+    def expectPaymentSuccess(amount: FiatAmount): Unit = {
+      val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
+      response.id shouldBe payment.id
+      response.senderId shouldBe senderAccount
+      response.receiverId shouldBe receiverAccount
+      response.amount shouldBe amount
+      response.description shouldBe "comment"
+      response.invoice shouldBe "invoice"
+    }
+
+    def expectPaymentFailed(errorHint: String = ""): Unit = {
+      requester.expectMsgPF() {
+        case PaymentProcessorActor.PaymentFailed(_, ex) =>
+          ex.toString should include (errorHint)
+      }
+    }
+
+    def expectPaymentFound(payment: AnyPayment): Unit = {
+      requester.expectMsgPF() {
+        case PaymentProcessorActor.PaymentFound(`payment`) =>
+      }
+    }
+
+    def expectPaymentNotFound(payment: AnyPayment): Unit = {
+      requester.expectMsg(
+        PaymentProcessorActor.PaymentNotFound(FindPaymentCriterion.ById(payment.id)))
+    }
+
+    def expectFindPaymentFailed(payment: AnyPayment): Unit = {
+      requester.expectMsg(
+        PaymentProcessorActor.FindPaymentFailed(FindPaymentCriterion.ById(payment.id), cause))
+    }
+
+    def expectForwardedToRegistry(request: Any): Unit = {
+      fundsRegistry.expectForward(request, requester.ref)
+    }
+  }
+
+  private trait WithReadyOkPayProcessor extends WithOkPayProcessor {
+    givenStartedPaymentProcessor()
+    expectRegistryIsInitialized()
   }
 }
