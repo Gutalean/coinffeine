@@ -2,7 +2,7 @@ package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
 
-import coinffeine.model.currency.CurrencyAmount
+import coinffeine.model.currency.FiatAmount
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.amounts.AmountsCalculator
@@ -21,7 +21,7 @@ private class MaximumFiatValidation(amountsCalculator: AmountsCalculator) extend
     )
   }
 
-  private def maximumAmountViolated(requested: CurrencyAmount[_], maximum: CurrencyAmount[_]) =
+  private def maximumAmountViolated(requested: FiatAmount, maximum: FiatAmount) =
     OrderValidation.Error(NonEmptyList(
       s"Maximum allowed fiat amount is $maximum, but you requested $requested"))
 }
