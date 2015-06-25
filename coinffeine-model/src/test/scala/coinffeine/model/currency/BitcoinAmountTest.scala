@@ -8,7 +8,7 @@ class BitcoinAmountTest extends UnitTest with CurrencyAmountBehaviors {
 
   it should "be numeric" in {
     10.BTC - 20.BTC should be <= Bitcoin.zero
-    1.BTC + BitcoinAmount.numeric.fromInt(150000000) shouldBe 2.5.BTC
+    1.BTC + BitcoinAmount.Numeric.fromInt(150000000) shouldBe 2.5.BTC
     Seq(1.BTC, 2.BTC, 3.BTC).sum shouldBe 6.BTC
   }
 

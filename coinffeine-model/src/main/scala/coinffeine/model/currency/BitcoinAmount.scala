@@ -10,8 +10,32 @@ case class BitcoinAmount(units: Long) extends CurrencyAmount[BitcoinAmount] {
 }
 
 object BitcoinAmount {
-  implicit lazy val numeric: Integral[BitcoinAmount] with Ordering[BitcoinAmount] =
-    new IntegralCurrencyAmount[BitcoinAmount] {
-      override protected def amount(units: Long) = BitcoinAmount(units)
-    }
+
+  implicit object Numeric extends Integral[BitcoinAmount] with Ordering[BitcoinAmount] {
+
+    override def plus(x: BitcoinAmount, y: BitcoinAmount) = x + y
+
+    override def times(x: BitcoinAmount, y: BitcoinAmount) = BitcoinAmount(x.units * y.units)
+
+    override def minus(x: BitcoinAmount, y: BitcoinAmount) = x - y
+
+    override def negate(x: BitcoinAmount): BitcoinAmount = -x
+
+    override def quot(x: BitcoinAmount, y: BitcoinAmount) = BitcoinAmount(x.units / y.units)
+
+    override def rem(x: BitcoinAmount, y: BitcoinAmount) = BitcoinAmount(x.units % y.units)
+
+    override def toDouble(x: BitcoinAmount): Double = x.units.toDouble
+
+    override def toFloat(x: BitcoinAmount): Float = x.units.toFloat
+
+    override def toLong(x: BitcoinAmount): Long = x.units
+
+    override def toInt(x: BitcoinAmount): Int = x.units.toInt
+
+    override def fromInt(x: Int): BitcoinAmount = BitcoinAmount(x)
+
+    override def compare(x: BitcoinAmount, y: BitcoinAmount): Int = x.units.compare(y.units)
+  }
+
 }
