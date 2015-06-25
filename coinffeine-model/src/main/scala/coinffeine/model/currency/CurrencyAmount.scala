@@ -10,9 +10,9 @@ trait CurrencyAmount[Self <: CurrencyAmount[Self]] extends Ordered[Self] { this:
 
   lazy val value: BigDecimal = BigDecimal(units) / currency.unitsInOne
 
-  def +(other: Self): Self = fromUnits(units + other.units)
+  def +(other: Self): Self = binaryOperation(other)(_ + _)
 
-  def -(other: Self): Self = fromUnits(units - other.units)
+  def -(other: Self): Self = binaryOperation(other)(_ - _)
 
   def *(mult: Long): Self = fromUnits(units * mult)
 
@@ -23,21 +23,29 @@ trait CurrencyAmount[Self <: CurrencyAmount[Self]] extends Ordered[Self] { this:
     fromUnits(units / divisor)
   }
 
-  def /%(other: Self): (Long, Self) = (units / other.units, fromUnits(units % other.units))
+  def /%(other: Self): (Long, Self) = (units / other.units, binaryOperation(other)(_ % _))
 
   def unary_- : Self = fromUnits(-units)
 
-  def min(that: Self): Self = if (this.units <= that.units) this else that
+  def min(other: Self): Self = {
+    requireSameCurrency(other)
+    if (this.units <= other.units) this else other
+  }
 
-  def max(that: Self): Self = if (this.units >= that.units) this else that
+  def max(other: Self): Self = {
+    requireSameCurrency(other)
+    if (this.units >= other.units) this else other
+  }
 
-  def averageWith(that: Self): Self = fromUnits((this.units + that.units) / 2)
+  def averageWith(other: Self): Self = binaryOperation(other) { (left, right) =>
+    (left + right) / 2
+  }
 
   val isPositive = units > 0
   val isNegative = units < 0
 
   override def compare(other: Self): Int = {
-    require(currency == other.currency)
+    requireSameCurrency(other)
     units.compareTo(other.units)
   }
 
@@ -49,8 +57,17 @@ trait CurrencyAmount[Self <: CurrencyAmount[Self]] extends Ordered[Self] { this:
   override def toString = format
 
   protected def fromUnits(units: Long): Self
-  
+
   protected def fromExactValue(value: BigDecimal): Self
+
+  private def binaryOperation(other: Self)(op: (Long, Long) => Long): Self = {
+    requireSameCurrency(other)
+    fromUnits(op(units, other.units))
+  }
+
+  private def requireSameCurrency(other: Self): Unit = {
+    require(currency == other.currency, s"Cannot operate $currency with ${other.currency}")
+  }
 }
 
 object CurrencyAmount {
@@ -60,8 +77,13 @@ object CurrencyAmount {
       symbolPos: Currency.SymbolPosition): String = {
     val currency = amount.currency
     val units = amount.units
-    val numbers = s"%s%d.%0${currency.precision}d".format(
-      if (units < 0) "-" else "", units.abs / currency.unitsInOne, units.abs % currency.unitsInOne)
+    val numbers = {
+      val formatString = s"%s%d.%0${currency.precision}d"
+      formatString.format(
+        if (units < 0) "-" else "",
+        units.abs / currency.unitsInOne,
+        units.abs % currency.unitsInOne)
+    }
     addSymbol(numbers, symbolPos, currency)
   }
 
