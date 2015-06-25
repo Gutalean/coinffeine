@@ -62,7 +62,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
           new Label with TextStyles.CurrencyAmount {
             text <== balances.fiat.delegate.mapToString {
               case Some(b) => b.amount.format(Currency.NoSymbol)
-              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+              case None => Euro.formatMissingAmount(Currency.NoSymbol)
             }
           },
           new Label("EUR") with TextStyles.CurrencySymbol)
@@ -73,7 +73,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
           new Label with TextStyles.CurrencyAmount {
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
-              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+              case None => Euro.formatMissingAmount(Currency.NoSymbol)
             }
           },
           new Label("BTC") with TextStyles.CurrencySymbol)

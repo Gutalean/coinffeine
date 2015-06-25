@@ -36,7 +36,7 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
     val amount = new Label with TextStyles.CurrencyAmount {
       text <== currentPrice.mapToString {
         case Some(Some(p)) => p.of(1.BTC).format(Currency.NoSymbol)
-        case _ => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+        case _ => Euro.formatMissingAmount(Currency.NoSymbol)
       }
     }
     val symbol = new Label(Euro.toString) with TextStyles.CurrencySymbol

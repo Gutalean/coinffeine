@@ -2,6 +2,8 @@ package coinffeine.model.currency
 
 import scala.math.BigDecimal.RoundingMode
 
+import coinffeine.model.currency.Currency.SymbolPosition
+
 /** Representation of a currency. */
 trait Currency {
 
@@ -40,6 +42,9 @@ trait Currency {
   def isValidAmount(value: BigDecimal): Boolean = (value * unitsInOne).isWhole()
 
   def toString: String
+
+  def formatMissingAmount(symbolPosition: SymbolPosition = preferredSymbolPosition) =
+    CurrencyAmountFormatter.formatMissing(this, symbolPosition)
 }
 
 object Currency {
