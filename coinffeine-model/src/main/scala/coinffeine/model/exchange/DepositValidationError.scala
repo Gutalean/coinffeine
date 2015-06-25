@@ -2,7 +2,7 @@ package coinffeine.model.exchange
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Bitcoin
+import coinffeine.model.currency.BitcoinAmount
 
 sealed trait DepositValidationError {
   def description: String
@@ -33,7 +33,7 @@ object DepositValidationError {
       )
   }
 
-  case class InvalidCommittedAmount(actual: Bitcoin.Amount, expected: Bitcoin.Amount)
+  case class InvalidCommittedAmount(actual: BitcoinAmount, expected: BitcoinAmount)
     extends DepositValidationError {
     override def description = s"committed a deposit of $actual when $expected was expected"
   }

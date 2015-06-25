@@ -6,12 +6,12 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Progress
 
-case class FailedExchange[C <: FiatCurrency](
-    prev: ActiveExchange[C],
+case class FailedExchange(
+    prev: ActiveExchange,
     timestamp: DateTime,
     cause: FailureCause,
     user: Option[Exchange.PeerInfo] = None,
-    transaction: Option[ImmutableTransaction] = None) extends CompletedExchange[C] {
+    transaction: Option[ImmutableTransaction] = None) extends CompletedExchange {
 
   override val status = ExchangeStatus.Failed(cause)
   override val metadata = prev.metadata

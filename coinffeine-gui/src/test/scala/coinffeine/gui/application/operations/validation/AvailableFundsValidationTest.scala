@@ -8,6 +8,7 @@ import coinffeine.common.properties.{MutableProperty, MutablePropertyMap}
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
+import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
@@ -15,7 +16,7 @@ import coinffeine.peer.amounts.DefaultAmountsCalculator
 class AvailableFundsValidationTest extends UnitTest with Inside {
 
   private val newBid = OrderRequest(Bid, 0.5.BTC, LimitPrice(300.EUR))
-  private val spread = Spread.empty[Euro.type]
+  private val spread = Spread.empty
 
   "The available funds requirement" should "optionally require bitcoin funds to be known" in
     new Fixture {
@@ -57,7 +58,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
   }
 
   private trait Fixture {
-    val fiatBalance = new MutablePropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]]()
+    val fiatBalance = new MutablePropertyMap[FiatCurrency, FiatBalance]()
     val initialFiatBalance = FiatBalance(amount = 450.EUR, hasExpired = false)
     fiatBalance.set(Euro, initialFiatBalance)
     val initialBitcoinBalance = BitcoinBalance(

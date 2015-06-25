@@ -92,12 +92,12 @@ class OrderPropertiesDialog(props: OrderProperties) {
     simpleLine("Price", requestedPrice, actualPrice)
   }
 
-  private def formatRequestedPrice(price: AnyOrderPrice): String = price match {
+  private def formatRequestedPrice(price: OrderPrice): String = price match {
     case LimitPrice(limit) => "Limit price at " + limit
     case MarketPrice(currency) => s"Taking $currency market price"
   }
 
-  def formatAveragePrice(order: AnyCurrencyOrder): String = {
+  def formatAveragePrice(order: Order): String = {
     val exchanges = order.exchanges.values.filter(_.status != Handshaking).toSeq
     WeightedAveragePrice.average(exchanges).fold("") { price =>
       "Average of %s from %s".format(price, formatCount(exchanges.size, "exchange"))

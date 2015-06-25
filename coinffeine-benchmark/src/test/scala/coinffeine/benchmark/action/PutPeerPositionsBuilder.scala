@@ -12,7 +12,7 @@ import coinffeine.model.market.OrderBookEntry
 
 case class PutPeerPositionsBuilder(
     requestName: Expression[String],
-    orderBookEntries: Seq[OrderBookEntry[Euro.type]] = PutPeerPositions.DefaultOrderBookEntries)
+    orderBookEntries: Seq[OrderBookEntry] = PutPeerPositions.DefaultOrderBookEntries)
   extends ActionBuilder {
 
   override def build(next: ActorRef, protocols: Protocols) = {
@@ -23,5 +23,5 @@ case class PutPeerPositionsBuilder(
 
   }
 
-  def orderBookEntries(entries: Seq[OrderBookEntry[Euro.type]]) = copy(orderBookEntries = entries)
+  def orderBookEntries(entries: Seq[OrderBookEntry]) = copy(orderBookEntries = entries)
 }

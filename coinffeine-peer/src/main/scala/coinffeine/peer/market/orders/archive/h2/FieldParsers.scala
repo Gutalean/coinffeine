@@ -7,7 +7,7 @@ import anorm._
 import org.joda.time.DateTime
 
 import coinffeine.model.Both
-import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange.{ExchangeId, ExchangeStatus, Role}
 import coinffeine.model.network.PeerId
@@ -41,22 +41,21 @@ private object FieldParsers {
   def timestamp(name: String): RowParser[DateTime] =
     date(name).map(t => new DateTime(t.getTime))
 
-  def bitcoinAmount(name: String): RowParser[Bitcoin.Amount] =
+  def bitcoinAmount(name: String): RowParser[BitcoinAmount] =
     get[JBigDecimal](name).map(value => Bitcoin.exactAmount(value))
 
-  def fiatAmount[C <: FiatCurrency](currency: C, name: String): RowParser[CurrencyAmount[C]] =
-    get[JBigDecimal](name).map(value => CurrencyAmount.exactAmount(value, currency))
+  def fiatAmount(currency: FiatCurrency, name: String): RowParser[FiatAmount] =
+    get[JBigDecimal](name).map(value => currency.exactAmount(value))
 
   def progress(names: Both[String]): RowParser[Progress] =
     both(bitcoinAmount, names).map(Progress.apply)
 
-  def price(
-      valueColumn: String, currencyColumn: String): RowParser[OrderPrice[FiatCurrency]] = for {
+  def price(valueColumn: String, currencyColumn: String): RowParser[OrderPrice] = for {
     currencySymbol <- str(currencyColumn)
     currency = FiatCurrency(currencySymbol)
     value <- get[Option[JBigDecimal]](valueColumn)
-  } yield value.fold[OrderPrice[FiatCurrency]](MarketPrice(currency)) { amount =>
-    LimitPrice(CurrencyAmount.exactAmount(amount, currency))
+  } yield value.fold[OrderPrice](MarketPrice(currency)) { amount =>
+    LimitPrice(currency.exactAmount(amount))
   }
 
   def orderStatus(name: String): RowParser[OrderStatus] = str(name).map { status =>

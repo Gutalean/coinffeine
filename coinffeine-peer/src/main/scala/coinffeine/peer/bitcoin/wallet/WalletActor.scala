@@ -4,12 +4,13 @@ import scala.util.control.NoStackTrace
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.Bitcoin
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.exchange.ExchangeId
 
 object WalletActor {
+
   /** A request message to create a new transaction. */
-  case class CreateTransaction(amount: Bitcoin.Amount, to: Address)
+  case class CreateTransaction(amount: BitcoinAmount, to: Address)
 
   /** A successful response to a transaction creation request. */
   case class TransactionCreated(req: CreateTransaction, tx: ImmutableTransaction)
@@ -21,11 +22,13 @@ object WalletActor {
     * message to the wallet actor and until being stopped or sending [[UnsubscribeToWalletChanges]].
     */
   case object SubscribeToWalletChanges
+
   case object UnsubscribeToWalletChanges
+
   case object WalletChanged
 
   /** A message sent to the wallet actor to block an amount of coins for exclusive use. */
-  case class BlockBitcoins(id: ExchangeId, amount: Bitcoin.Amount)
+  case class BlockBitcoins(id: ExchangeId, amount: BitcoinAmount)
 
   /** Responses to [[BlockBitcoins]] */
   sealed trait BlockBitcoinsResponse
@@ -55,10 +58,11 @@ object WalletActor {
     * @param amount             The amount of bitcoins to be blocked and included in the transaction
     * @param transactionFee     The fee to include in the transaction
     */
-  case class CreateDeposit(coinsId: ExchangeId,
-                           requiredSignatures: Both[KeyPair],
-                           amount: Bitcoin.Amount,
-                           transactionFee: Bitcoin.Amount)
+  case class CreateDeposit(
+      coinsId: ExchangeId,
+      requiredSignatures: Both[KeyPair],
+      amount: BitcoinAmount,
+      transactionFee: BitcoinAmount)
 
   /** A message sent by the wallet actor in reply to a [[CreateDeposit]] message to report
     * a successful funds blocking.
@@ -74,10 +78,13 @@ object WalletActor {
   case class DepositCreationError(request: CreateDeposit, error: FundsUseException)
 
   sealed abstract class FundsUseException(message: String)
-    extends Exception(message) with NoStackTrace
+      extends Exception(message) with NoStackTrace
+
   case object UnknownFunds extends FundsUseException("Unknown funds")
-  case class NotEnoughFunds(requested: Bitcoin.Amount, available: Bitcoin.Amount)
-    extends FundsUseException(s"Not enough funds blocked: $requested requested, $available available")
+
+  case class NotEnoughFunds(requested: BitcoinAmount, available: BitcoinAmount)
+      extends FundsUseException(
+        s"Not enough funds blocked: $requested requested, $available available")
 
   /** A message sent to the wallet actor in order to release the funds that of a non published
     * deposit.
@@ -91,4 +98,5 @@ object WalletActor {
   case class KeyPairCreated(keyPair: KeyPair) {
     require(keyPair.canSign, s"Can't sign with $keyPair")
   }
+
 }

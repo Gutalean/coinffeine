@@ -53,14 +53,14 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
       sender() ! response
   }
 
-  private def archive(order: AnyCurrencyOrder): Try[Unit] = Try {
+  private def archive(order: Order): Try[Unit] = Try {
     require(!order.status.isActive, "Cannot archive active orders")
     insertOrderRecord(order)
     order.exchanges.values.foreach(ex => insertExchange(order.id, ex))
     order.log.activities.foreach(event => insertOrderEvent(order.id, event))
   }
 
-  private def insertOrderRecord(order: AnyCurrencyOrder): Unit = {
+  private def insertOrderRecord(order: Order): Unit = {
     val query = SQL(
       """insert into `order`(id, order_type, amount, price, currency)
         |values ({id}, {order_type}, {amount}, {price}, {currency})""".stripMargin
@@ -89,12 +89,12 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
       throw new scala.RuntimeException(s"Cannot insert order event $entry for $id")
   }
 
-  private def insertExchange(orderId: OrderId, exchange: AnyExchange): Unit = {
+  private def insertExchange(orderId: OrderId, exchange: Exchange): Unit = {
     insertExchangeRecord(orderId, exchange)
     exchange.log.activities.foreach(event => insertExchangeEvent(exchange.id, event))
   }
 
-  private def insertExchangeRecord(orderId: OrderId, exchange: AnyExchange): Unit = {
+  private def insertExchangeRecord(orderId: OrderId, exchange: Exchange): Unit = {
     val query = SQL(
       """insert into exchange(
         |  id, order_id, role, buyer_bitcoin, seller_bitcoin,
@@ -132,14 +132,14 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
       throw new scala.RuntimeException(s"Cannot insert order event $entry for $id")
   }
 
-  private def listOrders(): Try[Seq[AnyCurrencyOrder]] = Try {
+  private def listOrders(): Try[Seq[Order]] = Try {
     listOrderIds().flatMap(retrieveOrder)
   }
 
   private def listOrderIds(): Seq[OrderId] =
     SQL("select id from `order` order by id").as(p.orderId("id") *)(conn).toSeq
 
-  private def retrieveOrder(orderId: OrderId): Option[AnyCurrencyOrder] = {
+  private def retrieveOrder(orderId: OrderId): Option[Order] = {
     val orderParser =
       p.orderType("order_type") ~ p.bitcoinAmount("amount") ~ p.price("price", "currency") map {
         case orderType ~ amount ~ price =>
@@ -160,8 +160,8 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
   private def retrieveOrderLog(orderId: OrderId): ActivityLog[OrderStatus] =
     retrieveActivityLog(orderId.value, "order_log", p.orderStatus)
 
-  private def retrieveExchanges[C <: FiatCurrency](
-      orderId: OrderId, currency: C): Map[ExchangeId, ArchivedExchange[C]] = (for {
+  private def retrieveExchanges(
+      orderId: OrderId, currency: FiatCurrency): Map[ExchangeId, ArchivedExchange] = (for {
     id <- listExchangeIds(orderId)
     exchange <- retrieveExchange(id, currency)
   } yield id -> exchange).toMap
@@ -172,8 +172,8 @@ class H2OrderArchive(dbFile: File) extends Actor with ActorLogging {
       .as(p.exchangeId("id") *)(conn)
       .toSeq
 
-  private def retrieveExchange[C <: FiatCurrency](
-      exchangeId: ExchangeId, currency: C): Option[ArchivedExchange[C]] =
+  private def retrieveExchange(
+      exchangeId: ExchangeId, currency: FiatCurrency): Option[ArchivedExchange] =
     SQL("""select role, buyer_bitcoin, seller_bitcoin, buyer_fiat, seller_fiat, counterpart,
           |  lock_time, buyer_progress, seller_progress
           |  from exchange where id = {id}""".stripMargin)

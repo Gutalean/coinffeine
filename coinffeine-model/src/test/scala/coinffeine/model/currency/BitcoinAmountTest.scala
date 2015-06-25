@@ -1,4 +1,4 @@
-package coinffeine.model.currency2
+package coinffeine.model.currency
 
 import coinffeine.common.test.UnitTest
 

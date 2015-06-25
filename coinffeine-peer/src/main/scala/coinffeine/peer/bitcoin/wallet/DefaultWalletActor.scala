@@ -4,21 +4,22 @@ import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
 import akka.actor.{Address => _, _}
-import akka.persistence.{SnapshotOffer, PersistentActor}
+import akka.persistence.{PersistentActor, SnapshotOffer}
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{Bitcoin, BitcoinBalance}
+import coinffeine.model.currency.{BitcoinAmount, BitcoinBalance}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.BlockedOutputs.Output
 import coinffeine.peer.bitcoin.wallet.WalletActor._
-import coinffeine.peer.events.bitcoin.{PrimaryAddressChanged, BitcoinBalanceChanged, WalletActivityChanged}
+import coinffeine.peer.events.bitcoin.{BitcoinBalanceChanged, PrimaryAddressChanged, WalletActivityChanged}
 
-private class DefaultWalletActor(wallet: SmartWallet,
-                                 override val persistenceId: String)
-  extends PersistentActor with PeriodicSnapshot with ActorLogging with CoinffeineEventProducer {
+private class DefaultWalletActor(
+    wallet: SmartWallet,
+    override val persistenceId: String)
+    extends PersistentActor with PeriodicSnapshot with ActorLogging with CoinffeineEventProducer {
 
   import DefaultWalletActor._
 
@@ -55,7 +56,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
 
   override def receiveCommand: Receive = managingSnapshots orElse {
 
-    case request @ CreateDeposit(coinsId, signatures, amount, transactionFee) =>
+    case request@CreateDeposit(coinsId, signatures, amount, transactionFee) =>
       blockedOutputs.canUse(coinsId, amount + transactionFee) match {
         case scalaz.Success(outputs) =>
           log.info("Creating deposit of {} (+{} fee) for {} with signatures {}",
@@ -70,7 +71,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
           sender() ! WalletActor.DepositCreationError(request, error)
       }
 
-    case req @ WalletActor.CreateTransaction(amount, to) =>
+    case req@WalletActor.CreateTransaction(amount, to) =>
       try {
         sender ! WalletActor.TransactionCreated(req, createTransaction(amount, to))
       } catch {
@@ -103,7 +104,7 @@ private class DefaultWalletActor(wallet: SmartWallet,
         case None =>
           log.error("Failed to block {} for {}", amount, sender())
           sender() ! CannotBlockBitcoins(
-              s"cannot collect funds to block $amount: ${blockedOutputs.available} available")
+            s"cannot collect funds to block $amount: ${blockedOutputs.available} available")
       }
 
     case UnblockBitcoins(fundsId) if blockedOutputs.areBlocked(fundsId) =>
@@ -164,19 +165,20 @@ private class DefaultWalletActor(wallet: SmartWallet,
     publish(BitcoinBalanceChanged(balance))
   }
 
-  private def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = {
+  private def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = {
     val funds = blockedOutputs.collectUnblockedFunds(amount)
-      .getOrElse(throw new Exception("Not enough funds"))
+        .getOrElse(throw new Exception("Not enough funds"))
     wallet.createTransaction(toOutPoints(funds), amount, to)
   }
 
   private def computeSpendCandidates: Set[Output] =
     toOutputs(wallet.spendCandidates.map(_.getOutPointFor).toSet)
 
-  private def toOutPoints(outputs: Set[Output]): Set[TransactionOutPoint] = outputs.map { output =>
-    wallet.delegate.getTransaction(output.txHash)
-      .getOutput(output.index)
-      .getOutPointFor
+  private def toOutPoints(outputs: Set[Output]): Set[TransactionOutPoint] = outputs.map {
+    output =>
+      wallet.delegate.getTransaction(output.txHash)
+          .getOutput(output.index)
+          .getOutPointFor
   }
 
   private def toOutputs(outPoints: Set[TransactionOutPoint]): Set[Output] =
@@ -210,22 +212,29 @@ private class DefaultWalletActor(wallet: SmartWallet,
       self ! InternalWalletChanged
     }
   }
+
 }
 
 object DefaultWalletActor {
   val PersistenceId = "wallet"
 
-  def props(wallet: SmartWallet,
-            persistenceId: String = PersistenceId) =
+  def props(
+      wallet: SmartWallet,
+      persistenceId: String = PersistenceId) =
     Props(new DefaultWalletActor(wallet, persistenceId))
 
   private case object InternalWalletChanged
 
   private case class FundsBlocked(id: ExchangeId, outputs: Set[Output]) extends PersistentEvent
+
   private case class FundsUnblocked(id: ExchangeId) extends PersistentEvent
+
   private case class DepositCreated(request: CreateDeposit, outputs: Set[Output])
-    extends PersistentEvent
+      extends PersistentEvent
+
   private case class DepositCancelled(tx: ImmutableTransaction) extends PersistentEvent
+
   private case class Snapshot(
       blockedOutputs: BlockedOutputs, deposits: Map[Hash, ExchangeId]) extends PersistentEvent
+
 }

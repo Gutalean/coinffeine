@@ -155,11 +155,11 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
 
     protected val instance = system.actorOf(Props(new BlockchainActor(chain, wallet.delegate)))
 
-    protected def createSendTransaction(amount: Bitcoin.Amount): MutableTransaction =
+    protected def createSendTransaction(amount: BitcoinAmount): MutableTransaction =
       wallet.delegate.createSend(otherWallet.delegate.freshReceiveAddress(), amount)
 
     protected def createMultisigTransaction(
-        amount: Bitcoin.Amount): (ImmutableTransaction, Both[PublicKey]) = {
+        amount: BitcoinAmount): (ImmutableTransaction, Both[PublicKey]) = {
       val signatures = Both(
         buyer = wallet.delegate.freshReceiveKey(),
         seller = otherWallet.delegate.freshReceiveKey()
@@ -171,7 +171,7 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
       requester.expectNoMsg(100.millis.dilated)
     }
 
-    protected def outputWithValue(tx: MutableTransaction, value: Bitcoin.Amount) =
+    protected def outputWithValue(tx: MutableTransaction, value: BitcoinAmount) =
       tx.getOutputs.asScala.find(_.getValue.value == value.units).get
 
     protected def givenConfirmationSubscription(

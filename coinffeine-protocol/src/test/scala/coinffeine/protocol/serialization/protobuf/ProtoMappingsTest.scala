@@ -87,11 +87,11 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     .build()
 
   "Limit-price order" should behave like
-    thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
+    thereIsAMappingBetween[OrderBookEntry, msg.OrderBookEntry](
       limitOrderBookEntry, limitOrderBookEntryMessage)
 
   "Market-price order" should behave like
-    thereIsAMappingBetween[OrderBookEntry[_ <: FiatCurrency], msg.OrderBookEntry](
+    thereIsAMappingBetween[OrderBookEntry, msg.OrderBookEntry](
       marketOrderBookEntry, marketOrderBookEntryMessage)
 
   val positions = PeerPositions(Market(Euro), Seq(limitOrderBookEntry), "nonce-1234567890")
@@ -102,7 +102,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     .build
 
   "Peer positions" should behave like
-    thereIsAMappingBetween[PeerPositions[_ <: FiatCurrency], msg.PeerPositions](
+    thereIsAMappingBetween[PeerPositions, msg.PeerPositions](
       positions, positionsMessage)
 
   val positionsReceived = PeerPositionsReceived("nonce-1234567890")
@@ -183,14 +183,14 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     .setCounterpart(msg.PeerId.newBuilder().setValue(buyer.value))
     .build
   "Order match" must behave like
-    thereIsAMappingBetween[OrderMatch[_ <: FiatCurrency], msg.OrderMatch](
+    thereIsAMappingBetween[OrderMatch, msg.OrderMatch](
       orderMatch, orderMatchMessage)
 
   val emptyQuoteMessage = msg.Quote.newBuilder
     .setMarket(msg.Market.newBuilder.setCurrency("EUR"))
     .build
   val emptyQuote = Quote.empty(Market(Euro))
-  "Empty quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](
+  "Empty quote" must behave like thereIsAMappingBetween[Quote, msg.Quote](
     emptyQuote, emptyQuoteMessage)
 
   val quoteMessage = emptyQuoteMessage.toBuilder
@@ -199,7 +199,7 @@ class ProtoMappingsTest extends UnitTest with CoinffeineUnitTestNetwork.Componen
     .setLastPrice(decimalNumberMapping.toProtobuf(22))
     .build
   val quote = Quote(20.EUR -> 30.EUR, 22 EUR)
-  "Quote" must behave like thereIsAMappingBetween[Quote[_ <: FiatCurrency], msg.Quote](
+  "Quote" must behave like thereIsAMappingBetween[Quote, msg.Quote](
     quote, quoteMessage)
 
   val quoteRequest = QuoteRequest(Market(Euro))

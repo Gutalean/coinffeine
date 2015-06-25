@@ -4,7 +4,7 @@ import scala.util.Random
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
+import coinffeine.model.currency.{Bitcoin, Euro}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.network.PeerId
 import coinffeine.model.order.OrderId
@@ -29,6 +29,6 @@ trait TestProtocolSerializationComponent extends ProtocolSerializationComponent 
     counterpart = PeerId.hashOf("bob")
   )
 
-  private def randomSatoshi() = CurrencyAmount.closestAmount(Random.nextDouble(), Bitcoin)
-  private def randomEuros() = CurrencyAmount.closestAmount(Random.nextDouble(), Euro)
+  private def randomSatoshi() = Bitcoin.closestAmount(Random.nextDouble())
+  private def randomEuros() = Euro.closestAmount(Random.nextDouble())
 }

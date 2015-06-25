@@ -4,25 +4,26 @@ import scalaz.Scalaz._
 import scalaz.ValidationNel
 
 import coinffeine.model.Both
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatAmount
 import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep, Step}
 
-private class PaymentValidation[C <: FiatCurrency](
+private class PaymentValidation(
     exchangeId: ExchangeId,
-    amounts: Seq[IntermediateStepAmounts[C]],
+    amounts: Seq[IntermediateStepAmounts],
     participants: Both[AccountId]) {
   import PaymentValidation._
 
-  def apply(step: Step, payment: Payment[C]): Result = step match {
+  def apply(step: Step, payment: Payment): Result = step match {
     case _: FinalStep => UnexpectedPayment.failureNel
-    case intermediateStep: IntermediateStep => validateIntermediateStep(intermediateStep, payment)
+    case intermediateStep: IntermediateStep =>
+      validateIntermediateStep(intermediateStep, payment)
   }
 
-  private def validateIntermediateStep(step: IntermediateStep, payment: Payment[C]): Result = {
+  private def validateIntermediateStep(step: IntermediateStep, payment: Payment): Result = {
 
     val amountValidation: Result = {
       val expectedAmount = step.select(amounts).fiatAmount
@@ -45,9 +46,7 @@ private class PaymentValidation[C <: FiatCurrency](
     val completenessValidation: Result =
       if (payment.completed) ().successNel else IncompletePayment.failureNel
 
-    (amountValidation |@| accountsValidation |@| invoiceValidation |@| completenessValidation) {
-      _ |+| _ |+| _ |+| _
-    }
+    amountValidation *> accountsValidation *> invoiceValidation *> completenessValidation
   }
 }
 
@@ -62,8 +61,7 @@ private object PaymentValidation {
     override def message = "No payment was expected at the last step"
   }
 
-  case class InvalidAmount(actual: CurrencyAmount[_ <: FiatCurrency],
-                           expected: CurrencyAmount[_ <: FiatCurrency]) extends Error {
+  case class InvalidAmount(actual: FiatAmount, expected: FiatAmount) extends Error {
     override def message = s"Expected a payment of $expected but $actual was payed"
   }
 

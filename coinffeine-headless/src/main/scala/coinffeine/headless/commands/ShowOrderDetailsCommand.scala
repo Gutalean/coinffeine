@@ -6,7 +6,7 @@ import coinffeine.headless.prompt.ANSIText._
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
-import coinffeine.model.order.{AnyCurrencyOrder, OrderId}
+import coinffeine.model.order.{Order, OrderId}
 import coinffeine.peer.api.CoinffeineOperations
 
 class ShowOrderDetailsCommand(operations: CoinffeineOperations) extends Command {
@@ -33,7 +33,7 @@ class ShowOrderDetailsCommand(operations: CoinffeineOperations) extends Command 
     validator.requireExistingOrderId(args).fold(fail = reportError, succ = printOrderDetails)
   }
 
-  private class OrderDetailsPrinter(output: PrintWriter, order: AnyCurrencyOrder) {
+  private class OrderDetailsPrinter(output: PrintWriter, order: Order) {
 
     def print(): Unit = {
       printGeneralDetails()
@@ -55,7 +55,7 @@ class ShowOrderDetailsCommand(operations: CoinffeineOperations) extends Command 
       }
     }
 
-    private def printExchangeDetails(exchange: Exchange[_ <: FiatCurrency]): Unit = {
+    private def printExchangeDetails(exchange: Exchange): Unit = {
       output.println(Bold("\t" + exchange.id))
       printExchangeAmounts(exchange)
       printStatus(exchange.status.name)
@@ -63,7 +63,7 @@ class ShowOrderDetailsCommand(operations: CoinffeineOperations) extends Command 
         exchange.role.select(exchange.exchangedBitcoin).value).doubleValue())
     }
 
-    private def printExchangeAmounts(exchange: Exchange[_ <: FiatCurrency]): Unit = {
+    private def printExchangeAmounts(exchange: Exchange): Unit = {
       output.format("\tAmounts: %s (%s net) by %s (%s net)%n",
         exchange.exchangedBitcoin.seller, exchange.exchangedBitcoin.buyer,
         exchange.exchangedFiat.buyer, exchange.exchangedFiat.seller

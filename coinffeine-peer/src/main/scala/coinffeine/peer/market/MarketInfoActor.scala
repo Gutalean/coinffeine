@@ -39,14 +39,14 @@ private class MarketInfoActor(gateway: ActorRef) extends Actor {
     }
   }
 
-  private class PendingQuoteRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+  private class PendingQuoteRequest(market: Market) extends PendingRequest {
     override protected val request = QuoteRequest(market)
     override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
       case Quote(`market`, _, _) =>
     }
   }
 
-  private class PendingOpenOrdersRequest(market: Market[_ <: FiatCurrency]) extends PendingRequest {
+  private class PendingOpenOrdersRequest(market: Market) extends PendingRequest {
     override protected val request = OpenOrdersRequest(market)
     override protected val responseMatcher: PartialFunction[PublicMessage, Unit] = {
       case OpenOrders(PeerPositions(`market`, _, _)) =>
@@ -100,8 +100,8 @@ object MarketInfoActor {
   sealed trait InfoRequest
 
   /** The sender of this message will receive a [[Quote]] in response */
-  case class RequestQuote(market: Market[_ <: FiatCurrency]) extends InfoRequest
+  case class RequestQuote(market: Market) extends InfoRequest
 
   /** The sender of this message will receive an [[OpenOrders]] in response */
-  case class RequestOpenOrders(market: Market[_ <: FiatCurrency]) extends InfoRequest
+  case class RequestOpenOrders(market: Market) extends InfoRequest
 }

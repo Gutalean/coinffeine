@@ -41,7 +41,7 @@ class PersistentOrderActorTest extends OrderActorTest {
   it should "remember that an exchange was started" in new Fixture {
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    val Seq(exchange: AnyExchange) =
+    val Seq(exchange: Exchange) =
       givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
     exchange.id shouldBe orderMatch.exchangeId
 
@@ -54,7 +54,7 @@ class PersistentOrderActorTest extends OrderActorTest {
     eventProbe.ignoreMsg { case _ => true }
     givenInMarketOrder()
     gatewayProbe.relayMessageFromBroker(orderMatch)
-    val Seq(exchange: HandshakingExchange[_]) =
+    val Seq(exchange: HandshakingExchange) =
       givenSuccessfulFundsBlockingAndExchangeCreation(orderMatch.exchangeId)
     actor.tell(
       msg = ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())),

@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 
 trait ExchangeProtocol {
@@ -14,12 +13,12 @@ trait ExchangeProtocol {
     * @return                A new handshake
     */
   @throws[IllegalArgumentException]("when deposit funds are insufficient or incorrect")
-  def createHandshake[C <: FiatCurrency](exchange: DepositPendingExchange[C],
-                                         deposit: ImmutableTransaction): Handshake[C]
+  def createHandshake(exchange: DepositPendingExchange,
+                                         deposit: ImmutableTransaction): Handshake
 
   /** Validate buyer and seller deposit transactions. */
   def validateDeposits(transactions: Both[ImmutableTransaction],
-                       amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
+                       amounts: ActiveExchange.Amounts,
                        requiredSignatures: Both[PublicKey],
                        network: Network): Both[DepositValidation]
 
@@ -28,5 +27,5 @@ trait ExchangeProtocol {
     *
     * @param exchange   Exchange description
     */
-  def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]): MicroPaymentChannel[C]
+  def createMicroPaymentChannel(exchange: RunningExchange): MicroPaymentChannel
 }

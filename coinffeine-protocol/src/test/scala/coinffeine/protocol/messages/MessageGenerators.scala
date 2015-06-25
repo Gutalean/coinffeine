@@ -42,13 +42,12 @@ trait MessageGenerators {
 
   implicit val arbitraryKeyPair: Arbitrary[KeyPair] = Arbitrary(Gen.parameterized(_ => new KeyPair))
 
-  implicit val arbitraryBitcoinAmount: Arbitrary[Bitcoin.Amount] =
+  implicit val arbitraryBitcoinAmount: Arbitrary[BitcoinAmount] =
     Arbitrary(arbitrary[Long].map(n => Bitcoin.fromSatoshi(n.abs)))
 
-  def amountOf[C <: Currency](currency: C): Gen[CurrencyAmount[C]] =
-    Gen.chooseNum[Long](0, currency.unitsInOne * 10000, 1, currency.unitsInOne).map { units =>
-      CurrencyAmount(units, currency)
-    }
+  def fiatAmountOf(currency: FiatCurrency): Gen[FiatAmount] =
+    Gen.chooseNum[Long](0, currency.unitsInOne * 10000, 1, currency.unitsInOne)
+        .map(currency.fromUnits)
 
   implicit val arbitraryImmutableTransaction: Arbitrary[ImmutableTransaction] =
     Arbitrary(for {
@@ -67,7 +66,7 @@ trait MessageGenerators {
   implicit val arbitraryFiatCurrency: Arbitrary[FiatCurrency] =
     Arbitrary(Gen.oneOf(Euro, UsDollar))
 
-  implicit val arbitraryMarket: Arbitrary[Market[FiatCurrency]] =
+  implicit val arbitraryMarket: Arbitrary[Market] =
     Arbitrary(arbitrary[FiatCurrency].map(Market.apply))
 
   val commitmentNotifications: Gen[CommitmentNotification] = for {
@@ -108,42 +107,42 @@ trait MessageGenerators {
   val channelClosures: Gen[MicropaymentChannelClosed] =
     arbitrary[ExchangeId].map(MicropaymentChannelClosed.apply)
 
-  def priceIn[C <: FiatCurrency](currency: C): Gen[Price[C]] = Gen.posNum[Long].map { n =>
+  def priceIn(currency: FiatCurrency): Gen[Price] = Gen.posNum[Long].map { n =>
     Price(BigDecimal(n) / 1000, currency)
   }
 
-  def orderPriceIn[C <: FiatCurrency](currency: C): Gen[OrderPrice[C]] = Gen.oneOf(
+  def orderPriceIn(currency: FiatCurrency): Gen[OrderPrice] = Gen.oneOf(
     Gen.const(MarketPrice(currency)),
     priceIn(currency).map(price => LimitPrice(price))
   )
 
-  def orderBookEntries[C <: FiatCurrency](currency: C): Gen[OrderBookEntry[C]] = for {
+  def orderBookEntries(currency: FiatCurrency): Gen[OrderBookEntry] = for {
     id <- arbitrary[OrderId]
     orderType <- arbitrary[OrderType]
-    amount <- arbitrary[Bitcoin.Amount] suchThat (_.isPositive)
+    amount <- arbitrary[BitcoinAmount] suchThat (_.isPositive)
     price <- orderPriceIn(currency)
   } yield OrderBookEntry(id, orderType, amount, price)
 
-  def peerPositions[C <: FiatCurrency](currency: C): Gen[PeerPositions[C]] = for {
-    positions <- Gen.containerOf[Seq, OrderBookEntry[C]](orderBookEntries(currency))
+  def peerPositions(currency: FiatCurrency): Gen[PeerPositions] = for {
+    positions <- Gen.containerOf[Seq, OrderBookEntry](orderBookEntries(currency))
   } yield PeerPositions(Market(currency), positions)
 
-  val peerPositions: Gen[PeerPositions[FiatCurrency]] = for {
+  val peerPositions: Gen[PeerPositions] = for {
     currency <- arbitrary[FiatCurrency]
     positions <- peerPositions(currency)
   } yield positions
 
-  val openOrders: Gen[OpenOrders[FiatCurrency]] = peerPositions.map(OpenOrders.apply)
+  val openOrders: Gen[OpenOrders] = peerPositions.map(OpenOrders.apply)
 
   val openOrderRequests: Gen[OpenOrdersRequest] =
-    arbitrary[Market[FiatCurrency]].map(OpenOrdersRequest.apply)
+    arbitrary[Market].map(OpenOrdersRequest.apply)
 
-  val orderMatch: Gen[OrderMatch[FiatCurrency]] = for {
+  val orderMatch: Gen[OrderMatch] = for {
     orderId <- arbitrary[OrderId]
     exchangeId <- arbitrary[ExchangeId]
-    bitcoinAmounts <- arbitrary[Both[Bitcoin.Amount]] suchThat (_.forall(_.isPositive))
+    bitcoinAmounts <- arbitrary[Both[BitcoinAmount]] suchThat (_.forall(_.isPositive))
     currency <- arbitrary[FiatCurrency]
-    fiatAmounts <- genBoth(amountOf(currency)) suchThat (_.forall(_.isPositive))
+    fiatAmounts <- genBoth(fiatAmountOf(currency)) suchThat (_.forall(_.isPositive))
     lockTime <- arbitrary[Long]
     counterpart <- arbitrary[PeerId]
   } yield OrderMatch(orderId, exchangeId, bitcoinAmounts, fiatAmounts, lockTime.abs, counterpart)
@@ -163,7 +162,7 @@ trait MessageGenerators {
   val peerPositionsReceives: Gen[PeerPositionsReceived] =
     arbitrary[String].map(PeerPositionsReceived.apply)
 
-  val quotes: Gen[Quote[FiatCurrency]] = for {
+  val quotes: Gen[Quote] = for {
     currency <- arbitrary[FiatCurrency]
     highestBid <- Gen.option(priceIn(currency))
     lowestAsk <- Gen.option(priceIn(currency))

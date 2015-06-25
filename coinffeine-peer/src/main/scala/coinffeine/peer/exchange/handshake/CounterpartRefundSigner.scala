@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.handshake
 
 import akka.actor._
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 import coinffeine.model.network.PeerId
 import coinffeine.peer.exchange.handshake.CounterpartRefundSigner.StartSigningRefunds
@@ -11,9 +10,10 @@ import coinffeine.peer.exchange.protocol.Handshake.InvalidRefundTransaction
 import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessage, Subscribe}
 import coinffeine.protocol.messages.handshake._
 
-private class CounterpartRefundSigner(gateway: ActorRef,
-                                      exchangeId: ExchangeId,
-                                      counterpart: PeerId) extends Actor with ActorLogging {
+private class CounterpartRefundSigner(
+    gateway: ActorRef,
+    exchangeId: ExchangeId,
+    counterpart: PeerId) extends Actor with ActorLogging {
 
   override def preStart(): Unit = {
     gateway ! Subscribe {
@@ -27,7 +27,7 @@ private class CounterpartRefundSigner(gateway: ActorRef,
       context.become(signingRefunds(handshake))
   }
 
-  private def signingRefunds(handshake: Handshake[_ <: FiatCurrency]): Receive = {
+  private def signingRefunds(handshake: Handshake): Receive = {
     case ReceiveMessage(RefundSignatureRequest(_, refundTransaction), _) =>
       try {
         log.info("Handshake {}: signing refund TX {}", exchangeId,
@@ -46,8 +46,9 @@ private class CounterpartRefundSigner(gateway: ActorRef,
 }
 
 private[handshake] object CounterpartRefundSigner {
-  def props(gateway: ActorRef, exchange: HandshakingExchange[_ <: FiatCurrency]): Props =
+  def props(gateway: ActorRef, exchange: HandshakingExchange): Props =
     Props(new CounterpartRefundSigner(gateway, exchange.id, exchange.counterpartId))
 
-  case class StartSigningRefunds(exchange: Handshake[_ <: FiatCurrency])
+  case class StartSigningRefunds(exchange: Handshake)
+
 }

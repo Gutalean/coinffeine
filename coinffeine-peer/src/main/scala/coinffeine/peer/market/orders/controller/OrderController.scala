@@ -3,7 +3,7 @@ package coinffeine.peer.market.orders.controller
 import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin.Network
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -19,56 +19,56 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
   * @param network            Which network the order is running on
   * @param initialOrder       Order to run
   */
-private[orders] class OrderController[C <: FiatCurrency](
+private[orders] class OrderController(
     peerId: PeerId,
     amountsCalculator: AmountsCalculator,
     network: Network,
-    initialOrder: ActiveOrder[C]) {
+    initialOrder: ActiveOrder) {
 
   import OrderController._
 
   private val orderMatchValidator = new OrderMatchValidator(peerId, amountsCalculator)
-  private var listeners = Seq.empty[OrderController.Listener[C]]
+  private var listeners = Seq.empty[OrderController.Listener]
   private var _order = initialOrder
-  private var _pendingFundRequests = Map.empty[ExchangeId, FundsRequest[C]]
+  private var _pendingFundRequests = Map.empty[ExchangeId, FundsRequest]
 
   /** Immutable snapshot of the order */
-  def view: ActiveOrder[C] = _order
+  def view: ActiveOrder = _order
 
-  def reset(order: ActiveOrder[C], pendingFundsRequests: Map[ExchangeId, FundsRequest[C]]): Unit = {
+  def reset(order: ActiveOrder, pendingFundsRequests: Map[ExchangeId, FundsRequest]): Unit = {
     _order = order
     _pendingFundRequests = pendingFundsRequests
   }
 
-  def updateExchange(exchange: ActiveExchange[C]): Unit = {
+  def updateExchange(exchange: ActiveExchange): Unit = {
     updateOrder(_.withExchange(exchange))
   }
 
-  def completeExchange(exchange: CompletedExchange[C]): Unit = {
+  def completeExchange(exchange: CompletedExchange): Unit = {
     updateExchange(exchange)
   }
 
-  def addListener(listener: OrderController.Listener[C]): Unit = {
+  def addListener(listener: OrderController.Listener): Unit = {
     listeners :+= listener
     listener.onOrderChange(_order, _order)
   }
 
-  def shouldAcceptOrderMatch(orderMatch: OrderMatch[C]): MatchResult[C] =
+  def shouldAcceptOrderMatch(orderMatch: OrderMatch): MatchResult =
     orderMatchValidator.shouldAcceptOrderMatch(_order, orderMatch, totalPendingFundsAmount)
 
-  private def totalPendingFundsAmount: Bitcoin.Amount = {
+  private def totalPendingFundsAmount: BitcoinAmount = {
     val role = Role.fromOrderType(_order.orderType)
     _pendingFundRequests.values.map(request => role.select(request.orderMatch.bitcoinAmount)).sum
   }
 
-  def pendingFundRequests: Map[ExchangeId, FundsRequest[C]] = _pendingFundRequests
+  def pendingFundRequests: Map[ExchangeId, FundsRequest] = _pendingFundRequests
 
-  def pendingFunds: Map[ExchangeId, RequiredFunds[C]] = _pendingFundRequests.mapValues(_.funds)
+  def pendingFunds: Map[ExchangeId, RequiredFunds] = _pendingFundRequests.mapValues(_.funds)
 
   def hasPendingFunds(exchangeId: ExchangeId): Boolean = _pendingFundRequests.contains(exchangeId)
 
   /** Mark exchange required funds as being requested */
-  def fundsRequested(orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]): Unit = {
+  def fundsRequested(orderMatch: OrderMatch, requiredFunds: RequiredFunds): Unit = {
     _pendingFundRequests += orderMatch.exchangeId -> FundsRequest(orderMatch, requiredFunds)
   }
 
@@ -78,7 +78,7 @@ private[orders] class OrderController[C <: FiatCurrency](
   }
 
   /** Start an exchange. You should have called [[fundsRequested()]] previously. */
-  def startExchange(exchangeId: ExchangeId, timestamp: DateTime): HandshakingExchange[C] = {
+  def startExchange(exchangeId: ExchangeId, timestamp: DateTime): HandshakingExchange = {
     val request = _pendingFundRequests.getOrElse(exchangeId,
       throw new IllegalArgumentException(s"Cannot accept $exchangeId: no funds were blocked"))
     _pendingFundRequests -= exchangeId
@@ -101,7 +101,7 @@ private[orders] class OrderController[C <: FiatCurrency](
     updateOrder(_.cancel(timestamp))
   }
 
-  private def updateOrder(mutator: ActiveOrder[C] => ActiveOrder[C]): Unit = {
+  private def updateOrder(mutator: ActiveOrder => ActiveOrder): Unit = {
     val previousOrder = _order
     val newOrder = mutator(_order)
     if (previousOrder != newOrder) {
@@ -112,9 +112,9 @@ private[orders] class OrderController[C <: FiatCurrency](
 }
 
 private[orders] object OrderController {
-  trait Listener[C <: FiatCurrency] {
-    def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit
+  trait Listener {
+    def onOrderChange(oldOrder: ActiveOrder, newOrder: ActiveOrder): Unit
   }
 
-  case class FundsRequest[C <: FiatCurrency](orderMatch: OrderMatch[C], funds: RequiredFunds[C])
+  case class FundsRequest(orderMatch: OrderMatch, funds: RequiredFunds)
 }

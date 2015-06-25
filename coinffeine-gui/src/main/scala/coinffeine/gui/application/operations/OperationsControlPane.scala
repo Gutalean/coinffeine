@@ -64,10 +64,10 @@ object OperationsControlPane {
   private val BitcoinPricePollingInterval = 10.seconds
 
   /** Summarizes a full quote into a simple price or None if there is no price information at all */
-  def summarize[C <: FiatCurrency](quote: Quote[C]): Option[Price[C]] =
+  def summarize(quote: Quote): Option[Price] =
     quote.lastPrice orElse summarize(quote.spread)
 
-  private def summarize[C <: FiatCurrency](spread: Spread[C]): Option[Price[C]] = {
+  private def summarize(spread: Spread): Option[Price] = {
     val spreadAverage = for {
       bid <- spread.highestBid
       ask <- spread.lowestAsk

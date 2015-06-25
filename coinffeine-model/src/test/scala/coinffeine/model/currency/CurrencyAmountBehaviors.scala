@@ -1,11 +1,10 @@
-package coinffeine.model.currency2
+package coinffeine.model.currency
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.currency.Euro
 
 trait CurrencyAmountBehaviors extends PropertyChecks { this: UnitTest =>
 

@@ -2,14 +2,14 @@ package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.CurrencyAmount
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.amounts.AmountsCalculator
 
 private class MaximumFiatValidation(amountsCalculator: AmountsCalculator) extends OrderValidation {
 
-  override def apply[C <: FiatCurrency](request: OrderRequest[C], spread: Spread[C]): OrderValidation.Result = {
+  override def apply(request: OrderRequest, spread: Spread): OrderValidation.Result = {
     val maximum = amountsCalculator.maxFiatPerExchange(request.price.currency)
     val tooHighRequestOpt = for {
       price <- request.estimatedPrice(spread)

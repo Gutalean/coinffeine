@@ -34,7 +34,7 @@ class OrderSupervisorTest
     log = ActivityLog.fromEvents(DateTime.now() -> OrderStatus.Completed)
   )
 
-  class MockOrderActor(order: ActiveOrder[_ <: FiatCurrency], listener: ActorRef) extends Actor {
+  class MockOrderActor(order: ActiveOrder, listener: ActorRef) extends Actor {
     override def preStart(): Unit = {
       listener ! order
     }
@@ -45,7 +45,7 @@ class OrderSupervisorTest
   }
 
   object MockOrderActor {
-    def props(order: ActiveOrder[_ <: FiatCurrency], probe: TestProbe) =
+    def props(order: ActiveOrder, probe: TestProbe) =
       Props(new MockOrderActor(order, probe.ref))
   }
 
@@ -115,7 +115,7 @@ class OrderSupervisorTest
     val submissionProbe, archiveProbe = new MockSupervisedActor()
     val operationsProperties = new DefaultOperationsProperties()
     private val delegates = new Delegates {
-      def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+      def orderActorProps(order: ActiveOrder,
                           submission: ActorRef,
                           archive: ActorRef) =
         MockOrderActor.props(order, createdOrdersProbe)
@@ -130,7 +130,7 @@ class OrderSupervisorTest
       givenArchivedOrders()
     }
 
-    def givenArchivedOrders(orders: AnyCurrencyOrder*): Unit ={
+    def givenArchivedOrders(orders: Order*): Unit ={
       archiveBehavior = {
         case OrderArchive.Query() => OrderArchive.QueryResponse(orders)
       }
@@ -150,9 +150,9 @@ class OrderSupervisorTest
       archiveProbe.expectAskWithReply(archiveBehavior)
     }
 
-    def shouldCreateOrder(request: OrderRequest[_ <: FiatCurrency]): ActiveOrder[_ <: FiatCurrency] = {
+    def shouldCreateOrder(request: OrderRequest): ActiveOrder = {
       actor ! OpenOrder(request)
-      createdOrdersProbe.expectMsgType[ActiveOrder[_ <: FiatCurrency]]
+      createdOrdersProbe.expectMsgType[ActiveOrder]
       val order = expectMsgType[CoinffeinePeerActor.OrderOpened].order
       order.orderType shouldBe request.orderType
       order.amount shouldBe request.amount

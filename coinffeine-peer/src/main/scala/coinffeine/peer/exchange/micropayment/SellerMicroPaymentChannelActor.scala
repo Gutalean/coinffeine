@@ -10,7 +10,6 @@ import akka.persistence.RecoveryCompleted
 import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.common.akka.{AskPattern, ResubmitTimer}
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
@@ -22,13 +21,14 @@ import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.gateway.MessageGateway.ReceiveMessage
 import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, PaymentProof, StepSignatures}
 
-class SellerMicroPaymentChannelActor[C <: FiatCurrency](
+class SellerMicroPaymentChannelActor(
     constants: ProtocolConstants,
     collaborators: MicroPaymentChannelActor.Collaborators,
-    initialChannel: MicroPaymentChannel[C])
-  extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
+    initialChannel: MicroPaymentChannel)
+    extends BaseChannelActor(initialChannel.exchange, collaborators) with ActorLogging {
 
   import context.dispatcher
+
   import SellerMicroPaymentChannelActor._
 
   private var channel = initialChannel
@@ -58,7 +58,7 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
     val counterpartId = initialChannel.exchange.counterpartId
     collaborators.gateway ! MessageGateway.Subscribe {
       case ReceiveMessage(
-        PaymentProof(`id`, _, _) | MicropaymentChannelClosed(`id`), `counterpartId`) =>
+      PaymentProof(`id`, _, _) | MicropaymentChannelClosed(`id`), `counterpartId`) =>
     }
   }
 
@@ -80,8 +80,8 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       log.warning("Exchange {}: received unexpected {}", exchange.id, proof)
 
     case PaymentFound(payment) =>
-      validatePayment(channel.currentStep, payment.asInstanceOf[Payment[C]])
-        .fold(fail = rejectPayment, succ = _ => acceptPayment(payment))
+      validatePayment(channel.currentStep, payment.asInstanceOf[Payment])
+          .fold(fail = rejectPayment, succ = _ => acceptPayment(payment))
 
     case PaymentNotFound(FindPaymentCriterion.ById(paymentId)) =>
       log.error("Exchange {}: no payment with id {} found", exchange.id, paymentId)
@@ -95,10 +95,10 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
       exchange.id, channel.currentStep, errors.list.mkString("; "))
   }
 
-  private def acceptPayment(payment: Payment[_ <: FiatCurrency]): Unit = {
+  private def acceptPayment(payment: Payment): Unit = {
     log.info("Exchange {}: payment {} accepted", exchange.id, payment.id)
     resubmitTimer.reset()
-    persist(AcceptedPayment){ _ =>
+    persist(AcceptedPayment) { _ =>
       onAcceptedPayment()
       self ! ResubmitTimeout
     }
@@ -155,11 +155,14 @@ class SellerMicroPaymentChannelActor[C <: FiatCurrency](
 
 object SellerMicroPaymentChannelActor {
 
-  def props(initialChannel: MicroPaymentChannel[_ <: FiatCurrency],
-            constants: ProtocolConstants,
-            collaborators: MicroPaymentChannelActor.Collaborators) =
+  def props(
+      initialChannel: MicroPaymentChannel,
+      constants: ProtocolConstants,
+      collaborators: MicroPaymentChannelActor.Collaborators) =
     Props(new SellerMicroPaymentChannelActor(constants, collaborators, initialChannel))
 
   private case object AcceptedPayment extends PersistentEvent
+
   private case object ChannelClosed extends PersistentEvent
+
 }

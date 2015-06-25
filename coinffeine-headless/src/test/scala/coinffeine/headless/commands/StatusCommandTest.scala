@@ -6,6 +6,7 @@ import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Proper
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
+import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api._
 
@@ -58,14 +59,14 @@ class StatusCommandTest extends CommandTest {
     override def marketStats: MarketStats = ???
     override def wallet = new CoinffeineWallet {
       override val balance = btcBalance
-      override def transfer(amount: Bitcoin.Amount, address: Address): Future[Hash] = ???
+      override def transfer(amount: BitcoinAmount, address: Address): Future[Hash] = ???
       override val activity = null
       override val primaryAddress = MockCoinffeineApp.this.primaryAddress
     }
     override def paymentProcessor = new CoinffeinePaymentProcessor {
       override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] = fiatBalance.get
       override def accountId: Option[AccountId] = ???
-      override val balance: PropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]] =
+      override val balance: PropertyMap[FiatCurrency, FiatBalance] =
         new MutablePropertyMap
     }
     override def alarms = ???

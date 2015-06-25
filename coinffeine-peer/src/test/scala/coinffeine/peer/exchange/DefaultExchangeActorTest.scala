@@ -42,10 +42,10 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
         def transactionBroadcaster(refund: ImmutableTransaction)
                                   (implicit context: ActorContext) = broadcaster.props
         def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeActor.props
-        def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
+        def micropaymentChannel(channel: MicroPaymentChannel,
                                 resultListeners: Set[ActorRef]) =
           micropaymentChannelActor.props(channel, resultListeners)
-        def depositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
+        def depositWatcher(exchange: DepositPendingExchange,
                            deposit: ImmutableTransaction,
                            refundTx: ImmutableTransaction)(implicit context: ActorContext): Props =
           depositWatcherActor.props(exchange, deposit, refundTx)

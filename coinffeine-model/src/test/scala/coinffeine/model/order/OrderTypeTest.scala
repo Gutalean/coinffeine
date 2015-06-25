@@ -17,24 +17,24 @@ class OrderTypeTest extends UnitTest {
   }
 
   "Bid order type" should "order prices in descending order" in {
-    val prices = Seq[OrderPrice[Euro.type]](
+    val prices = Seq[OrderPrice](
       MarketPrice(Euro),
       MarketPrice(Euro),
       LimitPrice(100.EUR),
       LimitPrice(20.EUR),
       LimitPrice(10.EUR)
     )
-    Random.shuffle(prices).sorted(Bid.priceOrdering[Euro.type]) shouldBe prices
+    Random.shuffle(prices).sorted(Bid.priceOrdering) shouldBe prices
   }
 
   "Ask order type" should "order prices in ascending order" in {
-    val prices = Seq[OrderPrice[Euro.type]](
+    val prices = Seq[OrderPrice](
       MarketPrice(Euro),
       MarketPrice(Euro),
       LimitPrice(10.EUR),
       LimitPrice(20.EUR),
       LimitPrice(100.EUR)
     )
-    Random.shuffle(prices).sorted(Ask.priceOrdering[Euro.type]) shouldBe prices
+    Random.shuffle(prices).sorted(Ask.priceOrdering) shouldBe prices
   }
 }

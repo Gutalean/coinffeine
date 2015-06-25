@@ -163,7 +163,7 @@ class ActiveOrderTest extends UnitTest with SampleExchange with CoinffeineUnitTe
   }
 
   private def createRandomExchange(
-      timestamp: DateTime = DateTime.now()): HandshakingExchange[Euro.type] =
+      timestamp: DateTime = DateTime.now()): HandshakingExchange =
     ActiveExchange.create(
       ExchangeId.random(), BuyerRole, peerIds.seller, amounts, parameters, timestamp)
 }

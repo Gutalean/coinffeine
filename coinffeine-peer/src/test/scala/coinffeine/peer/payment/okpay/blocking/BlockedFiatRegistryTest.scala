@@ -263,9 +263,9 @@ class BlockedFiatRegistryTest extends AkkaSpec {
       eventProbe.expectMsg(PaymentProcessorActor.UnavailableFunds(fundsId))
     }
 
-    protected def currentTotalBlockedFunds[C <: FiatCurrency](currency: C): TotalBlockedFunds[C] = {
+    protected def currentTotalBlockedFunds(currency: FiatCurrency): TotalBlockedFunds = {
       actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(currency)
-      expectMsgType[TotalBlockedFunds[C]]
+      expectMsgType[TotalBlockedFunds]
     }
   }
 

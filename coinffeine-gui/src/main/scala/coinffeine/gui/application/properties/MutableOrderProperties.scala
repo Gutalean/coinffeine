@@ -6,13 +6,13 @@ import scalafx.collections.ObservableBuffer
 import org.joda.time.DateTime
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.exchange.AnyExchange
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.exchange.Exchange
 import coinffeine.model.order._
 
-class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProperties {
+class MutableOrderProperties(initialValue: Order) extends OrderProperties {
 
-  override val orderProperty = new ObjectProperty[AnyCurrencyOrder](this, "source", initialValue)
+  override val orderProperty = new ObjectProperty[Order](this, "source", initialValue)
 
   override val idProperty = new ReadOnlyObjectProperty[OrderId](this, "id", initialValue.id)
 
@@ -31,19 +31,19 @@ class MutableOrderProperties(initialValue: AnyCurrencyOrder) extends OrderProper
   override val isCancellable = statusProperty.delegate.mapToBool(_.isActive).toReadOnlyProperty
 
   override val amountProperty =
-    new ReadOnlyObjectProperty[Bitcoin.Amount](this, "amount", initialValue.amount)
+    new ReadOnlyObjectProperty[BitcoinAmount](this, "amount", initialValue.amount)
 
   override val priceProperty =
-    new ReadOnlyObjectProperty[AnyOrderPrice](this, "price", initialValue.price)
+    new ReadOnlyObjectProperty[OrderPrice](this, "price", initialValue.price)
 
   override val progressProperty = orderProperty.delegate.mapToDouble(_.progress).toReadOnlyProperty
 
-  def update(order: AnyCurrencyOrder): Unit = {
+  def update(order: Order): Unit = {
     orderProperty.value = order
     updateExchanges(order.exchanges.values.toSeq)
   }
 
-  private def updateExchanges(newExchanges: Seq[AnyExchange]): Unit = {
+  private def updateExchanges(newExchanges: Seq[Exchange]): Unit = {
     exchanges.clear()
     newExchanges
       .filter(_.isStarted)

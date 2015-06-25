@@ -6,8 +6,8 @@ import coinffeine.gui.application.operations.validation.OrderValidation
 import coinffeine.gui.application.operations.wizard.OrderSubmissionWizard.CollectedData
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.Wizard
-import coinffeine.model.currency.{Bitcoin, CurrencyAmount, Euro}
-import coinffeine.model.order.{OrderType, OrderPrice}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.order.{OrderPrice, OrderType}
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
@@ -36,9 +36,9 @@ object OrderSubmissionWizard {
 
     val orderType: ObjectProperty[OrderType] = new ObjectProperty(this, "orderType")
 
-    val bitcoinAmount: ObjectProperty[CurrencyAmount[Bitcoin.type]] =
+    val bitcoinAmount: ObjectProperty[BitcoinAmount] =
       new ObjectProperty(this, "bitcoinAmount")
 
-    val price: ObjectProperty[OrderPrice[Euro.type]] = new ObjectProperty(this, "price")
+    val price: ObjectProperty[OrderPrice] = new ObjectProperty(this, "price")
   }
 }

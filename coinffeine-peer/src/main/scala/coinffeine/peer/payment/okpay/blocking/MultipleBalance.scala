@@ -1,6 +1,6 @@
 package coinffeine.peer.payment.okpay.blocking
 
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 
 /** Keeps a balance on several currencies */
 private class MultipleBalance {
@@ -11,21 +11,21 @@ private class MultipleBalance {
     byCurrency = newBalances.map(b => b.currency -> b).toMap
   }
 
-  def incrementBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
+  def incrementBalance(amount: FiatAmount): Unit = {
     val prevAmount = balanceFor(amount.currency)
     val newBalance = prevAmount + amount
     byCurrency = byCurrency.updated(amount.currency, newBalance)
   }
 
-  def reduceBalance[C <: FiatCurrency](amount: CurrencyAmount[C]): Unit = {
+  def reduceBalance(amount: FiatAmount): Unit = {
     val prevAmount = balanceFor(amount.currency)
-    val zero = CurrencyAmount.zero(amount.currency)
+    val zero = amount.currency.zero
     val newBalance = (prevAmount - amount).max(zero)
     byCurrency = byCurrency.updated(amount.currency, newBalance)
   }
 
-  def balanceFor[C <: FiatCurrency](currency: C): CurrencyAmount[C] = {
-    val zero = CurrencyAmount.zero(currency)
-    byCurrency.getOrElse(currency, zero).asInstanceOf[CurrencyAmount[C]]
+  def balanceFor(currency: FiatCurrency): FiatAmount = {
+    val zero = currency.zero
+    byCurrency.getOrElse(currency, zero).asInstanceOf[FiatAmount]
   }
 }

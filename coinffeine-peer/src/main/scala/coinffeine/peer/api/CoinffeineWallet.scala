@@ -3,7 +3,7 @@ package coinffeine.peer.api
 import scala.concurrent.Future
 
 import coinffeine.model.bitcoin.{Address, Hash, WalletProperties}
-import coinffeine.model.currency.Bitcoin
+import coinffeine.model.currency.BitcoinAmount
 
 trait CoinffeineWallet extends WalletProperties {
 
@@ -13,11 +13,11 @@ trait CoinffeineWallet extends WalletProperties {
     * @param address  Destination address
     * @return         TX id if transfer is possible, TransferException otherwise
     */
-  def transfer(amount: Bitcoin.Amount, address: Address): Future[Hash]
+  def transfer(amount: BitcoinAmount, address: Address): Future[Hash]
 }
 
 object CoinffeineWallet {
 
-  case class TransferException(amount: Bitcoin.Amount, address: Address, cause: Throwable)
+  case class TransferException(amount: BitcoinAmount, address: Address, cause: Throwable)
     extends Exception(s"Cannot transfer $amount to $address", cause)
 }

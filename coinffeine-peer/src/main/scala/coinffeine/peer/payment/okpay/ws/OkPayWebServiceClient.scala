@@ -9,9 +9,9 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.PaymentProcessor.{Invoice, AccountId, PaymentId}
-import coinffeine.model.payment.{AnyPayment, Payment}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.payment.Payment
+import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
@@ -49,12 +49,12 @@ class OkPayWebServiceClient(
   override implicit protected val executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
 
-  override def sendPayment[C <: FiatCurrency](
+  override def sendPayment(
       to: AccountId,
-      amount: CurrencyAmount[C],
+      amount: FiatAmount,
       comment: String,
       invoice: Invoice,
-      feePolicy: FeePolicy): Future[Payment[C]] =
+      feePolicy: FeePolicy): Future[Payment] =
     authenticatedRequest { token =>
       service.send_Money(
         walletID = Some(Some(accountId)),
@@ -77,10 +77,10 @@ class OkPayWebServiceClient(
       }
     }
 
-  override def findPaymentById(paymentId: PaymentId): Future[Option[AnyPayment]] =
+  override def findPaymentById(paymentId: PaymentId): Future[Option[Payment]] =
     findPayment(Left(paymentId))
 
-  override def findPaymentByInvoice(invoice: Invoice): Future[Option[AnyPayment]] =
+  override def findPaymentByInvoice(invoice: Invoice): Future[Option[Payment]] =
     findPayment(Right(invoice))
 
   private def findPayment(params: Either[PaymentId, Invoice]) =
@@ -110,17 +110,17 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
-  private def parsePaymentOfCurrency[C <: FiatCurrency](
-     txInfo: TransactionInfo, expectedCurrency: C): Payment[C] = {
+  private def parsePaymentOfCurrency(
+      txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Payment = {
     val payment = parsePayment(txInfo)
     if (payment.amount.currency != expectedCurrency) {
       throw new PaymentProcessorException(
         s"payment is expressed in ${payment.amount.currency}, but $expectedCurrency was expected")
     }
-    payment.asInstanceOf[Payment[C]]
+    payment.asInstanceOf[Payment]
   }
 
-  private def parsePayment(txInfo: TransactionInfo): AnyPayment = {
+  private def parsePayment(txInfo: TransactionInfo): Payment = {
     txInfo match {
       case TransactionInfo(
           Some(amount),
@@ -135,18 +135,20 @@ class OkPayWebServiceClient(
           Flatten(WalletId(receiverId)),
           Flatten(WalletId(senderId)),
           statusOpt) =>
-        val amount = FiatAmount(net, txInfo.Currency.get.get)
+        val amount = FiatCurrency(txInfo.Currency.get.get)(net)
         val date = DateFormat.parseDateTime(rawDate)
         val isCompleted = statusOpt.getOrElse(NoneType) == Completed
-        Payment(paymentId.toString, senderId, receiverId, amount, date, description, invoice, isCompleted)
+        Payment(paymentId.toString, senderId, receiverId, amount, date, description, invoice,
+          isCompleted)
 
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }
   }
 
-  private def parseBalances[C <: FiatCurrency](balances: ArrayOfBalance): Seq[FiatAmount] = {
+  private def parseBalances(balances: ArrayOfBalance): Seq[FiatAmount] = {
     balances.Balance.collect {
-      case Some(Balance(Some(amount), Flatten(currencyCode))) => FiatAmount(amount, currencyCode)
+      case Some(Balance(Some(amount), Flatten(currencyCode))) =>
+        FiatCurrency(currencyCode)(amount)
     }
   }
 

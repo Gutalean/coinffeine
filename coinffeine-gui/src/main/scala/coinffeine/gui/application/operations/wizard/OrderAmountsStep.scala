@@ -18,16 +18,17 @@ import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
-class OrderAmountsStep(marketStats: MarketStats,
-                       amountsCalculator: AmountsCalculator,
-                       data: CollectedData,
-                       validator: OrderValidation)
-  extends StepPane[OrderSubmissionWizard.CollectedData] {
+class OrderAmountsStep(
+    marketStats: MarketStats,
+    amountsCalculator: AmountsCalculator,
+    data: CollectedData,
+    validator: OrderValidation)
+    extends StepPane[OrderSubmissionWizard.CollectedData] {
 
   override val icon = GlyphIcon.MarketPrice
 
   private val order =
-    new ObjectProperty[Option[OrderRequest[Euro.type]]](this, "order", None)
+    new ObjectProperty[Option[OrderRequest]](this, "order", None)
   private val validation =
     new ObjectProperty[OrderValidation.Result](this, "validation", OrderValidation.OK)
 
@@ -35,11 +36,17 @@ class OrderAmountsStep(marketStats: MarketStats,
     marketStats.currentQuote(Market(Euro))
   }
 
-  private val action = new Label { styleClass += "action" }
+  private val action = new Label {
+    styleClass += "action"
+  }
 
-  private val btcAmount = new CurrencyTextField(Bitcoin(0)) { styleClass += "btc-input" }
+  private val btcAmount = new CurrencyTextField(Bitcoin.zero) {
+    styleClass += "btc-input"
+  }
 
-  private val fiatAmount = new CurrencyTextField(Euro(0)) { styleClass += "fiat-input" }
+  private val fiatAmount = new CurrencyTextField(Euro.zero) {
+    styleClass += "fiat-input"
+  }
 
   private val marketPrice = new Label
 
@@ -48,7 +55,9 @@ class OrderAmountsStep(marketStats: MarketStats,
 
     val group = new ToggleGroup
 
-    val limitButton = new RadioButton("Limit order") { toggleGroup = group }
+    val limitButton = new RadioButton("Limit order") {
+      toggleGroup = group
+    }
 
     val limitDetails = new VBox {
       styleClass += "details"
@@ -80,7 +89,9 @@ class OrderAmountsStep(marketStats: MarketStats,
       )
     }
 
-    val marketPriceButton = new RadioButton("Market price order") { toggleGroup = group }
+    val marketPriceButton = new RadioButton("Market price order") {
+      toggleGroup = group
+    }
 
     val marketPriceDetails = new HBox {
       styleClass += "details"
@@ -169,13 +180,13 @@ class OrderAmountsStep(marketStats: MarketStats,
     data.bitcoinAmount <== btcAmount.currencyValue
 
     data.price <==
-      MarketSelection.group.selectedToggle.delegate.zip(fiatAmount.currencyValue) {
-        (sel, price) => Option(sel) match {
-          case Some(MarketSelection.limitButton) if price.isPositive => LimitPrice(price)
-          case Some(MarketSelection.marketPriceButton) => MarketPrice(Euro)
-          case _ => null
+        MarketSelection.group.selectedToggle.delegate.zip(fiatAmount.currencyValue) {
+          (sel, price) => Option(sel) match {
+            case Some(MarketSelection.limitButton) if price.isPositive => LimitPrice(price)
+            case Some(MarketSelection.marketPriceButton) => MarketPrice(Euro)
+            case _ => null
+          }
         }
-      }
   }
 }
 

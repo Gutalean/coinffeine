@@ -5,7 +5,6 @@ import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market.RequiredFunds
 import coinffeine.peer.bitcoin.wallet.WalletActor
@@ -16,7 +15,7 @@ private[funds] class FundsBlockerActor(
     id: ExchangeId,
     wallet: ActorRef,
     paymentProcessor: ActorRef,
-    requiredFunds: RequiredFunds[_ <: FiatCurrency],
+    requiredFunds: RequiredFunds,
     listener: ActorRef) extends Actor with ActorLogging {
 
   private trait Funds {
@@ -126,7 +125,7 @@ object FundsBlockerActor {
   def props(id: ExchangeId,
             wallet: ActorRef,
             paymentProcessor: ActorRef,
-            requiredFunds: RequiredFunds[_ <: FiatCurrency],
+            requiredFunds: RequiredFunds,
             listener: ActorRef) =
     Props(new FundsBlockerActor(id, wallet, paymentProcessor, requiredFunds, listener))
 

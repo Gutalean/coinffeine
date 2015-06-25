@@ -12,7 +12,7 @@ import coinffeine.model.exchange.ActiveExchange
   * TODO: add missing validations
   */
 private class RefundTransactionValidation(parameters: ActiveExchange.Parameters,
-                                          expectedAmount: Bitcoin.Amount) {
+                                          expectedAmount: BitcoinAmount) {
   import Scalaz._
 
   import RefundTransactionValidation._
@@ -57,7 +57,7 @@ private object RefundTransactionValidation {
     override def message = s"invalid inputs: $cause"
   }
 
-  case class InvalidRefundedAmount(actual: Bitcoin.Amount, expected: Bitcoin.Amount) extends Error {
+  case class InvalidRefundedAmount(actual: BitcoinAmount, expected: BitcoinAmount) extends Error {
     override def message = s"invalid refunded amount: $expected expected, $actual found"
   }
 }

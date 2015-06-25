@@ -11,13 +11,11 @@ import scalafx.scene.chart.{AreaChart, NumberAxis, XYChart}
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.gui.util.FxExecutor
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
 import coinffeine.model.order.{Ask, Bid, OrderType}
 import coinffeine.peer.api.MarketStats
 
-class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
-                                        market: Market[C]) extends AreaChart[Number, Number](
+class OrderBookChart(stats: MarketStats, market: Market) extends AreaChart[Number, Number](
     OrderBookChart.xAxis(market), OrderBookChart.yAxis()) with Includes with LazyLogging {
 
   private val reloader = new Timeline(new KeyFrame(
@@ -47,7 +45,7 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
     }
   }
 
-  private def toSeries(data: Set[OrderBookEntry[C]], orderType: OrderType) = {
+  private def toSeries(data: Set[OrderBookEntry], orderType: OrderType) = {
     val series = new XYChart.Series[Number, Number]() {
       name = orderType.toString
     }
@@ -59,7 +57,7 @@ class OrderBookChart[C <: FiatCurrency](stats: MarketStats,
     series
   }
 
-  private def sumCurrencyAmount(entries: Seq[OrderBookEntry[C]]) =
+  private def sumCurrencyAmount(entries: Seq[OrderBookEntry]) =
     entries.map(_.amount.value.toDouble).sum
 
   private def toChartData(data: (Double, Double)) = XYChart.Data[Number, Number](data._1, data._2)
@@ -69,7 +67,7 @@ object OrderBookChart {
 
   val UpdateInterval = 20.seconds
 
-  private def xAxis[C <: FiatCurrency](market: Market[C]) = new NumberAxis {
+  private def xAxis(market: Market) = new NumberAxis {
     autoRanging = true
     forceZeroInRange = false
     label = s"Price (${market.currency}/BTC)"
@@ -77,7 +75,7 @@ object OrderBookChart {
       this, "", market.currency.javaCurrency.getSymbol)
   }
 
-  private def yAxis[C <: FiatCurrency]() = new NumberAxis {
+  private def yAxis() = new NumberAxis {
     autoRanging = true
     label = s"Bitcoins"
     tickLabelFormatter = NumberAxis.DefaultFormatter(this, "", "BTC")

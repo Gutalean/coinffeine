@@ -75,7 +75,7 @@ class WeightedAveragePriceTest extends UnitTest {
     )) shouldBe Some(Price(60.EUR))
   }
 
-  abstract class TestExchange extends Exchange[Euro.type] {
+  abstract class TestExchange extends Exchange {
     override val id = ExchangeId.random()
     override val log = ActivityLog.empty
     override val counterpartId = PeerId.random()
@@ -86,17 +86,17 @@ class WeightedAveragePriceTest extends UnitTest {
 
   case class CompletedExchange(
       override val role: Role,
-      override val exchangedBitcoin: Both[Bitcoin.Amount],
-      override val exchangedFiat: Both[CurrencyAmount[Euro.type]]) extends TestExchange {
+      override val exchangedBitcoin: Both[BitcoinAmount],
+      override val exchangedFiat: Both[FiatAmount]) extends TestExchange {
     override def status = ExchangeStatus.Successful
     override def progress = Progress(exchangedBitcoin)
   }
 
   case class FailedExchange(
     override val role: Role,
-    progressedBitcoin: Both[Bitcoin.Amount],
-    override val exchangedBitcoin: Both[Bitcoin.Amount],
-    override val exchangedFiat: Both[CurrencyAmount[Euro.type]]) extends TestExchange {
+    progressedBitcoin: Both[BitcoinAmount],
+    override val exchangedBitcoin: Both[BitcoinAmount],
+    override val exchangedFiat: Both[FiatAmount]) extends TestExchange {
     override def status = ExchangeStatus.Failed(FailureCause.StepFailed(3))
     override def progress = Progress(progressedBitcoin)
   }

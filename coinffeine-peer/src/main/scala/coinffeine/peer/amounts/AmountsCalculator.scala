@@ -9,14 +9,14 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 trait AmountsCalculator {
 
   /** Compute the maximum fiat amount allowed per exchange. */
-  def maxFiatPerExchange[C <: FiatCurrency](currency: C): CurrencyAmount[C]
+  def maxFiatPerExchange(currency: FiatCurrency): FiatAmount
 
   /** Compute amounts governing an exchange from the raw bitcoin and fiat exchanged */
-  def exchangeAmountsFor[C <: FiatCurrency](
-      bitcoinAmount: Bitcoin.Amount,
-      fiatAmount: CurrencyAmount[C]): ActiveExchange.Amounts[C]
+  def exchangeAmountsFor(
+      bitcoinAmount: BitcoinAmount,
+      fiatAmount: FiatAmount): ActiveExchange.Amounts
 
-  def exchangeAmountsFor[C <: FiatCurrency](orderMatch: OrderMatch[C]): ActiveExchange.Amounts[C] =
+  def exchangeAmountsFor(orderMatch: OrderMatch): ActiveExchange.Amounts =
     exchangeAmountsFor(orderMatch.bitcoinAmount.seller, orderMatch.fiatAmount.buyer)
 
   /** Estimate order amounts by assuming a single perfect match exchange
@@ -25,6 +25,7 @@ trait AmountsCalculator {
     * @param spread  Current market spread relevant to market price orders
     * @return        An estimation if there is enough price information or [[None]]
     */
-  def estimateAmountsFor[C <: FiatCurrency](order: OrderRequest[C],
-                                            spread: Spread[C]): Option[ActiveExchange.Amounts[C]]
+  def estimateAmountsFor(
+      order: OrderRequest,
+      spread: Spread): Option[ActiveExchange.Amounts]
 }

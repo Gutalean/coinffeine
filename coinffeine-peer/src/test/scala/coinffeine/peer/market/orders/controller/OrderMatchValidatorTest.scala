@@ -29,7 +29,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside {
     lockTime = 37376,
     counterpart = PeerId.random()
   )
-  private val exchange = ActiveExchange.create[Euro.type](
+  private val exchange = ActiveExchange.create(
     id = orderMatch.exchangeId,
     role = BuyerRole,
     counterpartId = orderMatch.counterpart,
@@ -48,8 +48,8 @@ class OrderMatchValidatorTest extends UnitTest with Inside {
     val exchangingOrder = limitOrder.withExchange(exchange)
     inside(validator.shouldAcceptOrderMatch(
       exchangingOrder, orderMatch, orderMatch.bitcoinAmount.buyer)) {
-        case MatchAlreadyAccepted(_) =>
-      }
+      case MatchAlreadyAccepted(_) =>
+    }
   }
 
   it should "reject self-matches" in {
@@ -57,7 +57,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside {
   }
 
   it should "reject matches of more amount than the pending one" in {
-    val tooLargeOrderMatch = orderMatch.copy[Euro.type](bitcoinAmount = Both(1.9997.BTC, 2.BTC))
+    val tooLargeOrderMatch = orderMatch.copy(bitcoinAmount = Both(1.9997.BTC, 2.BTC))
     expectRejectionWithMessage(limitOrder, tooLargeOrderMatch, "Invalid amount")
   }
 
@@ -97,7 +97,7 @@ class OrderMatchValidatorTest extends UnitTest with Inside {
   }
 
   it should "take rounding into account when checking the price limit" in {
-    val boundaryOrderMatch = orderMatch.copy(fiatAmount = Both(110.23.EUR,109.68.EUR))
+    val boundaryOrderMatch = orderMatch.copy(fiatAmount = Both(110.23.EUR, 109.68.EUR))
     inside(validator.shouldAcceptOrderMatch(limitOrder, boundaryOrderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
@@ -108,23 +108,24 @@ class OrderMatchValidatorTest extends UnitTest with Inside {
   }
 
   it should "accept matches when having a running exchange" in {
-    val runningExchange = exchange.copy[Euro.type](
+    val runningExchange = exchange.copy(
       metadata = exchange.metadata.copy(id = ExchangeId.random())
     ).handshake(
-      user = Exchange.PeerInfo("account1", new KeyPair),
-      counterpart = Exchange.PeerInfo("account2", new KeyPair),
-      timestamp = handshakeStartedOn
-    )
+          user = Exchange.PeerInfo("account1", new KeyPair),
+          counterpart = Exchange.PeerInfo("account2", new KeyPair),
+          timestamp = handshakeStartedOn
+        )
     val exchangingOrder = limitOrder.copy(amount = 10.BTC).withExchange(runningExchange)
     inside(validator.shouldAcceptOrderMatch(exchangingOrder, orderMatch, alreadyBlocking = 0.BTC)) {
       case MatchAccepted(_) =>
     }
   }
 
-  private def expectRejectionWithMessage(order: ActiveOrder[Euro.type],
-                                         orderMatch: OrderMatch[Euro.type],
-                                         message: String,
-                                         alreadyBlocking: Bitcoin.Amount = 0.BTC): Unit = {
+  private def expectRejectionWithMessage(
+      order: ActiveOrder,
+      orderMatch: OrderMatch,
+      message: String,
+      alreadyBlocking: BitcoinAmount = 0.BTC): Unit = {
     inside(validator.shouldAcceptOrderMatch(order, orderMatch, alreadyBlocking)) {
       case MatchRejected(completeMessage) =>
         completeMessage should include(message)

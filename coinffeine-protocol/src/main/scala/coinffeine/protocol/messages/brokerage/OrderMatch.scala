@@ -17,13 +17,13 @@ import coinffeine.protocol.messages.PublicMessage
   * @param lockTime       Block in which deposits will be redeemable
   * @param counterpart    Who is the exchange counterpart
   */
-case class OrderMatch[C <: FiatCurrency](
+case class OrderMatch(
     orderId: OrderId,
     exchangeId: ExchangeId,
-    bitcoinAmount: Both[Bitcoin.Amount],
-    fiatAmount: Both[CurrencyAmount[C]],
+    bitcoinAmount: Both[BitcoinAmount],
+    fiatAmount: Both[FiatAmount],
     lockTime: Long,
     counterpart: PeerId
 ) extends PublicMessage {
-  def currency: C = fiatAmount.buyer.currency
+  def currency: FiatCurrency = fiatAmount.buyer.currency
 }

@@ -1,19 +1,19 @@
 package coinffeine.model.payment
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 
 trait PaymentProcessor {
 
-  def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C]
+  def calculateFee(amount: FiatAmount): FiatAmount
 
-  def amountPlusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+  def amountPlusFee(amount: FiatAmount): FiatAmount =
     amount + calculateFee(amount)
 
-  def amountMinusFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] =
+  def amountMinusFee(amount: FiatAmount): FiatAmount =
     amount - calculateFee(amount)
 
   /** Best step size balancing fees paid and risk taken for this payment processor and currency. */
-  def bestStepSize[C <: FiatCurrency](currency: C): CurrencyAmount[C]
+  def bestStepSize(currency: FiatCurrency): FiatAmount
 }
 
 object PaymentProcessor {

@@ -94,15 +94,15 @@ abstract class OrderActorTest extends AkkaSpec
     private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
     val properties = new DefaultOperationsProperties
     val eventProbe = new EventProbe(OrderChanged.Topic)
-    private val props = Props(new OrderActor[Euro.type](
+    private val props = Props(new OrderActor(
       order,
       new OrderController(myRole.select(peerIds), calculatorStub, network, order),
-      new Delegates[Euro.type] {
-        override def exchangeActor(exchange: HandshakingExchange[Euro.type])
+      new Delegates {
+        override def exchangeActor(exchange: HandshakingExchange)
                                   (implicit context: ActorContext) =
           Fixture.this.exchangeActor.props(exchange)
 
-        override def fundsBlocker(id: ExchangeId, funds: RequiredFunds[Euro.type])
+        override def fundsBlocker(id: ExchangeId, funds: RequiredFunds)
                                  (implicit context: ActorContext): Props =
           Fixture.this.fundsBlocker.props(id)
       },
@@ -171,7 +171,7 @@ abstract class OrderActorTest extends AkkaSpec
         ExchangeActor.ExchangeSuccess(completedExchange.copy(timestamp = DateTime.now())))
     }
 
-    def expectProperty[A](f: AnyCurrencyOrder => A): A =
+    def expectProperty[A](f: Order => A): A =
       eventually(timeout = Timeout(3.seconds.dilated)) {
         f(properties.orders(order.id))
       }

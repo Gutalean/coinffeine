@@ -9,15 +9,15 @@ import coinffeine.model.network.PeerId
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.model.{ActivityLog, Both}
 
-case class ExchangeMetadata[C <: FiatCurrency](
+case class ExchangeMetadata(
   id: ExchangeId,
   role: Role,
   counterpartId: PeerId,
-  amounts: ActiveExchange.Amounts[C],
+  amounts: ActiveExchange.Amounts,
   parameters: ActiveExchange.Parameters,
   createdOn: DateTime)
 
-trait Exchange[C <: FiatCurrency] {
+trait Exchange {
   def id: ExchangeId
   def role: Role
   def status: ExchangeStatus
@@ -27,9 +27,9 @@ trait Exchange[C <: FiatCurrency] {
   def isStarted: Boolean
 
   def counterpartId: PeerId
-  def exchangedBitcoin: Both[Bitcoin.Amount]
-  def exchangedFiat: Both[CurrencyAmount[C]]
-  def currency: C = exchangedFiat.buyer.currency
+  def exchangedBitcoin: Both[BitcoinAmount]
+  def exchangedFiat: Both[FiatAmount]
+  def currency: FiatCurrency = exchangedFiat.buyer.currency
   def lockTime: Long
 
   def depositsIds: Option[Both[Hash]] = log.activities.collectFirst {
@@ -48,10 +48,10 @@ object Exchange {
     }
   }
 
-  case class Progress(bitcoinsTransferred: Both[Bitcoin.Amount]) {
+  case class Progress(bitcoinsTransferred: Both[BitcoinAmount]) {
     def +(other: Progress) =
       Progress(bitcoinsTransferred.zip(other.bitcoinsTransferred).map { case (l, r) => l + r })
   }
 
-  def noProgress[C <: FiatCurrency](c: C) = Exchange.Progress(Both.fill(Bitcoin.zero))
+  def noProgress = Exchange.Progress(Both.fill(Bitcoin.zero))
 }

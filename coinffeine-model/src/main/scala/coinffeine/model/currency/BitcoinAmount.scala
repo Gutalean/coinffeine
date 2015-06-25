@@ -1,4 +1,4 @@
-package coinffeine.model.currency2
+package coinffeine.model.currency
 
 case class BitcoinAmount(units: Long) extends CurrencyAmount[BitcoinAmount] {
 

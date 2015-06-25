@@ -17,7 +17,7 @@ import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsRecei
 class PutPeerPositions(val requestName: Expression[String],
                        val next: ActorRef,
                        protocol: CoinffeineProtocol,
-                       orderBookEntries: Seq[OrderBookEntry[Euro.type]])
+                       orderBookEntries: Seq[OrderBookEntry])
     extends Chainable with ReportingSupport {
 
   override def runAction() = {
@@ -32,5 +32,5 @@ class PutPeerPositions(val requestName: Expression[String],
 
 object PutPeerPositions {
 
-  val DefaultOrderBookEntries: Seq[OrderBookEntry[Euro.type]] = Seq.empty
+  val DefaultOrderBookEntries: Seq[OrderBookEntry] = Seq.empty
 }

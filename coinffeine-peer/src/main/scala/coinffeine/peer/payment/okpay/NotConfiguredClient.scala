@@ -3,7 +3,7 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 
-import coinffeine.model.currency.{CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency.FiatAmount
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
@@ -19,14 +19,14 @@ object NotConfiguredClient extends OkPayClient {
 
   override def currentBalances() = Future.failed(notConfiguredError)
 
-  override def sendPayment[C <: FiatCurrency](
-    to: AccountId, amount: CurrencyAmount[C], comment: String,
-    invoice: Invoice, feePolicy: FeePolicy) =
+  override def sendPayment(
+      to: AccountId, amount: FiatAmount, comment: String, invoice: Invoice,
+      feePolicy: FeePolicy) =
     Future.failed(notConfiguredError)
 
   override protected def executionContext = throw notConfiguredError
 
   private val notConfiguredError =
     new IllegalStateException("OKPay credentials are not properly configured")
-      with NoStackTrace
+        with NoStackTrace
 }

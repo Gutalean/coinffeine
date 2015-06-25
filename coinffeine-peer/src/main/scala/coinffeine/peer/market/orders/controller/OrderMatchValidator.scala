@@ -4,7 +4,7 @@ import scalaz.Validation
 import scalaz.Validation.FlatMap._
 import scalaz.syntax.validation._
 
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.exchange.Role
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
@@ -14,12 +14,12 @@ import coinffeine.protocol.messages.brokerage.OrderMatch
 
 private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator) {
 
-  def shouldAcceptOrderMatch[C <: FiatCurrency](
-    order: ActiveOrder[C],
-    orderMatch: OrderMatch[C],
-    alreadyBlocking: Bitcoin.Amount): MatchResult[C] = {
+  def shouldAcceptOrderMatch(
+    order: ActiveOrder,
+    orderMatch: OrderMatch,
+    alreadyBlocking: BitcoinAmount): MatchResult = {
 
-    type MatchValidation = Validation[MatchResult[C], Unit]
+    type MatchValidation = Validation[MatchResult, Unit]
 
     lazy val amounts = calculator.exchangeAmountsFor(orderMatch)
 
@@ -47,7 +47,7 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
       case MarketPrice(_) => ().success
     }
 
-    def requireValidLimitPrice(price: Price[C]): MatchValidation = {
+    def requireValidLimitPrice(price: Price): MatchValidation = {
       val role = Role.fromOrderType(order.orderType)
       val limitFiat = price.of(role.select(orderMatch.bitcoinAmount))
       val actualFiat = role.select(orderMatch.fiatAmount)
@@ -65,7 +65,7 @@ private class OrderMatchValidator(peerId: PeerId, calculator: AmountsCalculator)
         s"Match with inconsistent amounts: fiat amounts ${orderMatch.fiatAmount}"))
     } yield {}
 
-    def require(predicate: Boolean, result: => MatchResult[C]): MatchValidation =
+    def require(predicate: Boolean, result: => MatchResult): MatchValidation =
       if (predicate) ().success else result.failure
 
     (for {

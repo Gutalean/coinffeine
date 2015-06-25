@@ -10,7 +10,7 @@ object OkPayPaymentProcessor extends PaymentProcessor {
   val MinFee = BigDecimal(0.01)
   val MaxFee = BigDecimal(2.99)
 
-  def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]): CurrencyAmount[C] = {
+  def calculateFee(amount: FiatAmount): FiatAmount = {
     requireSupported(amount.currency)
     val num = implicitly[Numeric[BigDecimal]]
     val baseFee = amount.value * 0.005
@@ -18,13 +18,13 @@ object OkPayPaymentProcessor extends PaymentProcessor {
     roundUp(fee, amount.currency)
   }
 
-  override def bestStepSize[C <: FiatCurrency](currency: C): CurrencyAmount[C] = {
+  override def bestStepSize(currency: FiatCurrency): FiatAmount = {
     requireSupported(currency)
-    CurrencyAmount.exactAmount(2, currency)
+    currency(2)
   }
 
-  private def roundUp[C <: FiatCurrency](amount: BigDecimal, currency: C): CurrencyAmount[C] =
-    CurrencyAmount.exactAmount(amount.setScale(currency.precision, RoundingMode.UP), currency)
+  private def roundUp(amount: BigDecimal, currency: FiatCurrency): FiatAmount =
+    currency.exactAmount(amount.setScale(currency.precision, RoundingMode.UP))
 
   private def requireSupported(currency: FiatCurrency): Unit = {
     require(SupportedCurrencies.contains(currency),

@@ -3,4 +3,4 @@ package coinffeine.model.market
 import coinffeine.model.currency.FiatCurrency
 
 /** Identifies a given market. */
-case class Market[C <: FiatCurrency](currency: C)
+case class Market(currency: FiatCurrency)

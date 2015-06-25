@@ -1,7 +1,7 @@
 package coinffeine.model.bitcoin
 
-import coinffeine.model.currency.Bitcoin
+import coinffeine.model.currency.BitcoinAmount
 
 trait BitcoinFeeCalculator {
-  def defaultTransactionFee: Bitcoin.Amount
+  def defaultTransactionFee: BitcoinAmount
 }

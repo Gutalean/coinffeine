@@ -8,7 +8,7 @@ import coinffeine.model.currency._
 
 object DummyOutput {
 
-  def of(amount: Bitcoin.Amount): MutableTransactionOutput = {
+  def of(amount: BitcoinAmount): MutableTransactionOutput = {
     val tx = new MutableTransaction(CoinffeineUnitTestNetwork)
     tx.setLockTime(Random.nextLong().abs)
     tx.addOutput(1.BTC, new PublicKey)

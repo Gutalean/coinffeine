@@ -11,7 +11,6 @@ import org.joda.time.DateTime
 
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
-import coinffeine.model.currency._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.{BrokerId, PeerId}
@@ -27,20 +26,20 @@ import coinffeine.protocol.gateway.MessageGateway.{ForwardMessage, ReceiveMessag
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
 
-class OrderActor[C <: FiatCurrency](
-    initialOrder: ActiveOrder[C],
-    order: OrderController[C],
-    delegates: OrderActor.Delegates[C],
+class OrderActor(
+    initialOrder: ActiveOrder,
+    order: OrderController,
+    delegates: OrderActor.Delegates,
     collaborators: OrderActor.Collaborators)
-  extends PersistentActor with PeriodicSnapshot with ActorLogging
-  with OrderPublisher.Listener with CoinffeineEventProducer {
+    extends PersistentActor with PeriodicSnapshot with ActorLogging
+    with OrderPublisher.Listener with CoinffeineEventProducer {
 
   import OrderActor._
 
   private val orderId = initialOrder.id
   override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
-  private val publisher = new OrderPublisher[C](collaborators.submissionSupervisor, this)
+  private val publisher = new OrderPublisher(collaborators.submissionSupervisor, this)
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -55,18 +54,18 @@ class OrderActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
-    case SnapshotOffer(metadata, snapshot: Snapshot[C]) =>
+    case SnapshotOffer(metadata, snapshot: Snapshot) =>
       setLastSnapshot(metadata.sequenceNr)
       order.reset(snapshot.order, snapshot.pendingFunds)
-    case event: FundsRequested[_] => onFundsRequested(event.asInstanceOf[FundsRequested[C]])
+    case event: FundsRequested => onFundsRequested(event.asInstanceOf[FundsRequested])
     case event: FundsBlocked => onFundsBlocked(event)
     case event: CannotBlockFunds => onCannotBlockFunds(event)
     case event: CancelledOrder => onCancelledOrder(event)
-    case event: ExchangeFinished[_] => onCompletedExchange(event.asInstanceOf[ExchangeFinished[C]])
+    case event: ExchangeFinished => onCompletedExchange(event.asInstanceOf[ExchangeFinished])
     case RecoveryCompleted => self ! ResumeOrder
   }
 
-  private def onFundsRequested(event: FundsRequested[C]): Unit = {
+  private def onFundsRequested(event: FundsRequested): Unit = {
     order.fundsRequested(event.orderMatch, event.requiredFunds)
   }
 
@@ -85,7 +84,7 @@ class OrderActor[C <: FiatCurrency](
     order.cancel(event.timestamp)
   }
 
-  private def onCompletedExchange(event: ExchangeFinished[C]): Unit = {
+  private def onCompletedExchange(event: ExchangeFinished): Unit = {
     order.completeExchange(event.exchange)
   }
 
@@ -95,11 +94,11 @@ class OrderActor[C <: FiatCurrency](
   override def receiveCommand = managingSnapshots orElse publisher.receiveSubmissionEvents orElse {
     case ResumeOrder => resumeOrder()
 
-    case ReceiveMessage(message: OrderMatch[_], _) if order.hasPendingFunds(message.exchangeId) =>
+    case ReceiveMessage(message: OrderMatch, _) if order.hasPendingFunds(message.exchangeId) =>
       log.warning("Already blocking funds for {}, should take so long", message.exchangeId)
 
-    case ReceiveMessage(message: OrderMatch[_], _) if message.currency == currency =>
-      val orderMatch = message.asInstanceOf[OrderMatch[C]]
+    case ReceiveMessage(message: OrderMatch, _) if message.currency == currency =>
+      val orderMatch = message.asInstanceOf[OrderMatch]
       order.shouldAcceptOrderMatch(orderMatch) match {
         case MatchAccepted(requiredFunds) =>
           persist(FundsRequested(orderMatch, requiredFunds)) { event =>
@@ -135,13 +134,13 @@ class OrderActor[C <: FiatCurrency](
 
     case ExchangeActor.ExchangeUpdate(exchange) if exchange.currency == currency =>
       log.debug("Order actor received update for {}: {}", exchange.id, exchange.progress)
-      order.updateExchange(exchange.asInstanceOf[ActiveExchange[C]])
+      order.updateExchange(exchange.asInstanceOf[ActiveExchange])
 
     case ExchangeActor.ExchangeSuccess(exchange) if exchange.currency == currency =>
-      completeExchange(exchange.asInstanceOf[SuccessfulExchange[C]])
+      completeExchange(exchange.asInstanceOf[SuccessfulExchange])
 
     case ExchangeActor.ExchangeFailure(exchange) if exchange.currency == currency =>
-      completeExchange(exchange.asInstanceOf[FailedExchange[C]])
+      completeExchange(exchange.asInstanceOf[FailedExchange])
 
     case OrderArchived(`orderId`) =>
       log.info("{}: archived and stopping", orderId)
@@ -163,23 +162,28 @@ class OrderActor[C <: FiatCurrency](
     }
   }
 
-  private def spawnExchangeActor(exchange: ActiveExchange[C]): ActorRef = {
+  private def spawnExchangeActor(exchange: ActiveExchange): ActorRef = {
     context.actorOf(delegates.exchangeActor(handshakingExchangeOf(exchange)), exchange.id.value)
   }
 
   @tailrec
-  private def handshakingExchangeOf(exchange: ActiveExchange[C]): HandshakingExchange[C] =
+  private def handshakingExchangeOf(exchange: ActiveExchange): HandshakingExchange =
     exchange match {
-      case ex: HandshakingExchange[C] => ex
-      case ex: DepositPendingExchange[C] => ex.prev
-      case ex: RunningExchange[C] => ex.prev.prev
-      case ex: SuccessfulExchange[C] => ex.prev.prev.prev
-      case ex: AbortingExchange[C] => handshakingExchangeOf(ex.prev)
-      case ex: FailedExchange[C] => handshakingExchangeOf(ex.prev)
+      case ex: HandshakingExchange => ex
+      case ex: DepositPendingExchange => ex.prev
+      case ex: RunningExchange => ex.prev.prev
+      case ex: SuccessfulExchange => ex.prev.prev.prev
+      case ex: AbortingExchange => handshakingExchangeOf(ex.prev)
+      case ex: FailedExchange => handshakingExchangeOf(ex.prev)
     }
 
-  override def inMarket(): Unit = { order.becomeInMarket() }
-  override def offline(): Unit = { order.becomeOffline() }
+  override def inMarket(): Unit = {
+    order.becomeInMarket()
+  }
+
+  override def offline(): Unit = {
+    order.becomeOffline()
+  }
 
   private def reRequestPendingFunds(): Unit = {
     order.pendingFunds.foreach { case (exchangeId, requiredFunds) =>
@@ -189,14 +193,14 @@ class OrderActor[C <: FiatCurrency](
 
   private def subscribeToOrderMatches(): Unit = {
     collaborators.gateway ! MessageGateway.Subscribe.fromBroker {
-      case orderMatch: OrderMatch[_] if orderMatch.orderId == orderId &&
-        orderMatch.currency == currency =>
+      case orderMatch: OrderMatch if orderMatch.orderId == orderId &&
+          orderMatch.currency == currency =>
     }
   }
 
   private def subscribeToOrderChanges(): Unit = {
-    order.addListener(new OrderController.Listener[C] {
-      override def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit = {
+    order.addListener(new OrderController.Listener {
+      override def onOrderChange(oldOrder: ActiveOrder, newOrder: ActiveOrder): Unit = {
         if (recoveryFinished) {
           if (newOrder.status != oldOrder.status) {
             log.info("Order {} has now {} status", orderId, newOrder.status)
@@ -214,18 +218,19 @@ class OrderActor[C <: FiatCurrency](
     })
   }
 
-  private def updatePublisher(order: ActiveOrder[C]): Unit = {
+  private def updatePublisher(order: ActiveOrder): Unit = {
     if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
     else publisher.stopPublishing()
   }
 
-  private def rejectOrderMatch(cause: ExchangeRejection.Cause, exchangeId: ExchangeId): Unit = {
+  private def rejectOrderMatch(
+      cause: ExchangeRejection.Cause, exchangeId: ExchangeId): Unit = {
     log.info("Rejecting match for {}: {}", exchangeId, cause.message)
     val rejection = ExchangeRejection(exchangeId, cause)
     collaborators.gateway ! ForwardMessage(rejection, BrokerId)
   }
 
-  private def completeExchange(exchange: CompletedExchange[C]): Unit = {
+  private def completeExchange(exchange: CompletedExchange): Unit = {
     val level = if (exchange.isSuccess) Logging.InfoLevel else Logging.ErrorLevel
     log.log(level, "Exchange {}: completed with state {}", exchange.id, exchange.status)
     persist(ExchangeFinished(exchange)) { event =>
@@ -234,7 +239,7 @@ class OrderActor[C <: FiatCurrency](
     }
   }
 
-  private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds[C]): Unit = {
+  private def spawnFundsBlocker(exchangeId: ExchangeId, funds: RequiredFunds): Unit = {
     context.actorOf(delegates.fundsBlocker(exchangeId, funds))
   }
 
@@ -244,42 +249,49 @@ class OrderActor[C <: FiatCurrency](
 }
 
 object OrderActor {
-  private case class Snapshot[C <: FiatCurrency](
-    order: ActiveOrder[C],
-    pendingFunds: Map[ExchangeId, OrderController.FundsRequest[C]]) extends PersistentEvent
 
-  case class Collaborators(wallet: ActorRef,
-                           paymentProcessor: ActorRef,
-                           submissionSupervisor: ActorRef,
-                           gateway: ActorRef,
-                           bitcoinPeer: ActorRef,
-                           blockchain: ActorRef,
-                           archive: ActorRef)
+  private case class Snapshot(
+      order: ActiveOrder,
+      pendingFunds: Map[ExchangeId, OrderController.FundsRequest]) extends PersistentEvent
 
-  trait Delegates[C <: FiatCurrency] {
-    def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext): Props
-    def fundsBlocker(id: ExchangeId, funds: RequiredFunds[C])(implicit context: ActorContext): Props
+  case class Collaborators(
+      wallet: ActorRef,
+      paymentProcessor: ActorRef,
+      submissionSupervisor: ActorRef,
+      gateway: ActorRef,
+      bitcoinPeer: ActorRef,
+      blockchain: ActorRef,
+      archive: ActorRef)
+
+  trait Delegates {
+    def exchangeActor(exchange: HandshakingExchange)(implicit context: ActorContext): Props
+
+    def fundsBlocker(id: ExchangeId, funds: RequiredFunds)
+        (implicit context: ActorContext): Props
   }
 
   case object CancelOrder
 
-  def props[C <: FiatCurrency](exchangeActorProps: (HandshakingExchange[C], ExchangeActor.Collaborators) => Props,
-                               network: NetworkParameters,
-                               amountsCalculator: AmountsCalculator,
-                               order: ActiveOrder[C],
-                               collaborators: Collaborators,
-                               peerId: PeerId): Props = {
+  def props(
+      exchangeActorProps: (HandshakingExchange, ExchangeActor.Collaborators) => Props,
+      network: NetworkParameters,
+      amountsCalculator: AmountsCalculator,
+      order: ActiveOrder,
+      collaborators: Collaborators,
+      peerId: PeerId): Props = {
     import collaborators._
-    val delegates = new Delegates[C] {
-      override def exchangeActor(exchange: HandshakingExchange[C])(implicit context: ActorContext) = {
+    val delegates = new Delegates {
+      override def exchangeActor(exchange: HandshakingExchange)
+          (implicit context: ActorContext) = {
         exchangeActorProps(exchange, ExchangeActor.Collaborators(
           wallet, paymentProcessor, gateway, bitcoinPeer, blockchain, context.self))
       }
-      override def fundsBlocker(id: ExchangeId, funds: RequiredFunds[C])
-                               (implicit context: ActorContext) =
+
+      override def fundsBlocker(id: ExchangeId, funds: RequiredFunds)
+          (implicit context: ActorContext) =
         FundsBlockerActor.props(id, wallet, paymentProcessor, funds, context.self)
     }
-    Props(new OrderActor[C](
+    Props(new OrderActor(
       order,
       new OrderController(peerId, amountsCalculator, network, order),
       delegates,
@@ -288,12 +300,18 @@ object OrderActor {
   }
 
   private case object ResumeOrder
-  private case class FundsRequested[C <: FiatCurrency](
-      orderMatch: OrderMatch[C], requiredFunds: RequiredFunds[C]) extends PersistentEvent
+
+  private case class FundsRequested(
+      orderMatch: OrderMatch, requiredFunds: RequiredFunds) extends PersistentEvent
+
   private case class FundsBlocked(exchangeId: ExchangeId, timestamp: DateTime)
-    extends PersistentEvent
+      extends PersistentEvent
+
   private case class CannotBlockFunds(exchangeId: ExchangeId) extends PersistentEvent
+
   private case class CancelledOrder(timestamp: DateTime) extends PersistentEvent
-  private case class ExchangeFinished[C <: FiatCurrency](exchange: CompletedExchange[C])
-    extends PersistentEvent
+
+  private case class ExchangeFinished(exchange: CompletedExchange)
+      extends PersistentEvent
+
 }

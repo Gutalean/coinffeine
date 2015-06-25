@@ -51,33 +51,33 @@ class SmartWallet(val delegate: Wallet) {
     delegate.currentReceiveAddress()
   }
 
-  def estimatedBalance: Bitcoin.Amount = synchronized {
+  def estimatedBalance: BitcoinAmount = synchronized {
     delegate.getBalance(BalanceType.ESTIMATED)
   }
 
-  def availableBalance: Bitcoin.Amount = synchronized {
+  def availableBalance: BitcoinAmount = synchronized {
     delegate.getBalance(BalanceType.AVAILABLE)
   }
 
-  def value(tx: MutableTransaction): Bitcoin.Amount = tx.getValue(delegate)
+  def value(tx: MutableTransaction): BitcoinAmount = tx.getValue(delegate)
 
-  def valueSentFromMe(tx: MutableTransaction): Bitcoin.Amount = tx.getValueSentFromMe(delegate)
+  def valueSentFromMe(tx: MutableTransaction): BitcoinAmount = tx.getValueSentFromMe(delegate)
 
-  def valueSentToMe(tx: MutableTransaction): Bitcoin.Amount = tx.getValueSentToMe(delegate)
+  def valueSentToMe(tx: MutableTransaction): BitcoinAmount = tx.getValueSentToMe(delegate)
 
   def freshKeyPair(): KeyPair = synchronized {
     delegate.freshReceiveKey()
   }
 
   def createTransaction(inputs: Inputs,
-                        amount: Bitcoin.Amount,
+                        amount: BitcoinAmount,
                         to: Address): ImmutableTransaction = synchronized {
     val request = SendRequest.to(to, amount)
     request.coinSelector = new HandpickedCoinSelector(inputs)
     createTransaction(request)
   }
 
-  def createTransaction(amount: Bitcoin.Amount, to: Address): ImmutableTransaction = synchronized {
+  def createTransaction(amount: BitcoinAmount, to: Address): ImmutableTransaction = synchronized {
     createTransaction(SendRequest.to(to, amount))
   }
 
@@ -109,14 +109,14 @@ class SmartWallet(val delegate: Wallet) {
   }
 
   def createMultisignTransaction(requiredSignatures: Both[PublicKey],
-                                 amount: Bitcoin.Amount,
-                                 fee: Bitcoin.Amount = Bitcoin.zero): ImmutableTransaction =
+                                 amount: BitcoinAmount,
+                                 fee: BitcoinAmount = Bitcoin.zero): ImmutableTransaction =
     createMultisignTransaction(collectFunds(amount), requiredSignatures, amount, fee)
 
   def createMultisignTransaction(inputs: Inputs,
                                  requiredSignatures: Both[PublicKey],
-                                 amount: Bitcoin.Amount,
-                                 fee: Bitcoin.Amount): ImmutableTransaction = synchronized {
+                                 amount: BitcoinAmount,
+                                 fee: BitcoinAmount): ImmutableTransaction = synchronized {
     require(amount.isPositive, s"Amount to block must be greater than zero ($amount given)")
     require(!fee.isNegative, s"Fee should be non-negative ($fee given)")
     val totalInputFunds = valueOf(inputs)
@@ -147,7 +147,7 @@ class SmartWallet(val delegate: Wallet) {
     listeners.values.foreach(_.apply())
   }
 
-  private def collectFunds(amount: Bitcoin.Amount): Inputs = {
+  private def collectFunds(amount: BitcoinAmount): Inputs = {
     val inputFundCandidates = spendCandidates
     val necessaryInputCount =
       inputFundCandidates.view.scanLeft(Bitcoin.zero)(_ + _.getValue)
@@ -168,9 +168,9 @@ class SmartWallet(val delegate: Wallet) {
 
   private def getTransaction(txHash: Hash) = Option(delegate.getTransaction(txHash))
 
-  private def valueOf(inputs: Inputs): Bitcoin.Amount = inputs.toSeq.map(valueOf).sum
+  private def valueOf(inputs: Inputs): BitcoinAmount = inputs.toSeq.map(valueOf).sum
 
-  private def valueOf(input: TransactionOutPoint): Bitcoin.Amount =
+  private def valueOf(input: TransactionOutPoint): BitcoinAmount =
     Option(input.getConnectedOutput)
       .getOrElse(delegate.getTransaction(input.getHash).getOutput(input.getIndex.toInt))
       .getValue

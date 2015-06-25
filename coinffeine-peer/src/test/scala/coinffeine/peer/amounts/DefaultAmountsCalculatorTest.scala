@@ -101,7 +101,9 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   it must "have steps summing up to the total fiat amount" in new Fixture {
     forAnyAmounts { (_, fiatAmount, amounts) =>
-      val spentAmount = amounts.intermediateSteps.map(s => s.fiatAmount + s.fiatFee).sum
+      val currency = fiatAmount.currency
+      val spentAmount = currency.sum(amounts.intermediateSteps.map(
+        s => s.fiatAmount + s.fiatFee))
       (fiatAmount - spentAmount).value should be <= paymentProcessor.calculateFee(0.01.EUR).value
     }
   }
@@ -175,20 +177,18 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   abstract class Fixture(val processorFee: BigDecimal = 0.02,
                          processorStepSize: BigDecimal = 10,
-                         val txFee: Bitcoin.Amount = 0.002.BTC) {
+                         val txFee: BitcoinAmount = 0.002.BTC) {
     val paymentProcessor: PaymentProcessor = new FixedFeeProcessor(processorFee, processorStepSize)
     val stepSize = paymentProcessor.bestStepSize(Euro)
     val bitcoinFeeCalculator: BitcoinFeeCalculator = new FixedBitcoinFee(txFee)
     val instance = new DefaultAmountsCalculator(
       new DefaultStepwisePaymentCalculator(paymentProcessor), bitcoinFeeCalculator)
 
-    type Euros = Euro.type
-
-    def forAnyAmounts(test: Amounts[Euros] => Unit): Unit = {
+    def forAnyAmounts(test: Amounts => Unit): Unit = {
       forAnyAmounts((_, _, amounts) => test(amounts))
     }
 
-    def forAnyAmounts(test: (Bitcoin.Amount, CurrencyAmount[Euros], Amounts[Euros]) => Unit): Unit = {
+    def forAnyAmounts(test: (BitcoinAmount, FiatAmount, Amounts) => Unit): Unit = {
       forAll (exampleCases) { (bitcoin, fiat) =>
         withClue(s"exchanging $bitcoin for $fiat: ") {
           test(bitcoin, fiat, instance.exchangeAmountsFor(bitcoin, fiat))
@@ -196,17 +196,16 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
       }
     }
 
-    protected def bitcoinStepSize(amounts: Amounts[Euros]): Bitcoin.Amount = {
+    protected def bitcoinStepSize(amounts: Amounts): BitcoinAmount = {
       val price = amounts.netBitcoinExchanged.value / amounts.netFiatExchanged.value
-      val expectedStepSize = CurrencyAmount.closestAmount(stepSize.value * price, Bitcoin)
+      val expectedStepSize = Bitcoin.closestAmount(stepSize.value * price)
       val buyerAmounts = txFee +: amounts.intermediateSteps.map(_.depositSplit.buyer)
       val actualStepSize = pairsOf(buyerAmounts).map { case (prevStep, nextStep) =>
         nextStep - prevStep
-      }.reduce(_ max _)
+      }.max
 
-      val satoshi = CurrencyAmount.smallestAmount(Bitcoin)
-      val oneCentInBitcoin = CurrencyAmount.closestAmount(price * 0.01, Bitcoin)
-      val expectedRoundingError = satoshi + oneCentInBitcoin
+      val oneCentInBitcoin = Bitcoin.closestAmount(price * 0.01)
+      val expectedRoundingError = Bitcoin.satoshi + oneCentInBitcoin
 
       actualStepSize.value shouldEqual expectedStepSize.value +- expectedRoundingError.value
 
@@ -216,11 +215,9 @@ class DefaultAmountsCalculatorTest extends UnitTest with PropertyChecks {
 
   class FixedFeeProcessor(fee: BigDecimal, stepSize: BigDecimal) extends PaymentProcessor {
 
-    override def calculateFee[C <: FiatCurrency](amount: CurrencyAmount[C]) =
-      CurrencyAmount.exactAmount(fee, amount.currency)
+    override def calculateFee(amount: FiatAmount) = amount.currency.exactAmount(fee)
 
-    override def bestStepSize[C <: FiatCurrency](currency: C) =
-      CurrencyAmount.exactAmount(stepSize, currency)
+    override def bestStepSize(currency: FiatCurrency) = currency.exactAmount(stepSize)
   }
 
   private def pairsOf[A](elems: Iterable[A]): Seq[(A, A)] = elems.iterator.sliding(2, 1)

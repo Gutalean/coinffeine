@@ -9,14 +9,14 @@ import coinffeine.peer.exchange.protocol._
 
 object DefaultExchangeProtocol extends ExchangeProtocol {
 
-  override def createHandshake[C <: FiatCurrency](
-      exchange: DepositPendingExchange[C],
-      deposit: ImmutableTransaction): Handshake[C] = {
+  override def createHandshake(
+      exchange: DepositPendingExchange,
+      deposit: ImmutableTransaction): Handshake = {
     requireValidDeposit(exchange, deposit)
     new DefaultHandshake(exchange, deposit)
   }
 
-  private def requireValidDeposit[C <: FiatCurrency](exchange: DepositPendingExchange[C],
+  private def requireValidDeposit(exchange: DepositPendingExchange,
                                                      deposit: ImmutableTransaction): Unit = {
     val validator = new DepositValidator(
       exchange.amounts, exchange.participants.map(_.bitcoinKey), exchange.parameters.network)
@@ -33,11 +33,11 @@ object DefaultExchangeProtocol extends ExchangeProtocol {
     }
   }
 
-  override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
+  override def createMicroPaymentChannel(exchange: RunningExchange) =
     new DefaultMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                amounts: Amounts[_ <: FiatCurrency],
+                                amounts: Amounts,
                                 requiredSignatures: Both[PublicKey],
                                 network: Network) =
     new DepositValidator(amounts, requiredSignatures, network).validate(transactions)

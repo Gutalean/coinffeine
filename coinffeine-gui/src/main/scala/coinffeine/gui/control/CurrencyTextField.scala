@@ -12,17 +12,17 @@ import scalafx.scene.layout.StackPane
 import org.controlsfx.control.textfield.CustomTextField
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.currency.{Currency, CurrencyAmount}
+import coinffeine.model.currency.CurrencyAmount
 
-class CurrencyTextField[C <: Currency](
-    initialValue: CurrencyAmount[C],
+class CurrencyTextField[A <: CurrencyAmount[A]](
+    initialValue: A,
     delegate: CustomTextField = new CustomTextField) extends TextField(delegate) {
 
   require(!initialValue.isNegative, "Initial value cannot be negative")
 
   styleClass += "currency-text-field"
 
-  private val _currencyValue = ObjectProperty[CurrencyAmount[C]](this, "currencyValue", initialValue)
+  private val _currencyValue = ObjectProperty[A](this, "currencyValue", initialValue)
 
   private val currency = initialValue.currency
 
@@ -32,7 +32,7 @@ class CurrencyTextField[C <: Currency](
     children = new Label(currency.toString)
   }
 
-  val currencyValue: ReadOnlyObjectProperty[CurrencyAmount[C]] = _currencyValue
+  val currencyValue: ReadOnlyObjectProperty[A] = _currencyValue
 
   /* Initialize the text property to the initial value. */
   text = initialValue.value.toString()
@@ -77,8 +77,7 @@ class CurrencyTextField[C <: Currency](
   })
 
   _currencyValue <== text.delegate.map { input =>
-    Try(CurrencyAmount.exactAmount(BigDecimal(input), currency))
-      .getOrElse(CurrencyAmount.zero(currency))
+    Try(currency.exactAmount(BigDecimal(input))).getOrElse(currency.zero).asInstanceOf[A]
   }
 
   /*

@@ -10,9 +10,9 @@ object AmountsParser {
   object BitcoinAmount {
     private val Pattern = """(?i)(\d+(?:\.\d{1,8})?)(?:BTC)?""".r
 
-    def unapply(text: String): Option[Bitcoin.Amount] = text match {
+    def unapply(text: String): Option[BitcoinAmount] = text match {
       case Pattern(decimalExpression) =>
-        Some(CurrencyAmount.exactAmount(BigDecimal(decimalExpression), Bitcoin))
+        Some(Bitcoin.exactAmount(BigDecimal(decimalExpression)))
       case _ => None
     }
   }
@@ -20,11 +20,11 @@ object AmountsParser {
   object FiatAmount {
     private val Pattern = """(?i)(\d+(?:\.\d+)?)(\w+)""".r
 
-    def unapply(text: String): Option[CurrencyAmount[_ <: FiatCurrency]] = for {
+    def unapply(text: String): Option[FiatAmount] = for {
       amount <- parseAmount(Pattern, text)
       currency <- lookupFiatCurrency(amount.symbol)
       if withinPrecision(amount.value, currency.precision)
-    } yield CurrencyAmount.exactAmount(amount.value, currency)
+    } yield currency.exactAmount(amount.value)
 
     private def withinPrecision(value: BigDecimal, precision: Int): Boolean =
       (value * BigDecimal(10).pow(precision)).isWhole()
@@ -33,7 +33,7 @@ object AmountsParser {
   object Price {
     private val Pattern = """(?i)(\d+(?:\.\d+)?)(\w+)(?:/BTC)?""".r
 
-    def unapply(text: String): Option[AmountPrice[_ <: FiatCurrency]] = for {
+    def unapply(text: String): Option[AmountPrice] = for {
       amount <- parseAmount(Pattern, text)
       currency <- lookupFiatCurrency(amount.symbol)
     } yield AmountPrice(amount.value, currency)

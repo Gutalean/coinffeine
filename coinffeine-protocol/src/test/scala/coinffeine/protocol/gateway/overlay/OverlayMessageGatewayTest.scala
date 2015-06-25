@@ -52,7 +52,7 @@ class OverlayMessageGatewayTest
 
   it should "deliver incoming messages to subscribers" in new FreshGateway {
     gateway ! Subscribe {
-      case MessageGateway.ReceiveMessage(_: OrderMatch[_], _) =>
+      case MessageGateway.ReceiveMessage(_: OrderMatch, _) =>
     }
     expectSuccessfulStart()
     val sender = PeerId.random()

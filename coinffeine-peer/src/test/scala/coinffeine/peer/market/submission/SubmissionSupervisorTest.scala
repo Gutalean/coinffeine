@@ -36,17 +36,17 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     val requester = TestProbe()
     val actor = system.actorOf(SubmissionSupervisor.props(gateway.ref, constants))
 
-    def keepSubmitting(entry: OrderBookEntry[_ <: FiatCurrency]): Unit = {
+    def keepSubmitting(entry: OrderBookEntry): Unit = {
       requester.send(actor, KeepSubmitting(entry))
     }
 
-    def stopSubmitting(entry: OrderBookEntry[_ <: FiatCurrency]): Unit = {
+    def stopSubmitting(entry: OrderBookEntry): Unit = {
       requester.send(actor, StopSubmitting(entry.id))
     }
 
     def expectPeerPositionsForwarding(
-        market: Market[_ <: FiatCurrency],
-        entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
+        market: Market,
+        entries: OrderBookEntry*): Unit = {
       gateway.expectForwardingToPF(BrokerId) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
@@ -55,8 +55,8 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
 
     def expectPeerPositionsForwardingAndAcknowledgeThem(
         timeout: Duration,
-        market: Market[_ <: FiatCurrency],
-        entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
+        market: Market,
+        entries: OrderBookEntry*): Unit = {
       gateway.expectForwardingToPF(BrokerId, timeout) {
         case PeerPositions(`market`, entriesInMsg, nonce) =>
           entries.foreach(e => entriesInMsg should contain (e))
@@ -65,11 +65,11 @@ class SubmissionSupervisorTest extends AkkaSpec with Inside {
     }
 
     def expectPeerPositionsForwardingAndAcknowledgeThem(
-        market: Market[_ <: FiatCurrency], entries: OrderBookEntry[_ <: FiatCurrency]*): Unit = {
+        market: Market, entries: OrderBookEntry*): Unit = {
       expectPeerPositionsForwardingAndAcknowledgeThem(Duration.Undefined, market, entries: _*)
     }
 
-    def expectOrdersInMarket[C <: FiatCurrency](entries: OrderBookEntry[C]*): Unit = {
+    def expectOrdersInMarket(entries: OrderBookEntry*): Unit = {
       requester.expectMsgAllOf(entries.map(e => InMarket(e)): _*)
     }
   }

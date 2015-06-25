@@ -2,9 +2,8 @@ package coinffeine.model.exchange
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 
-trait AfterHandshakeExchange[C <: FiatCurrency] extends ActiveExchange[C] {
+trait AfterHandshakeExchange extends ActiveExchange {
 
   override def isStarted = true
 

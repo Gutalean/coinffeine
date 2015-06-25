@@ -15,7 +15,7 @@ private class SubmissionSupervisor(gateway: ActorRef, protocolConstants: Protoco
   extends Actor with ActorLogging {
 
   private implicit val timeout = Timeout(1.second)
-  private var delegatesByMarket = Map.empty[Market[_ <: FiatCurrency], ActorRef]
+  private var delegatesByMarket = Map.empty[Market, ActorRef]
 
   override def receive = {
     case message@KeepSubmitting(order) =>
@@ -25,13 +25,13 @@ private class SubmissionSupervisor(gateway: ActorRef, protocolConstants: Protoco
       delegatesByMarket.values.foreach(_ forward message)
   }
 
-  private def marketOf(order: OrderBookEntry[_ <: FiatCurrency]) =
+  private def marketOf(order: OrderBookEntry) =
     Market(currency = order.price.currency)
 
-  private def getOrCreateDelegate(market: Market[_ <: FiatCurrency]): ActorRef =
+  private def getOrCreateDelegate(market: Market): ActorRef =
     delegatesByMarket.getOrElse(market, createDelegate(market))
 
-  private def createDelegate(market: Market[_ <: FiatCurrency]): ActorRef = {
+  private def createDelegate(market: Market): ActorRef = {
     log.info(s"Start submitting to $market")
     val newDelegate = context.actorOf(
       MarketSubmissionActor.props(market, gateway, protocolConstants),
@@ -44,13 +44,13 @@ private class SubmissionSupervisor(gateway: ActorRef, protocolConstants: Protoco
 
 object SubmissionSupervisor {
 
-  case class KeepSubmitting(order: OrderBookEntry[_ <: FiatCurrency])
+  case class KeepSubmitting(order: OrderBookEntry)
 
   case class StopSubmitting(orderId: OrderId)
 
-  case class InMarket(order: OrderBookEntry[_ <: FiatCurrency])
+  case class InMarket(order: OrderBookEntry)
 
-  case class Offline(order: OrderBookEntry[_ <: FiatCurrency])
+  case class Offline(order: OrderBookEntry)
 
   def props(gateway: ActorRef, constants: ProtocolConstants) =
     Props(new SubmissionSupervisor(gateway, constants))

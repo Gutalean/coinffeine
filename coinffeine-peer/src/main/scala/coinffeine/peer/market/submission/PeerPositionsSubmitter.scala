@@ -26,12 +26,12 @@ import coinffeine.protocol.messages.brokerage.{PeerPositions, PeerPositionsRecei
   *                     from.
   * @param retryPolicy  The time to wait and number of retries to perform
   */
-private class PeerPositionsSubmitter[C <: FiatCurrency](
-    submission: Submission[C],
+private class PeerPositionsSubmitter(
+    submission: Submission,
     gateway: ActorRef,
     retryPolicy: RetrySettings) extends Actor with ActorLogging {
 
-  private val peerPositions: PeerPositions[C] = submission.toPeerPositions
+  private val peerPositions: PeerPositions = submission.toPeerPositions
   private val nonce = peerPositions.nonce
 
   override def preStart() = {
@@ -53,7 +53,7 @@ private class PeerPositionsSubmitter[C <: FiatCurrency](
       terminate(Offline.apply)
   }
 
-  private def terminate(notification: OrderBookEntry[_ <: FiatCurrency] => Any): Unit = {
+  private def terminate(notification: OrderBookEntry => Any): Unit = {
     submission.entries.foreach { entry =>
       entry.requester ! notification(entry.orderBookEntry)
     }
@@ -63,7 +63,7 @@ private class PeerPositionsSubmitter[C <: FiatCurrency](
 
 object PeerPositionsSubmitter {
 
-  def props[C <: FiatCurrency](submission: Submission[C],
+  def props(submission: Submission,
                                gateway: ActorRef,
                                constants: ProtocolConstants): Props = {
     val retryPolicy = RetrySettings(

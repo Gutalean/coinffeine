@@ -12,7 +12,7 @@ import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.{AnyPayment, OkPayPaymentProcessor, Payment}
+import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
@@ -179,7 +179,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       client.setBalances(Future.failed(cause))
     }
 
-    def givenClientPaymentWillSucceedWith(payment: AnyPayment): Unit = {
+    def givenClientPaymentWillSucceedWith(payment: Payment): Unit = {
       client.setPaymentResult(Future.successful(payment))
     }
 
@@ -187,15 +187,15 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       client.setPaymentResult(Future.failed(cause))
     }
 
-    def givenClientExistingPayment(payment: AnyPayment): Unit = {
+    def givenClientExistingPayment(payment: Payment): Unit = {
       client.givenExistingPayment(payment)
     }
 
-    def givenClientNonExistingPayment(payment: AnyPayment): Unit = {
+    def givenClientNonExistingPayment(payment: Payment): Unit = {
       client.givenNonExistingPayment(payment.id)
     }
 
-    def givenClientPaymentCannotBeRetrieved(payment: AnyPayment): Unit = {
+    def givenClientPaymentCannotBeRetrieved(payment: Payment): Unit = {
       client.givenPaymentCannotBeRetrieved(payment.id, cause)
     }
 
@@ -216,7 +216,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         PaymentProcessorActor.Pay(funds, receiverAccount, amount, "comment", "invoice"))
     }
 
-    def whenFindPaymentIsRequested(payment: AnyPayment): Unit = {
+    def whenFindPaymentIsRequested(payment: Payment): Unit = {
       requester.send(
         processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id)))
     }
@@ -264,13 +264,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       fundsRegistry.expectMsg(BlockedFiatRegistry.UnmarkUsed(funds, amount))
     }
 
-    def expectBalanceRetrieved[C <: FiatCurrency](
-        balance: CurrencyAmount[C], blocked: CurrencyAmount[C]): Unit = {
+    def expectBalanceRetrieved(balance: FiatAmount, blocked: FiatAmount): Unit = {
       requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(balance, blocked))
     }
 
     def expectBalanceRetrieved(): Unit = {
-      requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved[FiatCurrency]]
+      requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved]
     }
 
     def expectBalanceRetrievalFailure(currency: FiatCurrency): Unit = {
@@ -278,7 +277,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     }
 
     def expectPaymentSuccess(amount: FiatAmount): Unit = {
-      val response = requester.expectMsgType[PaymentProcessorActor.Paid[_ <: FiatCurrency]].payment
+      val response = requester.expectMsgType[PaymentProcessorActor.Paid].payment
       response.id shouldBe payment.id
       response.senderId shouldBe senderAccount
       response.receiverId shouldBe receiverAccount
@@ -294,18 +293,18 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       }
     }
 
-    def expectPaymentFound(payment: AnyPayment): Unit = {
+    def expectPaymentFound(payment: Payment): Unit = {
       requester.expectMsgPF() {
         case PaymentProcessorActor.PaymentFound(`payment`) =>
       }
     }
 
-    def expectPaymentNotFound(payment: AnyPayment): Unit = {
+    def expectPaymentNotFound(payment: Payment): Unit = {
       requester.expectMsg(
         PaymentProcessorActor.PaymentNotFound(FindPaymentCriterion.ById(payment.id)))
     }
 
-    def expectFindPaymentFailed(payment: AnyPayment): Unit = {
+    def expectFindPaymentFailed(payment: Payment): Unit = {
       requester.expectMsg(
         PaymentProcessorActor.FindPaymentFailed(FindPaymentCriterion.ById(payment.id), cause))
     }

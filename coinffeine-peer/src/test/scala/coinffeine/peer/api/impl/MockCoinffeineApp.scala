@@ -6,6 +6,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.model.bitcoin.{Address, TransactionSizeFeeCalculator, WalletActivity}
 import coinffeine.model.currency._
+import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
@@ -28,7 +29,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override val primaryAddress: Property[Option[Address]] = null
     override val activity: Property[WalletActivity] =
       new MutableProperty[WalletActivity](WalletActivity(Seq.empty))
-    override def transfer(amount: Bitcoin.Amount, address: Address) = ???
+    override def transfer(amount: BitcoinAmount, address: Address) = ???
   }
 
   override def marketStats: MarketStats = ???
@@ -36,7 +37,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
   override def paymentProcessor: CoinffeinePaymentProcessor = new CoinffeinePaymentProcessor {
     override def accountId = Some("fake-account-id")
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
-    override val balance = new MutablePropertyMap[FiatCurrency, FiatBalance[_ <: FiatCurrency]]
+    override val balance = new MutablePropertyMap[FiatCurrency, FiatBalance]
   }
 
   override def utils = new CoinffeineUtils {

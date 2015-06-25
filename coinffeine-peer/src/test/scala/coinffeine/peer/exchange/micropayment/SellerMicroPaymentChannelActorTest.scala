@@ -8,18 +8,17 @@ import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.model.currency.Euro
 import coinffeine.model.payment.Payment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{FakeExchangeProtocol, MockMicroPaymentChannel}
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.SellerPerspective
-import coinffeine.peer.payment.PaymentProcessorActor.{FindPaymentCriterion, FindPayment, PaymentFound}
+import coinffeine.peer.payment.PaymentProcessorActor.{FindPayment, FindPaymentCriterion, PaymentFound}
 import coinffeine.protocol.messages.exchange._
 
 abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("sellerExchange")
-  with SellerPerspective with ProgressExpectations[Euro.type] with Eventually {
+  with SellerPerspective with ProgressExpectations with Eventually {
 
   val listener, paymentProcessor = TestProbe()
   val protocolConstants = ProtocolConstants(

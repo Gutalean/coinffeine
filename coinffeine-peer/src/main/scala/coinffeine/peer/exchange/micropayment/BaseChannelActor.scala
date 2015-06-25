@@ -9,8 +9,8 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel.Step
 import coinffeine.protocol.gateway.MessageGateway.ForwardMessage
 import coinffeine.protocol.messages.PublicMessage
 
-private[micropayment] abstract class BaseChannelActor[C <: FiatCurrency](
-    exchange: RunningExchange[C],
+private[micropayment] abstract class BaseChannelActor(
+    exchange: RunningExchange,
     collaborators: MicroPaymentChannelActor.Collaborators) extends PersistentActor {
 
   protected def forwardToCounterpart(message: PublicMessage): Unit = {

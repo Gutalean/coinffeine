@@ -18,7 +18,7 @@ object WalletActivity {
 
   case class Entry(time: DateTime,
                    tx: ImmutableTransaction,
-                   amount: Bitcoin.Amount,
+                   amount: BitcoinAmount,
                    exchangeId: Option[ExchangeId]) {
     def entryType: EntryType =
       if (exchangeId.isDefined) EntryType.Deposit
