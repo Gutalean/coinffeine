@@ -1,46 +1,45 @@
 package coinffeine.gui.application.operations
 
-import coinffeine.model.currency.{Bitcoin, CurrencyAmount, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.exchange.{ExchangeStatus, Exchange}
 import coinffeine.model.order.Price
 
 object WeightedAveragePrice {
 
-  def average[C <: FiatCurrency](exchanges: Seq[Exchange[C]]): Option[Price[C]] = {
+  def average(exchanges: Seq[Exchange]): Option[Price] = {
 
-    case class WeightedContribution(bitcoin: Bitcoin.Amount, fiat: CurrencyAmount[C]) {
+    case class WeightedContribution(bitcoin: BitcoinAmount, fiat: FiatAmount) {
 
       def +(other: WeightedContribution) = copy(
         bitcoin = bitcoin + other.bitcoin,
         fiat = fiat + other.fiat
       )
 
-      def toPrice: Price[C] = Price.whenExchanging(bitcoin, fiat)
+      def toPrice: Price = Price.whenExchanging(bitcoin, fiat)
     }
 
-    def measureContribution(exchange: Exchange[C]): WeightedContribution = {
+    def measureContribution(exchange: Exchange): WeightedContribution = {
       exchange.status match {
         case ExchangeStatus.Failed(_) => measureProgressUntilFailing(exchange)
         case _ => measureTotalAmounts(exchange)
       }
     }
 
-    def measureProgressUntilFailing(exchange: Exchange[C]): WeightedContribution = {
+    def measureProgressUntilFailing(exchange: Exchange): WeightedContribution = {
       val bitcoinAmount = exchange.role.select(exchange.progress.bitcoinsTransferred)
       val totalFiatAmount = exchange.role.select(exchange.exchangedFiat)
       val proportionalFiatAmount = scaleFiatAmount(totalFiatAmount, completionProportion(exchange))
       WeightedContribution(bitcoinAmount, proportionalFiatAmount)
     }
 
-    def completionProportion(exchange: Exchange[C]): BigDecimal =
+    def completionProportion(exchange: Exchange): BigDecimal =
       exchange.role.select(exchange.progress.bitcoinsTransferred).value /
         exchange.role.select(exchange.exchangedBitcoin).value
 
-    def scaleFiatAmount(amount: CurrencyAmount[C], proportion: BigDecimal) = {
-      CurrencyAmount.closestAmount(amount.value * proportion, amount.currency)
-    }
+    def scaleFiatAmount(amount: FiatAmount, proportion: BigDecimal) =
+      amount.currency.closestAmount(amount.value * proportion)
 
-    def measureTotalAmounts(exchange: Exchange[C]): WeightedContribution = WeightedContribution(
+    def measureTotalAmounts(exchange: Exchange): WeightedContribution = WeightedContribution(
       exchange.role.select(exchange.exchangedBitcoin),
       exchange.role.select(exchange.exchangedFiat)
     )

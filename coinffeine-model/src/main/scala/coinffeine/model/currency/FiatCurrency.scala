@@ -2,6 +2,19 @@ package coinffeine.model.currency
 
 import java.util.{Currency => JavaCurrency}
 
+trait FiatCurrency extends Currency {
+  override type Amount = FiatAmount
+
+  val javaCurrency: JavaCurrency
+  override lazy val preferredSymbolPosition = Currency.SymbolSuffixed
+  override lazy val symbol = javaCurrency.getCurrencyCode
+  override lazy val toString = symbol
+
+  override def fromUnits(units: Long) = FiatAmount(units, this)
+
+  def sum(addends: Seq[FiatAmount]) = addends.foldLeft(zero)(_ + _)
+}
+
 object FiatCurrency {
 
   def apply(currencyCode: String): FiatCurrency = apply(JavaCurrency.getInstance(currencyCode))
@@ -14,12 +27,4 @@ object FiatCurrency {
   }
 
   val values: Set[FiatCurrency] = Set(Euro, UsDollar)
-}
-
-/** A fiat currency. */
-trait FiatCurrency extends Currency {
-  val javaCurrency: JavaCurrency
-  override lazy val preferredSymbolPosition = Currency.SymbolSuffixed
-  override lazy val symbol = javaCurrency.getCurrencyCode
-  override lazy val toString = symbol
 }

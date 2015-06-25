@@ -12,7 +12,6 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.HandshakeFailureCause.CannotCreateDeposits
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
@@ -39,24 +38,26 @@ object HandshakeActor {
   }
 
   /** Sent to the handshake listeners to notify success. */
-  case class HandshakeSuccess(exchange: DepositPendingExchange[_ <: FiatCurrency],
-                              bothCommitments: Both[ImmutableTransaction],
-                              refundTx: ImmutableTransaction,
-                              override val timestamp: DateTime) extends HandshakeResult
+  case class HandshakeSuccess(
+      exchange: DepositPendingExchange,
+      bothCommitments: Both[ImmutableTransaction],
+      refundTx: ImmutableTransaction,
+      override val timestamp: DateTime) extends HandshakeResult
 
   /** Sent to the handshake listeners to notify a failure without having committed funds. */
   case class HandshakeFailure(cause: HandshakeFailureCause, override val timestamp: DateTime)
-    extends HandshakeResult
+      extends HandshakeResult
 
   /** Send to listeners to notify a handshake failure after having compromised funds */
-  case class HandshakeFailureWithCommitment(exchange: DepositPendingExchange[_ <: FiatCurrency],
-                                            cause: Throwable,
-                                            commitment: ImmutableTransaction,
-                                            refundTx: ImmutableTransaction,
-                                            override val timestamp: DateTime) extends HandshakeResult
+  case class HandshakeFailureWithCommitment(
+      exchange: DepositPendingExchange,
+      cause: Throwable,
+      commitment: ImmutableTransaction,
+      refundTx: ImmutableTransaction,
+      override val timestamp: DateTime) extends HandshakeResult
 
   case class CommitmentTransactionRejectedException(
-       exchangeId: ExchangeId, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
+      exchangeId: ExchangeId, rejectedTx: Hash, isOwn: Boolean) extends RuntimeException(
     s"Commitment transaction $rejectedTx (${if (isOwn) "ours" else "counterpart"}) was rejected"
   )
 
@@ -70,34 +71,42 @@ object HandshakeActor {
     * @param wallet      Wallet actor for deposit creation
     * @param listener    Actor to be notified on handshake result
     */
-  case class Collaborators(gateway: ActorRef,
-    blockchain: ActorRef,
-    wallet: ActorRef,
-    listener: ActorRef)
+  case class Collaborators(
+      gateway: ActorRef,
+      blockchain: ActorRef,
+      wallet: ActorRef,
+      listener: ActorRef)
 
   case class ProtocolDetails(factory: ExchangeProtocol, constants: ProtocolConstants)
 
-  case class ExchangeToStart[C <: FiatCurrency](info: HandshakingExchange[C],
-    timestamp: DateTime,
-    user: Exchange.PeerInfo)
+  case class ExchangeToStart(
+      info: HandshakingExchange,
+      timestamp: DateTime,
+      user: Exchange.PeerInfo)
 
-  def props(exchange: ExchangeToStart[_ <: FiatCurrency],
-    collaborators: Collaborators,
-    protocol: ProtocolDetails) =
+  def props(
+      exchange: ExchangeToStart,
+      collaborators: Collaborators,
+      protocol: ProtocolDetails) =
     Props(new HandshakeActor(exchange, collaborators, protocol))
 
   private case object ResumeHandshake
-  private case class HandshakeStarted[C <: FiatCurrency](handshake: Handshake[C])
-    extends PersistentEvent
+
+  private case class HandshakeStarted(handshake: Handshake)
+      extends PersistentEvent
+
   private case class RefundCreated(refund: ImmutableTransaction) extends PersistentEvent
+
   private case class NotifiedCommitments(commitments: Both[Hash]) extends PersistentEvent
+
   private case class FinishedWith(result: HandshakeResult) extends PersistentEvent
+
 }
 
-private class HandshakeActor[C <: FiatCurrency](
-  exchange: HandshakeActor.ExchangeToStart[C],
-  collaborators: HandshakeActor.Collaborators,
-  protocol: HandshakeActor.ProtocolDetails) extends PersistentActor with ActorLogging {
+private class HandshakeActor(
+    exchange: HandshakeActor.ExchangeToStart,
+    collaborators: HandshakeActor.Collaborators,
+    protocol: HandshakeActor.ProtocolDetails) extends PersistentActor with ActorLogging {
 
   import context.dispatcher
   import protocol.constants._
@@ -112,7 +121,7 @@ private class HandshakeActor[C <: FiatCurrency](
   private val counterpartRefundSigner =
     context.actorOf(CounterpartRefundSigner.props(collaborators.gateway, exchange.info))
 
-  private var handshake: Handshake[C] = _
+  private var handshake: Handshake = _
   private var refund: ImmutableTransaction = _
 
   /** Self-message that aborts the handshake. */
@@ -141,7 +150,7 @@ private class HandshakeActor[C <: FiatCurrency](
   }
 
   override def receiveRecover: Receive = {
-    case event: HandshakeStarted[C] => onHandshakeStarted(event)
+    case event: HandshakeStarted => onHandshakeStarted(event)
     case event: RefundCreated => onRefundCreated(event)
     case event: NotifiedCommitments => onNotifiedCommitments(event)
     case event: FinishedWith => onFinishedWith(event)
@@ -160,10 +169,10 @@ private class HandshakeActor[C <: FiatCurrency](
         exchange.info.handshake(exchange.user, counterpart, exchange.timestamp)
       collaborators.listener ! ExchangeUpdate(handshakingExchange)
       createDeposit(handshakingExchange)
-        .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
-        .pipeTo(self)
+          .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
+          .pipeTo(self)
 
-    case createdHandshake: Handshake[C] =>
+    case createdHandshake: Handshake =>
       persist(HandshakeStarted(createdHandshake))(onHandshakeStarted)
 
     case Status.Failure(cause) =>
@@ -171,7 +180,7 @@ private class HandshakeActor[C <: FiatCurrency](
       finishWith(HandshakeFailure(CannotCreateDeposits, DateTime.now()))
   }
 
-  private def onHandshakeStarted(event: HandshakeStarted[C]): Unit = {
+  private def onHandshakeStarted(event: HandshakeStarted): Unit = {
     handshake = event.handshake
     collaborators.blockchain ! BlockchainActor.WatchMultisigKeys(
       event.handshake.exchange.requiredSignatures)
@@ -194,7 +203,7 @@ private class HandshakeActor[C <: FiatCurrency](
     context.become(finishing)
   }
 
-  private def createDeposit(exchange: DepositPendingExchange[C]): Future[ImmutableTransaction] = {
+  private def createDeposit(exchange: DepositPendingExchange): Future[ImmutableTransaction] = {
     val requiredSignatures = exchange.participants.map(_.bitcoinKey)
     val depositAmounts = exchange.role.select(exchange.amounts.deposits)
     AskPattern(
@@ -226,7 +235,7 @@ private class HandshakeActor[C <: FiatCurrency](
         exchange.info.counterpartId
       )) {
         case RefundSignatureResponse(id, herSignature) if id == exchange.info.id &&
-          validCounterpartSignature(herSignature) =>
+            validCounterpartSignature(herSignature) =>
           handshake.signMyRefund(herSignature)
       }
     }
@@ -263,7 +272,7 @@ private class HandshakeActor[C <: FiatCurrency](
         forwardMyCommitment()
 
       case CommitmentNotification(_, bothCommitments) =>
-        persist(NotifiedCommitments(bothCommitments)){ event =>
+        persist(NotifiedCommitments(bothCommitments)) { event =>
           onNotifiedCommitments(event)
           acknowledgeCommitmentNotification()
         }
@@ -302,7 +311,7 @@ private class HandshakeActor[C <: FiatCurrency](
 
       case ReceiveMessage(CommitmentNotification(_, bothCommitments), BrokerId) =>
         log.info("Handshake {}: commitment notification was received again; " +
-          "seems like last ack was missed, retransmitting it to the broker",
+            "seems like last ack was missed, retransmitting it to the broker",
           exchange.info.id)
         acknowledgeCommitmentNotification()
 
@@ -331,7 +340,7 @@ private class HandshakeActor[C <: FiatCurrency](
   }
 
   private def retrieveCommitmentTransactions(
-    commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
+      commitmentIds: Both[Hash]): Future[Both[ImmutableTransaction]] = {
     val retrievals = commitmentIds.map(retrieveCommitmentTransaction)
     for {
       buyerTx <- retrievals.buyer

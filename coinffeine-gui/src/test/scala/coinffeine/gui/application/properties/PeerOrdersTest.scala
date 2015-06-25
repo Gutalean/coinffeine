@@ -92,15 +92,15 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
 
     val operations = new CoinffeineOperations {
       override def cancelOrder(order: OrderId) = {}
-      override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) =
+      override def submitOrder(request: OrderRequest) =
         Future.successful(request.create())
-      override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] =
-        new MutablePropertyMap[OrderId, AnyCurrencyOrder]
+      override val orders: MutablePropertyMap[OrderId, Order] =
+        new MutablePropertyMap[OrderId, Order]
     }
 
     val orders = new PeerOrders(operations, ExecutionContext.global)
 
-    def withNewOrder(id: String)(action: ActiveOrder[Euro.type] => Unit): Unit = {
+    def withNewOrder(id: String)(action: ActiveOrder => Unit): Unit = {
       val orderId = OrderId(id)
       val order = ActiveOrder(orderId, Bid, 1.BTC, Price(100.EUR))
       operations.orders.set(orderId, order)
@@ -110,7 +110,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       action(order)
     }
 
-    def randomExchange(order: ActiveOrder[Euro.type]) = {
+    def randomExchange(order: ActiveOrder) = {
       val id = ExchangeId.random()
       val counterpart = PeerId.random()
       val request = OrderRequest(order.orderType, order.amount, order.price)
@@ -119,7 +119,7 @@ class PeerOrdersTest extends UnitTest with Eventually with Inside {
       ActiveExchange.create(id, BuyerRole, counterpart, amounts, params, DateTime.now())
     }
 
-    def randomlyHandshake(exchange: HandshakingExchange[Euro.type]) = exchange.handshake(
+    def randomlyHandshake(exchange: HandshakingExchange) = exchange.handshake(
       user = Exchange.PeerInfo("peer-01", new ECKey()),
       counterpart = Exchange.PeerInfo("peer-02", new ECKey()),
       timestamp = DateTime.now()

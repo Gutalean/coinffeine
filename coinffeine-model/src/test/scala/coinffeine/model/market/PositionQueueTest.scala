@@ -3,11 +3,11 @@ package coinffeine.model.market
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.{OrderId, Bid, Price}
+import coinffeine.model.order.{Bid, OrderId, Price}
 
 class PositionQueueTest extends UnitTest {
 
-  val emptyQueue = PositionQueue.empty(Bid, Euro)
+  val emptyQueue = PositionQueue.empty(Bid)
   val peerA = PeerId.hashOf("A")
   val peerB = PeerId.hashOf("B")
   val unknownPeer = PeerId.hashOf("unknown")

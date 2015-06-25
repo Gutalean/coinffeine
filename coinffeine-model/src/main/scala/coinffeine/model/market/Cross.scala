@@ -12,16 +12,16 @@ import coinffeine.model.order.OrderType
   * @param bitcoinAmounts  Net and gross bitcoin amounts to exchange
   * @param fiatAmounts     Gross and net fiat amounts to exchange
   * @param positions       Bidding and asking positions
-  * @tparam C              Currency exchanged by bitcoin
   */
-case class Cross[C <: FiatCurrency](bitcoinAmounts: Both[Bitcoin.Amount],
-                                    fiatAmounts: Both[CurrencyAmount[C]],
-                                    positions: Both[PositionId]) {
+case class Cross(
+    bitcoinAmounts: Both[BitcoinAmount],
+    fiatAmounts: Both[FiatAmount],
+    positions: Both[PositionId]) {
 
   /** Decrease the available amount of a position by the amount in this cross.
     * Return [[None]] for perfect matches
     */
-  def decreasePosition[T <: OrderType](position: Position[T, C]): Option[Position[T, C]] = {
+  def decreasePosition[T <: OrderType](position: Position[T]): Option[Position[T]] = {
     val role = Role.fromOrderType(position.orderType)
     val crossedAmount = role.select(bitcoinAmounts)
     (position.availableAmount > crossedAmount)

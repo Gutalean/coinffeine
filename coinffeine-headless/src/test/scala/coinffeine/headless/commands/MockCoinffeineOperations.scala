@@ -2,13 +2,13 @@ package coinffeine.headless.commands
 
 import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.model.currency.Euro
-import coinffeine.model.order.{ActiveOrder, AnyCurrencyOrder, OrderId}
+import coinffeine.model.order.{ActiveOrder, Order, OrderId}
 
 class MockCoinffeineOperations extends DummyCoinffeineOperations {
 
-  override val orders = new MutablePropertyMap[OrderId, AnyCurrencyOrder]
+  override val orders = new MutablePropertyMap[OrderId, Order]
 
-  def givenOrderExists(order: ActiveOrder[Euro.type]): Unit = {
+  def givenOrderExists(order: ActiveOrder): Unit = {
     orders.set(order.id, order)
   }
 

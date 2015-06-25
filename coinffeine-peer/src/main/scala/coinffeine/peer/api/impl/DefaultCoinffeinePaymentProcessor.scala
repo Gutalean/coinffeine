@@ -6,7 +6,7 @@ import akka.actor.ActorRef
 import akka.pattern._
 import com.typesafe.scalalogging.LazyLogging
 
-import coinffeine.model.currency.{CurrencyAmount, Euro}
+import coinffeine.model.currency.{Euro, FiatAmount}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorActor._
@@ -25,8 +25,8 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
   override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] =
     await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse].map {
       case BalanceRetrieved(
-        balance @ CurrencyAmount(_, Euro),
-        blockedFunds @ CurrencyAmount(_, Euro)) =>
+        balance @ FiatAmount(_, Euro),
+        blockedFunds @ FiatAmount(_, Euro)) =>
         Some(CoinffeinePaymentProcessor.Balance(
           balance.asInstanceOf[Euro.Amount],
           blockedFunds.asInstanceOf[Euro.Amount]

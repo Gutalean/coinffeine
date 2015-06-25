@@ -9,7 +9,7 @@ import akka.util.Timeout
 
 import coinffeine.common.akka._
 import coinffeine.model.bitcoin.{Address, ImmutableTransaction}
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.order.{ActiveOrder, OrderId, OrderRequest}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.bitcoin.BitcoinPeerActor
@@ -30,8 +30,9 @@ import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 /** Implementation of the topmost actor on a peer node. It starts all the relevant actors like
   * the peer actor and the message gateway and supervise them.
   */
-class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTimeout: FiniteDuration)
-  extends Actor with ActorLogging with ServiceLifecycle[Unit] {
+class CoinffeinePeerActor(
+    props: CoinffeinePeerActor.PropsCatalogue, serviceTimeout: FiniteDuration)
+    extends Actor with ActorLogging with ServiceLifecycle[Unit] {
 
   import context.dispatcher
 
@@ -52,14 +53,14 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTime
       _ <- Service.askStart(bitcoinPeerRef)
       _ <- Service.askStart(gatewayRef)
       walletActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveWalletActor)
-        .withReply[BitcoinPeerActor.WalletActorRef]
+          .withReply[BitcoinPeerActor.WalletActorRef]
       blockchainActorRef <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.RetrieveBlockchainActor)
-        .withReply[BitcoinPeerActor.BlockchainActorRef]
+          .withReply[BitcoinPeerActor.BlockchainActorRef]
     } yield (walletActorRef, blockchainActorRef)).pipeTo(self)
 
     BecomeStarting {
       case (BitcoinPeerActor.WalletActorRef(retrievedWalletRef),
-            BitcoinPeerActor.BlockchainActorRef(retrievedBlockchainRef)) =>
+      BitcoinPeerActor.BlockchainActorRef(retrievedBlockchainRef)) =>
         walletRef = retrievedWalletRef
         val collaborators = OrderSupervisorCollaborators(
           gatewayRef, paymentProcessorRef, bitcoinPeerRef, retrievedBlockchainRef, walletRef)
@@ -75,9 +76,8 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTime
   override protected def onStop() = {
     implicit val timeout = Timeout(serviceTimeout)
     log.info("Stopping Coinffeine peer")
-    Service
-      .askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef)
-      .pipeTo(self)
+    Service.askStopAll(paymentProcessorRef, bitcoinPeerRef, gatewayRef)
+        .pipeTo(self)
     BecomeStopping {
       case () =>
         completeStop()
@@ -87,21 +87,21 @@ class CoinffeinePeerActor(props: CoinffeinePeerActor.PropsCatalogue, serviceTime
   }
 
   private val handleMessages: Receive = {
-    case message @ (OpenOrder(_) | CancelOrder(_)) =>
+    case message@(OpenOrder(_) | CancelOrder(_)) =>
       orderSupervisorRef forward message
-    case message @ WithdrawWalletFunds(amount, to) =>
+    case message@WithdrawWalletFunds(amount, to) =>
       implicit val txBroadcastTimeout = new Timeout(WithdrawFundsTxBroadcastTimeout)
       (for {
         txCreated <- AskPattern(walletRef, WalletActor.CreateTransaction(amount, to))
-          .withImmediateReply[WalletActor.TransactionCreated]
+            .withImmediateReply[WalletActor.TransactionCreated]
         txPublished <- AskPattern(bitcoinPeerRef, BitcoinPeerActor.PublishTransaction(txCreated.tx))
-          .withReply[BitcoinPeerActor.TransactionPublished]()
+            .withReply[BitcoinPeerActor.TransactionPublished]()
       } yield txPublished.broadcastTx)
-        .map(tx => WalletFundsWithdrawn(amount, to, tx))
-        .recover { case NonFatal(ex) => WalletFundsWithdrawFailure(amount, to, ex) }
-        .pipeTo(sender())
+          .map(tx => WalletFundsWithdrawn(amount, to, tx))
+          .recover { case NonFatal(ex) => WalletFundsWithdrawFailure(amount, to, ex) }
+          .pipeTo(sender())
 
-    case message @ RetrieveBalance(_) =>
+    case message@RetrieveBalance(_) =>
       paymentProcessorRef forward message
 
     case QuoteRequest(market) =>
@@ -123,10 +123,10 @@ object CoinffeinePeerActor {
     *
     * @param order Order to open
     */
-  case class OpenOrder(order: OrderRequest[_ <: FiatCurrency])
+  case class OpenOrder(order: OrderRequest)
 
   /** An order created as response to [[OpenOrder]]. */
-  case class OrderOpened(order: ActiveOrder[_ <: FiatCurrency])
+  case class OrderOpened(order: ActiveOrder)
 
   /** Cancel an order
     *
@@ -140,36 +140,41 @@ object CoinffeinePeerActor {
   type RetrieveMarketOrders = brokerage.OpenOrdersRequest
 
   /** A request to withdraw funds from Bitcoin wallet. */
-  case class WithdrawWalletFunds(amount: Bitcoin.Amount, to: Address)
+  case class WithdrawWalletFunds(amount: BitcoinAmount, to: Address)
 
   /** A response reporting a successful withdraw of wallet funds. */
-  case class WalletFundsWithdrawn(amount: Bitcoin.Amount,
-                                  to: Address,
-                                  tx: ImmutableTransaction)
+  case class WalletFundsWithdrawn(
+      amount: BitcoinAmount,
+      to: Address,
+      tx: ImmutableTransaction)
 
   /** A response reporting a failure while withdrawing wallet funds. */
-  case class WalletFundsWithdrawFailure(amount: Bitcoin.Amount,
-                                        to: Address,
-                                        failure: Throwable)
+  case class WalletFundsWithdrawFailure(
+      amount: BitcoinAmount,
+      to: Address,
+      failure: Throwable)
 
-  case class OrderSupervisorCollaborators(gateway: ActorRef,
-                                          paymentProcessor: ActorRef,
-                                          bitcoinPeer: ActorRef,
-                                          blockchain: ActorRef,
-                                          wallet: ActorRef)
+  case class OrderSupervisorCollaborators(
+      gateway: ActorRef,
+      paymentProcessor: ActorRef,
+      bitcoinPeer: ActorRef,
+      blockchain: ActorRef,
+      wallet: ActorRef)
 
-  case class PropsCatalogue(gateway: ActorSystem => Props,
-                            marketInfo: ActorRef => Props,
-                            orderSupervisor: OrderSupervisorCollaborators => Props,
-                            bitcoinPeer: Props,
-                            paymentProcessor: Props)
+  case class PropsCatalogue(
+      gateway: ActorSystem => Props,
+      marketInfo: ActorRef => Props,
+      orderSupervisor: OrderSupervisorCollaborators => Props,
+      bitcoinPeer: Props,
+      paymentProcessor: Props)
 
-  trait Component { this: MessageGateway.Component
-    with ExchangeActor.Component
-    with ConfigComponent
-    with BitcoinPlatform.Component
-    with ProtocolConstants.Component
-    with OrderArchive.Component =>
+  trait Component {
+    this: MessageGateway.Component
+        with ExchangeActor.Component
+        with ConfigComponent
+        with BitcoinPlatform.Component
+        with ProtocolConstants.Component
+        with OrderArchive.Component =>
 
     private val amountsCalculator = new DefaultAmountsCalculator()
 
@@ -185,13 +190,16 @@ object CoinffeinePeerActor {
       Props(new CoinffeinePeerActor(props, configProvider.generalSettings().serviceStartStopTimeout))
     }
 
-    private def orderSupervisorProps(orderSupervisorCollaborators: OrderSupervisorCollaborators) =
+    private def orderSupervisorProps(
+        orderSupervisorCollaborators: OrderSupervisorCollaborators) =
       OrderSupervisor.props(new OrderSupervisor.Delegates {
+
         import orderSupervisorCollaborators._
 
-        override def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
-                                     submission: ActorRef,
-                                     archive: ActorRef) = {
+        override def orderActorProps(
+            order: ActiveOrder,
+            submission: ActorRef,
+            archive: ActorRef) = {
           val collaborators = OrderActor.Collaborators(wallet, paymentProcessor, submission,
             gateway, bitcoinPeer, blockchain, archive)
           OrderActor.props(exchangeActorProps, bitcoinPlatform.network, amountsCalculator, order,
@@ -203,4 +211,5 @@ object CoinffeinePeerActor {
         override val archiveProps = orderArchiveProps
       })
   }
+
 }

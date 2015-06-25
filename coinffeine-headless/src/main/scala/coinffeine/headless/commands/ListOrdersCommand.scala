@@ -5,9 +5,9 @@ import java.io.PrintWriter
 import coinffeine.common.properties.PropertyMap
 import coinffeine.headless.prompt.ANSIText.Bold
 import coinffeine.headless.shell.Command
-import coinffeine.model.order.{AnyCurrencyOrder, OrderId, OrderType}
+import coinffeine.model.order.{Order, OrderId, OrderType}
 
-class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) extends Command {
+class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, Order]) extends Command {
   override val keyword = "list"
   override val description = "lists all orders"
 
@@ -17,7 +17,7 @@ class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) 
     else printOrders(output, currentOrders)
   }
 
-  def printOrders(output: PrintWriter, allOrders: List[AnyCurrencyOrder]): Unit = {
+  def printOrders(output: PrintWriter, allOrders: List[Order]): Unit = {
     val ordersByType = allOrders.groupBy(_.orderType)
     for {
       orderType <- OrderType.values
@@ -29,7 +29,7 @@ class ListOrdersCommand(ordersProperty: PropertyMap[OrderId, AnyCurrencyOrder]) 
 
   private def printOrders(output: PrintWriter,
                           orderType: OrderType,
-                          orders: List[AnyCurrencyOrder]): Unit = {
+                          orders: List[Order]): Unit = {
     output.println(Bold(orderType.shortName.capitalize + " orders"))
     orders.sortBy(_.id.value).foreach { order =>
       output.format("%s\t%s\t%s\t%s%n", order.id.value, order.status, order.amount, order.price)

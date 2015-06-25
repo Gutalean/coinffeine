@@ -10,8 +10,7 @@ import akka.util.Timeout
 import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
-import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.order.{ActiveOrder, AnyCurrencyActiveOrder, OrderId}
+import coinffeine.model.order.{ActiveOrder, OrderId}
 import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.market.orders.archive.OrderArchive
@@ -25,7 +24,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
 
   private val submission = context.actorOf(delegates.submissionProps, "submission")
   private val archive = context.actorOf(delegates.archiveProps, "archive")
-  private var orders = Map.empty[OrderId, AnyCurrencyActiveOrder]
+  private var orders = Map.empty[OrderId, ActiveOrder]
   private var orderRefs = Map.empty[OrderId, ActorRef]
 
   override val receiveRecover: Receive = {
@@ -85,7 +84,7 @@ private[this] class OrderSupervisor(override val persistenceId: String,
     orders += event.order.id -> event.order
   }
 
-  private def spawn(order: AnyCurrencyActiveOrder): Unit = {
+  private def spawn(order: ActiveOrder): Unit = {
     val props = delegates.orderActorProps(order, submission, archive)
     val ref = context.actorOf(props, s"order-${order.id.value}")
     orderRefs += order.id -> ref
@@ -96,11 +95,11 @@ object OrderSupervisor {
   val DefaultPersistenceId = "orders"
   val QueryTimeout = 20.seconds
 
-  private case class Snapshot(orders: Map[OrderId, AnyCurrencyActiveOrder]) extends PersistentEvent
+  private case class Snapshot(orders: Map[OrderId, ActiveOrder]) extends PersistentEvent
 
   trait Delegates {
     val submissionProps: Props
-    def orderActorProps(order: ActiveOrder[_ <: FiatCurrency],
+    def orderActorProps(order: ActiveOrder,
                         submission: ActorRef,
                         archive: ActorRef): Props
     val archiveProps: Props
@@ -111,5 +110,5 @@ object OrderSupervisor {
   def props(persistenceId: String, delegates: Delegates): Props =
     Props(new OrderSupervisor(persistenceId, delegates))
 
-  private case class OrderCreated(order: ActiveOrder[_ <: FiatCurrency]) extends PersistentEvent
+  private case class OrderCreated(order: ActiveOrder) extends PersistentEvent
 }

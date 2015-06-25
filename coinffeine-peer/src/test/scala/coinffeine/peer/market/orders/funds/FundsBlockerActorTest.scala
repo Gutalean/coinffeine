@@ -59,7 +59,7 @@ class FundsBlockerActorTest extends AkkaSpec with Inside {
     }
 
   abstract class Fixture(requiredFiat: Euro.Amount = 100.EUR,
-                         requiredBitcoin: Bitcoin.Amount = 1.BTC) {
+                         requiredBitcoin: BitcoinAmount = 1.BTC) {
     val exchangeId = ExchangeId.random()
     val walletProbe, paymentProcessor = TestProbe()
     val actor = system.actorOf(FundsBlockerActor.props(exchangeId, walletProbe.ref,

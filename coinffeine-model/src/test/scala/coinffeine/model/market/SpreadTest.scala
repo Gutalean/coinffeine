@@ -7,7 +7,7 @@ import coinffeine.model.order.Price
 class SpreadTest extends UnitTest {
 
   "A price spread" should "be converted to string" in {
-    Spread.empty[Euro.type].toString shouldBe "(--, --)"
+    Spread.empty.toString shouldBe "(--, --)"
     Spread(Some(Price(10.USD)), lowestAsk = None).toString shouldBe "(10 USD, --)"
     Spread(Price(10.785, Euro), Price(10.896, Euro)).toString shouldBe "(10.785 EUR, 10.896 EUR)"
   }

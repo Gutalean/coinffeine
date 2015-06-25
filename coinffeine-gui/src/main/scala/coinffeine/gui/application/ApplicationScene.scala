@@ -12,6 +12,7 @@ import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
+import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -61,7 +62,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
           new Label with TextStyles.CurrencyAmount {
             text <== balances.fiat.delegate.mapToString {
               case Some(b) => b.amount.format(Currency.NoSymbol)
-              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+              case None => Euro.formatMissingAmount(Currency.NoSymbol)
             }
           },
           new Label("EUR") with TextStyles.CurrencySymbol)
@@ -72,7 +73,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
           new Label with TextStyles.CurrencyAmount {
             text <== balances.bitcoin.delegate.mapToString {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
-              case None => CurrencyAmount.formatMissing(Euro, Currency.NoSymbol)
+              case None => Euro.formatMissingAmount(Currency.NoSymbol)
             }
           },
           new Label("BTC") with TextStyles.CurrencySymbol)
@@ -122,6 +123,6 @@ object ApplicationScene {
 
   case class Balances(
     bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
-    fiat: ReadOnlyObjectProperty[Option[FiatBalance[Euro.type]]]
+    fiat: ReadOnlyObjectProperty[Option[FiatBalance]]
   )
 }

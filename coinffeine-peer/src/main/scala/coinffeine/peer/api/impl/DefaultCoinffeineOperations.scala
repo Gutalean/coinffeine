@@ -16,12 +16,12 @@ class DefaultCoinffeineOperations(properties: OperationsProperties,
                                   override val peer: ActorRef)
   extends CoinffeineOperations with PeerActorWrapper {
 
-  override val orders: PropertyMap[OrderId, AnyCurrencyOrder] = properties.orders
+  override val orders: PropertyMap[OrderId, Order] = properties.orders
 
-  override def submitOrder[C <: FiatCurrency](order: OrderRequest[C]) =
+  override def submitOrder(order: OrderRequest) =
     AskPattern(peer, OpenOrder(order))
       .withReply[OrderOpened]()
-      .map(_.order.asInstanceOf[ActiveOrder[C]])
+      .map(_.order.asInstanceOf[ActiveOrder])
 
   override def cancelOrder(order: OrderId): Unit = {
     peer ! CancelOrder(order)

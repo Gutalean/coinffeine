@@ -2,21 +2,19 @@ package coinffeine.peer.market.orders.controller
 
 import org.scalatest.Assertions
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.order.{ActiveOrder, OrderStatus}
 
-class MockOrderControllerListener[C <: FiatCurrency]
-  extends OrderController.Listener[C] with Assertions {
+class MockOrderControllerListener extends OrderController.Listener with Assertions {
 
-  var currentOrder: ActiveOrder[C] = _
+  var currentOrder: ActiveOrder = _
 
-  override def onOrderChange(oldOrder: ActiveOrder[C], newOrder: ActiveOrder[C]): Unit = {
+  override def onOrderChange(oldOrder: ActiveOrder, newOrder: ActiveOrder): Unit = {
     currentOrder = newOrder
   }
 
   def lastStatus: OrderStatus = lastOrder.status
 
-  def lastOrder: ActiveOrder[C] = {
+  def lastOrder: ActiveOrder = {
     require(currentOrder != null, "Order status was never updated")
     currentOrder
   }

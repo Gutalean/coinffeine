@@ -11,11 +11,11 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.protocol.impl.DefaultMicroPaymentChannel._
 
-private[impl] class DefaultMicroPaymentChannel[C <: FiatCurrency] private (
-    override val exchange: RunningExchange[C], override val currentStep: Step)
-  extends MicroPaymentChannel[C] {
+private[impl] class DefaultMicroPaymentChannel private (
+    override val exchange: RunningExchange, override val currentStep: Step)
+  extends MicroPaymentChannel {
 
-  def this(exchange: RunningExchange[C]) =
+  def this(exchange: RunningExchange) =
     this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   private val currentUnsignedTransaction = ImmutableTransaction {

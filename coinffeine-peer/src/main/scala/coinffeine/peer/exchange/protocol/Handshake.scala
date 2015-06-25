@@ -5,9 +5,9 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.DepositPendingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
-trait Handshake[C <: FiatCurrency] {
+trait Handshake {
 
-  val exchange: DepositPendingExchange[C]
+  val exchange: DepositPendingExchange
 
   /** Ready to be broadcast deposit */
   def myDeposit: ImmutableTransaction

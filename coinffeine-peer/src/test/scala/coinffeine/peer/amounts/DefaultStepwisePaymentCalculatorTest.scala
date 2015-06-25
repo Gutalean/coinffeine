@@ -62,7 +62,7 @@ class DefaultStepwisePaymentCalculatorTest extends UnitTest with PropertyChecks 
 
   "Maximum net payment and required gross amount" should "be consistent" in {
     forAll (Gen.posNum[Int]) { cents =>
-      val grossAmount = CurrencyAmount.fromIndivisibleUnits(cents, Euro)
+      val grossAmount = Euro.fromUnits(cents)
       val maxNetPayment = instance.maximumPaymentWithGrossAmount(grossAmount)
       if (maxNetPayment.isPositive) {
         val requiredGrossAmount = instance.requiredAmountToPay(maxNetPayment)

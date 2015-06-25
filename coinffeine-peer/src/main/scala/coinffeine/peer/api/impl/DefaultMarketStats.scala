@@ -8,7 +8,6 @@ import akka.actor.ActorRef
 import akka.util.Timeout
 
 import coinffeine.common.akka.AskPattern
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.Market
 import coinffeine.peer.api.MarketStats
 import coinffeine.protocol.messages.brokerage._
@@ -18,11 +17,11 @@ private[impl] class DefaultMarketStats(override val peer: ActorRef)
 
   implicit protected override val timeout = Timeout(20.seconds)
 
-  override def currentQuote[C <: FiatCurrency](market: Market[C]): Future[Quote[C]] =
-    AskPattern(peer, QuoteRequest(market)).withReply[Quote[C]]()
+  override def currentQuote(market: Market): Future[Quote] =
+    AskPattern(peer, QuoteRequest(market)).withReply[Quote]()
 
-  override def openOrders[C <: FiatCurrency](market: Market[C]) =
+  override def openOrders(market: Market) =
     AskPattern(peer, OpenOrdersRequest(market))
-      .withReply[OpenOrders[C]]()
+      .withReply[OpenOrders]()
       .map(_.orders.entries.toSet)
 }

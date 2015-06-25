@@ -4,12 +4,13 @@ import scalaz.Scalaz._
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.exchange._
 
-private[impl] class DepositValidator(amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
-                                     requiredSignatures: Both[PublicKey],
-                                     network: Network) {
+private[impl] class DepositValidator(
+    amounts: ActiveExchange.Amounts,
+    requiredSignatures: Both[PublicKey],
+    network: Network) {
 
   def validate(transactions: Both[ImmutableTransaction]): Both[DepositValidation] = Both(
     buyer = requireValidBuyerFunds(transactions.buyer),
@@ -22,22 +23,25 @@ private[impl] class DepositValidator(amounts: ActiveExchange.Amounts[_ <: FiatCu
   def requireValidSellerFunds(transaction: ImmutableTransaction): DepositValidation =
     requireValidDeposit(SellerRole, transaction)
 
-  private def requireValidDeposit(role: Role,
-                                  transaction: ImmutableTransaction): DepositValidation = {
+  private def requireValidDeposit(
+      role: Role,
+      transaction: ImmutableTransaction): DepositValidation = {
     Option(transaction.get.getOutput(0))
-      .fold[DepositValidation](DepositValidationError.NoOutputs.failureNel) { funds =>
-        requireValidMultiSignature(funds) *> requireValidAmount(role, funds)
-      }
+        .fold[DepositValidation](DepositValidationError.NoOutputs.failureNel) { funds =>
+      requireValidMultiSignature(funds) *> requireValidAmount(role, funds)
+    }
   }
 
-  private def requireValidAmount(role: Role, funds: MutableTransactionOutput): DepositValidation = {
-    val actualFunds: Bitcoin.Amount = funds.getValue
+  private def requireValidAmount(
+      role: Role, funds: MutableTransactionOutput): DepositValidation = {
+    val actualFunds: BitcoinAmount = funds.getValue
     val expectedFunds = role.select(amounts.deposits).output
     if (actualFunds == expectedFunds) ().successNel
     else DepositValidationError.InvalidCommittedAmount(actualFunds, expectedFunds).failureNel
   }
 
-  private def requireValidMultiSignature(funds: MutableTransactionOutput): DepositValidation = {
+  private def requireValidMultiSignature(
+      funds: MutableTransactionOutput): DepositValidation = {
     funds match {
       case MultiSigOutput(MultiSigInfo(possibleKeys, requiredKeyCount)) =>
         requireTwoOutOfTwoSignatures(requiredKeyCount) *> requireExpectedAddresses(possibleKeys)

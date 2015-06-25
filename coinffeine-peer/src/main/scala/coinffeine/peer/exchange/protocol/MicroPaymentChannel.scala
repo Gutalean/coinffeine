@@ -9,13 +9,13 @@ import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
-trait MicroPaymentChannel[C <: FiatCurrency] {
+trait MicroPaymentChannel {
 
-  val exchange: RunningExchange[C]
+  val exchange: RunningExchange
 
   val currentStep: Step
 
-  def nextStep: MicroPaymentChannel[C]
+  def nextStep: MicroPaymentChannel
 
   /** Check signature validity for the current step.
     *
@@ -55,7 +55,7 @@ object MicroPaymentChannel {
     @throws[IllegalArgumentException]("if this step is final")
     def next: Step
 
-    def select[C <: FiatCurrency](amounts: Amounts[C]): StepAmounts[C]
+    def select(amounts: Amounts): StepAmounts
   }
 
   case class IntermediateStep(override val value: Int, breakdown: StepBreakdown) extends Step {
@@ -68,11 +68,11 @@ object MicroPaymentChannel {
       if (value == breakdown.intermediateSteps) FinalStep(breakdown) else copy(value = value + 1)
     override val toString = s"step $value/${breakdown.totalSteps}"
 
-    override def select[C <: FiatCurrency](amounts: Amounts[C]): IntermediateStepAmounts[C] =
+    override def select(amounts: Amounts): IntermediateStepAmounts =
       select(amounts.intermediateSteps)
 
-    def select[C <: FiatCurrency](
-        amounts: Seq[IntermediateStepAmounts[C]]): IntermediateStepAmounts[C] =
+    def select(
+        amounts: Seq[IntermediateStepAmounts]): IntermediateStepAmounts =
       amounts(value - 1)
   }
 
@@ -81,7 +81,7 @@ object MicroPaymentChannel {
     override val isFinal = true
     override def next = throw new IllegalArgumentException("Already at the last step")
     override def toString = s"step $value/$value"
-    override def select[C <: FiatCurrency](amounts: Amounts[C]): FinalStepAmounts[C] =
+    override def select(amounts: Amounts): FinalStepAmounts =
       amounts.finalStep
   }
 

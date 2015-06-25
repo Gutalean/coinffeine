@@ -22,38 +22,38 @@ import coinffeine.model.market.OrderBookEntry
   * @param exchanges  The exchanges that have been initiated to complete this order
   * @param log        Log of important order events
   */
-case class ActiveOrder[C <: FiatCurrency] private (
+case class ActiveOrder private (
     override val id: OrderId,
     override val orderType: OrderType,
-    override val amount: Bitcoin.Amount,
-    override val price: OrderPrice[C],
+    override val amount: BitcoinAmount,
+    override val price: OrderPrice,
     override val inMarket: Boolean,
-    override val exchanges: Map[ExchangeId, ActiveExchange[C]],
-    override val log: ActivityLog[OrderStatus]) extends Order[C] {
+    override val exchanges: Map[ExchangeId, ActiveExchange],
+    override val log: ActivityLog[OrderStatus]) extends Order {
 
   require(amount.isPositive, s"Orders should have a positive amount ($amount given)")
 
-  def cancel(timestamp: DateTime): ActiveOrder[C] = {
+  def cancel(timestamp: DateTime): ActiveOrder = {
     require(cancellable, "Cannot cancel %s with active exchanges %s".format(
       id, exchanges.values.filterNot(_.isCompleted).map(_.id)))
     copy(log = log.record(OrderStatus.Cancelled, timestamp))
   }
   override def cancellable: Boolean = status.isActive && exchanges.values.forall(_.isCompleted)
 
-  def becomeInMarket: ActiveOrder[C] = copy(inMarket = true)
-  def becomeOffline: ActiveOrder[C] = copy(inMarket = false)
+  def becomeInMarket: ActiveOrder = copy(inMarket = true)
+  def becomeOffline: ActiveOrder = copy(inMarket = false)
 
   override def status: OrderStatus = log.mostRecent.get.event
 
   def amounts: ActiveOrder.Amounts = ActiveOrder.Amounts.fromExchanges(amount, role, exchanges)
 
-  def pendingOrderBookEntry: OrderBookEntry[C] =
+  def pendingOrderBookEntry: OrderBookEntry =
     OrderBookEntry(id, orderType, amounts.pending, price)
 
   def shouldBeOnMarket: Boolean = !cancelled && amounts.pending.isPositive
 
   /** Create a new copy of this order with the given exchange. */
-  def withExchange(exchange: ActiveExchange[C]): ActiveOrder[C] =
+  def withExchange(exchange: ActiveExchange): ActiveOrder =
     if (exchanges.get(exchange.id).contains(exchange)) this
     else {
       val nextExchanges = exchanges + (exchange.id -> exchange)
@@ -77,29 +77,29 @@ case class ActiveOrder[C <: FiatCurrency] private (
 }
 
 object ActiveOrder {
-  case class Amounts(exchanged: Bitcoin.Amount,
-                     exchanging: Bitcoin.Amount,
-                     pending: Bitcoin.Amount) {
+  case class Amounts(exchanged: BitcoinAmount,
+                     exchanging: BitcoinAmount,
+                     pending: BitcoinAmount) {
     require((exchanged + exchanging + pending).isPositive)
     def completed: Boolean = exchanging.isZero && pending.isZero
     def progressMade: Boolean = exchanging.isPositive || exchanged.isPositive
   }
 
   object Amounts {
-    def fromExchanges[C <: FiatCurrency](amount: Bitcoin.Amount,
+    def fromExchanges(amount: BitcoinAmount,
                                          role: Role,
-                                         exchanges: Map[ExchangeId, ActiveExchange[C]]): Amounts = {
-      def totalSum(exchanges: Iterable[ActiveExchange[C]]): Bitcoin.Amount = exchanges.map {
-        case ex: SuccessfulExchange[_] => ex.progress.bitcoinsTransferred
-        case ex: FailedExchange[_] => ex.progress.bitcoinsTransferred
+                                         exchanges: Map[ExchangeId, ActiveExchange]): Amounts = {
+      def totalSum(exchanges: Iterable[ActiveExchange]): BitcoinAmount = exchanges.map {
+        case ex: SuccessfulExchange => ex.progress.bitcoinsTransferred
+        case ex: FailedExchange => ex.progress.bitcoinsTransferred
         case ex => ex.amounts.exchangedBitcoin
       }.map(role.select).sum
 
       val exchangeGroups = exchanges.values.groupBy {
-        case _: SuccessfulExchange[_] => 'exchanged
-        case _: FailedExchange[_] => 'exchanged
+        case _: SuccessfulExchange => 'exchanged
+        case _: FailedExchange => 'exchanged
         case _ => 'exchanging
-      }.mapValues(totalSum).withDefaultValue(Bitcoin.Zero)
+      }.mapValues(totalSum).withDefaultValue(Bitcoin.zero)
 
       ActiveOrder.Amounts(
         exchanged = exchangeGroups('exchanged),
@@ -109,40 +109,45 @@ object ActiveOrder {
     }
   }
 
-  def apply[C <: FiatCurrency](id: OrderId,
-                               orderType: OrderType,
-                               amount: Bitcoin.Amount,
-                               price: Price[C],
-                               timestamp: DateTime = DateTime.now()): ActiveOrder[C] =
+  def apply(
+      id: OrderId,
+      orderType: OrderType,
+      amount: BitcoinAmount,
+      price: Price,
+      timestamp: DateTime = DateTime.now()): ActiveOrder =
     apply(id, orderType, amount, LimitPrice(price), timestamp)
 
-  def apply[C <: FiatCurrency](id: OrderId,
-                               orderType: OrderType,
-                               amount: Bitcoin.Amount,
-                               price: OrderPrice[C],
-                               timestamp: DateTime): ActiveOrder[C] = {
+  def apply(
+      id: OrderId,
+      orderType: OrderType,
+      amount: BitcoinAmount,
+      price: OrderPrice,
+      timestamp: DateTime): ActiveOrder = {
     val log = ActivityLog(OrderStatus.NotStarted, timestamp)
     ActiveOrder(id, orderType, amount, price, inMarket = false, exchanges = Map.empty, log)
   }
 
   /** Creates a limit order with a random identifier. */
-  def randomLimit[C <: FiatCurrency](orderType: OrderType,
-                                     amount: Bitcoin.Amount,
-                                     price: Price[C],
-                                     timestamp: DateTime = DateTime.now()) =
+  def randomLimit(
+      orderType: OrderType,
+      amount: BitcoinAmount,
+      price: Price,
+      timestamp: DateTime = DateTime.now()) =
     random(orderType, amount, LimitPrice(price), timestamp)
 
   /** Creates a market price order with a random identifier. */
-  def randomMarketPrice[C <: FiatCurrency](orderType: OrderType,
-                                           amount: Bitcoin.Amount,
-                                           currency: C,
-                                           timestamp: DateTime = DateTime.now()) =
+  def randomMarketPrice(
+      orderType: OrderType,
+      amount: BitcoinAmount,
+      currency: FiatCurrency,
+      timestamp: DateTime = DateTime.now()) =
     random(orderType, amount, MarketPrice(currency), timestamp)
 
   /** Creates a market price order with a random identifier. */
-  def random[C <: FiatCurrency](orderType: OrderType,
-                                amount: Bitcoin.Amount,
-                                price: OrderPrice[C],
-                                timestamp: DateTime = DateTime.now()) =
+  def random(
+      orderType: OrderType,
+      amount: BitcoinAmount,
+      price: OrderPrice,
+      timestamp: DateTime = DateTime.now()) =
     ActiveOrder(OrderId.random(), orderType, amount, price, timestamp)
 }

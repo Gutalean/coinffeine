@@ -6,19 +6,19 @@ import org.joda.time.DateTime
 
 import coinffeine.common.properties.MutablePropertyMap
 import coinffeine.model.currency.FiatCurrency
-import coinffeine.model.order.{AnyCurrencyActiveOrder, AnyCurrencyOrder, OrderId, OrderRequest}
+import coinffeine.model.order.{ActiveOrder, Order, OrderId, OrderRequest}
 import coinffeine.peer.api.CoinffeineOperations
 
 class MockCoinffeineOperations extends CoinffeineOperations {
 
-  override val orders: MutablePropertyMap[OrderId, AnyCurrencyOrder] = new MutablePropertyMap
+  override val orders: MutablePropertyMap[OrderId, Order] = new MutablePropertyMap
 
   override def cancelOrder(orderId: OrderId): Unit = {
     orders.get(orderId).foreach(order =>
-      orders.set(orderId, order.asInstanceOf[AnyCurrencyActiveOrder].cancel(DateTime.now())))
+      orders.set(orderId, order.asInstanceOf[ActiveOrder].cancel(DateTime.now())))
   }
 
-  override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = {
+  override def submitOrder(request: OrderRequest) = {
     val order = request.create()
     orders.set(order.id, order)
     Future.successful(order)

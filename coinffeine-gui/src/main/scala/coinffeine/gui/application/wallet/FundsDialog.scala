@@ -10,7 +10,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.SupportWidget
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
-import coinffeine.model.currency.{Bitcoin, BitcoinBalance, Currency}
+import coinffeine.model.currency.{BitcoinAmount, BitcoinBalance, Currency}
 
 class FundsDialog(props: WalletProperties) {
 
@@ -45,7 +45,7 @@ class FundsDialog(props: WalletProperties) {
     )
   }
 
-  private def makeAmount(selector: BitcoinBalance => Option[Bitcoin.Amount]) = new HBox {
+  private def makeAmount(selector: BitcoinBalance => Option[BitcoinAmount]) = new HBox {
     styleClass += "amount"
     children = Seq(
       new Label {

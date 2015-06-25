@@ -59,7 +59,7 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
     val watcher = system.actorOf(Props(
       new DepositWatcher(exchange, myDeposit, myRefund, Collaborators(blockchain.ref, listener = self))))
 
-    def spendDeposit(getBackAmount: Bitcoin.Amount) = {
+    def spendDeposit(getBackAmount: BitcoinAmount) = {
       val tx = TransactionProcessor.createUnsignedTransaction(
         inputs = myDeposit.get.getOutputs.asScala,
         outputs = Seq(participants.seller.bitcoinKey -> getBackAmount),

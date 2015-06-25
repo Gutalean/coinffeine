@@ -2,9 +2,9 @@ package coinffeine.model.currency
 
 import java.util.{Currency => JavaCurrency}
 
-import org.scalatest.{FlatSpec, ShouldMatchers}
+import coinffeine.common.test.UnitTest
 
-class CurrencyTest extends FlatSpec with ShouldMatchers {
+class CurrencyTest extends UnitTest {
 
   "US Dollar" must behave like validFiatCurrency(UsDollar, "USD")
   it must behave like validCurrencyWithCents(UsDollar)

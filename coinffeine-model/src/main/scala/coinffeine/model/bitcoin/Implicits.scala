@@ -22,8 +22,8 @@ trait Implicits {
 object Implicits {
   class PimpMyMutableTransaction(val tx: MutableTransaction) extends AnyVal {
 
-    def addChangeOutput(inputAmount: Bitcoin.Amount,
-                        spentAmount: Bitcoin.Amount,
+    def addChangeOutput(inputAmount: BitcoinAmount,
+                        spentAmount: BitcoinAmount,
                         changeAddress: Address): Unit = {
       val changeAmount = inputAmount - spentAmount
       require(!changeAmount.isNegative)
@@ -32,7 +32,7 @@ object Implicits {
       }
     }
 
-    def addMultisigOutput(amount: Bitcoin.Amount, requiredSignatures: Seq[PublicKey]): Unit = {
+    def addMultisigOutput(amount: BitcoinAmount, requiredSignatures: Seq[PublicKey]): Unit = {
       require(requiredSignatures.size > 1, "should have at least two signatures")
       tx.addOutput(
         amount,
@@ -48,7 +48,7 @@ object Implicits {
       tx.calculateSignature(index, signAs, script, SigHash.ALL, false)
     }
 
-    def outputAmount: Bitcoin.Amount = tx.getOutputs.foldLeft(Coin.ZERO)((a, b) => a.add(b.getValue))
+    def outputAmount: BitcoinAmount = tx.getOutputs.foldLeft(Coin.ZERO)((a, b) => a.add(b.getValue))
   }
 
   class PimpMyInput(val input: TransactionInput) extends AnyVal {

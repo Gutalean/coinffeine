@@ -65,11 +65,10 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
     Status.fromOrder(order) shouldBe WaitingForConfirmation
   }
 
-  private def randomOrder(amount: Bitcoin.Amount): ActiveOrder[Euro.type] = {
+  private def randomOrder(amount: BitcoinAmount): ActiveOrder =
     ActiveOrder.randomMarketPrice(Ask, amount, Euro)
-  }
 
-  private def randomExchange(amount: Bitcoin.Amount): HandshakingExchange[Euro.type] =
+  private def randomExchange(amount: BitcoinAmount): HandshakingExchange =
     ActiveExchange.create(
       id = ExchangeId.random(),
       role = SellerRole,
@@ -79,17 +78,16 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
       createdOn = DateTime.now()
     )
 
-  private def randomWaitingForConfirmationExchange(
-      amount: Bitcoin.Amount): RunningExchange[Euro.type] = {
+  private def randomWaitingForConfirmationExchange(amount: BitcoinAmount): RunningExchange = {
     val exchange = randomInProgressExchange(amount)
     exchange.completeStep(exchange.amounts.intermediateSteps.size)
   }
 
   private def randomInProgressExchange(
-      amount: Bitcoin.Amount, completedSteps: Int): RunningExchange[Euro.type] =
+      amount: BitcoinAmount, completedSteps: Int): RunningExchange =
     randomInProgressExchange(amount).completeStep(completedSteps)
 
-  private def randomInProgressExchange(amount: Bitcoin.Amount): RunningExchange[Euro.type] =
+  private def randomInProgressExchange(amount: BitcoinAmount): RunningExchange =
     randomExchange(amount)
       .handshake(
         user = PeerInfo("userAccount", new bitcoin.PublicKey),
@@ -97,6 +95,6 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
         timestamp = DateTime.now())
       .startExchanging(FakeExchangeProtocol.DummyDeposits, DateTime.now())
 
-  private def randomCompletedExchange(amount: Bitcoin.Amount): SuccessfulExchange[Euro.type] =
+  private def randomCompletedExchange(amount: BitcoinAmount): SuccessfulExchange =
     randomInProgressExchange(amount).complete(DateTime.now())
 }

@@ -60,7 +60,7 @@ class PayerActorTest extends AkkaSpec {
     paymentProcessor.reply(dupPaymentFailed)
     paymentProcessor.expectMsg(FindPayment(findPaymentCriterion))
     paymentProcessor.reply(PaymentNotFound(findPaymentCriterion))
-    requester.expectMsgType[PayerActor.CannotEnsurePayment[_]]
+    requester.expectMsgType[PayerActor.CannotEnsurePayment]
   }
 
   it should "retry payment retrieval by invoice if first attempt fails" in new Fixture {

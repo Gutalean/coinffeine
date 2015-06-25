@@ -21,7 +21,7 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
     payerActor.expectCreation()
-    payerActor.expectMsgType[PayerActor.EnsurePayment[_]]
+    payerActor.expectMsgType[PayerActor.EnsurePayment]
     expectProgress(signatures = 1)
   }
 
@@ -88,7 +88,7 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
     actor ! fromCounterpart(StepSignatures(exchange.id, 1, signatures))
     listener.expectMsgType[LastBroadcastableOffer]
     payerActor.expectCreation()
-    payerActor.expectMsgType[PayerActor.EnsurePayment[_]]
+    payerActor.expectMsgType[PayerActor.EnsurePayment]
     expectProgress(signatures = 1)
   }
 

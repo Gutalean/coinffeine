@@ -10,7 +10,7 @@ import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -20,7 +20,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   import BlockedFiatRegistry._
 
   private val balances = new MultipleBalance()
-  private var funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]] = Map.empty
+  private var funds: Map[ExchangeId, BlockedFundsInfo] = Map.empty
   private val fundsAvailability = new BlockedFundsAvailability()
 
   override def receiveRecover: Receive = {
@@ -46,7 +46,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     case RetrieveTotalBlockedFunds(currency) =>
       totalBlockedForCurrency(currency) match {
         case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
-        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.Zero)
+        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.zero)
       }
 
     case BalancesUpdate(newBalances) =>
@@ -88,19 +88,15 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def onFundsMarkedUsed(event: FundsMarkedUsedEvent): Unit = {
-    type C = event.amount.currency.type
-    val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
-    updateFunds(fundsToUse.copy(remainingAmount =
-      fundsToUse.remainingAmount - event.amount.asInstanceOf[CurrencyAmount[C]]))
+    val fundsToUse = funds(event.fundsId)
+    updateFunds(fundsToUse.copy(remainingAmount = fundsToUse.remainingAmount - event.amount))
     balances.reduceBalance(event.amount)
     updateBackedFunds()
   }
 
   private def onFundsUnmarkedUsed(event: FundsUnmarkedUsedEvent): Unit = {
-    type C = event.amount.currency.type
-    val fundsToUse = funds(event.fundsId).asInstanceOf[BlockedFundsInfo[C]]
-    updateFunds(fundsToUse.copy(remainingAmount =
-      fundsToUse.remainingAmount + event.amount.asInstanceOf[CurrencyAmount[C]]))
+    val fundsToUse = funds(event.fundsId)
+    updateFunds(fundsToUse.copy(remainingAmount = fundsToUse.remainingAmount + event.amount))
     balances.incrementBalance(event.amount)
     updateBackedFunds()
   }
@@ -111,26 +107,25 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     updateBackedFunds()
   }
 
-  private def canMarkUsed[C <: FiatCurrency](
-      fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
+  private def canMarkUsed(
+      fundsId: ExchangeId, amount: FiatAmount): Validation[String, BlockedFundsInfo] = for {
     funds <- requireExistingFunds(fundsId, amount.currency)
     _ <- requireEnoughBalance(funds, amount)
     _ <- requiredBackedFunds(funds.id)
   } yield funds
 
-  private def canUnmarkUsed[C <: FiatCurrency](
-      fundsId: ExchangeId, amount: CurrencyAmount[C]): Validation[String, BlockedFundsInfo[C]] = for {
+  private def canUnmarkUsed(
+      fundsId: ExchangeId, amount: FiatAmount): Validation[String, BlockedFundsInfo] = for {
     funds <- requireExistingFunds(fundsId, amount.currency)
   } yield funds
 
-  private def requireExistingFunds[C <: FiatCurrency](
-      fundsId: ExchangeId, currency: C): Validation[String, BlockedFundsInfo[C]] =
+  private def requireExistingFunds(
+      fundsId: ExchangeId, currency: FiatCurrency): Validation[String, BlockedFundsInfo] =
     funds.get(fundsId).toSuccess(s"no such funds with id $fundsId")
       .ensure(s"cannot spend $currency out of $fundsId")(_.remainingAmount.currency == currency)
-      .map(_.asInstanceOf[BlockedFundsInfo[C]])
 
-  private def requireEnoughBalance[C <: FiatCurrency](
-      funds: BlockedFundsInfo[C], minimumBalance: CurrencyAmount[C]): Validation[String, Unit] =
+  private def requireEnoughBalance(
+      funds: BlockedFundsInfo, minimumBalance: FiatAmount): Validation[String, Unit] =
     if (funds.remainingAmount >= minimumBalance) ().success
     else s"""insufficient blocked funds for id ${funds.id}: $minimumBalance requested,
             |${funds.remainingAmount} available""".stripMargin.failure
@@ -139,7 +134,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     if (fundsAvailability.areAvailable(fundsId)) ().success
     else s"funds with id $fundsId are not currently available".failure
 
-  private def updateFunds(newFunds: BlockedFundsInfo[_ <: FiatCurrency]): Unit = {
+  private def updateFunds(newFunds: BlockedFundsInfo): Unit = {
     funds += newFunds.id -> newFunds
   }
 
@@ -154,16 +149,16 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     }
   }
 
-  private def fundsThatCanBeBacked[C <: FiatCurrency](currency: C): Set[ExchangeId] = {
+  private def fundsThatCanBeBacked(currency: FiatCurrency): Set[ExchangeId] = {
     val availableBalance = balances.balanceFor(currency)
     val eligibleFunds = funds
       .values
       .filter(_.remainingAmount.currency == currency)
-      .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
+      .asInstanceOf[Iterable[BlockedFundsInfo]]
       .toSeq
       .sortBy(_.timestamp.getMillis)
     val fundsThatCanBeBacked =
-      eligibleFunds.scanLeft(CurrencyAmount.zero(currency))(_ + _.remainingAmount)
+      eligibleFunds.scanLeft(currency.zero)(_ + _.remainingAmount)
         .takeWhile(_ <= availableBalance)
         .size - 1
     eligibleFunds.take(fundsThatCanBeBacked).map(_.id).toSet
@@ -181,10 +176,10 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private def currenciesInUse(): Set[FiatCurrency] =
     funds.values.map(_.remainingAmount.currency).toSet
 
-  private def totalBlockedForCurrency[C <: FiatCurrency](currency: C): Option[FiatAmount] = {
+  private def totalBlockedForCurrency(currency: FiatCurrency): Option[FiatAmount] = {
     val fundsForCurrency = funds.values
       .filter(_.remainingAmount.currency == currency)
-      .asInstanceOf[Iterable[BlockedFundsInfo[C]]]
+      .asInstanceOf[Iterable[BlockedFundsInfo]]
     if (fundsForCurrency.isEmpty) None
     else Some(fundsForCurrency.map(_.remainingAmount).reduce(_ + _))
   }
@@ -194,8 +189,8 @@ private[okpay] object BlockedFiatRegistry {
 
   val PersistenceId = "blockedFiatRegistry"
 
-  case class RetrieveTotalBlockedFunds[C <: FiatCurrency](currency: C)
-  case class TotalBlockedFunds[C <: FiatCurrency](funds: CurrencyAmount[C])
+  case class RetrieveTotalBlockedFunds(currency: FiatCurrency)
+  case class TotalBlockedFunds(funds: FiatAmount)
 
   case class BalancesUpdate(balances: Seq[FiatAmount])
 
@@ -216,13 +211,13 @@ private[okpay] object BlockedFiatRegistry {
   private case class FundsUnmarkedUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
   private case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvent
 
-  private case class BlockedFundsInfo[C <: FiatCurrency](
-      id: ExchangeId, remainingAmount: CurrencyAmount[C]) {
+  private case class BlockedFundsInfo(
+      id: ExchangeId, remainingAmount: FiatAmount) {
     val timestamp = DateTime.now()
-    def canUseFunds(amount: CurrencyAmount[C]): Boolean = amount <= remainingAmount
+    def canUseFunds(amount: FiatAmount): Boolean = amount <= remainingAmount
   }
 
-  private case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo[_ <: FiatCurrency]])
+  private case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo])
     extends PersistentEvent
 
   def props = Props(new BlockedFiatRegistry(PersistenceId))

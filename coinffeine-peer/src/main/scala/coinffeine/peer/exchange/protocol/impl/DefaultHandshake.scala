@@ -6,9 +6,9 @@ import coinffeine.model.exchange.DepositPendingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 import coinffeine.peer.exchange.protocol._
 
-private[impl] class DefaultHandshake[C <: FiatCurrency](
-   override val exchange: DepositPendingExchange[C],
-   override val myDeposit: ImmutableTransaction) extends Handshake[C] {
+private[impl] class DefaultHandshake(
+   override val exchange: DepositPendingExchange,
+   override val myDeposit: ImmutableTransaction) extends Handshake {
 
   override val myUnsignedRefund: ImmutableTransaction = UnsignedRefundTransaction(
     deposit = myDeposit,
@@ -45,7 +45,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   }
 
   private def signRefundTransaction(tx: MutableTransaction,
-                                    expectedAmount: Bitcoin.Amount): TransactionSignature = {
+                                    expectedAmount: BitcoinAmount): TransactionSignature = {
     ensureValidRefundTransaction(ImmutableTransaction(tx), expectedAmount)
     tx.signMultisigOutput(
       index = 0,
@@ -55,7 +55,7 @@ private[impl] class DefaultHandshake[C <: FiatCurrency](
   }
 
   private def ensureValidRefundTransaction(tx: ImmutableTransaction,
-                                           expectedAmount: Bitcoin.Amount) = {
+                                           expectedAmount: BitcoinAmount) = {
     val validator = new RefundTransactionValidation(exchange.parameters, expectedAmount)
     validator(tx).swap.foreach { errors =>
       throw new InvalidRefundTransaction(tx, errors.list.mkString(", "))

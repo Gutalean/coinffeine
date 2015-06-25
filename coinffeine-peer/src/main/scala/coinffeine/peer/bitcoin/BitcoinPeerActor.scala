@@ -19,7 +19,6 @@ import coinffeine.model.network.NetworkEndpoint
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 import coinffeine.peer.bitcoin.platform.BitcoinPlatform
 import coinffeine.peer.bitcoin.wallet.{DefaultWalletActor, SmartWallet}
-import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.events.bitcoin.{ActiveBitcoinPeersChanged, BlockchainStatusChanged}
 
 class BitcoinPeerActor(delegates: BitcoinPeerActor.Delegates,

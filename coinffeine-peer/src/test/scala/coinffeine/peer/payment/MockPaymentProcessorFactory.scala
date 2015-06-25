@@ -5,24 +5,20 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.{AnyPayment, Payment}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.payment.Payment
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 
-class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty) {
+class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
 
-  @volatile var payments: List[AnyPayment] = initialPayments
+  @volatile var payments: List[Payment] = initialPayments
 
   private class MockPaymentProcessor(
       fiatAddress: String,
       initialBalances: Seq[FiatAmount]) extends Actor {
 
-    val id: String = "MockPay"
-
     override def receive: Receive = {
-      case PaymentProcessorActor.RetrieveAccountId =>
-        sender ! PaymentProcessorActor.RetrievedAccountId(id)
-      case pay: PaymentProcessorActor.Pay[_] =>
+      case pay: PaymentProcessorActor.Pay =>
         sendPayment(sender(), pay)
       case PaymentProcessorActor.FindPayment(criterion) =>
         findPayment(sender(), criterion)
@@ -31,7 +27,7 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
     }
 
     private def findPayment(requester: ActorRef, criterion: FindPaymentCriterion): Unit = {
-      def predicate(payment: AnyPayment) = criterion match {
+      def predicate(payment: Payment) = criterion match {
         case FindPaymentCriterion.ById(paymentId) => payment.id == paymentId
         case FindPaymentCriterion.ByInvoice(invoice) => payment.invoice == invoice
       }
@@ -41,25 +37,23 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       }
     }
 
-    private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
-      val deltas: List[CurrencyAmount[C]] = paymentsForCurrency(currency).collect {
-        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _, _) => CurrencyAmount.zero(currency)
+    private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
+      val deltas: List[FiatAmount] = paymentsForCurrency(currency).collect {
+        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _, _) => currency.zero
         case Payment(_, _, `fiatAddress`, in, _, _, _, _) => in
         case Payment(_, `fiatAddress`, _, out, _, _, _, _) => -out
       }
       val initial = initialBalances.collectFirst {
-        case a if a.currency == currency => a.asInstanceOf[CurrencyAmount[C]]
-      }.getOrElse(CurrencyAmount.zero(currency))
-      implicit val num = initial.numeric
-      val balance = initial + deltas.sum
-      requester ! PaymentProcessorActor.BalanceRetrieved(balance, num.fromInt(0))
+        case a if a.currency == currency => a.asInstanceOf[FiatAmount]
+      }.getOrElse(currency.zero)
+      val balance = initial + currency.sum(deltas)
+      requester ! PaymentProcessorActor.BalanceRetrieved(balance, currency.zero)
     }
 
-    private def paymentsForCurrency[C <: FiatCurrency](currency: C): List[Payment[C]] =
-      payments.filter(_.amount.currency == currency).asInstanceOf[List[Payment[C]]]
+    private def paymentsForCurrency(currency: FiatCurrency): List[Payment] =
+      payments.filter(_.amount.currency == currency)
 
-    private def sendPayment[C <: FiatCurrency](
-        requester: ActorRef, pay: PaymentProcessorActor.Pay[C]): Unit =
+    private def sendPayment(requester: ActorRef, pay: PaymentProcessorActor.Pay): Unit =
       if (initialBalances.map(_.currency).contains(pay.amount.currency)) {
         val payment = Payment(
           UUID.randomUUID().toString,
@@ -78,7 +72,6 @@ class MockPaymentProcessorFactory(initialPayments: List[AnyPayment] = List.empty
       }
   }
 
-  def newProcessor(
-      fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): Props =
+  def newProcessor(fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): Props =
     Props(new MockPaymentProcessor(fiatAddress, initialBalance))
 }

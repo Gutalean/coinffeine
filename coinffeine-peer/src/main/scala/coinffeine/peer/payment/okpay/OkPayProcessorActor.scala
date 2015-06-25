@@ -11,7 +11,7 @@ import akka.pattern._
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
-import coinffeine.model.currency._
+import coinffeine.model.currency.{FiatBalance, _}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.events.fiat.BalanceChanged
@@ -33,7 +33,7 @@ private class OkPayProcessorActor(
   private val registry = context.actorOf(registryProps, "funds")
 
   private var timer: Cancellable = _
-  private var balances = Map.empty[FiatCurrency, AnyFiatBalance]
+  private var balances = Map.empty[FiatCurrency, FiatBalance]
 
   override def onStart(args: Unit) = {
     pollBalances()
@@ -53,25 +53,16 @@ private class OkPayProcessorActor(
   }
 
   private def started: Receive = {
-    case PaymentProcessorActor.RetrieveAccountId =>
-      sender ! RetrievedAccountId(clientFactory.build().accountId)
-    case pay: Pay[_] =>
-      sendPayment(sender(), pay)
-    case FindPayment(criterion) =>
-      findPayment(sender(), criterion)
-    case RetrieveBalance(currency) =>
-      currentBalance(sender(), currency)
-    case PollBalances =>
-      pollBalances()
-    case UpdateBalances(newBalances) =>
-      updateBalances(newBalances)
-    case BalanceUpdateFailed(cause) =>
-      notifyBalanceUpdateFailure(cause)
-    case msg @ (_: BlockFunds | _: UnblockFunds) =>
-      registry.forward(msg)
+    case pay: Pay => sendPayment(sender(), pay)
+    case FindPayment(criterion) => findPayment(sender(), criterion)
+    case RetrieveBalance(currency) => currentBalance(sender(), currency)
+    case PollBalances => pollBalances()
+    case UpdateBalances(newBalances) => updateBalances(newBalances)
+    case BalanceUpdateFailed(cause) => notifyBalanceUpdateFailure(cause)
+    case msg @ (_: BlockFunds | _: UnblockFunds) => registry.forward(msg)
   }
 
-  private def sendPayment[C <: FiatCurrency](requester: ActorRef, pay: Pay[C]): Unit = {
+  private def sendPayment(requester: ActorRef, pay: Pay): Unit = {
     (for {
       _ <- markFundsUsed(pay)
       payment <- clientFactory.build().sendPayment(pay.to, pay.amount, pay.comment, pay.invoice)
@@ -86,7 +77,7 @@ private class OkPayProcessorActor(
     }
   }
 
-  private def markFundsUsed[C <: FiatCurrency](pay: Pay[C]): Future[Unit] = {
+  private def markFundsUsed(pay: Pay): Future[Unit] = {
     val request = MarkUsed(pay.fundsId, OkPayPaymentProcessor.amountPlusFee(pay.amount))
     log.debug("Using funds with id %s. Using %s for %s".format(
       pay.fundsId, request.amount, pay.invoice))
@@ -96,7 +87,7 @@ private class OkPayProcessorActor(
       .map(_ => {})
   }
 
-  private def unmarkFundsUsed[C <: FiatCurrency](
+  private def unmarkFundsUsed(
       fundsId: ExchangeId, amount: FiatAmount): Unit = {
     log.debug("Unmarking funds with id {} as used", fundsId)
     registry ! UnmarkUsed(fundsId, OkPayPaymentProcessor.amountPlusFee(amount))
@@ -115,7 +106,7 @@ private class OkPayProcessorActor(
     }
   }
 
-  private def currentBalance[C <: FiatCurrency](requester: ActorRef, currency: C): Unit = {
+  private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
     val balances = clientFactory.build().currentBalances()
     balances.onSuccess { case b =>
       self ! UpdateBalances(b)
@@ -125,7 +116,7 @@ private class OkPayProcessorActor(
       totalAmount <- balances.map { b =>
         b.find(_.currency == currency)
           .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
-          .asInstanceOf[CurrencyAmount[C]]
+          .asInstanceOf[FiatAmount]
       }
       blockedAmount <- blockedFunds
     } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
@@ -133,9 +124,9 @@ private class OkPayProcessorActor(
     }.pipeTo(requester)
   }
 
-  private def blockedFundsForCurrency[C <: FiatCurrency](currency: C): Future[CurrencyAmount[C]] = {
+  private def blockedFundsForCurrency(currency: FiatCurrency): Future[FiatAmount] = {
     AskPattern(registry, RetrieveTotalBlockedFunds(currency))
-      .withImmediateReply[TotalBlockedFunds[C]]().map(_.funds)
+      .withImmediateReply[TotalBlockedFunds]().map(_.funds)
   }
 
   private def updateBalances(balances: Seq[FiatAmount]): Unit = {
@@ -154,7 +145,7 @@ private class OkPayProcessorActor(
     }
   }
 
-  private def updateBalance[C <: FiatCurrency](balance: FiatBalance[C]): Unit = {
+  private def updateBalance(balance: FiatBalance): Unit = {
     balances += balance.amount.currency -> balance
     publish(BalanceChanged(balance))
   }

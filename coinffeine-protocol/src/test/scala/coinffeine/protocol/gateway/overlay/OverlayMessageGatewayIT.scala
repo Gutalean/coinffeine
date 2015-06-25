@@ -23,9 +23,9 @@ import coinffeine.protocol.serialization.test.TestProtocolSerializationComponent
 class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with Eventually {
 
   private val subscribeToOrderMatches = MessageGateway.Subscribe {
-    case ReceiveMessage(_: OrderMatch[_], _) =>
+    case ReceiveMessage(_: OrderMatch, _) =>
   }
-  
+
   "Overlay message gateway" must "send a message to a remote peer" in { f =>
     val msg = f.randomOrderMatch()
     f.peerProbe.send(f.peerGateway, ForwardMessage(msg, BrokerId))
@@ -51,10 +51,10 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
     val msg2 = msg1.copy(orderId = OrderId("2"))
     val probe = f.createPeerProbe()
     probe.send(f.peerGateway, Subscribe {
-      case ReceiveMessage(orderMatch: OrderMatch[_], _) if orderMatch.orderId == OrderId("1") =>
+      case ReceiveMessage(orderMatch: OrderMatch, _) if orderMatch.orderId == OrderId("1") =>
     })
     probe.send(f.peerGateway, Subscribe {
-      case ReceiveMessage(orderMatch: OrderMatch[_], _) if orderMatch.orderId == OrderId("2") =>
+      case ReceiveMessage(orderMatch: OrderMatch, _) if orderMatch.orderId == OrderId("2") =>
     })
     f.brokerProbe.send(f.brokerGateway, ForwardMessage(msg1, f.peerId))
     probe.expectMsg(ReceiveMessage(msg1, BrokerId))
@@ -86,7 +86,7 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
 
   it must "subscribe to broker messages" in { f =>
     f.peerProbe.send(f.peerGateway, Subscribe.fromBroker {
-      case _: OrderMatch[_] =>
+      case _: OrderMatch =>
     })
     val message = f.randomOrderMatch()
     f.brokerProbe.send(f.brokerGateway, ForwardMessage(message, f.peerId))
@@ -105,7 +105,7 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
   }
 
   override type FixtureParam = Fixture
-  
+
   override protected def withFixture(test: OneArgTest) = {
     val fixture = new Fixture
     try {
@@ -172,7 +172,7 @@ class OverlayMessageGatewayIT extends fixture.FlatSpec with ShouldMatchers with 
 
     // Send an initial message to the broker gateway to make it know its PeerConnection
     peerGateway ! ForwardMessage(randomOrderMatch(), BrokerId)
-    private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch[_]]]
+    private val msg = brokerProbe.expectMsgType[ReceiveMessage[OrderMatch]]
     val peerId = msg.sender
   }
 

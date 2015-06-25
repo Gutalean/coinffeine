@@ -5,12 +5,12 @@ import scala.collection.JavaConverters._
 import akka.actor.{Actor, ActorRef}
 
 import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction, MutableTransactionOutput}
-import coinffeine.model.currency.{Bitcoin, FiatCurrency}
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 
 /** Actor that monitors a multisig deposit to inform about its destination */
-class DepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
+class DepositWatcher(exchange: DepositPendingExchange,
                      myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
                      collaborators: DepositWatcher.Collaborators) extends Actor {
@@ -37,7 +37,7 @@ class DepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
       collaborators.listener ! DepositWatcher.DepositSpent(spendTx, depositUse)
   }
 
-  private def amountForMe(tx: MutableTransaction): Bitcoin.Amount =
+  private def amountForMe(tx: MutableTransaction): BitcoinAmount =
     (for (output <- tx.getOutputs.asScala if sentToUserKey(output))
       yield Bitcoin.fromSatoshi(output.getValue.value)).sum
 
@@ -46,7 +46,7 @@ class DepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
     script.isSentToAddress && script.getToAddress(network) == userAddress
   }
 
-  private def stepWithAmount(amount: Bitcoin.Amount): Option[Int] =
+  private def stepWithAmount(amount: BitcoinAmount): Option[Int] =
     exchange.amounts.steps.zipWithIndex.reverse.collectFirst {
       case (step, index) if exchange.role.select(step.depositSplit) == amount => index + 1
     }

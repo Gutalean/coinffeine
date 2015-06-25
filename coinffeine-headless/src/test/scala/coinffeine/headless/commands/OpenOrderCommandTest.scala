@@ -37,11 +37,11 @@ class OpenOrderCommandTest extends CommandTest with Inside {
   }
 
   class CoinffeineOperationsSpy extends DummyCoinffeineOperations {
-    private var _submissions = Seq.empty[AnyCurrencyActiveOrder]
+    private var _submissions = Seq.empty[ActiveOrder]
 
-    def submissions: Seq[AnyCurrencyActiveOrder] = _submissions
+    def submissions: Seq[ActiveOrder] = _submissions
 
-    override def submitOrder[C <: FiatCurrency](request: OrderRequest[C]) = Future.successful {
+    override def submitOrder(request: OrderRequest) = Future.successful {
       synchronized {
         val order = request.create()
         _submissions :+= order

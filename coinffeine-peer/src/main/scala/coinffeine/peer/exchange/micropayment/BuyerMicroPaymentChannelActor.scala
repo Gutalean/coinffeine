@@ -19,8 +19,8 @@ import coinffeine.protocol.messages.exchange.{MicropaymentChannelClosed, StepSig
 /** This actor implements the buyer's side of the exchange. You can find more information about
   * the algorithm at https://github.com/Coinffeine/coinffeine/wiki/Exchange-algorithm
   */
-private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
-    initialChannel: MicroPaymentChannel[C],
+private class BuyerMicroPaymentChannelActor(
+    initialChannel: MicroPaymentChannel,
     constants: ProtocolConstants,
     collaborators: Collaborators,
     delegates: BuyerMicroPaymentChannelActor.Delegates)
@@ -142,7 +142,7 @@ private class BuyerMicroPaymentChannelActor[C <: FiatCurrency](
     buyer.lastCompletedStep.foreach(notifyCompletedStep)
   }
 
-  private def pay(request: PaymentProcessorActor.Pay[C]): Unit = {
+  private def pay(request: PaymentProcessorActor.Pay): Unit = {
     val payer = context.actorOf(delegates.payer())
     payer ! PayerActor.EnsurePayment(request, collaborators.paymentProcessor)
     waitingForPaymentResult = true
@@ -163,7 +163,7 @@ object BuyerMicroPaymentChannelActor {
     def payer(): Props
   }
 
-  def props(initialChannel: MicroPaymentChannel[_ <: FiatCurrency],
+  def props(initialChannel: MicroPaymentChannel,
             constants: ProtocolConstants,
             collaborators: Collaborators,
             delegates: Delegates) =

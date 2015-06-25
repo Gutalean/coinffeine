@@ -6,14 +6,14 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
 import coinffeine.peer.market.submission.SubmissionSupervisor._
 
-private[orders] class OrderPublisher[C <: FiatCurrency](submissionActor: ActorRef,
+private[orders] class OrderPublisher(submissionActor: ActorRef,
                                                         listener: OrderPublisher.Listener)
                                                        (implicit context: ActorContext) {
 
   private implicit val sender = context.self
-  private var pendingEntry: Option[OrderBookEntry[C]] = None
+  private var pendingEntry: Option[OrderBookEntry] = None
 
-  def keepPublishing(entry: OrderBookEntry[C]): Unit = {
+  def keepPublishing(entry: OrderBookEntry): Unit = {
     pendingEntry = Some(entry)
     submissionActor ! KeepSubmitting(entry)
   }

@@ -5,7 +5,6 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.util.Timeout
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment.okpay.OkPayClient.DuplicatedPayment
@@ -24,27 +23,28 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
   override def receive = waitingForWork
 
   private def waitingForWork: Receive = {
-    case payment @ EnsurePayment(request, paymentProcessor) =>
+    case payment@EnsurePayment(request, paymentProcessor) =>
       paymentProcessor ! request
       context.setReceiveTimeout(retryTimeout.duration)
       context.become(waitingPaymentResponse(sender(), payment))
   }
 
-  private def waitingPaymentResponse[C <: FiatCurrency](requester: ActorRef,
-                                                        payment: EnsurePayment[C]): Receive = {
+  private def waitingPaymentResponse(
+      requester: ActorRef,
+      payment: EnsurePayment): Receive = {
     case ReceiveTimeout =>
       log.warning("payment processor didn't respond to payment request in {}, retrying...",
         retryTimeout.duration)
       payment.paymentProcessor ! payment.request
 
-    case paid @ PaymentProcessorActor.Paid(_) =>
+    case paid@PaymentProcessorActor.Paid(_) =>
       log.debug("payment processor responded with success paid, notifying requester...")
       requester ! PaymentEnsured(paid)
       context.stop(self)
 
     case PaymentProcessorActor.PaymentFailed(_, _: DuplicatedPayment) =>
       log.warning("payment processor responded with duplicated payment error; " +
-        "retrieving the actual payment...")
+          "retrieving the actual payment...")
       payment.paymentProcessor ! PaymentProcessorActor.FindPayment(
         FindPaymentCriterion.ByInvoice(payment.request.invoice))
       context.become(retrievingPayment(requester, payment))
@@ -55,16 +55,17 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
       context.become(waitingToRetryAfterFailure(requester, payment))
   }
 
-  private def waitingToRetryAfterFailure[C <: FiatCurrency](requester: ActorRef,
-                                                            payment: EnsurePayment[C]): Receive = {
+  private def waitingToRetryAfterFailure(
+      requester: ActorRef,
+      payment: EnsurePayment): Receive = {
     case ReceiveTimeout =>
       log.info("retrying after failure...")
       payment.paymentProcessor ! payment.request
       context.become(waitingPaymentResponse(requester, payment))
   }
 
-  private def retrievingPayment[C <: FiatCurrency](
-      requester: ActorRef, payment: EnsurePayment[C]): Receive = {
+  private def retrievingPayment(
+      requester: ActorRef, payment: EnsurePayment): Receive = {
     case PaymentFound(foundPayment) =>
       requester ! PaymentEnsured(PaymentProcessorActor.Paid(foundPayment))
       context.stop(self)
@@ -90,16 +91,18 @@ object PayerActor {
   val DefaultRetryTimeout = Timeout(30.seconds)
 
   /** A message sent to the payer actor requesting it to ensure a payment is made. */
-  case class EnsurePayment[C <: FiatCurrency](
-    request: PaymentProcessorActor.Pay[C],
-    paymentProcessor: ActorRef)
+  case class EnsurePayment(
+      request: PaymentProcessorActor.Pay,
+      paymentProcessor: ActorRef)
 
   /** A response sent by payer actor after [[EnsurePayment]] indicating the payment was ensured. */
-  case class PaymentEnsured[C <: FiatCurrency](response: PaymentProcessorActor.Paid[C])
+  case class PaymentEnsured(response: PaymentProcessorActor.Paid)
 
   /** A response sent by payer actor after [[EnsurePayment]] indicating the payment couldn't be ensured. */
-  case class CannotEnsurePayment[C <: FiatCurrency](request: PaymentProcessorActor.Pay[C],
-                                                    cause: Throwable)
+  case class CannotEnsurePayment(
+      request: PaymentProcessorActor.Pay,
+      cause: Throwable)
 
-  def props(retryTimeout: Timeout = DefaultRetryTimeout): Props = Props(new PayerActor(retryTimeout))
+  def props(
+      retryTimeout: Timeout = DefaultRetryTimeout): Props = Props(new PayerActor(retryTimeout))
 }

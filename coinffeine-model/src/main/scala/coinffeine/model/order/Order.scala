@@ -6,14 +6,14 @@ import coinffeine.model.ActivityLog
 import coinffeine.model.currency._
 import coinffeine.model.exchange.{Exchange, ExchangeId, Role}
 
-trait Order[C <: FiatCurrency] {
+trait Order {
 
   def id: OrderId
   def orderType: OrderType
-  def amount: Bitcoin.Amount
-  def price: OrderPrice[C]
+  def amount: BitcoinAmount
+  def price: OrderPrice
   def inMarket: Boolean
-  def exchanges: Map[ExchangeId, Exchange[C]]
+  def exchanges: Map[ExchangeId, Exchange]
   def log: ActivityLog[OrderStatus]
   def status: OrderStatus
 
@@ -31,8 +31,8 @@ trait Order[C <: FiatCurrency] {
     *
     * @return The amount of bitcoins that have been transferred
     */
-  def bitcoinsTransferred: Bitcoin.Amount =
-    totalSum(Bitcoin.Zero)(e => role.select(e.progress.bitcoinsTransferred))
+  def bitcoinsTransferred: BitcoinAmount =
+    exchanges.values.map(e => role.select(e.progress.bitcoinsTransferred)).sum
 
   /** Retrieve the progress of this order.
     *
@@ -44,8 +44,4 @@ trait Order[C <: FiatCurrency] {
 
   /** Whether the order can be cancelled */
   def cancellable: Boolean
-
-  private def totalSum[A <: Currency](zero: CurrencyAmount[A])
-                                     (f: Exchange[C] => CurrencyAmount[A]): CurrencyAmount[A] =
-    exchanges.values.map(f).foldLeft(zero)(_ + _)
 }

@@ -12,7 +12,7 @@ import coinffeine.model.currency._
 object TransactionProcessor {
 
   def createUnsignedTransaction(inputs: Seq[MutableTransactionOutput],
-                                outputs: Seq[(PublicKey, Bitcoin.Amount)],
+                                outputs: Seq[(PublicKey, BitcoinAmount)],
                                 network: Network,
                                 lockTime: Option[Long] = None): MutableTransaction = {
     val tx = new MutableTransaction(network)

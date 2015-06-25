@@ -37,7 +37,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
           case PayerActor.EnsurePayment(req, pp) if pp == buyerPaymentProc =>
             implicit val executionContext = context.dispatcher
             AskPattern(pp, req)
-              .withImmediateReply[PaymentProcessorActor.Paid[_ <: FiatCurrency]]
+              .withImmediateReply[PaymentProcessorActor.Paid]
               .map(paid => PayerActor.PaymentEnsured(paid))
               .pipeTo(sender())
         }

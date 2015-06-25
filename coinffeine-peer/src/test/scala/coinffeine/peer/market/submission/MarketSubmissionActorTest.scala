@@ -29,7 +29,7 @@ class MarketSubmissionActorTest extends AkkaSpec {
 
   it should "discard old entries when newer ones are passed" in new Fixture {
     actor ! KeepSubmitting(entry)
-    val updatedEntry = entry.copy[Euro.type](amount = entry.amount - 0.1.BTC)
+    val updatedEntry = entry.copy(amount = entry.amount - 0.1.BTC)
     actor ! KeepSubmitting(updatedEntry)
     forwarder.expectCreation() shouldBe Seq(expectedSubmission)
     forwarder.expectStop()
@@ -49,7 +49,7 @@ class MarketSubmissionActorTest extends AkkaSpec {
   trait Fixture {
     protected val forwarder = new MockSupervisedActor
     protected val actor = system.actorOf(MarketSubmissionActor.props(
-      market, (orders: Submission[Euro.type]) => forwarder.props(orders), resubmitInterval)
+      market, (orders: Submission) => forwarder.props(orders), resubmitInterval)
     )
   }
 }

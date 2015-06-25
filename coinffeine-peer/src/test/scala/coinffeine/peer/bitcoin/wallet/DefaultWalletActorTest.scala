@@ -13,6 +13,7 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
+import coinffeine.model.currency.BitcoinBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 import coinffeine.peer.properties.bitcoin.DefaultWalletProperties
@@ -37,7 +38,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     val depositCreated = expectMsgPF() {
       case WalletActor.TransactionCreated(`request`, responseTx) => responseTx
     }
-    val value: Bitcoin.Amount = depositCreated.get.getValue(wallet.delegate)
+    val value: BitcoinAmount = depositCreated.get.getValue(wallet.delegate)
     value shouldBe (-1.BTC)
   }
 
@@ -182,14 +183,14 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
       instance = system.actorOf(DefaultWalletActor.props(wallet, persistenceId))
     }
 
-    def givenBlockedFunds(amount: Bitcoin.Amount): ExchangeId = {
+    def givenBlockedFunds(amount: BitcoinAmount): ExchangeId = {
       val fundsId = ExchangeId.random()
       instance ! WalletActor.BlockBitcoins(fundsId, amount)
       expectMsg(WalletActor.BlockedBitcoins(fundsId))
       fundsId
     }
 
-    def balancePlusOutputAmount(balance: BitcoinBalance, amount: Bitcoin.Amount) = balance.copy(
+    def balancePlusOutputAmount(balance: BitcoinBalance, amount: BitcoinAmount) = balance.copy(
       estimated = balance.estimated + amount,
       available = balance.estimated + amount,
       minOutput = Some(balance.minOutput.fold(amount) { _ min amount }))

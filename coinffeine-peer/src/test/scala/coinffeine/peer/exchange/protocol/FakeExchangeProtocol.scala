@@ -11,15 +11,15 @@ import coinffeine.model.exchange._
 
 class FakeExchangeProtocol extends ExchangeProtocol {
 
-  override def createHandshake[C <: FiatCurrency](
-      exchange: DepositPendingExchange[C],
+  override def createHandshake(
+      exchange: DepositPendingExchange,
       deposit: ImmutableTransaction) = new MockHandshake(exchange)
 
-  override def createMicroPaymentChannel[C <: FiatCurrency](exchange: RunningExchange[C]) =
+  override def createMicroPaymentChannel(exchange: RunningExchange) =
     new MockMicroPaymentChannel(exchange)
 
   override def validateDeposits(transactions: Both[ImmutableTransaction],
-                                amounts: ActiveExchange.Amounts[_ <: FiatCurrency],
+                                amounts: ActiveExchange.Amounts,
                                 requiredSignatures: Both[PublicKey],
                                 network: Network): Both[DepositValidation] =
     transactions.map {

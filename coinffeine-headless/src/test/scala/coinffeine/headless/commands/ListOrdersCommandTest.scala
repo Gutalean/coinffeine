@@ -7,7 +7,7 @@ import coinffeine.model.order._
 
 class ListOrdersCommandTest extends CommandTest {
 
-  val orderMap = new MutablePropertyMap[OrderId, AnyCurrencyOrder]()
+  val orderMap = new MutablePropertyMap[OrderId, Order]()
   val command = new ListOrdersCommand(orderMap)
 
   "The list orders command" should "print a message when no orders exist" in {

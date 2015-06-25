@@ -4,7 +4,7 @@ import java.io.InputStream
 
 import org.bitcoinj.{core, crypto}
 
-import coinffeine.model.currency.Bitcoin
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount}
 
 package object bitcoin extends Implicits {
 
@@ -22,9 +22,9 @@ package object bitcoin extends Implicits {
   type MutableTransactionOutput = core.TransactionOutput
   type MutableTransaction = core.Transaction
   object MutableTransaction {
-    val ReferenceDefaultMinTxFee: Bitcoin.Amount =
+    val ReferenceDefaultMinTxFee: BitcoinAmount =
       Bitcoin.fromSatoshi(core.Transaction.REFERENCE_DEFAULT_MIN_TX_FEE.value)
-    val MinimumNonDustAmount: Bitcoin.Amount =
+    val MinimumNonDustAmount: BitcoinAmount =
       Bitcoin.fromSatoshi(core.Transaction.MIN_NONDUST_OUTPUT.value)
   }
 
@@ -44,9 +44,9 @@ package object bitcoin extends Implicits {
   type Wallet = core.Wallet
   object Wallet {
 
-    def defaultFeePerKb: Bitcoin.Amount = core.Wallet.SendRequest.DEFAULT_FEE_PER_KB
+    def defaultFeePerKb: BitcoinAmount = core.Wallet.SendRequest.DEFAULT_FEE_PER_KB
 
-    def defaultFeePerKb_= (value: Bitcoin.Amount): Unit = {
+    def defaultFeePerKb_= (value: BitcoinAmount): Unit = {
       core.Wallet.SendRequest.DEFAULT_FEE_PER_KB = value
     }
 

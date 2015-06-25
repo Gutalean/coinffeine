@@ -1,7 +1,6 @@
 package coinffeine.peer.exchange.protocol
 
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.DepositPendingExchange
 import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, InvalidRefundTransaction}
 
@@ -9,8 +8,8 @@ import coinffeine.peer.exchange.protocol.Handshake.{InvalidRefundSignature, Inva
   *
   * @param exchange       Info about the exchange being mocked
   */
-class MockHandshake[C <: FiatCurrency](override val exchange: DepositPendingExchange[C])
-  extends Handshake[C] {
+class MockHandshake(override val exchange: DepositPendingExchange)
+  extends Handshake {
 
   override val myDeposit = dummyImmutableTransaction(1)
   override val myUnsignedRefund = dummyImmutableTransaction(2)

@@ -11,12 +11,11 @@ import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, Wall
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.currency.{Euro, FiatBalance}
+import coinffeine.model.currency.Euro
+import coinffeine.model.currency.FiatBalance
 import coinffeine.peer.api.CoinffeineApp
 
 class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) extends PropertyBindings {
-
-  type EuroBalance = FiatBalance[Euro.type]
 
   import coinffeine.gui.util.FxExecutor.asContext
   import ApplicationProperties._
@@ -27,10 +26,9 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
 
   val wallet = new WalletProperties(app.wallet)
 
-  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[EuroBalance]] =
-    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Euro) {
-      _.asInstanceOf[EuroBalance]
-    }
+  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] =
+    // TODO: simplify?
+    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Euro)(identity)
 
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus

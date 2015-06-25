@@ -7,7 +7,7 @@ import scalafx.scene.layout.{HBox, StackPane, VBox}
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.scene.styles.NodeStyles
-import coinffeine.model.exchange.{AnyExchange, Exchange}
+import coinffeine.model.exchange.Exchange
 import coinffeine.model.order._
 
 /** Interactively shows the status of an order if you bind the {{{status}}} property. */
@@ -77,7 +77,7 @@ object OrderStatusWidget {
   }
 
   object Status {
-    def fromOrder(order: AnyCurrencyOrder): Status =
+    def fromOrder(order: Order): Status =
       order.status match {
         case OrderStatus.NotStarted => submittingStatus(order)
         case OrderStatus.InProgress if !hasActiveExchanges(order) => submittingStatus(order)
@@ -88,19 +88,19 @@ object OrderStatusWidget {
         case OrderStatus.Completed | OrderStatus.Cancelled => Completed
       }
 
-    private def hasActiveExchanges(order: AnyCurrencyOrder) =
+    private def hasActiveExchanges(order: Order) =
       activeExchanges(order).nonEmpty
 
-    private def activeExchanges(order: AnyCurrencyOrder) =
+    private def activeExchanges(order: Order) =
       order.exchanges.values.filterNot(_.isCompleted)
 
-    private def submittingStatus(order: AnyCurrencyOrder) =
+    private def submittingStatus(order: Order) =
       if (!order.inMarket) Submitting else InMarket
 
-    private def isWaitingForConfirmation(exchange: AnyExchange): Boolean =
+    private def isWaitingForConfirmation(exchange: Exchange): Boolean =
       exchange.exchangedBitcoin.buyer == exchange.progress.bitcoinsTransferred.buyer
 
-    private def isInProgress(exchange: Exchange[_]): Boolean =
+    private def isInProgress(exchange: Exchange): Boolean =
       !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
   }
 

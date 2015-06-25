@@ -25,25 +25,25 @@ class BrokerLoadTest extends Simulation {
   )
 
   val coinffeineConf = coinffeineProtocol
-    .brokerEndpoint("dev.coinffeine.com", 9009)
+      .brokerEndpoint("dev.coinffeine.com", 9009)
 
   val requestOpenOrders = exec(ask("RequestOpenOrders")
-    .message(OpenOrdersRequest(market))
-    .response { case _: OpenOrders[_] => })
+      .message(OpenOrdersRequest(market))
+      .response { case _: OpenOrders => })
 
   val putMyOrders = exec(putOrders("PutMyOrders")
-    .orderBookEntries(orderBookEntries))
+      .orderBookEntries(orderBookEntries))
 
   val standbyPeer = repeat(20) {
     exec(requestOpenOrders)
-    .pause(5)
-    .exec(putMyOrders)
-    .pause(5)
+        .pause(5)
+        .exec(putMyOrders)
+        .pause(5)
   }
 
   val scn = scenario("StandbyPeer")
-    .exec(standbyPeer)
+      .exec(standbyPeer)
 
   setUp(scn.inject(constantUsersPerSec(2) during (25 seconds)))
-    .protocols(coinffeineConf)
+      .protocols(coinffeineConf)
 }

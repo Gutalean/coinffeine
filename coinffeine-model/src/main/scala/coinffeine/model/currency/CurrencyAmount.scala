@@ -1,113 +1,69 @@
 package coinffeine.model.currency
 
-import scala.math.BigDecimal.RoundingMode
+trait CurrencyAmount[Self <: CurrencyAmount[Self]] extends Ordered[Self] { this: Self =>
 
-/** An finite amount of currency C.
-  *
-  * This trait is used to grant polymorphism to currency amounts. You may combine it with a type
-  * parameter in any function in order to accept generic currency amounts, as in:
-  * {{{
-  *   def myFunction[C <: Currency](amount: CurrencyAmount[C]): Unit { ... }
-  * }}}
-  *
-  * @param units     Number of indivisible units on this currency amount
-  * @param currency  Currency this amount is of
-  * @tparam C The type of currency this amount is represented in
-  */
-case class CurrencyAmount[C <: Currency](units: Long, currency: C)
-  extends Ordered[CurrencyAmount[C]] {
   require(currency.isValidAmount(value), s"Invalid amount for $currency: $value")
 
-  lazy val value: BigDecimal = BigDecimal(units) / currency.UnitsInOne
+  val units: Long
 
-  def +(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units + other.units)
-  def -(other: CurrencyAmount[C]): CurrencyAmount[C] = copy(units = units - other.units)
-  def *(mult: Long): CurrencyAmount[C] = copy(units = units * mult)
-  def *(mult: BigDecimal): CurrencyAmount[C] = CurrencyAmount.exactAmount(value * mult, currency)
-  def /(divisor: Long): CurrencyAmount[C] = {
+  val currency: Currency
+
+  lazy val value: BigDecimal = BigDecimal(units) / currency.unitsInOne
+
+  def +(other: Self): Self = binaryOperation(other)(_ + _)
+
+  def -(other: Self): Self = binaryOperation(other)(_ - _)
+
+  def *(mult: Long): Self = fromUnits(units * mult)
+
+  def *(mult: BigDecimal): Self = fromExactValue(value * mult)
+
+  def /(divisor: Long): Self = {
     require(units % divisor == 0, "Division with remainder")
-    copy(units = units / divisor)
+    fromUnits(units / divisor)
   }
-  def /%(other: CurrencyAmount[C]): (Long, CurrencyAmount[C]) =
-    (units / other.units, copy(units % other.units))
-  def unary_- : CurrencyAmount[C] = copy(units = -units)
 
-  def min(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    if (this.units <= that.units) this else that
-  def max(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    if (this.units >= that.units) this else that
-  def averageWith(that: CurrencyAmount[C]): CurrencyAmount[C] =
-    CurrencyAmount((this.units + that.units) / 2, currency)
+  def /%(other: Self): (Long, Self) = (units / other.units, binaryOperation(other)(_ % _))
+
+  def unary_- : Self = fromUnits(-units)
+
+  def min(other: Self): Self = {
+    requireSameCurrency(other)
+    if (this.units <= other.units) this else other
+  }
+
+  def max(other: Self): Self = {
+    requireSameCurrency(other)
+    if (this.units >= other.units) this else other
+  }
+
+  def averageWith(other: Self): Self = binaryOperation(other) { (left, right) =>
+    (left + right) / 2
+  }
 
   val isPositive = units > 0
   val isNegative = units < 0
 
-  /** Convert this amount to an integer number of the minimum indivisible units. This means
-    * cents for Euro/Dollar and Satoshis for Bitcoin. */
-  def toIndivisibleUnits: BigInt =
-    (value / CurrencyAmount.smallestAmount(currency).value).toBigInt()
-
-  override def compare(other: CurrencyAmount[C]): Int = {
-    require(currency == other.currency)
+  override def compare(other: Self): Int = {
+    requireSameCurrency(other)
     units.compareTo(other.units)
   }
 
-  def format(symbolPos: Currency.SymbolPosition): String = CurrencyAmount.format(this, symbolPos)
+  def format(symbolPos: Currency.SymbolPosition): String =
+    CurrencyAmountFormatter.format(this, symbolPos)
 
-  def format: String = CurrencyAmount.format(this)
+  override def toString = CurrencyAmountFormatter.format(this)
 
-  override def toString = format
+  protected def fromUnits(units: Long): Self
 
-  def numeric: Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]] =
-    currency.numeric.asInstanceOf[Integral[CurrencyAmount[C]] with Ordering[CurrencyAmount[C]]]
-}
+  protected def fromExactValue(value: BigDecimal): Self
 
-object CurrencyAmount {
-  def zero[C <: Currency](currency: C): CurrencyAmount[C] = CurrencyAmount(0, currency)
-
-  def smallestAmount[C <: Currency](currency: C) = CurrencyAmount(1, currency)
-
-  def fromIndivisibleUnits[C <: Currency](units: Long, currency: C): CurrencyAmount[C] =
-    CurrencyAmount(units, currency)
-
-  def closestAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
-    toAmount(value, currency, RoundingMode.HALF_EVEN)
-
-  @throws[ArithmeticException]("when the amount exceeds currency precision")
-  def exactAmount[C <: Currency](value: BigDecimal, currency: C): CurrencyAmount[C] =
-    toAmount(value, currency, RoundingMode.UNNECESSARY)
-
-  private def toAmount[C <: Currency](value: BigDecimal,
-                                      currency: C,
-                                      roundingMode: RoundingMode.Value): CurrencyAmount[C] = {
-    val units = value.setScale(currency.precision, roundingMode) * currency.UnitsInOne
-    CurrencyAmount(units.toLong, currency)
+  private def binaryOperation(other: Self)(op: (Long, Long) => Long): Self = {
+    requireSameCurrency(other)
+    fromUnits(op(units, other.units))
   }
 
-  def format[C <: Currency](amount: CurrencyAmount[C],
-                            symbolPos: Currency.SymbolPosition): String = {
-    val currency = amount.currency
-    val units = amount.units
-    val numbers = s"%s%d.%0${currency.precision}d".format(
-      if (units < 0) "-" else "", units.abs / currency.UnitsInOne, units.abs % currency.UnitsInOne)
-    addSymbol(numbers, symbolPos, currency)
-  }
-
-  def format[C <: Currency](amount: CurrencyAmount[C]): String =
-    format(amount, amount.currency.preferredSymbolPosition)
-
-  def formatMissing[C <: Currency](currency: C, symbolPos: Currency.SymbolPosition): String = {
-    val amount = "_." + "_" * currency.precision
-    addSymbol(amount, symbolPos, currency)
-  }
-
-  def formatMissing[C <: Currency](currency: C): String =
-    formatMissing(currency, currency.preferredSymbolPosition)
-
-  private def addSymbol[C <: Currency](
-      amount: String, symbolPos: Currency.SymbolPosition, currency: C): String = symbolPos match {
-    case Currency.SymbolPrefixed => s"${currency.symbol}$amount"
-    case Currency.SymbolSuffixed => s"$amount${currency.symbol}"
-    case Currency.NoSymbol => amount
+  private def requireSameCurrency(other: Self): Unit = {
+    require(currency == other.currency, s"Cannot operate $currency with ${other.currency}")
   }
 }

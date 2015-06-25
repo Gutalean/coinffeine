@@ -8,10 +8,10 @@ import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 
-class MockMicroPaymentChannel[C <: FiatCurrency] private (
-     override val exchange: RunningExchange[C],  step: Step) extends MicroPaymentChannel[C] {
+class MockMicroPaymentChannel private (
+     override val exchange: RunningExchange,  step: Step) extends MicroPaymentChannel {
 
-  def this(exchange: RunningExchange[C]) =
+  def this(exchange: RunningExchange) =
     this(exchange, IntermediateStep(1, exchange.amounts.breakdown))
 
   override val currentStep = step

@@ -6,14 +6,13 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.TransactionSignature
-import coinffeine.model.currency._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.peer.exchange.test.CoinffeineClientTest
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
 
 abstract class BuyerMicroPaymentChannelActorTest extends CoinffeineClientTest("buyerExchange")
-  with BuyerPerspective with ProgressExpectations[Euro.type] {
+  with BuyerPerspective with ProgressExpectations {
 
   def protocolConstants = ProtocolConstants.Default
   val listener, paymentProcessor = TestProbe()

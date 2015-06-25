@@ -21,7 +21,7 @@ class SubmissionTest extends UnitTest {
   }
 
   it should "replace older versions of entries" in {
-    val updatedEntry = orderBookEntry.copy[Euro.type](amount = 9.BTC)
+    val updatedEntry = orderBookEntry.copy(amount = 9.BTC)
     Submission.empty(market)
       .addEntry(requester, orderBookEntry)
       .addEntry(requester, updatedEntry)

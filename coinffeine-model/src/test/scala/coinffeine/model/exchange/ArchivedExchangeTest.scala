@@ -17,7 +17,7 @@ class ArchivedExchangeTest extends UnitTest {
         counterpartId = PeerId.random(),
         lockTime = 12345000,
         log = ActivityLog.empty,
-        progress = Exchange.noProgress(Euro)
+        progress = Exchange.noProgress
       )
     }
   }

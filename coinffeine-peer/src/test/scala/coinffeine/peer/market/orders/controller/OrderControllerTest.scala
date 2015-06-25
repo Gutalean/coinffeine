@@ -117,16 +117,16 @@ class OrderControllerTest extends UnitTest with Inside with SampleExchange {
 
   trait Fixture {
     protected val amountsCalculator = new DefaultAmountsCalculator()
-    protected val listener = new MockOrderControllerListener[Euro.type]
-    protected val order = new OrderController[Euro.type](
+    protected val listener = new MockOrderControllerListener
+    protected val order = new OrderController(
       peerIds.buyer, amountsCalculator, CoinffeineUnitTestNetwork, initialOrder)
     order.addListener(listener)
 
-    protected def complete(exchange: Exchange[Euro.type]): SuccessfulExchange[Euro.type] =
+    protected def complete(exchange: Exchange): SuccessfulExchange =
       exchange match {
-        case runningExchange: RunningExchange[Euro.type] =>
+        case runningExchange: RunningExchange =>
           runningExchange.complete(runningExchange.log.mostRecent.get.timestamp.plusMinutes(10))
-        case notStarted: HandshakingExchange[Euro.type] =>
+        case notStarted: HandshakingExchange =>
           val createdOn = notStarted.metadata.createdOn
           notStarted.handshake(participants.buyer, participants.seller, createdOn.plusSeconds(5))
             .startExchanging(FakeExchangeProtocol.DummyDeposits, createdOn.plusMinutes(10))

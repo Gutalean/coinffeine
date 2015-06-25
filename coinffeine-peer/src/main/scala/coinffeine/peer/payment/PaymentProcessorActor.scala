@@ -11,12 +11,6 @@ import coinffeine.model.payment.PaymentProcessor._
 
 object PaymentProcessorActor {
 
-  /** A message sent to the payment processor in order to identify the user account. */
-  case object RetrieveAccountId
-
-  /** A message sent by the payment processor identifying the account id. */
-  case class RetrievedAccountId(id: AccountId)
-
   /** A message sent to the payment processor to reserve some funds for an exchange.
     * Availability will be notified via [[AvailableFunds]] and [[UnavailableFunds]] messages on the
     * event stream.
@@ -55,31 +49,33 @@ object PaymentProcessorActor {
     * @param to        The ID of the receiver account
     * @param amount    The amount of fiat currency to pay
     * @param comment   The comment to be attached to the payment
-    * @tparam C        The fiat currency of the payment amount
     */
-  case class Pay[C <: FiatCurrency](fundsId: ExchangeId,
-                                    to: AccountId,
-                                    amount: CurrencyAmount[C],
-                                    comment: String,
-                                    invoice: Invoice)
+  case class Pay(
+      fundsId: ExchangeId,
+      to: AccountId,
+      amount: FiatAmount,
+      comment: String,
+      invoice: Invoice)
 
   /** A message sent by the payment processor in order to notify of a successful payment. */
-  case class Paid[C <: FiatCurrency](payment: Payment[C])
+  case class Paid(payment: Payment)
 
   /** A message sent by the payment processor to notify a payment failure.
     *
     * @param request The original pay message that cannot be processed.
     * @param error The error that prevented the request to be processed
-    * @tparam C The fiat currency of the payment amount
     */
-  case class PaymentFailed[C <: FiatCurrency](request: Pay[C], error: Throwable)
+  case class PaymentFailed(request: Pay, error: Throwable)
 
   /** A criterion to find a payment. */
   sealed trait FindPaymentCriterion
 
   object FindPaymentCriterion {
+
     case class ById(id: PaymentId) extends FindPaymentCriterion
+
     case class ByInvoice(invoice: Invoice) extends FindPaymentCriterion
+
   }
 
   /** A message sent to the payment processor in order to find a payment. */
@@ -88,34 +84,35 @@ object PaymentProcessorActor {
   sealed trait FindPaymentResponse
 
   /** A message sent by the payment processor to notify a found payment. */
-  case class PaymentFound(payment: Payment[_ <: FiatCurrency]) extends FindPaymentResponse
+  case class PaymentFound(payment: Payment) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify a not found payment. */
   case class PaymentNotFound(criterion: FindPaymentCriterion) extends FindPaymentResponse
 
   /** A message sent by the payment processor to notify an error while finding a payment. */
-  case class FindPaymentFailed(criterion: FindPaymentCriterion,
-                               error: Throwable) extends FindPaymentResponse
+  case class FindPaymentFailed(
+      criterion: FindPaymentCriterion,
+      error: Throwable) extends FindPaymentResponse
 
   /** A message sent to the payment processor to retrieve the current balance
     * in the given currency.
     * */
-  case class RetrieveBalance[C <: FiatCurrency](currency: C)
+  case class RetrieveBalance(currency: FiatCurrency)
 
   sealed trait RetrieveBalanceResponse
 
   /** A message sent by the payment processor reporting the current balance in the
     * given currency.
     * */
-  case class BalanceRetrieved[C <: FiatCurrency](
-    balance: CurrencyAmount[C],
-    blockedFunds: CurrencyAmount[C]) extends RetrieveBalanceResponse
+  case class BalanceRetrieved(
+      balance: FiatAmount,
+      blockedFunds: FiatAmount) extends RetrieveBalanceResponse
 
   /** A message sent by the payment processor reporting that the current balance in the
     * given currency cannot be retrieved.
     */
-  case class BalanceRetrievalFailed[C <: FiatCurrency](currency: C, error: Throwable)
-    extends RetrieveBalanceResponse
+  case class BalanceRetrievalFailed(currency: FiatCurrency, error: Throwable)
+      extends RetrieveBalanceResponse
 
   /** Payment processor requests should be considered to have failed after this period */
   val RequestTimeout = Timeout(5.seconds)

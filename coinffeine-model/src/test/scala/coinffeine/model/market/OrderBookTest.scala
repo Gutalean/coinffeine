@@ -16,9 +16,7 @@ class OrderBookTest extends UnitTest with OptionValues {
   def ask(btc: BigDecimal, eur: BigDecimal, by: String, orderId: String = "1") =
     Position.limitAsk(btc.BTC, Price(eur, Euro), PositionId(PeerId.hashOf(by), OrderId(orderId)))
 
-  def cross(bid: Position[Bid.type, Euro.type],
-            ask: Position[Ask.type, Euro.type],
-            amount: Bitcoin.Amount) = {
+  def cross(bid: Position[Bid.type], ask: Position[Ask.type], amount: BitcoinAmount) = {
     val averagePrice = bid.price.toOption.get.averageWith(ask.price.toOption.get)
     Cross(
       Both.fill(amount),
@@ -108,8 +106,8 @@ class OrderBookTest extends UnitTest with OptionValues {
     shouldIgnorePositionChange(entry, entry.copy(price = LimitPrice(originalPrice.scaleBy(2))))
   }
 
-  private def shouldIgnorePositionChange(originalEntry: OrderBookEntry[Euro.type],
-                                         modifiedEntry: OrderBookEntry[Euro.type]): Unit = {
+  private def shouldIgnorePositionChange(
+      originalEntry: OrderBookEntry, modifiedEntry: OrderBookEntry): Unit = {
     val originalBook = emptyBook.updateUserPositions(Seq(originalEntry), user)
     originalBook.updateUserPositions(Seq(modifiedEntry), user) shouldBe originalBook
   }

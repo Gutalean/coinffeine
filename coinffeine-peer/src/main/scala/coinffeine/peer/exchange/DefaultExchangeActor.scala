@@ -8,11 +8,11 @@ import org.joda.time.DateTime
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.bitcoin.wallet.WalletActor
+import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.TransactionBroadcaster
@@ -23,9 +23,9 @@ import coinffeine.peer.exchange.protocol._
 import coinffeine.peer.exchange.protocol.impl.DefaultExchangeProtocol
 import coinffeine.peer.payment.PaymentProcessorActor
 
-class DefaultExchangeActor[C <: FiatCurrency](
+class DefaultExchangeActor(
     exchangeProtocol: ExchangeProtocol,
-    exchange: HandshakingExchange[C],
+    exchange: HandshakingExchange,
     peerInfoLookup: PeerInfoLookup,
     delegates: DefaultExchangeActor.Delegates,
     collaborators: ExchangeActor.Collaborators) extends PersistentActor with ActorLogging {
@@ -96,7 +96,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
   private def inHandshake(user: Exchange.PeerInfo): Receive = {
     case HandshakeSuccess(rawExchange, commitments, refundTx, committedOn)
       if rawExchange.currency == exchange.currency =>
-      val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange[C]]
+      val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange]
       spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
       spawnBroadcaster(refundTx)
       val validationResult = exchangeProtocol.validateDeposits(
@@ -139,7 +139,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     context.watch(txBroadcasterRef.get)
   }
 
-  private def spawnDepositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
+  private def spawnDepositWatcher(exchange: DepositPendingExchange,
                                   deposit: ImmutableTransaction,
                                   refundTx: ImmutableTransaction): Unit = {
     context.actorOf(delegates.depositWatcher(exchange, deposit, refundTx), "depositWatcher")
@@ -147,7 +147,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
                                        commitmentsConfirmedOn: DateTime,
-                                       handshakingExchange: DepositPendingExchange[C]): Unit = {
+                                       handshakingExchange: DepositPendingExchange): Unit = {
     val runningExchange = handshakingExchange.startExchanging(commitments, commitmentsConfirmedOn)
     val channel = exchangeProtocol.createMicroPaymentChannel(runningExchange)
     val resultListeners = Set(self, txBroadcasterRef.get)
@@ -157,7 +157,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
     context.become(inMicropaymentChannel(runningExchange))
   }
 
-  private def inMicropaymentChannel(runningExchange: RunningExchange[C]): Receive = {
+  private def inMicropaymentChannel(runningExchange: RunningExchange): Receive = {
     case MicroPaymentChannelActor.ChannelSuccess(successTx) =>
       log.info("Finishing exchange '{}' successfully", exchange.id)
       txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
@@ -175,18 +175,18 @@ class DefaultExchangeActor[C <: FiatCurrency](
     case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx, DateTime.now())))
 
-    case update @ ExchangeUpdate(updatedRunningExchange: RunningExchange[C]) =>
+    case update @ ExchangeUpdate(updatedRunningExchange: RunningExchange) =>
       collaborators.listener ! update
       context.become(inMicropaymentChannel(updatedRunningExchange))
   }
 
-  private def startAbortion(abortingExchange: AbortingExchange[C]): Unit = {
+  private def startAbortion(abortingExchange: AbortingExchange): Unit = {
     log.warning("Exchange {}: starting abortion", exchange.id)
     txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
     context.become(aborting(abortingExchange))
   }
 
-  private def aborting(abortingExchange: AbortingExchange[C]): Receive = {
+  private def aborting(abortingExchange: AbortingExchange): Receive = {
     case DepositSpent(tx, DepositRefund | ChannelAtStep(_)) =>
       finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
 
@@ -200,7 +200,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
       finishWith(ExchangeFailure(abortingExchange.failedToBroadcast(DateTime.now())))
   }
 
-  private def failingAtStep(runningExchange: RunningExchange[C], step: Int): Receive = {
+  private def failingAtStep(runningExchange: RunningExchange, step: Int): Receive = {
     case DepositSpent(tx, destination) =>
       val expectedDestination = ChannelAtStep(step)
       if (destination != expectedDestination) {
@@ -215,7 +215,7 @@ class DefaultExchangeActor[C <: FiatCurrency](
         runningExchange.stepFailure(step, transaction = None, timestamp = DateTime.now())))
   }
 
-  private def waitingForFinalTransaction(runningExchange: RunningExchange[C],
+  private def waitingForFinalTransaction(runningExchange: RunningExchange,
                                          expectedLastTx: Option[ImmutableTransaction]): Receive = {
 
     case DepositSpent(_, CompletedChannel) =>
@@ -257,18 +257,18 @@ object DefaultExchangeActor {
 
   trait Delegates {
     def handshake(user: Exchange.PeerInfo, timestamp: DateTime, listener: ActorRef): Props
-    def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
+    def micropaymentChannel(channel: MicroPaymentChannel,
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
-    def depositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
+    def depositWatcher(exchange: DepositPendingExchange,
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
   }
 
   trait Component extends ExchangeActor.Component {
-    this: ProtocolConstants.Component =>
+    this: ProtocolConstants.Component with ConfigComponent =>
 
-    override def exchangeActorProps(exchange: HandshakingExchange[_ <: FiatCurrency],
+    override def exchangeActorProps(exchange: HandshakingExchange,
                                     collaborators: ExchangeActor.Collaborators) = {
       import collaborators._
 
@@ -287,7 +287,7 @@ object DefaultExchangeActor {
           HandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
 
-        def micropaymentChannel(channel: MicroPaymentChannel[_ <: FiatCurrency],
+        def micropaymentChannel(channel: MicroPaymentChannel,
                                 resultListeners: Set[ActorRef]): Props = exchange.role match {
           case BuyerRole => BuyerMicroPaymentChannelActor.props(channel, protocolConstants,
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners),
@@ -298,14 +298,14 @@ object DefaultExchangeActor {
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners))
         }
 
-        def depositWatcher(exchange: DepositPendingExchange[_ <: FiatCurrency],
+        def depositWatcher(exchange: DepositPendingExchange,
                            deposit: ImmutableTransaction,
                            refundTx: ImmutableTransaction)(implicit context: ActorContext) =
           Props(new DepositWatcher(exchange, deposit, refundTx,
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
-      val lookup = new DefaultPeerInfoLookup(wallet, paymentProcessor)
+      val lookup = new PeerInfoLookupImpl(wallet, configProvider.okPaySettings)
 
       Props(new DefaultExchangeActor(DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }

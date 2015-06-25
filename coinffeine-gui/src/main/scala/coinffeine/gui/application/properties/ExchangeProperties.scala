@@ -3,13 +3,13 @@ package coinffeine.gui.application.properties
 import scalafx.beans.property._
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.model.currency.Bitcoin
-import coinffeine.model.exchange.{AnyExchange, ExchangeId}
-import coinffeine.model.order.{AnyPrice, Price}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.exchange.{Exchange, ExchangeId}
+import coinffeine.model.order.Price
 
-class ExchangeProperties(exchange: AnyExchange) {
+class ExchangeProperties(exchange: Exchange) {
 
-  val exchangeSourceProperty: ObjectProperty[AnyExchange] =
+  val exchangeSourceProperty: ObjectProperty[Exchange] =
     new ObjectProperty(this, "source", exchange)
 
   val exchangeIdProperty: ObjectProperty[ExchangeId] =
@@ -27,7 +27,7 @@ class ExchangeProperties(exchange: AnyExchange) {
   val isCancellable: ReadOnlyBooleanProperty =
     new BooleanProperty(this, "isCancellable", false)
 
-  val amountProperty: ReadOnlyObjectProperty[Bitcoin.Amount] =
+  val amountProperty: ReadOnlyObjectProperty[BitcoinAmount] =
     new ObjectProperty(this, "amount", exchange.role.select(exchange.exchangedBitcoin))
 
   val statusProperty: ReadOnlyStringProperty =
@@ -35,7 +35,7 @@ class ExchangeProperties(exchange: AnyExchange) {
 
   val progressProperty: ReadOnlyDoubleProperty = exchangeProgressProperty
 
-  val priceProperty: ReadOnlyObjectProperty[AnyPrice] =
+  val priceProperty: ReadOnlyObjectProperty[Price] =
     new ObjectProperty(this, "price", Price.whenExchanging(
       exchange.role.select(exchange.exchangedBitcoin),
       exchange.role.select(exchange.exchangedFiat)))
@@ -43,11 +43,11 @@ class ExchangeProperties(exchange: AnyExchange) {
   val operationTypeProperty: ReadOnlyStringProperty =
     new StringProperty(this, "opType", "Exchange")
 
-  def updateProgress(exchange: AnyExchange): Unit = {
+  def updateProgress(exchange: Exchange): Unit = {
     exchangeProgressProperty.value = progressOf(exchange)
   }
 
-  private def progressOf(exchange: AnyExchange): Double = {
+  private def progressOf(exchange: Exchange): Double = {
     val done = exchange.role.select(exchange.progress.bitcoinsTransferred).value
     val total = exchange.role.select(exchange.exchangedBitcoin).value
     (done / total).toDouble

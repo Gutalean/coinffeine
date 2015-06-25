@@ -30,7 +30,7 @@ class SelfCrossValidationTest extends UnitTest with Inside {
   }
 
   private trait Fixture {
-    val orders = new MutablePropertyMap[OrderId, AnyCurrencyOrder]
+    val orders = new MutablePropertyMap[OrderId, Order]
     val existingOrder = ActiveOrder.randomLimit(Bid, 1.BTC, Price(200.EUR))
     orders.set(existingOrder.id, existingOrder)
     val instance = new SelfCrossValidation(orders)

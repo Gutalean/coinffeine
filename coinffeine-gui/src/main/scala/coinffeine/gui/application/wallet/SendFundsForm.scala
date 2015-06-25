@@ -13,6 +13,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
 import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address, WalletProperties}
 import coinffeine.model.currency._
+import coinffeine.model.currency.BitcoinBalance
 
 class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator) {
 
@@ -22,7 +23,7 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
 
   private val txFee = s"${feeCalculator.defaultTransactionFee.value}BTC"
 
-  private val amount = new ObjectProperty[Bitcoin.Amount](this, "amount", 0.BTC)
+  private val amount = new ObjectProperty[BitcoinAmount](this, "amount", 0.BTC)
   private val address = new ObjectProperty[Option[Address]](this, "address", None)
   private val submit = new BooleanProperty(this, "submit", false)
 
@@ -127,5 +128,5 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
 object SendFundsForm {
   sealed trait Result
   case object CancelSend extends Result
-  case class Send(amount: Bitcoin.Amount, to: Address) extends Result
+  case class Send(amount: BitcoinAmount, to: Address) extends Result
 }

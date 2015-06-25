@@ -13,7 +13,7 @@ import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, Interme
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.messages.exchange.{PaymentProof, StepSignatures}
 
-class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) extends LazyLogging {
+class BuyerChannel(initialChannel: MicroPaymentChannel) extends LazyLogging {
   private var channel = initialChannel
   private var _lastOffer: Option[ImmutableTransaction] = None
   private var _lastPaymentProof: Option[PaymentProof] = None
@@ -45,7 +45,7 @@ class BuyerChannel[C <: FiatCurrency](initialChannel: MicroPaymentChannel[C]) ex
     _lastCompletedStep = Some(channel.currentStep)
   }
 
-  def paymentRequest: Option[PaymentProcessorActor.Pay[C]] = channel.currentStep match {
+  def paymentRequest: Option[PaymentProcessorActor.Pay] = channel.currentStep match {
     case _: FinalStep => None
     case step: IntermediateStep =>
       Some(PaymentProcessorActor.Pay(

@@ -5,8 +5,8 @@ import org.joda.time.DateTime
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Progress
 
-case class SuccessfulExchange[C <: FiatCurrency](prev: RunningExchange[C], timestamp: DateTime)
-  extends AfterHandshakeExchange[C] with CompletedExchange[C] {
+case class SuccessfulExchange(prev: RunningExchange, timestamp: DateTime)
+  extends AfterHandshakeExchange with CompletedExchange {
 
   override val status = ExchangeStatus.Successful
   override val metadata = prev.metadata

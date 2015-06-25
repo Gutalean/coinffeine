@@ -81,7 +81,7 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
       case m: QuoteRequest =>
         builder.setQuoteRequest(ProtoMapping.toProtobuf(m)).success
       case m @ Quote(_, _, _) =>
-        builder.setQuote(ProtoMapping.toProtobuf[Quote[_ <: FiatCurrency], proto.Quote](m)).success
+        builder.setQuote(ProtoMapping.toProtobuf[Quote, proto.Quote](m)).success
       case m: ExchangeRejection =>
         builder.setExchangeRejection(ProtoMapping.toProtobuf(m)).success
       case m: PeerHandshake =>
@@ -100,10 +100,10 @@ class ProtobufProtocolSerialization(transactionSerialization: TransactionSeriali
         builder.setOpenOrderRequest(ProtoMapping.toProtobuf(m)).success
       case m @ OpenOrders(_) =>
         builder.setOpenOrders(
-          ProtoMapping.toProtobuf[OpenOrders[_ <: FiatCurrency], proto.OpenOrders](m)).success
+          ProtoMapping.toProtobuf[OpenOrders, proto.OpenOrders](m)).success
       case m @ PeerPositions(_, _, _) =>
         builder.setPeerPositions(
-          ProtoMapping.toProtobuf[PeerPositions[_ <: FiatCurrency], proto.PeerPositions](m)).success
+          ProtoMapping.toProtobuf[PeerPositions, proto.PeerPositions](m)).success
       case m: PeerPositionsReceived =>
         builder.setPeerPositionsReceived(ProtoMapping.toProtobuf(m)).success
       case _ => UnsupportedMessageClass(message.getClass).failure

@@ -34,7 +34,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   def withFees[A](body: => A) = {
     Wallet.defaultFeePerKb = MutableTransaction.ReferenceDefaultMinTxFee
     val result = Try(body)
-    Wallet.defaultFeePerKb = Bitcoin.Zero
+    Wallet.defaultFeePerKb = Bitcoin.zero
     result.get
   }
 
@@ -51,21 +51,21 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  def createWallet(key: KeyPair, amount: Bitcoin.Amount): Wallet = {
+  def createWallet(key: KeyPair, amount: BitcoinAmount): Wallet = {
     val wallet = createWallet(key)
     sendMoneyToWallet(wallet, amount)
     wallet
   }
 
   /** Create a wallet and mine bitcoins into it until getting at least `amount` in its balance. */
-  def createWallet(amount: Bitcoin.Amount): Wallet = {
+  def createWallet(amount: BitcoinAmount): Wallet = {
     val wallet = createWallet()
     sendMoneyToWallet(wallet, amount)
     wallet
   }
 
   /** Mine bitcoins into a wallet until having a minimum amount. */
-  def sendMoneyToWallet(wallet: Wallet, amount: Bitcoin.Amount): Unit = {
+  def sendMoneyToWallet(wallet: Wallet, amount: BitcoinAmount): Unit = {
     val miner = new KeyPair
     val minerWallet = createWallet(miner)
     while (
@@ -151,7 +151,7 @@ trait BitcoinjTest extends UnitTest with CoinffeineUnitTestNetwork.Component {
   private def startBitcoinj(): Unit = {
     BitcoinjTest.ExecutionLock.lock()
     BriefLogFormatter.init()
-    Wallet.defaultFeePerKb = Bitcoin.Zero
+    Wallet.defaultFeePerKb = Bitcoin.zero
     createH2BlockStore()
     chain = new FullPrunedBlockChain(network, blockStore)
   }
