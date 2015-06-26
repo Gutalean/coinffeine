@@ -5,7 +5,7 @@ import coinffeine.model.currency._
 trait Balance[A <: CurrencyAmount[A]] {
   def amount: A
 
-  def hasExpired: Boolean
+  def status: CacheStatus
 }
 
 case class BitcoinBalance(
@@ -13,7 +13,7 @@ case class BitcoinBalance(
     available: BitcoinAmount,
     minOutput: Option[BitcoinAmount],
     blocked: BitcoinAmount = Bitcoin.zero,
-    hasExpired: Boolean = false) extends Balance[BitcoinAmount] {
+    status: CacheStatus = CacheStatus.Fresh) extends Balance[BitcoinAmount] {
 
   val amount = estimated
 }
@@ -28,5 +28,5 @@ object BitcoinBalance {
 
 case class FiatBalance(
     amount: FiatAmount,
-    hasExpired: Boolean = false) extends Balance[FiatAmount]
+    status: CacheStatus = CacheStatus.Fresh) extends Balance[FiatAmount]
 

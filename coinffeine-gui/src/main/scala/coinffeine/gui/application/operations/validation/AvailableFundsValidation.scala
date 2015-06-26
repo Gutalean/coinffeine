@@ -21,10 +21,10 @@ private class AvailableFundsValidation(
       currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request, spread)
 
   private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] =
-    fiatBalance.get(currency).filterNot(_.hasExpired).map(_.amount)
+    fiatBalance.get(currency).filter(_.status.isFresh).map(_.amount)
 
   private def currentAvailableBitcoin(): Option[BitcoinAmount] =
-    bitcoinBalance.get.filterNot(_.hasExpired).map(_.available)
+    bitcoinBalance.get.filter(_.status.isFresh).map(_.available)
 
   private def checkAvailableFunds(
       availableFiat: Option[FiatAmount],

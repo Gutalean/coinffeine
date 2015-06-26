@@ -11,8 +11,8 @@ import akka.pattern._
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
-import coinffeine.model.currency.balance.FiatBalance
-import coinffeine.model.currency.{_}
+import coinffeine.model.currency._
+import coinffeine.model.currency.balance.{CacheStatus, FiatBalance}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.events.fiat.BalanceChanged
@@ -29,6 +29,7 @@ private class OkPayProcessorActor(
   with EventStreamReporting with CoinffeineEventProducer {
 
   import context.dispatcher
+
   import OkPayProcessorActor._
 
   private val registry = context.actorOf(registryProps, "funds")
@@ -133,7 +134,7 @@ private class OkPayProcessorActor(
   private def updateBalances(balances: Seq[FiatAmount]): Unit = {
     recover(OkPayPollingAlarm)
     for (amount <- balances) {
-      updateBalance(FiatBalance(amount, hasExpired = false))
+      updateBalance(FiatBalance(amount))
     }
     registry ! BalancesUpdate(balances)
   }
@@ -142,7 +143,7 @@ private class OkPayProcessorActor(
     log.error(cause, "Cannot poll OKPay for balances")
     alert(OkPayPollingAlarm)
     for (balance <- balances.values) {
-      updateBalance(balance.copy(hasExpired = true))
+      updateBalance(balance.copy(status = CacheStatus.Stale))
     }
   }
 
