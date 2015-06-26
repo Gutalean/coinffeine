@@ -233,7 +233,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         cacheStatus: CacheStatus = CacheStatus.Fresh,
         timeout: FiniteDuration = 200.millis): Unit = {
       eventually(PatienceConfiguration.Timeout(timeout)) {
-        properties.balance(balance.currency) shouldBe FiatBalance(balance, cacheStatus)
+        properties.balances(balance.currency) shouldBe FiatBalance(balance, cacheStatus)
       }
     }
 

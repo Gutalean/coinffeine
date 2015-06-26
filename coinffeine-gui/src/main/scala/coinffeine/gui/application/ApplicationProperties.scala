@@ -28,7 +28,7 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) exte
 
   val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] =
     // TODO: simplify?
-    createBoundedToMapEntry(app.paymentProcessor.balance, "balance", Euro)(identity)
+    createBoundedToMapEntry(app.paymentProcessor.balances, "balance", Euro)(identity)
 
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus

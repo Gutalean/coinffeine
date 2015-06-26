@@ -11,7 +11,7 @@ import coinffeine.peer.payment.PaymentProcessorProperties
 class DefaultPaymentProcessorProperties(implicit system: ActorSystem)
   extends PaymentProcessorProperties {
 
-  override val balance = EventObservedPropertyMap[FiatCurrency, FiatBalance](BalanceChanged.Topic) {
+  override val balances = EventObservedPropertyMap[FiatCurrency, FiatBalance](BalanceChanged.Topic) {
     case BalanceChanged(newBalance) =>
       EventObservedPropertyMap.Put(newBalance.amount.currency, newBalance)
   }

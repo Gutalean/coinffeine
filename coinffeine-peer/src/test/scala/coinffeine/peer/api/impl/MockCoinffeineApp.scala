@@ -37,7 +37,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
   override def paymentProcessor: CoinffeinePaymentProcessor = new CoinffeinePaymentProcessor {
     override def accountId = Some("fake-account-id")
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
-    override val balance = new MutablePropertyMap[FiatCurrency, FiatBalance]
+    override val balances = new MutablePropertyMap[FiatCurrency, FiatBalance]
   }
 
   override def utils = new CoinffeineUtils {
