@@ -51,4 +51,10 @@ class FiatBalancesTest extends UnitTest {
       FiatBalances.empty.withBalance(10.EUR, 2.USD)
     }
   }
+
+  it should "have an unchecked accessor to balances" in {
+    val balances = FiatBalances.fromAmounts(1.EUR)
+    noException shouldBe thrownBy { balances(Euro) }
+    a[NoSuchElementException] shouldBe thrownBy { balances(UsDollar) }
+  }
 }

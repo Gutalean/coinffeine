@@ -1,9 +1,15 @@
 package coinffeine.model.currency.balance
 
+import java.util.NoSuchElementException
+
 import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 
 /** Available amounts and remaining transference limits if any */
 case class FiatBalances private(values: Map[FiatCurrency, FiatBalances.Balance]) {
+
+  def apply(currency: FiatCurrency): FiatBalances.Balance =
+    values.getOrElse(currency,
+      throw new NoSuchElementException(s"Missing balance for $currency in $this"))
 
   def get(currency: FiatCurrency): Option[FiatBalances.Balance] = values.get(currency)
 
@@ -52,4 +58,11 @@ object FiatBalances {
 
   private def duplicatedCurrencies(amounts: Seq[FiatAmount]) =
     amounts.map(_.currency).distinct.size != amounts.size
+}
+
+case class CachedFiatBalances(value: FiatBalances, status: CacheStatus)
+
+object CachedFiatBalances {
+  def fresh(value: FiatBalances) = CachedFiatBalances(value, CacheStatus.Fresh)
+  def stale(value: FiatBalances) = CachedFiatBalances(value, CacheStatus.Stale)
 }
