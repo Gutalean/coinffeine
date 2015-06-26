@@ -10,8 +10,7 @@ import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.joda.time.DateTime
 
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
-import coinffeine.model.currency.balance.FiatBalances
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatAmounts, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
@@ -20,7 +19,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   import BlockedFiatRegistry._
 
-  private var balances = FiatBalances.empty
+  private var balances = FiatAmounts.empty
   private var funds: Map[ExchangeId, BlockedFundsInfo] = Map.empty
   private val fundsAvailability = new BlockedFundsAvailability()
 
@@ -151,7 +150,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def fundsThatCanBeBacked(currency: FiatCurrency): Set[ExchangeId] = {
-    val availableBalance = balances.get(currency).fold(currency.zero)(_.amount)
+    val availableBalance = balances.get(currency).getOrElse(currency.zero)
     val eligibleFunds = funds
         .values
         .filter(_.remainingAmount.currency == currency)
@@ -194,7 +193,7 @@ private[okpay] object BlockedFiatRegistry {
 
   case class TotalBlockedFunds(funds: FiatAmount)
 
-  case class BalancesUpdate(balances: FiatBalances)
+  case class BalancesUpdate(balances: FiatAmounts)
 
   /** Request funds for immediate use.
     *

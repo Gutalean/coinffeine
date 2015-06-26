@@ -1,6 +1,7 @@
 package coinffeine.model.currency.balance
 
 import coinffeine.model.currency._
+import coinffeine.model.util.CacheStatus
 
 trait Balance[A <: CurrencyAmount[A]] {
   def amount: A
