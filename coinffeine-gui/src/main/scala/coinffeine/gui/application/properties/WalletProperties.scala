@@ -2,8 +2,7 @@ package coinffeine.gui.application.properties
 
 import scalafx.beans.property.ReadOnlyObjectProperty
 
-import coinffeine.model.currency._
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.peer.api.CoinffeineWallet
 
 class WalletProperties(wallet: CoinffeineWallet) extends PropertyBindings {

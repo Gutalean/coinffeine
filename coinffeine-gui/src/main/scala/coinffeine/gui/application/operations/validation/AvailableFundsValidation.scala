@@ -4,6 +4,7 @@ import scalaz.NonEmptyList
 
 import coinffeine.common.properties.{Property, PropertyMap}
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.amounts.AmountsCalculator

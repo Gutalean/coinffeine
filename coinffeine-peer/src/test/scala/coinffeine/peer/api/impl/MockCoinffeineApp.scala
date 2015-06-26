@@ -6,7 +6,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Property}
 import coinffeine.model.bitcoin.{Address, TransactionSizeFeeCalculator, WalletActivity}
 import coinffeine.model.currency._
-import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._

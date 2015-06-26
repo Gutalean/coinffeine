@@ -11,7 +11,8 @@ import akka.pattern._
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
-import coinffeine.model.currency.{FiatBalance, _}
+import coinffeine.model.currency.balance.FiatBalance
+import coinffeine.model.currency.{_}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.events.fiat.BalanceChanged

@@ -11,6 +11,7 @@ import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.PaymentProcessorActor

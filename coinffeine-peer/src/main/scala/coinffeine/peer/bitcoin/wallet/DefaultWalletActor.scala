@@ -10,7 +10,8 @@ import org.bitcoinj.core.TransactionOutPoint
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.{BitcoinAmount, BitcoinBalance}
+import coinffeine.model.currency.BitcoinAmount
+import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.BlockedOutputs.Output
 import coinffeine.peer.bitcoin.wallet.WalletActor._

@@ -6,7 +6,7 @@ import coinffeine.common.properties.{MutableProperty, MutablePropertyMap, Proper
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
-import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.api._
 

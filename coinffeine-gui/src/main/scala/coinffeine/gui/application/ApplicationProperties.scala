@@ -12,7 +12,7 @@ import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.Euro
-import coinffeine.model.currency.FiatBalance
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.peer.api.CoinffeineApp
 
 class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext) extends PropertyBindings {

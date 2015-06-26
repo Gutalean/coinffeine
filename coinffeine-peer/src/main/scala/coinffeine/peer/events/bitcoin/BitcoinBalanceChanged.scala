@@ -1,7 +1,7 @@
 package coinffeine.peer.events.bitcoin
 
 import coinffeine.common.akka.event.TopicProvider
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 
 /** An event reporting the bitcoin balance has changed. */
 case class BitcoinBalanceChanged(balance: BitcoinBalance)

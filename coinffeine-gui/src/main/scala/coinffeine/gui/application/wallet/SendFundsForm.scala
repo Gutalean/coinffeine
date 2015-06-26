@@ -13,7 +13,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
 import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address, WalletProperties}
 import coinffeine.model.currency._
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 
 class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator) {
 
