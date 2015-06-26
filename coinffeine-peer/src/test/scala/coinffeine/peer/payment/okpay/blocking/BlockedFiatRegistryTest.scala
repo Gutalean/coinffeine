@@ -6,7 +6,6 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry.TotalBlockedFunds
@@ -253,7 +252,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     }
 
     protected def givenBalanceUpdate(amount: FiatAmount): Unit = {
-      actor ! BlockedFiatRegistry.BalancesUpdate(FiatBalances.fromAmounts(amount))
+      actor ! BlockedFiatRegistry.BalancesUpdate(FiatAmounts.fromAmounts(amount))
     }
 
     protected def expectBecomingAvailable(fundsId: ExchangeId): Unit = {

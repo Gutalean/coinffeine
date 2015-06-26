@@ -1,4 +1,12 @@
-package coinffeine.model.currency.balance
+package coinffeine.model.util
+
+case class Cached[T](cached: T, status: CacheStatus)
+
+object Cached {
+  def fresh[T](value: T) = Cached(value, CacheStatus.Fresh)
+
+  def stale[T](value: T) = Cached(value, CacheStatus.Stale)
+}
 
 sealed trait CacheStatus {
   def isFresh: Boolean
