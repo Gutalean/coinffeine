@@ -55,6 +55,26 @@ class FiatBalancesTest extends UnitTest {
   it should "have an unchecked accessor to balances" in {
     val balances = FiatBalances.fromAmounts(1.EUR)
     noException shouldBe thrownBy { balances(Euro) }
-    a[NoSuchElementException] shouldBe thrownBy { balances(UsDollar) }
+    a [NoSuchElementException] shouldBe thrownBy { balances(UsDollar) }
+  }
+
+  it should "increment the balance for a given currency" in {
+    val balances = FiatBalances.fromBalances(1.EUR -> 20.EUR).increment(1.EUR)
+    balances(Euro) shouldBe FiatBalances.Balance(2.EUR, Some(20.EUR))
+  }
+
+  it should "create a new balance when incrementing a non-existing one" in {
+    val balances = FiatBalances.empty.increment(1.EUR)
+    balances(Euro) shouldBe FiatBalances.Balance(1.EUR, remainingLimit = None)
+  }
+
+  it should "decrement the balance for a given currency" in {
+    val balances = FiatBalances.fromAmounts(1.EUR).decrement(1.EUR)
+    balances(Euro).amount shouldBe 0.EUR
+  }
+
+  it should "not decrement below 0" in {
+    val balances = FiatBalances.fromAmounts(1.EUR).decrement(10.EUR)
+    balances(Euro).amount shouldBe 0.EUR
   }
 }

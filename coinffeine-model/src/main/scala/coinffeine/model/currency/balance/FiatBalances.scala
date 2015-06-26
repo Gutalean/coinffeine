@@ -13,6 +13,14 @@ case class FiatBalances private(values: Map[FiatCurrency, FiatBalances.Balance])
 
   def get(currency: FiatCurrency): Option[FiatBalances.Balance] = values.get(currency)
 
+  def increment(delta: FiatAmount): FiatBalances = {
+    val balance = get(delta.currency)
+        .getOrElse(FiatBalances.Balance(amount = delta.currency.zero, remainingLimit = None))
+    copy(values = values + (delta.currency -> balance.increment(delta)))
+  }
+
+  def decrement(delta: FiatAmount): FiatBalances = increment(-delta)
+
   def withBalance(amount: FiatAmount, remainingLimit: FiatAmount): FiatBalances = {
     FiatBalances.requireSameCurrencies(amount, remainingLimit)
     withBalance(amount, Some(remainingLimit))
@@ -29,7 +37,10 @@ case class FiatBalances private(values: Map[FiatCurrency, FiatBalances.Balance])
 
 object FiatBalances {
 
-  case class Balance(amount: FiatAmount, remainingLimit: Option[FiatAmount])
+  case class Balance(amount: FiatAmount, remainingLimit: Option[FiatAmount]) {
+    def increment(delta: FiatAmount): Balance =
+      copy(amount = (amount + delta) max amount.currency.zero)
+  }
 
   val empty = new FiatBalances(Map.empty)
 
@@ -64,5 +75,6 @@ case class CachedFiatBalances(cached: FiatBalances, status: CacheStatus)
 
 object CachedFiatBalances {
   def fresh(value: FiatBalances) = CachedFiatBalances(value, CacheStatus.Fresh)
+
   def stale(value: FiatBalances) = CachedFiatBalances(value, CacheStatus.Stale)
 }
