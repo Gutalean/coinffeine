@@ -12,7 +12,7 @@ import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{CacheStatus, FiatBalance}
+import coinffeine.model.currency.balance.{CachedFiatBalances, FiatBalances}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.peer.events.fiat.BalanceChanged
@@ -35,7 +35,7 @@ private class OkPayProcessorActor(
   private val registry = context.actorOf(registryProps, "funds")
 
   private var timer: Cancellable = _
-  private var balances = Map.empty[FiatCurrency, FiatBalance]
+  private var balances = CachedFiatBalances.stale(FiatBalances.empty)
 
   override def onStart(args: Unit) = {
     pollBalances()
@@ -59,8 +59,8 @@ private class OkPayProcessorActor(
     case FindPayment(criterion) => findPayment(sender(), criterion)
     case RetrieveBalance(currency) => currentBalance(sender(), currency)
     case PollBalances => pollBalances()
-    case UpdateBalances(newBalances) => updateBalances(newBalances)
-    case BalanceUpdateFailed(cause) => notifyBalanceUpdateFailure(cause)
+    case UpdateBalances(newBalances) => refreshBalances(newBalances)
+    case BalanceUpdateFailed(cause) => staleBalances(cause)
     case msg @ (_: BlockFunds | _: UnblockFunds) => registry.forward(msg)
   }
 
@@ -131,25 +131,22 @@ private class OkPayProcessorActor(
       .withImmediateReply[TotalBlockedFunds]().map(_.funds)
   }
 
-  private def updateBalances(balances: Seq[FiatAmount]): Unit = {
+  private def refreshBalances(amounts: Seq[FiatAmount]): Unit = {
     recover(OkPayPollingAlarm)
-    for (amount <- balances) {
-      updateBalance(FiatBalance(amount))
-    }
-    registry ! BalancesUpdate(balances)
+    balances = CachedFiatBalances.fresh(FiatBalances.fromAmounts(amounts: _*))
+    notifyBalances()
   }
 
-  private def notifyBalanceUpdateFailure(cause: Throwable): Unit = {
+  private def staleBalances(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
     alert(OkPayPollingAlarm)
-    for (balance <- balances.values) {
-      updateBalance(balance.copy(status = CacheStatus.Stale))
-    }
+    balances = CachedFiatBalances.stale(balances.value)
+    notifyBalances()
   }
 
-  private def updateBalance(balance: FiatBalance): Unit = {
-    balances += balance.amount.currency -> balance
-    publish(BalanceChanged(balance))
+  private def notifyBalances(): Unit = {
+    registry ! BalancesUpdate(balances.value.values.values.map(_.amount).toSeq)
+    publish(BalanceChanged(balances))
   }
 
   private def pollBalances(): Unit = {

@@ -11,7 +11,7 @@ import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{CacheStatus, FiatBalance}
+import coinffeine.model.currency.balance.{FiatBalances, CacheStatus, FiatBalance}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -233,7 +233,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         cacheStatus: CacheStatus = CacheStatus.Fresh,
         timeout: FiniteDuration = 200.millis): Unit = {
       eventually(PatienceConfiguration.Timeout(timeout)) {
-        properties.balances(balance.currency) shouldBe FiatBalance(balance, cacheStatus)
+        properties.balances.get.status shouldBe cacheStatus
+        properties.balances.get.value(balance.currency).amount shouldBe balance
       }
     }
 
