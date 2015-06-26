@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 
 import coinffeine.common.akka.event.EventObservedProperty
 import coinffeine.model.bitcoin.{Address, WalletActivity, WalletProperties}
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.peer.events.bitcoin._
 
 class DefaultWalletProperties(implicit system: ActorSystem) extends WalletProperties {

@@ -3,7 +3,6 @@ package coinffeine.headless.commands
 import scala.concurrent.Future
 
 import coinffeine.common.properties.PropertyMap
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.order.{Order, OrderId, OrderRequest}
 import coinffeine.peer.api.CoinffeineOperations
 

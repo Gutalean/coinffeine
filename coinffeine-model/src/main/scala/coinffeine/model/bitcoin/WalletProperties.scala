@@ -1,7 +1,7 @@
 package coinffeine.model.bitcoin
 
 import coinffeine.common.properties.Property
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 
 trait WalletProperties {
   val balance: Property[Option[BitcoinBalance]]

@@ -10,7 +10,8 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.SupportWidget
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
-import coinffeine.model.currency.{BitcoinAmount, BitcoinBalance, Currency}
+import coinffeine.model.currency.balance.BitcoinBalance
+import coinffeine.model.currency.{BitcoinAmount, Currency}
 
 class FundsDialog(props: WalletProperties) {
 

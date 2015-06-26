@@ -12,7 +12,7 @@ import coinffeine.gui.preferences.PaymentProcessorSettingsForm
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
-import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.

@@ -2,15 +2,16 @@ package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
 
-import coinffeine.common.properties.{Property, PropertyMap}
+import coinffeine.common.properties.Property
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.{BitcoinBalance, CachedFiatBalances}
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.amounts.AmountsCalculator
 
 private class AvailableFundsValidation(
     amountsCalculator: AmountsCalculator,
-    fiatBalance: PropertyMap[FiatCurrency, FiatBalance],
+    fiatBalances: Property[CachedFiatBalances],
     bitcoinBalance: Property[Option[BitcoinBalance]]) extends OrderValidation {
 
   override def apply(
@@ -19,11 +20,16 @@ private class AvailableFundsValidation(
     checkAvailableFunds(
       currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request, spread)
 
-  private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] =
-    fiatBalance.get(currency).filterNot(_.hasExpired).map(_.amount)
+  private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] = {
+    val cachedBalances = fiatBalances.get
+    for {
+      balance <- cachedBalances.cached.get(currency)
+      if cachedBalances.status.isFresh
+    } yield balance.amount
+  }
 
   private def currentAvailableBitcoin(): Option[BitcoinAmount] =
-    bitcoinBalance.get.filterNot(_.hasExpired).map(_.available)
+    bitcoinBalance.get.filter(_.status.isFresh).map(_.available)
 
   private def checkAvailableFunds(
       availableFiat: Option[FiatAmount],

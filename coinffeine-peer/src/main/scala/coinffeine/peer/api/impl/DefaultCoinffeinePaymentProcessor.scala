@@ -20,7 +20,7 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
 
   override val accountId: Option[AccountId] = lookupAccountId()
 
-  override val balance = properties.balance
+  override val balances = properties.balances
 
   override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] =
     await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse].map {

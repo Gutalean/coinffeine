@@ -4,11 +4,11 @@ import scalaz.NonEmptyList
 
 import org.scalatest.Inside
 
-import coinffeine.common.properties.{MutableProperty, MutablePropertyMap}
+import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
-import coinffeine.model.currency.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance._
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
@@ -20,7 +20,8 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
 
   "The available funds requirement" should "optionally require bitcoin funds to be known" in
     new Fixture {
-      bitcoinBalance.set(Some(initialBitcoinBalance.copy(hasExpired = true)))
+      givenEnoughFiatFunds()
+      givenStaleBitcoinFunds()
       inside(instance.apply(newBid, spread)) {
         case Warning(NonEmptyList(requirement)) =>
           requirement should include ("not possible to check")
@@ -30,17 +31,17 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
 
   it should "optionally require available bitcoin balance to cover order needs" in new Fixture {
-    val notEnoughBitcoin = 0.001.BTC
-    bitcoinBalance.set(Some(initialBitcoinBalance.copy(available = notEnoughBitcoin)))
+    givenEnoughFiatFunds()
+    givenNotEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement should include (
-          s"Your $notEnoughBitcoin available are insufficient for this order")
+        requirement should include regex "Your .* available are insufficient for this order"
     }
   }
 
   it should "optionally require fiat funds to be known" in new Fixture {
-    fiatBalance.set(Euro, initialFiatBalance.copy(hasExpired = true))
+    givenStaleFiatFunds()
+    givenEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
         requirement should include ("not possible to check")
@@ -48,27 +49,49 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
   }
 
   it should "optionally require available fiat balance to cover order needs" in new Fixture {
-    val notEnoughFiat = 1.EUR
-    fiatBalance.set(Euro, initialFiatBalance.copy(amount = notEnoughFiat))
+    givenNotEnoughFiatFunds()
+    givenEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
       case Warning(NonEmptyList(requirement)) =>
-        requirement should include (
-          s"Your $notEnoughFiat available are insufficient for this order")
+        requirement should include regex "Your .* available are insufficient for this order"
     }
   }
 
   private trait Fixture {
-    val fiatBalance = new MutablePropertyMap[FiatCurrency, FiatBalance]()
-    val initialFiatBalance = FiatBalance(amount = 450.EUR, hasExpired = false)
-    fiatBalance.set(Euro, initialFiatBalance)
+    private val fiatBalances =
+      new MutableProperty[CachedFiatBalances](CachedFiatBalances.fresh(FiatBalances.empty))
+    private val initialFiatBalance = CachedFiatBalances.fresh(FiatBalances.fromAmounts(450.EUR))
     val initialBitcoinBalance = BitcoinBalance(
       estimated = 2.3.BTC,
       available = 2.3.BTC,
-      minOutput = Some(0.1.BTC),
-      hasExpired = false
+      minOutput = Some(0.1.BTC)
     )
-    val bitcoinBalance = new MutableProperty[Option[BitcoinBalance]](Some(initialBitcoinBalance))
+    val bitcoinBalance = new MutableProperty[Option[BitcoinBalance]](None)
     val instance =
-      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiatBalance, bitcoinBalance)
+      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiatBalances, bitcoinBalance)
+
+    protected def givenEnoughBitcoinFunds(): Unit = {
+      bitcoinBalance.set(Some(initialBitcoinBalance))
+    }
+
+    protected def givenStaleBitcoinFunds(): Unit = {
+      bitcoinBalance.set(Some(initialBitcoinBalance.copy(status = CacheStatus.Stale)))
+    }
+
+    protected def givenNotEnoughBitcoinFunds(): Unit = {
+      bitcoinBalance.set(Some(initialBitcoinBalance.copy(available = 0.001.BTC)))
+    }
+
+    protected def givenEnoughFiatFunds(): Unit = {
+      fiatBalances.set(initialFiatBalance)
+    }
+
+    protected def givenStaleFiatFunds(): Unit = {
+      fiatBalances.set(CachedFiatBalances.stale(initialFiatBalance.cached))
+    }
+
+    protected def givenNotEnoughFiatFunds(): Unit = {
+      fiatBalances.set(CachedFiatBalances.fresh(FiatBalances.fromAmounts(1.EUR)))
+    }
   }
 }

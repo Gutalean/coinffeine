@@ -13,7 +13,7 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
 import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
-import coinffeine.model.currency.BitcoinBalance
+import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.bitcoin.wallet.WalletActor.{SubscribeToWalletChanges, UnsubscribeToWalletChanges, WalletChanged}
 import coinffeine.peer.properties.bitcoin.DefaultWalletProperties
