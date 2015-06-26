@@ -60,7 +60,7 @@ object FiatBalances {
     amounts.map(_.currency).distinct.size != amounts.size
 }
 
-case class CachedFiatBalances(value: FiatBalances, status: CacheStatus)
+case class CachedFiatBalances(cached: FiatBalances, status: CacheStatus)
 
 object CachedFiatBalances {
   def fresh(value: FiatBalances) = CachedFiatBalances(value, CacheStatus.Fresh)

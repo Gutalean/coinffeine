@@ -30,7 +30,7 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
   val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = {
     val property = new ObjectProperty[Option[FiatBalance]](this, "balance", None)
     app.paymentProcessor.balances.onNewValue { balances =>
-      val maybeBalance = balances.value.get(Euro).map { euroBalance =>
+      val maybeBalance = balances.cached.get(Euro).map { euroBalance =>
         FiatBalance(euroBalance.amount, balances.status)
       }
       property.set(maybeBalance)

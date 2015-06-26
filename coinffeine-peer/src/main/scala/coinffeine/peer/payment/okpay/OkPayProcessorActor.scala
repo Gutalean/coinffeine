@@ -140,12 +140,12 @@ private class OkPayProcessorActor(
   private def staleBalances(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
     alert(OkPayPollingAlarm)
-    balances = CachedFiatBalances.stale(balances.value)
+    balances = CachedFiatBalances.stale(balances.cached)
     notifyBalances()
   }
 
   private def notifyBalances(): Unit = {
-    registry ! BalancesUpdate(balances.value.values.values.map(_.amount).toSeq)
+    registry ! BalancesUpdate(balances.cached.values.values.map(_.amount).toSeq)
     publish(BalanceChanged(balances))
   }
 

@@ -87,7 +87,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
 
     protected def givenStaleFiatFunds(): Unit = {
-      fiatBalances.set(CachedFiatBalances.stale(initialFiatBalance.value))
+      fiatBalances.set(CachedFiatBalances.stale(initialFiatBalance.cached))
     }
 
     protected def givenNotEnoughFiatFunds(): Unit = {

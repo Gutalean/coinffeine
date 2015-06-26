@@ -234,7 +234,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         timeout: FiniteDuration = 200.millis): Unit = {
       eventually(PatienceConfiguration.Timeout(timeout)) {
         properties.balances.get.status shouldBe cacheStatus
-        properties.balances.get.value(balance.currency).amount shouldBe balance
+        properties.balances.get.cached(balance.currency).amount shouldBe balance
       }
     }
 

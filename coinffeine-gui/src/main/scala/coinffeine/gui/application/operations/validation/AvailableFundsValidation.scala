@@ -23,7 +23,7 @@ private class AvailableFundsValidation(
   private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] = {
     val cachedBalances = fiatBalances.get
     for {
-      balance <- cachedBalances.value.get(currency)
+      balance <- cachedBalances.cached.get(currency)
       if cachedBalances.status.isFresh
     } yield balance.amount
   }
