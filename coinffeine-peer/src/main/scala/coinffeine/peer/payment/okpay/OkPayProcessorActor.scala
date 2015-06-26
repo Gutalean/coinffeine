@@ -145,7 +145,7 @@ private class OkPayProcessorActor(
   }
 
   private def notifyBalances(): Unit = {
-    registry ! BalancesUpdate(balances.cached.values.values.map(_.amount).toSeq)
+    registry ! BalancesUpdate(balances.cached)
     publish(BalanceChanged(balances))
   }
 
