@@ -10,7 +10,6 @@ import org.scalatest.{Inside, OptionValues}
 import coinffeine.common.akka.test.MockSupervisedActor
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange._
 import coinffeine.peer.bitcoin.blockchain.BlockchainActor
