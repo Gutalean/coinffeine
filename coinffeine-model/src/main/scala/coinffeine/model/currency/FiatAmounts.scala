@@ -3,13 +3,17 @@ package coinffeine.model.currency
 import java.util.NoSuchElementException
 
 /** Available amounts and remaining transference limits if any */
-case class FiatAmounts private(values: Map[FiatCurrency, FiatAmount]) {
+case class FiatAmounts private(entries: Map[FiatCurrency, FiatAmount]) {
 
   def apply(currency: FiatCurrency): FiatAmount =
-    values.getOrElse(currency,
+    entries.getOrElse(currency,
       throw new NoSuchElementException(s"Missing amount for $currency in $this"))
 
-  def get(currency: FiatCurrency): Option[FiatAmount] = values.get(currency)
+  def get(currency: FiatCurrency): Option[FiatAmount] = entries.get(currency)
+
+  def amounts: Seq[FiatAmount] = entries.values.toSeq
+
+  def contains(currency: FiatCurrency): Boolean = entries.contains(currency)
 
   def increment(delta: FiatAmount): FiatAmounts = {
     val prevAmount = get(delta.currency).getOrElse(delta.currency.zero)
@@ -19,7 +23,7 @@ case class FiatAmounts private(values: Map[FiatCurrency, FiatAmount]) {
   def decrement(delta: FiatAmount): FiatAmounts = increment(-delta)
 
   def withAmount(amount: FiatAmount): FiatAmounts = copy(
-    values = values + (amount.currency -> amount))
+    entries = entries + (amount.currency -> amount))
 }
 
 object FiatAmounts {

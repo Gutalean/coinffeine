@@ -1,17 +1,34 @@
 package coinffeine.peer.serialization
 
+import scala.collection.generic.{MapFactory, SetFactory}
+
 import com.esotericsoftware.kryo.Kryo
+import com.romix.scala.serialization.kryo.{EnumerationSerializer, ScalaCollectionSerializer, ScalaImmutableMapSerializer}
 import org.bitcoinj.crypto.DeterministicKey
+import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin.KeyPair
-import org.joda.time.DateTime
+import coinffeine.model.currency.FiatAmounts
 
 class KryoConfigurator {
   def customize(kryo: Kryo): Unit  = {
+    overrideFaultySerializationOfBitcoinjKeys(kryo)
+    overrideFaultySerializationOfDateTime(kryo)
+    overrideFaultySerializationOfFiatAmounts(kryo)
+    kryo.setReferences(true)
+  }
+
+  private def overrideFaultySerializationOfBitcoinjKeys(kryo: Kryo): Unit = {
     val keyPairSerializer = new KeyPairSerializer
     kryo.register(classOf[KeyPair], keyPairSerializer)
     kryo.register(classOf[DeterministicKey], keyPairSerializer)
+  }
+
+  private def overrideFaultySerializationOfDateTime(kryo: Kryo): Unit = {
     kryo.register(classOf[DateTime], new DateTimeSerializer)
-    kryo.setReferences(true)
+  }
+
+  private def overrideFaultySerializationOfFiatAmounts(kryo: Kryo): Unit = {
+    kryo.register(classOf[FiatAmounts], new FiatAmountsSerializer)
   }
 }

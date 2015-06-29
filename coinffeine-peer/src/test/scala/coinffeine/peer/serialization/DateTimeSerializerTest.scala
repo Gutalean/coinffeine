@@ -4,8 +4,8 @@ import org.joda.time.DateTime
 
 class DateTimeSerializerTest extends SerializerTest {
 
-  "Date time" should "support roundtrip Kryo serialization" in {
+  "Date time" should "support roundtrip Kryo serialization" in new Fixture {
     val instant = new DateTime()
-    instant shouldBe dateTimeSerializationRoundtrip(instant)
+    instant shouldBe serializationRoundtrip(instant)
   }
 }
