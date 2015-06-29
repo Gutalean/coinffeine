@@ -3,20 +3,20 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-import coinffeine.model.currency.FiatAmount
+import coinffeine.model.currency.{FiatAmounts, FiatAmount}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
-  private var balances: Future[Seq[FiatAmount]] = Future.successful(Seq.empty)
+  private var balances: Future[FiatAmounts] = Future.successful(FiatAmounts.empty)
   private var paymentResult: Future[Payment] = _
   private var payments: Map[PaymentId, Try[Option[Payment]]] = Map.empty
 
   override val executionContext = ExecutionContext.global
 
-  override def currentBalances(): Future[Seq[FiatAmount]] = balances
+  override def currentBalances(): Future[FiatAmounts] = balances
 
   override def findPaymentById(paymentId: PaymentId): Future[Option[Payment]] =
     Future.fromTry(payments(paymentId))
@@ -33,11 +33,11 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
       invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment] = paymentResult
 
-  def setBalances(balances: Seq[FiatAmount]): Unit = {
+  def setBalances(balances: FiatAmounts): Unit = {
     setBalances(Future.successful(balances))
   }
 
-  def setBalances(newBalances: Future[Seq[FiatAmount]]): Unit = synchronized {
+  def setBalances(newBalances: Future[FiatAmounts]): Unit = synchronized {
     balances = newBalances
   }
 

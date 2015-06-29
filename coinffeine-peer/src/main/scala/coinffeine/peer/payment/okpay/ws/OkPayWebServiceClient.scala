@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment._
@@ -97,7 +97,7 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
-  override def currentBalances(): Future[Seq[FiatAmount]] =
+  override def currentBalances(): Future[FiatAmounts] =
     authenticatedRequest { token =>
       service.wallet_Get_Balance(
         walletID = Some(Some(accountId)),
@@ -145,12 +145,12 @@ class OkPayWebServiceClient(
     }
   }
 
-  private def parseBalances(balances: ArrayOfBalance): Seq[FiatAmount] = {
+  private def parseBalances(balances: ArrayOfBalance): FiatAmounts = FiatAmounts(
     balances.Balance.collect {
       case Some(Balance(Some(amount), Flatten(currencyCode))) =>
         FiatCurrency(currencyCode)(amount)
     }
-  }
+  )
 
   /** Wraps a request that needs an authentication token and makes sure that it is
     * retried in case of authentication fails once.

@@ -5,7 +5,7 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 
@@ -14,8 +14,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
   @volatile var payments: List[Payment] = initialPayments
 
   private class MockPaymentProcessor(
-      fiatAddress: String,
-      initialBalances: Seq[FiatAmount]) extends Actor {
+      fiatAddress: String, initialBalances: FiatAmounts) extends Actor {
 
     override def receive: Receive = {
       case pay: PaymentProcessorActor.Pay =>
@@ -43,9 +42,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
         case Payment(_, _, `fiatAddress`, in, _, _, _, _) => in
         case Payment(_, `fiatAddress`, _, out, _, _, _, _) => -out
       }
-      val initial = initialBalances.collectFirst {
-        case a if a.currency == currency => a.asInstanceOf[FiatAmount]
-      }.getOrElse(currency.zero)
+      val initial = initialBalances.get(currency).getOrElse(currency.zero)
       val balance = initial + currency.sum(deltas)
       requester ! PaymentProcessorActor.BalanceRetrieved(balance, currency.zero)
     }
@@ -54,7 +51,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
       payments.filter(_.amount.currency == currency)
 
     private def sendPayment(requester: ActorRef, pay: PaymentProcessorActor.Pay): Unit =
-      if (initialBalances.map(_.currency).contains(pay.amount.currency)) {
+      if (initialBalances.contains(pay.amount.currency)) {
         val payment = Payment(
           UUID.randomUUID().toString,
           fiatAddress,
@@ -72,6 +69,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
       }
   }
 
-  def newProcessor(fiatAddress: String, initialBalance: Seq[FiatAmount] = Seq.empty): Props =
+  def newProcessor(
+      fiatAddress: String, initialBalance: FiatAmounts = FiatAmounts.empty): Props =
     Props(new MockPaymentProcessor(fiatAddress, initialBalance))
 }
