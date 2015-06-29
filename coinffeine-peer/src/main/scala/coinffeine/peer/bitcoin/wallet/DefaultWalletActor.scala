@@ -139,7 +139,9 @@ private class DefaultWalletActor(
     val tx = wallet.findTransactionSpendingOutput(outPoints.head).getOrElse(
       wallet.createMultisignTransaction(outPoints, requiredSignatures, amount, transactionFee))
     deposits += tx.get.getHash -> coinsId
-    log.debug(s"Creating deposit for $coinsId using outputs ${event.outputs} and having TX $tx")
+    if (recoveryFinished) {
+      log.debug(s"Creating deposit for $coinsId using outputs ${event.outputs} and having TX $tx")
+    }
     tx
   }
 
