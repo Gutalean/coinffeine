@@ -13,6 +13,8 @@ case class FiatAmounts private(entries: Map[FiatCurrency, FiatAmount]) {
 
   def amounts: Seq[FiatAmount] = entries.values.toSeq
 
+  def contains(currency: FiatCurrency): Boolean = entries.contains(currency)
+
   def increment(delta: FiatAmount): FiatAmounts = {
     val prevAmount = get(delta.currency).getOrElse(delta.currency.zero)
     withAmount((prevAmount + delta) max delta.currency.zero)
