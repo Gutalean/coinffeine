@@ -38,7 +38,7 @@ object Dependencies {
       artifacts Artifact("javax.servlet", "jar", "jar")
   )
   lazy val jline = "jline" % "jline" % "2.12.1"
-  lazy val jodaTime = "joda-time" % "joda-time" % "2.7"
+  lazy val jodaTime = "joda-time" % "joda-time" % "2.8.1"
   lazy val jodaConvert = "org.joda" % "joda-convert" % "1.7"
   lazy val liftJson = "net.liftweb" %% "lift-json" % Versions.lift
   lazy val liftWeb = "net.liftweb" %% "lift-webkit" % Versions.lift
