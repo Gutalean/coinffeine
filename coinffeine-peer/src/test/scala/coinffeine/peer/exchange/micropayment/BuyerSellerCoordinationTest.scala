@@ -23,7 +23,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   val gateways = new LinkedMessageGateways(PeerId.hashOf("broker"), peerIds.buyer, peerIds.seller)
 
   val buyerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
-    participants.buyer.paymentProcessorAccount, Seq(1000.EUR)))
+    participants.buyer.paymentProcessorAccount, FiatAmounts.fromAmounts(1000.EUR)))
   val buyerRunningExchange = buyerHandshakingExchange.startExchanging(
     FakeExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
   val buyerProps = BuyerMicroPaymentChannelActor.props(
@@ -46,7 +46,7 @@ class BuyerSellerCoordinationTest extends CoinffeineClientTest("buyerExchange") 
   )
 
   val sellerPaymentProc = system.actorOf(paymentProcFactory.newProcessor(
-    participants.seller.paymentProcessorAccount, Seq(0.EUR)))
+    participants.seller.paymentProcessorAccount, FiatAmounts.fromAmounts(0.EUR)))
   val sellerRunningExchange = sellerHandshakingExchange.startExchanging(
     FakeExchangeProtocol.DummyDeposits, ExchangeTimestamps.handshakingStart)
   val sellerProps = SellerMicroPaymentChannelActor.props(

@@ -174,7 +174,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     }
 
     def givenClientBalance(balance: FiatAmount): Unit = {
-      client.setBalances(Seq(balance))
+      client.setBalances(FiatAmounts.fromAmounts(balance))
     }
 
     def givenBalanceRetrievalFailure(): Unit = {

@@ -115,10 +115,8 @@ private class OkPayProcessorActor(
     }
     val blockedFunds = blockedFundsForCurrency(currency)
     (for {
-      totalAmount <- balances.map { b =>
-        b.find(_.currency == currency)
-          .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
-          .asInstanceOf[FiatAmount]
+      totalAmount <- balances.map { b => b.get(currency)
+        .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
       }
       blockedAmount <- blockedFunds
     } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
@@ -131,9 +129,9 @@ private class OkPayProcessorActor(
       .withImmediateReply[TotalBlockedFunds]().map(_.funds)
   }
 
-  private def refreshBalances(amounts: Seq[FiatAmount]): Unit = {
+  private def refreshBalances(amounts: FiatAmounts): Unit = {
     recover(OkPayPollingAlarm)
-    balances = Cached.fresh(FiatAmounts.fromAmounts(amounts: _*))
+    balances = Cached.fresh(amounts)
     notifyBalances()
   }
 
@@ -169,7 +167,7 @@ object OkPayProcessorActor {
   private case object PollBalances
 
   /** Self-message sent to update to the latest balances */
-  private case class UpdateBalances(balances: Seq[FiatAmount])
+  private case class UpdateBalances(balances: FiatAmounts)
 
   /** Self-message to report balance polling failures */
   private case class BalanceUpdateFailed(cause: Throwable)
