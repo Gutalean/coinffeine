@@ -3,9 +3,11 @@ package coinffeine.peer.payment.okpay
 import java.net.URI
 import scala.concurrent.duration._
 
+import coinffeine.model.payment.PaymentProcessor.{AccountId, AccountSecret}
+
 case class OkPaySettings(
-    userAccount: Option[String],
-    seedToken: Option[String],
+    userAccount: Option[AccountId],
+    seedToken: Option[AccountSecret],
     serverEndpointOverride: Option[URI],
     pollingInterval: FiniteDuration) {
 

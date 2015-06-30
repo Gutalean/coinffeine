@@ -23,8 +23,8 @@ object PaymentProcessor {
   /** The ID type of a user account in the payment processor. */
   type AccountId = String
 
-  /** The credentials of a user account in the payment processor. */
-  type AccountCredentials = String
+  /** The secret of a user account in the payment processor. Might be a password or a token. */
+  type AccountSecret = String
 
   /** The ID type of a payment registered by the payment processor. */
   type PaymentId = String
