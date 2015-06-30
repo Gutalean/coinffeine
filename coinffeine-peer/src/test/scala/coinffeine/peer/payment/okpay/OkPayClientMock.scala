@@ -3,10 +3,9 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-import coinffeine.model.currency.{FiatAmounts, FiatAmount}
+import coinffeine.model.currency.{FiatAmount, FiatAmounts}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
