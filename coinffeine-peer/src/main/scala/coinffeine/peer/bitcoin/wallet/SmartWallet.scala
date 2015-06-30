@@ -91,23 +91,6 @@ class SmartWallet(val delegate: Wallet) {
     ImmutableTransaction(result.tx)
   }
 
-  /** Mark the inputs of the given transaction as unspent */
-  def releaseTransaction(tx: ImmutableTransaction): Unit = synchronized {
-    val walletTx = getTransaction(tx.get.getHash).getOrElse(
-      throw new IllegalArgumentException(s"${tx.get.getHashAsString} is not part of this wallet"))
-    walletTx.getInputs.foreach { input =>
-      val parentTx = input.getOutpoint.getConnectedOutput.getParentTransaction
-      if (contains(parentTx)) {
-        if (!input.disconnect()) {
-          throw new IllegalStateException(s"cannot disconnect outputs from $input in $walletTx")
-        }
-        moveToPool(parentTx, WalletTransaction.Pool.UNSPENT)
-      }
-    }
-    moveToPool(walletTx, WalletTransaction.Pool.DEAD)
-    update()
-  }
-
   def createMultisignTransaction(requiredSignatures: Both[PublicKey],
                                  amount: BitcoinAmount,
                                  fee: BitcoinAmount = Bitcoin.zero): ImmutableTransaction =
@@ -134,7 +117,6 @@ class SmartWallet(val delegate: Wallet) {
     tx.addChangeOutput(totalInputFunds, amount + fee, delegate.getChangeAddress)
 
     delegate.signTransaction(SendRequest.forTx(tx))
-    commitTransaction(tx)
     ImmutableTransaction(tx)
   }
 

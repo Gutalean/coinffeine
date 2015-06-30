@@ -38,6 +38,12 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     Bitcoin.fromSatoshi(tx.get.getOutput(0).getValue.value) shouldBe 1.BTC
   }
 
+  it must "not change the balance when creating a new multisign tx" in new Fixture {
+    val initialBalance = wallet.delegate.getBalance
+    wallet.createMultisignTransaction(signatures, 1.BTC, 0.1.BTC)
+    wallet.delegate.getBalance shouldBe initialBalance
+  }
+
   it must "fail to create a deposit when there is no enough amount" in new Fixture {
     a [NotEnoughFunds] shouldBe thrownBy {
       wallet.createMultisignTransaction(signatures, 10000.BTC, 0.BTC)
@@ -49,12 +55,6 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     a [NotEnoughFunds] shouldBe thrownBy {
       wallet.createMultisignTransaction(signatures, 1.BTC, 0.BTC)
     }
-  }
-
-  it must "release unpublished deposit funds" in new Fixture {
-    val tx = wallet.createMultisignTransaction(signatures, 1.BTC, 0.1.BTC)
-    wallet.releaseTransaction(tx)
-    wallet.estimatedBalance shouldBe initialFunds
   }
 
   it must "not find the spending transaction of unknown outputs" in new Fixture {
