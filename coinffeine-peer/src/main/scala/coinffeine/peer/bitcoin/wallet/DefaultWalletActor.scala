@@ -146,7 +146,6 @@ private class DefaultWalletActor(
   }
 
   private def onDepositCancelled(event: DepositCancelled): Unit = {
-    wallet.releaseTransaction(event.tx)
     val releasedOutputs = event.tx.get.getInputs.map(_.getOutpoint).toSet
     blockedOutputs.cancelUsage(toOutputs(releasedOutputs))
   }

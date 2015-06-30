@@ -133,14 +133,9 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     override def useLastPersistenceId = true
     override def buildWallet() = SmartWallet.loadFromStream(
       new ByteArrayInputStream(serializedWallet.toByteArray))
-    wallet.estimatedBalance shouldBe 8.9.BTC
     instance ! WalletActor.ReleaseDeposit(tx)
-    eventually {
-      wallet.estimatedBalance shouldBe 10.BTC
-    }
-    instance ! WalletActor.UnblockBitcoins(funds2)
-    instance ! WalletActor.BlockBitcoins(funds3, 1.BTC)
-    expectMsg(WalletActor.BlockedBitcoins(funds3))
+    instance ! WalletActor.BlockBitcoins(funds2, 1.BTC)
+    expectMsg(WalletActor.BlockedBitcoins(funds2))
   }
 
   it must "recover its previous state from snapshot" in new Fixture {
