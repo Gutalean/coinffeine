@@ -15,7 +15,7 @@ import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
-import coinffeine.peer.payment.okpay.{OkPayClient, TokenGenerator}
+import coinffeine.peer.payment.okpay.{FeePolicy, OkPayClient, TokenGenerator}
 
 /** SOAP client of OKPay service.
   *
@@ -64,8 +64,8 @@ class OkPayWebServiceClient(
         amount = Some(amount.value),
         comment = Some(Some(comment)),
         isReceiverPaysFees = Some(feePolicy match {
-          case PaidByReceiver => true
-          case PaidBySender => false
+          case FeePolicy.PaidByReceiver => true
+          case FeePolicy.PaidBySender => false
         }),
         invoice = Some(Some(invoice))
       ).map { response =>

@@ -5,7 +5,6 @@ import scala.util.control.NoStackTrace
 
 import coinffeine.model.currency.FiatAmount
 import coinffeine.model.payment.PaymentProcessor._
-import coinffeine.peer.payment.okpay.OkPayClient.FeePolicy
 
 /** Null object pattern for the case of not having enough information to configure an
   * actual OK Pay client.

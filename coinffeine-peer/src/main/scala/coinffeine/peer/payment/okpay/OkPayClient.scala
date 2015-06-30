@@ -6,8 +6,14 @@ import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment.PaymentProcessorException
-import coinffeine.peer.payment.okpay.OkPayClient.{FeePolicy, PaidBySender}
 import coinffeine.peer.payment.okpay.ws.OkPayFault.OkPayFault
+
+sealed trait FeePolicy
+
+object FeePolicy {
+  case object PaidByReceiver extends FeePolicy
+  case object PaidBySender extends FeePolicy
+}
 
 trait OkPayClient {
 
@@ -18,7 +24,7 @@ trait OkPayClient {
       amount: FiatAmount,
       comment: String,
       invoice: Invoice,
-      feePolicy: FeePolicy = PaidBySender): Future[Payment]
+      feePolicy: FeePolicy = FeePolicy.PaidBySender): Future[Payment]
 
   def findPaymentById(paymentId: PaymentId): Future[Option[Payment]]
 
@@ -39,12 +45,6 @@ trait OkPayClient {
 }
 
 object OkPayClient {
-
-  sealed trait FeePolicy
-
-  case object PaidByReceiver extends FeePolicy
-
-  case object PaidBySender extends FeePolicy
 
   abstract class Error(msg: String, cause: Throwable)
       extends Exception(s"invalid OKPay client operation: $msg", cause)
