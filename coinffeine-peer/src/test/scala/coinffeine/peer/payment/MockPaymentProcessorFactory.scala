@@ -38,9 +38,9 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
 
     private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
       val deltas: List[FiatAmount] = paymentsForCurrency(currency).collect {
-        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _, _) => currency.zero
-        case Payment(_, _, `fiatAddress`, in, _, _, _, _) => in
-        case Payment(_, `fiatAddress`, _, out, _, _, _, _) => -out
+        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _, _, _) => currency.zero
+        case Payment(_, _, `fiatAddress`, in, _, _, _, _, _) => in
+        case Payment(_, `fiatAddress`, _, out, _, _, _, _, _) => -out
       }
       val initial = initialBalances.get(currency).getOrElse(currency.zero)
       val balance = initial + currency.sum(deltas)
@@ -53,13 +53,14 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
     private def sendPayment(requester: ActorRef, pay: PaymentProcessorActor.Pay): Unit =
       if (initialBalances.contains(pay.amount.currency)) {
         val payment = Payment(
-          UUID.randomUUID().toString,
-          fiatAddress,
-          pay.to,
-          pay.amount,
-          DateTime.now(),
-          pay.comment,
-          pay.invoice,
+          id = UUID.randomUUID().toString,
+          senderId = fiatAddress,
+          receiverId = pay.to,
+          amount = pay.amount,
+          fee = pay.amount.currency.zero,
+          date = DateTime.now(),
+          description = pay.comment,
+          invoice = pay.invoice,
           completed = true)
         payments = payment :: payments
         requester ! PaymentProcessorActor.Paid(payment)

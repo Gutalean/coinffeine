@@ -109,6 +109,7 @@ object Build extends sbt.Build {
       )
     )
     dependsOn(
+      common % "compile->compile;test->test",
       commonAkka % "compile->compile;test->test",
       commonTest % "test->compile",
       model,

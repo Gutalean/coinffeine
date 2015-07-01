@@ -60,6 +60,7 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
       description = PaymentFields.description(exchange.id, step),
       invoice = PaymentFields.invoice(exchange.id, step),
       amount = step.select(exchange.amounts).fiatAmount,
+      fee = exchange.currency.zero,
       date = DateTime.now(),
       completed = completed
     )))
