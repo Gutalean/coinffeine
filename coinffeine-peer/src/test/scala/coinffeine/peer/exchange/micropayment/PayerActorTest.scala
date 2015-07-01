@@ -80,7 +80,7 @@ class PayerActorTest extends AkkaSpec {
     val requester = TestProbe()
     val paymentProcessor = TestProbe()
     val payment = Payment(
-      "payment", "sender", "receiver", 5.EUR, DateTime.now(),
+      "payment", "sender", "receiver", amount = 5.EUR, fee = 0.1.EUR, DateTime.now(),
       "description", "invoice", completed = true)
     val request = PaymentProcessorActor.Pay(
       ExchangeId("pay-id"), payment.receiverId, payment.amount, payment.description, payment.invoice)

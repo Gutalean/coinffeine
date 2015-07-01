@@ -93,7 +93,7 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
   }
 
   def paymentConfirmation(paymentId: String) = PaymentProcessorActor.Paid(Payment(
-    paymentId, "sender", "receiver", 1.EUR, DateTime.now(),
+    paymentId, "sender", "receiver", amount = 1.EUR, fee = 0.01.EUR, DateTime.now(),
     "description", "invoice", completed = true
   ))
 }

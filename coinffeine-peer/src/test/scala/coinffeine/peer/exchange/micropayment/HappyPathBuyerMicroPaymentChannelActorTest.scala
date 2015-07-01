@@ -31,8 +31,8 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
       payerActor.expectAskWithReply {
         case PayerActor.EnsurePayment(_, pp) if pp == paymentProcessor.ref =>
           PayerActor.PaymentEnsured(PaymentProcessorActor.Paid(
-            Payment(s"payment$i", "sender", "receiver", 1.EUR, DateTime.now(), "description", "invoice",
-              completed = true)
+            Payment(s"payment$i", "sender", "receiver", 1.EUR, 0.01.EUR, DateTime.now(),
+              "description", "invoice", completed = true)
         ))
       }
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)

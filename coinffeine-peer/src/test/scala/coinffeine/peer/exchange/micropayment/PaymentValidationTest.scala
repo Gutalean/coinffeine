@@ -27,6 +27,7 @@ class PaymentValidationTest extends UnitTest with Inside {
     senderId = participants.buyer,
     receiverId = participants.seller,
     amount = 2.EUR,
+    fee = 0.01.EUR,
     date = null,
     description = s"Payment for exchange ${exchangeId.value}, step 1",
     invoice = s"${exchangeId.value}@1",

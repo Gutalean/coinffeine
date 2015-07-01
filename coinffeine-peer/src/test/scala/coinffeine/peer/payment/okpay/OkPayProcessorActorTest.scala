@@ -142,6 +142,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       senderId = senderAccount,
       receiverId = receiverAccount,
       amount = amount,
+      fee = 0.USD,
       date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
       description = "comment",
       invoice = "invoice",

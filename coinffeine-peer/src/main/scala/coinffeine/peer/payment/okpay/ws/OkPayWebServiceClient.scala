@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
-import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatAmounts, FiatCurrency}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment._
@@ -127,7 +127,7 @@ class OkPayWebServiceClient(
           Flatten(description),
           Flatten(rawCurrency),
           Flatten(rawDate),
-          _,
+          maybeFee,
           Some(paymentId),
           Flatten(invoice),
           Some(net),
@@ -135,11 +135,13 @@ class OkPayWebServiceClient(
           Flatten(WalletId(receiverId)),
           Flatten(WalletId(senderId)),
           statusOpt) =>
-        val amount = FiatCurrency(txInfo.Currency.get.get)(net)
+        val currency = FiatCurrency(txInfo.Currency.get.get)
+        val amount = currency(net)
         val date = DateFormat.parseDateTime(rawDate)
         val isCompleted = statusOpt.getOrElse(NoneType) == Completed
-        Payment(paymentId.toString, senderId, receiverId, amount, date, description, invoice,
-          isCompleted)
+        val fee = maybeFee.fold(currency.zero)(currency.apply)
+        Payment(paymentId.toString, senderId, receiverId, amount, fee, date, description,
+          invoice, isCompleted)
 
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }

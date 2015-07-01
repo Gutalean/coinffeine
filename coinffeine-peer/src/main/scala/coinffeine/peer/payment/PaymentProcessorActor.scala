@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 
 import akka.util.Timeout
 
-import coinffeine.model.currency.{CurrencyAmount, FiatAmount, FiatCurrency}
+import coinffeine.model.currency.{FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._

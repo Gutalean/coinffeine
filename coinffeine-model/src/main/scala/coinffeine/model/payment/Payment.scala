@@ -10,7 +10,10 @@ case class Payment(
     senderId: String,
     receiverId: String,
     amount: FiatAmount,
+    fee: FiatAmount,
     date: DateTime,
     description: String,
     invoice: Invoice,
-    completed: Boolean)
+    completed: Boolean) {
+  require(amount.currency == fee.currency, s"Inconsistent currencies: $this")
+}
