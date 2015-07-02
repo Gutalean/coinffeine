@@ -9,12 +9,15 @@ import coinffeine.model.payment.PaymentProcessor._
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
   private val balances = new Fallible(FiatAmounts.empty)
+  private val remainingLimits = new Fallible(FiatAmounts.empty)
   private val payments = new Fallible(Map.empty[PaymentId, Payment])
   private var paymentResult: Future[Payment] = _
 
   override val executionContext = ExecutionContext.global
 
   override def currentBalances(): Future[FiatAmounts] = balances.lookup()
+
+  override def currentRemainingLimits(): Future[FiatAmounts] = remainingLimits.lookup()
 
   override def findPaymentById(paymentId: PaymentId): Future[Option[Payment]] =
     payments.lookup(_.get(paymentId))
@@ -37,6 +40,22 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
     balances.givenLookupWillSucceed()
   }
 
+  def givenBalances(newBalances: FiatAmounts): Unit = synchronized {
+    balances.givenValue(newBalances)
+  }
+
+  def givenLimitsCannotBeRetrieved(cause: Throwable): Unit = synchronized {
+    remainingLimits.givenLookupWillFail(cause)
+  }
+
+  def givenLimitsCanBeRetrieved(): Unit = synchronized {
+    remainingLimits.givenLookupWillSucceed()
+  }
+
+  def givenLimits(newRemainingLimits: FiatAmounts): Unit = synchronized {
+    remainingLimits.givenValue(newRemainingLimits)
+  }
+
   def givenPaymentsCannotBeRetrieved(cause: Throwable): Unit = synchronized {
     payments.givenLookupWillFail(cause)
   }
@@ -45,16 +64,12 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
     payments.givenLookupWillSucceed()
   }
 
-  def givenBalances(newBalances: FiatAmounts): Unit = synchronized {
-    balances.givenValue(newBalances)
+  def givenExistingPayment(payment: Payment): Unit = synchronized {
+    payments.givenValue(payments.currentValue + (payment.id -> payment))
   }
 
   def givenPaymentResult(result: Future[Payment]): Unit = synchronized {
     paymentResult = result
-  }
-
-  def givenExistingPayment(payment: Payment): Unit = synchronized {
-    payments.givenValue(payments.currentValue + (payment.id -> payment))
   }
 }
 

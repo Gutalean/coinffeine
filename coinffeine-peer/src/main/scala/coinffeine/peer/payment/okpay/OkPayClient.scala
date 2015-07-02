@@ -32,6 +32,8 @@ trait OkPayClient {
 
   def currentBalances(): Future[FiatAmounts]
 
+  def currentRemainingLimits(): Future[FiatAmounts] = ???
+
   def currentBalance(currency: FiatCurrency): Future[FiatAmount] = {
     implicit val ec = executionContext
     currentBalances().map { balances =>
