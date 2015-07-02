@@ -69,6 +69,8 @@ class StatusCommandTest extends CommandTest {
       override def accountId: Option[AccountId] = ???
       override val balances: Property[Cached[FiatAmounts]] =
         new MutableProperty(Cached.fresh(FiatAmounts.empty))
+      override val remainingLimits: Property[Cached[FiatAmounts]] =
+        new MutableProperty(Cached.fresh(FiatAmounts.empty))
     }
     override def alarms = ???
     override def start(): Future[Unit] = ???

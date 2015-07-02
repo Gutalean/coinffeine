@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import soapenvelope11.Fault
 
-import coinffeine.model.currency.{FiatAmount, FiatAmounts, FiatCurrency}
+import coinffeine.model.currency._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
 import coinffeine.peer.payment._
@@ -109,6 +109,9 @@ class OkPayWebServiceClient(
             throw new PaymentProcessorException(s"Cannot parse balances in $response"))
       }.mapSoapFault()
     }
+
+  // TODO: compute the actual remaining limits
+  override def currentRemainingLimits() = Future.successful(FiatAmounts.empty)
 
   private def parsePaymentOfCurrency(
       txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Payment = {

@@ -3,11 +3,12 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
+import scala.util.{Try, Failure, Success}
 
 import akka.actor._
 import akka.pattern._
 
+import coinffeine.common.ScalaFutureImplicits._
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
@@ -15,7 +16,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
-import coinffeine.peer.events.fiat.BalanceChanged
+import coinffeine.peer.events.fiat.{RemainingLimitsChanged, BalanceChanged}
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
@@ -36,9 +37,10 @@ private class OkPayProcessorActor(
 
   private var timer: Cancellable = _
   private var balances = Cached.stale(FiatAmounts.empty)
+  private var remainingLimits = Cached.stale(FiatAmounts.empty)
 
   override def onStart(args: Unit) = {
-    pollBalances()
+    pollAccountState()
     timer = context.system.scheduler.schedule(
       initialDelay = pollingInterval,
       interval = pollingInterval,
@@ -58,9 +60,9 @@ private class OkPayProcessorActor(
     case pay: Pay => sendPayment(sender(), pay)
     case FindPayment(criterion) => findPayment(sender(), criterion)
     case RetrieveBalance(currency) => currentBalance(sender(), currency)
-    case PollBalances => pollBalances()
-    case UpdateBalances(newBalances) => refreshBalances(newBalances)
-    case BalanceUpdateFailed(cause) => staleBalances(cause)
+    case PollBalances => pollAccountState()
+    case PollResult(newBalances, newRemainingLimits) =>
+      updateCachedInformation(newBalances, newRemainingLimits)
     case msg @ (_: BlockFunds | _: UnblockFunds) => registry.forward(msg)
   }
 
@@ -71,11 +73,11 @@ private class OkPayProcessorActor(
     } yield payment).onComplete {
       case Success(payment) =>
         requester ! Paid(payment)
-        pollBalances()
+        pollAccountState()
       case Failure(error) =>
         unmarkFundsUsed(pay.fundsId, pay.amount)
         requester ! PaymentFailed(pay, error)
-        pollBalances()
+        pollAccountState()
     }
   }
 
@@ -109,17 +111,16 @@ private class OkPayProcessorActor(
   }
 
   private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
-    val balances = clientFactory.build().currentBalances()
-    balances.onSuccess { case b =>
-      self ! UpdateBalances(b)
-    }
-    val blockedFunds = blockedFundsForCurrency(currency)
-    (for {
-      totalAmount <- balances.map { b => b.get(currency)
-        .getOrElse(throw new PaymentProcessorException(s"No balance in $currency"))
-      }
-      blockedAmount <- blockedFunds
-    } yield BalanceRetrieved(totalAmount, blockedAmount)).recover {
+    val pollResult = pollAccountState()
+    val blockedFundsResult = blockedFundsForCurrency(currency)
+    val completeBalance = for {
+      accountState <- pollResult
+      balances <- Future.fromTry(accountState.balances)
+      totalAmount = balances.get(currency).getOrElse(throw new PaymentProcessorException(
+        s"No balance in $currency"))
+      blockedAmount <- blockedFundsResult
+    } yield BalanceRetrieved(totalAmount, blockedAmount)
+    completeBalance.recover {
       case NonFatal(error) => BalanceRetrievalFailed(currency, error)
     }.pipeTo(requester)
   }
@@ -129,28 +130,46 @@ private class OkPayProcessorActor(
       .withImmediateReply[TotalBlockedFunds]().map(_.funds)
   }
 
-  private def refreshBalances(amounts: FiatAmounts): Unit = {
-    recover(OkPayPollingAlarm)
-    balances = Cached.fresh(amounts)
-    notifyBalances()
+  private def updateCachedInformation(
+      maybeBalances: Try[FiatAmounts], maybeLimits: Try[FiatAmounts]): Unit = {
+
+    if (maybeBalances.isSuccess && maybeLimits.isSuccess) recover(OkPayPollingAlarm)
+    else alert(OkPayPollingAlarm)
+
+    maybeBalances match {
+      case Success(newBalances) =>
+        balances = Cached.fresh(newBalances)
+      case Failure(cause) =>
+        log.error(cause, "Cannot poll OkPay for balances")
+        balances = Cached.stale(balances.cached)
+    }
+
+    maybeLimits match {
+      case Success(newLimits) =>
+        remainingLimits = Cached.fresh(newLimits)
+      case Failure(cause) =>
+        log.error(cause, "Cannot poll OkPay for remaining limits")
+        remainingLimits = Cached.stale(remainingLimits.cached)
+    }
+
+    notifyAccountStatus()
   }
 
-  private def staleBalances(cause: Throwable): Unit = {
-    log.error(cause, "Cannot poll OKPay for balances")
-    alert(OkPayPollingAlarm)
-    balances = Cached.stale(balances.cached)
-    notifyBalances()
-  }
-
-  private def notifyBalances(): Unit = {
-    registry ! BalancesUpdate(balances.cached)
+  private def notifyAccountStatus(): Unit = {
+    registry ! AccountUpdate(balances.cached, remainingLimits.cached)
     publish(BalanceChanged(balances))
+    publish(RemainingLimitsChanged(remainingLimits))
   }
 
-  private def pollBalances(): Unit = {
-    clientFactory.build().currentBalances().map(UpdateBalances.apply).recover {
-      case NonFatal(cause) => BalanceUpdateFailed(cause)
-    }.pipeTo(self)
+  private def pollAccountState(): Future[PollResult] = {
+    val balancesResult = clientFactory.build().currentBalances().materialize
+    val limitsResult = clientFactory.build().currentRemainingLimits().materialize
+    val pollResult = for {
+      balances <- balancesResult
+      limits <- limitsResult
+    } yield PollResult(balances, limits)
+    pollResult.pipeTo(self)
+    pollResult
   }
 }
 
@@ -166,11 +185,8 @@ object OkPayProcessorActor {
   /** Self-message sent to trigger OKPay API polling. */
   private case object PollBalances
 
-  /** Self-message sent to update to the latest balances */
-  private case class UpdateBalances(balances: FiatAmounts)
-
-  /** Self-message to report balance polling failures */
-  private case class BalanceUpdateFailed(cause: Throwable)
+  /** Self-message sent to update to the latest balances and remaining limits */
+  private case class PollResult(balances: Try[FiatAmounts], remainingLimits: Try[FiatAmounts])
 
   def props(lookupSettings: () => OkPaySettings) = {
     Props(new OkPayProcessorActor(new OkPayClientFactory(lookupSettings), BlockedFiatRegistry.props,

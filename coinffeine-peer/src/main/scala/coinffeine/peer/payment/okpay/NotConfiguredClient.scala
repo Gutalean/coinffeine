@@ -12,20 +12,27 @@ import coinffeine.model.payment.PaymentProcessor._
 object NotConfiguredClient extends OkPayClient {
   override val accountId = "unconfigured"
 
-  override def findPaymentById(paymentId: PaymentId) = Future.failed(notConfiguredError)
+  override def findPaymentById(paymentId: PaymentId) = failedFuture
 
-  override def findPaymentByInvoice(invoice: Invoice) = Future.failed(notConfiguredError)
+  override def findPaymentByInvoice(invoice: Invoice) = failedFuture
 
-  override def currentBalances() = Future.failed(notConfiguredError)
+  override def currentBalances() = failedFuture
+
+  override def currentRemainingLimits() = failedFuture
 
   override def sendPayment(
-      to: AccountId, amount: FiatAmount, comment: String, invoice: Invoice,
+      to: AccountId,
+      amount: FiatAmount,
+      comment: String,
+      invoice: Invoice,
       feePolicy: FeePolicy) =
-    Future.failed(notConfiguredError)
+    failedFuture
 
   override protected def executionContext = throw notConfiguredError
 
   private val notConfiguredError =
     new IllegalStateException("OKPay credentials are not properly configured")
         with NoStackTrace
+
+  private val failedFuture = Future.failed(notConfiguredError)
 }
