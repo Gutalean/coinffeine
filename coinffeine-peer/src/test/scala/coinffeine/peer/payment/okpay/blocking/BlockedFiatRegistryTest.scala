@@ -65,6 +65,20 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     )
   }
 
+  it must "consider remaining usage limits when blocking funds" in new WithBlockingFundsActor {
+    givenAccountUpdate(amount = 100.EUR, remainingLimit = 50.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
+    actor ! PaymentProcessorActor.BlockFunds(ExchangeId.random(), 50.EUR)
+    expectMsgAllConformingOf(
+      classOf[PaymentProcessorActor.BlockedFunds],
+      classOf[PaymentProcessorActor.BlockedFunds]
+    )
+    eventProbe.expectMsgAllConformingOf(
+      classOf[PaymentProcessorActor.AvailableFunds],
+      classOf[PaymentProcessorActor.UnavailableFunds]
+    )
+  }
+
   it must "reject blocking funds twice for the same exchange" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds = givenAvailableFunds(50.EUR)

@@ -20,6 +20,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   import BlockedFiatRegistry._
 
   private var balances = FiatAmounts.empty
+  private var remainingLimits = FiatAmounts.empty
   private var funds: Map[ExchangeId, BlockedFundsInfo] = Map.empty
   private val fundsAvailability = new BlockedFundsAvailability()
 
@@ -51,6 +52,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
     case AccountUpdate(newBalances, newRemainingLimits) =>
       balances = newBalances
+      remainingLimits = newRemainingLimits
       updateBackedFunds()
 
     case MarkUsed(fundsId, amount) =>
@@ -150,7 +152,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   private def fundsThatCanBeBacked(currency: FiatCurrency): Set[ExchangeId] = {
-    val availableBalance = balances.get(currency).getOrElse(currency.zero)
+    val balance = transferableBalance(currency)
     val eligibleFunds = funds
         .values
         .filter(_.remainingAmount.currency == currency)
@@ -159,9 +161,15 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
         .sortBy(_.timestamp.getMillis)
     val fundsThatCanBeBacked =
       eligibleFunds.scanLeft(currency.zero)(_ + _.remainingAmount)
-          .takeWhile(_ <= availableBalance)
+          .takeWhile(_ <= balance)
           .size - 1
     eligibleFunds.take(fundsThatCanBeBacked).map(_.id).toSet
+  }
+
+  private def transferableBalance(currency: FiatCurrency): FiatAmount = {
+    val availableBalance = balances.get(currency).getOrElse(currency.zero)
+    val remainingLimit = remainingLimits.get(currency)
+    remainingLimit.fold(availableBalance)(_ min availableBalance)
   }
 
   private def notifyAvailabilityChanges(): Unit = {
