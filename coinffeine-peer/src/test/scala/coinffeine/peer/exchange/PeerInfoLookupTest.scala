@@ -11,7 +11,7 @@ import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.payment.okpay.OkPaySettings
+import coinffeine.peer.payment.okpay.{VerificationStatus, OkPaySettings}
 
 class PeerInfoLookupTest extends AkkaSpec {
 
@@ -37,7 +37,7 @@ class PeerInfoLookupTest extends AkkaSpec {
   }
 
   private trait Fixture {
-    
+
     class TestActor(wallet: ActorRef, settings: OkPaySettingsStub) extends Actor {
       import context.dispatcher
       val instance = new PeerInfoLookupImpl(wallet, settings.lookup)
@@ -68,11 +68,12 @@ class PeerInfoLookupTest extends AkkaSpec {
       wallet.reply(WalletActor.KeyPairCreated(peerInfo.bitcoinKey))
     }
   }
-  
+
   private class OkPaySettingsStub {
     private var settings: OkPaySettings = OkPaySettings(
       userAccount = None,
       seedToken = None,
+      verificationStatus = None,
       serverEndpointOverride = None,
       pollingInterval = Duration.Zero
     )
