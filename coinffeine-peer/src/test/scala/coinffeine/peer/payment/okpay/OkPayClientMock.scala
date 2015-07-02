@@ -1,7 +1,6 @@
 package coinffeine.peer.payment.okpay
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 import coinffeine.model.currency.{FiatAmount, FiatAmounts}
 import coinffeine.model.payment.Payment
@@ -9,21 +8,19 @@ import coinffeine.model.payment.PaymentProcessor._
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
-  private var balances: Future[FiatAmounts] = Future.successful(FiatAmounts.empty)
+  private val balances = new Fallible(FiatAmounts.empty)
+  private val payments = new Fallible(Map.empty[PaymentId, Payment])
   private var paymentResult: Future[Payment] = _
-  private var payments: Map[PaymentId, Try[Option[Payment]]] = Map.empty
 
   override val executionContext = ExecutionContext.global
 
-  override def currentBalances(): Future[FiatAmounts] = balances
+  override def currentBalances(): Future[FiatAmounts] = balances.lookup()
 
   override def findPaymentById(paymentId: PaymentId): Future[Option[Payment]] =
-    Future.fromTry(payments(paymentId))
+    payments.lookup(_.get(paymentId))
 
   override def findPaymentByInvoice(invoice: Invoice): Future[Option[Payment]] =
-    Future.successful(payments.values.collectFirst {
-      case Success(Some(payment)) if payment.invoice == invoice => payment
-    })
+    payments.lookup(_.values.find(_.invoice == invoice))
 
   override def sendPayment(
       to: AccountId,
@@ -32,28 +29,55 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
       invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment] = paymentResult
 
-  def setBalances(balances: FiatAmounts): Unit = {
-    setBalances(Future.successful(balances))
+  def givenBalancesCannotBeRetrieved(cause: Throwable): Unit = synchronized {
+    balances.givenLookupWillFail(cause)
   }
 
-  def setBalances(newBalances: Future[FiatAmounts]): Unit = synchronized {
-    balances = newBalances
+  def givenBalancesCanBeRetrieved(): Unit = synchronized {
+    balances.givenLookupWillSucceed()
   }
 
-  def setPaymentResult(result: Future[Payment]): Unit = synchronized {
+  def givenPaymentsCannotBeRetrieved(cause: Throwable): Unit = synchronized {
+    payments.givenLookupWillFail(cause)
+  }
+
+  def givenPaymentsCanBeRetrieved(): Unit = synchronized {
+    payments.givenLookupWillSucceed()
+  }
+
+  def givenBalances(newBalances: FiatAmounts): Unit = synchronized {
+    balances.givenValue(newBalances)
+  }
+
+  def givenPaymentResult(result: Future[Payment]): Unit = synchronized {
     paymentResult = result
   }
 
   def givenExistingPayment(payment: Payment): Unit = synchronized {
-    payments += payment.id -> Success(Some(payment))
+    payments.givenValue(payments.currentValue + (payment.id -> payment))
+  }
+}
+
+private class Fallible[A](initialValue: A) {
+  private var value: A = initialValue
+  private var retrievalFailure: Option[Throwable] = None
+
+  def givenLookupWillFail(cause: Throwable): Unit = {
+    retrievalFailure = Some(cause)
   }
 
-  def givenNonExistingPayment(paymentId: PaymentId): Unit = synchronized {
-    payments += paymentId -> Success(None)
+  def givenLookupWillSucceed(): Unit = {
+    retrievalFailure = None
   }
 
-  def givenPaymentCannotBeRetrieved(paymentId: PaymentId, error: Throwable): Unit =
-    synchronized {
-      payments += paymentId -> Failure(error)
-    }
+  def givenValue(newValue: A): Unit = {
+    value = newValue
+  }
+
+  def currentValue: A = value
+
+  def lookup(): Future[A] = lookup(identity)
+
+  def lookup[B](f: A => B): Future[B] =
+    retrievalFailure.fold(Future.successful(f(value)))(Future.failed)
 }

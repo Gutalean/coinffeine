@@ -24,7 +24,7 @@ import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   "OKPayProcessor" must "be able to get the current balance" in new WithOkPayProcessor {
-    givenClientBalance(amount)
+    givenAccountStatus(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenBalanceIsRequested(UsDollar)
@@ -33,10 +33,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   }
 
   it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
-    givenClientBalance(amount)
+    givenAccountStatus(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
-    givenClientBalance(amount * 2)
+    givenAccountStatus(amount * 2)
     whenBalanceIsRequested(UsDollar)
     expectRetrieveBlockedFunds(UsDollar)
     expectBalancePropertyUpdated(amount * 2)
@@ -64,7 +64,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
     givenClientPaymentWillSucceedWith(payment)
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenClientBalance(amountPlusFee)
+    givenAccountStatus(amountPlusFee)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -78,7 +78,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   }
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
-    givenClientBalance(amount)
+    givenAccountStatus(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -89,7 +89,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "report failure to send a payment" in new WithOkPayProcessor {
     givenClientPaymentWillFail()
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenClientBalance(amountPlusFee)
+    givenAccountStatus(amountPlusFee)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -106,14 +106,13 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   }
 
   it must "be able to check a payment does not exist" in new WithOkPayProcessor {
-    givenClientNonExistingPayment(payment)
     givenStartedPaymentProcessor()
     whenFindPaymentIsRequested(payment)
     expectPaymentNotFound(payment)
   }
 
   it must "report failure to retrieve a payment" in new WithOkPayProcessor {
-    givenClientPaymentCannotBeRetrieved(payment)
+    givenPaymentsCannotBeRetrieved()
     givenStartedPaymentProcessor()
     whenFindPaymentIsRequested(payment)
     expectFindPaymentFailed(payment)
@@ -121,11 +120,11 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
-    givenClientBalance(100.EUR)
+    givenAccountStatus(100.EUR)
     givenStartedPaymentProcessor()
-    givenClientBalance(120.EUR)
+    givenAccountStatus(120.EUR)
     expectBalancePropertyUpdated(120.EUR, timeout = 2.seconds.dilated)
-    givenClientBalance(140.EUR)
+    givenAccountStatus(140.EUR)
     expectBalancePropertyUpdated(140.EUR, timeout = 2.seconds.dilated)
     givenBalanceRetrievalFailure()
     expectBalancePropertyUpdated(
@@ -174,32 +173,28 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       requester.expectMsg(Service.Started)
     }
 
-    def givenClientBalance(balance: FiatAmount): Unit = {
-      client.setBalances(FiatAmounts.fromAmounts(balance))
+    def givenAccountStatus(balance: FiatAmount): Unit = {
+      client.givenBalances(FiatAmounts.fromAmounts(balance))
     }
 
     def givenBalanceRetrievalFailure(): Unit = {
-      client.setBalances(Future.failed(cause))
+      client.givenBalancesCannotBeRetrieved(cause)
     }
 
     def givenClientPaymentWillSucceedWith(payment: Payment): Unit = {
-      client.setPaymentResult(Future.successful(payment))
+      client.givenPaymentResult(Future.successful(payment))
     }
 
     def givenClientPaymentWillFail(): Unit = {
-      client.setPaymentResult(Future.failed(cause))
+      client.givenPaymentResult(Future.failed(cause))
     }
 
     def givenClientExistingPayment(payment: Payment): Unit = {
       client.givenExistingPayment(payment)
     }
 
-    def givenClientNonExistingPayment(payment: Payment): Unit = {
-      client.givenNonExistingPayment(payment.id)
-    }
-
-    def givenClientPaymentCannotBeRetrieved(payment: Payment): Unit = {
-      client.givenPaymentCannotBeRetrieved(payment.id, cause)
+    def givenPaymentsCannotBeRetrieved(): Unit = {
+      client.givenPaymentsCannotBeRetrieved(cause)
     }
 
     def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
