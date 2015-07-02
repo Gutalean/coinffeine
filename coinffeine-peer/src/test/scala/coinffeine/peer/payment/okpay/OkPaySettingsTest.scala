@@ -10,6 +10,7 @@ class OkPaySettingsTest extends UnitTest {
   val settingsWithNoCredentials = OkPaySettings(
     userAccount = None,
     seedToken = None,
+    verificationStatus = None,
     serverEndpointOverride = None,
     pollingInterval = 10.seconds
   )

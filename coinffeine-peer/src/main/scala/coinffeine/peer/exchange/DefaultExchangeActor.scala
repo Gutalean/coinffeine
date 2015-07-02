@@ -305,7 +305,7 @@ object DefaultExchangeActor {
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
-      val lookup = new PeerInfoLookupImpl(wallet, configProvider.okPaySettings)
+      val lookup = new PeerInfoLookupImpl(wallet, configProvider)
 
       Props(new DefaultExchangeActor(DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }

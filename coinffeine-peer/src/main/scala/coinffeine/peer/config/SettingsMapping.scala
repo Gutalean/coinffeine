@@ -1,11 +1,11 @@
 package coinffeine.peer.config
 
-import scalaz.syntax.std.boolean._
 import java.io.File
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.util.Try
+import scalaz.syntax.std.boolean._
 
 import com.typesafe.config._
 
@@ -16,7 +16,7 @@ import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.bitcoin.BitcoinSettings.MainNet
-import coinffeine.peer.payment.okpay.OkPaySettings
+import coinffeine.peer.payment.okpay.{OkPaySettings, VerificationStatus}
 import coinffeine.protocol.MessageGatewaySettings
 
 trait SettingsMapping[A] {
@@ -149,6 +149,10 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def fromConfig(configPath: File, config: Config) = OkPaySettings(
       userAccount = config.getStringOpt("coinffeine.okpay.id"),
       seedToken = config.getStringOpt("coinffeine.okpay.token"),
+      verificationStatus = config.getStringOpt("coinffeine.okpay.verificationStatus").map { status =>
+        VerificationStatus.parse(status).getOrElse(
+          throw new IllegalArgumentException(s"Invalid configured verification status: '$status'"))
+      },
       serverEndpointOverride = config.getStringOpt("coinffeine.okpay.endpoint").map(URI.create),
       pollingInterval = config.getSeconds("coinffeine.okpay.pollingInterval")
     )
@@ -156,6 +160,8 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withOptValue("coinffeine.okpay.id", settings.userAccount.map(configValue))
       .withOptValue("coinffeine.okpay.token", settings.seedToken.map(configValue))
+      .withOptValue("coinffeine.okpay.verificationStatus",
+          settings.verificationStatus.map(s => configValue(s.toString)))
       .withOptValue("coinffeine.okpay.endpoint",
         settings.serverEndpointOverride.map(url => configValue(url.toString)))
       .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))

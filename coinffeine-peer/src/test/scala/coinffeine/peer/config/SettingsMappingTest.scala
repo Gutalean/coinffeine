@@ -15,7 +15,7 @@ import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
-import coinffeine.peer.payment.okpay.OkPaySettings
+import coinffeine.peer.payment.okpay.{OkPaySettings, VerificationStatus}
 import coinffeine.protocol.MessageGatewaySettings
 
 class SettingsMappingTest extends UnitTest with OptionValues {
@@ -179,38 +179,58 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       "coinffeine.okpay.id" -> "id",
       "coinffeine.okpay.token" -> "token",
       "coinffeine.okpay.endpoint" -> "http://example.com/death-star",
-      "coinffeine.okpay.pollingInterval" -> "50s"
+      "coinffeine.okpay.pollingInterval" -> "50s",
+      "coinffeine.okpay.verificationStatus" -> "NotVerified"
     )
     val settings = fromConfig[OkPaySettings](conf)
     settings.userAccount shouldBe Some("id")
     settings.seedToken shouldBe Some("token")
     settings.serverEndpointOverride shouldBe Some(new URI("http://example.com/death-star"))
     settings.pollingInterval shouldBe 50.seconds
+    settings.verificationStatus should contain (VerificationStatus.NotVerified)
 
-    val settings2 = fromConfig[OkPaySettings](makeConfig(
+    val alternativeSettings = fromConfig[OkPaySettings](amendConfig(conf,
+      "coinffeine.okpay.verificationStatus" -> "Verified"
+    ))
+    alternativeSettings.verificationStatus should contain (VerificationStatus.Verified)
+
+    val requiredSettings = fromConfig[OkPaySettings](makeConfig(
       "coinffeine.okpay.pollingInterval" -> "50s"
     ))
-    settings2.userAccount shouldBe 'empty
-    settings2.seedToken shouldBe 'empty
-    settings2.serverEndpointOverride shouldBe 'empty
+    requiredSettings.userAccount shouldBe 'empty
+    requiredSettings.seedToken shouldBe 'empty
+    requiredSettings.verificationStatus shouldBe 'empty
+    requiredSettings.serverEndpointOverride shouldBe 'empty
   }
 
   it should "map to config" in {
     val settings = OkPaySettings(
       userAccount = Some("skywalker"),
       seedToken = Some("lightsaber"),
+      verificationStatus = Some(VerificationStatus.NotVerified),
       serverEndpointOverride = Some(new URI("http://example.com/x-wing")),
       pollingInterval = 15.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.getString("coinffeine.okpay.id") shouldBe "skywalker"
     cfg.getString("coinffeine.okpay.token") shouldBe "lightsaber"
+    cfg.getString("coinffeine.okpay.verificationStatus") shouldBe "NotVerified"
     cfg.getString("coinffeine.okpay.endpoint") shouldBe "http://example.com/x-wing"
     cfg.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS) shouldBe 15
 
-    val cfg2 = SettingsMapping.toConfig(settings.copy(userAccount = None, seedToken = None))
-    cfg2.hasPath("coinffeine.okpay.id") shouldBe false
-    cfg2.hasPath("coinffeine.okpay.token") shouldBe false
+    val alternativeCfg = SettingsMapping.toConfig(settings.copy(
+      verificationStatus = Some(VerificationStatus.Verified)
+    ))
+    alternativeCfg.getString("coinffeine.okpay.verificationStatus") shouldBe "Verified"
+
+    val requiredCfg = SettingsMapping.toConfig(settings.copy(
+      userAccount = None,
+      seedToken = None,
+      verificationStatus = None
+    ))
+    requiredCfg.hasPath("coinffeine.okpay.id") shouldBe false
+    requiredCfg.hasPath("coinffeine.okpay.token") shouldBe false
+    requiredCfg.hasPath("coinffeine.okpay.verificationStatus") shouldBe false
   }
 
   private def makeConfig(items: (String, Any)*): Config =

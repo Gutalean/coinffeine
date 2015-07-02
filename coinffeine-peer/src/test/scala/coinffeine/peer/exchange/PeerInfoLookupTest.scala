@@ -1,7 +1,5 @@
 package coinffeine.peer.exchange
 
-import scala.concurrent.duration.Duration
-
 import akka.actor._
 import akka.pattern._
 import akka.testkit.TestProbe
@@ -11,7 +9,6 @@ import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.bitcoin.wallet.WalletActor
-import coinffeine.peer.payment.okpay.OkPaySettings
 
 class PeerInfoLookupTest extends AkkaSpec {
 
@@ -37,26 +34,26 @@ class PeerInfoLookupTest extends AkkaSpec {
   }
 
   private trait Fixture {
-    
-    class TestActor(wallet: ActorRef, settings: OkPaySettingsStub) extends Actor {
+
+    class TestActor(wallet: ActorRef, settings: SettingsStub) extends Actor {
       import context.dispatcher
-      val instance = new PeerInfoLookupImpl(wallet, settings.lookup)
+      val instance = new PeerInfoLookupImpl(wallet, settings.lookup())
       override def receive: Receive = {
         case "retrieve" => instance.lookup().pipeTo(sender())
       }
     }
 
     val wallet = TestProbe()
-    val settingsProvider = new OkPaySettingsStub
+    val settings = new SettingsStub
     val peerInfo = Exchange.PeerInfo("FooPay0001", new KeyPair())
-    val actor = system.actorOf(Props(new TestActor(wallet.ref, settingsProvider)))
+    val actor = system.actorOf(Props(new TestActor(wallet.ref, settings)))
 
     def givenConfiguredAccountId(): Unit = {
-      settingsProvider.givenAccountId(peerInfo.paymentProcessorAccount)
+      settings.givenAccountId(peerInfo.paymentProcessorAccount)
     }
 
     def givenNotConfiguredAccountId(): Unit = {
-      settingsProvider.givenUndefinedAccountId()
+      settings.givenUndefinedAccountId()
     }
 
     def whenLookupIsRequested(): Unit = {
@@ -68,23 +65,18 @@ class PeerInfoLookupTest extends AkkaSpec {
       wallet.reply(WalletActor.KeyPairCreated(peerInfo.bitcoinKey))
     }
   }
-  
-  private class OkPaySettingsStub {
-    private var settings: OkPaySettings = OkPaySettings(
-      userAccount = None,
-      seedToken = None,
-      serverEndpointOverride = None,
-      pollingInterval = Duration.Zero
-    )
 
-    def lookup(): OkPaySettings = settings
+  private class SettingsStub {
+    private var value: Option[AccountId] = _
+
+    def lookup(): Option[AccountId] = value
 
     def givenUndefinedAccountId(): Unit = {
-      settings = settings.copy(userAccount = None)
+      value = None
     }
 
     def givenAccountId(id: AccountId): Unit = {
-      settings = settings.copy(userAccount = Some(id))
+      value = Some(id)
     }
   }
 }
