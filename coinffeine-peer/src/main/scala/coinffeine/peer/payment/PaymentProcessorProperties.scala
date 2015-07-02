@@ -6,4 +6,5 @@ import coinffeine.model.util.Cached
 
 trait PaymentProcessorProperties {
   val balances: Property[Cached[FiatAmounts]]
+  val remainingLimits: Property[Cached[FiatAmounts]]
 }
