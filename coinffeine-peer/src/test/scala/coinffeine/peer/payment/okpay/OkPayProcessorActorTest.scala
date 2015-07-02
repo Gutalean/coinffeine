@@ -226,7 +226,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectRegistryIsInitialized(): Unit = {
       fundsRegistry.expectCreation()
-      fundsRegistry.expectMsgType[BlockedFiatRegistry.BalancesUpdate]
+      fundsRegistry.expectMsgType[BlockedFiatRegistry.AccountUpdate]
     }
 
     def expectBalancePropertyUpdated(

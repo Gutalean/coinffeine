@@ -49,7 +49,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
         case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.zero)
       }
 
-    case BalancesUpdate(newBalances) =>
+    case AccountUpdate(newBalances, newRemainingLimits) =>
       balances = newBalances
       updateBackedFunds()
 
@@ -193,7 +193,7 @@ private[okpay] object BlockedFiatRegistry {
 
   case class TotalBlockedFunds(funds: FiatAmount)
 
-  case class BalancesUpdate(balances: FiatAmounts)
+  case class AccountUpdate(balances: FiatAmounts, remainingLimits: FiatAmounts)
 
   /** Request funds for immediate use.
     *

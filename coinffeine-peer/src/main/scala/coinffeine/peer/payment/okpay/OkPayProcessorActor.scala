@@ -132,18 +132,18 @@ private class OkPayProcessorActor(
   private def refreshBalances(amounts: FiatAmounts): Unit = {
     recover(OkPayPollingAlarm)
     balances = Cached.fresh(amounts)
-    notifyBalances()
+    notifyAccountStatus()
   }
 
   private def staleBalances(cause: Throwable): Unit = {
     log.error(cause, "Cannot poll OKPay for balances")
     alert(OkPayPollingAlarm)
     balances = Cached.stale(balances.cached)
-    notifyBalances()
+    notifyAccountStatus()
   }
 
-  private def notifyBalances(): Unit = {
-    registry ! BalancesUpdate(balances.cached)
+  private def notifyAccountStatus(): Unit = {
+    registry ! AccountUpdate(balances.cached, remainingLimits = FiatAmounts.empty)
     publish(BalanceChanged(balances))
   }
 
