@@ -10,10 +10,11 @@ import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 
 import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.properties.Property
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
-import coinffeine.model.util.CacheStatus
+import coinffeine.model.util.{Cached, CacheStatus}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
@@ -24,7 +25,7 @@ import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   "OKPayProcessor" must "be able to get the current balance" in new WithOkPayProcessor {
-    givenAccountStatus(amount)
+    givenAccountBalance(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenBalanceIsRequested(UsDollar)
@@ -33,10 +34,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   }
 
   it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
-    givenAccountStatus(amount)
+    givenAccountBalance(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
-    givenAccountStatus(amount * 2)
+    givenAccountBalance(amount * 2)
     whenBalanceIsRequested(UsDollar)
     expectRetrieveBlockedFunds(UsDollar)
     expectBalancePropertyUpdated(amount * 2)
@@ -64,7 +65,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
     givenClientPaymentWillSucceedWith(payment)
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenAccountStatus(amountPlusFee)
+    givenAccountBalance(amountPlusFee)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -78,7 +79,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   }
 
   it must "require enough funds to send a payment" in new WithOkPayProcessor {
-    givenAccountStatus(amount)
+    givenAccountBalance(amount)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -89,7 +90,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   it must "report failure to send a payment" in new WithOkPayProcessor {
     givenClientPaymentWillFail()
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
-    givenAccountStatus(amountPlusFee)
+    givenAccountBalance(amountPlusFee)
     givenStartedPaymentProcessor()
     expectRegistryIsInitialized()
     whenPaymentIsRequested(amount)
@@ -120,19 +121,37 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
   it must "poll for EUR balance periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
-    givenAccountStatus(100.EUR)
+    givenAccountBalance(100.EUR)
     givenStartedPaymentProcessor()
-    givenAccountStatus(120.EUR)
-    expectBalancePropertyUpdated(120.EUR, timeout = 2.seconds.dilated)
-    givenAccountStatus(140.EUR)
-    expectBalancePropertyUpdated(140.EUR, timeout = 2.seconds.dilated)
+
+    givenAccountBalance(120.EUR)
+    expectBalancePropertyUpdated(120.EUR)
+
+    givenAccountBalance(140.EUR)
+    expectBalancePropertyUpdated(140.EUR)
+
     givenBalanceRetrievalFailure()
-    expectBalancePropertyUpdated(
-      140.EUR, cacheStatus = CacheStatus.Stale, timeout = 2.seconds.dilated)
+    expectBalancePropertyUpdated(140.EUR, cacheStatus = CacheStatus.Stale)
+  }
+
+  it must "poll for remaining limits periodically" in new WithOkPayProcessor {
+    override def pollingInterval = 1.second
+    givenAccountBalance(100.EUR)
+    givenStartedPaymentProcessor()
+
+    givenAccountRemainingLimits(300.EUR)
+    expectRemainingLimitsPropertyUpdated(300.EUR)
+
+    givenAccountRemainingLimits(280.EUR)
+    expectRemainingLimitsPropertyUpdated(280.EUR)
+
+    givenRemainingLimitsRetrievalFailure()
+    expectRemainingLimitsPropertyUpdated(280.EUR, cacheStatus = CacheStatus.Stale)
   }
 
   private trait WithOkPayProcessor {
     def pollingInterval = 3.seconds.dilated
+    val propertyCheckTimeout = PatienceConfiguration.Timeout(2.seconds)
     val senderAccount = "OK12345"
     val receiverAccount = "OK54321"
     val amount = 100.USD
@@ -173,12 +192,20 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       requester.expectMsg(Service.Started)
     }
 
-    def givenAccountStatus(balance: FiatAmount): Unit = {
+    def givenAccountBalance(balance: FiatAmount): Unit = {
       client.givenBalances(FiatAmounts.fromAmounts(balance))
+    }
+
+    def givenAccountRemainingLimits(remainingLimit: FiatAmount): Unit = {
+      client.givenLimits(FiatAmounts.fromAmounts(remainingLimit))
     }
 
     def givenBalanceRetrievalFailure(): Unit = {
       client.givenBalancesCannotBeRetrieved(cause)
+    }
+
+    def givenRemainingLimitsRetrievalFailure(): Unit = {
+      client.givenLimitsCannotBeRetrieved(cause)
     }
 
     def givenClientPaymentWillSucceedWith(payment: Payment): Unit = {
@@ -226,11 +253,25 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectBalancePropertyUpdated(
         balance: FiatAmount,
-        cacheStatus: CacheStatus = CacheStatus.Fresh,
-        timeout: FiniteDuration = 200.millis): Unit = {
-      eventually(PatienceConfiguration.Timeout(timeout)) {
-        properties.balances.get.status shouldBe cacheStatus
-        properties.balances.get.cached(balance.currency) shouldBe balance
+        cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
+      expectPropertyUpdated(
+        property = properties.balances,
+        expectedValue = Cached(FiatAmounts.fromAmounts(balance), cacheStatus)
+      )
+    }
+
+    def expectRemainingLimitsPropertyUpdated(
+        remainingLimit: FiatAmount,
+        cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
+      expectPropertyUpdated(
+        property = properties.remainingLimits,
+        expectedValue = Cached(FiatAmounts.fromAmounts(remainingLimit), cacheStatus)
+      )
+    }
+
+    private def expectPropertyUpdated[A](property: Property[A], expectedValue: A): Unit = {
+      eventually(propertyCheckTimeout) {
+        property.get shouldBe expectedValue
       }
     }
 
