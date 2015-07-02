@@ -15,7 +15,7 @@ private class BlockchainDownloadListener(
   private var lastStatus: BlockchainStatus = BlockchainStatus.NotDownloading(None)
 
   override def onChainDownloadStarted(peer: Peer, blocksLeft: Int): Unit = {
-    logger.debug(
+    logger.info(
       s"Blockchain download started from peer ${peer.getAddress}, $blocksLeft blocks to download")
     val lastBlockInfo = BlockInfo(
       peer.getBestHeight, new DateTime(blockchain.getChainHead.getHeader.getTime))
@@ -27,9 +27,11 @@ private class BlockchainDownloadListener(
     reportDownloadProgress(Some(lastBlockInfo), blocksLeft)
   }
 
-  def reportDownloadProgress(lastBlock: Option[BlockchainStatus.BlockInfo], remainingBlocks: Int): Unit = {
+  def reportDownloadProgress(
+      lastBlock: Option[BlockchainStatus.BlockInfo], remainingBlocks: Int): Unit = {
     val newStatus = lastStatus match {
       case _ if remainingBlocks == 0 =>
+        logger.info("Blockchain download completed")
         BlockchainStatus.NotDownloading(lastBlock)
       case downloading @ BlockchainStatus.Downloading(blocks, _) if blocks >= remainingBlocks =>
         downloading.copy(remainingBlocks = remainingBlocks)
