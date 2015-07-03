@@ -9,8 +9,7 @@ import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.Browser
 import coinffeine.gui.wizard.StepPane
 
-private[setup] class FaucetInfoStepPane(address: String)
-  extends StackPane with StepPane[SetupConfig] {
+private class FaucetInfoStepPane(address: String) extends StackPane with StepPane[SetupConfig] {
 
   override val icon = GlyphIcon.Number2
 
@@ -25,13 +24,13 @@ private[setup] class FaucetInfoStepPane(address: String)
     text = "Please, use our faucet site to obtain your testing credentials."
   }
 
-  private val gotoFaucetLine = new Button("Go to Faucet Site") {
-    handleEvent(ActionEvent.Action) { () => openFaucet()}
+  private val goToFaucetLine = new Button("Go to Faucet Site") {
+    handleEvent(ActionEvent.Action) { () => openFaucet() }
   }
 
   children = new VBox {
     styleClass += "faucet-pane"
-    children = Seq(title, par1, par2, new SupportWidget("setup-faucet"), gotoFaucetLine)
+    children = Seq(title, par1, par2, new SupportWidget("setup-faucet"), goToFaucetLine)
   }
 
   private def openFaucet(): Unit = {
