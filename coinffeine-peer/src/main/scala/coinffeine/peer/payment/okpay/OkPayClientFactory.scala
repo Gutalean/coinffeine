@@ -2,6 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import java.util.concurrent.atomic.AtomicReference
 
+import coinffeine.model.payment.okpay.VerificationStatus.NotVerified
 import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
 /** Factory of OKPay clients.
@@ -16,9 +17,15 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
   private val tokenCache = new AtomicReference[Option[String]](None)
 
   override def build(): OkPayClient = {
-    lookupSettings().apiCredentials.fold[OkPayClient](NotConfiguredClient) { credentials =>
+    val settings = lookupSettings()
+    settings.apiCredentials.fold[OkPayClient](NotConfiguredClient) { credentials =>
       new OkPayWebServiceClient(
-        okPay.service, tokenCache, credentials.walletId, credentials.seedToken)
+        okPay.service,
+        tokenCache,
+        credentials.walletId,
+        credentials.seedToken,
+        settings.verificationStatus.getOrElse(NotVerified).periodicLimits
+      )
     }
   }
 

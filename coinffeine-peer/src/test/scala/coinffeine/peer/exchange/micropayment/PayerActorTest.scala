@@ -4,12 +4,10 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.testkit._
-import org.joda.time.DateTime
 
 import coinffeine.common.akka.test.AkkaSpec
-import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.TestPayment
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment.okpay.OkPayClient.DuplicatedPayment
@@ -79,11 +77,14 @@ class PayerActorTest extends AkkaSpec {
     val retryTimeout = 250.millis
     val requester = TestProbe()
     val paymentProcessor = TestProbe()
-    val payment = Payment(
-      "payment", "sender", "receiver", amount = 5.EUR, fee = 0.1.EUR, DateTime.now(),
-      "description", "invoice", completed = true)
+    val payment = TestPayment.random(completed = true)
     val request = PaymentProcessorActor.Pay(
-      ExchangeId("pay-id"), payment.receiverId, payment.amount, payment.description, payment.invoice)
+      ExchangeId("pay-id"),
+      payment.receiverId,
+      payment.netAmount,
+      payment.description,
+      payment.invoice
+    )
     val response = PaymentProcessorActor.Paid(payment)
     val dupPaymentFailed = PaymentProcessorActor.PaymentFailed(
       request, DuplicatedPayment(payment.receiverId, payment.invoice, null))

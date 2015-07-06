@@ -14,7 +14,7 @@ import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
 import coinffeine.peer.events.fiat.{RemainingLimitsChanged, BalanceChanged}
 import coinffeine.peer.payment.PaymentProcessorActor._

@@ -1,4 +1,4 @@
-package coinffeine.model.payment
+package coinffeine.model.payment.okpay
 
 import java.util.Currency
 

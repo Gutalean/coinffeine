@@ -12,6 +12,7 @@ import soapenvelope11.Fault
 import coinffeine.model.currency._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
+import coinffeine.model.payment.okpay.{TransactionStatus, Transaction}
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
@@ -24,12 +25,14 @@ import coinffeine.peer.payment.okpay.{FeePolicy, OkPayClient, TokenGenerator}
   * @param cachedToken          Cache of security tokens
   * @param accountId            Account, also known as wallet ID in OKPay terms
   * @param tokenGenerator       Generator of valid request tokens
+  * @param periodicLimits       Periodic limits
   */
 class OkPayWebServiceClient(
     service: OkPayWebService.Service,
     cachedToken: AtomicReference[Option[String]],
     override val accountId: String,
-    tokenGenerator: TokenGenerator) extends OkPayClient with StrictLogging {
+    tokenGenerator: TokenGenerator,
+    periodicLimits: FiatAmounts) extends OkPayClient with StrictLogging {
 
   import OkPayWebServiceClient._
 
@@ -39,12 +42,15 @@ class OkPayWebServiceClient(
     * @param cachedToken          Cache of security tokens
     * @param accountId            Account, also known as wallet ID in OKPay terms
     * @param seedToken            Token used to generate request tokens
+    * @param periodicLimits       Periodic limits
     */
   def this(
       service: OkPayWebService.Service,
       cachedToken: AtomicReference[Option[String]],
       accountId: String,
-      seedToken: String) = this(service, cachedToken, accountId, new TokenGenerator(seedToken))
+      seedToken: String,
+      periodicLimits: FiatAmounts) =
+    this(service, cachedToken, accountId, new TokenGenerator(seedToken), periodicLimits)
 
   override implicit protected val executionContext =
     scala.concurrent.ExecutionContext.Implicits.global
@@ -116,9 +122,9 @@ class OkPayWebServiceClient(
   private def parsePaymentOfCurrency(
       txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Payment = {
     val payment = parsePayment(txInfo)
-    if (payment.amount.currency != expectedCurrency) {
+    if (payment.netAmount.currency != expectedCurrency) {
       throw new PaymentProcessorException(
-        s"payment is expressed in ${payment.amount.currency}, but $expectedCurrency was expected")
+        s"payment is expressed in ${payment.netAmount.currency}, but $expectedCurrency was expected")
     }
     payment.asInstanceOf[Payment]
   }
@@ -137,18 +143,28 @@ class OkPayWebServiceClient(
           _,
           Flatten(WalletId(receiverId)),
           Flatten(WalletId(senderId)),
-          statusOpt) =>
+          maybeStatus) =>
         val currency = FiatCurrency(txInfo.Currency.get.get)
         val amount = currency(net)
         val date = DateFormat.parseDateTime(rawDate)
-        val isCompleted = statusOpt.getOrElse(NoneType) == Completed
         val fee = maybeFee.fold(currency.zero)(currency.apply)
-        Payment(paymentId.toString, senderId, receiverId, amount, fee, date, description,
-          invoice, isCompleted)
+        Transaction(paymentId, senderId, receiverId, amount, fee, date, description,
+          invoice, parseStatus(maybeStatus))
 
       case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
     }
   }
+
+  private def parseStatus(maybeStatus: Option[OperationStatus]): TransactionStatus =
+    maybeStatus.getOrElse(NoneType) match {
+      case NoneType => TransactionStatus.None
+      case Error => TransactionStatus.Error
+      case Canceled => TransactionStatus.Canceled
+      case Pending => TransactionStatus.Pending
+      case Reversed => TransactionStatus.Reversed
+      case Hold => TransactionStatus.Hold
+      case Completed => TransactionStatus.Completed
+    }
 
   private def parseBalances(balances: ArrayOfBalance): FiatAmounts = FiatAmounts(
     balances.Balance.collect {

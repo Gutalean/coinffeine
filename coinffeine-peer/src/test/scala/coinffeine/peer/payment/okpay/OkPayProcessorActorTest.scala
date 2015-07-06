@@ -13,13 +13,13 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
-import coinffeine.model.util.{Cached, CacheStatus}
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
+import coinffeine.model.payment.{Payment, TestPayment}
+import coinffeine.model.util.{CacheStatus, Cached}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
-import coinffeine.peer.payment.okpay.ws.OkPayWebServiceClient
 import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
@@ -152,20 +152,15 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
   private trait WithOkPayProcessor {
     def pollingInterval = 3.seconds.dilated
     val propertyCheckTimeout = PatienceConfiguration.Timeout(2.seconds)
-    val senderAccount = "OK12345"
-    val receiverAccount = "OK54321"
     val amount = 100.USD
-    val payment = Payment(
-      id = "250092",
-      senderId = senderAccount,
-      receiverId = receiverAccount,
-      amount = amount,
+    val payment = TestPayment.random(
+      netAmount = amount,
       fee = 0.USD,
-      date = OkPayWebServiceClient.DateFormat.parseDateTime("2014-01-20 14:00:00"),
-      description = "comment",
       invoice = "invoice",
       completed = true
     )
+    val senderAccount = payment.senderId
+    val receiverAccount = payment.receiverId
     val funds = ExchangeId.random()
     val cause = new Exception("Sample error") with NoStackTrace
     val client = new OkPayClientMock(senderAccount)
@@ -243,7 +238,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def whenFindPaymentIsRequested(payment: Payment): Unit = {
       requester.send(
-        processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.id)))
+        processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.paymentId)))
     }
 
     def expectRegistryIsInitialized(): Unit = {
@@ -318,12 +313,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectPaymentSuccess(amount: FiatAmount): Unit = {
       val response = requester.expectMsgType[PaymentProcessorActor.Paid].payment
-      response.id shouldBe payment.id
+      response.paymentId shouldBe payment.paymentId
       response.senderId shouldBe senderAccount
       response.receiverId shouldBe receiverAccount
-      response.amount shouldBe amount
-      response.description shouldBe "comment"
-      response.invoice shouldBe "invoice"
+      response.netAmount shouldBe amount
+      response.description shouldBe payment.description
+      response.invoice shouldBe payment.invoice
     }
 
     def expectPaymentFailed(errorHint: String = ""): Unit = {
@@ -341,12 +336,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectPaymentNotFound(payment: Payment): Unit = {
       requester.expectMsg(
-        PaymentProcessorActor.PaymentNotFound(FindPaymentCriterion.ById(payment.id)))
+        PaymentProcessorActor.PaymentNotFound(FindPaymentCriterion.ById(payment.paymentId)))
     }
 
     def expectFindPaymentFailed(payment: Payment): Unit = {
       requester.expectMsg(
-        PaymentProcessorActor.FindPaymentFailed(FindPaymentCriterion.ById(payment.id), cause))
+        PaymentProcessorActor.FindPaymentFailed(FindPaymentCriterion.ById(payment.paymentId), cause))
     }
 
     def expectForwardedToRegistry(request: Any): Unit = {

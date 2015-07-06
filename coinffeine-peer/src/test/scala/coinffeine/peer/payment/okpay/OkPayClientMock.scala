@@ -65,7 +65,7 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
   }
 
   def givenExistingPayment(payment: Payment): Unit = synchronized {
-    payments.givenValue(payments.currentValue + (payment.id -> payment))
+    payments.givenValue(payments.currentValue + (payment.paymentId -> payment))
   }
 
   def givenPaymentResult(result: Future[Payment]): Unit = synchronized {

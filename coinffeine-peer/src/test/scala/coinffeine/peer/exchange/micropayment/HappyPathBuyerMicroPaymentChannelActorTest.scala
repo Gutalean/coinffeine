@@ -6,7 +6,7 @@ import akka.testkit._
 import org.joda.time.DateTime
 
 import coinffeine.model.currency._
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.{TestPayment, Payment}
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -31,8 +31,12 @@ class HappyPathBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChanne
       payerActor.expectAskWithReply {
         case PayerActor.EnsurePayment(_, pp) if pp == paymentProcessor.ref =>
           PayerActor.PaymentEnsured(PaymentProcessorActor.Paid(
-            Payment(s"payment$i", "sender", "receiver", 1.EUR, 0.01.EUR, DateTime.now(),
-              "description", "invoice", completed = true)
+            TestPayment.random(
+              paymentId = s"payment$i",
+              netAmount = 1.EUR,
+              fee = 0.01.EUR,
+              completed = true
+            )
         ))
       }
       gateway.expectForwarding(PaymentProof(exchange.id, s"payment$i", i), counterpartId)
