@@ -1,10 +1,10 @@
 package coinffeine.common.akka.event
 
-import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.{Eventually, IntegrationPatience}
 
 import coinffeine.common.akka.test.AkkaSpec
 
-class EventObservedPropertyMapTest extends AkkaSpec with Eventually {
+class EventObservedPropertyMapTest extends AkkaSpec with Eventually with IntegrationPatience {
 
   "Event observed property map" should "be empty if no command is received" in new Fixture {
     prop.content shouldBe 'empty
