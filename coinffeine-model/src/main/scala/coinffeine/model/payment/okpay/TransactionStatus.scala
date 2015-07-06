@@ -2,6 +2,7 @@ package coinffeine.model.payment.okpay
 
 sealed trait TransactionStatus {
   def isCompleted: Boolean = false
+  def affectsLimits: Boolean = true
 }
 
 case object TransactionStatus {
@@ -10,11 +11,15 @@ case object TransactionStatus {
 
   case object Error extends TransactionStatus
 
-  case object Canceled extends TransactionStatus
+  case object Canceled extends TransactionStatus {
+    override def affectsLimits = false
+  }
 
   case object Pending extends TransactionStatus
 
-  case object Reversed extends TransactionStatus
+  case object Reversed extends TransactionStatus {
+    override def affectsLimits = false
+  }
 
   case object Hold extends TransactionStatus
 
