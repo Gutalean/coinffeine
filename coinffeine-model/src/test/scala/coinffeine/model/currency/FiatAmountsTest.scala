@@ -52,4 +52,14 @@ class FiatAmountsTest extends UnitTest {
     val amounts = FiatAmounts.fromAmounts(1.EUR).decrement(10.EUR)
     amounts(Euro) shouldBe 0.EUR
   }
+
+  it should "be added with other fiat amounts" in {
+    (FiatAmounts.empty + FiatAmounts.empty) shouldBe FiatAmounts.empty
+    (FiatAmounts.empty + FiatAmounts.fromAmounts(1.EUR)) shouldBe FiatAmounts.fromAmounts(1.EUR)
+    (FiatAmounts.fromAmounts(1.EUR) + FiatAmounts.empty) shouldBe FiatAmounts.fromAmounts(1.EUR)
+    (FiatAmounts.fromAmounts(1.EUR) + FiatAmounts.fromAmounts(1.USD)) shouldBe
+        FiatAmounts.fromAmounts(1.EUR, 1.USD)
+    (FiatAmounts.fromAmounts(1.EUR, 1.USD) + FiatAmounts.fromAmounts(10.EUR, 10.USD)) shouldBe
+        FiatAmounts.fromAmounts(11.EUR, 11.USD)
+  }
 }

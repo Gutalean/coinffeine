@@ -5,14 +5,14 @@ import scala.concurrent.Future
 import scalaxb.Soap11Fault
 
 import com.typesafe.scalalogging.StrictLogging
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, DateTimeZone, Interval}
 import soapenvelope11.Fault
 
+import coinffeine.common.time.Month
 import coinffeine.model.currency._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
-import coinffeine.model.payment.okpay.{TransactionStatus, Transaction}
+import coinffeine.model.payment.okpay._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
@@ -97,7 +97,7 @@ class OkPayWebServiceClient(
         txnID = params.left.toOption.map(_.toLong),
         invoice = params.right.toOption.map(Some(_))
       ).map { result =>
-        result.Transaction_GetResult.flatten.map(parsePayment)
+        result.Transaction_GetResult.flatten.map(parseTransaction)
       }.recover {
         case Soap11Fault(Fault(_, OkPayFault(OkPayFault.TransactionNotFound), _, _), _, _) => None
       }.mapSoapFault()
@@ -116,43 +116,108 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
-  // TODO: compute the actual remaining limits
-  override def currentRemainingLimits() = Future.successful(FiatAmounts.empty)
+  override def currentRemainingLimits(): Future[FiatAmounts] =
+    if (periodicLimits.amounts.count(_.isPositive) == 0) Future.successful(periodicLimits)
+    else currentPeriodUsage().map(remainingLimits)
 
-  private def parsePaymentOfCurrency(
-      txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Payment = {
-    val payment = parsePayment(txInfo)
-    if (payment.netAmount.currency != expectedCurrency) {
-      throw new PaymentProcessorException(
-        s"payment is expressed in ${payment.netAmount.currency}, but $expectedCurrency was expected")
-    }
-    payment.asInstanceOf[Payment]
+  private def remainingLimits(usage: FiatAmounts): FiatAmounts =
+    FiatAmounts(periodicLimits.amounts.map { limit =>
+      remainingLimit(limit, usage)
+    })
+
+  private def remainingLimit(limit: FiatAmount, usage: FiatAmounts): FiatAmount =
+    decreaseAmount(limit, usageFor(usage, limit.currency))
+
+  private def decreaseAmount(amount: FiatAmount, delta: FiatAmount): FiatAmount =
+    (amount - delta) max amount.currency.zero
+
+  private def usageFor(usage: FiatAmounts, currency: FiatCurrency): FiatAmount =
+    usage.get(currency).getOrElse(currency.zero)
+
+  private def currentPeriodUsage(): Future[FiatAmounts] = {
+    val currentInterval = Month.containing(DateTime.now(DateTimeZone.UTC))
+    val firstPage = Page.first(Page.MaxSize)
+    val allPages = Stream.iterate(firstPage)(_.next).map(page => transactionHistoryPage(currentInterval, page))
+    for {
+      firstResult <- allPages.head
+      nonEmptyPages = allPages.take(firstResult.totalPages).toVector
+      amounts <- Future.fold(nonEmptyPages)(FiatAmounts.empty)(_ + usage(_))
+    } yield amounts
   }
 
-  private def parsePayment(txInfo: TransactionInfo): Payment = {
-    txInfo match {
-      case TransactionInfo(
-          Some(amount),
-          Flatten(description),
-          Flatten(rawCurrency),
-          Flatten(rawDate),
-          maybeFee,
-          Some(paymentId),
-          Flatten(invoice),
-          Some(net),
-          _,
-          Flatten(WalletId(receiverId)),
-          Flatten(WalletId(senderId)),
-          maybeStatus) =>
-        val currency = FiatCurrency(txInfo.Currency.get.get)
-        val amount = currency(net)
-        val date = DateFormat.parseDateTime(rawDate)
-        val fee = maybeFee.fold(currency.zero)(currency.apply)
-        Transaction(paymentId, senderId, receiverId, amount, fee, date, description,
-          invoice, parseStatus(maybeStatus))
+  private def usage(result: TransactionHistoryPage): FiatAmounts = {
+    result.transactions.foldLeft(FiatAmounts.empty)(_ + usage(_))
+  }
 
-      case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
+  private def usage(transaction: Transaction): FiatAmounts = {
+    if (transaction.senderId == accountId && transaction.status.affectsLimits) {
+      FiatAmounts.fromAmounts(transaction.grossAmount)
+    } else FiatAmounts.empty
+  }
+
+  private def transactionHistoryPage(
+      interval: Interval, page: Page): Future[TransactionHistoryPage] =
+    authenticatedRequest { token =>
+      service.transaction_History(
+        walletID = Some(Some(accountId)),
+        securityToken = Some(Some(token)),
+        from = Some(Some(OkPayDate(interval.getStart))),
+        till = Some(Some(OkPayDate(interval.getEnd))),
+        pageSize = Some(page.size),
+        pageNumber = Some(page.number)
+      ).map(parseTransactionHistoryResponse).mapSoapFault()
     }
+
+  private def parseTransactionHistoryResponse(
+      response: Transaction_HistoryResponse): TransactionHistoryPage = {
+    response.Transaction_HistoryResult match {
+      case Some(Some(HistoryInfo(
+          Some(_pageCount),
+          Some(pageNumber),
+          Some(pageSize),
+          Some(totalSize),
+          Some(Some(arrayOfTransactions))))) =>
+        val page = Page(size = pageSize, number = pageNumber)
+        val transactions = arrayOfTransactions.TransactionInfo.flatten.map(parseTransaction)
+        TransactionHistoryPage(page, totalSize, transactions)
+
+      case _ =>
+        throw new PaymentProcessorException(s"Cannot parse the transaction history: $response")
+    }
+  }
+
+  private def parsePaymentOfCurrency(
+      txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Transaction = {
+    val payment = parseTransaction(txInfo)
+    val actualCurrency = payment.netAmount.currency
+    if (actualCurrency != expectedCurrency) {
+      throw new PaymentProcessorException(
+        s"payment is expressed in $actualCurrency, but $expectedCurrency was expected")
+    }
+    payment
+  }
+
+  private def parseTransaction(txInfo: TransactionInfo): Transaction = txInfo match {
+    case TransactionInfo(
+        Some(amount),
+        Flatten(description),
+        Flatten(rawCurrency),
+        Flatten(OkPayDate(date)),
+        maybeFee,
+        Some(paymentId),
+        Flatten(invoice),
+        Some(net),
+        _,
+        Flatten(WalletId(receiverId)),
+        Flatten(WalletId(senderId)),
+        maybeStatus) =>
+      val currency = FiatCurrency(txInfo.Currency.get.get)
+      val amount = currency(net)
+      val fee = maybeFee.fold(currency.zero)(currency.apply)
+      Transaction(paymentId, senderId, receiverId, amount, fee, date, description,
+        invoice, parseStatus(maybeStatus))
+
+    case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
   }
 
   private def parseStatus(maybeStatus: Option[OperationStatus]): TransactionStatus =
@@ -197,7 +262,7 @@ class OkPayWebServiceClient(
   private def lookupServerTime(): Future[DateTime] =
     service.get_Date_Time().map { response =>
       response.Get_Date_TimeResult.flatten
-        .fold(throw new PaymentProcessorException("Empty getDateTime response"))(DateFormat.parseDateTime)
+        .fold(throw new PaymentProcessorException("Empty getDateTime response"))(OkPayDate.Format.parseDateTime)
     }.mapSoapFault()
 
   implicit class PimpMyFuture[A](future: Future[A]) {
@@ -231,8 +296,6 @@ class OkPayWebServiceClient(
 }
 
 object OkPayWebServiceClient {
-
-  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZoneUTC()
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten

@@ -24,6 +24,12 @@ case class FiatAmounts private(entries: Map[FiatCurrency, FiatAmount]) {
 
   def withAmount(amount: FiatAmount): FiatAmounts = copy(
     entries = entries + (amount.currency -> amount))
+
+  def +(other: FiatAmounts): FiatAmounts = FiatAmounts(
+    (amounts ++ other.amounts).groupBy(_.currency).transform { (currency, values) =>
+      currency.sum(values)
+    }
+  )
 }
 
 object FiatAmounts {
