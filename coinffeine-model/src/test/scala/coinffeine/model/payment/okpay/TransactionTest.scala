@@ -10,7 +10,7 @@ class TransactionTest extends UnitTest {
   "A transaction" should "have the same currency for net amount and fee" in {
     an [IllegalArgumentException] shouldBe thrownBy {
       Transaction(
-        id = 42L,
+        transactionId = 42L,
         senderId = "sender",
         receiverId = "receiver",
         date = DateTime.now(),

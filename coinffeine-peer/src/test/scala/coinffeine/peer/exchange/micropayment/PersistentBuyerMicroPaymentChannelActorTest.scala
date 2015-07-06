@@ -6,7 +6,7 @@ import akka.testkit._
 import org.joda.time.DateTime
 
 import coinffeine.model.currency._
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.TestPayment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.payment.PaymentProcessorActor
@@ -92,8 +92,15 @@ class PersistentBuyerMicroPaymentChannelActorTest extends BuyerMicroPaymentChann
     expectProgress(signatures = 1)
   }
 
-  def paymentConfirmation(paymentId: String) = PaymentProcessorActor.Paid(Payment(
-    paymentId, "sender", "receiver", amount = 1.EUR, fee = 0.01.EUR, DateTime.now(),
-    "description", "invoice", completed = true
+  def paymentConfirmation(paymentId: String) = PaymentProcessorActor.Paid(TestPayment(
+    paymentId = paymentId,
+    senderId = "sender",
+    receiverId = "receiver",
+    netAmount = 1.EUR,
+    fee = 0.01.EUR,
+    date = DateTime.now(),
+    description = "description",
+    invoice = "invoice",
+    completed = true
   ))
 }

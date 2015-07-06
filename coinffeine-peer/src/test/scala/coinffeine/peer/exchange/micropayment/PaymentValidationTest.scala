@@ -10,7 +10,7 @@ import coinffeine.model.Both
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ActiveExchange.{IntermediateStepAmounts, StepBreakdown}
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.TestPayment
 import coinffeine.peer.exchange.micropayment.PaymentValidation._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep}
 
@@ -22,20 +22,19 @@ class PaymentValidationTest extends UnitTest with Inside {
     buyer = "account1",
     seller = "account2"
   )
-  private val payment1 = Payment(
-    id = "payment1",
+  private val payment1 = TestPayment.random(
+    paymentId = "payment1",
     senderId = participants.buyer,
     receiverId = participants.seller,
-    amount = 2.EUR,
+    netAmount = 2.EUR,
     fee = 0.01.EUR,
-    date = null,
     description = s"Payment for exchange ${exchangeId.value}, step 1",
     invoice = s"${exchangeId.value}@1",
     completed = true
   )
   private val payment2 = payment1.copy(
-    id = "payment2",
-    amount = 1.EUR,
+    paymentId = "payment2",
+    netAmount = 1.EUR,
     description = s"Payment for exchange ${exchangeId.value}, step 2",
     invoice = s"${exchangeId.value}@2"
   )
@@ -63,9 +62,9 @@ class PaymentValidationTest extends UnitTest with Inside {
   }
 
   it should "require the amount corresponding with the step" in {
-    validate(firstStep, payment1.copy(amount = 0.3.EUR)) shouldBe
+    validate(firstStep, payment1.copy(netAmount = 0.3.EUR)) shouldBe
       InvalidAmount(actual = 0.3.EUR, expected = 2.EUR).failureNel
-    validate(secondStep, payment2.copy(amount = 2.EUR)) shouldBe
+    validate(secondStep, payment2.copy(netAmount = 2.EUR)) shouldBe
       InvalidAmount(actual = 2.EUR, expected = 1.EUR).failureNel
   }
 
@@ -92,7 +91,7 @@ class PaymentValidationTest extends UnitTest with Inside {
 
   it should "accumulate multiple errors" in {
     val veryWrongPayment = payment1.copy(
-      amount = 0.1.EUR,
+      netAmount = 0.1.EUR,
       senderId = "other sender",
       receiverId = "not me",
       description = "some description",

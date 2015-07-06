@@ -8,7 +8,7 @@ import akka.testkit._
 import org.joda.time.DateTime
 import org.scalatest.concurrent.Eventually
 
-import coinffeine.model.payment.Payment
+import coinffeine.model.payment.TestPayment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.{FakeExchangeProtocol, MockMicroPaymentChannel}
@@ -52,14 +52,15 @@ abstract class SellerMicroPaymentChannelActorTest extends CoinffeineClientTest("
   }
 
   protected def expectPaymentLookup(step: IntermediateStep, completed: Boolean = true): Unit = {
-    val FindPayment(FindPaymentCriterion.ById(paymentId)) = paymentProcessor.expectMsgType[FindPayment]
-    paymentProcessor.reply(PaymentFound(Payment(
-      id = paymentId,
+    val FindPayment(FindPaymentCriterion.ById(paymentId)) =
+      paymentProcessor.expectMsgType[FindPayment]
+    paymentProcessor.reply(PaymentFound(TestPayment(
+      paymentId = paymentId,
       senderId = participants.buyer.paymentProcessorAccount,
       receiverId = participants.seller.paymentProcessorAccount,
       description = PaymentFields.description(exchange.id, step),
       invoice = PaymentFields.invoice(exchange.id, step),
-      amount = step.select(exchange.amounts).fiatAmount,
+      netAmount = step.select(exchange.amounts).fiatAmount,
       fee = exchange.currency.zero,
       date = DateTime.now(),
       completed = completed

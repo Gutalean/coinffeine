@@ -27,8 +27,8 @@ private class PaymentValidation(
 
     val amountValidation: Result = {
       val expectedAmount = step.select(amounts).fiatAmount
-      if (expectedAmount == payment.amount) ().successNel
-      else InvalidAmount(actual = payment.amount, expected = expectedAmount).failureNel
+      if (expectedAmount == payment.netAmount) ().successNel
+      else InvalidAmount(actual = payment.netAmount, expected = expectedAmount).failureNel
     }
 
     val accountsValidation: Result = {

@@ -98,8 +98,8 @@ private class BuyerMicroPaymentChannelActor(
 
     case PayerActor.PaymentEnsured(paid) =>
       waitingForPaymentResult = false
-      persist(CompletedPayment(paid.payment.id)) { event =>
-        log.debug("Exchange {}: payment {} for {} done", exchange.id, paid.payment.id, buyer.currentStep)
+      persist(CompletedPayment(paid.payment.paymentId)) { event =>
+        log.debug("Exchange {}: payment {} for {} done", exchange.id, paid.payment.paymentId, buyer.currentStep)
         onCompletedPayment(event)
         resubmitTimer.reset()
         forwardLastPaymentProof()

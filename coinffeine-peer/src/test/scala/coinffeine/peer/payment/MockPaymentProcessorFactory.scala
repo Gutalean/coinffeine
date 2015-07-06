@@ -5,8 +5,8 @@ import java.util.UUID
 import akka.actor.{Actor, ActorRef, Props}
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
-import coinffeine.model.payment.Payment
+import coinffeine.model.currency.{FiatAmount, FiatAmounts, FiatCurrency}
+import coinffeine.model.payment.{Payment, TestPayment}
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
 
 class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
@@ -27,7 +27,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
 
     private def findPayment(requester: ActorRef, criterion: FindPaymentCriterion): Unit = {
       def predicate(payment: Payment) = criterion match {
-        case FindPaymentCriterion.ById(paymentId) => payment.id == paymentId
+        case FindPaymentCriterion.ById(paymentId) => payment.paymentId == paymentId
         case FindPaymentCriterion.ByInvoice(invoice) => payment.invoice == invoice
       }
       payments.find(predicate) match {
@@ -38,9 +38,11 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
 
     private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
       val deltas: List[FiatAmount] = paymentsForCurrency(currency).collect {
-        case Payment(_, `fiatAddress`, `fiatAddress`, out, _, _, _, _, _) => currency.zero
-        case Payment(_, _, `fiatAddress`, in, _, _, _, _, _) => in
-        case Payment(_, `fiatAddress`, _, out, _, _, _, _, _) => -out
+        case selfPayment if selfPayment.senderId == fiatAddress &&
+            selfPayment.receiverId == fiatAddress =>
+          currency.zero
+        case income if income.receiverId == fiatAddress => income.netAmount
+        case charge if charge.senderId == fiatAddress => -charge.grossAmount
       }
       val initial = initialBalances.get(currency).getOrElse(currency.zero)
       val balance = initial + currency.sum(deltas)
@@ -48,15 +50,15 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
     }
 
     private def paymentsForCurrency(currency: FiatCurrency): List[Payment] =
-      payments.filter(_.amount.currency == currency)
+      payments.filter(_.netAmount.currency == currency)
 
     private def sendPayment(requester: ActorRef, pay: PaymentProcessorActor.Pay): Unit =
       if (initialBalances.contains(pay.amount.currency)) {
-        val payment = Payment(
-          id = UUID.randomUUID().toString,
+        val payment = TestPayment(
+          paymentId = UUID.randomUUID().toString,
           senderId = fiatAddress,
           receiverId = pay.to,
-          amount = pay.amount,
+          netAmount = pay.amount,
           fee = pay.amount.currency.zero,
           date = DateTime.now(),
           description = pay.comment,

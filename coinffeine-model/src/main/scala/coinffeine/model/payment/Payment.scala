@@ -2,18 +2,21 @@ package coinffeine.model.payment
 
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.FiatAmount
+import coinffeine.model.currency.{FiatCurrency, FiatAmount}
 import coinffeine.model.payment.PaymentProcessor._
 
-case class Payment(
-    id: String,
-    senderId: String,
-    receiverId: String,
-    amount: FiatAmount,
-    fee: FiatAmount,
-    date: DateTime,
-    description: String,
-    invoice: Invoice,
-    completed: Boolean) {
-  require(amount.currency == fee.currency, s"Inconsistent currencies: $this")
+trait Payment {
+  val paymentId: String
+  val senderId: String
+  val receiverId: String
+  val netAmount: FiatAmount
+  val fee: FiatAmount
+  val date: DateTime
+  val description: String
+  val invoice: Invoice
+  val completed: Boolean
+
+  def currency: FiatCurrency = netAmount.currency
+
+  def grossAmount: FiatAmount = netAmount + fee
 }

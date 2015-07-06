@@ -96,7 +96,7 @@ class SellerMicroPaymentChannelActor(
   }
 
   private def acceptPayment(payment: Payment): Unit = {
-    log.info("Exchange {}: payment {} accepted", exchange.id, payment.id)
+    log.info("Exchange {}: payment {} accepted", exchange.id, payment.paymentId)
     resubmitTimer.reset()
     persist(AcceptedPayment) { _ =>
       onAcceptedPayment()
