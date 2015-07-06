@@ -15,4 +15,6 @@ case class Page(size: Int, number: Int) {
 
 object Page {
   val MaxSize = 50
+
+  def first(size: Int) = Page(size, number = 1)
 }

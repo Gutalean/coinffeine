@@ -6,7 +6,7 @@ class PageTest extends UnitTest {
 
   "A page" should "not be constructed from invalid page sizes" in new {
     an [IllegalArgumentException] shouldBe thrownBy { Page(size = -1, number = 1) }
-    an [IllegalArgumentException] shouldBe thrownBy { Page(size = 0, number = 1) }
+    an [IllegalArgumentException] shouldBe thrownBy { Page.first(size = 0) }
     an [IllegalArgumentException] shouldBe thrownBy { Page(size = Page.MaxSize + 1, number = 1) }
   }
 
@@ -16,11 +16,11 @@ class PageTest extends UnitTest {
   }
 
   it should "step to the next page" in {
-    Page(size = 2, number = 1).next shouldBe Page(size = 2, number = 2)
+    Page.first(size = 2).next shouldBe Page(size = 2, number = 2)
   }
 
   it should "compute the range of elements it represents" in {
-    val firstPage = Page(size = 10, number = 1)
+    val firstPage = Page.first(size = 10)
     firstPage.rangeStart shouldBe 0
     firstPage.rangeEnd shouldBe firstPage.size
 
