@@ -5,14 +5,13 @@ import scala.concurrent.Future
 import scalaxb.Soap11Fault
 
 import com.typesafe.scalalogging.StrictLogging
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, Interval}
 import soapenvelope11.Fault
 
 import coinffeine.model.currency._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
-import coinffeine.model.payment.okpay.{TransactionStatus, Transaction}
+import coinffeine.model.payment.okpay._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.OkPayClient._
 import coinffeine.peer.payment.okpay.generated._
@@ -97,7 +96,7 @@ class OkPayWebServiceClient(
         txnID = params.left.toOption.map(_.toLong),
         invoice = params.right.toOption.map(Some(_))
       ).map { result =>
-        result.Transaction_GetResult.flatten.map(parsePayment)
+        result.Transaction_GetResult.flatten.map(parseTransaction)
       }.recover {
         case Soap11Fault(Fault(_, OkPayFault(OkPayFault.TransactionNotFound), _, _), _, _) => None
       }.mapSoapFault()
@@ -120,39 +119,37 @@ class OkPayWebServiceClient(
   override def currentRemainingLimits() = Future.successful(FiatAmounts.empty)
 
   private def parsePaymentOfCurrency(
-      txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Payment = {
-    val payment = parsePayment(txInfo)
-    if (payment.netAmount.currency != expectedCurrency) {
+      txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Transaction = {
+    val payment = parseTransaction(txInfo)
+    val actualCurrency = payment.netAmount.currency
+    if (actualCurrency != expectedCurrency) {
       throw new PaymentProcessorException(
-        s"payment is expressed in ${payment.netAmount.currency}, but $expectedCurrency was expected")
+        s"payment is expressed in $actualCurrency, but $expectedCurrency was expected")
     }
-    payment.asInstanceOf[Payment]
+    payment
   }
 
-  private def parsePayment(txInfo: TransactionInfo): Payment = {
-    txInfo match {
-      case TransactionInfo(
-          Some(amount),
-          Flatten(description),
-          Flatten(rawCurrency),
-          Flatten(rawDate),
-          maybeFee,
-          Some(paymentId),
-          Flatten(invoice),
-          Some(net),
-          _,
-          Flatten(WalletId(receiverId)),
-          Flatten(WalletId(senderId)),
-          maybeStatus) =>
-        val currency = FiatCurrency(txInfo.Currency.get.get)
-        val amount = currency(net)
-        val date = DateFormat.parseDateTime(rawDate)
-        val fee = maybeFee.fold(currency.zero)(currency.apply)
-        Transaction(paymentId, senderId, receiverId, amount, fee, date, description,
-          invoice, parseStatus(maybeStatus))
+  private def parseTransaction(txInfo: TransactionInfo): Transaction = txInfo match {
+    case TransactionInfo(
+        Some(amount),
+        Flatten(description),
+        Flatten(rawCurrency),
+        Flatten(OkPayDate(date)),
+        maybeFee,
+        Some(paymentId),
+        Flatten(invoice),
+        Some(net),
+        _,
+        Flatten(WalletId(receiverId)),
+        Flatten(WalletId(senderId)),
+        maybeStatus) =>
+      val currency = FiatCurrency(txInfo.Currency.get.get)
+      val amount = currency(net)
+      val fee = maybeFee.fold(currency.zero)(currency.apply)
+      Transaction(paymentId, senderId, receiverId, amount, fee, date, description,
+        invoice, parseStatus(maybeStatus))
 
-      case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
-    }
+    case _ => throw new PaymentProcessorException(s"Cannot parse the sent payment: $txInfo")
   }
 
   private def parseStatus(maybeStatus: Option[OperationStatus]): TransactionStatus =
@@ -197,7 +194,7 @@ class OkPayWebServiceClient(
   private def lookupServerTime(): Future[DateTime] =
     service.get_Date_Time().map { response =>
       response.Get_Date_TimeResult.flatten
-        .fold(throw new PaymentProcessorException("Empty getDateTime response"))(DateFormat.parseDateTime)
+        .fold(throw new PaymentProcessorException("Empty getDateTime response"))(OkPayDate.Format.parseDateTime)
     }.mapSoapFault()
 
   implicit class PimpMyFuture[A](future: Future[A]) {
@@ -231,8 +228,6 @@ class OkPayWebServiceClient(
 }
 
 object OkPayWebServiceClient {
-
-  val DateFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withZoneUTC()
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten
