@@ -5,9 +5,10 @@ import scala.concurrent.Future
 import scalaxb.Soap11Fault
 
 import com.typesafe.scalalogging.StrictLogging
-import org.joda.time.{DateTime, Interval}
+import org.joda.time.{DateTime, DateTimeZone, Interval}
 import soapenvelope11.Fault
 
+import coinffeine.common.time.Month
 import coinffeine.model.currency._
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor.{AccountId, Invoice, PaymentId}
@@ -115,8 +116,75 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
-  // TODO: compute the actual remaining limits
-  override def currentRemainingLimits() = Future.successful(FiatAmounts.empty)
+  override def currentRemainingLimits(): Future[FiatAmounts] =
+    if (periodicLimits.amounts.count(_.isPositive) == 0) Future.successful(periodicLimits)
+    else currentPeriodUsage().map(remainingLimits)
+
+  private def remainingLimits(usage: FiatAmounts): FiatAmounts =
+    FiatAmounts(periodicLimits.amounts.map { limit =>
+      remainingLimit(limit, usage)
+    })
+
+  private def remainingLimit(limit: FiatAmount, usage: FiatAmounts): FiatAmount =
+    decreaseAmount(limit, usageFor(usage, limit.currency))
+
+  private def decreaseAmount(amount: FiatAmount, delta: FiatAmount): FiatAmount =
+    (amount - delta) max amount.currency.zero
+
+  private def usageFor(usage: FiatAmounts, currency: FiatCurrency): FiatAmount =
+    usage.get(currency).getOrElse(currency.zero)
+
+  private def currentPeriodUsage(): Future[FiatAmounts] = {
+    val currentInterval = Month.containing(DateTime.now(DateTimeZone.UTC))
+    val firstPage = Page.first(Page.MaxSize)
+    val allPages = Stream.iterate(firstPage)(_.next).map(page => transactionHistoryPage(currentInterval, page))
+    for {
+      firstResult <- allPages.head
+      nonEmptyPages = allPages.take(firstResult.totalPages).toVector
+      amounts <- Future.fold(nonEmptyPages)(FiatAmounts.empty)(_ + usage(_))
+    } yield amounts
+  }
+
+  private def usage(result: TransactionHistoryPage): FiatAmounts = {
+    result.transactions.foldLeft(FiatAmounts.empty)(_ + usage(_))
+  }
+
+  private def usage(transaction: Transaction): FiatAmounts = {
+    if (transaction.senderId == accountId && transaction.status.affectsLimits) {
+      FiatAmounts.fromAmounts(transaction.grossAmount)
+    } else FiatAmounts.empty
+  }
+
+  private def transactionHistoryPage(
+      interval: Interval, page: Page): Future[TransactionHistoryPage] =
+    authenticatedRequest { token =>
+      service.transaction_History(
+        walletID = Some(Some(accountId)),
+        securityToken = Some(Some(token)),
+        from = Some(Some(OkPayDate(interval.getStart))),
+        till = Some(Some(OkPayDate(interval.getEnd))),
+        pageSize = Some(page.size),
+        pageNumber = Some(page.number)
+      ).map(parseTransactionHistoryResponse).mapSoapFault()
+    }
+
+  private def parseTransactionHistoryResponse(
+      response: Transaction_HistoryResponse): TransactionHistoryPage = {
+    response.Transaction_HistoryResult match {
+      case Some(Some(HistoryInfo(
+          Some(_pageCount),
+          Some(pageNumber),
+          Some(pageSize),
+          Some(totalSize),
+          Some(Some(arrayOfTransactions))))) =>
+        val page = Page(size = pageSize, number = pageNumber)
+        val transactions = arrayOfTransactions.TransactionInfo.flatten.map(parseTransaction)
+        TransactionHistoryPage(page, totalSize, transactions)
+
+      case _ =>
+        throw new PaymentProcessorException(s"Cannot parse the transaction history: $response")
+    }
+  }
 
   private def parsePaymentOfCurrency(
       txInfo: TransactionInfo, expectedCurrency: FiatCurrency): Transaction = {
