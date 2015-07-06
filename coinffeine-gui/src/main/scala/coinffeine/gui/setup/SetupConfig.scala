@@ -2,7 +2,8 @@ package coinffeine.gui.setup
 
 import scalafx.beans.property.{ObjectProperty, StringProperty}
 
-import coinffeine.peer.payment.okpay.{OkPayApiCredentials, VerificationStatus}
+import coinffeine.model.payment.okpay.VerificationStatus
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
 class SetupConfig {
 

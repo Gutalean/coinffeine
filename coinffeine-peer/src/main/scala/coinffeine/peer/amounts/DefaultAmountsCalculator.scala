@@ -10,7 +10,7 @@ import coinffeine.model.exchange.Exchange._
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.order.{Ask, Bid, OrderRequest}
-import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 class DefaultAmountsCalculator(

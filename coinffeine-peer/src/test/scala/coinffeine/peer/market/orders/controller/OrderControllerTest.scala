@@ -10,7 +10,7 @@ import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
 import coinffeine.model.order._
-import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 import coinffeine.protocol.messages.brokerage.OrderMatch

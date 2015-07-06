@@ -13,7 +13,8 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.model.payment.{OkPayPaymentProcessor, Payment}
+import coinffeine.model.payment.Payment
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.{Cached, CacheStatus}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion

@@ -2,7 +2,7 @@ package coinffeine.peer.payment.okpay
 
 import java.util.concurrent.atomic.AtomicReference
 
-import coinffeine.peer.payment.okpay.VerificationStatus.NotVerified
+import coinffeine.model.payment.okpay.VerificationStatus.NotVerified
 import coinffeine.peer.payment.okpay.ws.{OkPayWebService, OkPayWebServiceClient}
 
 /** Factory of OKPay clients.

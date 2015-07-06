@@ -1,4 +1,4 @@
-package coinffeine.peer.payment.okpay
+package coinffeine.model.payment.okpay
 
 import coinffeine.common.test.UnitTest
 

@@ -5,7 +5,7 @@ import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.payment.OkPayPaymentProcessor
+import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.peer.amounts.StepwisePaymentCalculator.Payment
 
 class DefaultStepwisePaymentCalculatorTest extends UnitTest with PropertyChecks {

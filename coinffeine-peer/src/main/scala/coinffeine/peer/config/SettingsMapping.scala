@@ -11,12 +11,13 @@ import com.typesafe.config._
 
 import coinffeine.common.TypesafeConfigImplicits
 import coinffeine.model.network.PeerId
+import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.overlay.relay.DefaultRelaySettings
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.appdata.DataVersion
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.bitcoin.BitcoinSettings.MainNet
-import coinffeine.peer.payment.okpay.{OkPaySettings, VerificationStatus}
+import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
 trait SettingsMapping[A] {

@@ -1,8 +1,9 @@
-package coinffeine.model.payment
+package coinffeine.model.payment.okpay
 
 import scala.math.BigDecimal.RoundingMode
 
 import coinffeine.model.currency._
+import coinffeine.model.payment.PaymentProcessor
 
 object OkPayPaymentProcessor extends PaymentProcessor {
 
