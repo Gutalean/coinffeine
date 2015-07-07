@@ -11,6 +11,7 @@ class OkPaySettingsTest extends UnitTest {
     userAccount = None,
     seedToken = None,
     verificationStatus = None,
+    customPeriodicLimits = None,
     serverEndpointOverride = None,
     pollingInterval = 10.seconds
   )

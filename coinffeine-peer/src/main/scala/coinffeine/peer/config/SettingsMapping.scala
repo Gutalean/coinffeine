@@ -146,22 +146,29 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
   implicit val okPay = new SettingsMapping[OkPaySettings] {
 
-    override def fromConfig(configPath: File, config: Config) = OkPaySettings(
-      userAccount = config.getStringOpt("coinffeine.okpay.id"),
-      seedToken = config.getStringOpt("coinffeine.okpay.token"),
-      verificationStatus = config.getStringOpt("coinffeine.okpay.verificationStatus").map { status =>
-        VerificationStatus.parse(status).getOrElse(
-          throw new IllegalArgumentException(s"Invalid configured verification status: '$status'"))
-      },
-      serverEndpointOverride = config.getStringOpt("coinffeine.okpay.endpoint").map(URI.create),
-      pollingInterval = config.getSeconds("coinffeine.okpay.pollingInterval")
-    )
+    override def fromConfig(configPath: File, config: Config) = {
+      val subConfig = config.getConfig("coinffeine.okpay")
+      OkPaySettings(
+        userAccount = subConfig.getStringOpt("id"),
+        seedToken = subConfig.getStringOpt("token"),
+        verificationStatus = subConfig.getStringOpt("verificationStatus").map { status =>
+          VerificationStatus.parse(status)
+              .getOrElse(throw new IllegalArgumentException(
+                  s"Invalid configured verification status: '$status'"))
+        },
+        customPeriodicLimits = FiatAmountsMapping.fromConfig("customPeriodicLimits", subConfig),
+        serverEndpointOverride = subConfig.getStringOpt("endpoint").map(URI.create),
+        pollingInterval = subConfig.getSeconds("pollingInterval")
+      )
+    }
 
     override def toConfig(settings: OkPaySettings, config: Config) = config
       .withOptValue("coinffeine.okpay.id", settings.userAccount.map(configValue))
       .withOptValue("coinffeine.okpay.token", settings.seedToken.map(configValue))
       .withOptValue("coinffeine.okpay.verificationStatus",
           settings.verificationStatus.map(s => configValue(s.toString)))
+      .withOptValue("coinffeine.okpay.customPeriodicLimits",
+          settings.customPeriodicLimits.map(a => FiatAmountsMapping.toConfig(a).root()))
       .withOptValue("coinffeine.okpay.endpoint",
         settings.serverEndpointOverride.map(url => configValue(url.toString)))
       .withValue("coinffeine.okpay.pollingInterval", configDuration(settings.pollingInterval))
