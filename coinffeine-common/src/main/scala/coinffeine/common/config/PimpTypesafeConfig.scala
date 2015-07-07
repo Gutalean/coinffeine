@@ -1,4 +1,4 @@
-package coinffeine.common
+package coinffeine.common.config
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._

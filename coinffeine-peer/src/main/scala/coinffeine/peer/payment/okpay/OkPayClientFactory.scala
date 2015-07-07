@@ -24,7 +24,7 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
         tokenCache,
         credentials.walletId,
         credentials.seedToken,
-        settings.verificationStatus.getOrElse(NotVerified).periodicLimits
+        settings.periodicLimits
       )
     }
   }

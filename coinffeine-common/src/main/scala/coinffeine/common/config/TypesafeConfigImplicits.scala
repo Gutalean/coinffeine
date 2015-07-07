@@ -1,4 +1,4 @@
-package coinffeine.common
+package coinffeine.common.config
 
 import scala.language.implicitConversions
 

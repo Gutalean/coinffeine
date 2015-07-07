@@ -10,6 +10,7 @@ import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.currency._
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.overlay.relay.DefaultRelaySettings
@@ -189,11 +190,14 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     settings.serverEndpointOverride shouldBe Some(new URI("http://example.com/death-star"))
     settings.pollingInterval shouldBe 50.seconds
     settings.verificationStatus should contain (VerificationStatus.NotVerified)
+    settings.customPeriodicLimits shouldBe 'empty
 
     val alternativeSettings = fromConfig[OkPaySettings](amendConfig(conf,
-      "coinffeine.okpay.verificationStatus" -> "Verified"
+      "coinffeine.okpay.verificationStatus" -> "Verified",
+      "coinffeine.okpay.customPeriodicLimits.EUR" -> 350
     ))
     alternativeSettings.verificationStatus should contain (VerificationStatus.Verified)
+    alternativeSettings.customPeriodicLimits should contain (FiatAmounts.fromAmounts(350.EUR))
 
     val requiredSettings = fromConfig[OkPaySettings](makeConfig(
       "coinffeine.okpay.pollingInterval" -> "50s"
@@ -209,6 +213,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
       userAccount = Some("skywalker"),
       seedToken = Some("lightsaber"),
       verificationStatus = Some(VerificationStatus.NotVerified),
+      customPeriodicLimits = Some(FiatAmounts.fromAmounts(10000.EUR, 10000.USD)),
       serverEndpointOverride = Some(new URI("http://example.com/x-wing")),
       pollingInterval = 15.seconds
     )
@@ -216,6 +221,8 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     cfg.getString("coinffeine.okpay.id") shouldBe "skywalker"
     cfg.getString("coinffeine.okpay.token") shouldBe "lightsaber"
     cfg.getString("coinffeine.okpay.verificationStatus") shouldBe "NotVerified"
+    cfg.getString("coinffeine.okpay.customPeriodicLimits.EUR") shouldBe "10000.0"
+    cfg.getString("coinffeine.okpay.customPeriodicLimits.USD") shouldBe "10000.0"
     cfg.getString("coinffeine.okpay.endpoint") shouldBe "http://example.com/x-wing"
     cfg.getDuration("coinffeine.okpay.pollingInterval", TimeUnit.SECONDS) shouldBe 15
 
@@ -227,11 +234,13 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val requiredCfg = SettingsMapping.toConfig(settings.copy(
       userAccount = None,
       seedToken = None,
-      verificationStatus = None
+      verificationStatus = None,
+      customPeriodicLimits = None
     ))
     requiredCfg.hasPath("coinffeine.okpay.id") shouldBe false
     requiredCfg.hasPath("coinffeine.okpay.token") shouldBe false
     requiredCfg.hasPath("coinffeine.okpay.verificationStatus") shouldBe false
+    requiredCfg.hasPath("coinffeine.okpay.customPeriodicLimits") shouldBe false
   }
 
   private def makeConfig(items: (String, Any)*): Config =
