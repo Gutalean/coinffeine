@@ -8,8 +8,7 @@ import scala.util.Try
 import scalaz.syntax.std.boolean._
 
 import com.typesafe.config._
-
-import coinffeine.common.TypesafeConfigImplicits
+import coinffeine.common.config.TypesafeConfigImplicits
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.overlay.relay.DefaultRelaySettings
