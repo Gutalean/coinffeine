@@ -20,6 +20,11 @@ case class OkPaySettings(
     token <- seedToken
   } yield OkPayApiCredentials(walletId, token)
 
+  def periodicLimits: FiatAmounts = customPeriodicLimits.getOrElse(defaultPeriodicLimits)
+
+  private def defaultPeriodicLimits: FiatAmounts =
+    verificationStatus.getOrElse(VerificationStatus.NotVerified).periodicLimits
+
   def withApiCredentials(apiCredentials: OkPayApiCredentials) = copy(
     userAccount = Some(apiCredentials.walletId),
     seedToken = Some(apiCredentials.seedToken)
