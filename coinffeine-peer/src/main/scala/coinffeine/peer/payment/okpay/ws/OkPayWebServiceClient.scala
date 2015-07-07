@@ -158,6 +158,8 @@ class OkPayWebServiceClient(
   private def transactionHistoryPage(
       interval: Interval, page: Page): Future[TransactionHistoryPage] =
     authenticatedRequest { token =>
+      logger.debug("Fetching transaction history page {} for interval {}",
+        page.number.toString, interval)
       service.transaction_History(
         walletID = Some(Some(accountId)),
         securityToken = Some(Some(token)),
