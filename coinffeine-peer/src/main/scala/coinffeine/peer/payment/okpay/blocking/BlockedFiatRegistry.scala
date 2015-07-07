@@ -156,7 +156,6 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
     val eligibleFunds = funds
         .values
         .filter(_.remainingAmount.currency == currency)
-        .asInstanceOf[Iterable[BlockedFundsInfo]]
         .toSeq
         .sortBy(_.timestamp.getMillis)
     val fundsThatCanBeBacked =
@@ -174,10 +173,14 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   private def notifyAvailabilityChanges(): Unit = {
     fundsAvailability.notifyChanges(
-      onAvailable = funds =>
-        context.system.eventStream.publish(PaymentProcessorActor.AvailableFunds(funds)),
-      onUnavailable = funds =>
+      onAvailable = funds => {
+        log.debug("{} fiat funds becomes available", funds)
+        context.system.eventStream.publish(PaymentProcessorActor.AvailableFunds(funds))
+      },
+      onUnavailable = funds => {
+        log.debug("{} fiat funds becomes unavailable", funds)
         context.system.eventStream.publish(PaymentProcessorActor.UnavailableFunds(funds))
+      }
     )
   }
 
