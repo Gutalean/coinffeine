@@ -17,7 +17,7 @@ import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.config.SettingsProvider
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
-class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) extends LazyLogging {
+class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends LazyLogging {
 
   private val walletIdField = new TextField
   private val seedTokenField = new TextField
