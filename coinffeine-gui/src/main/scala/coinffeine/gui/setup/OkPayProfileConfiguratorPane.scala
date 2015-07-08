@@ -13,26 +13,26 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.peer.payment.okpay.profile.{OkPayProfileConfigurator, ScrappingProfile}
+import coinffeine.peer.payment.okpay.profile.{ProfileConfigurator, ScrappingProfile}
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
-class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
+class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   extends StepPane[SetupConfig] with LazyLogging {
 
-  import OkPaySeedTokenRetrievalPane._
+  import OkPayProfileConfiguratorPane._
 
   override val icon = GlyphIcon.Numbers(stepNumber)
 
   private val title = new Label("OKPay API token") { styleClass += "title" }
 
-  private val retrievalStatus =
-    new ObjectProperty[RetrievalStatus](this, "retrievalStatus", InProgress)
+  private val configurationStatus =
+    new ObjectProperty[ConfigurationStatus](this, "configurationStatus", InProgress)
   private val progressHint = new Label() {
-    text <== retrievalStatus.delegate.mapToString(_.hint)
+    text <== configurationStatus.delegate.mapToString(_.hint)
   }
   private val progressBar = new ProgressBar() {
-    progress <== retrievalStatus.delegate.mapToDouble(_.progress)
-    retrievalStatus.delegate.bindToList(styleClass) { status =>
+    progress <== configurationStatus.delegate.mapToDouble(_.progress)
+    configurationStatus.delegate.bindToList(styleClass) { status =>
       Seq("progress-bar") ++ status.failed.option("error")
     }
   }
@@ -43,7 +43,7 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
   }
 
   private val subtitle = new HBox {
-    visible <== retrievalStatus.delegate.mapToBool(_.failed)
+    visible <== configurationStatus.delegate.mapToBool(_.failed)
     styleClass += "subtitle"
     children = Seq(
       new Label("You can configure manually your API credentials"),
@@ -53,7 +53,7 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
 
   private val accountIdField, seedTokenField = new TextField
   private val manualInputPane = new VBox {
-    visible <== retrievalStatus.delegate.mapToBool(_.failed)
+    visible <== configurationStatus.delegate.mapToBool(_.failed)
     styleClass += "data"
     children = Seq(
       new Label("Your account ID"),
@@ -69,12 +69,12 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
   }
 
   data.okPayWalletAccess <==
-    retrievalStatus.delegate.zip(accountIdField.text, seedTokenField.text) {
+    configurationStatus.delegate.zip(accountIdField.text, seedTokenField.text) {
       (status, manualId, manualToken) =>
         val manualCredentials = OkPayApiCredentials(manualId.trim, manualToken.trim)
         status match {
-          case SuccessfulRetrieval(accessData) => Some(accessData)
-          case FailedRetrieval(_) => Some(manualCredentials)
+          case SuccessfulConfiguration(result) => Some(result.credentials)
+          case FailedConfiguration(_) => Some(manualCredentials)
           case _ => None
         }
     }
@@ -88,22 +88,22 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
 
   private def startTokenRetrieval(): Unit = {
     implicit val context = FxExecutor.asContext
-    retrievalStatus.set(InProgress)
+    configurationStatus.set(InProgress)
     configureProfile(data.okPayCredentials.value).onComplete {
-      case Success(accessData) => retrievalStatus.set(SuccessfulRetrieval(accessData))
+      case Success(accessData) => configurationStatus.set(SuccessfulConfiguration(accessData))
       case Failure(ex) =>
         logger.error("Cannot configure OKPay profile and retrieve API credentials", ex)
-        retrievalStatus.set(FailedRetrieval(ex))
+        configurationStatus.set(FailedConfiguration(ex))
     }
   }
 
-  private def configureProfile(credentials: OkPayCredentials): Future[OkPayApiCredentials] = {
+  private def configureProfile(
+      credentials: OkPayCredentials): Future[ProfileConfigurator.Result] = {
     implicit val context = scala.concurrent.ExecutionContext.global
     for {
       profile <- ScrappingProfile.login(credentials.id, credentials.password)
-      configurator = new OkPayProfileConfigurator(profile)
-      accessData <- configurator.configure()
-    } yield accessData
+      result <- new ProfileConfigurator(profile).configure()
+    } yield result
   }
 
   private def validApiCredentials(credentials: OkPayApiCredentials): Boolean =
@@ -111,26 +111,27 @@ class OkPaySeedTokenRetrievalPane(data: SetupConfig, stepNumber: Int)
       credentials.seedToken.nonEmpty
 }
 
-object OkPaySeedTokenRetrievalPane {
-  sealed trait RetrievalStatus {
+object OkPayProfileConfiguratorPane {
+  sealed trait ConfigurationStatus {
     def hint: String
     def progress: Double
     def failed: Boolean
   }
 
-  case object InProgress extends RetrievalStatus {
+  case object InProgress extends ConfigurationStatus {
     override def hint = "Obtaining the token (this may take a while)..."
     override def progress = -1
     override def failed = false
   }
 
-  case class FailedRetrieval(exception: Throwable) extends RetrievalStatus {
+  case class FailedConfiguration(exception: Throwable) extends ConfigurationStatus {
     override def hint = "Something went wrong while retrieving the token."
     override def progress = 1
     override def failed = true
   }
 
-  case class SuccessfulRetrieval(accessData: OkPayApiCredentials) extends RetrievalStatus {
+  case class SuccessfulConfiguration(result: ProfileConfigurator.Result)
+      extends ConfigurationStatus {
     override def hint = "Token retrieved successfully."
     override def progress = 1
     override def failed = false
