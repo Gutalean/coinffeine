@@ -8,7 +8,7 @@ import scalafx.scene.layout._
 
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.PaymentProcessorWidget
-import coinffeine.gui.preferences.PaymentProcessorSettingsForm
+import coinffeine.gui.preferences.PaymentProcessorSettingsDialog
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
@@ -31,7 +31,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
   require(views.nonEmpty, "At least one view is required")
 
   private val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
-  private val settingsForm = new PaymentProcessorSettingsForm(settingsProvider)
+  private val settingsForm = new PaymentProcessorSettingsDialog(settingsProvider)
 
   private val viewSelector: Seq[ToggleButton] = {
     val group = new ToggleGroup

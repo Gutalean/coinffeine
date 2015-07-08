@@ -30,6 +30,13 @@ class OkPaySettingsTest extends UnitTest {
     completeSettings.apiCredentials shouldBe Some(credentials)
   }
 
+  it should "normalize empty string to missing field" in {
+    val credentials = OkPayApiCredentials("", "")
+    val settings = settingsWithNoCredentials.withApiCredentials(credentials)
+    settings.userAccount shouldBe 'empty
+    settings.seedToken shouldBe 'empty
+  }
+
   it should "take the unverified periodic limits by default" in {
     settingsWithNoCredentials.periodicLimits shouldBe
         VerificationStatus.NotVerified.periodicLimits

@@ -22,8 +22,8 @@
 
 .payment-processor-preferences .support-icon  { -fx-font-size: 18; }
 
-.payment-processor-preferences .labeled-field {
-    -fx-padding: 10 100 40 100;
+.payment-processor-preferences .field {
+    -fx-padding: 10 100 20 100;
 }
 
 .payment-processor-preferences .footer {

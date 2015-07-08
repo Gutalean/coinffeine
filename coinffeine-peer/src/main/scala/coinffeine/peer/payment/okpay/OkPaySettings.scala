@@ -26,9 +26,12 @@ case class OkPaySettings(
     verificationStatus.getOrElse(VerificationStatus.NotVerified).periodicLimits
 
   def withApiCredentials(apiCredentials: OkPayApiCredentials) = copy(
-    userAccount = Some(apiCredentials.walletId),
-    seedToken = Some(apiCredentials.seedToken)
+    userAccount = nonEmptyString(apiCredentials.walletId),
+    seedToken = nonEmptyString(apiCredentials.seedToken)
   )
+
+  private def nonEmptyString(string: String): Option[String] =
+    if (string.isEmpty) None else Some(string)
 
   require(
     userAccount.forall(_.matches(OkPaySettings.AccountIdPattern)),
