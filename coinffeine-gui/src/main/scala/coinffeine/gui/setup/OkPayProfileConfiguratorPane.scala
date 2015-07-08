@@ -13,6 +13,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.util.FxExecutor
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
+import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.payment.okpay.profile.{ProfileConfigurator, ScrappingProfile}
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
@@ -25,14 +26,14 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private val title = new Label("OKPay API token") { styleClass += "title" }
 
-  private val configurationStatus =
+  private val automaticConfiguration =
     new ObjectProperty[ConfigurationStatus](this, "configurationStatus", InProgress)
   private val progressHint = new Label() {
-    text <== configurationStatus.delegate.mapToString(_.hint)
+    text <== automaticConfiguration.delegate.mapToString(_.hint)
   }
   private val progressBar = new ProgressBar() {
-    progress <== configurationStatus.delegate.mapToDouble(_.progress)
-    configurationStatus.delegate.bindToList(styleClass) { status =>
+    progress <== automaticConfiguration.delegate.mapToDouble(_.progress)
+    automaticConfiguration.delegate.bindToList(styleClass) { status =>
       Seq("progress-bar") ++ status.failed.option("error")
     }
   }
@@ -43,7 +44,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   }
 
   private val subtitle = new HBox {
-    visible <== configurationStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfiguration.delegate.mapToBool(_.failed)
     styleClass += "subtitle"
     children = Seq(
       new Label("You can configure manually your API credentials"),
@@ -52,14 +53,28 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   }
 
   private val accountIdField, seedTokenField = new TextField
+  private val verificationStatusField = new CheckBox("Verified account")
+  private val manualConfiguration =
+    accountIdField.text.delegate.zip(seedTokenField.text, verificationStatusField.selected) {
+      (accountId, seedToken, verified) =>
+        ProfileConfigurator.Result(
+          OkPayApiCredentials(accountId.trim, seedToken.trim),
+          VerificationStatus.fromBoolean(verified)
+        )
+    }
+
   private val manualInputPane = new VBox {
-    visible <== configurationStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfiguration.delegate.mapToBool(_.failed)
     styleClass += "data"
     children = Seq(
       new Label("Your account ID"),
       accountIdField,
       new Label("Your token"),
-      seedTokenField
+      seedTokenField,
+      verificationStatusField,
+      new Label("Unverified accounts cannot transfer more than 300EUR/month") {
+        styleClass += "explanation"
+      }
     )
   }
 
@@ -68,16 +83,14 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
     children = Seq(title, progressPane, subtitle, manualInputPane)
   }
 
-  data.okPayWalletAccess <==
-    configurationStatus.delegate.zip(accountIdField.text, seedTokenField.text) {
-      (status, manualId, manualToken) =>
-        val manualCredentials = OkPayApiCredentials(manualId.trim, manualToken.trim)
-        status match {
-          case SuccessfulConfiguration(result) => Some(result.credentials)
-          case FailedConfiguration(_) => Some(manualCredentials)
-          case _ => None
-        }
-    }
+  private val mergedConfiguration = automaticConfiguration.delegate.zip(manualConfiguration) {
+    case (SuccessfulConfiguration(automaticConfig), _) => Some(automaticConfig)
+    case (FailedConfiguration(_), manualConfig) => Some(manualConfig)
+    case _ => None
+  }
+
+  data.okPayWalletAccess <== mergedConfiguration.map(_.map(_.credentials))
+  data.okPayVerificationStatus <== mergedConfiguration.map(_.map(_.verificationStatus))
 
   canContinue <== data.okPayWalletAccess.delegate.mapToBool {
     case Some(credentials) => validApiCredentials(credentials)
@@ -88,12 +101,12 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private def startTokenRetrieval(): Unit = {
     implicit val context = FxExecutor.asContext
-    configurationStatus.set(InProgress)
+    automaticConfiguration.set(InProgress)
     configureProfile(data.okPayCredentials.value).onComplete {
-      case Success(accessData) => configurationStatus.set(SuccessfulConfiguration(accessData))
+      case Success(accessData) => automaticConfiguration.set(SuccessfulConfiguration(accessData))
       case Failure(ex) =>
         logger.error("Cannot configure OKPay profile and retrieve API credentials", ex)
-        configurationStatus.set(FailedConfiguration(ex))
+        automaticConfiguration.set(FailedConfiguration(ex))
     }
   }
 
