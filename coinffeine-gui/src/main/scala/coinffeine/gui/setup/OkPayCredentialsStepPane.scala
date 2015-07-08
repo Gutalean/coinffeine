@@ -1,10 +1,10 @@
 package coinffeine.gui.setup
 
-import coinffeine.gui.beans.Implicits._
-import scalafx.scene.control.{PasswordField, TextField, Label}
-import scalafx.scene.layout.{VBox, HBox}
+import scalafx.scene.control.{Label, PasswordField, TextField}
+import scalafx.scene.layout.{HBox, VBox}
 
-import coinffeine.gui.control.{SupportWidget, GlyphIcon}
+import coinffeine.gui.beans.Implicits._
+import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.StepPane
 
 class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
