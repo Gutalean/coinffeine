@@ -34,7 +34,7 @@ object SetupWizard {
     val panes = Seq(
       new LicenseAgreementPane,
       new OkPayCredentialsStepPane(data, 2),
-      new OkPaySeedTokenRetrievalPane(data, 3),
+      new OkPayProfileConfiguratorPane(data, 3),
       new TopUpStepPane(walletAddress)
     )
     new SetupWizard(panes, data, ExitPolicy.Confirmed)
@@ -44,7 +44,7 @@ object SetupWizard {
     val data = new SetupConfig
     val panes = Seq(
       new OkPayCredentialsStepPane(data, 1),
-      new OkPaySeedTokenRetrievalPane(data, 2)
+      new OkPayProfileConfiguratorPane(data, 2)
     )
     new SetupWizard(panes, data, ExitPolicy.Unconfirmed)
   }

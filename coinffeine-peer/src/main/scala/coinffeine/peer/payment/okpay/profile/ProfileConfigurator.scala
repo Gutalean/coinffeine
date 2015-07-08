@@ -5,15 +5,22 @@ import scala.concurrent.Future
 
 import com.typesafe.scalalogging.LazyLogging
 
+import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
-class OkPayProfileConfigurator(profile: Profile) extends LazyLogging {
+class ProfileConfigurator(profile: Profile) extends LazyLogging {
 
-  def configure(): Future[OkPayApiCredentials] = Future {
+  import ProfileConfigurator._
+
+  def configure(): Future[Result] = Future {
     ensureBusinessMode()
     val walletId = profile.walletId()
     profile.enableAPI(walletId)
-    OkPayApiCredentials(walletId, profile.configureSeedToken(walletId))
+
+    Result(
+      credentials = OkPayApiCredentials(walletId, profile.configureSeedToken(walletId)),
+      verificationStatus = VerificationStatus.NotVerified // TODO by @gotoalberto
+    )
   }
 
   private def ensureBusinessMode(): Unit = {
@@ -24,4 +31,8 @@ class OkPayProfileConfigurator(profile: Profile) extends LazyLogging {
   private def switchToBusinessMode(): Unit = {
     profile.accountMode = AccountMode.Business
   }
+}
+
+object ProfileConfigurator {
+  case class Result(credentials: OkPayApiCredentials, verificationStatus: VerificationStatus)
 }
