@@ -24,7 +24,10 @@
 
 .payment-processor-preferences .field {
     -fx-padding: 10 100 20 100;
+    -fx-spacing: 4;
 }
+
+.payment-processor-preferences .field .explanation { -fx-font-size: 12; }
 
 .payment-processor-preferences .footer {
     -fx-alignment: center;
