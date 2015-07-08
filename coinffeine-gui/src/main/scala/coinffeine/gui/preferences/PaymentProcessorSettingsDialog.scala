@@ -99,8 +99,7 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
 
   private def applyAndClose(): Unit = {
     val verificationStatus =
-      if (verificationStatusField.selected.value) VerificationStatus.Verified
-      else VerificationStatus.NotVerified
+      VerificationStatus.fromBoolean(verificationStatusField.selected.value)
     saveSettings(credentials.value, verificationStatus)
     formStage.close()
   }

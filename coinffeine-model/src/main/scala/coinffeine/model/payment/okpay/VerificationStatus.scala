@@ -19,4 +19,7 @@ object VerificationStatus {
   }
 
   def parse(status: String): Option[VerificationStatus] = values.find(_.toString == status)
+
+  def fromBoolean(verified: Boolean): VerificationStatus =
+    if (verified) VerificationStatus.Verified else VerificationStatus.NotVerified
 }
