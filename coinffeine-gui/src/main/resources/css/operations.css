@@ -240,7 +240,7 @@
 .wizard .order-amounts .messages {
     -fx-wrap-text: true;
     -fx-max-width: 500;
-    -fx-min-height: 60;
+    -fx-min-height: 80;
     -fx-border-radius: 4;
     -fx-background-radius: 4;
     -fx-padding: 2 10;
