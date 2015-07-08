@@ -91,7 +91,12 @@ abstract class OrderActorTest extends AkkaSpec
     val submissionProbe, paymentProcessorProbe, bitcoinPeerProbe, blockchainProbe,
       walletProbe, archiveProbe = TestProbe()
     val entry = OrderBookEntry.fromOrder(order)
-    private val calculatorStub = new AmountsCalculatorStub(amounts, halfOrderAmounts)
+    private val calculatorStub = {
+      val stub = new AmountsCalculatorStub()
+      stub.givenExchangeAmounts(amounts)
+      stub.givenExchangeAmounts(halfOrderAmounts)
+      stub
+    }
     val properties = new DefaultOperationsProperties
     val eventProbe = new EventProbe(OrderChanged.Topic)
     private val props = Props(new OrderActor(
