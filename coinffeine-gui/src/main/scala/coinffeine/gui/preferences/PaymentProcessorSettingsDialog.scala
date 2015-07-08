@@ -1,6 +1,7 @@
 package coinffeine.gui.preferences
 
 import scalafx.Includes._
+import scalafx.scene.Node
 import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.{Modality, Stage, StageStyle}
@@ -60,9 +61,14 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
       children = Seq(
         header,
         description,
-        field("Account ID", walletIdField),
-        field("Token", seedTokenField),
-        field(verificationStatusField),
+        labelledField("Account ID", walletIdField),
+        labelledField("Token", seedTokenField),
+        field(
+          new HBox(verificationStatusField, new SupportWidget("setup-verification")),
+          new Label("Unverified accounts cannot transfer more than 300EUR/month") {
+            styleClass += "explanation"
+          }
+        ),
         new HBox {
           styleClass += "footer"
           disable <== walletIdField.text.delegate.mapToBool(text => !validWalletId(text))
@@ -75,17 +81,12 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
     }
   }
 
-  private def field(label: String, field: Control) = new VBox {
-    styleClass += "field"
-    children = Seq(
-      new Label(label) with TextStyles.Emphasis,
-      field
-    )
-  }
+  private def labelledField(label: String, node: Node) =
+    field(new Label(label) with TextStyles.Emphasis, node)
 
-  private def field(field: Control) = new VBox {
+  private def field(nodes: Node*) = new VBox {
     styleClass += "field"
-    children = field
+    children = nodes
   }
 
   private val formStage = new Stage(style = StageStyle.UTILITY) {
