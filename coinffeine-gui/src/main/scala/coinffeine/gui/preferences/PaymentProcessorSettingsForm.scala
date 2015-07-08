@@ -1,7 +1,7 @@
 package coinffeine.gui.preferences
 
 import scalafx.Includes._
-import scalafx.scene.control.{Hyperlink, Button, Label, TextField}
+import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, VBox}
 import scalafx.stage.{Modality, Stage, StageStyle}
 
@@ -13,6 +13,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.gui.wizard.Wizard
+import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.config.SettingsProvider
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
@@ -20,6 +21,7 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) extends L
 
   private val walletIdField = new TextField
   private val seedTokenField = new TextField
+  private val verificationStatusField = new CheckBox("Verified account")
 
   private val credentials =
     walletIdField.text.delegate.zip(seedTokenField.text) { (walletId, seedToken) =>
@@ -58,8 +60,9 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) extends L
       children = Seq(
         header,
         description,
-        labeledField(walletIdField, "Account ID"),
-        labeledField(seedTokenField, "Token"),
+        field("Account ID", walletIdField),
+        field("Token", seedTokenField),
+        field(verificationStatusField),
         new HBox {
           styleClass += "footer"
           disable <== walletIdField.text.delegate.mapToBool(text => !validWalletId(text))
@@ -72,12 +75,17 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) extends L
     }
   }
 
-  private def labeledField(field: TextField, label: String) = new VBox {
-    styleClass += "labeled-field"
+  private def field(label: String, field: Control) = new VBox {
+    styleClass += "field"
     children = Seq(
       new Label(label) with TextStyles.Emphasis,
       field
     )
+  }
+
+  private def field(field: Control) = new VBox {
+    styleClass += "field"
+    children = field
   }
 
   private val formStage = new Stage(style = StageStyle.UTILITY) {
@@ -89,33 +97,57 @@ class PaymentProcessorSettingsForm(settingsProvider: SettingsProvider) extends L
   }
 
   private def applyAndClose(): Unit = {
-    saveCredentials(credentials.value)
+    val verificationStatus =
+      if (verificationStatusField.selected.value) VerificationStatus.Verified
+      else VerificationStatus.NotVerified
+    saveSettings(credentials.value, verificationStatus)
     formStage.close()
   }
 
   private def rerunWizard(): Unit = {
     try {
       val result = SetupWizard.okPaySetup.run(Some(formScene.window.value))
-      result.okPayWalletAccess.value.foreach(saveCredentials)
+      val credentials = result.okPayWalletAccess.value.getOrElse(OkPayApiCredentials.empty)
+      val verificationStatus =
+        result.okPayVerificationStatus.value.getOrElse(VerificationStatus.NotVerified)
+      saveSettings(credentials, verificationStatus)
     } catch {
       case _: Wizard.CancelledByUser => logger.info("OKPay wizard was cancelled by the user")
     }
     formStage.close()
   }
 
-  private def saveCredentials(credentials: OkPayApiCredentials): Unit = {
+  private def saveSettings(
+      credentials: OkPayApiCredentials, verificationStatus: VerificationStatus): Unit = {
     settingsProvider.saveUserSettings(
-      settingsProvider.okPaySettings().withApiCredentials(credentials))
+      settingsProvider.okPaySettings()
+          .withApiCredentials(credentials)
+          .copy(verificationStatus = Some(verificationStatus)))
   }
 
   private def validWalletId(walletId: String): Boolean =
     walletId.trim.matches(OkPaySettings.AccountIdPattern)
 
   def show(): Unit = {
-    val credentials = settingsProvider.okPaySettings().apiCredentials
-    walletIdField.text = credentials.fold("")(_.walletId)
-    seedTokenField.text = credentials.fold("")(_.seedToken)
+    resetFieldsToCurrentSettings()
     walletIdField.requestFocus()
     formStage.showAndWait()
+  }
+
+  private def resetFieldsToCurrentSettings(): Unit = {
+    val currentSettings = settingsProvider.okPaySettings()
+    resetCredentialFields(
+      currentSettings.apiCredentials.getOrElse(OkPayApiCredentials.empty))
+    resetVerificationStatusField(
+      currentSettings.verificationStatus.getOrElse(VerificationStatus.NotVerified))
+  }
+
+  private def resetCredentialFields(credentials: OkPayApiCredentials): Unit = {
+    walletIdField.text = credentials.walletId
+    seedTokenField.text = credentials.seedToken
+  }
+
+  private def resetVerificationStatusField(verificationStatus: VerificationStatus): Unit = {
+    verificationStatusField.selected = verificationStatus == VerificationStatus.Verified
   }
 }
