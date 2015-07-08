@@ -11,9 +11,10 @@ import coinffeine.peer.payment.okpay.OkPayClient.DuplicatedPayment
 
 /** An actor that ensures a payment is made through a payment processor.
   *
-  * After receiving a [[PayerActor.EnsurePayment]] message, it starts ensuring that the wrapped
-  * payment is made. It will retry and manage the corresponding error until the payment is fully
-  * confirmed by the payment processor. Then, [[PayerActor.PaymentEnsured]] is responded back and
+  * After receiving a [[coinffeine.peer.exchange.micropayment.PayerActor.EnsurePayment]]
+  * message, it starts ensuring that the wrapped payment is made. It will retry and manage the
+  * corresponding error until the payment is fully confirmed by the payment processor. Then,
+  * [[coinffeine.peer.exchange.micropayment.PayerActor.PaymentEnsured]] is responded back and
   * the PayerActor terminates.
   */
 class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
@@ -98,7 +99,9 @@ object PayerActor {
   /** A response sent by payer actor after [[EnsurePayment]] indicating the payment was ensured. */
   case class PaymentEnsured(response: PaymentProcessorActor.Paid)
 
-  /** A response sent by payer actor after [[EnsurePayment]] indicating the payment couldn't be ensured. */
+  /** A response sent by payer actor after [[EnsurePayment]] indicating the payment couldn't
+    * be ensured.
+    */
   case class CannotEnsurePayment(
       request: PaymentProcessorActor.Pay,
       cause: Throwable)
