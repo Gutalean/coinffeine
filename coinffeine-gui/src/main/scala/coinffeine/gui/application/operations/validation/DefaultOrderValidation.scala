@@ -1,5 +1,6 @@
 package coinffeine.gui.application.operations.validation
 
+import scalaz.syntax.applicative._
 import coinffeine.model.market._
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.api.CoinffeineApp
@@ -17,5 +18,5 @@ class DefaultOrderValidation(app: CoinffeineApp) extends OrderValidation {
   )
 
   override def apply(request: OrderRequest, spread: Spread) =
-    validations.map(_.apply(request, spread)).reduce(OrderValidation.Result.combine)
+    validations.map(_.apply(request, spread)).reduce(_ *> _)
 }

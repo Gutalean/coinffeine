@@ -1,6 +1,6 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.NonEmptyList
+import scalaz.syntax.applicative._
 
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
@@ -37,34 +37,29 @@ private class AvailableFundsValidation(
       availableBitcoin: Option[BitcoinAmount],
       request: OrderRequest,
       spread: Spread): OrderValidation.Result =
-    amountsCalculator.estimateAmountsFor(request, spread)
-        .fold[OrderValidation.Result](OrderValidation.OK) { estimatedAmounts =>
-      OrderValidation.Result.combine(
+    amountsCalculator.estimateAmountsFor(request, spread).fold(OrderValidation.Ok) {
+      estimatedAmounts =>
         checkForAvailableBalance("bitcoin", availableBitcoin,
-          estimatedAmounts.bitcoinRequired(request.orderType)),
+          estimatedAmounts.bitcoinRequired(request.orderType)) *>
         checkForAvailableBalance(request.price.currency.toString, availableFiat,
           estimatedAmounts.fiatRequired(request.orderType))
-      )
     }
 
   private def checkForAvailableBalance[A <: CurrencyAmount[A]](
-      balanceName: String, available: Option[A], required: A) = {
+      balanceName: String, available: Option[A], required: A) =
     available match {
-      case Some(enoughFunds) if enoughFunds >= required => OrderValidation.OK
-      case Some(notEnoughFunds) =>
-        OrderValidation.Warning(NonEmptyList(shortOfFunds(notEnoughFunds, required)))
-      case None =>
-        OrderValidation.Warning(NonEmptyList(cannotCheckBalance(balanceName)))
+      case Some(enoughFunds) if enoughFunds >= required => OrderValidation.Ok
+      case Some(notEnoughFunds) => shortOfFunds(notEnoughFunds, required)
+      case None => cannotCheckBalance(balanceName)
     }
-  }
-
-  private def cannotCheckBalance(name: String) =
-    s"It is not possible to check your $name balance.\n" +
-        "It can be submitted anyway, but it might be stalled until your balance is " +
-        "available again and it has enough funds to satisfy the order."
 
   private def shortOfFunds[A <: CurrencyAmount[A]](available: A, required: A) =
-    s"Your $available available are insufficient for this order " +
+    OrderValidation.warning(s"Your $available available are insufficient for this order " +
         s"(at least $required required).\nYou may proceed, but your order will be stalled " +
-        "until enough funds are available."
+        "until enough funds are available.")
+
+  private def cannotCheckBalance(name: String) = OrderValidation.warning(
+    s"It is not possible to check your $name balance.\n" +
+        "It can be submitted anyway, but it might be stalled until your balance is " +
+        "available again and it has enough funds to satisfy the order.")
 }

@@ -1,6 +1,7 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.NonEmptyList
+import scalaz.syntax.validation._
+import scalaz.{NonEmptyList, Semigroup, Validation}
 
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
@@ -13,31 +14,33 @@ trait OrderValidation {
 
 object OrderValidation {
 
-  sealed trait Result
+  type Result = Validation[Problem, Unit]
 
-  /** All requirements were met and the order can be created right away */
-  case object OK extends Result
+  val Ok: Result = ().success
 
-  /** At least one mandatory requirement was unmet and the order cannot be created */
-  case class Error(violations: NonEmptyList[String]) extends Result
+  def error(violation1: String, violations: String*) =
+    Error(NonEmptyList(violation1, violations:_*)).failure
 
-  /** Optional requirements were unmet, the order can be created after user confirmation */
-  case class Warning(violations: NonEmptyList[String]) extends Result
+  def warning(violation1: String, violations: String*) =
+    Warning(NonEmptyList(violation1, violations:_*)).failure
 
-  object Result {
-    def combine(checkResults: Result*): Result = {
-      checkResults.foldLeft[Result](OK)(combine)
-    }
+  sealed trait Problem
 
-    def combine(leftResult: Result, rightResult: Result): Result =
-      (leftResult, rightResult) match {
-        case (OK, other) => other
-        case (other, OK) => other
+  object Problem {
+    implicit object ProblemSemigroup extends Semigroup[Problem] {
+      override def append(left: Problem, right: => Problem): Problem = (left, right) match {
         case (Warning(violations1), Warning(violations2)) =>
           Warning(violations1.append(violations2))
         case (Error(violations1), Error(violations2)) => Error(violations1.append(violations2))
         case (error: Error, _) => error
         case (_, error: Error) => error
       }
+    }
   }
+
+  /** At least one mandatory requirement was unmet and the order cannot be created */
+  case class Error(violations: NonEmptyList[String]) extends Problem
+
+  /** Optional requirements were unmet, the order can be created after user confirmation */
+  case class Warning(violations: NonEmptyList[String]) extends Problem
 }

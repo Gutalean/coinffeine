@@ -1,6 +1,6 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.NonEmptyList
+import scalaz.{Failure, NonEmptyList}
 
 import org.scalatest.Inside
 
@@ -21,13 +21,13 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
 
   "The available funds requirement" should "not apply for sellers" in new Fixture {
     givenNotEnoughRemainingLimits()
-    instance.apply(newAsk, spread) shouldBe OK
+    instance.apply(newAsk, spread) shouldBe Ok
   }
 
   it should "optionally require fiat limits to be known" in new Fixture {
     givenStaleRemainingLimits()
     inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
+      case Failure(Warning(NonEmptyList(requirement))) =>
         requirement should include ("not possible to check")
     }
   }
@@ -35,19 +35,19 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
   it should "optionally require available remaining limits to cover order needs" in new Fixture {
     givenNotEnoughRemainingLimits()
     inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
+      case Failure(Error(NonEmptyList(requirement))) =>
         requirement should include regex "You need to transfer .* but your remaining limit of .* is not enough"
     }
   }
 
   it should "not complain when having enough remaining limits" in new Fixture {
     givenEnoughRemainingLimits()
-    instance.apply(newBid, spread) shouldBe OK
+    instance.apply(newBid, spread) shouldBe Ok
   }
 
   it should "not complain when having no limit for the currency of the order" in new Fixture {
     givenUnboundedLimits()
-    instance.apply(newBid, spread) shouldBe OK
+    instance.apply(newBid, spread) shouldBe Ok
   }
 
 

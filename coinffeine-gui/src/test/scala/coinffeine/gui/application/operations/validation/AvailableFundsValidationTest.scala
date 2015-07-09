@@ -1,6 +1,6 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.NonEmptyList
+import scalaz.{Failure, NonEmptyList}
 
 import org.scalatest.Inside
 
@@ -24,18 +24,18 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
       givenEnoughFiatFunds()
       givenStaleBitcoinFunds()
       inside(instance.apply(newBid, spread)) {
-        case Warning(NonEmptyList(requirement)) =>
+        case Failure(Warning(NonEmptyList(requirement))) =>
           requirement should include ("not possible to check")
       }
       bitcoinBalance.set(None)
-      instance.apply(newBid, spread) should not be OK
+      instance.apply(newBid, spread) should not be Ok
     }
 
   it should "optionally require available bitcoin balance to cover order needs" in new Fixture {
     givenEnoughFiatFunds()
     givenNotEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
+      case Failure(Warning(NonEmptyList(requirement))) =>
         requirement should include regex "Your .* available are insufficient for this order"
     }
   }
@@ -44,7 +44,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     givenStaleFiatFunds()
     givenEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
+      case Failure(Warning(NonEmptyList(requirement))) =>
         requirement should include ("not possible to check")
     }
   }
@@ -53,7 +53,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     givenNotEnoughFiatFunds()
     givenEnoughBitcoinFunds()
     inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
+      case Failure(Warning(NonEmptyList(requirement))) =>
         requirement should include regex "Your .* available are insufficient for this order"
     }
   }

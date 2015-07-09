@@ -1,6 +1,6 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.NonEmptyList
+import scalaz.{Failure, NonEmptyList}
 
 import org.scalatest.Inside
 
@@ -20,13 +20,13 @@ class SelfCrossValidationTest extends UnitTest with Inside {
     orders.set(crossingAsk.id, crossingAsk)
 
     inside(instance.apply(request, Spread.empty)) {
-      case Error(NonEmptyList(unmetRequirement)) =>
+      case Failure(Error(NonEmptyList(unmetRequirement))) =>
         unmetRequirement should include ("self-cross")
     }
   }
 
   it should "accept not self-crossing orders" in new Fixture {
-    instance.apply(request, Spread.empty) shouldBe OK
+    instance.apply(request, Spread.empty) shouldBe Ok
   }
 
   private trait Fixture {
