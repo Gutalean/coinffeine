@@ -1,6 +1,6 @@
 package coinffeine.peer.bitcoin.platform
 
-import org.bitcoinj.core.{FullPrunedBlockChain, AbstractBlockChain, PeerGroup}
+import org.bitcoinj.core.{AbstractBlockChain, PeerGroup}
 
 import coinffeine.model.bitcoin.Network
 import coinffeine.model.network.NetworkEndpoint
@@ -12,11 +12,6 @@ trait BitcoinPlatform {
   def peerGroup: PeerGroup
   def wallet: SmartWallet
   def seedPeers: Seq[NetworkEndpoint]
-
-  def fullPrunedBlockchain: Option[FullPrunedBlockChain] = blockchain match {
-    case chain: FullPrunedBlockChain => Some(chain)
-    case _ => None
-  }
 }
 
 object BitcoinPlatform {
