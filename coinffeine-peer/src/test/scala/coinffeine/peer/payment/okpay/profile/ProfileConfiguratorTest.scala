@@ -23,6 +23,12 @@ class ProfileConfiguratorTest extends UnitTest with FutureMatchers {
     result.credentials shouldBe OkPayApiCredentials(profile.walletId, profile.seedToken.get)
   }
 
+  it should "retrieve the verification status" in new Fixture {
+    profile.givenVerificationStatus(VerificationStatus.Verified)
+    val result = configurator.configure().futureValue
+    result.verificationStatus shouldBe VerificationStatus.Verified
+  }
+
   trait Fixture {
     protected val profile = new FakeProfile()
     protected val configurator = new ProfileConfigurator(profile)
@@ -33,6 +39,7 @@ class ProfileConfiguratorTest extends UnitTest with FutureMatchers {
     override var accountMode: AccountMode = AccountMode.Client
     var apiEnabled = false
     var seedToken: Option[String] = None
+    private var _verificationStatus: VerificationStatus = _
 
     override def enableAPI(id: String): Unit = {
       require(id == walletId)
@@ -45,6 +52,10 @@ class ProfileConfiguratorTest extends UnitTest with FutureMatchers {
       seedToken.get
     }
 
-    override def verificationStatus: VerificationStatus = ???
+    override def verificationStatus = _verificationStatus
+
+    def givenVerificationStatus(verificationStatus: VerificationStatus): Unit = {
+      _verificationStatus = verificationStatus
+    }
   }
 }
