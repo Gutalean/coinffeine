@@ -9,7 +9,7 @@ import org.apache.commons.io.FileUtils
 
 import coinffeine.peer.appdata.Migration.Context
 
-object MigrationV1ToV2 extends Migration {
+class BackupJournalMigration(backupSuffix: String) extends Migration {
 
   private val ExplanationTitle = "Order data migration"
 
@@ -34,7 +34,7 @@ object MigrationV1ToV2 extends Migration {
   }
 
   private def moveDirectory(sourceDir: File): Migration.Result = {
-    val destDir = new File(sourceDir.getAbsolutePath + ".v0.8")
+    val destDir = new File(sourceDir.getAbsolutePath + "." + backupSuffix)
     \/.fromTryCatchNonFatal(FileUtils.moveDirectory(sourceDir, destDir))
       .leftMap(Migration.Failed.apply)
   }

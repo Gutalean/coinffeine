@@ -7,5 +7,5 @@ case class DataVersion(value: Int) extends Ordered[DataVersion] {
 }
 
 object DataVersion {
-  val Current = DataVersion(2)
+  val Current = DataVersion(3)
 }
