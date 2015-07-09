@@ -11,9 +11,8 @@ import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
-import coinffeine.model.util.{CacheStatus, Cached}
+import coinffeine.model.util.{Cached, CacheStatus}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
-import coinffeine.peer.payment.PaymentProcessorProperties
 
 class AvailableFundsValidationTest extends UnitTest with Inside {
 
@@ -50,16 +49,6 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
   }
 
-  it should "optionally require fiat limits to be known" in new Fixture {
-    givenEnoughFiatFunds()
-    givenStaleRemainingLimits()
-    givenEnoughBitcoinFunds()
-    inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
-        requirement should include ("not possible to check")
-    }
-  }
-
   it should "optionally require available fiat balance to cover order needs" in new Fixture {
     givenNotEnoughFiatFunds()
     givenEnoughBitcoinFunds()
@@ -69,24 +58,9 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
   }
 
-  it should "optionally require available remaining limits to cover order needs" in new Fixture {
-    givenEnoughFiatFunds()
-    givenNotEnoughRemainingLimits()
-    givenEnoughBitcoinFunds()
-    inside(instance.apply(newBid, spread)) {
-      case Warning(NonEmptyList(requirement)) =>
-        requirement should include regex "Your .* available are insufficient for this order"
-    }
-  }
-
   private trait Fixture {
-    private val fiat = new PaymentProcessorProperties {
-      override val balances =
-        new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
-      override val remainingLimits =
-        new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
-    }
-
+    private val fiatBalances =
+      new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
     private val initialFiatBalance = Cached.fresh(FiatAmounts.fromAmounts(450.EUR))
     val initialBitcoinBalance = BitcoinBalance(
       estimated = 2.3.BTC,
@@ -95,7 +69,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     )
     val bitcoinBalance = new MutableProperty[Option[BitcoinBalance]](None)
     val instance =
-      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiat, bitcoinBalance)
+      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiatBalances, bitcoinBalance)
 
     protected def givenEnoughBitcoinFunds(): Unit = {
       bitcoinBalance.set(Some(initialBitcoinBalance))
@@ -110,27 +84,15 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
 
     protected def givenEnoughFiatFunds(): Unit = {
-      fiat.balances.set(initialFiatBalance)
+      fiatBalances.set(initialFiatBalance)
     }
 
     protected def givenStaleFiatFunds(): Unit = {
-      fiat.balances.set(Cached.stale(initialFiatBalance.cached))
+      fiatBalances.set(Cached.stale(initialFiatBalance.cached))
     }
 
     protected def givenNotEnoughFiatFunds(): Unit = {
-      fiat.balances.set(Cached.fresh(FiatAmounts.fromAmounts(1.EUR)))
-    }
-
-    protected def givenEnoughRemainingLimits(): Unit = {
-      fiat.remainingLimits.set(initialFiatBalance)
-    }
-
-    protected def givenStaleRemainingLimits(): Unit = {
-      fiat.remainingLimits.set(Cached.stale(initialFiatBalance.cached))
-    }
-
-    protected def givenNotEnoughRemainingLimits(): Unit = {
-      fiat.remainingLimits.set(Cached.fresh(FiatAmounts.fromAmounts(1.EUR)))
+      fiatBalances.set(Cached.fresh(FiatAmounts.fromAmounts(1.EUR)))
     }
   }
 }

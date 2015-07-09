@@ -7,12 +7,12 @@ import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
+import coinffeine.model.util.Cached
 import coinffeine.peer.amounts.AmountsCalculator
-import coinffeine.peer.payment.PaymentProcessorProperties
 
 private class AvailableFundsValidation(
     amountsCalculator: AmountsCalculator,
-    fiatProperties: PaymentProcessorProperties,
+    fiatBalances: Property[Cached[FiatAmounts]],
     bitcoinBalance: Property[Option[BitcoinBalance]]) extends OrderValidation {
 
   override def apply(
@@ -22,12 +22,11 @@ private class AvailableFundsValidation(
       currentAvailableFiat(request.price.currency), currentAvailableBitcoin(), request, spread)
 
   private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] = {
-    val cachedBalances = fiatProperties.balances.get
-    val cachedRemainingLimits = fiatProperties.remainingLimits.get
+    val cachedBalances = fiatBalances.get
     for {
-      balance <- cachedBalances.cached.get(currency) if cachedBalances.status.isFresh
-      limit = cachedRemainingLimits.cached.get(currency) if cachedRemainingLimits.status.isFresh
-    } yield limit.fold(balance)(_ min balance)
+      balance <- cachedBalances.cached.get(currency)
+      if cachedBalances.status.isFresh
+    } yield balance
   }
 
   private def currentAvailableBitcoin(): Option[BitcoinAmount] =
@@ -60,7 +59,7 @@ private class AvailableFundsValidation(
   }
 
   private def cannotCheckBalance(name: String) =
-    s"It is not possible to check your $name balance and limits.\n" +
+    s"It is not possible to check your $name balance.\n" +
         "It can be submitted anyway, but it might be stalled until your balance is " +
         "available again and it has enough funds to satisfy the order."
 
