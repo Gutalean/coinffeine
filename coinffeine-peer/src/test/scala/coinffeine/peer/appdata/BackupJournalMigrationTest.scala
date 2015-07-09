@@ -10,18 +10,18 @@ import coinffeine.common.test.{TempDir, UnitTest}
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.config.user.UserFileConfigProvider
 
-class MigrationV1ToV2Test extends UnitTest with Inside {
+class BackupJournalMigrationTest extends UnitTest with Inside {
 
   "Migration from 0.8 to 0.9" should "abort if user doesn't approve the migration" in
     new Fixture {
       context.givenUserDisapproval()
-      MigrationV1ToV2.apply(context) shouldBe Migration.Aborted.left
+      migration.apply(context) shouldBe Migration.Aborted.left
     }
 
   it should "rename journal and snapshot directories if the user approves it" in new Fixture {
     context.givenUserApproval()
     context.givenEventSourcingDirectories()
-    MigrationV1ToV2.apply(context) shouldBe Migration.Success
+    migration.apply(context) shouldBe Migration.Success
     context.expectNoEventSourcingDirectories()
     context.expectEventSourcingBackup()
   }
@@ -30,7 +30,7 @@ class MigrationV1ToV2Test extends UnitTest with Inside {
     context.givenUserApproval()
     context.givenEventSourcingDirectories()
     context.givenPreviousEventSourcingBackup()
-    inside(MigrationV1ToV2.apply(context)) {
+    inside(migration.apply(context)) {
       case -\/(Migration.Failed(cause)) => cause.getMessage should include("already exists")
     }
   }
@@ -38,6 +38,7 @@ class MigrationV1ToV2Test extends UnitTest with Inside {
   trait Fixture {
     protected val dataDir = TempDir.create("migrationTest")
     protected val context = new MockedContext(dataDir)
+    protected val migration = new BackupJournalMigration("v0.8")
   }
 
   class MockedContext(dataDir: File) extends Migration.Context {
