@@ -4,6 +4,7 @@ import scala.concurrent.duration._
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control.{Label, RadioButton, ToggleGroup}
 import scalafx.scene.layout.{HBox, VBox}
+import scalaz.Failure
 import scalaz.syntax.std.option._
 
 import coinffeine.gui.application.operations.validation.OrderValidation
@@ -30,7 +31,7 @@ class OrderAmountsStep(
   private val order =
     new ObjectProperty[Option[OrderRequest]](this, "order", None)
   private val validation =
-    new ObjectProperty[OrderValidation.Result](this, "validation", OrderValidation.OK)
+    new ObjectProperty[OrderValidation.Result](this, "validation", OrderValidation.Ok)
 
   private val currentQuote = PollingBean(OrderAmountsStep.CurrentQuotePollingInterval) {
     marketStats.currentQuote(Market(Euro))
@@ -105,9 +106,9 @@ class OrderAmountsStep(
         Seq("label", "messages") ++ styleClassFor(result)
       }
       text <== validation.delegate.mapToString {
-        case OrderValidation.OK => ""
-        case OrderValidation.Warning(violations) => violations.list.mkString("\n")
-        case OrderValidation.Error(violations) => violations.list.mkString("\n")
+        case Failure(OrderValidation.Warning(violations)) => violations.list.mkString("\n")
+        case Failure(OrderValidation.Error(violations)) => violations.list.mkString("\n")
+        case _ => ""
       }
     }
 
@@ -115,8 +116,8 @@ class OrderAmountsStep(
   }
 
   private def styleClassFor(result: OrderValidation.Result): Option[String] = result match {
-    case _: OrderValidation.Warning => "warning".some
-    case _: OrderValidation.Error => "error".some
+    case Failure(_: OrderValidation.Warning)=> "warning".some
+    case Failure(_: OrderValidation.Error) => "error".some
     case _ => None
   }
 
@@ -163,14 +164,14 @@ class OrderAmountsStep(
 
     validation <== order.delegate.zip(currentQuote) { (order, quote) =>
       val spread = quote.map(_.spread).getOrElse(Spread.empty)
-      order.map(o => validator(o, spread)).getOrElse(OrderValidation.OK)
+      order.map(o => validator(o, spread)).getOrElse(OrderValidation.Ok)
     }
   }
 
   private def bindCanContinue(): Unit = {
     val definedOrder = order.delegate.mapToBool(_.isDefined)
     val validOrder = validation.delegate.mapToBool {
-      case _: OrderValidation.Error => false
+      case Failure(_: OrderValidation.Error) => false
       case _ => true
     }
     canContinue <== definedOrder and validOrder

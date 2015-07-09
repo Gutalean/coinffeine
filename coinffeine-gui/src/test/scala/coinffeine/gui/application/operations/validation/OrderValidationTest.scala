@@ -1,9 +1,9 @@
 package coinffeine.gui.application.operations.validation
 
 import scalaz.NonEmptyList
+import scalaz.syntax.semigroup._
 
 import coinffeine.common.test.UnitTest
-import coinffeine.gui.application.operations.validation.OrderValidation.Result._
 import coinffeine.gui.application.operations.validation.OrderValidation._
 
 class OrderValidationTest extends UnitTest {
@@ -13,50 +13,24 @@ class OrderValidationTest extends UnitTest {
   private val noFiat = "you have no Euros but you need 3.34 €"
   private val noBtc = "you have 0 BTC but you need 3 satoshis"
 
-  "Combining check results" should "treat RequirementsMet as recessive" in {
-    val otherResults = Seq(
-      OK,
-      Error(NonEmptyList(selfCross)),
-      Warning(NonEmptyList(noFiat))
-    )
-    for (other <- otherResults) {
-      combine(other, OK) shouldBe other
-      combine(OK, other) shouldBe other
-    }
+  private val offLimitsError: Problem = Error(NonEmptyList(offLimits))
+  private val selfCrossError: Problem = Error(NonEmptyList(selfCross))
+  private val noFiatWarning: Problem = Warning(NonEmptyList(noFiat))
+  private val noBtcWarning: Problem = Warning(NonEmptyList(noBtc))
+
+  "Combining check results" should "treat Error as dominant" in {
+    noFiatWarning |+| offLimitsError shouldBe offLimitsError
   }
 
-  it should "treat RequirementsUnmet as dominant" in {
-    val unmet = Error(NonEmptyList(offLimits))
-    for (other <- Seq(
-      OK,
-      Warning(NonEmptyList(noFiat))
-    )) {
-      combine(other, unmet) shouldBe unmet
-      combine(unmet, other) shouldBe unmet
-    }
+  it should "combine errors" in {
+    offLimitsError |+| selfCrossError shouldBe Error(NonEmptyList(offLimits, selfCross))
   }
 
-  it should "combine requirements unmet" in {
-    combine(Error(NonEmptyList(offLimits)),
-      Error(NonEmptyList(selfCross))) shouldBe
-      Error(NonEmptyList(offLimits, selfCross))
-  }
-
-  it should "combine optional requirements unmet" in {
-    combine(Warning(NonEmptyList(noFiat)),
-      Warning(NonEmptyList(noBtc))) shouldBe
-      Warning(NonEmptyList(noFiat, noBtc))
-  }
-
-  it should "consider 0 requirements as met" in {
-    combine() shouldBe OK
+  it should "combine warnings" in {
+    noFiatWarning |+| noBtcWarning shouldBe Warning(NonEmptyList(noFiat, noBtc))
   }
 
   it should "combine multiple results" in {
-    combine(
-      OK,
-      Error(NonEmptyList(selfCross)),
-      Warning(NonEmptyList(noFiat))
-    ) shouldBe Error(NonEmptyList(selfCross))
+    selfCrossError |+| noFiatWarning |+| noBtcWarning shouldBe selfCrossError
   }
 }
