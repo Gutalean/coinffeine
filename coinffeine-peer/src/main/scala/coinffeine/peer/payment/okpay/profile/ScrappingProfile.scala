@@ -136,9 +136,13 @@ class ScrappingProfile private (val client: WebClient) extends Profile with Lazy
   override def verificationStatus: VerificationStatus = {
     val welcomePage = retrievePage(s"$OkPayBaseUrl/en/account/index.html")
     val verificationStatusName =
-      welcomePage.getAnchorByHref("/en/account/profile/verification.html").getTextContent.trim
+      Option[HtmlAnchor](welcomePage.getAnchorByHref("/en/account/profile/verification.html"))
+        .getOrElse(
+          throw new ProfileException(s"Error on retrieve verification status.")
+        ).getTextContent.trim
     VerificationStatusNames.get(verificationStatusName).getOrElse(
-      throw new ProfileException(s"Verification status not found. '$verificationStatusName' was found.")
+      throw new ProfileException(
+        s"Verification status not found. '$verificationStatusName' was found.")
     )
   }
 }
