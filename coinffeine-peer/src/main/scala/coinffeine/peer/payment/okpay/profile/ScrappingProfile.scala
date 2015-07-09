@@ -9,6 +9,8 @@ import com.gargoylesoftware.htmlunit.html._
 import com.typesafe.scalalogging.LazyLogging
 import org.eclipse.jetty.util.ajax.JSON
 
+import coinffeine.model.payment.okpay.VerificationStatus
+
 class ScrappingProfile private (val client: WebClient) extends Profile with LazyLogging {
   import ScrappingProfile._
 
@@ -130,6 +132,15 @@ class ScrappingProfile private (val client: WebClient) extends Profile with Lazy
       form, s"Cannot submit form with button $submitButton at ${form.getHtmlPageOrNull.getUrl}") {
       form.getInputByName[HtmlSubmitInput](submitButton).click[HtmlPage]()
     }
+
+  override def verificationStatus: VerificationStatus = {
+    val welcomePage = retrievePage(s"$OkPayBaseUrl/en/account/index.html")
+    val verificationStatusName =
+      welcomePage.getAnchorByHref("/en/account/profile/verification.html").getTextContent.trim
+    VerificationStatusNames.get(verificationStatusName).getOrElse(
+      throw new ProfileException(s"Verification status not found. '$verificationStatusName' was found.")
+    )
+  }
 }
 
 object ScrappingProfile {
@@ -140,6 +151,10 @@ object ScrappingProfile {
     AccountMode.Client -> "cbxBuyer"
   )
   private val AccountTypeLocation = "general/account-type.html"
+  private val VerificationStatusNames = Map[String, VerificationStatus](
+    "Verified" -> VerificationStatus.Verified,
+    "Not verified" -> VerificationStatus.NotVerified
+  )
 
   def login(username: String, password: String)
            (implicit context: ExecutionContext): Future[ScrappingProfile] = Future {

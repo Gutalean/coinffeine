@@ -1,6 +1,7 @@
 package coinffeine.peer.payment.okpay.profile
 
 import coinffeine.common.test.{FutureMatchers, UnitTest}
+import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
 class ProfileConfiguratorTest extends UnitTest with FutureMatchers {
@@ -43,5 +44,7 @@ class ProfileConfiguratorTest extends UnitTest with FutureMatchers {
       seedToken = Some("seedToken")
       seedToken.get
     }
+
+    override def verificationStatus: VerificationStatus = ???
   }
 }
