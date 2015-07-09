@@ -51,9 +51,8 @@ private class TransferenceLimitValidation(
     else OrderValidation.Ok
 
   private def limitIsNotEnough(requiredAmount: FiatAmount, remainingLimit: FiatAmount) =
-    OrderValidation.error(s"You need to transfer $requiredAmount but your remaining limit of " +
-        s"$remainingLimit is not enough.\nYou may proceed but your order can " +
-        s"fail when you hit your transference limit.")
+    OrderValidation.error(
+      "This order will exceed your payment processor monthly transference limits.")
 
   private def cannotCheckLimits(currency: FiatCurrency) = OrderValidation.warning(
     s"It is not possible to check your $currency limit.\n" +

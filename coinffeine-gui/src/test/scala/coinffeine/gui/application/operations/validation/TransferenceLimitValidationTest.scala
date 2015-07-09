@@ -36,7 +36,8 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
     givenNotEnoughRemainingLimits()
     inside(instance.apply(newBid, spread)) {
       case Failure(Error(NonEmptyList(requirement))) =>
-        requirement should include regex "You need to transfer .* but your remaining limit of .* is not enough"
+        requirement should include
+          "This order will exceed your payment processor monthly transference limits"
     }
   }
 
