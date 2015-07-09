@@ -19,7 +19,7 @@ class ProfileConfigurator(profile: Profile) extends LazyLogging {
 
     Result(
       credentials = OkPayApiCredentials(walletId, profile.configureSeedToken(walletId)),
-      verificationStatus = VerificationStatus.NotVerified // TODO by @gotoalberto
+      verificationStatus = profile.verificationStatus
     )
   }
 

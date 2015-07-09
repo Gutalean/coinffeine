@@ -1,5 +1,7 @@
 package coinffeine.peer.payment.okpay.profile
 
+import coinffeine.model.payment.okpay.VerificationStatus
+
 /** Interface to manipulate the OKPay profile */
 trait Profile {
 
@@ -11,4 +13,6 @@ trait Profile {
   def enableAPI(walletId: String): Unit
 
   def configureSeedToken(walletId: String): String
+
+  def verificationStatus: VerificationStatus
 }
