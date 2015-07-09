@@ -142,7 +142,7 @@ class ScrappingProfile private (val client: WebClient) extends Profile with Lazy
         ).getTextContent.trim
     VerificationStatusNames.get(verificationStatusName).getOrElse(
       throw new ProfileException(
-        s"Verification status not found. '$verificationStatusName' was found.")
+        s"Unknown verification status: '$verificationStatusName'")
     )
   }
 }
