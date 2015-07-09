@@ -11,7 +11,7 @@ import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
-import coinffeine.model.util.{Cached, CacheStatus}
+import coinffeine.model.util.{CacheStatus, Cached}
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 
 class AvailableFundsValidationTest extends UnitTest with Inside {
