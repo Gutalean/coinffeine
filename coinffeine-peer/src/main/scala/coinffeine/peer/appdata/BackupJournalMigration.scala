@@ -18,20 +18,25 @@ class BackupJournalMigration(backupSuffix: String) extends Migration {
     "(a backup will be made).\n\n" +
     "Do you want to continue?"
 
-  override def apply(context: Context) =
-    if (context.confirm(ExplanationTitle, Explanation)) moveEventSourcingDirectories(context)
+  override def apply(context: Context) = {
+    val directories = eventSourcingDirectories(context)
+    if (!shouldMove(directories)) Migration.Success
+    else if (context.confirm(ExplanationTitle, Explanation)) moveDirectories(directories)
     else Migration.Aborted.left
-
-  private def moveEventSourcingDirectories(context: Migration.Context): Migration.Result = {
-    val eventSourcingDirectories = Seq(
-      "akka.persistence.journal.leveldb.dir",
-      "akka.persistence.snapshot-store.local.dir"
-    ).map(setting => new File(context.config.enrichedConfig.getString(setting)))
-
-    eventSourcingDirectories.foldLeft(Migration.Success) { (accum, sourceDir) =>
-      accum >> { moveDirectory(sourceDir) }
-    }
   }
+
+  private def shouldMove(directories: Seq[File]): Boolean = directories.exists(_.exists())
+
+  private def moveDirectories(directories: Seq[File]): Migration.Result = directories
+      .filter(_.exists())
+      .foldLeft(Migration.Success) { (accum, sourceDir) =>
+          accum >> moveDirectory(sourceDir)
+      }
+
+  private def eventSourcingDirectories(context: Migration.Context): Seq[File] = Seq(
+    "akka.persistence.journal.leveldb.dir",
+    "akka.persistence.snapshot-store.local.dir"
+  ).map(setting => new File(context.config.enrichedConfig.getString(setting)))
 
   private def moveDirectory(sourceDir: File): Migration.Result = {
     val destDir = new File(sourceDir.getAbsolutePath + "." + backupSuffix)
