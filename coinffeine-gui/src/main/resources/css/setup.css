@@ -55,7 +55,7 @@
     -fx-alignment: center;
     -fx-padding: 25;
     -fx-spacing: 30;
-    -fx-min-height: 480;
+    -fx-min-height: 420;
 }
 
 .wizard .okpay-pane .label {
