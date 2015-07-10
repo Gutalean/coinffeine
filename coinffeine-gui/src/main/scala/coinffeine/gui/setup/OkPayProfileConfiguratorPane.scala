@@ -4,7 +4,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control._
-import scalafx.scene.layout.{HBox, VBox}
+import scalafx.scene.layout.{StackPane, HBox, VBox}
 import scalaz.syntax.std.boolean._
 
 import com.typesafe.scalalogging.LazyLogging
@@ -26,28 +26,35 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private val title = new Label("OKPay API token") { styleClass += "title" }
 
-  private val automaticConfiguration =
+  private val automaticConfigStatus =
     new ObjectProperty[ConfigurationStatus](this, "configurationStatus", InProgress)
-  private val progressHint = new Label() {
-    text <== automaticConfiguration.delegate.mapToString(_.hint)
-  }
-  private val progressBar = new ProgressBar() {
-    progress <== automaticConfiguration.delegate.mapToDouble(_.progress)
-    automaticConfiguration.delegate.bindToList(styleClass) { status =>
-      Seq("progress-bar") ++ status.failed.option("error")
-    }
-  }
 
   private val progressPane = new VBox {
     styleClass += "data"
-    children = Seq(progressHint, progressBar)
+    visible <== automaticConfigStatus.delegate.mapToBool(!_.failed)
+    children = Seq(
+      new Label {
+        text <== automaticConfigStatus.delegate.mapToString { status =>
+          if (status.finished) "Token retrieved successfully."
+          else "Obtaining the token (this may take a while)..."
+        }
+      },
+      new ProgressBar() {
+        progress <== automaticConfigStatus.delegate.mapToDouble { status =>
+          if (status.finished) 1 else -1
+        }
+        automaticConfigStatus.delegate.bindToList(styleClass) { status =>
+          Seq("progress-bar") ++ status.failed.option("error")
+        }
+      }
+    )
   }
 
   private val subtitle = new HBox {
-    visible <== automaticConfiguration.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
     styleClass += "subtitle"
     children = Seq(
-      new Label("You can configure manually your API credentials"),
+      new Label("You can manually configure your API credentials"),
       new SupportWidget("setup-credentials")
     )
   }
@@ -64,9 +71,10 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
     }
 
   private val manualInputPane = new VBox {
-    visible <== automaticConfiguration.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
     styleClass += "data"
     children = Seq(
+      subtitle,
       new Label("Your account ID"),
       accountIdField,
       new Label("Your token"),
@@ -80,10 +88,15 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   children = new VBox {
     styleClass += "okpay-pane"
-    children = Seq(title, progressPane, subtitle, manualInputPane)
+    children = Seq(
+      title,
+      new StackPane {
+        children = Seq(progressPane, manualInputPane)
+      }
+    )
   }
 
-  private val mergedConfiguration = automaticConfiguration.delegate.zip(manualConfiguration) {
+  private val mergedConfiguration = automaticConfigStatus.delegate.zip(manualConfiguration) {
     case (SuccessfulConfiguration(automaticConfig), _) => Some(automaticConfig)
     case (FailedConfiguration(_), manualConfig) => Some(manualConfig)
     case _ => None
@@ -101,12 +114,12 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private def startTokenRetrieval(): Unit = {
     implicit val context = FxExecutor.asContext
-    automaticConfiguration.set(InProgress)
+    automaticConfigStatus.set(InProgress)
     configureProfile(data.okPayCredentials.value).onComplete {
-      case Success(accessData) => automaticConfiguration.set(SuccessfulConfiguration(accessData))
+      case Success(accessData) => automaticConfigStatus.set(SuccessfulConfiguration(accessData))
       case Failure(ex) =>
         logger.error("Cannot configure OKPay profile and retrieve API credentials", ex)
-        automaticConfiguration.set(FailedConfiguration(ex))
+        automaticConfigStatus.set(FailedConfiguration(ex))
     }
   }
 
@@ -126,27 +139,23 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
 object OkPayProfileConfiguratorPane {
   sealed trait ConfigurationStatus {
-    def hint: String
-    def progress: Double
+    def finished: Boolean
     def failed: Boolean
   }
 
   case object InProgress extends ConfigurationStatus {
-    override def hint = "Obtaining the token (this may take a while)..."
-    override def progress = -1
+    override def finished = false
     override def failed = false
   }
 
   case class FailedConfiguration(exception: Throwable) extends ConfigurationStatus {
-    override def hint = "Something went wrong while retrieving the token."
-    override def progress = 1
+    override def finished = true
     override def failed = true
   }
 
   case class SuccessfulConfiguration(result: ProfileConfigurator.Result)
       extends ConfigurationStatus {
-    override def hint = "Token retrieved successfully."
-    override def progress = 1
+    override def finished = true
     override def failed = false
   }
 }

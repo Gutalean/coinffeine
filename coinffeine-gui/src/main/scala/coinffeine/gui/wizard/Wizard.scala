@@ -76,8 +76,8 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
 
     private def separator(stepNumber: Int) = new Rectangle {
       styleClass += "separator"
-      width = 80
-      height = 4
+      width = 50
+      height = 3
       disable <== currentStep.delegate.mapToBool(currentStep => stepNumber >= currentStep.intValue())
     }
   }
