@@ -4,41 +4,47 @@ import java.io.File
 import scalaz.-\/
 import scalaz.syntax.either._
 
-import org.scalatest.Inside
+import org.scalatest.{Inside, Outcome}
 
-import coinffeine.common.test.{TempDir, UnitTest}
+import coinffeine.common.test.{FixtureUnitTest, TempDir}
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.config.user.UserFileConfigProvider
 
-class BackupJournalMigrationTest extends UnitTest with Inside {
+class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
 
-  "Migration from 0.8 to 0.9" should "abort if user doesn't approve the migration" in
-    new Fixture {
-      context.givenUserDisapproval()
-      migration.apply(context) shouldBe Migration.Aborted.left
+  "Migration from 0.8 to 0.9" should "abort if user doesn't approve the migration" in { f =>
+      f.context.givenUserDisapproval()
+      f.migration.apply(f.context) shouldBe Migration.Aborted.left
     }
 
-  it should "rename journal and snapshot directories if the user approves it" in new Fixture {
-    context.givenUserApproval()
-    context.givenEventSourcingDirectories()
-    migration.apply(context) shouldBe Migration.Success
-    context.expectNoEventSourcingDirectories()
-    context.expectEventSourcingBackup()
+  it should "rename journal and snapshot directories if the user approves it" in { f =>
+    f.context.givenUserApproval()
+    f.context.givenEventSourcingDirectories()
+    f.migration.apply(f.context) shouldBe Migration.Success
+    f.context.expectNoEventSourcingDirectories()
+    f.context.expectEventSourcingBackup()
   }
 
-  it should "report failure if directories cannot be moved" in new Fixture {
-    context.givenUserApproval()
-    context.givenEventSourcingDirectories()
-    context.givenPreviousEventSourcingBackup()
-    inside(migration.apply(context)) {
+  it should "report failure if directories cannot be moved" in { f =>
+    f.context.givenUserApproval()
+    f.context.givenEventSourcingDirectories()
+    f.context.givenPreviousEventSourcingBackup()
+    inside(f.migration.apply(f.context)) {
       case -\/(Migration.Failed(cause)) => cause.getMessage should include("already exists")
     }
   }
 
-  trait Fixture {
-    protected val dataDir = TempDir.create("migrationTest")
-    protected val context = new MockedContext(dataDir)
-    protected val migration = new BackupJournalMigration("v0.8")
+  override type FixtureParam = Fixture
+
+  override protected def withFixture(test: OneArgTest): Outcome = {
+    TempDir.withTempDir("migrationTest") { dataDir =>
+      test(new Fixture(dataDir))
+    }
+  }
+
+  class Fixture(val dataDir: File) {
+    val context = new MockedContext(dataDir)
+    val migration = new BackupJournalMigration("v0.8")
   }
 
   class MockedContext(dataDir: File) extends Migration.Context {
