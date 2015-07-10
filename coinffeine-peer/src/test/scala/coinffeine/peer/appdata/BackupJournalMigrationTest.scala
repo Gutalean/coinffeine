@@ -13,9 +13,10 @@ import coinffeine.peer.config.user.UserFileConfigProvider
 class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
 
   "Migration from 0.8 to 0.9" should "abort if user doesn't approve the migration" in { f =>
-      f.context.givenUserDisapproval()
-      f.migration.apply(f.context) shouldBe Migration.Aborted.left
-    }
+    f.context.givenUserDisapproval()
+    f.context.givenEventSourcingDirectories()
+    f.migration.apply(f.context) shouldBe Migration.Aborted.left
+  }
 
   it should "rename journal and snapshot directories if the user approves it" in { f =>
     f.context.givenUserApproval()
@@ -34,6 +35,18 @@ class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
     }
   }
 
+  it should "do nothing if directories doesn't exist" in { f =>
+    f.migration.apply(f.context) shouldBe 'right
+    f.context.expectApprovalWasNotRequested()
+  }
+
+  it should "handle missing directories" in { f =>
+    f.context.givenUserApproval()
+    f.context.givenSomeEventSourcingDirectories()
+    f.migration.apply(f.context) shouldBe Migration.Success
+    f.context.expectNoEventSourcingDirectories()
+  }
+
   override type FixtureParam = Fixture
 
   override protected def withFixture(test: OneArgTest): Outcome = {
@@ -49,6 +62,7 @@ class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
 
   class MockedContext(dataDir: File) extends Migration.Context {
     private var userApproves = false
+    private var approvalRequested = false
 
     override val config: ConfigProvider = new UserFileConfigProvider(dataDir)
 
@@ -61,13 +75,24 @@ class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
       new File(f.getAbsolutePath + ".v0.8")
     }
 
-    override def confirm(title: String, question: String) = userApproves
+    override def confirm(title: String, question: String) = {
+      approvalRequested = true
+      userApproves
+    }
 
     def givenUserApproval(): Unit = { userApproves = true }
     def givenUserDisapproval(): Unit = { userApproves = false }
 
     def givenEventSourcingDirectories(): Unit = {
       eventSourcingDirectories.foreach(_.mkdir())
+    }
+
+    def givenSomeEventSourcingDirectories(): Unit = {
+      eventSourcingDirectories.head.mkdir()
+    }
+
+    def givenPreviousEventSourcingBackup(): Unit = {
+      backupDirectories.foreach(_.mkdir())
     }
 
     def expectNoEventSourcingDirectories(): Unit = {
@@ -78,8 +103,10 @@ class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
       backupDirectories.find(!_.exists()) shouldBe 'empty
     }
 
-    def givenPreviousEventSourcingBackup(): Unit = {
-      backupDirectories.foreach(_.mkdir())
+    def expectApprovalWasNotRequested(): Unit = {
+      withClue("approval request") {
+        approvalRequested shouldBe false
+      }
     }
   }
 }
