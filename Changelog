@@ -1,6 +1,8 @@
 Changelog
 =========
 
+v0.11.0:
+
 v0.10.0:
  - Show elapsed time since last mined block in status bar
  - Track OKPay monthly transference limits
