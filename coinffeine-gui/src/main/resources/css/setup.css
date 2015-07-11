@@ -1,5 +1,9 @@
 /* This file defines the styles for the setup wizard. */
 
+.wizard .header .glyph-icon {
+    -fx-font-size: 48;
+}
+
 .wizard .license-pane,
 .wizard .faucet-pane,
 .wizard .okpay-pane,
@@ -51,7 +55,7 @@
     -fx-alignment: center;
     -fx-padding: 25;
     -fx-spacing: 30;
-    -fx-min-height: 480;
+    -fx-min-height: 420;
 }
 
 .wizard .okpay-pane .label {
