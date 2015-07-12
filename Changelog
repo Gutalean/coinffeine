@@ -57,7 +57,7 @@ v0.5.0:
  - Add support to H2 database in OKPay Mock
  - Bug fixing
    * Save logging config file & log file itself in data dir specified
-     with `--data-dir` command argument.
+     with `--data-path` command argument.
 
 v0.4.2:
  - Bug fixing
