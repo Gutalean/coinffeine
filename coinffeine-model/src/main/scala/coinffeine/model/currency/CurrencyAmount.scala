@@ -27,6 +27,8 @@ trait CurrencyAmount[Self <: CurrencyAmount[Self]] extends Ordered[Self] { this:
 
   def unary_- : Self = fromUnits(-units)
 
+  def abs: Self = fromUnits(Math.abs(units))
+
   def min(other: Self): Self = {
     requireSameCurrency(other)
     if (this.units <= other.units) this else other

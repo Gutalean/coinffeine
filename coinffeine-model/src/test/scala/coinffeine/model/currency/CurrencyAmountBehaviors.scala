@@ -24,6 +24,16 @@ trait CurrencyAmountBehaviors extends PropertyChecks { this: UnitTest =>
       }
     }
 
+    it should "be taken its absolute value" in {
+      forAll (sampleAmounts) { amount =>
+        if (amount.isPositive) {
+          amount.abs shouldBe amount
+        } else {
+          amount.abs shouldBe -amount
+        }
+      }
+    }
+
     it should "be serializable" in {
       forAll (sampleAmounts) { amount =>
         val stream = new ByteArrayOutputStream()
