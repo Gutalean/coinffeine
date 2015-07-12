@@ -13,13 +13,11 @@ import org.joda.time.format.DateTimeFormat
 import coinffeine.gui.application.ApplicationView
 import coinffeine.gui.application.properties.{WalletActivityEntryProperties, WalletProperties}
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{GlyphIcon, GlyphLabel}
+import coinffeine.gui.control.GlyphLabel
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.ButtonStyles
 import coinffeine.gui.util.Browser
-import coinffeine.model.bitcoin.WalletActivity.EntryType
-import coinffeine.model.bitcoin.{Hash, WalletActivity}
-import coinffeine.model.bitcoin.BitcoinFeeCalculator
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Hash}
 import coinffeine.peer.api.CoinffeineWallet
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, PublicTestnet}
@@ -39,29 +37,26 @@ class WalletView(
     children = Seq(
       new GlyphLabel {
         styleClass += "icon"
-        icon <== activity.entry.delegate.map(entry => iconFor(entry.entryType))
+        icon <== activity.view.delegate.map(_.icon)
       },
       new Label {
         styleClass += "summary"
-        text <== activity.entry.delegate.mapToString(summarize)
+        text <== activity.view.delegate.mapToString(_.summary)
       },
       new Label {
         styleClass += "date"
-        text <== activity.time.delegate.mapToString(WalletView.DateFormat.print)
+        text <== activity.view.delegate.mapToString(v => WalletView.DateFormat.print(v.timestamp))
       },
       new HBox {
         styleClass += "buttons"
         children = Seq(
           new Button with ButtonStyles.Details {
             onAction = () =>
-              Browser.default.browse(detailsOfTransaction(activity.hash.value))
+              Browser.default.browse(detailsOfTransaction(activity.view.value.hash))
           }
         )
       }
     )
-
-    private def summarize(entry: WalletActivity.Entry): String =
-      s"${entry.amount.abs} ${descriptionFor(entry.entryType)}"
   }
 
   private val walletActivity = new VBox {
@@ -81,19 +76,6 @@ class WalletView(
 
   private def detailsOfTransaction(tx: Hash): URI =
     new URL(TransactionDetailsURLFormats(network).format(tx)).toURI
-
-  private def iconFor(entryType: EntryType) = entryType match {
-    case EntryType.DepositLock(_) | EntryType.DepositUnlock(_) => GlyphIcon.ExchangeTypes
-    case EntryType.OutFlow => GlyphIcon.BitcoinOutflow
-    case EntryType.InFlow => GlyphIcon.BitcoinInflow
-  }
-
-  private def descriptionFor(entryType: EntryType) = entryType match {
-    case EntryType.DepositLock(_) => "locked for an exchange"
-    case EntryType.DepositUnlock(_) => "unlocked from an exchange"
-    case EntryType.OutFlow => "withdrawn from your wallet"
-    case EntryType.InFlow => "added to your wallet"
-  }
 }
 
 object WalletView {
