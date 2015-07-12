@@ -61,7 +61,7 @@ class WalletView(
     )
 
     private def summarize(entry: WalletActivity.Entry): String =
-      s"${entry.amount} ${ActionDescriptions(entry.entryType)}"
+      s"${entry.amount.abs} ${ActionDescriptions(entry.entryType)}"
   }
 
   private val walletActivity = new VBox {
