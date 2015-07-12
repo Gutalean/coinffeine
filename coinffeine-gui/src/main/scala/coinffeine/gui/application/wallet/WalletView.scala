@@ -39,7 +39,7 @@ class WalletView(
     children = Seq(
       new GlyphLabel {
         styleClass += "icon"
-        icon <== activity.entry.delegate.map(entry => ActionIcons(entry.entryType))
+        icon <== activity.entry.delegate.map(entry => iconFor(entry.entryType))
       },
       new Label {
         styleClass += "summary"
@@ -61,7 +61,7 @@ class WalletView(
     )
 
     private def summarize(entry: WalletActivity.Entry): String =
-      s"${entry.amount.abs} ${ActionDescriptions(entry.entryType)}"
+      s"${entry.amount.abs} ${descriptionFor(entry.entryType)}"
   }
 
   private val walletActivity = new VBox {
@@ -81,6 +81,19 @@ class WalletView(
 
   private def detailsOfTransaction(tx: Hash): URI =
     new URL(TransactionDetailsURLFormats(network).format(tx)).toURI
+
+  private def iconFor(entryType: EntryType) = entryType match {
+    case EntryType.DepositLock(_) | EntryType.DepositUnlock(_) => GlyphIcon.ExchangeTypes
+    case EntryType.OutFlow => GlyphIcon.BitcoinOutflow
+    case EntryType.InFlow => GlyphIcon.BitcoinInflow
+  }
+
+  private def descriptionFor(entryType: EntryType) = entryType match {
+    case EntryType.DepositLock(_) => "locked for an exchange"
+    case EntryType.DepositUnlock(_) => "unlocked from an exchange"
+    case EntryType.OutFlow => "withdrawn from your wallet"
+    case EntryType.InFlow => "added to your wallet"
+  }
 }
 
 object WalletView {
@@ -89,18 +102,6 @@ object WalletView {
     PublicTestnet -> "http://testnet.trial.coinffeine.com/tx/%s",
     IntegrationRegnet -> "http://testnet.test.coinffeine.com/tx/%s",
     MainNet -> "https://blockchain.info/tx/%s"
-  )
-
-  private val ActionIcons = Map[EntryType, GlyphIcon](
-    EntryType.Deposit -> GlyphIcon.ExchangeTypes,
-    EntryType.OutFlow -> GlyphIcon.BitcoinOutflow,
-    EntryType.InFlow -> GlyphIcon.BitcoinInflow
-  )
-
-  private val ActionDescriptions = Map[EntryType, String](
-    EntryType.Deposit -> "locked for an exchange",
-    EntryType.OutFlow -> "withdrawn from your wallet",
-    EntryType.InFlow -> "added to your wallet"
   )
 
   private val DateFormat = DateTimeFormat
