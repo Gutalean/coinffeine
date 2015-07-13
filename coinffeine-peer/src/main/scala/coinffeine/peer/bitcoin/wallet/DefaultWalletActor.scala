@@ -4,7 +4,7 @@ import scala.collection.JavaConversions._
 import scala.util.control.NonFatal
 
 import akka.actor.{Address => _, _}
-import akka.persistence.{PersistentActor, SnapshotOffer}
+import akka.persistence.{PersistentActor, RecoveryCompleted, SnapshotOffer}
 import org.bitcoinj.core.TransactionOutPoint
 
 import coinffeine.common.akka.event.CoinffeineEventProducer
@@ -32,7 +32,6 @@ private class DefaultWalletActor(
     subscribeToWalletChanges()
     updateBalance()
     updateWalletPrimaryKeys()
-    updateActivity()
     super.preStart()
   }
 
@@ -50,6 +49,7 @@ private class DefaultWalletActor(
       setLastSnapshot(metadata.sequenceNr)
       blockedOutputs = snapshot.blockedOutputs
       deposits = snapshot.deposits
+    case RecoveryCompleted => updateActivity()
   }
 
   override protected def createSnapshot: Option[PersistentEvent] =
