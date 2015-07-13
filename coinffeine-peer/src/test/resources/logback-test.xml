@@ -19,6 +19,10 @@
     <logger name="org.apache.http.client.protocol.ResponseProcessCookies" level="OFF"/>
     <logger name="org.apache.commons.httpclient" level="OFF"/>
 
+    <logger name="com.esotericsoftware.kryo" level="WARN"/>
+    <logger name="com.romix.akka.serialization.kryo" level="WARN"/>
+    <logger name="akka.serialization" level="WARN"/>
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
