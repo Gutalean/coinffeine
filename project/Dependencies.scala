@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   object Versions {
-    val akka = "2.3.11"
+    val akka = "2.3.12"
     val dispatch = "0.11.2"
     val lift = "2.6.2"
     val logback = "1.1.3"
@@ -52,10 +52,10 @@ object Dependencies {
   )
   lazy val netty = "io.netty" % "netty" % "3.9.2.Final"
   lazy val protobuf = "com.google.protobuf" % "protobuf-java" % "2.6.1"
-  lazy val reflections = "org.reflections" % "reflections" % "0.9.9"
+  lazy val reflections = "org.reflections" % "reflections" % "0.9.10"
   lazy val scalafx = Seq(
     "org.scalafx" %% "scalafx" % "8.0.40-R8",
-    "org.controlsfx" % "controlsfx" % "8.20.8"
+    "org.controlsfx" % "controlsfx" % "8.40.9"
   )
   lazy val scalacheck = "org.scalacheck" %% "scalacheck" % "1.12.2"
   lazy val scalatest = "org.scalatest" %% "scalatest" % "2.2.5"
