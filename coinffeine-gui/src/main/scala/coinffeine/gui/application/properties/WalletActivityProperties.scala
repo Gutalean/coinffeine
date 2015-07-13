@@ -10,12 +10,13 @@ class WalletActivityProperties(wallet: CoinffeineWallet)
 
   import coinffeine.gui.util.FxExecutor.asContext
 
-  def find(hash: Hash): Option[WalletActivityEntryProperties] = find(_.hasHash(hash))
-
   wallet.activity.onNewValue { activity =>
     activity.entries.foreach { entry => find(entry.tx.get.getHash) match {
       case Some(txProps) => txProps.update(entry)
       case None => this += new WalletActivityEntryProperties(entry)
     }}
   }
+
+  private def find(hash: Hash): Option[WalletActivityEntryProperties] =
+    find(_.view.value.hash == hash)
 }

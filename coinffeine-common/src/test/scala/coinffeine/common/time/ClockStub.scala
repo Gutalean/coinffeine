@@ -13,7 +13,7 @@ class ClockStub(initialTime: DateTime) extends Clock {
   }
 
   def advanceBy(duration: FiniteDuration): Unit = {
-    time = time.plusMillis(duration.toMillis.toInt)
+    time = time.plus(duration.toMillis)
   }
 
   def advanceBy(duration: ReadableDuration): Unit = {
