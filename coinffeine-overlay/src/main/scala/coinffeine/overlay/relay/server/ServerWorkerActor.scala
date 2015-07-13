@@ -1,7 +1,6 @@
 package coinffeine.overlay.relay.server
 
 import java.net.InetSocketAddress
-
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 

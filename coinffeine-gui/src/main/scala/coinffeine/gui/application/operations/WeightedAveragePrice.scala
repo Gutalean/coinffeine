@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations
 
 import coinffeine.model.currency._
-import coinffeine.model.exchange.{ExchangeStatus, Exchange}
+import coinffeine.model.exchange.{Exchange, ExchangeStatus}
 import coinffeine.model.order.Price
 
 object WeightedAveragePrice {

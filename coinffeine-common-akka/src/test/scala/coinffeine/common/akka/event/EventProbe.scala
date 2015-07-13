@@ -1,6 +1,6 @@
 package coinffeine.common.akka.event
 
-import akka.actor.{Actor, Props, ActorSystem}
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.testkit.TestProbe
 
 class EventProbe(topic: String)(implicit system: ActorSystem) extends TestProbe(system) {

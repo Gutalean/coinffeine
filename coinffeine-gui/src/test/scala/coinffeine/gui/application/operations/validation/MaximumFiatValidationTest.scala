@@ -1,7 +1,7 @@
 package coinffeine.gui.application.operations.validation
 
-import scalaz.{Failure, NonEmptyList}
 import scalaz.syntax.std.option._
+import scalaz.{Failure, NonEmptyList}
 
 import org.scalatest.Inside
 

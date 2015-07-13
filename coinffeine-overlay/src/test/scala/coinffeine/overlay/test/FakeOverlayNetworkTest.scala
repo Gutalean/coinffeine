@@ -2,8 +2,8 @@ package coinffeine.overlay.test
 
 import scala.concurrent.duration._
 
-import akka.util.ByteString
 import akka.testkit._
+import akka.util.ByteString
 
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.overlay.OverlayId

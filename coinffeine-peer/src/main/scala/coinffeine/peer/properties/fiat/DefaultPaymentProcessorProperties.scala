@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 import coinffeine.common.akka.event.EventObservedProperty
 import coinffeine.model.currency.FiatAmounts
 import coinffeine.model.util.Cached
-import coinffeine.peer.events.fiat.{RemainingLimitsChanged, BalanceChanged}
+import coinffeine.peer.events.fiat.{BalanceChanged, RemainingLimitsChanged}
 import coinffeine.peer.payment.PaymentProcessorProperties
 
 class DefaultPaymentProcessorProperties(implicit system: ActorSystem)

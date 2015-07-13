@@ -6,8 +6,8 @@ import scalaz.{Failure, Success}
 
 import akka.util.ByteString
 import org.reflections.Reflections
-import org.scalatest.Inside
 import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.Inside
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
@@ -17,7 +17,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.{OrderId, Ask, Bid, Price}
+import coinffeine.model.order.{Ask, Bid, OrderId, Price}
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}

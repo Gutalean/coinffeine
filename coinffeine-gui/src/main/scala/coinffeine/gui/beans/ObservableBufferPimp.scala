@@ -1,8 +1,7 @@
 package coinffeine.gui.beans
 
-import scala.collection.JavaConversions._
-
 import javafx.collections.ObservableList
+import scala.collection.JavaConversions._
 import scalafx.collections.ObservableBuffer
 
 class ObservableBufferPimp[A](buffer: ObservableBuffer[A]) {

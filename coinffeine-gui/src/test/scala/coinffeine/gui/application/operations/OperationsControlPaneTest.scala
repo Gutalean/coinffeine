@@ -4,7 +4,7 @@ import scalaz.syntax.std.option._
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.market.{Spread, Market}
+import coinffeine.model.market.{Market, Spread}
 import coinffeine.model.order.Price
 import coinffeine.protocol.messages.brokerage.Quote
 

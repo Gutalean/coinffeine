@@ -1,5 +1,5 @@
-import sbt._
 import sbt.Keys._
+import sbt._
 import sbtassembly.Plugin.AssemblyKeys._
 import sbtassembly.Plugin.MergeStrategy
 

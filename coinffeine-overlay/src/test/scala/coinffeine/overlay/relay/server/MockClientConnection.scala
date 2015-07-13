@@ -1,7 +1,6 @@
 package coinffeine.overlay.relay.server
 
 import java.net.InetSocketAddress
-
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.ActorRef

@@ -2,7 +2,7 @@ package coinffeine.common.akka.event
 
 import scala.concurrent.ExecutionContext
 
-import akka.actor.{Props, ActorSystem, Actor}
+import akka.actor.{Actor, ActorSystem, Props}
 
 import coinffeine.common.properties.{MutableProperty, Property}
 

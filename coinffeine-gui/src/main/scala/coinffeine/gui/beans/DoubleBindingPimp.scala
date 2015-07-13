@@ -1,7 +1,7 @@
 package coinffeine.gui.beans
 
-import scalafx.beans.property.{DoubleProperty, ReadOnlyDoubleProperty}
 import javafx.beans.binding.DoubleBinding
+import scalafx.beans.property.{DoubleProperty, ReadOnlyDoubleProperty}
 
 class DoubleBindingPimp(binding: DoubleBinding) {
 

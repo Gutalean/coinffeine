@@ -1,8 +1,8 @@
 package coinffeine.gui.control
 
-import scalafx.beans.property.{StringProperty, ObjectProperty}
+import scalafx.beans.property.{ObjectProperty, StringProperty}
 import scalafx.css.PseudoClass
-import scalafx.scene.control.{Label, ToggleGroup, ToggleButton}
+import scalafx.scene.control.{Label, ToggleButton, ToggleGroup}
 import scalafx.scene.layout.VBox
 
 import coinffeine.gui.beans.Implicits._

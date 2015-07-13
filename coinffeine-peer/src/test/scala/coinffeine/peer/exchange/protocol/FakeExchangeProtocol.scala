@@ -6,7 +6,6 @@ import scalaz.syntax.validation._
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange._
 
 class FakeExchangeProtocol extends ExchangeProtocol {

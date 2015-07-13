@@ -2,7 +2,7 @@ package coinffeine.model.payment.okpay
 
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.FiatAmount
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
 

@@ -1,6 +1,7 @@
 package coinffeine.gui.application.operations.validation
 
 import scalaz.syntax.applicative._
+
 import coinffeine.model.market._
 import coinffeine.model.order.OrderRequest
 import coinffeine.peer.api.CoinffeineApp

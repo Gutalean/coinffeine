@@ -4,7 +4,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success}
 import scalafx.beans.property.ObjectProperty
 import scalafx.scene.control._
-import scalafx.scene.layout.{StackPane, HBox, VBox}
+import scalafx.scene.layout.{HBox, StackPane, VBox}
 import scalaz.syntax.std.boolean._
 
 import com.typesafe.scalalogging.LazyLogging

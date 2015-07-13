@@ -1,6 +1,6 @@
 package coinffeine.gui.wizard
 
-import javafx.event.{EventTarget, Event}
+import javafx.event.{Event, EventTarget}
 import scalafx.event.EventType
 
 class StepPaneEvent(source: Any, target: EventTarget) extends Event(StepPaneEvent.PaneActive)

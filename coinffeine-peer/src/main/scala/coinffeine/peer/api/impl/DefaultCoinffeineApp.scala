@@ -8,10 +8,10 @@ import akka.util.Timeout
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.Service
-import coinffeine.model.bitcoin.{TransactionSizeFeeCalculator, BitcoinFeeCalculator}
+import coinffeine.model.bitcoin.{BitcoinFeeCalculator, TransactionSizeFeeCalculator}
 import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
-import coinffeine.peer.amounts.{DefaultAmountsCalculator, AmountsCalculator}
+import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsCalculator}
 import coinffeine.peer.api._
 import coinffeine.peer.config.{ConfigComponent, ConfigProvider}
 import coinffeine.peer.properties.alarms.EventObservedAlarmsProperty

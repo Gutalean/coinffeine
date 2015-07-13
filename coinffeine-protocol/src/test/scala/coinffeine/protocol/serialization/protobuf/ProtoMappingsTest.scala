@@ -12,7 +12,7 @@ import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.market._
 import coinffeine.model.network.PeerId
-import coinffeine.model.order.{OrderId, Bid, MarketPrice, Price}
+import coinffeine.model.order.{Bid, MarketPrice, OrderId, Price}
 import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}
 import coinffeine.protocol.messages.brokerage._
 import coinffeine.protocol.messages.exchange.MicropaymentChannelClosed

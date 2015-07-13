@@ -1,13 +1,13 @@
 package coinffeine.benchmark.action
 
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 import akka.actor.ActorRef
 import io.gatling.core.action.Action
 import io.gatling.core.result.message.{KO, OK, Status}
-import io.gatling.core.result.writer.{RequestMessage, DataWriter}
+import io.gatling.core.result.writer.{DataWriter, RequestMessage}
 import io.gatling.core.session._
 
 trait ReportingSupport { self: Action =>

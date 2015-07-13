@@ -11,7 +11,7 @@ import coinffeine.gui.application.properties.WalletProperties
 import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.qrcode.QRCode
 import coinffeine.gui.scene.styles.PaneStyles
-import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address}
+import coinffeine.model.bitcoin.{Address, BitcoinFeeCalculator}
 import coinffeine.peer.api.CoinffeineWallet
 
 class WalletControlPane(wallet: CoinffeineWallet,

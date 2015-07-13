@@ -1,6 +1,6 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.{FiatCurrency, Bitcoin, BitcoinAmount}
+import coinffeine.model.currency.{Bitcoin, BitcoinAmount, FiatCurrency}
 import coinffeine.model.order._
 
 /** Bidding or asking position taken by a requester */

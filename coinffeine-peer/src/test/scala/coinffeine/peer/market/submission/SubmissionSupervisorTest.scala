@@ -9,7 +9,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.market._
 import coinffeine.model.network.BrokerId
-import coinffeine.model.order.{OrderId, Ask, Bid, Price}
+import coinffeine.model.order._
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.market.submission.SubmissionSupervisor.{InMarket, KeepSubmitting, StopSubmitting}
 import coinffeine.protocol.gateway.MockGateway

@@ -6,7 +6,7 @@ import org.bitcoinj.core.TransactionInput
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
-import coinffeine.model.bitcoin.{MutableTransaction, ImmutableTransaction}
+import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 
 class BroadcastPolicyTest extends UnitTest {
 

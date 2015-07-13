@@ -1,7 +1,6 @@
 package coinffeine.gui.control
 
 import scala.math._
-
 import scalafx.Includes._
 import scalafx.animation._
 import scalafx.event.ActionEvent

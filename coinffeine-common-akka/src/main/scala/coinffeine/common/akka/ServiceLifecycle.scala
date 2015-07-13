@@ -1,6 +1,6 @@
 package coinffeine.common.akka
 
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 

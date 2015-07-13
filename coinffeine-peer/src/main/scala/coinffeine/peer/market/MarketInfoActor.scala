@@ -2,7 +2,6 @@ package coinffeine.peer.market
 
 import akka.actor.{Actor, ActorRef, Props}
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.Market
 import coinffeine.model.network.BrokerId
 import coinffeine.protocol.gateway.MessageForwarder

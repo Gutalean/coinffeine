@@ -2,7 +2,6 @@ package coinffeine.peer.market.orders
 
 import akka.actor.{Actor, ActorContext, ActorRef}
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market._
 import coinffeine.peer.market.submission.SubmissionSupervisor._
 

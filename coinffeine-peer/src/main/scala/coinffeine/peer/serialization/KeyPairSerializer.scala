@@ -1,10 +1,9 @@
 package coinffeine.peer.serialization
 
-import com.esotericsoftware.kryo.io.{Output, Input}
+import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import org.bitcoinj.core.ECKey
 
-import coinffeine.model.bitcoin.KeyPair
 import coinffeine.model.bitcoin._
 
 class KeyPairSerializer extends Serializer[KeyPair] {

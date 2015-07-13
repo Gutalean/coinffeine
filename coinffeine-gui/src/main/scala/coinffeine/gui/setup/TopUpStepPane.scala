@@ -2,7 +2,7 @@ package coinffeine.gui.setup
 
 import scalafx.scene.control.{Label, TextField}
 import scalafx.scene.image.ImageView
-import scalafx.scene.layout.{Priority, HBox, VBox}
+import scalafx.scene.layout.{HBox, Priority, VBox}
 
 import coinffeine.gui.control.{GlyphIcon, SupportWidget}
 import coinffeine.gui.qrcode.QRCode

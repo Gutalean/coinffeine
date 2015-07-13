@@ -1,7 +1,6 @@
 package coinffeine.peer.pid
 
-import java.io.{IOException, File}
-
+import java.io.{File, IOException}
 import scala.util.Try
 
 import com.typesafe.scalalogging.LazyLogging

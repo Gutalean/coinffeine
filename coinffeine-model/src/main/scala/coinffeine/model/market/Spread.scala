@@ -1,6 +1,5 @@
 package coinffeine.model.market
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.order.Price
 
 /** Buyer-seller spread for a given market.

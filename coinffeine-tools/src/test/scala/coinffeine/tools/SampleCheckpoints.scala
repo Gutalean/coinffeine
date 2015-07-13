@@ -1,6 +1,6 @@
 package coinffeine.tools
 
-import org.bitcoinj.core.{Sha256Hash, Block, StoredBlock}
+import org.bitcoinj.core.{Block, Sha256Hash, StoredBlock}
 
 import coinffeine.model.bitcoin._
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork

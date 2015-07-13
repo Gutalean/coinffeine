@@ -1,9 +1,9 @@
 package coinffeine.gui.application.updates
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import dispatch.{Http, as, url}
 
 import coinffeine.peer.net.DaemonHttpClient

@@ -9,7 +9,6 @@ import coinffeine.model.exchange.Exchange
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.config.SettingsProvider
-import coinffeine.peer.payment.okpay.OkPaySettings
 
 trait PeerInfoLookup {
   /** Lookup current peer info */

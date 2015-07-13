@@ -9,10 +9,10 @@ import akka.util.ByteString
 import coinffeine.common.akka.test.{MockActor, MockSupervisedActor}
 import coinffeine.model.network.NodeId
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
-import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
-import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
+import coinffeine.protocol.protobuf.CoinffeineProtobuf.CoinffeineMessage.MessageType
+import coinffeine.protocol.protobuf.{CoinffeineProtobuf => proto}
 import coinffeine.protocol.serialization.{CoinffeineMessage, Payload, ProtocolSerialization}
 
 class MockOverlayNetwork(protocolSerialization: ProtocolSerialization)

@@ -2,7 +2,7 @@ package coinffeine.gui.beans
 
 import java.util.concurrent.Callable
 import javafx.beans.InvalidationListener
-import javafx.beans.binding.{BooleanBinding, Bindings, ObjectBinding}
+import javafx.beans.binding.{Bindings, BooleanBinding, ObjectBinding}
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import javafx.collections.ObservableList
 

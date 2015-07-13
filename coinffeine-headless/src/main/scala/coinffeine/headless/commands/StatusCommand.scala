@@ -4,7 +4,7 @@ import java.io.PrintWriter
 
 import coinffeine.headless.shell.Command
 import coinffeine.model.currency.balance.BitcoinBalance
-import coinffeine.peer.api.{CoinffeinePaymentProcessor, CoinffeineApp}
+import coinffeine.peer.api.{CoinffeineApp, CoinffeinePaymentProcessor}
 
 class StatusCommand(app: CoinffeineApp) extends Command {
 

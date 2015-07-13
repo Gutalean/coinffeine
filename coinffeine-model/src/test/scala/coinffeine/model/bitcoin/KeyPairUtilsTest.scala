@@ -1,7 +1,5 @@
 package coinffeine.model.bitcoin
 
-import org.bitcoinj.core.ECKey
-
 import coinffeine.common.test.UnitTest
 
 class KeyPairUtilsTest extends UnitTest {

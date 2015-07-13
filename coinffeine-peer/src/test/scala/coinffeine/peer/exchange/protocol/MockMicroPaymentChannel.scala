@@ -4,7 +4,6 @@ import scala.util.{Failure, Success}
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 

@@ -1,13 +1,12 @@
 package coinffeine.gui.beans
 
-import scala.language.implicitConversions
-
 import java.util.concurrent.Callable
 import javafx.beans.binding._
 import javafx.beans.value.ObservableValue
+import scala.language.implicitConversions
 import scalafx.collections.ObservableBuffer
 
-import coinffeine.common.properties.{PropertyMap, Property}
+import coinffeine.common.properties.{Property, PropertyMap}
 
 object Implicits {
 

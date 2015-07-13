@@ -3,7 +3,6 @@ package coinffeine.model.exchange
 import org.joda.time.DateTime
 
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.currency.FiatCurrency
 
 case class AbortingExchange(
   prev: ActiveExchange,

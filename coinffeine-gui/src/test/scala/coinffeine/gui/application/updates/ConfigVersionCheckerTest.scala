@@ -1,9 +1,9 @@
 package coinffeine.gui.application.updates
 
-import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-import com.typesafe.config.{ConfigValueFactory, ConfigFactory}
+import com.typesafe.config.{ConfigFactory, ConfigValueFactory}
 import org.scalatest.OptionValues
 
 import coinffeine.common.test.{FutureMatchers, UnitTest}

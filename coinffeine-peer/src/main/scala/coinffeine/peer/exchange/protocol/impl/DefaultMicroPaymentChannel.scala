@@ -5,7 +5,6 @@ import scala.util.control.NonFatal
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._
 import coinffeine.peer.exchange.protocol._

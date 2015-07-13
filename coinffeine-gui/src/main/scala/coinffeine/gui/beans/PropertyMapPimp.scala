@@ -3,6 +3,7 @@ package coinffeine.gui.beans
 import java.util.concurrent.Callable
 import javafx.beans.binding.{Bindings, ObjectBinding}
 import javafx.beans.{InvalidationListener, Observable}
+
 import coinffeine.common.properties.PropertyMap
 import coinffeine.gui.util.FxExecutor._
 

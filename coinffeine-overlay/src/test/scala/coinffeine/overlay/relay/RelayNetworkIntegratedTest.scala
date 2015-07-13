@@ -10,7 +10,7 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.test.DefaultTcpPortAllocator
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.server.ServerActor
-import coinffeine.overlay.relay.settings.{RelayServerSettings, RelayClientSettings}
+import coinffeine.overlay.relay.settings.{RelayClientSettings, RelayServerSettings}
 import coinffeine.overlay.{OverlayId, OverlayNetwork}
 
 class RelayNetworkIntegratedTest extends AkkaSpec {

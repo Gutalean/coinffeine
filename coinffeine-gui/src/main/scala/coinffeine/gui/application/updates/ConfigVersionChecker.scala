@@ -1,6 +1,6 @@
 package coinffeine.gui.application.updates
 
-import scala.concurrent.{Future, ExecutionContext}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 import scala.util.control.NonFatal
 
