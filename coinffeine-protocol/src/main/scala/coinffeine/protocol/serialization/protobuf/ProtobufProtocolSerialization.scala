@@ -9,7 +9,6 @@ import akka.util.ByteString
 import com.google.protobuf.Descriptors.FieldDescriptor
 import com.google.protobuf.InvalidProtocolBufferException
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.protocol.Version
 import coinffeine.protocol.messages.PublicMessage
 import coinffeine.protocol.messages.arbitration.{CommitmentNotification, CommitmentNotificationAck}

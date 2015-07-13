@@ -1,7 +1,7 @@
 package coinffeine.gui.beans
 
 import javafx.beans.binding.ObjectBinding
-import scalafx.beans.property.{ReadOnlyObjectProperty, ObjectProperty}
+import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
 class ObjectBindingPimp[A](binding: ObjectBinding[A]) {
 

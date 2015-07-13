@@ -1,6 +1,6 @@
 package coinffeine.common
 
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{Future, Promise}
 
 import com.google.common.util.concurrent.{FutureCallback, Futures, ListenableFuture}
 

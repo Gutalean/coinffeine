@@ -1,6 +1,7 @@
 package coinffeine.model.exchange
 
 import scalaz.syntax.std.option._
+
 import coinffeine.common.test.UnitTest
 
 class RoleTest extends UnitTest {

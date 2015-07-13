@@ -1,6 +1,6 @@
 package coinffeine.gui.scene.styles
 
-import scalafx.scene.layout.{GridPane, Pane, HBox, VBox}
+import scalafx.scene.layout.{GridPane, HBox, Pane, VBox}
 
 /** Styles applicable to panes. */
 object PaneStyles {

@@ -2,7 +2,6 @@ package coinffeine.peer.exchange.micropayment
 
 import akka.persistence.PersistentActor
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.ExchangeActor.ExchangeUpdate
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.Step

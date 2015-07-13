@@ -1,7 +1,7 @@
 package coinffeine.gui.beans
 
 import javafx.beans.binding.BooleanBinding
-import scalafx.beans.property.{ReadOnlyBooleanProperty, BooleanProperty}
+import scalafx.beans.property.{BooleanProperty, ReadOnlyBooleanProperty}
 
 class BooleanBindingPimp(binding: BooleanBinding) {
 

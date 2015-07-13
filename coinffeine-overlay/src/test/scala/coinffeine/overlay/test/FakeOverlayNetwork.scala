@@ -3,7 +3,7 @@ package coinffeine.overlay.test
 import scala.concurrent.duration._
 import scala.util.Random
 
-import akka.actor.{Props, ActorSystem}
+import akka.actor.{ActorSystem, Props}
 
 import coinffeine.overlay.OverlayNetwork
 

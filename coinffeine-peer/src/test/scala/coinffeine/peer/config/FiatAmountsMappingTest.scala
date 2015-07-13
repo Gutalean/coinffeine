@@ -1,9 +1,10 @@
 package coinffeine.peer.config
 
-import com.typesafe.config.ConfigFactory
-import org.scalacheck.{Gen, Arbitrary}
 import scalaz.syntax.std.boolean._
+
+import com.typesafe.config.ConfigFactory
 import org.scalacheck.Arbitrary._
+import org.scalacheck.Gen
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest

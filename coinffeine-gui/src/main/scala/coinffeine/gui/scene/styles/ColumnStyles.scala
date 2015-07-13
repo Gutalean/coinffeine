@@ -1,7 +1,7 @@
 package coinffeine.gui.scene.styles
 
 import scalafx.geometry.HPos
-import scalafx.scene.layout.{Priority, ColumnConstraints}
+import scalafx.scene.layout.{ColumnConstraints, Priority}
 
 /** Styles applicable to columns. */
 object ColumnStyles {

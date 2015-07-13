@@ -4,7 +4,6 @@ import scala.util.Try
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.{ImmutableTransaction, TransactionSignature}
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.ActiveExchange._
 import coinffeine.model.exchange.RunningExchange
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel._

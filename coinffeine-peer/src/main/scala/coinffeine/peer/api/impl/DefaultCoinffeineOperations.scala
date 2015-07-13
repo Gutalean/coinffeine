@@ -6,7 +6,6 @@ import akka.actor.ActorRef
 
 import coinffeine.common.akka.AskPattern
 import coinffeine.common.properties.PropertyMap
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.operations.OperationsProperties
 import coinffeine.model.order._
 import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, OrderOpened}

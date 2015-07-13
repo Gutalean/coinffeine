@@ -2,7 +2,7 @@ package coinffeine.gui.control
 
 import scalafx.Includes._
 import scalafx.geometry.Orientation
-import scalafx.scene.control.{Separator, Label}
+import scalafx.scene.control.{Label, Separator}
 import scalafx.scene.layout.{GridPane, VBox}
 
 import coinffeine.alarms.Alarm

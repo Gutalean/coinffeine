@@ -4,10 +4,8 @@ import scala.concurrent.duration._
 
 import akka.testkit._
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
-import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.protocol.messages.exchange.StepSignatures
 
 class BuyerMicroPaymentChannelActorFailureTest extends BuyerMicroPaymentChannelActorTest {

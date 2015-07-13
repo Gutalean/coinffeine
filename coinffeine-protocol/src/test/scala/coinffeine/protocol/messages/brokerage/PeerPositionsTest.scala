@@ -3,7 +3,7 @@ package coinffeine.protocol.messages.brokerage
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
 import coinffeine.model.market._
-import coinffeine.model.order.{OrderId, Bid, Price}
+import coinffeine.model.order.{Bid, OrderId, Price}
 
 class PeerPositionsTest extends UnitTest {
 

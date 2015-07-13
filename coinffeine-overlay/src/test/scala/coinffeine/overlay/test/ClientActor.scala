@@ -1,7 +1,6 @@
 package coinffeine.overlay.test
 
 import java.io.IOException
-
 import scala.util.control.NoStackTrace
 
 import akka.actor.{Actor, ActorRef, Props}

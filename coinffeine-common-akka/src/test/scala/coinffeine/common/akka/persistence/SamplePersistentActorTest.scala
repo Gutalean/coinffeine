@@ -2,7 +2,7 @@ package coinffeine.common.akka.persistence
 
 import akka.actor.Props
 
-import coinffeine.common.akka.persistence.SamplePersistentActor.{RequestSum, Sum, AddNumber}
+import coinffeine.common.akka.persistence.SamplePersistentActor.{AddNumber, RequestSum, Sum}
 import coinffeine.common.akka.test.AkkaSpec
 
 class SamplePersistentActorTest extends AkkaSpec() {

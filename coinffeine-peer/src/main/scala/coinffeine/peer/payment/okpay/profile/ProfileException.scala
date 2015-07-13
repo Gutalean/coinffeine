@@ -2,7 +2,7 @@ package coinffeine.peer.payment.okpay.profile
 
 import scala.util.control.NonFatal
 
-import com.gargoylesoftware.htmlunit.html.{HtmlDivision, HtmlPage, HtmlForm}
+import com.gargoylesoftware.htmlunit.html.{HtmlDivision, HtmlForm, HtmlPage}
 
 case class ProfileException(message: String, cause: Throwable = null)
   extends Exception(message, cause)

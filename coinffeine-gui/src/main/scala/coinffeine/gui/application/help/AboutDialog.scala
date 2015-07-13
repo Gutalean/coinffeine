@@ -9,6 +9,7 @@ import scalafx.scene.image.Image
 import scalafx.scene.layout._
 import scalafx.scene.shape.Circle
 import scalafx.stage.{Modality, Stage, StageStyle}
+
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.peer.AppVersion

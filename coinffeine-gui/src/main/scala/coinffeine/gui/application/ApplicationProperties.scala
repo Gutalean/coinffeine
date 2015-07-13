@@ -1,8 +1,8 @@
 package coinffeine.gui.application
 
-import javafx.beans.value.{ObservableValue, ChangeListener}
-import scala.concurrent.{Future, ExecutionContext}
+import javafx.beans.value.{ChangeListener, ObservableValue}
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContext, Future}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 
 import org.joda.time.DateTime
@@ -18,8 +18,8 @@ import coinffeine.peer.api.CoinffeineApp
 class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
     extends PropertyBindings {
 
-  import coinffeine.gui.util.FxExecutor.asContext
   import ApplicationProperties._
+  import coinffeine.gui.util.FxExecutor.asContext
 
   val now = PollingBean[DateTime](TimeComputingInterval)(Future.successful(DateTime.now()))
 

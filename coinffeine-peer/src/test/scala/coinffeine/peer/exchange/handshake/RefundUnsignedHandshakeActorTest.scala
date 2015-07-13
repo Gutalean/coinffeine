@@ -6,7 +6,7 @@ import akka.testkit._
 
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
-import coinffeine.protocol.messages.handshake.{PeerHandshake, ExchangeRejection}
+import coinffeine.protocol.messages.handshake.{ExchangeRejection, PeerHandshake}
 
 class RefundUnsignedHandshakeActorTest extends HandshakeActorTest("signature-timeout") {
 

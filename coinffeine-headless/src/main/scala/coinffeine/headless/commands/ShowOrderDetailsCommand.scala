@@ -4,7 +4,6 @@ import java.io.PrintWriter
 
 import coinffeine.headless.prompt.ANSIText._
 import coinffeine.headless.shell.Command
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange
 import coinffeine.model.order.{Order, OrderId}
 import coinffeine.peer.api.CoinffeineOperations

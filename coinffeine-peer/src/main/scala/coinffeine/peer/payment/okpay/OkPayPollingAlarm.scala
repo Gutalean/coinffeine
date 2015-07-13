@@ -1,6 +1,6 @@
 package coinffeine.peer.payment.okpay
 
-import coinffeine.alarms.{Severity, Alarm}
+import coinffeine.alarms.{Alarm, Severity}
 
 case object OkPayPollingAlarm extends Alarm {
 

@@ -3,10 +3,9 @@ package coinffeine.peer.exchange.micropayment
 import scala.concurrent.duration._
 
 import akka.testkit._
-import org.joda.time.DateTime
 
 import coinffeine.model.currency._
-import coinffeine.model.payment.{TestPayment, Payment}
+import coinffeine.model.payment.TestPayment
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.payment.PaymentProcessorActor

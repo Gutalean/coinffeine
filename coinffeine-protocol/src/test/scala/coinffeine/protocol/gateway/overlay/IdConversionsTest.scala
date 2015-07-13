@@ -3,7 +3,7 @@ package coinffeine.protocol.gateway.overlay
 import org.scalatest.prop.PropertyChecks
 
 import coinffeine.common.test.UnitTest
-import coinffeine.model.network.{PeerId, BrokerId}
+import coinffeine.model.network.{BrokerId, PeerId}
 import coinffeine.overlay.OverlayId
 
 class IdConversionsTest extends UnitTest with PropertyChecks with IdConversions {

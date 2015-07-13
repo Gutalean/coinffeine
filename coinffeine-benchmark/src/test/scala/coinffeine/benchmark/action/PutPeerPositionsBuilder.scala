@@ -1,13 +1,12 @@
 package coinffeine.benchmark.action
 
-import akka.actor.{Props, ActorRef}
+import akka.actor.{ActorRef, Props}
 import io.gatling.core.action.builder.ActionBuilder
 import io.gatling.core.akka.GatlingActorSystem
 import io.gatling.core.config.Protocols
 import io.gatling.core.session.Expression
 
 import coinffeine.benchmark.config.CoinffeineProtocol
-import coinffeine.model.currency.Euro
 import coinffeine.model.market.OrderBookEntry
 
 case class PutPeerPositionsBuilder(

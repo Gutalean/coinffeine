@@ -11,7 +11,7 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.control.{CurrencyTextField, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{ButtonStyles, Stylesheets, TextStyles}
-import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Address, WalletProperties}
+import coinffeine.model.bitcoin.{Address, BitcoinFeeCalculator, WalletProperties}
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 

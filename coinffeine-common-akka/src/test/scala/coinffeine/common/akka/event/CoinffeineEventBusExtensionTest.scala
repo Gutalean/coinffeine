@@ -1,6 +1,6 @@
 package coinffeine.common.akka.event
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.testkit.TestProbe
 
 import coinffeine.common.akka.test.AkkaSpec

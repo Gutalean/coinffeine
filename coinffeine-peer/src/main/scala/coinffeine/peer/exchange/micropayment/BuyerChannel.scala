@@ -7,7 +7,6 @@ import org.bitcoinj.crypto.TransactionSignature
 
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.ImmutableTransaction
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel.{FinalStep, IntermediateStep, Step}
 import coinffeine.peer.payment.PaymentProcessorActor

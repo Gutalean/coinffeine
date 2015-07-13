@@ -2,11 +2,11 @@ package coinffeine.protocol.gateway
 
 import akka.actor.{ActorSystem, Props}
 
-import coinffeine.alarms.{Severity, Alarm}
+import coinffeine.alarms.{Alarm, Severity}
 import coinffeine.model.network.{BrokerId, NodeId}
 import coinffeine.overlay.relay.settings.RelayClientSettings
-import coinffeine.protocol.{Version, MessageGatewaySettings}
 import coinffeine.protocol.messages.PublicMessage
+import coinffeine.protocol.{MessageGatewaySettings, Version}
 
 object MessageGateway {
 

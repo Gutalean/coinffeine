@@ -8,7 +8,6 @@ import coinffeine.common.akka.ResubmitTimer
 import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.Both
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.peer.ProtocolConstants
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor._
 import coinffeine.peer.exchange.protocol.MicroPaymentChannel

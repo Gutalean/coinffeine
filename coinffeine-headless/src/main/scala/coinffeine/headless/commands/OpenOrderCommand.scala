@@ -7,7 +7,7 @@ import scala.concurrent.duration.Duration
 import coinffeine.headless.parsing.{AmountsParser, Tokenizer}
 import coinffeine.headless.prompt.ANSIText.Red
 import coinffeine.headless.shell.Command
-import coinffeine.model.currency.{BitcoinAmount, Bitcoin, FiatCurrency}
+import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.order.{LimitPrice, OrderRequest, OrderType, Price}
 import coinffeine.peer.api.CoinffeineOperations
 

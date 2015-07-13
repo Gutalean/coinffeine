@@ -3,20 +3,20 @@ package coinffeine.peer.payment.okpay
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import scala.util.{Try, Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 import akka.actor._
 import akka.pattern._
 
-import coinffeine.common.ScalaFutureImplicits._
 import coinffeine.alarms.akka.EventStreamReporting
+import coinffeine.common.ScalaFutureImplicits._
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
-import coinffeine.peer.events.fiat.{RemainingLimitsChanged, BalanceChanged}
+import coinffeine.peer.events.fiat.{BalanceChanged, RemainingLimitsChanged}
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry

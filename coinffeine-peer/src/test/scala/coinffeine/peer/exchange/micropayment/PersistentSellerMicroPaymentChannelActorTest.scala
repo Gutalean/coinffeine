@@ -6,8 +6,8 @@ import scala.language.postfixOps
 import akka.testkit._
 
 import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.ChannelSuccess
-import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
+import coinffeine.peer.exchange.protocol.MicroPaymentChannel.IntermediateStep
 import coinffeine.protocol.messages.exchange._
 
 class PersistentSellerMicroPaymentChannelActorTest extends SellerMicroPaymentChannelActorTest {

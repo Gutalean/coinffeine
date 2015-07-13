@@ -1,6 +1,7 @@
 package coinffeine.peer.bitcoin
 
 import scalaz.syntax.std.option._
+
 import coinffeine.common.test.UnitTest
 
 class BitcoinSettingsTest extends UnitTest {

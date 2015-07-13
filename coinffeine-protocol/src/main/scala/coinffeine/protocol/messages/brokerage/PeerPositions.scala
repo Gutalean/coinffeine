@@ -2,7 +2,6 @@ package coinffeine.protocol.messages.brokerage
 
 import java.util.UUID
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.{Market, OrderBookEntry}
 import coinffeine.protocol.messages.PublicMessage
 

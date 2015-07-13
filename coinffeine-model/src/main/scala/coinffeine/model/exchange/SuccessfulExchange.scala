@@ -2,7 +2,6 @@ package coinffeine.model.exchange
 
 import org.joda.time.DateTime
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.exchange.Exchange.Progress
 
 case class SuccessfulExchange(prev: RunningExchange, timestamp: DateTime)

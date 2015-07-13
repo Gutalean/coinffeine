@@ -1,7 +1,7 @@
 package coinffeine.gui.application.launcher
 
-import scalafx.Includes._
 import scala.concurrent.Future
+import scalafx.Includes._
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.stage.Stage
 

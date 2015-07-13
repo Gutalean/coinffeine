@@ -10,12 +10,12 @@ import coinffeine.overlay.OverlayNetwork
 import coinffeine.overlay.OverlayNetwork.NetworkStatus
 import coinffeine.overlay.relay.client.RelayNetwork
 import coinffeine.overlay.relay.settings.RelayClientSettings
-import coinffeine.protocol.events.{BrokerIdChanged, ActiveCoinffeinePeersChanged}
-import coinffeine.protocol.{Version, MessageGatewaySettings}
+import coinffeine.protocol.events.{ActiveCoinffeinePeersChanged, BrokerIdChanged}
 import coinffeine.protocol.gateway.MessageGateway.{Subscribe, Unsubscribe}
 import coinffeine.protocol.gateway.{MessageGateway, SubscriptionManagerActor}
 import coinffeine.protocol.serialization.ProtocolSerialization.{DeserializationError, IncompatibleVersion}
 import coinffeine.protocol.serialization._
+import coinffeine.protocol.{MessageGatewaySettings, Version}
 
 /** Message gateway that uses an overlay network as transport */
 private class OverlayMessageGateway(

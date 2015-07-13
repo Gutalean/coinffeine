@@ -3,7 +3,6 @@ package coinffeine.peer.market.submission
 import akka.actor._
 import akka.util.Timeout
 
-import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants

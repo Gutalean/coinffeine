@@ -1,7 +1,7 @@
 package coinffeine.peer.api.impl
 
-import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 import akka.actor.ActorRef
 import akka.util.Timeout

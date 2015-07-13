@@ -2,7 +2,7 @@ package coinffeine.peer.bitcoin.wallet
 
 import scala.collection.JavaConversions._
 
-import org.bitcoinj.core.{TransactionOutPoint, Coin}
+import org.bitcoinj.core.{Coin, TransactionOutPoint}
 import org.bitcoinj.wallet.{CoinSelection, CoinSelector}
 
 import coinffeine.model.bitcoin.MutableTransactionOutput

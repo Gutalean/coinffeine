@@ -1,7 +1,7 @@
 package coinffeine.peer.market.orders.archive.h2
 
 import java.io.File
-import java.sql.{DriverManager, ResultSet, Timestamp}
+import java.sql.{DriverManager, Timestamp}
 import scala.util.{Failure, Success, Try}
 
 import akka.actor.{Actor, ActorLogging, Props}

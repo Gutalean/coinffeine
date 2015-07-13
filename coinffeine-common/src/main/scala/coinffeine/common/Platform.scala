@@ -1,6 +1,6 @@
 package coinffeine.common
 
-import java.nio.file.{Paths, Path}
+import java.nio.file.{Path, Paths}
 
 /** Taxonomy of supported platforms */
 sealed trait Platform {

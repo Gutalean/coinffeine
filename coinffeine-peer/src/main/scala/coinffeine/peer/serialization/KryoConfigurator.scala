@@ -1,9 +1,6 @@
 package coinffeine.peer.serialization
 
-import scala.collection.generic.{MapFactory, SetFactory}
-
 import com.esotericsoftware.kryo.Kryo
-import com.romix.scala.serialization.kryo.{EnumerationSerializer, ScalaCollectionSerializer, ScalaImmutableMapSerializer}
 import org.bitcoinj.crypto.DeterministicKey
 import org.joda.time.DateTime
 

@@ -1,6 +1,6 @@
 package coinffeine.gui.beans
 
-import javafx.beans.{Observable, InvalidationListener}
+import javafx.beans.{InvalidationListener, Observable}
 import scalafx.beans.property.{IntegerProperty, ObjectProperty}
 
 import org.scalatest.concurrent.Eventually

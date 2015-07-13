@@ -1,6 +1,7 @@
 package coinffeine.peer.api.impl
 
 import scalaz.syntax.std.option._
+
 import coinffeine.common.test.UnitTest
 
 class SystemNameTest extends UnitTest {
