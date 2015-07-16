@@ -11,7 +11,7 @@ import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{ImmutableTransaction, KeyPair}
+import coinffeine.model.bitcoin.{TransactionSizeFeeCalculator, ImmutableTransaction, KeyPair}
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.exchange.ExchangeId
@@ -132,7 +132,8 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
   it must "recover its previous state" in new Fixture {
     override def useLastPersistenceId = true
     override def buildWallet() = SmartWallet.loadFromStream(
-      new ByteArrayInputStream(serializedWallet.toByteArray))
+      new ByteArrayInputStream(serializedWallet.toByteArray),
+      TransactionSizeFeeCalculator)
     instance ! WalletActor.ReleaseDeposit(tx)
     instance ! WalletActor.BlockBitcoins(funds2, 1.BTC)
     expectMsg(WalletActor.BlockedBitcoins(funds2))
@@ -166,7 +167,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     protected def buildWallet() = {
       val wallet = createWallet(initialBalance.amount)
       wallet.importKey(requiredSignatures.buyer)
-      new SmartWallet(wallet)
+      new SmartWallet(wallet, TransactionSizeFeeCalculator)
     }
     lazy val wallet = buildWallet()
     val properties = new DefaultWalletProperties()

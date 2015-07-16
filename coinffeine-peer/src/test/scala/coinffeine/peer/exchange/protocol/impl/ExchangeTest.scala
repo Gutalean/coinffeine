@@ -1,7 +1,7 @@
 package coinffeine.peer.exchange.protocol.impl
 
 import coinffeine.model.Both
-import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.model.bitcoin.{TransactionSizeFeeCalculator, ImmutableTransaction}
 import coinffeine.model.bitcoin.test.{BitcoinjTest, CoinffeineUnitTestNetwork}
 import coinffeine.model.currency.BitcoinAmount
 import coinffeine.model.exchange._
@@ -21,7 +21,8 @@ trait ExchangeTest extends BitcoinjTest {
   /** Fixture with a buyer handshake with the right amount of funds */
   trait BuyerHandshake extends FreshInstance {
     val buyerWallet = new SmartWallet(
-      createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer))
+      createWallet(participants.buyer.bitcoinKey, amounts.bitcoinRequired.buyer),
+      TransactionSizeFeeCalculator)
     val buyerDeposit = {
       val depositAmounts = amounts.deposits.buyer
       buyerWallet.createMultisignTransaction(
@@ -33,7 +34,8 @@ trait ExchangeTest extends BitcoinjTest {
   /** Fixture with a seller handshake with the right amount of funds */
   trait SellerHandshake extends FreshInstance {
     val sellerWallet = new SmartWallet(
-      createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller))
+      createWallet(participants.seller.bitcoinKey, amounts.bitcoinRequired.seller),
+      TransactionSizeFeeCalculator)
     val sellerDeposit = {
       val depositAmounts = amounts.deposits.seller
       sellerWallet.createMultisignTransaction(

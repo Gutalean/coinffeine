@@ -1,5 +1,6 @@
 package coinffeine.peer.exchange.protocol.impl
 
+import coinffeine.model.bitcoin.TransactionSizeFeeCalculator
 import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 
@@ -20,7 +21,7 @@ class DefaultExchangeProtocolTest extends ExchangeTest {
     }
 
   it should "require the deposit to be valid" in new FreshInstance {
-    val buyerWallet = new SmartWallet(createWallet(participants.buyer.bitcoinKey, 1.BTC))
+    val buyerWallet = new SmartWallet(createWallet(participants.buyer.bitcoinKey, 1.BTC), TransactionSizeFeeCalculator)
     val invalidDeposit = buyerWallet.createMultisignTransaction(requiredSignatures, 0.1.BTC)
     an [IllegalArgumentException] should be thrownBy {
       protocol.createHandshake(buyerHandshakingExchange, invalidDeposit)
