@@ -9,7 +9,7 @@ import org.bitcoinj.core.Wallet
 
 import coinffeine.gui.setup.{SetupConfig, SetupWizard}
 import coinffeine.gui.util.FxExecutor
-import coinffeine.model.bitcoin.Network
+import coinffeine.model.bitcoin.{TransactionSizeFeeCalculator, Network}
 import coinffeine.peer.bitcoin.wallet.SmartWallet
 import coinffeine.peer.config.ConfigProvider
 
@@ -44,7 +44,7 @@ class RunWizardAction(configProvider: ConfigProvider, window: Window, network: =
     if (!walletFile.isFile) {
       createWallet(walletFile)
     }
-    SmartWallet.loadFromFile(walletFile)
+    SmartWallet.loadFromFile(walletFile, TransactionSizeFeeCalculator)
   }(ExecutionContext.global)
 
   private def createWallet(walletFile: File): Unit = {
