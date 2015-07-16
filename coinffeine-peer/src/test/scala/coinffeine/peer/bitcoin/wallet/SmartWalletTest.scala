@@ -20,8 +20,9 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     withFees {
       val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor).toSet
       val amount = 1.BTC
+      val expectedFee = feeCalculator.defaultTransactionFee
       val tx = wallet.createTransaction(inputs, amount, someAddress)
-      val amountPlusFee = amount + MutableTransaction.ReferenceDefaultMinTxFee
+      val amountPlusFee = amount + expectedFee
       Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe -amountPlusFee
     }
   }

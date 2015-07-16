@@ -33,13 +33,15 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
   }
 
   it must "create a new transaction" in new Fixture {
-    val request = WalletActor.CreateTransaction(1.BTC, someAddress)
+    val amount = 1.BTC
+    val request = WalletActor.CreateTransaction(amount, someAddress)
     instance ! request
     val depositCreated = expectMsgPF() {
       case WalletActor.TransactionCreated(`request`, responseTx) => responseTx
     }
     val value: BitcoinAmount = depositCreated.get.getValue(wallet.delegate)
-    value shouldBe (-1.BTC)
+    val amountPlusFee = amount + feeCalculator.defaultTransactionFee
+    value shouldBe -amountPlusFee
   }
 
   it must "fail to create a new transaction given insufficient balance" in new Fixture {
@@ -158,6 +160,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     def useLastPersistenceId: Boolean = false
     val requiredSignatures = Both(new KeyPair, new KeyPair)
     val initialBalance = BitcoinBalance.singleOutput(10.BTC)
+    val feeCalculator = TransactionSizeFeeCalculator
     private val persistenceId = {
       if (!useLastPersistenceId) {
         lastPersistenceId += 1
@@ -167,7 +170,7 @@ class DefaultWalletActorTest extends AkkaSpec("WalletActorTest") with BitcoinjTe
     protected def buildWallet() = {
       val wallet = createWallet(initialBalance.amount)
       wallet.importKey(requiredSignatures.buyer)
-      new SmartWallet(wallet, TransactionSizeFeeCalculator)
+      new SmartWallet(wallet, feeCalculator)
     }
     lazy val wallet = buildWallet()
     val properties = new DefaultWalletProperties()
