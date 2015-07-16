@@ -73,6 +73,8 @@ class SmartWallet(val delegate: Wallet, feeCalculator: BitcoinFeeCalculator) {
                         amount: BitcoinAmount,
                         to: Address): ImmutableTransaction = synchronized {
     val request = SendRequest.to(to, amount)
+    request.fee = feeCalculator.defaultTransactionFee
+    request.feePerKb = 0.BTC
     request.coinSelector = new HandpickedCoinSelector(inputs)
     createTransaction(request)
   }

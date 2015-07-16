@@ -1,6 +1,10 @@
 Changelog
 =========
 
+v0.10.1:
+ - Bug fixing
+   * Compute right fee when funds are withdrawn
+
 v0.10.0:
  - Show elapsed time since last mined block in status bar
  - Track OKPay monthly transference limits
