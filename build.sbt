@@ -3,7 +3,7 @@ import scala.collection.JavaConversions._
 
 name := "coinffeine"
 
-version in ThisBuild := "0.10.1-SNAPSHOT"
+version in ThisBuild := "0.10.1"
 
 organization in ThisBuild := "com.coinffeine"
 
