@@ -16,6 +16,8 @@ class DefaultBitcoinPlatformBuilder extends StrictLogging {
 
   import DefaultBitcoinPlatformBuilder._
 
+  private val feeCalculator = TransactionSizeFeeCalculator
+
   private var network: Network with NetworkComponent.SeedPeers = _
   private var walletFile: Option[File] = None
   private var blockchainFile: Option[File] = None
@@ -100,7 +102,7 @@ class DefaultBitcoinPlatformBuilder extends StrictLogging {
     wallet
   }
 
-  private def buildInMemoryWallet() = new SmartWallet(network)
+  private def buildInMemoryWallet() = new SmartWallet(network, feeCalculator)
 
   private def buildFileBackedWallet(walletFile: File) = {
     val wallet = if (walletFile.exists()) loadFromFile(walletFile) else emptyWalletAt(walletFile)
@@ -110,12 +112,12 @@ class DefaultBitcoinPlatformBuilder extends StrictLogging {
 
   private def loadFromFile(walletFile: File): SmartWallet = {
     logger.info("Loading wallet from {}", walletFile)
-    SmartWallet.loadFromFile(walletFile)
+    SmartWallet.loadFromFile(walletFile, feeCalculator)
   }
 
   private def emptyWalletAt(walletFile: File): SmartWallet = {
     logger.warn("{} doesn't exists, starting with an empty wallet", walletFile)
-    new SmartWallet(network)
+    new SmartWallet(network, feeCalculator)
   }
 
   private def exists(maybeFile: Option[File]): Boolean = maybeFile.fold(false)(_.exists())

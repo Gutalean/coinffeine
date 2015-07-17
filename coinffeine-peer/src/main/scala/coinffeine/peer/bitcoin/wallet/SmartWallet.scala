@@ -12,13 +12,13 @@ import coinffeine.model.Both
 import coinffeine.model.bitcoin._
 import coinffeine.model.currency._
 
-class SmartWallet(val delegate: Wallet) {
+class SmartWallet(val delegate: Wallet, feeCalculator: BitcoinFeeCalculator) {
 
   import SmartWallet._
 
   type Inputs = Set[TransactionOutPoint]
 
-  def this(network: Network) = this(new Wallet(network))
+  def this(network: Network, feeCalculator: BitcoinFeeCalculator) = this(new Wallet(network), feeCalculator)
 
   private case class ListenerExecutor(listener: Listener, context: ExecutionContext) {
     private val task = new Runnable {
@@ -73,6 +73,8 @@ class SmartWallet(val delegate: Wallet) {
                         amount: BitcoinAmount,
                         to: Address): ImmutableTransaction = synchronized {
     val request = SendRequest.to(to, amount)
+    request.fee = feeCalculator.defaultTransactionFee
+    request.feePerKb = 0.BTC
     request.coinSelector = new HandpickedCoinSelector(inputs)
     createTransaction(request)
   }
@@ -192,17 +194,17 @@ object SmartWallet {
     def onChange(): Unit
   }
 
-  def loadFromFile(file: File): SmartWallet = {
+  def loadFromFile(file: File, feeCalculator: BitcoinFeeCalculator): SmartWallet = {
     val stream = new FileInputStream(file)
     try {
-      loadFromStream(stream)
+      loadFromStream(stream, feeCalculator)
     } finally {
       stream.close()
     }
   }
 
-  def loadFromStream(stream: InputStream): SmartWallet = {
-    new SmartWallet(Wallet.loadFromFileStream(stream))
+  def loadFromStream(stream: InputStream, feeCalculator: BitcoinFeeCalculator): SmartWallet = {
+    new SmartWallet(Wallet.loadFromFileStream(stream), feeCalculator)
   }
 
   case class NotEnoughFunds(message: String, cause: Throwable = null)

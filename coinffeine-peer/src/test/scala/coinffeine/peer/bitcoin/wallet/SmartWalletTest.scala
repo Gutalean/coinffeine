@@ -5,7 +5,7 @@ import org.bitcoinj.core.TransactionOutPoint
 import coinffeine.common.test.UnitTest
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.BitcoinjTest
-import coinffeine.model.bitcoin.{Hash, KeyPair, MutableTransaction}
+import coinffeine.model.bitcoin.{Hash, KeyPair, TransactionSizeFeeCalculator}
 import coinffeine.model.currency._
 import coinffeine.peer.bitcoin.wallet.SmartWallet.NotEnoughFunds
 
@@ -20,8 +20,9 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
     withFees {
       val inputs = wallet.spendCandidates.take(1).map(_.getOutPointFor).toSet
       val amount = 1.BTC
+      val expectedFee = feeCalculator.defaultTransactionFee
       val tx = wallet.createTransaction(inputs, amount, someAddress)
-      val amountPlusFee = amount + MutableTransaction.ReferenceDefaultMinTxFee
+      val amountPlusFee = amount + expectedFee
       Bitcoin.fromSatoshi(tx.get.getValue(wallet.delegate).value) shouldBe -amountPlusFee
     }
   }
@@ -77,7 +78,8 @@ class SmartWalletTest extends UnitTest with BitcoinjTest {
   trait Fixture {
     val initialFunds = 10.BTC
     val someAddress = new KeyPair().toAddress(network)
-    val wallet = new SmartWallet(createWallet(initialFunds))
+    val feeCalculator = TransactionSizeFeeCalculator
+    val wallet = new SmartWallet(createWallet(initialFunds), feeCalculator)
     val signatures = Both(wallet.delegate.freshReceiveKey(), new KeyPair)
   }
 }
