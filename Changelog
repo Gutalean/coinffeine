@@ -4,6 +4,7 @@ Changelog
 v0.11.0:
 
 v0.10.1:
+ - Disable _new order_ button when OKPay account balance is not available
  - Bug fixing
    * Compute right fee when funds are withdrawn
 
