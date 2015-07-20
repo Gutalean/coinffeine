@@ -46,6 +46,7 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
 
   private val newOrderButton = new Button("New order") with ButtonStyles.Action {
     onAction = submitNewOrder _
+    disable <== paymentProcessorIsReady.not()
   }
 
   private def submitNewOrder(): Unit = {
@@ -56,6 +57,8 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
       app.operations.submitOrder(request)
     }
   }
+
+  private def paymentProcessorIsReady = app.paymentProcessor.balances.mapToBoolean(_.status.isFresh)
 
   children = Seq(bitcoinPrice, newOrderButton)
 }
