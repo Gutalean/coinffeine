@@ -2,7 +2,7 @@ package coinffeine.peer.bitcoin.platform
 
 import org.bitcoinj.core.{AbstractBlockChain, PeerGroup}
 
-import coinffeine.model.bitcoin.network.{IntegrationTestNetwork, MainNetwork, PublicTestNetwork}
+import coinffeine.model.bitcoin.network.{IntegrationTestNetwork, MainNetwork}
 import coinffeine.model.bitcoin.{Network, NetworkComponent}
 import coinffeine.model.network.NetworkEndpoint
 import coinffeine.peer.bitcoin.BitcoinSettings
@@ -24,7 +24,6 @@ object DefaultBitcoinPlatform {
 
     lazy val network = networkSetting match {
       case BitcoinSettings.IntegrationRegnet => IntegrationTestNetwork
-      case BitcoinSettings.PublicTestnet => PublicTestNetwork
       case BitcoinSettings.MainNet => MainNetwork.network
     }
 

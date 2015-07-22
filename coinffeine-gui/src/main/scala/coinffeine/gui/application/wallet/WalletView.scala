@@ -20,7 +20,7 @@ import coinffeine.gui.util.Browser
 import coinffeine.model.bitcoin.{BitcoinFeeCalculator, Hash}
 import coinffeine.peer.api.CoinffeineWallet
 import coinffeine.peer.bitcoin.BitcoinSettings
-import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet, PublicTestnet}
+import coinffeine.peer.bitcoin.BitcoinSettings.{IntegrationRegnet, MainNet}
 
 class WalletView(
     network: BitcoinSettings.Network,
@@ -81,7 +81,6 @@ class WalletView(
 object WalletView {
 
   private val TransactionDetailsURLFormats = Map[BitcoinSettings.Network, String](
-    PublicTestnet -> "http://testnet.trial.coinffeine.com/tx/%s",
     IntegrationRegnet -> "http://testnet.test.coinffeine.com/tx/%s",
     MainNet -> "https://blockchain.info/tx/%s"
   )
