@@ -12,7 +12,7 @@ import coinffeine.gui.control.{OrderStatusWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{OperationStyles, PaneStyles, Stylesheets}
 import coinffeine.gui.util.ElapsedTimePrinter
-import coinffeine.model.exchange.ExchangeStatus.Handshaking
+import coinffeine.model.exchange.{Exchange, ExchangeStatus, FailureCause}
 import coinffeine.model.order._
 
 class OrderPropertiesDialog(props: OrderProperties) {
@@ -98,10 +98,19 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   def formatAveragePrice(order: Order): String = {
-    val exchanges = order.exchanges.values.filter(_.status != Handshaking).toSeq
+    val exchanges = order.exchanges.values.filter(contributesToAvgPrice).toSeq
     WeightedAveragePrice.average(exchanges).fold("") { price =>
       "Average of %s from %s".format(price, formatCount(exchanges.size, "exchange"))
     }
+  }
+
+  private def contributesToAvgPrice(exchange: Exchange): Boolean = exchange.status match {
+    case ExchangeStatus.Successful |
+         ExchangeStatus.Exchanging(_) |
+         ExchangeStatus.WaitingDepositConfirmation(_, _) => true
+    case ExchangeStatus.Failed(FailureCause.Cancellation(_)) => false
+    case ExchangeStatus.Failed(_) => true
+    case _ => false
   }
 
   private def formatCount(number: Int, unit: String): String = number match {
