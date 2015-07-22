@@ -15,7 +15,7 @@ To build Coinffeine you will need:
  * Protobuf compiler 2.5.0 or higher. You can get it with your favourite
    package manager(`protobuf` in brew, `protobuf-compiler` in apt-get and
    macports) or directly from its
-   [project page](https://code.google.com/p/protobuf/downloads/list).
+   [project page](https://github.com/google/protobuf/tags).
 
 To compile all the modules and run their tests:
 
