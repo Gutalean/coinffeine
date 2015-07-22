@@ -103,6 +103,21 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
+  override def checkExistence(id: AccountId): Future[Boolean] =
+    authenticatedRequest { token =>
+      service.account_Check(
+        walletID =  Some(Some(accountId)),
+        securityToken = Some(Some(token)),
+        account = Some(Some(id))
+      ).map(parseAccountCheckResponse).mapSoapFault()
+    }
+
+  private def parseAccountCheckResponse(response: Account_CheckResponse): Boolean =
+    response.Account_CheckResult match {
+      case Some(walletOwner) if walletOwner != UnknownWalletOwner => true
+      case _ => false
+    }
+
   override def currentBalances(): Future[FiatAmounts] =
     authenticatedRequest { token =>
       service.wallet_Get_Balance(
@@ -298,6 +313,8 @@ class OkPayWebServiceClient(
 }
 
 object OkPayWebServiceClient {
+
+  private val UnknownWalletOwner = 0L
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten

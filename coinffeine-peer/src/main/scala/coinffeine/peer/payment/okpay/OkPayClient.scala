@@ -43,6 +43,8 @@ trait OkPayClient {
     }
   }
 
+  def checkExistence(id: AccountId): Future[Boolean]
+
   protected def executionContext: ExecutionContext
 }
 

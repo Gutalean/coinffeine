@@ -25,8 +25,9 @@ object NotConfiguredClient extends OkPayClient {
       amount: FiatAmount,
       comment: String,
       invoice: Invoice,
-      feePolicy: FeePolicy) =
-    failedFuture
+      feePolicy: FeePolicy) = failedFuture
+
+  override def checkExistence(id: AccountId) = failedFuture
 
   override protected def executionContext = throw notConfiguredError
 
