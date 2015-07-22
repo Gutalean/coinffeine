@@ -32,17 +32,11 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     baseSettings.licenseAccepted shouldBe false
     baseSettings.dataVersion shouldBe 'empty
     baseSettings.serviceStartStopTimeout shouldBe 30.seconds
-    baseSettings.techPreview shouldBe false
 
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> false))
       .licenseAccepted shouldBe false
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.licenseAccepted" -> true))
       .licenseAccepted shouldBe true
-
-    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.techPreview" -> false))
-      .techPreview shouldBe false
-    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.techPreview" -> true))
-      .techPreview shouldBe true
 
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.dataVersion" -> "42"))
       .dataVersion shouldBe Some(DataVersion(42))

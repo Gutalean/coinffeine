@@ -112,10 +112,6 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     top = new VBox(topBar, controlBar)
     center = centerPane
     bottom = statusBarPane
-
-    if (settingsProvider.generalSettings().techPreview) {
-      styleClass += "tech-preview"
-    }
   }
 }
 

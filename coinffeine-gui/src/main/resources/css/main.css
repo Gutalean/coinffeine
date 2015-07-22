@@ -12,10 +12,6 @@
     -fx-background-repeat: no-repeat;
 }
 
-.tech-preview #top-bar {
-    -fx-background-image: url("../graphics/topbar-logo-tech-preview.png");
-}
-
 #payment-processor {
     -fx-spacing: 5;
     -fx-padding: 0 20 0 0;

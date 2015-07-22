@@ -11,7 +11,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.peer.AppVersion
 
-class SplashScreen(techPreview: Boolean) {
+class SplashScreen {
 
   def displayOn(stage: PrimaryStage): Unit = {
     stage.initStyle(StageStyle.TRANSPARENT)
@@ -24,15 +24,10 @@ class SplashScreen(techPreview: Boolean) {
           new Spinner(autoPlay = true),
           new HBox(
             new Label("Copyright (C) 2014-2015 Coinffeine S.L.") { id = "copyright-note" },
-            new Label(versionText) { id = "version-note" }
+            new Label(s"Version ${AppVersion.Current}") { id = "version-note" }
           ))
       }
     }
     stage.show()
   }
-
-  private def versionText: String = "%sVersion %s".format(
-    if (techPreview) "Technical Preview " else "",
-    AppVersion.Current
-  )
 }
