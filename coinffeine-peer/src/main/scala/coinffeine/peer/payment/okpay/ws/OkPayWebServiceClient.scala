@@ -63,17 +63,17 @@ class OkPayWebServiceClient(
       feePolicy: FeePolicy): Future[Payment] =
     authenticatedRequest { token =>
       service.send_Money(
-        walletID = Some(Some(accountId)),
-        securityToken = Some(Some(token)),
-        receiver = Some(Some(to)),
-        currency = Some(Some(amount.currency.javaCurrency.getCurrencyCode)),
+        walletID = SSome(accountId),
+        securityToken = SSome(token),
+        receiver = SSome(to),
+        currency = SSome(amount.currency.javaCurrency.getCurrencyCode),
         amount = Some(amount.value),
-        comment = Some(Some(comment)),
+        comment = SSome(comment),
         isReceiverPaysFees = Some(feePolicy match {
           case FeePolicy.PaidByReceiver => true
           case FeePolicy.PaidBySender => false
         }),
-        invoice = Some(Some(invoice))
+        invoice = SSome(invoice)
       ).map { response =>
         parsePaymentOfCurrency(response.Send_MoneyResult.flatten.get, amount.currency)
       }.mapSoapFault {
@@ -92,8 +92,8 @@ class OkPayWebServiceClient(
   private def findPayment(params: Either[PaymentId, Invoice]) =
     authenticatedRequest { token =>
       service.transaction_Get(
-        walletID = Some(Some(accountId)),
-        securityToken = Some(Some(token)),
+        walletID = SSome(accountId),
+        securityToken = SSome(token),
         txnID = params.left.toOption.map(_.toLong),
         invoice = params.right.toOption.map(Some(_))
       ).map { result =>
@@ -103,11 +103,26 @@ class OkPayWebServiceClient(
       }.mapSoapFault()
     }
 
+  override def checkExistence(id: AccountId): Future[Boolean] =
+    authenticatedRequest { token =>
+      service.account_Check(
+        walletID =  SSome(accountId),
+        securityToken = SSome(token),
+        account = SSome(id)
+      ).map(parseAccountCheckResponse).mapSoapFault()
+    }
+
+  private def parseAccountCheckResponse(response: Account_CheckResponse): Boolean =
+    response.Account_CheckResult match {
+      case Some(walletOwner) if walletOwner != UnknownWalletOwner => true
+      case _ => false
+    }
+
   override def currentBalances(): Future[FiatAmounts] =
     authenticatedRequest { token =>
       service.wallet_Get_Balance(
-        walletID = Some(Some(accountId)),
-        securityToken = Some(Some(token))
+        walletID = SSome(accountId),
+        securityToken = SSome(token)
       ).map { response =>
         (for {
           arrayOfBalances <- response.Wallet_Get_BalanceResult.flatten
@@ -161,10 +176,10 @@ class OkPayWebServiceClient(
       logger.debug("Fetching transaction history page {} for interval {}",
         page.number.toString, interval)
       service.transaction_History(
-        walletID = Some(Some(accountId)),
-        securityToken = Some(Some(token)),
-        from = Some(Some(OkPayDate(interval.getStart))),
-        till = Some(Some(OkPayDate(interval.getEnd))),
+        walletID = SSome(accountId),
+        securityToken = SSome(token),
+        from = SSome(OkPayDate(interval.getStart)),
+        till = SSome(OkPayDate(interval.getEnd)),
         pageSize = Some(page.size),
         pageNumber = Some(page.number)
       ).map(parseTransactionHistoryResponse).mapSoapFault()
@@ -173,12 +188,12 @@ class OkPayWebServiceClient(
   private def parseTransactionHistoryResponse(
       response: Transaction_HistoryResponse): TransactionHistoryPage = {
     response.Transaction_HistoryResult match {
-      case Some(Some(HistoryInfo(
+      case SSome(HistoryInfo(
           Some(_pageCount),
           Some(pageNumber),
           Some(pageSize),
           Some(totalSize),
-          Some(Some(arrayOfTransactions))))) =>
+          SSome(arrayOfTransactions))) =>
         val page = Page(size = pageSize, number = pageNumber)
         val transactions = arrayOfTransactions.TransactionInfo.flatten.map(parseTransaction)
         TransactionHistoryPage(page, totalSize, transactions)
@@ -298,6 +313,8 @@ class OkPayWebServiceClient(
 }
 
 object OkPayWebServiceClient {
+
+  private val UnknownWalletOwner = 0L
 
   private object WalletId {
     def unapply(info: AccountInfo): Option[String] = info.WalletID.flatten

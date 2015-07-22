@@ -32,6 +32,8 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
       invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment] = paymentResult
 
+  override def checkExistence(id: AccountId): Future[Boolean] = ???
+
   def givenBalancesCannotBeRetrieved(cause: Throwable): Unit = synchronized {
     balances.givenLookupWillFail(cause)
   }
