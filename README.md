@@ -52,10 +52,10 @@ and look at `target/scala-2.x/scoverage-report/scoverage-report/index.html`.
 Generating release binaries
 ---------------------------
 
-To generate all module binaries that can be generated on the host platform (you wont generate Win-64 binaries from Mac)
-just run:
+To generate all module binaries that can be generated on the host platform 
+(you wont generate Win-64 binaries from Mac) just run:
 
-    sbt -DTECH_PREVIEW=<bool> release
+    sbt release
 
 And you will find the binaries at `target/release/<version>`.
 

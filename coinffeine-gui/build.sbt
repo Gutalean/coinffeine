@@ -1,8 +1,6 @@
 import CoinffeineKeys._
 
-techPreview := System.getProperty("TECH_PREVIEW", "true").toLowerCase == "true"
-
-name := (if (techPreview.value) "CoinffeineTP" else "Coinffeine")
+name := "Coinffeine"
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
 
@@ -39,8 +37,7 @@ JFX.license := "Coinffeine License"
 
 JFX.artifactBaseNameValue := "packages"
 
-JFX.mainClass :=
-  Option(if (techPreview.value) "coinffeine.gui.PreviewMain" else "coinffeine.gui.Main")
+JFX.mainClass := Option("coinffeine.gui.Main")
 
 JFX.title := "Coinffeine"
 

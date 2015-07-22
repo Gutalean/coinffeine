@@ -42,17 +42,15 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
   private val description = new VBox {
     styleClass += "description"
     private val commonLine = new Label("Please fill in your OKPay account details.")
-    children =
-      if(settingsProvider.generalSettings().techPreview) Seq(commonLine)
-      else Seq(
-        commonLine,
-        new HBox(
-          new Label("You can configure it manually"),
-          new SupportWidget("manual-okpay"),
-          new Label("or also")
-        ),
-        new Hyperlink("rerun the setup wizard") { onAction = rerunWizard _ }
-      )
+    children = Seq(
+      commonLine,
+      new HBox(
+        new Label("You can configure it manually"),
+        new SupportWidget("manual-okpay"),
+        new Label("or also")
+      ),
+      new Hyperlink("rerun the setup wizard") { onAction = rerunWizard _ }
+    )
   }
 
   private val formScene = new CoinffeineScene(Stylesheets.Preferences) {

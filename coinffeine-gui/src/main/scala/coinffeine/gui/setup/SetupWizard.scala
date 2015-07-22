@@ -19,16 +19,6 @@ class SetupWizard private (
 
 object SetupWizard {
 
-  def forTechnicalPreview(walletAddress: String): SetupWizard = {
-    val data = new SetupConfig
-    val panes = Seq(
-      new LicenseAgreementPane,
-      new FaucetInfoStepPane(walletAddress),
-      new OkPayWalletDataPane(data)
-    )
-    new SetupWizard(panes, data, ExitPolicy.Confirmed)
-  }
-
   def default(walletAddress: String): SetupWizard = {
     val data = new SetupConfig
     val panes = Seq(

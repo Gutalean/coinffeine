@@ -17,7 +17,7 @@ trait AppLauncher { this: ProductionCoinffeineComponent =>
   def launchApp(stage: PrimaryStage): Future[Stage] = {
     // FIXME: the laziness provided by the comprehension is needed since the cake does not properly
     //        manage the life cycle and race conditions arise
-    new SplashScreen(configProvider.generalSettings().techPreview).displayOn(stage)
+    new SplashScreen().displayOn(stage)
     for {
       _ <- new ConfigureLogAction(configProvider).apply()
       _ <- new AcquirePidFileAction(configProvider.dataPath).apply()

@@ -18,16 +18,14 @@ object BitcoinSettings {
     override def toString = name
   }
 
-  case object PublicTestnet extends Network {
-    override def name = "public-testnet"
-  }
   case object IntegrationRegnet extends Network {
     override def name = "integration-regnet"
   }
+
   case object MainNet extends Network {
     override def name = "mainnet"
   }
 
   def parseNetwork(name: String): Option[Network] =
-    Seq(PublicTestnet, IntegrationRegnet, MainNet).find(_.toString == name)
+    Seq(IntegrationRegnet, MainNet).find(_.toString == name)
 }
