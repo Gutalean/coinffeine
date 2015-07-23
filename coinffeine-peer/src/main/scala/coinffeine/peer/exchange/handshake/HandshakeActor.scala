@@ -12,7 +12,7 @@ import coinffeine.common.akka.AskPattern
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.Both
 import coinffeine.model.bitcoin._
-import coinffeine.model.exchange.HandshakeFailureCause.CannotCreateDeposits
+import coinffeine.model.exchange.HandshakeFailureCause.{InvalidCounterpartAccountId, CannotCreateDeposits}
 import coinffeine.model.exchange._
 import coinffeine.model.network.BrokerId
 import coinffeine.peer.ProtocolConstants
@@ -86,11 +86,15 @@ object HandshakeActor {
 
   def props(
       exchange: ExchangeToStart,
+      accountIdValidator: AccountIdValidator,
       collaborators: Collaborators,
       protocol: ProtocolDetails) =
-    Props(new HandshakeActor(exchange, collaborators, protocol))
+    Props(new HandshakeActor(exchange, accountIdValidator, collaborators, protocol))
 
   private case object ResumeHandshake
+
+  private case class CounterpartCheckResult(
+      counterpart: Exchange.PeerInfo, validity: AccountIdValidator.Result)
 
   private case class HandshakeStarted(handshake: Handshake)
       extends PersistentEvent
@@ -105,6 +109,7 @@ object HandshakeActor {
 
 private class HandshakeActor(
     exchange: HandshakeActor.ExchangeToStart,
+    accountIdValidator: AccountIdValidator,
     collaborators: HandshakeActor.Collaborators,
     protocol: HandshakeActor.ProtocolDetails) extends PersistentActor with ActorLogging {
 
@@ -167,12 +172,18 @@ private class HandshakeActor(
       log.debug("Received a handshake request for {}; counterpart using {} and {}",
         exchange.info.id, publicKey, paymentProcessorAccount)
       val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
+      checkCounterpart(counterpart).pipeTo(self)
+
+    case CounterpartCheckResult(counterpart, AccountIdValidator.Valid) =>
       val handshakingExchange =
         exchange.info.handshake(exchange.user, counterpart, exchange.timestamp)
       collaborators.listener ! ExchangeUpdate(handshakingExchange)
       createDeposit(handshakingExchange)
           .map(deposit => protocol.factory.createHandshake(handshakingExchange, deposit))
           .pipeTo(self)
+
+    case CounterpartCheckResult(counterpart, AccountIdValidator.Invalid) =>
+      finishWith(HandshakeFailure(InvalidCounterpartAccountId, DateTime.now()))
 
     case createdHandshake: Handshake =>
       persist(HandshakeStarted(createdHandshake))(onHandshakeStarted)
@@ -219,6 +230,10 @@ private class HandshakeActor(
       errorMessage = s"Cannot block ${depositAmounts.output} in multisig"
     ).withImmediateReplyOrError[DepositCreated, DepositCreationError](_.error).map(_.tx)
   }
+
+  private def checkCounterpart(counterpart: Exchange.PeerInfo): Future[CounterpartCheckResult] =
+    accountIdValidator.validate(counterpart.paymentProcessorAccount)
+        .map(result => CounterpartCheckResult(counterpart, result))
 
   private def waitForRefundSignature: Receive = {
 

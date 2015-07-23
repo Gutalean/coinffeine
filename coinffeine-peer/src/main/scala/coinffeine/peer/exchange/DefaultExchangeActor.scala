@@ -283,6 +283,7 @@ object DefaultExchangeActor {
                       timestamp: DateTime,
                       listener: ActorRef) = HandshakeActor.props(
           HandshakeActor.ExchangeToStart(exchange, timestamp, user),
+          null, // TODO
           HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
           HandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
