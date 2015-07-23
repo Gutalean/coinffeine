@@ -78,6 +78,21 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     expectNoMsg() // Must not remember SuccessfulBroadcast(result)
   }
 
+  it should "persist its state before broadcasting a transaction" in new Fixture {
+    expectRelevantHeightsSubscription()
+    givenLastOffer(someLastOffer)
+    expectNoMsg(100.millis.dilated)
+    system.stop(instance)
+  }
+
+  it should "broadcast the last offer if panicked before even starting" in new Fixture {
+    override def useLastRefundTx = true
+    expectRelevantHeightsSubscription()
+    givenHeightNotification(panicBlock + 100)
+    val result = givenSuccessfulBroadcast(someLastOffer)
+    expectTerminationWithResult(SuccessfulBroadcast(result))
+  }
+
   // Last refund transaction is saved to allow testing the persistence
   var lastRefundTx: ImmutableTransaction = _
 
