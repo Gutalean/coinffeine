@@ -13,11 +13,12 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.payment.{Payment, TestPayment}
 import coinffeine.model.util.{CacheStatus, Cached}
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.PaymentProcessorActor.FindPaymentCriterion
+import coinffeine.peer.payment.PaymentProcessorActor.{AccountExistence, CheckAccountExistence, FindPaymentCriterion}
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
 import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
@@ -149,6 +150,27 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     expectRemainingLimitsPropertyUpdated(280.EUR, cacheStatus = CacheStatus.Stale)
   }
 
+  it must "check that an account actually exists" in new WithOkPayProcessor {
+    val existingAccount = "existingAccount"
+    givenAccountExists(existingAccount)
+    givenStartedPaymentProcessor()
+    expectAccountExistence(existingAccount, AccountExistence.Existing)
+  }
+
+  it must "check that an account doesn't exist" in new WithOkPayProcessor {
+    val madeUpAccount = "madeUpAccount"
+    givenAccountDoesNotExist(madeUpAccount)
+    givenStartedPaymentProcessor()
+    expectAccountExistence(madeUpAccount, AccountExistence.NonExisting)
+  }
+
+  it must "report failure to check the existence of an account" in new WithOkPayProcessor {
+    val someAccount = "someAccount"
+    givenAccountExistenceCheckWillFail(someAccount)
+    givenStartedPaymentProcessor()
+    expectAccountExistence(someAccount, AccountExistence.CannotCheck)
+  }
+
   private trait WithOkPayProcessor {
     def pollingInterval = 3.seconds.dilated
     val propertyCheckTimeout = PatienceConfiguration.Timeout(2.seconds)
@@ -217,6 +239,18 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def givenPaymentsCannotBeRetrieved(): Unit = {
       client.givenPaymentsCannotBeRetrieved(cause)
+    }
+
+    def givenAccountExists(accountId: AccountId): Unit = {
+      client.givenAccountExistence(accountId, AccountExistence.Existing)
+    }
+
+    def givenAccountDoesNotExist(accountId: AccountId): Unit = {
+      client.givenAccountExistence(accountId, AccountExistence.NonExisting)
+    }
+
+    def givenAccountExistenceCheckWillFail(accountId: AccountId): Unit = {
+      client.givenAccountExistence(accountId, AccountExistence.CannotCheck)
     }
 
     def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
@@ -346,6 +380,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectForwardedToRegistry(request: Any): Unit = {
       fundsRegistry.expectForward(request, requester.ref)
+    }
+
+    def expectAccountExistence(
+        accountId: AccountId, expectedExistence: AccountExistence): Unit = {
+      requester.send(processor, CheckAccountExistence(accountId))
+      requester.expectMsg(expectedExistence)
     }
   }
 

@@ -1,10 +1,12 @@
 package coinffeine.peer.payment.okpay
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.control.NoStackTrace
 
 import coinffeine.model.currency.{FiatAmount, FiatAmounts}
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
+import coinffeine.peer.payment.PaymentProcessorActor.AccountExistence
 
 class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
 
@@ -12,6 +14,7 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
   private val remainingLimits = new Fallible(FiatAmounts.empty)
   private val payments = new Fallible(Map.empty[PaymentId, Payment])
   private var paymentResult: Future[Payment] = _
+  private var accountExistence = Map.empty[AccountId, AccountExistence]
 
   override val executionContext = ExecutionContext.global
 
@@ -32,7 +35,13 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
       invoice: Invoice,
       feePolicy: FeePolicy): Future[Payment] = paymentResult
 
-  override def checkExistence(id: AccountId): Future[Boolean] = ???
+  override def checkExistence(id: AccountId): Future[Boolean] =
+    accountExistence(id) match {
+      case AccountExistence.Existing => Future.successful(true)
+      case AccountExistence.NonExisting => Future.successful(false)
+      case AccountExistence.CannotCheck =>
+        Future.failed(new Exception("injected error") with NoStackTrace)
+    }
 
   def givenBalancesCannotBeRetrieved(cause: Throwable): Unit = synchronized {
     balances.givenLookupWillFail(cause)
@@ -73,6 +82,11 @@ class OkPayClientMock(override val accountId: AccountId) extends OkPayClient {
   def givenPaymentResult(result: Future[Payment]): Unit = synchronized {
     paymentResult = result
   }
+
+  def givenAccountExistence(accountId: AccountId, existence: AccountExistence): Unit =
+    synchronized {
+      accountExistence += accountId -> existence
+    }
 }
 
 private class Fallible[A](initialValue: A) {
