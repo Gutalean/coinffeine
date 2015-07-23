@@ -150,7 +150,8 @@ class BlockchainActorTest extends AkkaSpec("BlockChainActorTest") with BitcoinjT
 
   trait Fixture {
     protected val requester = TestProbe()
-    protected val wallet, otherWallet = new SmartWallet(createWallet(1.BTC), TransactionSizeFeeCalculator)
+    protected val wallet, otherWallet =
+      new SmartWallet(createWallet(1.BTC), TransactionSizeFeeCalculator)
     protected val tx = createSendTransaction(0.1.BTC)
 
     protected val instance = system.actorOf(Props(new BlockchainActor(chain, wallet.delegate)))
