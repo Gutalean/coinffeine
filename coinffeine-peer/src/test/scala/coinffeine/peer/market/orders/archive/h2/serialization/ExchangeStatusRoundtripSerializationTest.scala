@@ -13,9 +13,9 @@ import coinffeine.model.exchange.AbortionCause.{HandshakeCommitmentsFailure, Inv
 import coinffeine.model.exchange.CancellationCause._
 import coinffeine.model.exchange.Exchange.PeerInfo
 import coinffeine.model.exchange.ExchangeStatus
-import coinffeine.model.exchange.ExchangeStatus.{Aborting, Exchanging, Failed, WaitingDepositConfirmation}
+import coinffeine.model.exchange.ExchangeStatus._
 import coinffeine.model.exchange.FailureCause._
-import coinffeine.model.exchange.HandshakeFailureCause.{BrokerAbortion, CannotCreateDeposits, SignatureTimeout}
+import coinffeine.model.exchange.HandshakeFailureCause._
 import coinffeine.protocol.messages.MessageGenerators._
 
 class ExchangeStatusRoundtripSerializationTest extends UnitTest with PropertyChecks {
@@ -35,7 +35,12 @@ class ExchangeStatusRoundtripSerializationTest extends UnitTest with PropertyChe
   val cancellationCauses = Gen.oneOf(
     Gen.const(UserCancellation),
     Gen.const(CannotStartHandshake),
-    Gen.oneOf(SignatureTimeout, BrokerAbortion, CannotCreateDeposits).map(HandshakeFailed.apply)
+    Gen.oneOf(
+      SignatureTimeout,
+      BrokerAbortion,
+      CannotCreateDeposits,
+      InvalidCounterpartAccountId
+    ).map(HandshakeFailed.apply)
   )
 
   val abortionCauses = Gen.oneOf(

@@ -25,8 +25,10 @@ abstract class HandshakeActorTest(systemName: String)
 
   lazy val handshake = new MockHandshake(handshakingExchange)
   val idleTime = 100.millis
+  val accountIdValidator = new StubAccountIdValidator
   val listener, blockchain, wallet = TestProbe()
   var actor: ActorRef = _
+  accountIdValidator.givenAccountIdWillBeValid()
   startActor()
 
   private val peerHandshake =
@@ -37,6 +39,7 @@ abstract class HandshakeActorTest(systemName: String)
   def startActor(): Unit = {
     actor = system.actorOf(HandshakeActor.props(
       HandshakeActor.ExchangeToStart(exchange, DateTime.now(), user),
+      accountIdValidator,
       HandshakeActor.Collaborators(gateway.ref, blockchain.ref, wallet.ref, listener.ref),
       HandshakeActor.ProtocolDetails(new FakeExchangeProtocol, protocolConstants)
     ))
@@ -47,6 +50,10 @@ abstract class HandshakeActorTest(systemName: String)
     system.stop(actor)
     listener.expectTerminated(actor)
     startActor()
+  }
+
+  def givenCounterpartWalletIdIsInvalid(): Unit = {
+    accountIdValidator.givenAccountIdWillBeInvalid()
   }
 
   def givenCounterpartPeerHandshake(): Unit = {

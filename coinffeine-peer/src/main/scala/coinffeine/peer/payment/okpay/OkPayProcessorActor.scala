@@ -14,6 +14,7 @@ import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
+import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
 import coinffeine.peer.events.fiat.{BalanceChanged, RemainingLimitsChanged}
@@ -63,6 +64,7 @@ private class OkPayProcessorActor(
     case PollBalances => pollAccountState()
     case PollResult(newBalances, newRemainingLimits) =>
       updateCachedInformation(newBalances, newRemainingLimits)
+    case CheckAccountExistence(accountId) => checkAccountExistence(accountId)
     case msg @ (_: BlockFunds | _: UnblockFunds) => registry.forward(msg)
   }
 
@@ -159,6 +161,17 @@ private class OkPayProcessorActor(
     registry ! AccountUpdate(balances.cached, remainingLimits.cached)
     publish(BalanceChanged(balances))
     publish(RemainingLimitsChanged(remainingLimits))
+  }
+
+  private def checkAccountExistence(accountId: AccountId): Unit = {
+    clientFactory.build()
+        .checkExistence(accountId)
+        .map { exists => if (exists) AccountExistence.Existing else AccountExistence.NonExisting }
+        .recover { case NonFatal(ex) =>
+          log.error(ex, "Cannot check account '{}' existence", accountId)
+          AccountExistence.CannotCheck
+        }
+        .pipeTo(sender())
   }
 
   private def pollAccountState(): Future[PollResult] = {

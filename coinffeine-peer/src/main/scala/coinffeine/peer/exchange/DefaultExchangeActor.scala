@@ -16,7 +16,7 @@ import coinffeine.peer.config.ConfigComponent
 import coinffeine.peer.exchange.DepositWatcher._
 import coinffeine.peer.exchange.ExchangeActor._
 import coinffeine.peer.exchange.broadcast.TransactionBroadcaster
-import coinffeine.peer.exchange.handshake.HandshakeActor
+import coinffeine.peer.exchange.handshake.{AccountIdValidatorImpl, HandshakeActor}
 import coinffeine.peer.exchange.handshake.HandshakeActor._
 import coinffeine.peer.exchange.micropayment._
 import coinffeine.peer.exchange.protocol._
@@ -57,7 +57,9 @@ class DefaultExchangeActor(
 
   private def onRetrievedPeerInfo(event: RetrievedPeerInfo): Unit = {
     handshakeRef = Some(
-      context.actorOf(delegates.handshake(event.user, event.timestamp, self), HandshakeActorName))
+      context.actorOf(delegates.handshake(event.user, event.timestamp, self),
+      HandshakeActorName)
+    )
     context.watch(handshakeRef.get)
     context.become(inHandshake(event.user))
   }
@@ -272,6 +274,8 @@ object DefaultExchangeActor {
                                     collaborators: ExchangeActor.Collaborators) = {
       import collaborators._
 
+      val accountIdValidator = new AccountIdValidatorImpl(collaborators.paymentProcessor)
+
       val delegates = new Delegates {
         def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
           TransactionBroadcaster.props(
@@ -279,35 +283,42 @@ object DefaultExchangeActor {
             TransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
             protocolConstants)
 
-        def handshake(user: Exchange.PeerInfo,
-                      timestamp: DateTime,
-                      listener: ActorRef) = HandshakeActor.props(
+        def handshake(
+            user: Exchange.PeerInfo,
+            timestamp: DateTime,
+            listener: ActorRef) = HandshakeActor.props(
           HandshakeActor.ExchangeToStart(exchange, timestamp, user),
+          accountIdValidator,
           HandshakeActor.Collaborators(gateway, blockchain, wallet, listener),
           HandshakeActor.ProtocolDetails(DefaultExchangeProtocol, protocolConstants)
         )
 
-        def micropaymentChannel(channel: MicroPaymentChannel,
-                                resultListeners: Set[ActorRef]): Props = exchange.role match {
+        def micropaymentChannel(
+            channel: MicroPaymentChannel,
+            resultListeners: Set[ActorRef]): Props = exchange.role match {
+
           case BuyerRole => BuyerMicroPaymentChannelActor.props(channel, protocolConstants,
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners),
             new BuyerMicroPaymentChannelActor.Delegates {
               override def payer() = PayerActor.props()
             })
+
           case SellerRole => SellerMicroPaymentChannelActor.props(channel, protocolConstants,
             MicroPaymentChannelActor.Collaborators(gateway, paymentProcessor, resultListeners))
         }
 
-        def depositWatcher(exchange: DepositPendingExchange,
-                           deposit: ImmutableTransaction,
-                           refundTx: ImmutableTransaction)(implicit context: ActorContext) =
+        def depositWatcher(
+            exchange: DepositPendingExchange,
+            deposit: ImmutableTransaction,
+            refundTx: ImmutableTransaction)(implicit context: ActorContext) =
           Props(new DepositWatcher(exchange, deposit, refundTx,
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 
       val lookup = new PeerInfoLookupImpl(wallet, configProvider)
 
-      Props(new DefaultExchangeActor(DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
+      Props(new DefaultExchangeActor(
+        DefaultExchangeProtocol, exchange, lookup, delegates, collaborators))
     }
   }
 

@@ -114,6 +114,17 @@ object PaymentProcessorActor {
   case class BalanceRetrievalFailed(currency: FiatCurrency, error: Throwable)
       extends RetrieveBalanceResponse
 
+  /** A message sent to the payment processor to check for the existence of an account. */
+  case class CheckAccountExistence(accountId: AccountId)
+
+  /** Responses to [[CheckAccountExistence]] */
+  sealed trait AccountExistence
+  object AccountExistence {
+    case object Existing extends AccountExistence
+    case object NonExisting extends AccountExistence
+    case object CannotCheck extends AccountExistence
+  }
+
   /** Payment processor requests should be considered to have failed after this period */
   val RequestTimeout = Timeout(5.seconds)
 }
