@@ -50,9 +50,9 @@ class PayerActor(retryTimeout: Timeout) extends Actor with ActorLogging {
         FindPaymentCriterion.ByInvoice(payment.request.invoice))
       context.become(retrievingPayment(requester, payment))
 
-    case PaymentProcessorActor.PaymentFailed(_, cause) =>
-      log.error(cause, "payment failed; retrying in {}... ",
-        retryTimeout.duration)
+    case PaymentProcessorActor.PaymentFailed(pay, cause) =>
+      log.error(cause, "payment {} failed; retrying in {}... ",
+        pay, retryTimeout.duration)
       context.become(waitingToRetryAfterFailure(requester, payment))
   }
 
