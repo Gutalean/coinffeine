@@ -36,9 +36,11 @@ private[h2] object ExchangeStatusParser {
           ExchangeStatus.Exchanging(Both(new Hash(buyerHash), new Hash(sellerHash)))
       }
 
-    val handshakeFailureCause = HandshakeFailureCause.BrokerAbortion.parser |
+    val handshakeFailureCause =
+      HandshakeFailureCause.BrokerAbortion.parser |
       HandshakeFailureCause.CannotCreateDeposits.parser |
-      HandshakeFailureCause.SignatureTimeout.parser
+      HandshakeFailureCause.SignatureTimeout.parser |
+      HandshakeFailureCause.InvalidCounterpartAccountId.parser
 
     val handshakeFailed: Parser[CancellationCause.HandshakeFailed] =
       ("HandshakeFailed" ~> "(" ~> handshakeFailureCause <~ ")") ^^

@@ -56,6 +56,10 @@ class ExchangeStatusFormatterTest extends UnitTest {
       ExchangeStatus.Failed(FailureCause.Cancellation(CancellationCause.HandshakeFailed(
       HandshakeFailureCause.SignatureTimeout)))) shouldBe
       "Failed(Cancellation(HandshakeFailed(SignatureTimeout)))"
+    ExchangeStatusFormatter.format(
+      ExchangeStatus.Failed(FailureCause.Cancellation(CancellationCause.HandshakeFailed(
+      HandshakeFailureCause.InvalidCounterpartAccountId)))) shouldBe
+      "Failed(Cancellation(HandshakeFailed(InvalidCounterpartAccountId)))"
   }
 
   it should "format failed status because of abortion" in {

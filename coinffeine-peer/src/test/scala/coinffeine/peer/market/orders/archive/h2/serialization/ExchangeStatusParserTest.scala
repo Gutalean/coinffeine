@@ -53,6 +53,9 @@ class ExchangeStatusParserTest extends UnitTest {
     ExchangeStatusParser.parse("Failed(Cancellation(HandshakeFailed(SignatureTimeout)))") shouldBe
       ExchangeStatus.Failed(FailureCause.Cancellation(CancellationCause.HandshakeFailed(
         HandshakeFailureCause.SignatureTimeout))).some
+    ExchangeStatusParser.parse("Failed(Cancellation(HandshakeFailed(InvalidCounterpartAccountId)))") shouldBe
+      ExchangeStatus.Failed(FailureCause.Cancellation(CancellationCause.HandshakeFailed(
+        HandshakeFailureCause.InvalidCounterpartAccountId))).some
   }
 
   it should "parse failed status because of abortion" in {
