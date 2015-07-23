@@ -120,6 +120,7 @@ private class TransactionBroadcaster(
   }
 
   private def finishWith(result: BroadcastResult): Unit = {
+    log.debug("Finishing transaction broadcasting with result: {}", result)
     persist(FinishedWithResult(result))(onFinished)
   }
 

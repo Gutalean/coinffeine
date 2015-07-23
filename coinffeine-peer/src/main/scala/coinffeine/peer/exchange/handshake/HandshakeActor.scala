@@ -164,6 +164,8 @@ private class HandshakeActor(
       sendPeerHandshakeUntilFirstSignatureRequest()
 
     case ReceiveMessage(PeerHandshake(_, publicKey, paymentProcessorAccount), _) =>
+      log.debug("Received a handshake request for {}; counterpart using {} and {}",
+        exchange.info.id, publicKey, paymentProcessorAccount)
       val counterpart = Exchange.PeerInfo(paymentProcessorAccount, publicKey)
       val handshakingExchange =
         exchange.info.handshake(exchange.user, counterpart, exchange.timestamp)
