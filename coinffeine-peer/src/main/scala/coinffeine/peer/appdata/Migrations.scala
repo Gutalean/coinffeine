@@ -10,6 +10,6 @@ object Migrations {
     DataVersion(2) -> new BackupJournalMigration("v0.9")
   ))
 
-  def plan(settings: GeneralSettings): Seq[Migration] =
+  def plan(settings: GeneralSettings): MigrationPlan =
     Planner.plan(DataVersion.Current, settings)
 }
