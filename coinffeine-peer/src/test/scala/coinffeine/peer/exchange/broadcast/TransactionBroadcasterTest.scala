@@ -61,6 +61,7 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     givenLastOffer(someLastOffer)
     expectNoMsg(100.millis.dilated)
     instance ! PublishBestTransaction
+    expectNoMsg(100.millis.dilated)
     system.stop(instance)
   }
 
