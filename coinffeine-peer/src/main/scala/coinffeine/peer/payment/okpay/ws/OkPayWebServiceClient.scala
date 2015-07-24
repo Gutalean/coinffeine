@@ -248,12 +248,10 @@ class OkPayWebServiceClient(
       case Completed => TransactionStatus.Completed
     }
 
-  private def parseBalances(balances: ArrayOfBalance): FiatAmounts = FiatAmounts(
-    balances.Balance.collect {
-      case Some(Balance(Some(amount), Flatten(currencyCode))) =>
-        FiatCurrency(currencyCode)(amount)
-    }
-  )
+  private def parseBalances(balances: ArrayOfBalance): FiatAmounts = FiatAmounts(for {
+    Balance(Some(amount), Flatten(currencyCode)) <- balances.Balance.flatten
+    currency <- FiatCurrency.get(currencyCode)
+  } yield currency(amount))
 
   /** Wraps a request that needs an authentication token and makes sure that it is
     * retried in case of authentication fails once.
