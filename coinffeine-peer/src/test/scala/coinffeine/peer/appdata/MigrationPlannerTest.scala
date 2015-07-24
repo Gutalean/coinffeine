@@ -54,12 +54,18 @@ class MigrationPlannerTest extends UnitTest {
     )
     val actualPlan = new MigrationPlanner(sampleMigrations)
         .plan(DataVersion(2), settingsWithoutExplicitVersion)
-    actualPlan shouldBe SequentialMigration(Seq(Migration1))
+    actualPlan shouldBe SequentialPlan(Seq(Migration1))
   }
 
   it should "plan all the existing migrations from the saved version to the current version" in {
     new MigrationPlanner(sampleMigrations).plan(currentVersion, settingsForVersion(2)) shouldBe
-        SequentialMigration(Seq(Migration2, Migration3))
+        SequentialPlan(Seq(Migration2, Migration3))
+  }
+
+  it should "signal the impossibility of downgrading to the current version" in {
+    val futureVersionSettings = settingsForVersion(currentVersion.value + 1)
+    new MigrationPlanner(sampleMigrations)
+        .plan(currentVersion, futureVersionSettings) shouldBe FailToDowngradePlan
   }
 
   def settingsForVersion(savedVersion: Int) = GeneralSettings(

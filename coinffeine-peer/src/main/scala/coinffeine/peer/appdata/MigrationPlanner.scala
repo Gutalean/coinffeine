@@ -15,8 +15,9 @@ class MigrationPlanner(migrations: Map[DataVersion, Migration]) {
   def plan(currentVersion: DataVersion, settings: GeneralSettings): MigrationPlan = {
     (settings.dataVersion, settings.licenseAccepted) match {
       case (None, true) => migrate(DataVersion(1), currentVersion)
+      case (Some(futureVersion), _) if futureVersion > currentVersion => FailToDowngradePlan
       case (Some(previousVersion), _) => migrate(previousVersion, currentVersion)
-      case _ => SequentialMigration.empty
+      case _ => SequentialPlan.empty
     }
   }
 
@@ -24,7 +25,7 @@ class MigrationPlanner(migrations: Map[DataVersion, Migration]) {
       from: DataVersion,
       to: DataVersion,
       plan: Seq[Migration] = Seq.empty) =
-    SequentialMigration(migrations
+    SequentialPlan(migrations
       .filterKeys(ver => ver >= from && ver < to)
       .toSeq
       .sortBy(_._1)

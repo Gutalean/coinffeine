@@ -1,5 +1,7 @@
 package coinffeine.peer.appdata
 
+import scala.util.control.NoStackTrace
+
 import coinffeine.peer.appdata.Migration.Context
 
 sealed trait MigrationPlan {
@@ -10,7 +12,7 @@ sealed trait MigrationPlan {
 }
 
 /** An ordered sequence of migrations */
-case class SequentialMigration(steps: Seq[Migration]) extends MigrationPlan {
+case class SequentialPlan(steps: Seq[Migration]) extends MigrationPlan {
 
   override def needed = steps.nonEmpty
 
@@ -29,6 +31,24 @@ case class SequentialMigration(steps: Seq[Migration]) extends MigrationPlan {
   }
 }
 
-object SequentialMigration {
-  val empty = SequentialMigration(Seq.empty)
+case object FailToDowngradePlan extends MigrationPlan {
+
+  override def needed = true
+
+  override def execute(context: Context)(errorHandler: (Migration.Error) => Unit): Unit = {
+    val message =
+      ("Your data directory has version %s but this version of " +
+          "Coinffeine supports up to version %d").format(
+        formatVersion(context.config.generalSettings().dataVersion),
+        DataVersion.Current.value
+      )
+    errorHandler(Migration.Failed(new RuntimeException(message) with NoStackTrace))
+  }
+
+  private def formatVersion(maybeVersion: Option[DataVersion]) =
+    maybeVersion.fold("undefined")(_.value.toString)
+}
+
+object SequentialPlan {
+  val empty = SequentialPlan(Seq.empty)
 }
