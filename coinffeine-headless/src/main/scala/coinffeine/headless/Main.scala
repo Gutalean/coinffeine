@@ -21,7 +21,7 @@ object Main {
       println("You should run the wizard or configure manually the application")
       System.exit(-1)
     }
-    if (Migrations.plan(coinffeine.configProvider.generalSettings()).nonEmpty) {
+    if (Migrations.plan(coinffeine.configProvider.generalSettings()).needed) {
       println("You should run the data migrations or update manually")
       System.exit(-1)
     }

@@ -28,7 +28,7 @@ class MigrationPlannerTest extends UnitTest {
       serviceStartStopTimeout = null
     )
     new MigrationPlanner(sampleMigrations)
-      .plan(currentVersion, upToDateSettings) shouldBe 'empty
+      .plan(currentVersion, upToDateSettings) should not be 'needed
   }
 
   it should "plan no migration when version and license settings are blank" in {
@@ -38,11 +38,12 @@ class MigrationPlannerTest extends UnitTest {
       serviceStartStopTimeout = null
     )
     new MigrationPlanner(sampleMigrations)
-      .plan(currentVersion, firstRunSettings) shouldBe 'empty
+      .plan(currentVersion, firstRunSettings) should not be 'needed
   }
 
   it should "plan no migration when there is a version mismatch but there are no migrations" in {
-    new MigrationPlanner(Map.empty).plan(currentVersion, settingsForVersion(1)) shouldBe 'empty
+    new MigrationPlanner(Map.empty).plan(currentVersion, settingsForVersion(1)) should
+        not be 'needed
   }
 
   it should "plan a migration from pre-0.9 saved settings" in {
@@ -51,13 +52,14 @@ class MigrationPlannerTest extends UnitTest {
       dataVersion = None,
       serviceStartStopTimeout = null
     )
-    new MigrationPlanner(sampleMigrations)
-      .plan(DataVersion(2), settingsWithoutExplicitVersion) shouldBe Seq(Migration1)
+    val actualPlan = new MigrationPlanner(sampleMigrations)
+        .plan(DataVersion(2), settingsWithoutExplicitVersion)
+    actualPlan shouldBe SequentialMigration(Seq(Migration1))
   }
 
   it should "plan all the existing migrations from the saved version to the current version" in {
-    new MigrationPlanner(sampleMigrations)
-      .plan(currentVersion, settingsForVersion(2)) shouldBe Seq(Migration2, Migration3)
+    new MigrationPlanner(sampleMigrations).plan(currentVersion, settingsForVersion(2)) shouldBe
+        SequentialMigration(Seq(Migration2, Migration3))
   }
 
   def settingsForVersion(savedVersion: Int) = GeneralSettings(

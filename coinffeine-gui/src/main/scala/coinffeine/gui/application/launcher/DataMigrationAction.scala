@@ -9,7 +9,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.FxExecutor
-import coinffeine.peer.appdata.{DataVersion, Migration, Migrations}
+import coinffeine.peer.appdata.{MigrationPlan, DataVersion, Migration, Migrations}
 import coinffeine.peer.config.ConfigProvider
 
 class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
@@ -28,18 +28,11 @@ class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
   }
 
   def apply(): Future[Unit] = Future {
-    val plan = planMigration
-    executeMigration(plan)
+    planMigration.execute(Context)(handleMigrationError)
     updateDataVersion()
   }
 
-  private def planMigration: Seq[Migration] = Migrations.plan(configProvider.generalSettings())
-
-  private def executeMigration(plan: Seq[Migration]): Unit = {
-    for (migration <- plan) {
-      migration.apply(Context).valueOr(handleMigrationErrors)
-    }
-  }
+  private def planMigration: MigrationPlan = Migrations.plan(configProvider.generalSettings())
 
   private def updateDataVersion(): Unit = {
     val updatedSettings = configProvider.generalSettings()
@@ -47,7 +40,7 @@ class DataMigrationAction(configProvider: ConfigProvider) extends LazyLogging {
     configProvider.saveUserSettings(updatedSettings)
   }
 
-  private def handleMigrationErrors(error: Migration.Error): Unit = error match {
+  private def handleMigrationError(error: Migration.Error): Unit = error match {
     case Migration.Aborted => throw DataMigrationAction.AbortedByUser
 
     case Migration.Failed(cause) =>
