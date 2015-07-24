@@ -37,6 +37,13 @@ object TransactionBroadcaster {
 
   private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
   private case object PublicationRequested extends PersistentEvent
+
+  /** Unused but kept to maintain the binary compatibility, remove after 0.12 */
+  @deprecated private case class FinishedWithResult(result: BroadcastResult)
+      extends PersistentEvent
+  @deprecated sealed trait BroadcastResult
+  @deprecated case class SuccessfulBroadcast(publishedTransaction: TransactionPublished) extends BroadcastResult
+  @deprecated case class FailedBroadcast(cause: Throwable) extends BroadcastResult
 }
 
 private class TransactionBroadcaster(
