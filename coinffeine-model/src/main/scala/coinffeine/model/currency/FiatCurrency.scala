@@ -17,14 +17,17 @@ trait FiatCurrency extends Currency {
 
 object FiatCurrency {
 
+  def get(currencyCode: String): Option[FiatCurrency] =
+    get(JavaCurrency.getInstance(currencyCode))
+
+  def get(javaCurrency: JavaCurrency): Option[FiatCurrency] =
+    supported.find(_.javaCurrency == javaCurrency)
+
   def apply(currencyCode: String): FiatCurrency = apply(JavaCurrency.getInstance(currencyCode))
 
-  def apply(javaCurrency: JavaCurrency): FiatCurrency = javaCurrency match {
-    case UsDollar.javaCurrency => UsDollar
-    case Euro.javaCurrency => Euro
-    case _ => throw new IllegalArgumentException(
-      s"cannot convert $javaCurrency into a known Coinffeine fiat currency")
-  }
+  def apply(javaCurrency: JavaCurrency): FiatCurrency = get(javaCurrency).getOrElse(
+    throw new IllegalArgumentException(
+      s"cannot convert $javaCurrency into a known Coinffeine fiat currency"))
 
-  val values: Set[FiatCurrency] = Set(Euro, UsDollar)
+  val supported: Set[FiatCurrency] = Set(Euro, UsDollar)
 }
