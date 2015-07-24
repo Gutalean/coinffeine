@@ -22,17 +22,20 @@ object TransactionBroadcaster {
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction
 
+  @deprecated
   sealed trait BroadcastResult
 
   /** A message sent to the listeners indicating that the exchange could be finished by broadcasting
     * a transaction. This message can also be sent once the micropayment actor has been set if the
     * exchange has been forcefully closed due to the risk of having the refund exchange be valid.
     */
+  @deprecated
   case class SuccessfulBroadcast(publishedTransaction: TransactionPublished) extends BroadcastResult
 
   /** A message sent to the listeners indicating that the broadcast of the best transaction was not
     * performed due to an error.
     */
+  @deprecated
   case class FailedBroadcast(cause: Throwable) extends BroadcastResult
 
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
@@ -42,7 +45,7 @@ object TransactionBroadcaster {
   /** Response to an [[BroadcastResult]] to acknowledge completion and terminate the broadcaster */
   case object Finish
 
-  case class Collaborators(bitcoinPeer: ActorRef, blockchain: ActorRef, listener: ActorRef)
+  case class Collaborators(bitcoinPeer: ActorRef, blockchain: ActorRef)
 
   def props(
     refund: ImmutableTransaction, collaborators: Collaborators, constants: ProtocolConstants) =
@@ -50,7 +53,6 @@ object TransactionBroadcaster {
 
   private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
   private case object PublicationRequested extends PersistentEvent
-  private case class FinishedWithResult(result: BroadcastResult) extends PersistentEvent
 }
 
 private class TransactionBroadcaster(
@@ -76,7 +78,6 @@ private class TransactionBroadcaster(
   override val receiveRecover: Receive = {
     case event: OfferAdded => onOfferAdded(event)
     case PublicationRequested => onPublicationRequested()
-    case event: FinishedWithResult => onFinished(event)
     case RecoveryCompleted =>
       collaborators.blockchain ! BlockchainActor.RetrieveBlockchainHeight
       broadcastIfNeeded("preventive broadcast after recovery")
@@ -103,13 +104,8 @@ private class TransactionBroadcaster(
       broadcastIfNeeded(s"$height reached")
 
     case msg @ TransactionPublished(tx, _) if tx == policy.bestTransaction =>
-      finishWith(SuccessfulBroadcast(msg))
-
     case TransactionPublished(_, unexpectedTx) =>
-      finishWith(FailedBroadcast(UnexpectedTxBroadcast(unexpectedTx)))
-
     case TransactionNotPublished(_, err) =>
-      finishWith(FailedBroadcast(err))
   }
 
   private def broadcastIfNeeded(trigger: String): Unit = {
@@ -119,23 +115,12 @@ private class TransactionBroadcaster(
     }
   }
 
-  private def finishWith(result: BroadcastResult): Unit = {
-    log.debug("Finishing transaction broadcasting with result: {}", result)
-    persist(FinishedWithResult(result))(onFinished)
-  }
-
   private def onOfferAdded(event: OfferAdded): Unit = {
     policy.addOfferTransaction(event.offer)
   }
 
   private def onPublicationRequested(): Unit = {
     policy.requestPublication()
-  }
-
-  private def onFinished(event: FinishedWithResult): Unit = {
-    policy.done()
-    collaborators.listener ! event.result
-    context.become(finishing)
   }
 }
 

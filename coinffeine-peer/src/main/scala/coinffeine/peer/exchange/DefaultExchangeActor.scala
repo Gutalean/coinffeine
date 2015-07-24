@@ -261,7 +261,7 @@ object DefaultExchangeActor {
     def handshake(user: Exchange.PeerInfo, timestamp: DateTime, listener: ActorRef): Props
     def micropaymentChannel(channel: MicroPaymentChannel,
                             resultListeners: Set[ActorRef]): Props
-    def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext): Props
+    def transactionBroadcaster(refund: ImmutableTransaction): Props
     def depositWatcher(exchange: DepositPendingExchange,
                        deposit: ImmutableTransaction,
                        refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
@@ -277,10 +277,10 @@ object DefaultExchangeActor {
       val accountIdValidator = new AccountIdValidatorImpl(collaborators.paymentProcessor)
 
       val delegates = new Delegates {
-        def transactionBroadcaster(refund: ImmutableTransaction)(implicit context: ActorContext) =
+        def transactionBroadcaster(refund: ImmutableTransaction) =
           TransactionBroadcaster.props(
             refund,
-            TransactionBroadcaster.Collaborators(bitcoinPeer, blockchain, context.self),
+            TransactionBroadcaster.Collaborators(bitcoinPeer, blockchain),
             protocolConstants)
 
         def handshake(

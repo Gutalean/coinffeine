@@ -48,14 +48,6 @@ class BroadcastPolicyTest extends UnitTest {
     expectBroadcasting(offer)
   }
 
-  it should "not broadcast when done" in new Fixture {
-    val offer1 = buildOffer()
-    policy.addOfferTransaction(offer1)
-    policy.requestPublication()
-    policy.done()
-    expectNotBroadcasting()
-  }
-
   it should "prefer the last offer over the refund" in new Fixture {
     val offer = buildOffer()
     policy.addOfferTransaction(offer)

@@ -7,7 +7,6 @@ private class BroadcastPolicy(refund: ImmutableTransaction, refundSafetyBlockCou
 
   private var lastOffer: Option[ImmutableTransaction] = None
   private var publicationRequested: Boolean = false
-  private var publicationDone: Boolean = false
   private var height: Long = 0L
 
   private val refundBlock = refund.get.getLockTime
@@ -20,13 +19,11 @@ private class BroadcastPolicy(refund: ImmutableTransaction, refundSafetyBlockCou
 
   def requestPublication(): Unit = { publicationRequested = true }
 
-  def done(): Unit = { publicationDone = true }
-
   def updateHeight(currentHeight: Long): Unit = { height = currentHeight }
 
   def bestTransaction: ImmutableTransaction = lastOffer getOrElse refund
 
-  def shouldBroadcast: Boolean = !publicationDone && (shouldBroadcastLastOffer || canBroadcastRefund)
+  def shouldBroadcast: Boolean = shouldBroadcastLastOffer || canBroadcastRefund
 
   private def shouldBroadcastLastOffer = lastOffer.isDefined && (panicked || publicationRequested)
   private def canBroadcastRefund = height >= refundBlock

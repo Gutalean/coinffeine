@@ -38,8 +38,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       currentExchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
-        def transactionBroadcaster(refund: ImmutableTransaction)
-                                  (implicit context: ActorContext) = broadcaster.props
+        def transactionBroadcaster(refund: ImmutableTransaction) = broadcaster.props
         def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel,
                                 resultListeners: Set[ActorRef]) =
