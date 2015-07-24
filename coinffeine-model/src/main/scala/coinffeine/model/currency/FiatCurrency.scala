@@ -26,5 +26,5 @@ object FiatCurrency {
       s"cannot convert $javaCurrency into a known Coinffeine fiat currency")
   }
 
-  val values: Set[FiatCurrency] = Set(Euro, UsDollar)
+  val supported: Set[FiatCurrency] = Set(Euro, UsDollar)
 }

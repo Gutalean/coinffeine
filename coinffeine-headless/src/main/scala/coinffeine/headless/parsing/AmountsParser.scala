@@ -50,5 +50,5 @@ object AmountsParser {
   }
 
   private def lookupFiatCurrency(symbol: String): Option[FiatCurrency] =
-    FiatCurrency.values.find(_.toString.equalsIgnoreCase(symbol))
+    FiatCurrency.supported.find(_.toString.equalsIgnoreCase(symbol))
 }
