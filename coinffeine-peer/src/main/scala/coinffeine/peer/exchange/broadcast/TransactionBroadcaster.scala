@@ -22,27 +22,11 @@ object TransactionBroadcaster {
   /** A request for the actor to finish the exchange and broadcast the best possible transaction */
   case object PublishBestTransaction
 
-  @deprecated
-  sealed trait BroadcastResult
-
-  /** A message sent to the listeners indicating that the exchange could be finished by broadcasting
-    * a transaction. This message can also be sent once the micropayment actor has been set if the
-    * exchange has been forcefully closed due to the risk of having the refund exchange be valid.
-    */
-  @deprecated
-  case class SuccessfulBroadcast(publishedTransaction: TransactionPublished) extends BroadcastResult
-
-  /** A message sent to the listeners indicating that the broadcast of the best transaction was not
-    * performed due to an error.
-    */
-  @deprecated
-  case class FailedBroadcast(cause: Throwable) extends BroadcastResult
-
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
     "The exchange finished with a successful broadcast, but the transaction that was published was" +
       s"not the one that was being expected: $unexpectedTx")
 
-  /** Response to an [[BroadcastResult]] to acknowledge completion and terminate the broadcaster */
+  /** Instruct the broadcaster to terminate itself */
   case object Finish
 
   case class Collaborators(bitcoinPeer: ActorRef, blockchain: ActorRef)

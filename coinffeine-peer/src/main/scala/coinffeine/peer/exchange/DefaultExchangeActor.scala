@@ -196,10 +196,6 @@ class DefaultExchangeActor(
       log.error("When aborting {} and unexpected transaction was broadcast: {}",
         abortingExchange.id, tx)
       finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
-
-    case TransactionBroadcaster.FailedBroadcast(cause) =>
-      log.error(cause, "Cannot broadcast the refund transaction")
-      finishWith(ExchangeFailure(abortingExchange.failedToBroadcast(DateTime.now())))
   }
 
   private def failingAtStep(runningExchange: RunningExchange, step: Int): Receive = {
@@ -210,11 +206,6 @@ class DefaultExchangeActor(
           expectedDestination, destination, exchange.id, tx)
       }
       finishWith(ExchangeFailure(runningExchange.stepFailure(step, Some(tx), DateTime.now())))
-
-    case TransactionBroadcaster.FailedBroadcast(cause) =>
-      log.error(cause, "Cannot broadcast any recovery transaction")
-      finishWith(ExchangeFailure(
-        runningExchange.stepFailure(step, transaction = None, timestamp = DateTime.now())))
   }
 
   private def waitingForFinalTransaction(runningExchange: RunningExchange,
@@ -227,10 +218,6 @@ class DefaultExchangeActor(
       log.error("{} ({}) was unexpectedly broadcast for exchange {}", broadcastTx,
         destination, exchange.id)
       finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx, DateTime.now())))
-
-    case TransactionBroadcaster.FailedBroadcast(cause) =>
-      log.error(cause, "The finishing transaction could not be broadcast")
-      finishWith(ExchangeFailure(runningExchange.noBroadcast(DateTime.now())))
   }
 
   private def finishWith(result: ExchangeResult): Unit = {

@@ -55,7 +55,6 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
 
     givenSuccessfulUserInfoLookup()
     givenHandshakeWillSucceed()
-    broadcaster.givenBroadcasterWillSucceed()
 
     protected def givenSuccessfulUserInfoLookup(): Unit = {
       peerInfoLookup.willSucceed(Exchange.PeerInfo("Account007", new KeyPair()))

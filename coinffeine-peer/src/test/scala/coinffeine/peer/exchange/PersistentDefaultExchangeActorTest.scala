@@ -57,18 +57,7 @@ class PersistentDefaultExchangeActorTest extends DefaultExchangeActorTest {
     }
   }
 
-  it should "remember that publication failed" in new Fixture {
-    broadcaster.givenBroadcasterWillFail()
-    startActor()
-    givenMicropaymentChannelSuccess()
-    listener.expectMsgType[ExchangeFailure]
-
-    restartActor()
-    expectFailureTermination().exchange.cause shouldBe FailureCause.NoBroadcast
-  }
-
   it should "remember that it panicked publishing the best available transaction" in new Fixture {
-    broadcaster.givenBroadcasterWillPanic(dummyTx)
     startActor()
     givenMicropaymentChannelCreation()
     notifyDepositDestination(ChannelAtStep(3))

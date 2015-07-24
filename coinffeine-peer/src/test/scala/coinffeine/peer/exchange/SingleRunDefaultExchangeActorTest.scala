@@ -68,14 +68,6 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     expectFailureTermination(finishMicropaymentChannel = true)
   }
 
-  it should "report a failure if the broadcast failed" in new Fixture {
-    broadcaster.givenBroadcasterWillFail()
-    startActor()
-    givenMicropaymentChannelSuccess()
-    val result = expectFailureTermination(finishMicropaymentChannel = true)
-    result.exchange.cause shouldBe FailureCause.NoBroadcast
-  }
-
   it should "report a failure if the broadcast succeeds with an unexpected transaction" in
     new Fixture {
       val unexpectedTx = ImmutableTransaction {
@@ -83,7 +75,6 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
         newTx.setLockTime(40)
         newTx
       }
-      broadcaster.givenBroadcasterWillSucceed(unexpectedTx)
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
@@ -99,7 +90,6 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
         newTx.setLockTime(40)
         newTx
       }
-      broadcaster.givenBroadcasterWillPanic(midWayTx)
       startActor()
       givenMicropaymentChannelCreation()
       micropaymentChannelActor.probe.send(actor, ExchangeUpdate(runningExchange.completeStep(1)))
