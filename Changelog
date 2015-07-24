@@ -6,6 +6,7 @@ v0.11.0:
  - Check existence of counterparts OKPay account before accepting a handshake
  - Bug fixing
    * Consider only relevant exchanges when order average price is calculated
+   * Support relative paths on --data-path
 
 v0.10.1:
  - Disable _new order_ button when OKPay account balance is not available

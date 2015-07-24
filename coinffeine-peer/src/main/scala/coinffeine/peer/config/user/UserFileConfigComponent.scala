@@ -15,7 +15,10 @@ trait UserFileConfigComponent extends ConfigComponent {
     val defaultPath = Platform.detect().userSettingsPath().toAbsolutePath.toFile
     val path = commandLineArgs match {
       case Seq() => defaultPath
-      case Seq("--data-path", dataPath) => new File(dataPath)
+      case Seq("--data-path", dataPath) =>
+        val customPath = new File(dataPath).getAbsoluteFile.getCanonicalFile
+        println(s"Loading data from custom path: $customPath")
+        customPath
       case _ =>
         println(
           s"""Can't understand arguments: '$commandLineArgs'
