@@ -27,8 +27,8 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
       expectRelevantHeightsSubscription()
       givenHeightNotification(panicBlock)
       givenHeightNotification(refundLockTime)
-      val result = givenSuccessfulBroadcast(refundTx)
-      expectTerminationWithResult(SuccessfulBroadcast(result))
+      givenSuccessfulBroadcast(refundTx)
+      expectTermination()
     }
 
   it should "broadcast the refund transaction if it receives a finish exchange signal" in
@@ -36,8 +36,8 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
       expectRelevantHeightsSubscription()
       instance ! PublishBestTransaction
       givenHeightNotification(refundLockTime)
-      val result = givenSuccessfulBroadcast(refundTx)
-      expectTerminationWithResult(SuccessfulBroadcast(result))
+      givenSuccessfulBroadcast(refundTx)
+      expectTermination()
     }
 
   it should "broadcast the last offer when the refund transaction is about to become valid" in
@@ -45,22 +45,23 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
       expectRelevantHeightsSubscription()
       givenLastOffer(someLastOffer)
       givenHeightNotification(panicBlock)
-      val result = givenSuccessfulBroadcast(someLastOffer)
-      expectTerminationWithResult(SuccessfulBroadcast(result))
+      givenSuccessfulBroadcast(someLastOffer)
+      expectTermination()
     }
 
   it should "broadcast the refund transaction if there is no last offer" in new Fixture {
     expectRelevantHeightsSubscription()
     instance ! PublishBestTransaction
     givenHeightNotification(refundLockTime)
-    val result = givenSuccessfulBroadcast(refundTx)
-    expectTerminationWithResult(SuccessfulBroadcast(result))
+    givenSuccessfulBroadcast(refundTx)
+    expectTermination()
   }
 
   it should "persist its state" in new Fixture {
     givenLastOffer(someLastOffer)
     expectNoMsg(100.millis.dilated)
     instance ! PublishBestTransaction
+    expectNoMsg(100.millis.dilated)
     system.stop(instance)
   }
 
@@ -68,8 +69,8 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     override def useLastRefundTx = true
     expectRelevantHeightsSubscription()
 
-    val result = givenSuccessfulBroadcast(someLastOffer)
-    expectTerminationWithResult(SuccessfulBroadcast(result))
+    givenSuccessfulBroadcast(someLastOffer)
+    expectTermination()
     expectNoMsg(100.millis.dilated)
   }
 
@@ -89,8 +90,8 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     override def useLastRefundTx = true
     expectRelevantHeightsSubscription()
     givenHeightNotification(panicBlock + 100)
-    val result = givenSuccessfulBroadcast(someLastOffer)
-    expectTerminationWithResult(SuccessfulBroadcast(result))
+    givenSuccessfulBroadcast(someLastOffer)
+    expectTermination()
   }
 
   // Last refund transaction is saved to allow testing the persistence
@@ -114,7 +115,7 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     lastRefundTx = refundTx
     protected val bitcoinPeer, blockchain, terminationListener = TestProbe()
     protected val instance = system.actorOf(TransactionBroadcaster.props(
-      refundTx, Collaborators(bitcoinPeer.ref, blockchain.ref, listener = self), protocolConstants))
+      refundTx, Collaborators(bitcoinPeer.ref, blockchain.ref), protocolConstants))
     terminationListener.watch(instance)
 
     protected def expectRelevantHeightsSubscription(): Unit = {
@@ -125,11 +126,9 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
       )
     }
 
-    protected def givenSuccessfulBroadcast(tx: ImmutableTransaction): TransactionPublished = {
+    protected def givenSuccessfulBroadcast(tx: ImmutableTransaction): Unit = {
       bitcoinPeer.expectMsg(PublishTransaction(tx))
-      val result = TransactionPublished(tx, tx)
-      bitcoinPeer.reply(result)
-      result
+      bitcoinPeer.reply(TransactionPublished(tx, tx))
     }
 
     protected def givenHeightNotification(height: Long): Unit = {
@@ -140,8 +139,7 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
       instance ! LastBroadcastableOffer(offer)
     }
 
-    protected def expectTerminationWithResult(broadcastResult: BroadcastResult): Unit = {
-      expectMsg(broadcastResult)
+    protected def expectTermination(): Unit = {
       instance ! TransactionBroadcaster.Finish
       terminationListener.expectTerminated(instance)
     }

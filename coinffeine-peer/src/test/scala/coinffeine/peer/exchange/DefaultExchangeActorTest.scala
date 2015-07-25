@@ -38,8 +38,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       currentExchange,
       peerInfoLookup,
       new DefaultExchangeActor.Delegates {
-        def transactionBroadcaster(refund: ImmutableTransaction)
-                                  (implicit context: ActorContext) = broadcaster.props
+        def transactionBroadcaster(refund: ImmutableTransaction) = broadcaster.props
         def handshake(user: PeerInfo, timestamp: DateTime, listener: ActorRef) = handshakeActor.props
         def micropaymentChannel(channel: MicroPaymentChannel,
                                 resultListeners: Set[ActorRef]) =
@@ -56,7 +55,6 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
 
     givenSuccessfulUserInfoLookup()
     givenHandshakeWillSucceed()
-    broadcaster.givenBroadcasterWillSucceed()
 
     protected def givenSuccessfulUserInfoLookup(): Unit = {
       peerInfoLookup.willSucceed(Exchange.PeerInfo("Account007", new KeyPair()))
