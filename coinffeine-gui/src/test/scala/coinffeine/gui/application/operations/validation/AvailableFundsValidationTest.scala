@@ -8,7 +8,7 @@ import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.BitcoinBalance
+import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
 import coinffeine.model.util.Cached
@@ -59,8 +59,8 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
   }
 
   private trait Fixture {
-    private val fiatBalances = new MutableProperty(Cached.fresh(FiatAmounts.empty))
-    private val initialFiatBalance = Cached.fresh(FiatAmounts.fromAmounts(450.EUR))
+    private val fiatBalances = new MutableProperty(Cached.fresh(FiatBalance.empty))
+    private val initialFiatBalance = Cached.fresh(FiatBalance(FiatAmounts.fromAmounts(450.EUR)))
     val initialBitcoinBalance = BitcoinBalance(
       estimated = 2.3.BTC,
       available = 2.3.BTC,
@@ -91,7 +91,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
 
     protected def givenNotEnoughFiatFunds(): Unit = {
-      fiatBalances.set(Cached.fresh(FiatAmounts.fromAmounts(1.EUR)))
+      fiatBalances.set(Cached.fresh(FiatBalance(FiatAmounts.fromAmounts(1.EUR))))
     }
   }
 }

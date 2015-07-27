@@ -12,6 +12,7 @@ import coinffeine.common.akka.Service
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
@@ -285,7 +286,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
       expectPropertyUpdated(
         property = properties.balances,
-        expectedValue = Cached(FiatAmounts.fromAmounts(balance), cacheStatus)
+        expectedValue = Cached(FiatBalance(FiatAmounts.fromAmounts(balance)), cacheStatus)
       )
     }
 

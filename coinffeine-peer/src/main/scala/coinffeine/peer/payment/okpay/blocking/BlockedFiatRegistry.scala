@@ -130,7 +130,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
       funds: BlockedFundsInfo, minimumBalance: FiatAmount): Validation[String, Unit] =
     if (funds.remainingAmount >= minimumBalance) ().success
     else s"""insufficient blocked funds for id ${funds.id}: $minimumBalance requested,
-                                                                             |${funds.remainingAmount} available""".stripMargin.failure
+            |${funds.remainingAmount} available""".stripMargin.failure
 
   private def requiredBackedFunds(fundsId: ExchangeId): Validation[String, Unit] =
     if (fundsAvailability.areAvailable(fundsId)) ().success

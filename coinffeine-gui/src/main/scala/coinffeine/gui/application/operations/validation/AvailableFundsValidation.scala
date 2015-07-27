@@ -4,7 +4,7 @@ import scalaz.syntax.applicative._
 
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.BitcoinBalance
+import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
 import coinffeine.model.market.Spread
 import coinffeine.model.order.OrderRequest
 import coinffeine.model.util.Cached
@@ -12,7 +12,7 @@ import coinffeine.peer.amounts.AmountsCalculator
 
 private class AvailableFundsValidation(
     amountsCalculator: AmountsCalculator,
-    fiatBalances: Property[Cached[FiatAmounts]],
+    fiatBalances: Property[Cached[FiatBalance]],
     bitcoinBalance: Property[Option[BitcoinBalance]]) extends OrderValidation {
 
   override def apply(
@@ -24,7 +24,7 @@ private class AvailableFundsValidation(
   private def currentAvailableFiat(currency: FiatCurrency): Option[FiatAmount] = {
     val cachedBalances = fiatBalances.get
     for {
-      balance <- cachedBalances.cached.get(currency)
+      balance <- cachedBalances.cached.amounts.get(currency)
       if cachedBalances.status.isFresh
     } yield balance
   }

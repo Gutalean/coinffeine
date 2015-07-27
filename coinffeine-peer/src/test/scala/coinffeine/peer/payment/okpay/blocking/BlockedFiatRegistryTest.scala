@@ -6,6 +6,7 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry.TotalBlockedFunds

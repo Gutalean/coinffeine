@@ -4,6 +4,7 @@ import javafx.beans.value.{ChangeListener, ObservableValue}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
+import scalaz.syntax.std.boolean._
 
 import org.joda.time.DateTime
 
@@ -31,9 +32,7 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
   val fiatBalanceProperty: ReadOnlyObjectProperty[Option[Cached[FiatBalance]]] = {
     val property = new ObjectProperty[Option[Cached[FiatBalance]]](this, "balance", None)
     app.paymentProcessor.balances.onNewValue { balances =>
-      val maybeBalance = balances.cached.get(Euro).map { euroBalance =>
-        Cached(FiatBalance(euroBalance), balances.status)
-      }
+      val maybeBalance = balances.cached.amounts.contains(Euro).option(balances)
       property.set(maybeBalance)
     }
     property

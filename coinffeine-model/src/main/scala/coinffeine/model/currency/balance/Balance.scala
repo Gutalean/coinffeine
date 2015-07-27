@@ -12,7 +12,7 @@ case class BitcoinBalance(
     minOutput: Option[BitcoinAmount],
     blocked: BitcoinAmount = Bitcoin.zero) extends Balance[BitcoinAmount] {
 
-  val amount = estimated
+  override val amount = estimated
 }
 
 object BitcoinBalance {
@@ -23,4 +23,10 @@ object BitcoinBalance {
     minOutput = Some(amount))
 }
 
-case class FiatBalance(amount: FiatAmount) extends Balance[FiatAmount]
+case class FiatBalance(amounts: FiatAmounts) extends Balance[FiatAmount] {
+  override def amount = amounts(Euro)
+}
+
+object FiatBalance {
+  val empty = FiatBalance(FiatAmounts.empty)
+}
