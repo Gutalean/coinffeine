@@ -11,7 +11,7 @@ import coinffeine.model.currency._
 import coinffeine.model.currency.balance.BitcoinBalance
 import coinffeine.model.market._
 import coinffeine.model.order.{Bid, LimitPrice, OrderRequest}
-import coinffeine.model.util.{CacheStatus, Cached}
+import coinffeine.model.util.Cached
 import coinffeine.peer.amounts.DefaultAmountsCalculator
 
 class AvailableFundsValidationTest extends UnitTest with Inside {
@@ -22,7 +22,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
   "The available funds requirement" should "optionally require bitcoin funds to be known" in
     new Fixture {
       givenEnoughFiatFunds()
-      givenStaleBitcoinFunds()
+      givenUnknownBitcoinFunds()
       inside(instance.apply(newBid, spread)) {
         case Failure(Warning(NonEmptyList(requirement))) =>
           requirement should include ("not possible to check")
@@ -59,8 +59,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
   }
 
   private trait Fixture {
-    private val fiatBalances =
-      new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
+    private val fiatBalances = new MutableProperty(Cached.fresh(FiatAmounts.empty))
     private val initialFiatBalance = Cached.fresh(FiatAmounts.fromAmounts(450.EUR))
     val initialBitcoinBalance = BitcoinBalance(
       estimated = 2.3.BTC,
@@ -68,15 +67,15 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
       minOutput = Some(0.1.BTC)
     )
     val bitcoinBalance = new MutableProperty[Option[BitcoinBalance]](None)
-    val instance =
-      new AvailableFundsValidation(new DefaultAmountsCalculator(), fiatBalances, bitcoinBalance)
+    val instance = new AvailableFundsValidation(
+      new DefaultAmountsCalculator(), fiatBalances, bitcoinBalance)
 
     protected def givenEnoughBitcoinFunds(): Unit = {
       bitcoinBalance.set(Some(initialBitcoinBalance))
     }
 
-    protected def givenStaleBitcoinFunds(): Unit = {
-      bitcoinBalance.set(Some(initialBitcoinBalance.copy(status = CacheStatus.Stale)))
+    protected def givenUnknownBitcoinFunds(): Unit = {
+      bitcoinBalance.set(None)
     }
 
     protected def givenNotEnoughBitcoinFunds(): Unit = {

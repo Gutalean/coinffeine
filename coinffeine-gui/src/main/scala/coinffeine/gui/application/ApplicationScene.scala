@@ -13,6 +13,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.model.util.Cached
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -61,7 +62,7 @@ class ApplicationScene(balances: ApplicationScene.Balances,
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
             text <== balances.fiat.delegate.mapToString {
-              case Some(b) => b.amount.format(Currency.NoSymbol)
+              case Some(Cached(b, _)) => b.amount.format(Currency.NoSymbol)
               case None => Euro.formatMissingAmount(Currency.NoSymbol)
             }
           },
@@ -119,6 +120,6 @@ object ApplicationScene {
 
   case class Balances(
     bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
-    fiat: ReadOnlyObjectProperty[Option[FiatBalance]]
+    fiat: ReadOnlyObjectProperty[Option[Cached[FiatBalance]]]
   )
 }

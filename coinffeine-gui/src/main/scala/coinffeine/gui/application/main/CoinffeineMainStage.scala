@@ -17,8 +17,8 @@ import coinffeine.gui.util.FxExecutor
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
 
-class CoinffeineMainStage(app: CoinffeineApp,
-                          configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
+class CoinffeineMainStage(
+    app: CoinffeineApp, configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
   private val properties = new ApplicationProperties(app, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
@@ -27,7 +27,8 @@ class CoinffeineMainStage(app: CoinffeineApp,
   minWidth = 1024
   minHeight = 600
   scene = new ApplicationScene(
-    balances = ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalanceProperty),
+    balances =
+        ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalanceProperty),
     views = Seq(
       new OperationsView(app, properties, orderValidator),
       new StatsView(app),
@@ -37,9 +38,7 @@ class CoinffeineMainStage(app: CoinffeineApp,
         app.utils.bitcoinFeeCalculator,
         properties.wallet)
     ),
-    statusBarWidgets = Seq(
-      new ConnectionStatusWidget(properties.connectionStatusProperty)
-    ),
+    statusBarWidgets = Seq(new ConnectionStatusWidget(properties.connectionStatusProperty)),
     settingsProvider = configProvider
   )
   icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-256x256.png")))

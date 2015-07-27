@@ -25,8 +25,8 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
   override def operations = new MockCoinffeineOperations
 
   override def wallet: CoinffeineWallet = new CoinffeineWallet {
-    override val balance: Property[Option[BitcoinBalance]] =
-      new MutableProperty[Option[BitcoinBalance]](Some(BitcoinBalance.singleOutput(10.BTC)))
+    override val balance = new MutableProperty[Option[BitcoinBalance]](
+      Some(BitcoinBalance.singleOutput(10.BTC)))
     override val primaryAddress: Property[Option[Address]] = null
     override val activity: Property[WalletActivity] =
       new MutableProperty[WalletActivity](WalletActivity(Seq.empty))

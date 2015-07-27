@@ -5,9 +5,9 @@ import akka.actor.{Actor, ActorContext, ActorRef}
 import coinffeine.model.market._
 import coinffeine.peer.market.submission.SubmissionSupervisor._
 
-private[orders] class OrderPublisher(submissionActor: ActorRef,
-                                                        listener: OrderPublisher.Listener)
-                                                       (implicit context: ActorContext) {
+private[orders] class OrderPublisher(
+    submissionActor: ActorRef,
+    listener: OrderPublisher.Listener)(implicit context: ActorContext) {
 
   private implicit val sender = context.self
   private var pendingEntry: Option[OrderBookEntry] = None
@@ -24,8 +24,8 @@ private[orders] class OrderPublisher(submissionActor: ActorRef,
   }
 
   val receiveSubmissionEvents: Actor.Receive = {
-    case InMarket(entryInMarket) if Some(entryInMarket) == pendingEntry => listener.inMarket()
-    case Offline(entryInMarket) if Some(entryInMarket) == pendingEntry => listener.offline()
+    case InMarket(entryInMarket) if pendingEntry.contains(entryInMarket) => listener.inMarket()
+    case Offline(entryInMarket) if pendingEntry.contains(entryInMarket) => listener.offline()
   }
 }
 

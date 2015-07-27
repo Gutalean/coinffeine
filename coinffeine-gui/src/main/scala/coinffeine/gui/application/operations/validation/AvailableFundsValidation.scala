@@ -30,7 +30,7 @@ private class AvailableFundsValidation(
   }
 
   private def currentAvailableBitcoin(): Option[BitcoinAmount] =
-    bitcoinBalance.get.filter(_.status.isFresh).map(_.available)
+    bitcoinBalance.get.map(_.available)
 
   private def checkAvailableFunds(
       availableFiat: Option[FiatAmount],
