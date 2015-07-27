@@ -4,7 +4,6 @@ import javafx.beans.value.{ChangeListener, ObservableValue}
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
 import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
-import scalaz.syntax.std.boolean._
 
 import org.joda.time.DateTime
 
@@ -12,7 +11,6 @@ import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, Wall
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.currency.Euro
 import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeineApp
@@ -29,12 +27,9 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
 
   val wallet = new WalletProperties(app.wallet)
 
-  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[Cached[FiatBalance]]] = {
-    val property = new ObjectProperty[Option[Cached[FiatBalance]]](this, "balance", None)
-    app.paymentProcessor.balances.onNewValue { balances =>
-      val maybeBalance = balances.cached.amounts.contains(Euro).option(balances)
-      property.set(maybeBalance)
-    }
+  val fiatBalanceProperty: ReadOnlyObjectProperty[Cached[FiatBalance]] = {
+    val property = new ObjectProperty(this, "balance", Cached.stale(FiatBalance.empty))
+    app.paymentProcessor.balances.onNewValue(property.set)
     property
   }
 
