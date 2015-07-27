@@ -30,12 +30,6 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     },
     observableValue)
 
-  def mapToInt(f: A => Int): IntegerBinding = Bindings.createIntegerBinding(
-    new Callable[java.lang.Integer] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
   def mapToDouble(f: A => Double): DoubleBinding = Bindings.createDoubleBinding(
     new Callable[java.lang.Double] {
       override def call() = f(observableValue.getValue)

@@ -28,16 +28,6 @@ class ObservableValuePimpTest extends UnitTest {
     p2.value shouldBe "You have 0"
   }
 
-  it must "map as int binding" in {
-    val p1: ObjectProperty[String] = new ObjectProperty(this, "p1", "Hello World")
-    val p2: IntegerProperty = new IntegerProperty(this, "p2")
-    p2 <== p1.delegate.mapToInt(_.length)
-
-    p2.value shouldBe 11
-    p1.set("")
-    p2.value shouldBe 0
-  }
-
   it must "bind to list" in {
     val p1: ObjectProperty[String] = new ObjectProperty(this, "p1", "Hello World")
     val list: ObservableBuffer[String] = new ObservableBuffer()
