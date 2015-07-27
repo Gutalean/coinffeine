@@ -22,6 +22,9 @@ object Implicits {
   implicit def pimpMyObservableInteger(observableValue: ObservableValue[Int]): ObservableIntegerPimp =
     new ObservableIntegerPimp(observableValue)
 
+  implicit def pimpMyObservableDouble(observableValue: ObservableValue[Double]): ObservableDoublePimp =
+    new ObservableDoublePimp(observableValue)
+
   implicit def pimpMyProperty[A](property: Property[A]): PropertyPimp[A] =
     new PropertyPimp(property)
 

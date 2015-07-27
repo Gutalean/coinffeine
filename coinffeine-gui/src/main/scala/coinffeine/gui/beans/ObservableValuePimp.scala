@@ -24,12 +24,6 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     },
     new ObservableBeanProperty[A](observableValue, f))
 
-  def mapToDouble(f: A => Double): DoubleBinding = Bindings.createDoubleBinding(
-    new Callable[java.lang.Double] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
   def bindToList[B](list: ObservableList[B])(f: A => Seq[B]): Unit = {
     observableValue.addListener(new ChangeListener[A] {
       override def changed(observable: ObservableValue[_ <: A], oldValue: A, newValue: A) = {

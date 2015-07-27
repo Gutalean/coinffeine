@@ -36,7 +36,7 @@ class MutableOrderProperties(initialValue: Order) extends OrderProperties {
   override val priceProperty =
     new ReadOnlyObjectProperty[OrderPrice](this, "price", initialValue.price)
 
-  override val progressProperty = orderProperty.delegate.mapToDouble(_.progress).toReadOnlyProperty
+  override val progressProperty = orderProperty.delegate.map(_.progress).toDouble.toReadOnlyProperty
 
   def update(order: Order): Unit = {
     orderProperty.value = order

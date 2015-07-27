@@ -40,9 +40,9 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
         }.toStr
       },
       new ProgressBar() {
-        progress <== automaticConfigStatus.delegate.mapToDouble { status =>
-          if (status.finished) 1 else -1
-        }
+        progress <== automaticConfigStatus.delegate.map { status =>
+          if (status.finished) 1.0 else -1.0
+        }.toDouble
         automaticConfigStatus.delegate.bindToList(styleClass) { status =>
           Seq("progress-bar") ++ status.failed.option("error")
         }
