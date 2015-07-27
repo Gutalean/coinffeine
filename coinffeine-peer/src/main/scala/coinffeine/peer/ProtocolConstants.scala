@@ -22,19 +22,21 @@ import scala.language.postfixOps
   *                               valid
   * @param refundSafetyBlockCount The number of blocks before the refund can be broadcast where we
   *                               want to finish the exchange forcefully.
+  * @param transactionRepublicationInterval Time to wait before retrying transaction publication
   */
 case class ProtocolConstants(
   commitmentConfirmations: Int = 1,
-  resubmitHandshakeMessagesTimeout: FiniteDuration = 10 seconds,
-  refundSignatureAbortTimeout: FiniteDuration = 5 minutes,
-  commitmentAbortTimeout: FiniteDuration = 5 minutes,
-  microPaymentChannelResubmitTimeout: FiniteDuration = 3 seconds,
-  orderExpirationInterval: FiniteDuration = 1 minute,
-  orderResubmitInterval: FiniteDuration = 30 seconds,
-  orderAcknowledgeTimeout: FiniteDuration = 5 seconds,
+  resubmitHandshakeMessagesTimeout: FiniteDuration = 10.seconds,
+  refundSignatureAbortTimeout: FiniteDuration = 5.minutes,
+  commitmentAbortTimeout: FiniteDuration = 5.minutes,
+  microPaymentChannelResubmitTimeout: FiniteDuration = 3.seconds,
+  orderExpirationInterval: FiniteDuration = 1.minute,
+  orderResubmitInterval: FiniteDuration = 30.seconds,
+  orderAcknowledgeTimeout: FiniteDuration = 5.seconds,
   orderAcknowledgeRetries: Int = 2,
   refundLockTime: Int = 18,
-  refundSafetyBlockCount: Int = 2
+  refundSafetyBlockCount: Int = 2,
+  transactionRepublicationInterval: FiniteDuration = 10.minutes
 )
 
 object ProtocolConstants {
