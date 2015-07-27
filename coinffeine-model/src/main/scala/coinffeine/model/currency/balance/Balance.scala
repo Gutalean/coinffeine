@@ -1,22 +1,14 @@
 package coinffeine.model.currency.balance
 
 import coinffeine.model.currency._
-import coinffeine.model.util.CacheStatus
-
-trait Balance[A <: CurrencyAmount[A]] {
-  def amount: A
-
-  def status: CacheStatus
-}
 
 case class BitcoinBalance(
     estimated: BitcoinAmount,
     available: BitcoinAmount,
     minOutput: Option[BitcoinAmount],
-    blocked: BitcoinAmount = Bitcoin.zero,
-    status: CacheStatus = CacheStatus.Fresh) extends Balance[BitcoinAmount] {
+    blocked: BitcoinAmount = Bitcoin.zero) {
 
-  val amount = estimated
+  def amount = estimated
 }
 
 object BitcoinBalance {
@@ -27,7 +19,8 @@ object BitcoinBalance {
     minOutput = Some(amount))
 }
 
-case class FiatBalance(
-    amount: FiatAmount,
-    status: CacheStatus = CacheStatus.Fresh) extends Balance[FiatAmount]
+case class FiatBalance(amounts: FiatAmounts)
 
+object FiatBalance {
+  val empty = FiatBalance(FiatAmounts.empty)
+}

@@ -11,8 +11,8 @@ import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, Wall
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
-import coinffeine.model.currency.Euro
 import coinffeine.model.currency.balance.FiatBalance
+import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeineApp
 
 class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
@@ -27,14 +27,9 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
 
   val wallet = new WalletProperties(app.wallet)
 
-  val fiatBalanceProperty: ReadOnlyObjectProperty[Option[FiatBalance]] = {
-    val property = new ObjectProperty[Option[FiatBalance]](this, "balance", None)
-    app.paymentProcessor.balances.onNewValue { balances =>
-      val maybeBalance = balances.cached.get(Euro).map { euroBalance =>
-        FiatBalance(euroBalance, balances.status)
-      }
-      property.set(maybeBalance)
-    }
+  val fiatBalanceProperty: ReadOnlyObjectProperty[Cached[FiatBalance]] = {
+    val property = new ObjectProperty(this, "balance", Cached.stale(FiatBalance.empty))
+    app.paymentProcessor.balances.onNewValue(property.set)
     property
   }
 

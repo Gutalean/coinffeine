@@ -1,6 +1,13 @@
 package coinffeine.model.util
 
-case class Cached[T](cached: T, status: CacheStatus)
+case class Cached[A](cached: A, status: CacheStatus) {
+
+  def map[B](f: A => B): Cached[B] = copy(cached = f(cached))
+
+  def staled: Cached[A] = if (status.isFresh) copy(status = CacheStatus.Stale) else this
+
+  def isFresh: Boolean = status.isFresh
+}
 
 object Cached {
   def fresh[T](value: T) = Cached(value, CacheStatus.Fresh)

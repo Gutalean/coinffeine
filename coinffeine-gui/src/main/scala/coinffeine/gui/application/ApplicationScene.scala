@@ -13,6 +13,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.model.util.Cached
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -22,11 +23,12 @@ import coinffeine.peer.config.SettingsProvider
   * @param statusBarWidgets  Widgets displayed on the status bar at the bottom of the window
   * @param settingsProvider An object that provides the application settings
   */
-class ApplicationScene(balances: ApplicationScene.Balances,
-                       views: Seq[ApplicationView],
-                       statusBarWidgets: Seq[Node],
-                       settingsProvider: SettingsProvider) extends CoinffeineScene(
-    Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
+class ApplicationScene(
+    balances: ApplicationScene.Balances,
+    views: Seq[ApplicationView],
+    statusBarWidgets: Seq[Node],
+    settingsProvider: SettingsProvider) extends CoinffeineScene(
+  Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
 
   require(views.nonEmpty, "At least one view is required")
 
@@ -60,9 +62,8 @@ class ApplicationScene(balances: ApplicationScene.Balances,
         styleClass += "currency"
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
-            text <== balances.fiat.delegate.mapToString {
-              case Some(b) => b.amount.format(Currency.NoSymbol)
-              case None => Euro.formatMissingAmount(Currency.NoSymbol)
+            text <== balances.fiat.delegate.mapToString { cachedBalance =>
+              formatOptionalAmount(Euro, findAmount(Euro, cachedBalance))
             }
           },
           new Label("EUR") with TextStyles.CurrencySymbol)
@@ -113,12 +114,24 @@ class ApplicationScene(balances: ApplicationScene.Balances,
     center = centerPane
     bottom = statusBarPane
   }
+
+  private def findAmount(
+      currency: FiatCurrency, balance: Cached[FiatBalance]): Option[FiatAmount] =
+    for {
+      amount <- balance.cached.amounts.get(currency)
+      if balance.isFresh
+    } yield amount
+
+  private def formatOptionalAmount(currency: FiatCurrency, maybeAmount: Option[FiatAmount]) =
+    maybeAmount.fold(currency.formatMissingAmount(Currency.NoSymbol)) {
+      amount => amount.format(Currency.NoSymbol)
+    }
 }
 
 object ApplicationScene {
 
   case class Balances(
     bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
-    fiat: ReadOnlyObjectProperty[Option[FiatBalance]]
+    fiat: ReadOnlyObjectProperty[Cached[FiatBalance]]
   )
 }

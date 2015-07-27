@@ -6,7 +6,7 @@ import coinffeine.common.properties.{MutableProperty, Property}
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.BitcoinBalance
+import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.util.Cached
 import coinffeine.peer.api._
@@ -67,8 +67,7 @@ class StatusCommandTest extends CommandTest {
     override def paymentProcessor = new CoinffeinePaymentProcessor {
       override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] = fiatBalance.get
       override def accountId: Option[AccountId] = ???
-      override val balances: Property[Cached[FiatAmounts]] =
-        new MutableProperty(Cached.fresh(FiatAmounts.empty))
+      override val balances = new MutableProperty(Cached.fresh(FiatBalance.empty))
       override val remainingLimits: Property[Cached[FiatAmounts]] =
         new MutableProperty(Cached.fresh(FiatAmounts.empty))
     }
