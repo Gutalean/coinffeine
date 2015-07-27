@@ -14,6 +14,8 @@
 
 .currency-text-field { -fx-font-size: 20; }
 
+.currency-text-field:error { -fx-control-inner-background: #ffc0c0; }
+
 .currency-text-field .symbol {
     -fx-font-size: 20;
     -fx-padding: 0 5px 0 5px;

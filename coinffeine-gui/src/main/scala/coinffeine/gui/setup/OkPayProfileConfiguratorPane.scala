@@ -31,18 +31,18 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private val progressPane = new VBox {
     styleClass += "data"
-    visible <== automaticConfigStatus.delegate.mapToBool(!_.failed)
+    visible <== automaticConfigStatus.delegate.map(!_.failed).toBool
     children = Seq(
       new Label {
-        text <== automaticConfigStatus.delegate.mapToString { status =>
+        text <== automaticConfigStatus.delegate.map { status =>
           if (status.finished) "Token retrieved successfully."
           else "Obtaining the token (this may take a while)..."
-        }
+        }.toStr
       },
       new ProgressBar() {
-        progress <== automaticConfigStatus.delegate.mapToDouble { status =>
-          if (status.finished) 1 else -1
-        }
+        progress <== automaticConfigStatus.delegate.map { status =>
+          if (status.finished) 1.0 else -1.0
+        }.toDouble
         automaticConfigStatus.delegate.bindToList(styleClass) { status =>
           Seq("progress-bar") ++ status.failed.option("error")
         }
@@ -51,7 +51,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   }
 
   private val subtitle = new HBox {
-    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.map(_.failed).toBool
     styleClass += "subtitle"
     children = Seq(
       new Label("You can manually configure your API credentials"),
@@ -71,7 +71,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
     }
 
   private val manualInputPane = new VBox {
-    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.map(_.failed).toBool
     styleClass += "data"
     children = Seq(
       subtitle,
@@ -105,10 +105,10 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   data.okPayWalletAccess <== mergedConfiguration.map(_.map(_.credentials))
   data.okPayVerificationStatus <== mergedConfiguration.map(_.map(_.verificationStatus))
 
-  canContinue <== data.okPayWalletAccess.delegate.mapToBool {
+  canContinue <== data.okPayWalletAccess.delegate.map {
     case Some(credentials) => validApiCredentials(credentials)
     case _ => false
-  }
+  }.toBool
 
   onActivation = (e: StepPaneEvent) => startTokenRetrieval()
 

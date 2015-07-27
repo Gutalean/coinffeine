@@ -68,11 +68,11 @@ class OrderAmountsStep(
           styleClass += "price-line"
           children = Seq(
             new Label {
-              text <== data.orderType.delegate.mapToString {
+              text <== data.orderType.delegate.map {
                 case Bid => "For no more than"
                 case Ask => "For no less than"
                 case _ => "For"
-              }
+              }.toStr
             },
             fiatAmount,
             new Label("per BTC"))
@@ -105,11 +105,11 @@ class OrderAmountsStep(
       validation.delegate.bindToList(styleClass) { result =>
         Seq("label", "messages") ++ styleClassFor(result)
       }
-      text <== validation.delegate.mapToString {
+      text <== validation.delegate.map {
         case Failure(OrderValidation.Warning(violations)) => violations.list.mkString("\n")
         case Failure(OrderValidation.Error(violations)) => violations.list.mkString("\n")
         case _ => ""
-      }
+      }.toStr
     }
 
     children = Seq(limitButton, limitDetails, marketPriceButton, marketPriceDetails, messages)
@@ -135,8 +135,7 @@ class OrderAmountsStep(
   }
 
   private def bindActionText(): Unit = {
-    action.text <== data.orderType.delegate.mapToString(
-      ot => s"I want to ${ot.toString.toLowerCase}")
+    action.text <== data.orderType.delegate.map(ot => s"I want to ${ot.toString.toLowerCase}").toStr
   }
 
   private def bindMarketPriceText(): Unit = {
@@ -169,11 +168,11 @@ class OrderAmountsStep(
   }
 
   private def bindCanContinue(): Unit = {
-    val definedOrder = order.delegate.mapToBool(_.isDefined)
-    val validOrder = validation.delegate.mapToBool {
+    val definedOrder = order.delegate.map(_.isDefined).toBool
+    val validOrder = validation.delegate.map {
       case Failure(_: OrderValidation.Error) => false
       case _ => true
-    }
+    }.toBool
     canContinue <== definedOrder and validOrder
   }
 

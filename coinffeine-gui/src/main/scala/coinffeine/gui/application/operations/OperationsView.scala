@@ -43,9 +43,9 @@ class OperationsView(app: CoinffeineApp,
 
       val lineWidth = width
       val barWidth = lineWidth * p.progressProperty
-      val progressVisible = p.orderProperty.delegate.mapToBool { order =>
+      val progressVisible = p.orderProperty.delegate.map { order =>
         order.status.isActive && order.progress > 0d
-      }
+      }.toBool
       val textInside = p.progressProperty < ProgressThreshold
 
       val progress = new HBox {
@@ -63,9 +63,9 @@ class OperationsView(app: CoinffeineApp,
           private val textInsideInsets = barWidth.delegate.map { size =>
             Insets(0, 0, 0, size.doubleValue() + ProgressTextPadding).delegate
           }
-          text <== p.orderProperty.delegate.mapToString { order =>
+          text <== p.orderProperty.delegate.map { order =>
             s"(${order.bitcoinsTransferred} transferred)"
-          }
+          }.toStr
           minWidth <== Bindings.when(textInside).choose(0).otherwise(barWidth)
           alignment <== Bindings.when(textInside).choose(Pos.TopLeft).otherwise(Pos.TopRight)
           padding <== Bindings.when(textInside)
@@ -87,14 +87,14 @@ class OperationsView(app: CoinffeineApp,
           new OrderSummary(p.orderProperty),
           new Label {
             styleClass += "date"
-            text <== now.mapToString { n =>
+            text <== now.map { n =>
               val elapsed = new Period(createdOn, n.getOrElse(DateTime.now()))
               elapsedTimePrinter.printElapsed(createdOn, elapsed)
-            }
+            }.toStr
           },
           new OrderStatusWidget {
             status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
-            online <== props.connectionStatusProperty.delegate.mapToBool(_.coinffeine.connected)
+            online <== props.connectionStatusProperty.delegate.map(_.coinffeine.connected).toBool
           },
           new HBox with PaneStyles.ButtonRow {
             styleClass += "buttons"
@@ -106,7 +106,7 @@ class OperationsView(app: CoinffeineApp,
                 }
               },
               new Button with ButtonStyles.Close {
-                disable <== p.orderProperty.delegate.mapToBool(_.cancellable).not()
+                disable <== p.orderProperty.delegate.map(_.cancellable).toBool.not()
                 onAction = { e: Event =>
                   app.operations.cancelOrder(p.idProperty.value)
                 }

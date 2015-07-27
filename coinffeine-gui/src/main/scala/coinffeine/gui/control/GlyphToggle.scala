@@ -29,7 +29,7 @@ class GlyphToggle(initialText: String = "") extends VBox {
   val toggle = new ToggleButton {
     styleClass += "glyph-icon"
     toggleGroup <== _toggleGroup.delegate.map(_.delegate)
-    text <== _icon.delegate.mapToString(_.letter.toString)
+    text <== _icon.delegate.map(_.letter.toString).toStr
   }
 
   val label = new Label { text <== _text }

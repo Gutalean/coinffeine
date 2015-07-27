@@ -24,30 +24,6 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     },
     new ObservableBeanProperty[A](observableValue, f))
 
-  def mapToString(f: A => String): StringBinding = Bindings.createStringBinding(
-    new Callable[String] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
-  def mapToBool(f: A => Boolean): BooleanBinding = Bindings.createBooleanBinding(
-    new Callable[java.lang.Boolean] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
-  def mapToInt(f: A => Int): IntegerBinding = Bindings.createIntegerBinding(
-    new Callable[java.lang.Integer] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
-  def mapToDouble(f: A => Double): DoubleBinding = Bindings.createDoubleBinding(
-    new Callable[java.lang.Double] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
   def bindToList[B](list: ObservableList[B])(f: A => Seq[B]): Unit = {
     observableValue.addListener(new ChangeListener[A] {
       override def changed(observable: ObservableValue[_ <: A], oldValue: A, newValue: A) = {

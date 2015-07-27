@@ -15,5 +15,5 @@ class GlyphLabel extends Label {
   }
 
   styleClass += "glyph-icon"
-  text <== _icon.delegate.mapToString(_.letter.toString)
+  text <== _icon.delegate.map(_.letter.toString).toStr
 }

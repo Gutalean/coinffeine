@@ -3,7 +3,8 @@ package coinffeine.gui.control
 import javafx.beans.value.{ChangeListener, ObservableValue}
 import scala.util.Try
 import scalafx.Includes._
-import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
+import scalafx.beans.property.{ReadOnlyBooleanProperty, BooleanProperty, ObjectProperty, ReadOnlyObjectProperty}
+import scalafx.css.PseudoClass
 import scalafx.geometry.Insets
 import scalafx.scene.control.{Label, TextField}
 import scalafx.scene.input.KeyEvent
@@ -24,6 +25,8 @@ class CurrencyTextField[A <: CurrencyAmount[A]](
 
   private val _currencyValue = ObjectProperty[A](this, "currencyValue", initialValue)
 
+  private val _isValid = BooleanProperty(true)
+
   private val currency = initialValue.currency
 
   private val currencySymbol = new StackPane() {
@@ -33,6 +36,8 @@ class CurrencyTextField[A <: CurrencyAmount[A]](
   }
 
   val currencyValue: ReadOnlyObjectProperty[A] = _currencyValue
+
+  val isValid: ReadOnlyBooleanProperty = _isValid
 
   /* Initialize the text property to the initial value. */
   text = initialValue.value.toString()
@@ -80,6 +85,14 @@ class CurrencyTextField[A <: CurrencyAmount[A]](
     Try(currency.exactAmount(BigDecimal(input))).getOrElse(currency.zero).asInstanceOf[A]
   }
 
+  _isValid <== text.delegate.map { input =>
+    input.isEmpty || Try(currency.exactAmount(BigDecimal(input))).isSuccess
+  }.toBool
+
+  _isValid.onChange { (_, _, valid) =>
+    delegate.pseudoClassStateChanged(CurrencyTextField.ErrorPseudoClass, !valid)
+  }
+
   /*
    * This event handler is triggered when enter key is pressed, normalising the text.
    */
@@ -115,4 +128,8 @@ class CurrencyTextField[A <: CurrencyAmount[A]](
   private val DecimalRegex = "\\d*\\.?\\d*".r
   private val NumberRegex = "\\d".r
   private val DotRegex = "\\.".r
+}
+
+object CurrencyTextField {
+  val ErrorPseudoClass = PseudoClass("error")
 }

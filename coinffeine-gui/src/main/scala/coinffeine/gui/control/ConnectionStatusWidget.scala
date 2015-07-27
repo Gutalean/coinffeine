@@ -13,7 +13,7 @@ class ConnectionStatusWidget(
 
   children = Seq(
     new StatusDisc() {
-      failure <== status.delegate.mapToBool(!_.connected)
+      failure <== status.delegate.map(!_.connected).toBool
     },
     new Label {
       id = "connection-status"

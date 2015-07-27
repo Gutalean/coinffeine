@@ -69,7 +69,7 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
         ),
         new HBox {
           styleClass += "footer"
-          disable <== walletIdField.text.delegate.mapToBool(text => !validWalletId(text))
+          disable <== walletIdField.text.delegate.map(text => !validWalletId(text)).toBool
           children = new Button("Apply") {
             styleClass += "action-button"
             onAction = applyAndClose _

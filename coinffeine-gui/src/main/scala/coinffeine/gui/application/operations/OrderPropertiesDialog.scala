@@ -69,7 +69,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
       new VBox {
         children = Seq(
           propName("Status"),
-          propValue(props.statusProperty.delegate.mapToString(_.name.capitalize))
+          propValue(props.statusProperty.delegate.map(_.name.capitalize).toStr)
         )
       },
       new OrderStatusWidget {
@@ -79,16 +79,16 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def amountLine() = {
-    simpleLine("Amount", props.amountProperty.delegate.mapToString(_.toString))
+    simpleLine("Amount", props.amountProperty.delegate.map(_.toString).toStr)
   }
 
   private def orderTypeLine() = {
-    simpleLine("Type", props.typeProperty.delegate.mapToString(_.toString))
+    simpleLine("Type", props.typeProperty.delegate.map(_.toString).toStr)
   }
 
   private def priceLine() = {
-    val requestedPrice = props.priceProperty.delegate.mapToString(formatRequestedPrice)
-    val actualPrice = props.orderProperty.delegate.mapToString(formatAveragePrice)
+    val requestedPrice = props.priceProperty.delegate.map(formatRequestedPrice).toStr
+    val actualPrice = props.orderProperty.delegate.map(formatAveragePrice).toStr
     simpleLine("Price", requestedPrice, actualPrice)
   }
 
@@ -120,7 +120,7 @@ class OrderPropertiesDialog(props: OrderProperties) {
   }
 
   private def orderIdLine() = {
-    simpleLine("Order ID", props.idProperty.delegate.mapToString(_.value))
+    simpleLine("Order ID", props.idProperty.delegate.map(_.value).toStr)
   }
 
   private def simpleLine(

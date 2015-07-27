@@ -28,7 +28,7 @@ class MutableOrderProperties(initialValue: Order) extends OrderProperties {
   override val statusProperty =
     orderProperty.delegate.map(_.status).toReadOnlyProperty
 
-  override val isCancellable = statusProperty.delegate.mapToBool(_.isActive).toReadOnlyProperty
+  override val isCancellable = statusProperty.delegate.map(_.isActive).toBool.toReadOnlyProperty
 
   override val amountProperty =
     new ReadOnlyObjectProperty[BitcoinAmount](this, "amount", initialValue.amount)
@@ -36,7 +36,7 @@ class MutableOrderProperties(initialValue: Order) extends OrderProperties {
   override val priceProperty =
     new ReadOnlyObjectProperty[OrderPrice](this, "price", initialValue.price)
 
-  override val progressProperty = orderProperty.delegate.mapToDouble(_.progress).toReadOnlyProperty
+  override val progressProperty = orderProperty.delegate.map(_.progress).toDouble.toReadOnlyProperty
 
   def update(order: Order): Unit = {
     orderProperty.value = order
