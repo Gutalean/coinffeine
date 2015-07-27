@@ -19,8 +19,7 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
 
   private val refundLockTime = 20
   private val someLastOffer = ImmutableTransaction(new MutableTransaction(network))
-  private val protocolConstants = ProtocolConstants()
-  private val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
+  private val idleTime = 100.millis
 
   "A persistent transaction broadcast actor" should
     "broadcast the refund transaction if it becomes valid" in new Fixture {
@@ -57,37 +56,76 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     expectTermination()
   }
 
+  it should "broadcast again and again after the refund block" in new Fixture {
+    override def retryInterval = 100.millis
+    expectRelevantHeightsSubscription()
+    givenHeightNotification(refundLockTime)
+
+    givenSuccessfulBroadcast(refundTx)
+    givenSuccessfulBroadcast(refundTx)
+    givenSuccessfulBroadcast(refundTx)
+
+    expectTermination()
+  }
+
+  it should "broadcast again and again after panicking" in new Fixture {
+    override def retryInterval = 100.millis
+    expectRelevantHeightsSubscription()
+    givenLastOffer(someLastOffer)
+    givenHeightNotification(panicBlock)
+
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+
+    expectTermination()
+  }
+
+  it should "broadcast again and again after a publication request" in new Fixture {
+    override def retryInterval = 100.millis
+    expectRelevantHeightsSubscription()
+    givenLastOffer(someLastOffer)
+    instance ! PublishBestTransaction
+
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+
+    expectTermination()
+  }
+
   it should "persist its state" in new Fixture {
     givenLastOffer(someLastOffer)
-    expectNoMsg(100.millis.dilated)
+    expectNoMsg(idleTime)
     instance ! PublishBestTransaction
-    expectNoMsg(100.millis.dilated)
+    expectNoMsg(idleTime)
     system.stop(instance)
   }
 
   it should "restore its state" in new Fixture {
-    override def useLastRefundTx = true
+    override def useLastPersistenceId = true
     expectRelevantHeightsSubscription()
 
     givenSuccessfulBroadcast(someLastOffer)
     expectTermination()
-    expectNoMsg(100.millis.dilated)
+    expectNoMsg(idleTime)
   }
 
   it should "delete its journal after being finished" in new Fixture {
-    override def useLastRefundTx = true
-    expectNoMsg() // Must not remember SuccessfulBroadcast(result)
+    override def useLastPersistenceId = true
+    override def retryInterval = idleTime / 2
+    expectNoMsg(idleTime) // Must not retry publication
   }
 
   it should "persist its state before broadcasting a transaction" in new Fixture {
     expectRelevantHeightsSubscription()
     givenLastOffer(someLastOffer)
-    expectNoMsg(100.millis.dilated)
+    expectNoMsg(idleTime)
     system.stop(instance)
   }
 
   it should "broadcast the last offer if panicked before even starting" in new Fixture {
-    override def useLastRefundTx = true
+    override def useLastPersistenceId = true
     expectRelevantHeightsSubscription()
     givenHeightNotification(panicBlock + 100)
     givenSuccessfulBroadcast(someLastOffer)
@@ -98,9 +136,13 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
   var lastRefundTx: ImmutableTransaction = _
 
   trait Fixture {
-    protected def useLastRefundTx: Boolean = false
+    protected def useLastPersistenceId: Boolean = false
+    protected def retryInterval: FiniteDuration = 1.minute
+    protected val protocolConstants =
+      ProtocolConstants(transactionRepublicationInterval = retryInterval.dilated)
+    protected val panicBlock = refundLockTime - protocolConstants.refundSafetyBlockCount
     protected val refundTx =
-      if (useLastRefundTx) lastRefundTx
+      if (useLastPersistenceId) lastRefundTx
       else ImmutableTransaction {
         val tx = new MutableTransaction(network)
         tx.setLockTime(refundLockTime)

@@ -3,6 +3,8 @@ package coinffeine.peer.exchange.broadcast
 import akka.actor._
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 
+import coinffeine.common.akka.ResubmitTimer
+import coinffeine.common.akka.ResubmitTimer.ResubmitTimeout
 import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.bitcoin.ImmutableTransaction
 import coinffeine.peer.ProtocolConstants
@@ -42,7 +44,8 @@ object TransactionBroadcaster {
   @deprecated private case class FinishedWithResult(result: BroadcastResult)
       extends PersistentEvent
   @deprecated sealed trait BroadcastResult
-  @deprecated case class SuccessfulBroadcast(publishedTransaction: TransactionPublished) extends BroadcastResult
+  @deprecated case class SuccessfulBroadcast(publishedTransaction: TransactionPublished)
+      extends BroadcastResult
   @deprecated case class FailedBroadcast(cause: Throwable) extends BroadcastResult
 }
 
@@ -54,6 +57,8 @@ private class TransactionBroadcaster(
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
   private val policy = new BroadcastPolicy(refund, constants.refundSafetyBlockCount)
+  private val resubmitTimer =
+    new ResubmitTimer(context, constants.transactionRepublicationInterval)
 
   override def preStart(): Unit = {
     watchRelevantBlocks()
@@ -94,16 +99,21 @@ private class TransactionBroadcaster(
       policy.updateHeight(height)
       broadcastIfNeeded(s"$height reached")
 
-    case msg @ TransactionPublished(tx, _) if tx == policy.bestTransaction =>
-    case TransactionPublished(_, unexpectedTx) =>
-    case TransactionNotPublished(_, err) =>
+    case ResubmitTimeout => broadcast("resubmission")
+
+    case TransactionNotPublished(_, ex) => log.error(ex, "Cannot publish transaction")
   }
 
   private def broadcastIfNeeded(trigger: String): Unit = {
     if (policy.shouldBroadcast) {
-      log.info("Publishing {}: {}", policy.bestTransaction, trigger)
-      collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
+      broadcast(trigger)
     }
+  }
+
+  private def broadcast(trigger: String): Unit = {
+    log.info("Broadcasting {}: {}", policy.bestTransaction, trigger)
+    collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
+    resubmitTimer.reset()
   }
 
   private def onOfferAdded(event: OfferAdded): Unit = {
