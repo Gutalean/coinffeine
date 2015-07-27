@@ -63,9 +63,9 @@ class OperationsView(app: CoinffeineApp,
           private val textInsideInsets = barWidth.delegate.map { size =>
             Insets(0, 0, 0, size.doubleValue() + ProgressTextPadding).delegate
           }
-          text <== p.orderProperty.delegate.mapToString { order =>
+          text <== p.orderProperty.delegate.map { order =>
             s"(${order.bitcoinsTransferred} transferred)"
-          }
+          }.toStr
           minWidth <== Bindings.when(textInside).choose(0).otherwise(barWidth)
           alignment <== Bindings.when(textInside).choose(Pos.TopLeft).otherwise(Pos.TopRight)
           padding <== Bindings.when(textInside)
@@ -87,10 +87,10 @@ class OperationsView(app: CoinffeineApp,
           new OrderSummary(p.orderProperty),
           new Label {
             styleClass += "date"
-            text <== now.mapToString { n =>
+            text <== now.map { n =>
               val elapsed = new Period(createdOn, n.getOrElse(DateTime.now()))
               elapsedTimePrinter.printElapsed(createdOn, elapsed)
-            }
+            }.toStr
           },
           new OrderStatusWidget {
             status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)

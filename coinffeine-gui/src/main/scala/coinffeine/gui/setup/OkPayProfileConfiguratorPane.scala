@@ -34,10 +34,10 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
     visible <== automaticConfigStatus.delegate.map(!_.failed).toBool
     children = Seq(
       new Label {
-        text <== automaticConfigStatus.delegate.mapToString { status =>
+        text <== automaticConfigStatus.delegate.map { status =>
           if (status.finished) "Token retrieved successfully."
           else "Obtaining the token (this may take a while)..."
-        }
+        }.toStr
       },
       new ProgressBar() {
         progress <== automaticConfigStatus.delegate.mapToDouble { status =>

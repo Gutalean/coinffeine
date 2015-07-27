@@ -50,9 +50,9 @@ class FundsDialog(props: WalletProperties) {
     styleClass += "amount"
     children = Seq(
       new Label {
-        text <== props.balance.delegate.mapToString { maybeBalance =>
+        text <== props.balance.delegate.map { maybeBalance =>
           maybeBalance.flatMap(selector).fold("__.________")(_.format(Currency.NoSymbol))
-        }
+        }.toStr
       },
       new Label("BTC") with TextStyles.Emphasis
     )

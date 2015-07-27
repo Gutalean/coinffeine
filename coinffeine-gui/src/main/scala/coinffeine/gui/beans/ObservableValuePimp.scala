@@ -24,12 +24,6 @@ class ObservableValuePimp[A](val observableValue: ObservableValue[A]) extends An
     },
     new ObservableBeanProperty[A](observableValue, f))
 
-  def mapToString(f: A => String): StringBinding = Bindings.createStringBinding(
-    new Callable[String] {
-      override def call() = f(observableValue.getValue)
-    },
-    observableValue)
-
   def mapToDouble(f: A => Double): DoubleBinding = Bindings.createDoubleBinding(
     new Callable[java.lang.Double] {
       override def call() = f(observableValue.getValue)

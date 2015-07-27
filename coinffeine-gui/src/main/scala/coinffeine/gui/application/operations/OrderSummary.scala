@@ -40,7 +40,7 @@ class OrderSummary(orderProperty: ReadOnlyObjectProperty[Order]) extends HBox(0)
   }
 
   private def stringBinding(pred: Order => String) =
-    orderProperty.delegate.mapToString(pred)
+    orderProperty.delegate.map(pred).toStr
 
   private def summarize(order: Order): String = {
     val action = order.status match {

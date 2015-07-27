@@ -23,7 +23,7 @@ class OrderStatusWidget extends VBox {
   private val spinner = new Spinner(autoPlay = true)
   private val label = new Label() {
     styleClass += "message"
-    text <== status.delegate.mapToString(_.message)
+    text <== status.delegate.map(_.message).toStr
   }
   private val sections = Vector.tabulate(3) { index =>
     new StackPane with NodeStyles.HExpand {

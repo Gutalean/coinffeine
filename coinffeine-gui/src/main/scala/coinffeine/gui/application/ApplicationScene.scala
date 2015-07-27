@@ -62,9 +62,9 @@ class ApplicationScene(
         styleClass += "currency"
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
-            text <== balances.fiat.delegate.mapToString { cachedBalance =>
+            text <== balances.fiat.delegate.map { cachedBalance =>
               formatOptionalAmount(Euro, findAmount(Euro, cachedBalance))
-            }
+            }.toStr
           },
           new Label("EUR") with TextStyles.CurrencySymbol)
       },
@@ -72,10 +72,10 @@ class ApplicationScene(
         styleClass += "currency"
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
-            text <== balances.bitcoin.delegate.mapToString {
+            text <== balances.bitcoin.delegate.map {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
               case None => Euro.formatMissingAmount(Currency.NoSymbol)
-            }
+            }.toStr
           },
           new Label("BTC") with TextStyles.CurrencySymbol)
       }

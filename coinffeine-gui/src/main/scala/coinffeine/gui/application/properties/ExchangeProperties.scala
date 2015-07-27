@@ -22,7 +22,7 @@ class ExchangeProperties(exchange: Exchange) {
     exchangeSourceProperty.delegate.map(ex => ex: AnyRef).toReadOnlyProperty
 
   val idProperty: ReadOnlyStringProperty =
-    exchangeIdProperty.delegate.mapToString(_.value).toReadOnlyProperty
+    exchangeIdProperty.delegate.map(_.value).toStr.toReadOnlyProperty
 
   val isCancellable: ReadOnlyBooleanProperty =
     new BooleanProperty(this, "isCancellable", false)

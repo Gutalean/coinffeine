@@ -41,11 +41,11 @@ class WalletView(
       },
       new Label {
         styleClass += "summary"
-        text <== activity.view.delegate.mapToString(_.summary)
+        text <== activity.view.delegate.map(_.summary).toStr
       },
       new Label {
         styleClass += "date"
-        text <== activity.view.delegate.mapToString(v => WalletView.DateFormat.print(v.timestamp))
+        text <== activity.view.delegate.map(v => WalletView.DateFormat.print(v.timestamp)).toStr
       },
       new HBox {
         styleClass += "buttons"
