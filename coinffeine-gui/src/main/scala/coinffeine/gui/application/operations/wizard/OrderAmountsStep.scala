@@ -169,11 +169,11 @@ class OrderAmountsStep(
   }
 
   private def bindCanContinue(): Unit = {
-    val definedOrder = order.delegate.mapToBool(_.isDefined)
-    val validOrder = validation.delegate.mapToBool {
+    val definedOrder = order.delegate.map(_.isDefined).toBool
+    val validOrder = validation.delegate.map {
       case Failure(_: OrderValidation.Error) => false
       case _ => true
-    }
+    }.toBool
     canContinue <== definedOrder and validOrder
   }
 

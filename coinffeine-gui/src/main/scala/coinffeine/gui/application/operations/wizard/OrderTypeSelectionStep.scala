@@ -47,7 +47,7 @@ class OrderTypeSelectionStep(
     data.orderType <== Buttons.group.selectedToggle.delegate.map(
       t => Option(t).map(_.getUserData.asInstanceOf[OrderType]).orNull)
 
-    canContinue <== Buttons.group.selectedToggle.delegate.mapToBool(_ != null)
+    canContinue <== Buttons.group.selectedToggle.delegate.map(_ != null).toBool
   }
 
   children = new VBox(question, Buttons)

@@ -85,9 +85,9 @@ class CurrencyTextField[A <: CurrencyAmount[A]](
     Try(currency.exactAmount(BigDecimal(input))).getOrElse(currency.zero).asInstanceOf[A]
   }
 
-  _isValid <== text.delegate.mapToBool { input =>
+  _isValid <== text.delegate.map { input =>
     input.isEmpty || Try(currency.exactAmount(BigDecimal(input))).isSuccess
-  }
+  }.toBool
 
   _isValid.onChange { (_, _, valid) =>
     delegate.pseudoClassStateChanged(CurrencyTextField.ErrorPseudoClass, !valid)

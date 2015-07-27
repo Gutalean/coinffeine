@@ -28,16 +28,6 @@ class ObservableValuePimpTest extends UnitTest {
     p2.value shouldBe "You have 0"
   }
 
-  it must "map as boolean binding" in {
-    val p1: ObjectProperty[Int] = new ObjectProperty(this, "p1", 9)
-    val p2: BooleanProperty = new BooleanProperty(this, "p2")
-    p2 <== p1.delegate.mapToBool(_ > 0)
-
-    p2.value shouldBe true
-    p1.set(-2)
-    p2.value shouldBe false
-  }
-
   it must "map as int binding" in {
     val p1: ObjectProperty[String] = new ObjectProperty(this, "p1", "Hello World")
     val p2: IntegerProperty = new IntegerProperty(this, "p2")

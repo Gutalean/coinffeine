@@ -31,7 +31,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
 
   private val progressPane = new VBox {
     styleClass += "data"
-    visible <== automaticConfigStatus.delegate.mapToBool(!_.failed)
+    visible <== automaticConfigStatus.delegate.map(!_.failed).toBool
     children = Seq(
       new Label {
         text <== automaticConfigStatus.delegate.mapToString { status =>
@@ -51,7 +51,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   }
 
   private val subtitle = new HBox {
-    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.map(_.failed).toBool
     styleClass += "subtitle"
     children = Seq(
       new Label("You can manually configure your API credentials"),
@@ -71,7 +71,7 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
     }
 
   private val manualInputPane = new VBox {
-    visible <== automaticConfigStatus.delegate.mapToBool(_.failed)
+    visible <== automaticConfigStatus.delegate.map(_.failed).toBool
     styleClass += "data"
     children = Seq(
       subtitle,
@@ -105,10 +105,10 @@ class OkPayProfileConfiguratorPane(data: SetupConfig, stepNumber: Int)
   data.okPayWalletAccess <== mergedConfiguration.map(_.map(_.credentials))
   data.okPayVerificationStatus <== mergedConfiguration.map(_.map(_.verificationStatus))
 
-  canContinue <== data.okPayWalletAccess.delegate.mapToBool {
+  canContinue <== data.okPayWalletAccess.delegate.map {
     case Some(credentials) => validApiCredentials(credentials)
     case _ => false
-  }
+  }.toBool
 
   onActivation = (e: StepPaneEvent) => startTokenRetrieval()
 

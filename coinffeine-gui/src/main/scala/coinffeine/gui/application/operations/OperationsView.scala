@@ -43,9 +43,9 @@ class OperationsView(app: CoinffeineApp,
 
       val lineWidth = width
       val barWidth = lineWidth * p.progressProperty
-      val progressVisible = p.orderProperty.delegate.mapToBool { order =>
+      val progressVisible = p.orderProperty.delegate.map { order =>
         order.status.isActive && order.progress > 0d
-      }
+      }.toBool
       val textInside = p.progressProperty < ProgressThreshold
 
       val progress = new HBox {
@@ -94,7 +94,7 @@ class OperationsView(app: CoinffeineApp,
           },
           new OrderStatusWidget {
             status <== p.orderProperty.delegate.map(OrderStatusWidget.Status.fromOrder)
-            online <== props.connectionStatusProperty.delegate.mapToBool(_.coinffeine.connected)
+            online <== props.connectionStatusProperty.delegate.map(_.coinffeine.connected).toBool
           },
           new HBox with PaneStyles.ButtonRow {
             styleClass += "buttons"
@@ -106,7 +106,7 @@ class OperationsView(app: CoinffeineApp,
                 }
               },
               new Button with ButtonStyles.Close {
-                disable <== p.orderProperty.delegate.mapToBool(_.cancellable).not()
+                disable <== p.orderProperty.delegate.map(_.cancellable).toBool.not()
                 onAction = { e: Event =>
                   app.operations.cancelOrder(p.idProperty.value)
                 }

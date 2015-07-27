@@ -56,7 +56,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
     private def stepIcon(stepNumber: Int, step: StepPane[Data]) = new GlyphLabel with HExpand {
 
       private val navigable = new BooleanProperty(this, "navigable", false)
-      navigable <== currentStep.delegate.mapToBool(stepNumber < _.intValue)
+      navigable <== currentStep.delegate.map(stepNumber < _.intValue).toBool
       navigable.onChange { (_, _, newValue) =>
         delegate.pseudoClassStateChanged(NavigableClass, newValue)
       }
@@ -65,7 +65,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
         if (currentStep.intValue > stepNumber) GlyphIcon.Completed else step.icon
       }
 
-      disable <== currentStep.delegate.mapToBool(currentStep => stepNumber > currentStep.intValue())
+      disable <== currentStep.delegate.map(currentStep => stepNumber > currentStep.intValue()).toBool
 
       onMouseClicked = () => {
         if (navigable.value) {
@@ -78,7 +78,7 @@ class Wizard[Data](steps: Seq[StepPane[Data]],
       styleClass += "separator"
       width = 50
       height = 3
-      disable <== currentStep.delegate.mapToBool(currentStep => stepNumber >= currentStep.intValue())
+      disable <== currentStep.delegate.map(currentStep => stepNumber >= currentStep.intValue()).toBool
     }
   }
 

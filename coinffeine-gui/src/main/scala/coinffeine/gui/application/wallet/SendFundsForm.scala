@@ -30,9 +30,9 @@ class SendFundsForm(props: WalletProperties, feeCalculator: BitcoinFeeCalculator
   private val isValidAmount = amount.delegate.zip(props.balance) {
     case (a, Some(b)) => a.isPositive && a <= maxWithdraw(b)
     case _ => false
-  }.mapToBool(identity)
+  }.map(identity).toBool
 
-  private val isValidAddress = address.delegate.mapToBool(_.isDefined)
+  private val isValidAddress = address.delegate.map(_.isDefined).toBool
 
   private val formData = new VBox() {
     styleClass += "form-data"

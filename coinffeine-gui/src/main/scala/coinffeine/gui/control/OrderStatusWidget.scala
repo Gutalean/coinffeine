@@ -33,7 +33,7 @@ class OrderStatusWidget extends VBox {
   sections.head.children.add(spinner)
 
   styleClass += "order-status"
-  visible <== status.delegate.mapToBool(_ != Completed).and(online)
+  visible <== status.delegate.map(_ != Completed).toBool.and(online)
   children = Seq(label, new HBox {
     styleClass += "bar"
     children = sections

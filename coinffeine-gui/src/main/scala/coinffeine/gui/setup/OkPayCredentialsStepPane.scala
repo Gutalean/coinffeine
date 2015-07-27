@@ -48,7 +48,7 @@ class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
   data.okPayCredentials <==
     emailField.text.delegate.zip(passwordField.text)(OkPayCredentials.apply)
 
-  canContinue <== emailField.text.delegate.mapToBool(validEmail) and
+  canContinue <== emailField.text.delegate.map(validEmail).toBool and
     passwordField.text.isEmpty.not
 
   private def validEmail(email: String): Boolean =
