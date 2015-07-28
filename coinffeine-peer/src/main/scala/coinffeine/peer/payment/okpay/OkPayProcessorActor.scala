@@ -129,8 +129,9 @@ private class OkPayProcessorActor(
   }
 
   private def blockedFundsForCurrency(currency: FiatCurrency): Future[FiatAmount] = {
-    AskPattern(registry, RetrieveTotalBlockedFunds(currency))
-      .withImmediateReply[TotalBlockedFunds]().map(_.funds)
+    AskPattern(registry, RetrieveTotalBlockedFunds)
+      .withImmediateReply[TotalBlockedFunds]()
+        .map(_.funds.get(currency).getOrElse(currency.zero))
   }
 
   private def updateCachedInformation(

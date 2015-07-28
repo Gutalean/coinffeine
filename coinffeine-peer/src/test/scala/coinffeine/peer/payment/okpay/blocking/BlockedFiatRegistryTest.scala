@@ -6,7 +6,6 @@ import akka.testkit.TestProbe
 import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry.TotalBlockedFunds
@@ -19,23 +18,20 @@ class BlockedFiatRegistryTest extends AkkaSpec {
 
   "The blocking funds actor" must "retrieve no blocked funds when no funds are blocked" in
     new WithBlockingFundsActor {
-      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(Euro.zero))
+      currentTotalBlockedFunds(Euro) shouldBe Euro.zero
     }
 
   it must "retrieve blocked funds when blocked" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     givenAvailableFunds(100.EUR)
-    actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-    expectMsg(BlockedFiatRegistry.TotalBlockedFunds(100.EUR))
+    currentTotalBlockedFunds(Euro) shouldBe 100.EUR
   }
 
   it must "retrieve no blocked funds after unblocked" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds = givenAvailableFunds(100.EUR)
     actor ! PaymentProcessorActor.UnblockFunds(funds)
-    actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-    expectMsg(BlockedFiatRegistry.TotalBlockedFunds(Euro.zero))
+    currentTotalBlockedFunds(Euro) shouldBe Euro.zero
   }
 
   it must "retrieve blocked funds after using some" in new WithBlockingFundsActor {
@@ -45,8 +41,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     expectMsgPF() {
       case BlockedFiatRegistry.FundsMarkedUsed(`funds`, _) =>
     }
-    actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-    expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
+    currentTotalBlockedFunds(Euro) shouldBe 40.EUR
   }
 
   it must "block funds up to existing balances" in new WithBlockingFundsActor {
@@ -221,7 +216,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     expectBecomingUnavailable(funds1)
     givenAccountUpdate(100.EUR)
     expectBecomingAvailable(funds1)
-    currentTotalBlockedFunds(Euro) shouldBe TotalBlockedFunds(40.EUR)
+    currentTotalBlockedFunds(Euro) shouldBe 40.EUR
     system.stop(actor)
   }
 
@@ -236,8 +231,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
       expectBecomingUnavailable(funds1)
       givenAccountUpdate(100.EUR)
       expectBecomingAvailable(funds1)
-      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(Euro)
-      expectMsg(BlockedFiatRegistry.TotalBlockedFunds(40.EUR))
+      currentTotalBlockedFunds(Euro) shouldBe 40.EUR
     }
 
   private abstract class WithBlockingFundsActor(persistentId: Int = freshId()) {
@@ -287,9 +281,9 @@ class BlockedFiatRegistryTest extends AkkaSpec {
       eventProbe.expectMsg(PaymentProcessorActor.UnavailableFunds(fundsId))
     }
 
-    protected def currentTotalBlockedFunds(currency: FiatCurrency): TotalBlockedFunds = {
-      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds(currency)
-      expectMsgType[TotalBlockedFunds]
+    protected def currentTotalBlockedFunds(currency: FiatCurrency): FiatAmount = {
+      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds
+      expectMsgType[TotalBlockedFunds].funds.get(currency).getOrElse(currency.zero)
     }
   }
 

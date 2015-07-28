@@ -305,8 +305,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectRetrieveBlockedFunds(funds: FiatAmount): Unit = {
       fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistry.RetrieveTotalBlockedFunds(funds.currency) =>
-          BlockedFiatRegistry.TotalBlockedFunds(funds)
+        case BlockedFiatRegistry.RetrieveTotalBlockedFunds =>
+          BlockedFiatRegistry.TotalBlockedFunds(FiatAmounts.fromAmounts(funds))
       }
     }
 
