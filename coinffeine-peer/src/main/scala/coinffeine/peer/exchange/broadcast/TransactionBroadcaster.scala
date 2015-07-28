@@ -21,8 +21,11 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadc
   */
 object TransactionBroadcaster {
 
-  /** A request for the actor to finish the exchange and broadcast the best possible transaction */
+  /** A request for the actor to broadcast the best possible transaction */
   case object PublishBestTransaction
+
+  /** A request for the actor to broadcast the refund transaction. */
+  case object PublishRefundTransaction
 
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
     "The exchange finished with a successful broadcast, but the transaction that was published was" +
@@ -39,6 +42,7 @@ object TransactionBroadcaster {
 
   private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
   private case object PublicationRequested extends PersistentEvent
+  private case object RefundPublicationRequested extends PersistentEvent
 
   /** Unused but kept to maintain the binary compatibility, remove after 0.12 */
   @deprecated private case class FinishedWithResult(result: BroadcastResult)
@@ -95,6 +99,12 @@ private class TransactionBroadcaster(
         broadcastIfNeeded("requested publication")
       }
 
+    case PublishRefundTransaction =>
+      persist(RefundPublicationRequested) { _ =>
+        onRefundPublicationRequested()
+        broadcast("requested refund publication")
+      }
+
     case BlockchainActor.BlockchainHeightReached(height) =>
       policy.updateHeight(height)
       broadcastIfNeeded(s"$height reached")
@@ -122,6 +132,10 @@ private class TransactionBroadcaster(
 
   private def onPublicationRequested(): Unit = {
     policy.requestPublication()
+  }
+
+  private def onRefundPublicationRequested(): Unit = {
+    policy.unsetLastOffer()
   }
 }
 

@@ -17,6 +17,10 @@ private class BroadcastPolicy(refund: ImmutableTransaction, refundSafetyBlockCou
     lastOffer = Some(tx)
   }
 
+  def unsetLastOffer(): Unit = {
+    lastOffer = None
+  }
+
   def requestPublication(): Unit = { publicationRequested = true }
 
   def updateHeight(currentHeight: Long): Unit = { height = currentHeight }
