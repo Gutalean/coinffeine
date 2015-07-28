@@ -99,7 +99,11 @@ class DefaultExchangeActor(
     case HandshakeSuccess(rawExchange, commitments, refundTx, committedOn)
       if rawExchange.currency == exchange.currency =>
       val handshakingExchange = rawExchange.asInstanceOf[DepositPendingExchange]
-      spawnDepositWatcher(handshakingExchange, handshakingExchange.role.select(commitments), refundTx)
+      spawnDepositWatcher(
+        handshakingExchange,
+        handshakingExchange.role.select(commitments),
+        refundTx,
+        Some(handshakingExchange.role.counterpart.select(commitments)))
       spawnBroadcaster(refundTx)
       val validationResult = exchangeProtocol.validateDeposits(
         commitments, handshakingExchange.amounts, handshakingExchange.requiredSignatures,
@@ -122,8 +126,8 @@ class DefaultExchangeActor(
         timestamp = failedOn
       )))
 
-    case HandshakeFailureWithCommitment(rawExchange, cause, deposit, refundTx, failedOn) =>
-      spawnDepositWatcher(rawExchange, deposit, refundTx)
+    case HandshakeFailureWithCommitment(rawExchange, cause, myDeposit, refundTx, failedOn) =>
+      spawnDepositWatcher(rawExchange, myDeposit, herDeposit = None, refundTx = refundTx)
       spawnBroadcaster(refundTx)
       startAbortion(exchange.abort(
         cause = AbortionCause.HandshakeCommitmentsFailure,
@@ -142,9 +146,10 @@ class DefaultExchangeActor(
   }
 
   private def spawnDepositWatcher(exchange: DepositPendingExchange,
-                                  deposit: ImmutableTransaction,
-                                  refundTx: ImmutableTransaction): Unit = {
-    context.actorOf(delegates.depositWatcher(exchange, deposit, refundTx), "depositWatcher")
+                                  myDeposit: ImmutableTransaction,
+                                  refundTx: ImmutableTransaction,
+                                  herDeposit: Option[ImmutableTransaction]): Unit = {
+    context.actorOf(delegates.depositWatcher(exchange, myDeposit, refundTx, herDeposit), "depositWatcher")
   }
 
   private def startMicropaymentChannel(commitments: Both[ImmutableTransaction],
@@ -250,8 +255,9 @@ object DefaultExchangeActor {
                             resultListeners: Set[ActorRef]): Props
     def transactionBroadcaster(refund: ImmutableTransaction): Props
     def depositWatcher(exchange: DepositPendingExchange,
-                       deposit: ImmutableTransaction,
-                       refundTx: ImmutableTransaction)(implicit context: ActorContext): Props
+                       myDeposit: ImmutableTransaction,
+                       refundTx: ImmutableTransaction,
+                       herDeposit: Option[ImmutableTransaction])(implicit context: ActorContext): Props
   }
 
   trait Component extends ExchangeActor.Component {
@@ -296,9 +302,10 @@ object DefaultExchangeActor {
 
         def depositWatcher(
             exchange: DepositPendingExchange,
-            deposit: ImmutableTransaction,
-            refundTx: ImmutableTransaction)(implicit context: ActorContext) =
-          Props(new DepositWatcher(exchange, deposit, refundTx,
+            myDeposit: ImmutableTransaction,
+            refundTx: ImmutableTransaction,
+            herDeposit: Option[ImmutableTransaction])(implicit context: ActorContext) =
+          Props(new DepositWatcher(exchange, myDeposit, refundTx, herDeposit,
             DepositWatcher.Collaborators(collaborators.blockchain, context.self)))
       }
 

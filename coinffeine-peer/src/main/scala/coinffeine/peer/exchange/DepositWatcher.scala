@@ -13,6 +13,7 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 class DepositWatcher(exchange: DepositPendingExchange,
                      myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
+                     herDeposit: Option[ImmutableTransaction],
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
   private val network = exchange.parameters.network

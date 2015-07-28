@@ -45,9 +45,14 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
   }
 
   trait Fixture {
-    private val wallet = new SmartWallet(createWallet(100.BTC), TransactionSizeFeeCalculator)
-    requiredSignatures.foreach(wallet.delegate.importKey)
-    val myDeposit = wallet.createMultisignTransaction(
+    private val myWallet = new SmartWallet(createWallet(100.BTC), TransactionSizeFeeCalculator)
+    private val herWallet = new SmartWallet(createWallet(100.BTC), TransactionSizeFeeCalculator)
+    requiredSignatures.foreach(myWallet.delegate.importKey)
+    val myDeposit = myWallet.createMultisignTransaction(
+      requiredSignatures,
+      100.BTC
+    )
+    val herDeposit = herWallet.createMultisignTransaction(
       requiredSignatures,
       100.BTC
     )
@@ -57,7 +62,7 @@ class DepositWatcherTest extends AkkaSpec with BitcoinjTest with SampleExchange 
     val myRefund = spendDeposit(exchange.amounts.refunds.seller)
     val blockchain = TestProbe()
     val watcher = system.actorOf(Props(
-      new DepositWatcher(exchange, myDeposit, myRefund, Collaborators(blockchain.ref, listener = self))))
+      new DepositWatcher(exchange, myDeposit, myRefund, Some(herDeposit), Collaborators(blockchain.ref, listener = self))))
 
     def spendDeposit(getBackAmount: BitcoinAmount) = {
       val tx = TransactionProcessor.createUnsignedTransaction(
