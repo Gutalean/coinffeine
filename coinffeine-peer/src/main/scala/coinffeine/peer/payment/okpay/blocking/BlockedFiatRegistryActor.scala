@@ -14,10 +14,10 @@ import coinffeine.model.currency.{FiatAmount, FiatAmounts, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
 
-private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
+private[okpay] class BlockedFiatRegistryActor(override val persistenceId: String)
     extends PersistentActor with PeriodicSnapshot with ActorLogging {
 
-  import BlockedFiatRegistry._
+  import BlockedFiatRegistryActor._
 
   private var balances = FiatAmounts.empty
   private var remainingLimits = FiatAmounts.empty
@@ -45,7 +45,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
 
   override def receiveCommand: Receive = managingSnapshots orElse {
     case RetrieveTotalBlockedFunds =>
-      sender ! BlockedFiatRegistry.TotalBlockedFunds(totalBlockedByCurrency)
+      sender ! BlockedFiatRegistryActor.TotalBlockedFunds(totalBlockedByCurrency)
 
     case AccountUpdate(newBalances, newRemainingLimits) =>
       balances = newBalances
@@ -192,7 +192,7 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 }
 
-private[okpay] object BlockedFiatRegistry {
+private[okpay] object BlockedFiatRegistryActor {
 
   val PersistenceId = "blockedFiatRegistry"
 
@@ -238,5 +238,5 @@ private[okpay] object BlockedFiatRegistry {
   private case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo])
       extends PersistentEvent
 
-  def props = Props(new BlockedFiatRegistry(PersistenceId))
+  def props = Props(new BlockedFiatRegistryActor(PersistenceId))
 }

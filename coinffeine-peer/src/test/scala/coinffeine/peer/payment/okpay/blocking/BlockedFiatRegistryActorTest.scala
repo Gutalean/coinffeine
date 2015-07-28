@@ -8,9 +8,9 @@ import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.model.currency._
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.PaymentProcessorActor
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry.TotalBlockedFunds
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor.TotalBlockedFunds
 
-class BlockedFiatRegistryTest extends AkkaSpec {
+class BlockedFiatRegistryActorTest extends AkkaSpec {
 
   val eventProbe = TestProbe()
   system.eventStream.subscribe(
@@ -37,9 +37,9 @@ class BlockedFiatRegistryTest extends AkkaSpec {
   it must "retrieve blocked funds after using some" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds = givenAvailableFunds(100.EUR)
-    actor ! BlockedFiatRegistry.MarkUsed(funds, 60.EUR)
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds, 60.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.FundsMarkedUsed(`funds`, _) =>
+      case BlockedFiatRegistryActor.FundsMarkedUsed(`funds`, _) =>
     }
     currentTotalBlockedFunds(Euro) shouldBe 40.EUR
   }
@@ -133,25 +133,25 @@ class BlockedFiatRegistryTest extends AkkaSpec {
 
   it must "reject funds usage for unknown funds id" in new WithBlockingFundsActor {
     val unknownFunds = ExchangeId("unknown")
-    actor ! BlockedFiatRegistry.MarkUsed(unknownFunds, 10.EUR)
-    expectMsgPF() { case BlockedFiatRegistry.CannotMarkUsed(`unknownFunds`, _, _) => }
+    actor ! BlockedFiatRegistryActor.MarkUsed(unknownFunds, 10.EUR)
+    expectMsgPF() { case BlockedFiatRegistryActor.CannotMarkUsed(`unknownFunds`, _, _) => }
   }
 
   it must "reject funds usage when it exceeds blocked amount" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds = givenAvailableFunds(50.EUR)
-    actor ! BlockedFiatRegistry.MarkUsed(funds, 100.EUR)
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds, 100.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.CannotMarkUsed(`funds`, _, _) =>
+      case BlockedFiatRegistryActor.CannotMarkUsed(`funds`, _, _) =>
     }
   }
 
   it must "reject funds usage when block is unavailable" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds = givenUnavailableFunds(150.EUR)
-    actor ! BlockedFiatRegistry.MarkUsed(funds, 100.EUR)
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds, 100.EUR)
     expectMsgPF() {
-      case BlockedFiatRegistry.CannotMarkUsed(`funds`, _, _) =>
+      case BlockedFiatRegistryActor.CannotMarkUsed(`funds`, _, _) =>
     }
   }
 
@@ -159,23 +159,23 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     new WithBlockingFundsActor {
       givenAccountUpdate(100.EUR)
       val funds = givenAvailableFunds(50.EUR)
-      actor ! BlockedFiatRegistry.MarkUsed(funds, 10.EUR)
-      expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds, 10.EUR))
+      actor ! BlockedFiatRegistryActor.MarkUsed(funds, 10.EUR)
+      expectMsg(BlockedFiatRegistryActor.FundsMarkedUsed(funds, 10.EUR))
     }
 
   it must "accept funds usage when amount is equals to blocked funds" in
     new WithBlockingFundsActor {
       givenAccountUpdate(100.EUR)
       val funds = givenAvailableFunds(50.EUR)
-        actor ! BlockedFiatRegistry.MarkUsed(funds, 50.EUR)
-        expectMsgPF() { case BlockedFiatRegistry.FundsMarkedUsed(`funds`, _) => }
+        actor ! BlockedFiatRegistryActor.MarkUsed(funds, 50.EUR)
+        expectMsgPF() { case BlockedFiatRegistryActor.FundsMarkedUsed(`funds`, _) => }
     }
 
   it must "consider new balance after funds are used" in new WithBlockingFundsActor {
     givenAccountUpdate(100.EUR)
     val funds1 = givenAvailableFunds(50.EUR)
-    actor ! BlockedFiatRegistry.MarkUsed(funds1, 10.EUR)
-    expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds1, 10.EUR))
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds1, 10.EUR)
+    expectMsg(BlockedFiatRegistryActor.FundsMarkedUsed(funds1, 10.EUR))
     val funds2 = givenBlockedFunds(60.EUR)
     expectBecomingUnavailable(funds2)
   }
@@ -185,13 +185,13 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     val funds1 = givenAvailableFunds(50.EUR)
 
     // Mark and unmark funds
-    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
-    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
-    actor ! BlockedFiatRegistry.UnmarkUsed(funds1, 50.EUR)
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistryActor.FundsMarkedUsed]
+    actor ! BlockedFiatRegistryActor.UnmarkUsed(funds1, 50.EUR)
 
     // Mark again
-    actor ! BlockedFiatRegistry.MarkUsed(funds1, 50.EUR)
-    expectMsgType[BlockedFiatRegistry.FundsMarkedUsed]
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds1, 50.EUR)
+    expectMsgType[BlockedFiatRegistryActor.FundsMarkedUsed]
   }
 
   val funds1, funds2 = ExchangeId.random()
@@ -207,8 +207,8 @@ class BlockedFiatRegistryTest extends AkkaSpec {
       PaymentProcessorActor.BlockedFunds(funds2)
     )
     actor ! PaymentProcessorActor.UnblockFunds(funds2)
-    actor ! BlockedFiatRegistry.MarkUsed(funds1, 20.EUR)
-    expectMsg(BlockedFiatRegistry.FundsMarkedUsed(funds1, 20.EUR))
+    actor ! BlockedFiatRegistryActor.MarkUsed(funds1, 20.EUR)
+    expectMsg(BlockedFiatRegistryActor.FundsMarkedUsed(funds1, 20.EUR))
     system.stop(actor)
   }
 
@@ -239,7 +239,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     start()
 
     protected def start(): Unit = {
-      actor = system.actorOf(Props(new BlockedFiatRegistry(persistentId.toString)))
+      actor = system.actorOf(Props(new BlockedFiatRegistryActor(persistentId.toString)))
     }
 
     protected def givenBlockedFunds(amount: FiatAmount): ExchangeId = {
@@ -267,7 +267,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
 
     protected def givenAccountUpdate(
         amount: FiatAmount, remainingLimit: Option[FiatAmount] = None): Unit = {
-      actor ! BlockedFiatRegistry.AccountUpdate(
+      actor ! BlockedFiatRegistryActor.AccountUpdate(
         balances = FiatAmounts.fromAmounts(amount),
         remainingLimits = FiatAmounts(remainingLimit.toSeq)
       )
@@ -282,7 +282,7 @@ class BlockedFiatRegistryTest extends AkkaSpec {
     }
 
     protected def currentTotalBlockedFunds(currency: FiatCurrency): FiatAmount = {
-      actor ! BlockedFiatRegistry.RetrieveTotalBlockedFunds
+      actor ! BlockedFiatRegistryActor.RetrieveTotalBlockedFunds
       expectMsgType[TotalBlockedFunds].funds.get(currency).getOrElse(currency.zero)
     }
   }
