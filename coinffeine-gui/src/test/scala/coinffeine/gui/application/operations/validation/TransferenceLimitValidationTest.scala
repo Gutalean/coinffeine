@@ -8,6 +8,7 @@ import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.market._
 import coinffeine.model.order.{Ask, Bid, LimitPrice, OrderRequest}
 import coinffeine.model.util.Cached
@@ -53,25 +54,33 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
 
 
   private trait Fixture {
-    private val enoughLimits = Cached.fresh(FiatAmounts.fromAmounts(450.EUR))
-    private val remainingLimits =
-      new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
-    val instance = new TransferenceLimitValidation(new DefaultAmountsCalculator(), remainingLimits)
+    private val enoughLimits = balanceWithLimits(450.EUR)
+    private val remainingLimits = new MutableProperty(balanceWithoutLimits)
+
+    val instance =
+      new TransferenceLimitValidation(new DefaultAmountsCalculator(), remainingLimits)
 
     protected def givenEnoughRemainingLimits(): Unit = {
       remainingLimits.set(enoughLimits)
     }
 
     protected def givenUnboundedLimits(): Unit = {
-      remainingLimits.set(Cached.fresh(FiatAmounts.empty))
+      remainingLimits.set(balanceWithoutLimits)
     }
 
     protected def givenStaleRemainingLimits(): Unit = {
-      remainingLimits.set(Cached.stale(enoughLimits.cached))
+      remainingLimits.set(enoughLimits.staled)
     }
 
     protected def givenNotEnoughRemainingLimits(): Unit = {
-      remainingLimits.set(Cached.fresh(FiatAmounts.fromAmounts(1.EUR)))
+      remainingLimits.set(balanceWithLimits(1.EUR))
     }
+
+    private def balanceWithoutLimits = balanceWithLimits()
+
+    private def balanceWithLimits(limits: FiatAmount*) = Cached.fresh(FiatBalance(
+      amounts = FiatAmounts.fromAmounts(300.EUR),
+      remainingLimits = FiatAmounts(limits))
+    )
   }
 }

@@ -8,6 +8,7 @@ import scalaz.{NonEmptyList, Validation}
 import coinffeine.common.properties.Property
 import coinffeine.gui.application.operations.validation.OrderValidation.Problem
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.market.Spread
 import coinffeine.model.order.{Ask, Bid, OrderRequest}
 import coinffeine.model.util.Cached
@@ -15,7 +16,7 @@ import coinffeine.peer.amounts.AmountsCalculator
 
 private class TransferenceLimitValidation(
     amountsCalculator: AmountsCalculator,
-    remainingLimits: Property[Cached[FiatAmounts]]) extends OrderValidation {
+    remainingLimits: Property[Cached[FiatBalance]]) extends OrderValidation {
 
   override def apply(order: OrderRequest, spread: Spread): OrderValidation.Result =
     order.orderType match {
@@ -33,7 +34,7 @@ private class TransferenceLimitValidation(
   private def requireFreshLimit(currency: FiatCurrency): Validation[Problem, Option[FiatAmount]] = {
     val cachedLimits = remainingLimits.get
     if (!cachedLimits.status.isFresh) cannotCheckLimits(currency)
-    else cachedLimits.cached.get(currency).success
+    else cachedLimits.cached.remainingLimits.get(currency).success
   }
 
   private def requireAmountCanBeEstimated(

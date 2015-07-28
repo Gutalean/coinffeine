@@ -19,8 +19,10 @@ object BitcoinBalance {
     minOutput = Some(amount))
 }
 
-case class FiatBalance(amounts: FiatAmounts)
+case class FiatBalance(
+    amounts: FiatAmounts,
+    remainingLimits: FiatAmounts)
 
 object FiatBalance {
-  val empty = FiatBalance(FiatAmounts.empty)
+  val empty = FiatBalance(FiatAmounts.empty, FiatAmounts.empty)
 }

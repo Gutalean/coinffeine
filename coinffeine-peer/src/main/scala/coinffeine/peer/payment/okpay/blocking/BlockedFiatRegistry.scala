@@ -44,11 +44,8 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   }
 
   override def receiveCommand: Receive = managingSnapshots orElse {
-    case RetrieveTotalBlockedFunds(currency) =>
-      totalBlockedForCurrency(currency) match {
-        case Some(blockedFunds) => sender ! BlockedFiatRegistry.TotalBlockedFunds(blockedFunds)
-        case None => sender ! BlockedFiatRegistry.TotalBlockedFunds(currency.zero)
-      }
+    case RetrieveTotalBlockedFunds =>
+      sender ! BlockedFiatRegistry.TotalBlockedFunds(totalBlockedByCurrency)
 
     case AccountUpdate(newBalances, newRemainingLimits) =>
       balances = newBalances
@@ -187,12 +184,11 @@ private[okpay] class BlockedFiatRegistry(override val persistenceId: String)
   private def currenciesInUse(): Set[FiatCurrency] =
     funds.values.map(_.remainingAmount.currency).toSet
 
-  private def totalBlockedForCurrency(currency: FiatCurrency): Option[FiatAmount] = {
-    val fundsForCurrency = funds.values
-        .filter(_.remainingAmount.currency == currency)
-        .asInstanceOf[Iterable[BlockedFundsInfo]]
-    if (fundsForCurrency.isEmpty) None
-    else Some(fundsForCurrency.map(_.remainingAmount).reduce(_ + _))
+  private def totalBlockedByCurrency: FiatAmounts = {
+    val fundsByCurrency = funds.values
+        .groupBy(_.remainingAmount.currency)
+        .mapValues(funds => funds.map(_.remainingAmount).reduce(_ + _))
+    FiatAmounts(fundsByCurrency.values.toSeq)
   }
 }
 
@@ -200,9 +196,9 @@ private[okpay] object BlockedFiatRegistry {
 
   val PersistenceId = "blockedFiatRegistry"
 
-  case class RetrieveTotalBlockedFunds(currency: FiatCurrency)
+  case object RetrieveTotalBlockedFunds
 
-  case class TotalBlockedFunds(funds: FiatAmount)
+  case class TotalBlockedFunds(funds: FiatAmounts)
 
   case class AccountUpdate(balances: FiatAmounts, remainingLimits: FiatAmounts)
 

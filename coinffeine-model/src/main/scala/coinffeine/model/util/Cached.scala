@@ -4,6 +4,9 @@ case class Cached[A](cached: A, status: CacheStatus) {
 
   def map[B](f: A => B): Cached[B] = copy(cached = f(cached))
 
+  def flatMap[B](f: A => Cached[B]): Cached[B] =
+    if (isFresh) f(cached) else f(cached).staled
+
   def staled: Cached[A] = if (status.isFresh) copy(status = CacheStatus.Stale) else this
 
   def isFresh: Boolean = status.isFresh

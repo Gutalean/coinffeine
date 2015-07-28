@@ -15,7 +15,7 @@ class DefaultOrderValidation(app: CoinffeineApp) extends OrderValidation {
     new MaximumFiatValidation(amountsCalculator),
     new AvailableFundsValidation(
       amountsCalculator, app.paymentProcessor.balances, app.wallet.balance),
-    new TransferenceLimitValidation(amountsCalculator, app.paymentProcessor.remainingLimits)
+    new TransferenceLimitValidation(amountsCalculator, app.paymentProcessor.balances)
   )
 
   override def apply(request: OrderRequest, spread: Spread) =
