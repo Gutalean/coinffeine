@@ -18,7 +18,7 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
-import coinffeine.peer.events.fiat.BalanceChanged
+import coinffeine.peer.events.fiat.FiatBalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
@@ -160,7 +160,7 @@ private class OkPayProcessorActor(
 
   private def notifyAccountStatus(): Unit = {
     registry ! AccountUpdate(balances.cached, remainingLimits.cached)
-    publish(BalanceChanged(for {
+    publish(FiatBalanceChanged(for {
       cachedAmounts <- balances
       cachedRemainingLimits <- remainingLimits
     } yield FiatBalance(cachedAmounts, cachedRemainingLimits)))

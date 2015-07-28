@@ -5,8 +5,8 @@ import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.util.Cached
 
 /** An event published when FIAT balance changes. */
-case class BalanceChanged(balance: Cached[FiatBalance])
+case class FiatBalanceChanged(balance: Cached[FiatBalance])
 
-object BalanceChanged extends TopicProvider[BalanceChanged] {
+object FiatBalanceChanged extends TopicProvider[FiatBalanceChanged] {
   override val Topic = "fiat.balance-changed"
 }
