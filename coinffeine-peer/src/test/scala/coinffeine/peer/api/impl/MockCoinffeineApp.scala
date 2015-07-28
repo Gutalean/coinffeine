@@ -39,8 +39,6 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def accountId = Some("fake-account-id")
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
     override val balances = new MutableProperty(Cached.fresh(FiatBalance.empty))
-    override val remainingLimits =
-      new MutableProperty[Cached[FiatAmounts]](Cached.fresh(FiatAmounts.empty))
   }
 
   override def utils = new CoinffeineUtils {

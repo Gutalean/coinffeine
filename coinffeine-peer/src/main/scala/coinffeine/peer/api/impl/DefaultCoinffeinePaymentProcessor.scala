@@ -22,8 +22,6 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
 
   override val balances = properties.balances
 
-  override val remainingLimits = properties.remainingLimits
-
   override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] =
     await((peer ? RetrieveBalance(Euro)).mapTo[RetrieveBalanceResponse].map {
       case BalanceRetrieved(

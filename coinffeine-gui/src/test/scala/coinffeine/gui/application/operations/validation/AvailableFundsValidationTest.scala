@@ -60,7 +60,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
 
   private trait Fixture {
     private val fiatBalances = new MutableProperty(Cached.fresh(FiatBalance.empty))
-    private val initialFiatBalance = Cached.fresh(FiatBalance(FiatAmounts.fromAmounts(450.EUR)))
+    private val initialFiatBalance = freshBalance(450.EUR)
     val initialBitcoinBalance = BitcoinBalance(
       estimated = 2.3.BTC,
       available = 2.3.BTC,
@@ -87,11 +87,16 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
     }
 
     protected def givenStaleFiatFunds(): Unit = {
-      fiatBalances.set(Cached.stale(initialFiatBalance.cached))
+      fiatBalances.set(initialFiatBalance.staled)
     }
 
     protected def givenNotEnoughFiatFunds(): Unit = {
-      fiatBalances.set(Cached.fresh(FiatBalance(FiatAmounts.fromAmounts(1.EUR))))
+      fiatBalances.set(freshBalance(1.EUR))
     }
+
+    private def freshBalance(amount: FiatAmount) = Cached.fresh(FiatBalance(
+      amounts = FiatAmounts.fromAmounts(amount),
+      remainingLimits = FiatAmounts.empty
+    ))
   }
 }

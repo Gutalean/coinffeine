@@ -142,13 +142,13 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     givenStartedPaymentProcessor()
 
     givenAccountRemainingLimits(300.EUR)
-    expectRemainingLimitsPropertyUpdated(300.EUR)
+    expectBalancePropertyUpdated(100.EUR, Some(300.EUR))
 
     givenAccountRemainingLimits(280.EUR)
-    expectRemainingLimitsPropertyUpdated(280.EUR)
+    expectBalancePropertyUpdated(100.EUR, Some(280.EUR))
 
     givenRemainingLimitsRetrievalFailure()
-    expectRemainingLimitsPropertyUpdated(280.EUR, cacheStatus = CacheStatus.Stale)
+    expectBalancePropertyUpdated(100.EUR, Some(280.EUR), cacheStatus = CacheStatus.Stale)
   }
 
   it must "check that an account actually exists" in new WithOkPayProcessor {
@@ -283,19 +283,17 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectBalancePropertyUpdated(
         balance: FiatAmount,
+        remainingLimit: Option[FiatAmount] = None,
         cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
       expectPropertyUpdated(
         property = properties.balances,
-        expectedValue = Cached(FiatBalance(FiatAmounts.fromAmounts(balance)), cacheStatus)
-      )
-    }
-
-    def expectRemainingLimitsPropertyUpdated(
-        remainingLimit: FiatAmount,
-        cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
-      expectPropertyUpdated(
-        property = properties.remainingLimits,
-        expectedValue = Cached(FiatAmounts.fromAmounts(remainingLimit), cacheStatus)
+        expectedValue = Cached(
+          FiatBalance(
+            amounts = FiatAmounts.fromAmounts(balance),
+            remainingLimits = FiatAmounts.fromAmounts(remainingLimit.toSeq: _*)
+          ),
+          cacheStatus
+        )
       )
     }
 

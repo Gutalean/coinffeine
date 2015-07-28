@@ -18,7 +18,7 @@ import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
-import coinffeine.peer.events.fiat.{BalanceChanged, RemainingLimitsChanged}
+import coinffeine.peer.events.fiat.BalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
@@ -38,7 +38,7 @@ private class OkPayProcessorActor(
   private val registry = context.actorOf(registryProps, "funds")
 
   private var timer: Cancellable = _
-  private var balances = Cached.stale(FiatBalance.empty)
+  private var balances = Cached.stale(FiatAmounts.empty)
   private var remainingLimits = Cached.stale(FiatAmounts.empty)
 
   override def onStart(args: Unit) = {
@@ -141,7 +141,7 @@ private class OkPayProcessorActor(
 
     maybeBalances match {
       case Success(newBalances) =>
-        balances = Cached.fresh(FiatBalance(newBalances))
+        balances = Cached.fresh(newBalances)
       case Failure(cause) =>
         log.error(cause, "Cannot poll OkPay for balances")
         balances = Cached.stale(balances.cached)
@@ -159,9 +159,11 @@ private class OkPayProcessorActor(
   }
 
   private def notifyAccountStatus(): Unit = {
-    registry ! AccountUpdate(balances.cached.amounts, remainingLimits.cached)
-    publish(BalanceChanged(balances))
-    publish(RemainingLimitsChanged(remainingLimits))
+    registry ! AccountUpdate(balances.cached, remainingLimits.cached)
+    publish(BalanceChanged(for {
+      cachedAmounts <- balances
+      cachedRemainingLimits <- remainingLimits
+    } yield FiatBalance(cachedAmounts, cachedRemainingLimits)))
   }
 
   private def checkAccountExistence(accountId: AccountId): Unit = {
