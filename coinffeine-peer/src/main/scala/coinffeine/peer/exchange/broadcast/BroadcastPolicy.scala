@@ -3,7 +3,6 @@ package coinffeine.peer.exchange.broadcast
 import coinffeine.model.bitcoin.ImmutableTransaction
 
 private trait BroadcastPolicy {
-  def relevantBlocks: Seq[Long]
   def addOfferTransaction(tx: ImmutableTransaction): Unit
   def unsetLastOffer(): Unit
   def requestPublication(): Unit
@@ -21,8 +20,6 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
 
   private val refundBlock = refund.get.getLockTime
   private val panicBlock = refundBlock - refundSafetyBlockCount
-
-  override def relevantBlocks: Seq[Long] = Seq(panicBlock, refundBlock)
 
   override def addOfferTransaction(tx: ImmutableTransaction): Unit = {
     lastOffer = Some(tx)

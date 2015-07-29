@@ -60,6 +60,7 @@ private class TransactionBroadcaster(
   import TransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
+  private val relevantBlocks = Seq(refund.get.getLockTime - constants.refundSafetyBlockCount, refund.get.getLockTime)
   private val policy = new BroadcastPolicyImpl(refund, constants.refundSafetyBlockCount)
   private val resubmitTimer =
     new ResubmitTimer(context, constants.transactionRepublicationInterval)
@@ -70,7 +71,7 @@ private class TransactionBroadcaster(
   }
 
   private def watchRelevantBlocks(): Unit = {
-    for (blockHeight <- policy.relevantBlocks) {
+    for (blockHeight <- relevantBlocks) {
       collaborators.blockchain ! BlockchainActor.WatchBlockchainHeight(blockHeight)
     }
   }
