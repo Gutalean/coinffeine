@@ -14,7 +14,7 @@ private[okpay] class BlockedFiatRegistryActor(override val persistenceId: String
 
   import BlockedFiatRegistryActor._
 
-  private val registry = new BlockedFiatRegistry
+  private val registry = new BlockedFiatRegistryImpl
 
   override def receiveRecover: Receive = {
     case event: FundsBlockedEvent => onFundsBlocked(event)
@@ -55,7 +55,7 @@ private[okpay] class BlockedFiatRegistryActor(override val persistenceId: String
 
     case UnmarkUsed(fundsId, amount) =>
       registry.canUnmarkUsed(fundsId, amount).fold(
-        succ = funds => persist(FundsUnmarkedUsedEvent(fundsId, amount))(onFundsUnmarkedUsed),
+        succ = _ => persist(FundsUnmarkedUsedEvent(fundsId, amount))(onFundsUnmarkedUsed),
         fail = reason => log.warning("cannot unmark funds {}: {}", fundsId, reason)
       )
 

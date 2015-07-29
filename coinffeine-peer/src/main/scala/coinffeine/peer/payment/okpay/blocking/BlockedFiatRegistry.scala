@@ -5,11 +5,33 @@ import scalaz.Validation.FlatMap._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency, FiatAmounts}
+import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor.BlockedFundsInfo
 
-private[okpay] class BlockedFiatRegistry {
+private[okpay] trait BlockedFiatRegistry {
+
+  def updateTransientAmounts(newBalances: FiatAmounts, newRemainingLimits: FiatAmounts): Unit
+
+  def takeMemento: Map[ExchangeId, BlockedFundsInfo]
+  def restoreMemento(snapshot: Map[ExchangeId, BlockedFundsInfo]): Unit
+
+  def contains(fundsId: ExchangeId): Boolean
+  def blockedFundsByCurrency: FiatAmounts
+
+  def notifyAvailabilityChanges(listener: AvailabilityListener): Unit
+
+  def block(fundsId: ExchangeId, amount: FiatAmount): Unit
+  def unblock(fundsId: ExchangeId): Unit
+
+  def canMarkUsed(fundsId: ExchangeId, amount: FiatAmount): Validation[String, BlockedFundsInfo]
+  def markUsed(fundsId: ExchangeId, amount: FiatAmount): Unit
+
+  def canUnmarkUsed(fundsId: ExchangeId, amount: FiatAmount): Validation[String, Unit]
+  def unmarkUsed(fundsId: ExchangeId, amount: FiatAmount): Unit
+}
+
+private[okpay] class BlockedFiatRegistryImpl extends BlockedFiatRegistry {
   // Transient information
   private var balances = FiatAmounts.empty
   private var remainingLimits = FiatAmounts.empty
@@ -18,69 +40,70 @@ private[okpay] class BlockedFiatRegistry {
   // Information saved in mementos
   private var funds: Map[ExchangeId, BlockedFundsInfo] = Map.empty
 
-  def updateTransientAmounts(newBalances: FiatAmounts, newRemainingLimits: FiatAmounts): Unit = {
+  override def updateTransientAmounts(
+      newBalances: FiatAmounts, newRemainingLimits: FiatAmounts): Unit = {
     balances = newBalances
     remainingLimits = newRemainingLimits
     updateBackedFunds()
   }
 
-  def takeMemento: Map[ExchangeId, BlockedFundsInfo] = funds
+  override def takeMemento: Map[ExchangeId, BlockedFundsInfo] = funds
 
-  def restoreMemento(snapshot: Map[ExchangeId, BlockedFundsInfo]): Unit = {
+  override def restoreMemento(snapshot: Map[ExchangeId, BlockedFundsInfo]): Unit = {
     funds = snapshot
     funds.keys.foreach(fundsAvailability.addFunds)
     updateBackedFunds()
   }
 
-  def blockedFundsByCurrency: FiatAmounts = {
+  override def blockedFundsByCurrency: FiatAmounts = {
     val fundsByCurrency = funds.values
         .groupBy(_.remainingAmount.currency)
         .mapValues(funds => funds.map(_.remainingAmount).reduce(_ + _))
     FiatAmounts(fundsByCurrency.values.toSeq)
   }
 
-  def notifyAvailabilityChanges(listener: AvailabilityListener): Unit = {
+  override def notifyAvailabilityChanges(listener: AvailabilityListener): Unit = {
     fundsAvailability.notifyChanges(listener)
   }
 
-  def block(fundsId: ExchangeId, amount: FiatAmount): Unit = {
+  override def block(fundsId: ExchangeId, amount: FiatAmount): Unit = {
     require(!funds.contains(fundsId))
     funds += fundsId -> BlockedFundsInfo(fundsId, amount)
     fundsAvailability.addFunds(fundsId)
     updateBackedFunds()
   }
 
-  def unblock(fundsId: ExchangeId): Unit = {
+  override def unblock(fundsId: ExchangeId): Unit = {
     funds -= fundsId
     fundsAvailability.removeFunds(fundsId)
     updateBackedFunds()
   }
 
-  def canMarkUsed(
+  override def canMarkUsed(
       fundsId: ExchangeId, amount: FiatAmount): Validation[String, BlockedFundsInfo] = for {
     funds <- requireExistingFunds(fundsId, amount.currency)
     _ <- requireEnoughBalance(funds, amount)
     _ <- requiredBackedFunds(funds.id)
   } yield funds
 
-  def markUsed(fundsId: ExchangeId, amount: FiatAmount): Unit = {
+  override def markUsed(fundsId: ExchangeId, amount: FiatAmount): Unit = {
     val fundsToUse = funds(fundsId)
     updateFunds(fundsToUse.copy(remainingAmount = fundsToUse.remainingAmount - amount))
     balances = balances.decrement(amount)
     updateBackedFunds()
   }
 
-  def canUnmarkUsed(fundsId: ExchangeId, amount: FiatAmount) =
-    requireExistingFunds(fundsId, amount.currency)
+  override def canUnmarkUsed(fundsId: ExchangeId, amount: FiatAmount) =
+    requireExistingFunds(fundsId, amount.currency).map(_ => {})
 
-  def unmarkUsed(fundsId: ExchangeId, amount: FiatAmount): Unit = {
+  override def unmarkUsed(fundsId: ExchangeId, amount: FiatAmount): Unit = {
     val fundsToUse = funds(fundsId)
     updateFunds(fundsToUse.copy(remainingAmount = fundsToUse.remainingAmount + amount))
     balances = balances.increment(amount)
     updateBackedFunds()
   }
 
-  def contains(fundsId: ExchangeId): Boolean = funds.contains(fundsId)
+  override def contains(fundsId: ExchangeId): Boolean = funds.contains(fundsId)
 
   private def updateBackedFunds(): Unit = {
     fundsAvailability.clearAvailable()

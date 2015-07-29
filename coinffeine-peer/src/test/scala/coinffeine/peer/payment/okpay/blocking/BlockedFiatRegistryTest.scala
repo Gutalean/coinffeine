@@ -165,14 +165,14 @@ class BlockedFiatRegistryTest extends UnitTest {
     givenFundsMarkedUsed(funds1, 20.EUR)
     registry.unblock(funds2)
 
-    val otherRegistry = new BlockedFiatRegistry
+    val otherRegistry = new BlockedFiatRegistryImpl
     otherRegistry.restoreMemento(registry.takeMemento)
     otherRegistry.blockedFundsByCurrency shouldBe FiatAmounts.fromAmounts(40.EUR)
   }
 
   private abstract class Fixture() {
     private val listener = new MockAvailabilityListener
-    protected var registry = new BlockedFiatRegistry
+    protected var registry = new BlockedFiatRegistryImpl
 
     protected def givenAmounts(amount: FiatAmount, remainingLimit: FiatAmount): Unit = {
       givenAmounts(amount, Some(remainingLimit))
