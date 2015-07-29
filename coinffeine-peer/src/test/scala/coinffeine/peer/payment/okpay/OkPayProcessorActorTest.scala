@@ -21,7 +21,7 @@ import coinffeine.model.util.{CacheStatus, Cached}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.{AccountExistence, CheckAccountExistence, FindPaymentCriterion}
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor
 import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
@@ -278,7 +278,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectRegistryIsInitialized(): Unit = {
       fundsRegistry.expectCreation()
-      fundsRegistry.expectMsgType[BlockedFiatRegistry.AccountUpdate]
+      fundsRegistry.expectMsgType[BlockedFiatRegistryActor.AccountUpdate]
     }
 
     def expectBalancePropertyUpdated(
@@ -305,8 +305,8 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectRetrieveBlockedFunds(funds: FiatAmount): Unit = {
       fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistry.RetrieveTotalBlockedFunds =>
-          BlockedFiatRegistry.TotalBlockedFunds(FiatAmounts.fromAmounts(funds))
+        case BlockedFiatRegistryActor.RetrieveTotalBlockedFunds =>
+          BlockedFiatRegistryActor.TotalBlockedFunds(FiatAmounts.fromAmounts(funds))
       }
     }
 
@@ -316,20 +316,20 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectRegistryMarksUsed(amount: FiatAmount): Unit = {
       fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistry.MarkUsed(`funds`, `amount`) =>
-          BlockedFiatRegistry.FundsMarkedUsed(funds, amount)
+        case BlockedFiatRegistryActor.MarkUsed(`funds`, `amount`) =>
+          BlockedFiatRegistryActor.FundsMarkedUsed(funds, amount)
       }
     }
 
     def expectRegistryCannotMarkUsed(): Unit = {
       fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistry.MarkUsed(_, requested) =>
-          BlockedFiatRegistry.CannotMarkUsed(funds, requested, "not enough!")
+        case BlockedFiatRegistryActor.MarkUsed(_, requested) =>
+          BlockedFiatRegistryActor.CannotMarkUsed(funds, requested, "not enough!")
       }
     }
 
     def expectRegistryMarksUnused(amount: FiatAmount): Unit = {
-      fundsRegistry.expectMsg(BlockedFiatRegistry.UnmarkUsed(funds, amount))
+      fundsRegistry.expectMsg(BlockedFiatRegistryActor.UnmarkUsed(funds, amount))
     }
 
     def expectBalanceRetrieved(balance: FiatAmount, blocked: FiatAmount): Unit = {

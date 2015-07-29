@@ -21,8 +21,8 @@ import coinffeine.model.util.Cached
 import coinffeine.peer.events.fiat.FiatBalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
 import coinffeine.peer.payment._
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry._
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor._
 
 private class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
@@ -206,7 +206,7 @@ object OkPayProcessorActor {
   private case class PollResult(balances: Try[FiatAmounts], remainingLimits: Try[FiatAmounts])
 
   def props(lookupSettings: () => OkPaySettings) = {
-    Props(new OkPayProcessorActor(new OkPayClientFactory(lookupSettings), BlockedFiatRegistry.props,
+    Props(new OkPayProcessorActor(new OkPayClientFactory(lookupSettings), BlockedFiatRegistryActor.props,
       lookupSettings().pollingInterval))
   }
 }
