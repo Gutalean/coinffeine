@@ -29,11 +29,11 @@ private class BlockedFundsAvailability {
   def areAvailable(funds: ExchangeId): Boolean = availability(funds) == Available
 
   /** Notify the changes since the last call to this method via callbacks */
-  def notifyChanges(onAvailable: ExchangeId => Unit, onUnavailable: ExchangeId => Unit): Unit = {
+  def notifyChanges(listener: AvailabilityListener): Unit = {
     for (funds <- availability.keys) {
       (announcedAvailability(funds), availability(funds)) match {
-        case (None | Some(Unavailable), Available) => onAvailable(funds)
-        case (None | Some(Available), Unavailable) => onUnavailable(funds)
+        case (None | Some(Unavailable), Available) => listener.onAvailable(funds)
+        case (None | Some(Available), Unavailable) => listener.onUnavailable(funds)
         case _ => // No change
       }
     }
