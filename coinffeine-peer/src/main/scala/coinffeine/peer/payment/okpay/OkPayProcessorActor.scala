@@ -11,7 +11,7 @@ import akka.pattern._
 import coinffeine.alarms.akka.EventStreamReporting
 import coinffeine.common.ScalaFutureImplicits._
 import coinffeine.common.akka.event.CoinffeineEventProducer
-import coinffeine.common.akka.{AskPattern, ServiceLifecycle}
+import coinffeine.common.akka.{AskPattern, Service}
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.FiatBalance
 import coinffeine.model.exchange.ExchangeId
@@ -28,8 +28,7 @@ private class OkPayProcessorActor(
     clientFactory: OkPayProcessorActor.ClientFactory,
     registryProps: Props,
     pollingInterval: FiniteDuration)
-  extends Actor with ActorLogging with ServiceLifecycle[Unit]
-  with EventStreamReporting with CoinffeineEventProducer {
+  extends Actor with ActorLogging with EventStreamReporting with CoinffeineEventProducer {
 
   import context.dispatcher
 
@@ -41,21 +40,8 @@ private class OkPayProcessorActor(
   private var balances = Cached.stale(FiatAmounts.empty)
   private var remainingLimits = Cached.stale(FiatAmounts.empty)
 
-  override def onStart(args: Unit) = {
-    pollAccountState()
-    timer = context.system.scheduler.schedule(
-      initialDelay = pollingInterval,
-      interval = pollingInterval,
-      receiver = self,
-      message = PollBalances
-    )
-    BecomeStarted(started)
-  }
-
-  override def onStop() = {
-    Option(timer).foreach(_.cancel())
-    clientFactory.shutdown()
-    BecomeStopped
+  override def receive: Receive = {
+    case Service.Start(_) => start()
   }
 
   private def started: Receive = {
@@ -67,6 +53,26 @@ private class OkPayProcessorActor(
       updateCachedInformation(newBalances, newRemainingLimits)
     case CheckAccountExistence(accountId) => checkAccountExistence(accountId)
     case msg @ (_: BlockFunds | _: UnblockFunds) => registry.forward(msg)
+    case Service.Stop => stop()
+  }
+
+  private def start() = {
+    pollAccountState()
+    timer = context.system.scheduler.schedule(
+      initialDelay = pollingInterval,
+      interval = pollingInterval,
+      receiver = self,
+      message = PollBalances
+    )
+    context.become(started)
+    sender() ! Service.Started
+  }
+
+  private def stop(): Unit = {
+    Option(timer).foreach(_.cancel())
+    clientFactory.shutdown()
+    context.become(Map.empty)
+    sender() ! Service.Stopped
   }
 
   private def sendPayment(requester: ActorRef, pay: Pay): Unit = {
