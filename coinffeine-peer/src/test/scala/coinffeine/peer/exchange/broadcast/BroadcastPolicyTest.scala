@@ -63,7 +63,7 @@ class BroadcastPolicyTest extends UnitTest {
       tx.setLockTime(100)
       tx
     }
-    val policy = new BroadcastPolicy(refund, safetyBlocks)
+    val policy = new BroadcastPolicyImpl(refund, safetyBlocks)
 
     def expectNotBroadcasting(): Unit = {
       policy.shouldBroadcast shouldBe false

@@ -60,7 +60,7 @@ private class TransactionBroadcaster(
   import TransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
-  private val policy = new BroadcastPolicy(refund, constants.refundSafetyBlockCount)
+  private val policy = new BroadcastPolicyImpl(refund, constants.refundSafetyBlockCount)
   private val resubmitTimer =
     new ResubmitTimer(context, constants.transactionRepublicationInterval)
 
