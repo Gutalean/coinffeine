@@ -11,10 +11,37 @@ private trait BroadcastPolicy {
   def shouldBroadcast: Boolean
 }
 
+private object BroadcastPolicy {
+
+  sealed trait Offer {
+    def add(offer: ImmutableTransaction): Offer
+    def invalidate: Offer
+    def best: Option[ImmutableTransaction]
+  }
+
+  case object NoOffer extends Offer {
+    override def add(offer: ImmutableTransaction) = BestOffer(offer)
+    override def invalidate = InvalidatedOffers
+    override def best = None
+  }
+
+  case class BestOffer(offer: ImmutableTransaction) extends Offer {
+    override def add(betterOffer: ImmutableTransaction) = BestOffer(betterOffer)
+    override def invalidate = InvalidatedOffers
+    override def best = Some(offer)
+  }
+
+  case object InvalidatedOffers extends Offer {
+    override def add(offer: ImmutableTransaction) = this
+    override def invalidate = this
+    override def best = None
+  }
+}
+
 /** Keep the transactions related to an exchange and determine what should be broadcast */
 private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBlockCount: Int) extends BroadcastPolicy {
 
-  private var lastOffer: Option[ImmutableTransaction] = None
+  private var offer: BroadcastPolicy.Offer = BroadcastPolicy.NoOffer
   private var publicationRequested: Boolean = false
   private var height: Long = 0L
 
@@ -22,22 +49,22 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
   private val panicBlock = refundBlock - refundSafetyBlockCount
 
   override def addOfferTransaction(tx: ImmutableTransaction): Unit = {
-    lastOffer = Some(tx)
+    offer = offer.add(tx)
   }
 
   override def unsetLastOffer(): Unit = {
-    lastOffer = None
+    offer = offer.invalidate
   }
 
   override def requestPublication(): Unit = { publicationRequested = true }
 
   override def updateHeight(currentHeight: Long): Unit = { height = currentHeight }
 
-  override def bestTransaction: ImmutableTransaction = lastOffer getOrElse refund
+  override def bestTransaction: ImmutableTransaction = offer.best getOrElse refund
 
   override def shouldBroadcast: Boolean = shouldBroadcastLastOffer || canBroadcastRefund
 
-  private def shouldBroadcastLastOffer = lastOffer.isDefined && (panicked || publicationRequested)
+  private def shouldBroadcastLastOffer = offer.best.isDefined && (panicked || publicationRequested)
   private def canBroadcastRefund = height >= refundBlock
   private def panicked = height >= panicBlock
 }
