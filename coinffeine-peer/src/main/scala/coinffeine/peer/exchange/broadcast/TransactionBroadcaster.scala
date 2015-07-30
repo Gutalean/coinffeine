@@ -136,7 +136,7 @@ private class TransactionBroadcaster(
   }
 
   private def onRefundPublicationRequested(): Unit = {
-    policy.unsetLastOffer()
+    policy.invalidateOffers()
   }
 }
 

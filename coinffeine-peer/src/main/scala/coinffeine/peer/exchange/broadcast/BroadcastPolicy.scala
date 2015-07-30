@@ -4,7 +4,7 @@ import coinffeine.model.bitcoin.ImmutableTransaction
 
 private trait BroadcastPolicy {
   def addOfferTransaction(tx: ImmutableTransaction): Unit
-  def unsetLastOffer(): Unit
+  def invalidateOffers(): Unit
   def requestPublication(): Unit
   def updateHeight(currentHeight: Long): Unit
   def bestTransaction: ImmutableTransaction
@@ -52,7 +52,7 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
     offer = offer.add(tx)
   }
 
-  override def unsetLastOffer(): Unit = {
+  override def invalidateOffers(): Unit = {
     offer = offer.invalidate
   }
 
