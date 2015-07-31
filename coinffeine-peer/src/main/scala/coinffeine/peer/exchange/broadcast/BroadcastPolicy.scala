@@ -102,8 +102,11 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
     offerPublicationTrigger = offerPublicationTrigger.heightReached(currentHeight)
   }
 
-  override def transactionToBroadcast = if (shouldBroadcast) offer.best orElse Some(refund) else None
+  override def transactionToBroadcast = bestOfferToBroadcast orElse refundToBroadcast
 
-  private def shouldBroadcast: Boolean = shouldBroadcastLastOffer || refundPublicationTrigger.shouldPublish
-  private def shouldBroadcastLastOffer = offer.best.isDefined && offerPublicationTrigger.shouldPublish
+  private def bestOfferToBroadcast = for {
+    tx <- offer.best if offerPublicationTrigger.shouldPublish
+  } yield tx
+
+  private def refundToBroadcast = if (refundPublicationTrigger.shouldPublish) Some(refund) else None
 }
