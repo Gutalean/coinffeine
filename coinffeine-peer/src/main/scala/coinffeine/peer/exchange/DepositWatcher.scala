@@ -13,18 +13,25 @@ import coinffeine.peer.bitcoin.blockchain.BlockchainActor
 class DepositWatcher(exchange: DepositPendingExchange,
                      myDeposit: ImmutableTransaction,
                      refundTx: ImmutableTransaction,
+                     herDeposit: Option[ImmutableTransaction],
                      collaborators: DepositWatcher.Collaborators) extends Actor {
 
   private val network = exchange.parameters.network
   private val userAddress = exchange.user.bitcoinKey.toAddress(network)
+  private val myOutput = myDeposit.get.getOutput(0)
+  private val herOutput = herDeposit.map(_.get.getOutput(0))
 
   override def preStart(): Unit = {
-    collaborators.blockchain ! BlockchainActor.WatchOutput(myDeposit.get.getOutput(0))
+    collaborators.blockchain ! BlockchainActor.WatchOutput(myOutput)
+    herOutput.foreach(out => collaborators.blockchain ! BlockchainActor.WatchOutput(out))
   }
 
   override def receive: Receive = {
     case BlockchainActor.OutputSpent(_, `refundTx`) =>
       collaborators.listener ! DepositWatcher.DepositSpent(refundTx, DepositWatcher.DepositRefund)
+
+    case BlockchainActor.OutputSpent(output, spendTx) if herOutput.exists(isSameOutput(output, _)) =>
+      collaborators.listener ! DepositWatcher.DepositSpent(spendTx, DepositWatcher.CounterpartDepositRefund)
 
     case BlockchainActor.OutputSpent(_, spendTx) =>
       val actualAmount = amountForMe(spendTx.get)
@@ -50,6 +57,11 @@ class DepositWatcher(exchange: DepositPendingExchange,
     exchange.amounts.steps.zipWithIndex.reverse.collectFirst {
       case (step, index) if exchange.role.select(step.depositSplit) == amount => index + 1
     }
+
+  private def isSameOutput(lhs: MutableTransactionOutput, rhs: MutableTransactionOutput): Boolean = {
+    lhs.getParentTransaction.getHash == rhs.getParentTransaction.getHash &&
+      lhs.getIndex == rhs.getIndex
+  }
 }
 
 object DepositWatcher {
@@ -57,6 +69,7 @@ object DepositWatcher {
 
   sealed trait DepositDestination
   case object DepositRefund extends DepositDestination
+  case object CounterpartDepositRefund extends DepositDestination
   case object CompletedChannel extends DepositDestination
   case class ChannelAtStep(step: Int) extends DepositDestination
   case object UnexpectedDestination extends DepositDestination

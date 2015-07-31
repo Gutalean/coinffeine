@@ -52,6 +52,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       givenHandshakeWillSucceedWithInvalidCounterpartCommitment()
       startActor()
       listener.expectNoMsg()
+      broadcaster.expectPublishBestTransaction()
       notifyDepositDestination(DepositRefund)
       expectFailureTermination().exchange.cause shouldBe
         FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(true, false)))
@@ -64,6 +65,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelCreation()
     micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
+    broadcaster.expectPublishBestTransaction()
     notifyDepositDestination(ChannelAtStep(1))
     expectFailureTermination(finishMicropaymentChannel = true)
   }
@@ -80,6 +82,42 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       notifyDepositDestination(UnexpectedDestination, unexpectedTx)
       inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
         case FailedExchange(_, _, FailureCause.UnexpectedBroadcast, _, Some(`unexpectedTx`)) =>
+      }
+    }
+
+  it should "report a failure if the counterpart broadcasts his refund transaction after channel creation" in
+    new Fixture {
+      val myRefund = dummyTx
+      val counterpartRefund = ImmutableTransaction {
+        val newTx = dummyTx.get
+        newTx.setLockTime(40)
+        newTx
+      }
+      startActor()
+      givenMicropaymentChannelCreation()
+      notifyDepositDestination(CounterpartDepositRefund, counterpartRefund)
+      broadcaster.expectPublishRefundTransaction()
+      notifyDepositDestination(DepositRefund, myRefund)
+      inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
+        case FailedExchange(_, _, FailureCause.PanicBlockReached, _, Some(`myRefund`)) =>
+      }
+    }
+
+  it should "report a failure if the counterpart broadcasts his refund transaction after succeded channel" in
+    new Fixture {
+      val myRefund = dummyTx
+      val counterpartRefund = ImmutableTransaction {
+        val newTx = dummyTx.get
+        newTx.setLockTime(40)
+        newTx
+      }
+      startActor()
+      givenMicropaymentChannelSuccess()
+      notifyDepositDestination(CounterpartDepositRefund, counterpartRefund)
+      broadcaster.expectPublishRefundTransaction()
+      notifyDepositDestination(DepositRefund, myRefund)
+      inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
+        case FailedExchange(_, _, FailureCause.PanicBlockReached, _, Some(`myRefund`)) =>
       }
     }
 

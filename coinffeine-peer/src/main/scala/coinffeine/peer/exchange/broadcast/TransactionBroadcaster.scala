@@ -21,8 +21,11 @@ import coinffeine.peer.exchange.micropayment.MicroPaymentChannelActor.LastBroadc
   */
 object TransactionBroadcaster {
 
-  /** A request for the actor to finish the exchange and broadcast the best possible transaction */
+  /** A request for the actor to broadcast the best possible transaction */
   case object PublishBestTransaction
+
+  /** A request for the actor to broadcast the refund transaction. */
+  case object PublishRefundTransaction
 
   case class UnexpectedTxBroadcast(unexpectedTx: ImmutableTransaction) extends RuntimeException(
     "The exchange finished with a successful broadcast, but the transaction that was published was" +
@@ -39,6 +42,7 @@ object TransactionBroadcaster {
 
   private case class OfferAdded(offer: ImmutableTransaction) extends PersistentEvent
   private case object PublicationRequested extends PersistentEvent
+  private case object RefundPublicationRequested extends PersistentEvent
 
   /** Unused but kept to maintain the binary compatibility, remove after 0.12 */
   @deprecated private case class FinishedWithResult(result: BroadcastResult)
@@ -56,7 +60,8 @@ private class TransactionBroadcaster(
   import TransactionBroadcaster._
 
   override val persistenceId = "broadcast-with-refund-" + refund.get.getHashAsString
-  private val policy = new BroadcastPolicy(refund, constants.refundSafetyBlockCount)
+  private val relevantBlocks = Seq(refund.get.getLockTime - constants.refundSafetyBlockCount, refund.get.getLockTime)
+  private val policy = new BroadcastPolicyImpl(refund, constants.refundSafetyBlockCount)
   private val resubmitTimer =
     new ResubmitTimer(context, constants.transactionRepublicationInterval)
 
@@ -66,7 +71,7 @@ private class TransactionBroadcaster(
   }
 
   private def watchRelevantBlocks(): Unit = {
-    for (blockHeight <- policy.relevantBlocks) {
+    for (blockHeight <- relevantBlocks) {
       collaborators.blockchain ! BlockchainActor.WatchBlockchainHeight(blockHeight)
     }
   }
@@ -95,24 +100,28 @@ private class TransactionBroadcaster(
         broadcastIfNeeded("requested publication")
       }
 
+    case PublishRefundTransaction =>
+      persist(RefundPublicationRequested) { _ =>
+        onRefundPublicationRequested()
+        broadcastIfNeeded("requested refund publication")
+      }
+
     case BlockchainActor.BlockchainHeightReached(height) =>
       policy.updateHeight(height)
       broadcastIfNeeded(s"$height reached")
 
-    case ResubmitTimeout => broadcast("resubmission")
+    case ResubmitTimeout => broadcastIfNeeded("resubmission")
 
     case TransactionNotPublished(_, ex) => log.error(ex, "Cannot publish transaction")
   }
 
   private def broadcastIfNeeded(trigger: String): Unit = {
-    if (policy.shouldBroadcast) {
-      broadcast(trigger)
-    }
+    policy.transactionToBroadcast.foreach(tx => broadcast(tx, trigger))
   }
 
-  private def broadcast(trigger: String): Unit = {
-    log.info("Broadcasting {}: {}", policy.bestTransaction, trigger)
-    collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
+  private def broadcast(tx: ImmutableTransaction, trigger: String): Unit = {
+    log.info("Broadcasting {}: {}", policy.transactionToBroadcast, trigger)
+    collaborators.bitcoinPeer ! PublishTransaction(tx)
     resubmitTimer.reset()
   }
 
@@ -122,6 +131,10 @@ private class TransactionBroadcaster(
 
   private def onPublicationRequested(): Unit = {
     policy.requestPublication()
+  }
+
+  private def onRefundPublicationRequested(): Unit = {
+    policy.invalidateOffers()
   }
 }
 

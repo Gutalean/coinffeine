@@ -19,10 +19,19 @@ class MockedBroadcaster(implicit system: ActorSystem) {
       case TransactionBroadcaster.Finish =>
         probe.ref ! TransactionBroadcaster.Finish
         self ! PoisonPill
+      case msg =>  probe.ref forward msg
     }
   }
 
   val props: Props = Props(new ActorStub)
+
+  def expectPublishBestTransaction(): Unit = {
+    probe.expectMsg(TransactionBroadcaster.PublishBestTransaction)
+  }
+
+  def expectPublishRefundTransaction(): Unit = {
+    probe.expectMsg(TransactionBroadcaster.PublishRefundTransaction)
+  }
 
   def expectFinished(): Unit = {
     probe.expectMsg(TransactionBroadcaster.Finish)

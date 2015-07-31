@@ -10,12 +10,7 @@ import coinffeine.model.bitcoin.{ImmutableTransaction, MutableTransaction}
 
 class BroadcastPolicyTest extends UnitTest {
 
-  "The broadcast policy" should "determine the panic and locktime blocks as relevant" in
-    new Fixture {
-      policy.relevantBlocks shouldBe Seq(lockTime - safetyBlocks, lockTime)
-    }
-
-  it should "broadcast the refund transaction if it becomes valid" in new Fixture {
+  "The broadcast policy" should "broadcast the refund transaction if it becomes valid" in new Fixture {
     policy.updateHeight(lockTime - 1)
     expectNotBroadcasting()
     policy.updateHeight(lockTime)
@@ -63,15 +58,14 @@ class BroadcastPolicyTest extends UnitTest {
       tx.setLockTime(100)
       tx
     }
-    val policy = new BroadcastPolicy(refund, safetyBlocks)
+    val policy = new BroadcastPolicyImpl(refund, safetyBlocks)
 
     def expectNotBroadcasting(): Unit = {
-      policy.shouldBroadcast shouldBe false
+      policy.transactionToBroadcast shouldBe 'empty
     }
 
     def expectBroadcasting(tx: ImmutableTransaction): Unit = {
-      policy.shouldBroadcast shouldBe true
-      policy.bestTransaction shouldBe tx
+      policy.transactionToBroadcast shouldBe Some(tx)
     }
 
     def buildOffer() = ImmutableTransaction {

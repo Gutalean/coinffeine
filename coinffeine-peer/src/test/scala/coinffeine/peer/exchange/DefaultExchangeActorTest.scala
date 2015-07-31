@@ -44,9 +44,10 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
                                 resultListeners: Set[ActorRef]) =
           micropaymentChannelActor.props(channel, resultListeners)
         def depositWatcher(exchange: DepositPendingExchange,
-                           deposit: ImmutableTransaction,
-                           refundTx: ImmutableTransaction)(implicit context: ActorContext): Props =
-          depositWatcherActor.props(exchange, deposit, refundTx)
+                           myDeposit: ImmutableTransaction,
+                           refundTx: ImmutableTransaction,
+                           herDeposit: Option[ImmutableTransaction])(implicit context: ActorContext): Props =
+          depositWatcherActor.props(exchange, myDeposit, herDeposit, refundTx)
       },
       Collaborators(walletActor.ref, paymentProcessor.ref, gateway.ref, peers.ref, blockchain.ref,
         listener.ref)
@@ -101,6 +102,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       givenMicropaymentChannelCreation()
       micropaymentChannelActor.probe
         .send(actor, MicroPaymentChannelActor.ChannelSuccess(Some(dummyTx)))
+      broadcaster.expectPublishBestTransaction()
     }
 
     protected def shouldWatchForTheTransactions(): Unit = {

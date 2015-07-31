@@ -56,6 +56,23 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     expectTermination()
   }
 
+  it should "broadcast the refund transaction if requested" in new Fixture {
+    expectRelevantHeightsSubscription()
+    instance ! PublishRefundTransaction
+    givenHeightNotification(refundLockTime)
+    givenSuccessfulBroadcast(refundTx)
+    expectTermination()
+  }
+
+  it should "broadcast the refund transaction if requested even with previous last offer" in new Fixture {
+    expectRelevantHeightsSubscription()
+    givenLastOffer(someLastOffer)
+    instance ! PublishRefundTransaction
+    givenHeightNotification(refundLockTime)
+    givenSuccessfulBroadcast(refundTx)
+    expectTermination()
+  }
+
   it should "broadcast again and again after the refund block" in new Fixture {
     override def retryInterval = 100.millis
     expectRelevantHeightsSubscription()
@@ -90,6 +107,26 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     givenSuccessfulBroadcast(someLastOffer)
     givenSuccessfulBroadcast(someLastOffer)
     givenSuccessfulBroadcast(someLastOffer)
+
+    expectTermination()
+  }
+
+  it should "broadcast again and again after a refund publication request" in new Fixture {
+    override def retryInterval = 100.millis
+    expectRelevantHeightsSubscription()
+    givenLastOffer(someLastOffer)
+    instance ! PublishBestTransaction
+
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+    givenSuccessfulBroadcast(someLastOffer)
+
+    instance ! PublishRefundTransaction
+    givenHeightNotification(refundLockTime)
+
+    givenSuccessfulBroadcast(refundTx)
+    givenSuccessfulBroadcast(refundTx)
+    givenSuccessfulBroadcast(refundTx)
 
     expectTermination()
   }
