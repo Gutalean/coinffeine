@@ -9,7 +9,7 @@ import akka.persistence._
 import org.bitcoinj.core.NetworkParameters
 import org.joda.time.DateTime
 
-import coinffeine.common.akka.event.CoinffeineEventProducer
+import coinffeine.common.akka.event.{CoinffeineEventConsumer, CoinffeineEventProducer}
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.exchange._
 import coinffeine.model.market._
@@ -32,7 +32,7 @@ class OrderActor(
     delegates: OrderActor.Delegates,
     collaborators: OrderActor.Collaborators)
     extends PersistentActor with PeriodicSnapshot with ActorLogging
-    with OrderPublisher.Listener with CoinffeineEventProducer {
+    with OrderPublisher.Listener with CoinffeineEventProducer with CoinffeineEventConsumer {
 
   import OrderActor._
 
@@ -45,6 +45,7 @@ class OrderActor(
     log.info("Order actor initialized for {}", orderId)
     subscribeToOrderMatches()
     subscribeToOrderChanges()
+    subscribeToTopics()
     super.preStart()
   }
 
@@ -216,6 +217,10 @@ class OrderActor(
         }
       }
     })
+  }
+
+  private def subscribeToTopics(): Unit = {
+    publisher.topics.foreach(subscribe)
   }
 
   private def updatePublisher(order: ActiveOrder): Unit = {

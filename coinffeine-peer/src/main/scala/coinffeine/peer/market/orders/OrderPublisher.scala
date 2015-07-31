@@ -4,6 +4,8 @@ import akka.actor.{Actor, ActorContext, ActorRef}
 
 import coinffeine.model.market._
 import coinffeine.model.order.OrderId
+import coinffeine.peer.events.bitcoin.BitcoinBalanceChanged
+import coinffeine.peer.events.fiat.FiatBalanceChanged
 import coinffeine.peer.market.submission.SubmissionSupervisor._
 
 private[orders] class OrderPublisher(
@@ -29,9 +31,20 @@ private[orders] class OrderPublisher(
     submissionActor ! message
   }
 
+  val topics: Seq[String] = Seq(FiatBalanceChanged.Topic, BitcoinBalanceChanged.Topic)
+
   val receiveSubmissionEvents: Actor.Receive = {
+    case FiatBalanceChanged(balance) =>
+      policy.setFiatBalance(balance)
+      updateSubmissionRequest()
+
+    case BitcoinBalanceChanged(balance) =>
+      policy.setBitcoinBalance(balance)
+      updateSubmissionRequest()
+
     case InMarket(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
       listener.inMarket()
+
     case Offline(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
       listener.offline()
   }
