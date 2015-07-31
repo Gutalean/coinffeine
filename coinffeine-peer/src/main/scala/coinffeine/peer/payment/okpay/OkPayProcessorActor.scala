@@ -53,7 +53,9 @@ private class OkPayProcessorActor(
     case SnapshotOffer(metadata, snapshot: Snapshot) =>
       setLastSnapshot(metadata.sequenceNr)
       restoreSnapshot(snapshot)
-    case RecoveryCompleted => registry.notifyAvailabilityChanges(notifier)
+    case RecoveryCompleted =>
+      publishFiatBalance()
+      registry.notifyAvailabilityChanges(notifier)
   }
 
   override def receiveCommand: Receive = {
@@ -71,11 +73,13 @@ private class OkPayProcessorActor(
       persist(FundsBlockedEvent(fundsId, amount)) { event =>
         sender() ! BlockedFunds(fundsId)
         onFundsBlocked(event)
+        publishFiatBalance()
       }
     case UnblockFunds(fundsId) =>
       persist(FundsUnblockedEvent(fundsId)) { event =>
         sender() ! UnblockFunds(fundsId)
         onFundsUnblocked(event)
+        publishFiatBalance()
       }
 
     case FindPayment(criterion) => findPayment(sender(), criterion)
@@ -149,6 +153,7 @@ private class OkPayProcessorActor(
       succ = funds => persist(FundsMarkedUsedEvent(pay.fundsId, amount)) { event =>
         onFundsMarkedUsed(event)
         self ! FundsMarkedUsed(pay, amount, requester)
+        publishFiatBalance()
       },
       fail = reason => requester ! PaymentFailed(pay, new Exception(reason))
     )
@@ -172,7 +177,10 @@ private class OkPayProcessorActor(
       fundsId: ExchangeId, amount: FiatAmount): Unit = {
     log.debug("Unmarking funds with id {} as used", fundsId)
     registry.canUnmarkUsed(fundsId, amount).fold(
-      succ = _ => persist(FundsUnmarkedUsedEvent(fundsId, amount))(onFundsUnmarkedUsed),
+      succ = _ => persist(FundsUnmarkedUsedEvent(fundsId, amount)) { event =>
+        onFundsUnmarkedUsed(event)
+        publishFiatBalance()
+      },
       fail = reason => log.warning("cannot unmark funds {}: {}", fundsId, reason)
     )
   }
@@ -240,7 +248,7 @@ private class OkPayProcessorActor(
     publish(FiatBalanceChanged(for {
       cachedAmounts <- balances
       cachedRemainingLimits <- remainingLimits
-    } yield FiatBalance(cachedAmounts, cachedRemainingLimits)))
+    } yield FiatBalance(cachedAmounts, registry.blockedFundsByCurrency, cachedRemainingLimits)))
   }
 
   private def checkAccountExistence(accountId: AccountId): Unit = {

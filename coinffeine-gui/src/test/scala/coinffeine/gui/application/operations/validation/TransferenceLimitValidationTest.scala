@@ -80,6 +80,7 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
 
     private def balanceWithLimits(limits: FiatAmount*) = Cached.fresh(FiatBalance(
       amounts = FiatAmounts.fromAmounts(300.EUR),
+      blockedAmounts = FiatAmounts.empty,
       remainingLimits = FiatAmounts(limits))
     )
   }
