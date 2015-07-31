@@ -52,6 +52,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       givenHandshakeWillSucceedWithInvalidCounterpartCommitment()
       startActor()
       listener.expectNoMsg()
+      broadcaster.expectPublishBestTransaction()
       notifyDepositDestination(DepositRefund)
       expectFailureTermination().exchange.cause shouldBe
         FailureCause.Abortion(AbortionCause.InvalidCommitments(Both(true, false)))
@@ -64,6 +65,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
     givenMicropaymentChannelCreation()
     micropaymentChannelActor.probe.send(actor, MicroPaymentChannelActor.ChannelFailure(1, error))
 
+    broadcaster.expectPublishBestTransaction()
     notifyDepositDestination(ChannelAtStep(1))
     expectFailureTermination(finishMicropaymentChannel = true)
   }
@@ -94,6 +96,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelCreation()
       notifyDepositDestination(CounterpartDepositRefund, counterpartRefund)
+      broadcaster.expectPublishRefundTransaction()
       notifyDepositDestination(DepositRefund, myRefund)
       inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
         case FailedExchange(_, _, FailureCause.PanicBlockReached, _, Some(`myRefund`)) =>
@@ -111,6 +114,7 @@ class SingleRunDefaultExchangeActorTest extends DefaultExchangeActorTest {
       startActor()
       givenMicropaymentChannelSuccess()
       notifyDepositDestination(CounterpartDepositRefund, counterpartRefund)
+      broadcaster.expectPublishRefundTransaction()
       notifyDepositDestination(DepositRefund, myRefund)
       inside(expectFailureTermination(finishMicropaymentChannel = true).exchange) {
         case FailedExchange(_, _, FailureCause.PanicBlockReached, _, Some(`myRefund`)) =>

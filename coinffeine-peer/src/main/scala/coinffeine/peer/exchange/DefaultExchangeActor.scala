@@ -178,6 +178,7 @@ class DefaultExchangeActor(
     case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
       log.info("Counterpart of {} has broadcast her refund transaction {} while in micropayment channel",
         exchange.id, broadcastTx)
+      txBroadcasterRef.get ! TransactionBroadcaster.PublishRefundTransaction
       context.become(recoveringRefund(runningExchange))
 
     case DepositSpent(broadcastTx, CompletedChannel) =>
@@ -215,6 +216,7 @@ class DefaultExchangeActor(
     case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
       log.info("Counterpart of {} has broadcast her refund transaction {} while failing at step {}",
         exchange.id, broadcastTx, step)
+      txBroadcasterRef.get ! TransactionBroadcaster.PublishRefundTransaction
       context.become(recoveringRefund(runningExchange))
 
     case DepositSpent(tx, destination) =>
@@ -235,6 +237,7 @@ class DefaultExchangeActor(
     case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
       log.info("Counterpart of {} has broadcast her refund transaction {} while waiting for final transaction",
         exchange.id, broadcastTx)
+      txBroadcasterRef.get ! TransactionBroadcaster.PublishRefundTransaction
       context.become(recoveringRefund(runningExchange))
 
     case DepositSpent(broadcastTx, destination) =>

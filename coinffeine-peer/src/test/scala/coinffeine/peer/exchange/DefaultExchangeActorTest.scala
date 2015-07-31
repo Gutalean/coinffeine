@@ -102,6 +102,7 @@ abstract class DefaultExchangeActorTest extends CoinffeineClientTest("exchange")
       givenMicropaymentChannelCreation()
       micropaymentChannelActor.probe
         .send(actor, MicroPaymentChannelActor.ChannelSuccess(Some(dummyTx)))
+      broadcaster.expectPublishBestTransaction()
     }
 
     protected def shouldWatchForTheTransactions(): Unit = {
