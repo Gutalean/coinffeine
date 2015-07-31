@@ -9,7 +9,8 @@ import akka.testkit._
 import org.scalatest.concurrent.{Eventually, PatienceConfiguration}
 
 import coinffeine.common.akka.Service
-import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
+import coinffeine.common.akka.persistence.PeriodicSnapshot
+import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.FiatBalance
@@ -21,107 +22,99 @@ import coinffeine.model.util.{CacheStatus, Cached}
 import coinffeine.peer.payment.PaymentProcessorActor
 import coinffeine.peer.payment.PaymentProcessorActor.{AccountExistence, CheckAccountExistence, FindPaymentCriterion}
 import coinffeine.peer.payment.okpay.OkPayProcessorActor.ClientFactory
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor
+import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryImpl
 import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
-  "OKPayProcessor" must "be able to get the current balance" in new WithOkPayProcessor {
+  "OKPayProcessor" should "be able to get the current balance" in new WithOkPayProcessor {
     givenAccountBalance(amount)
     givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
-    whenBalanceIsRequested(UsDollar)
-    expectRetrieveBlockedFunds(13.USD)
-    expectBalanceRetrieved(amount, 13.USD)
+    expectBalanceRetrieved(amount, 0.USD)
   }
 
-  it must "update properties when asked to get the current balance" in new WithOkPayProcessor {
+  it should "update properties when asked to get the current balance" in new WithOkPayProcessor {
     givenAccountBalance(amount)
     givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
     givenAccountBalance(amount * 2)
     whenBalanceIsRequested(UsDollar)
-    expectRetrieveBlockedFunds(UsDollar)
     expectBalancePropertyUpdated(amount * 2)
   }
 
-  it must "report failure to get the current balance" in new WithOkPayProcessor {
+  it should "report failure to get the current balance" in new WithOkPayProcessor {
     givenBalanceRetrievalFailure()
     givenStartedPaymentProcessor()
-    whenBalanceIsRequested(UsDollar)
     expectBalanceRetrievalFailure(UsDollar)
   }
 
-  it must "delegate funds blocking" in new WithReadyOkPayProcessor {
-    val blockRequest = PaymentProcessorActor.BlockFunds(funds, amount)
-    whenFundsBlockingIsRequested(blockRequest)
-    expectForwardedToRegistry(blockRequest)
+  it should "block funds" in new WithOkPayProcessor {
+    givenAccountBalance(amount)
+    givenStartedPaymentProcessor()
+    whenFundsBlockingIsRequested(funds, amount / 2)
+    expectFundsAreBlocked(funds)
   }
 
-  it must "delegate funds unblocking" in new WithReadyOkPayProcessor {
-    val unblockRequest = PaymentProcessorActor.UnblockFunds(funds)
-    whenFundsUnblockingIsRequested(unblockRequest)
-    expectForwardedToRegistry(unblockRequest)
+  it should "unblock funds" in new WithOkPayProcessor {
+    givenAccountBalance(amount)
+    givenStartedPaymentProcessor()
+    givenFundsAreBlocked(amount / 2)
+
+    whenFundsUnblockingIsRequested(funds)
+    expectFundsAreUnblocked(funds)
   }
 
-  it must "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
+  it should "be able to send a payment that gets reserved funds reduced" in new WithOkPayProcessor {
     givenClientPaymentWillSucceedWith(payment)
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
     givenAccountBalance(amountPlusFee)
     givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
+    givenFundsAreBlocked(amountPlusFee)
     whenPaymentIsRequested(amount)
-    expectRegistryMarksUsed(amountPlusFee)
     expectPaymentSuccess(amount)
-
-    withClue("amount and its fee are blocked and paid") {
-      whenPaymentIsRequested(0.01.USD)
-      expectPaymentFailed("fail to use funds")
-    }
   }
 
-  it must "require enough funds to send a payment" in new WithOkPayProcessor {
+  it should "require enough funds to send a payment" in new WithOkPayProcessor {
     givenAccountBalance(amount)
     givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
+    givenFundsAreBlocked(amount / 2)
     whenPaymentIsRequested(amount)
-    expectRegistryCannotMarkUsed()
-    expectPaymentFailed("fail to use funds")
+    expectPaymentFailed("insufficient blocked funds")
   }
 
-  it must "report failure to send a payment" in new WithOkPayProcessor {
+  it should "report failure to send a payment" in new WithOkPayProcessor {
     givenClientPaymentWillFail()
     val amountPlusFee = OkPayPaymentProcessor.amountPlusFee(amount)
     givenAccountBalance(amountPlusFee)
     givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
+    givenFundsAreBlocked(amountPlusFee)
+
     whenPaymentIsRequested(amount)
-    expectRegistryMarksUsed(amountPlusFee)
-    expectRegistryMarksUnused(amountPlusFee)
+
     expectPaymentFailed()
+    expectBalanceRetrieved(amountPlusFee, amountPlusFee)
   }
 
-  it must "be able to retrieve an existing payment" in new WithOkPayProcessor {
+  it should "be able to retrieve an existing payment" in new WithOkPayProcessor {
     givenClientExistingPayment(payment)
     givenStartedPaymentProcessor()
     whenFindPaymentIsRequested(payment)
     expectPaymentFound(payment)
   }
 
-  it must "be able to check a payment does not exist" in new WithOkPayProcessor {
+  it should "be able to check a payment does not exist" in new WithOkPayProcessor {
     givenStartedPaymentProcessor()
     whenFindPaymentIsRequested(payment)
     expectPaymentNotFound(payment)
   }
 
-  it must "report failure to retrieve a payment" in new WithOkPayProcessor {
+  it should "report failure to retrieve a payment" in new WithOkPayProcessor {
     givenPaymentsCannotBeRetrieved()
     givenStartedPaymentProcessor()
     whenFindPaymentIsRequested(payment)
     expectFindPaymentFailed(payment)
   }
 
-  it must "poll for EUR balance periodically" in new WithOkPayProcessor {
+  it should "poll for EUR balance periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
     givenAccountBalance(100.EUR)
     givenStartedPaymentProcessor()
@@ -136,7 +129,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     expectBalancePropertyUpdated(140.EUR, cacheStatus = CacheStatus.Stale)
   }
 
-  it must "poll for remaining limits periodically" in new WithOkPayProcessor {
+  it should "poll for remaining limits periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
     givenAccountBalance(100.EUR)
     givenStartedPaymentProcessor()
@@ -151,28 +144,60 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     expectBalancePropertyUpdated(100.EUR, Some(280.EUR), cacheStatus = CacheStatus.Stale)
   }
 
-  it must "check that an account actually exists" in new WithOkPayProcessor {
+  it should "check that an account actually exists" in new WithOkPayProcessor {
     val existingAccount = "existingAccount"
     givenAccountExists(existingAccount)
     givenStartedPaymentProcessor()
     expectAccountExistence(existingAccount, AccountExistence.Existing)
   }
 
-  it must "check that an account doesn't exist" in new WithOkPayProcessor {
+  it should "check that an account doesn't exist" in new WithOkPayProcessor {
     val madeUpAccount = "madeUpAccount"
     givenAccountDoesNotExist(madeUpAccount)
     givenStartedPaymentProcessor()
     expectAccountExistence(madeUpAccount, AccountExistence.NonExisting)
   }
 
-  it must "report failure to check the existence of an account" in new WithOkPayProcessor {
+  it should "report failure to check the existence of an account" in new WithOkPayProcessor {
     val someAccount = "someAccount"
     givenAccountExistenceCheckWillFail(someAccount)
     givenStartedPaymentProcessor()
     expectAccountExistence(someAccount, AccountExistence.CannotCheck)
   }
 
+  it should "persist its state" in new WithOkPayProcessor {
+    givenAccountBalance(100.USD)
+    givenStartedPaymentProcessor()
+    givenFundsAreBlocked(50.USD)
+    givenStoppedPaymentProcessor()
+  }
+
+  it should "recover its previous state" in new WithOkPayProcessor {
+    override protected def reusePersistenceId = true
+    givenAccountBalance(100.USD)
+    givenStartedPaymentProcessor()
+    expectBalanceRetrieved(100.USD, 50.USD)
+  }
+
+  it should "persist its state in a snapshot" in new WithOkPayProcessor {
+    givenAccountBalance(100.USD)
+    givenStartedPaymentProcessor()
+    givenFundsAreBlocked(50.USD)
+    processor ! PeriodicSnapshot
+    givenStoppedPaymentProcessor()
+  }
+
+  it should "recover its previous state from snapshot" in new WithOkPayProcessor {
+    override protected def reusePersistenceId = true
+    givenAccountBalance(100.USD)
+    givenStartedPaymentProcessor()
+    expectBalanceRetrieved(100.USD, 50.USD)
+  }
+
+  private var currentPersistenceId = 1
+
   private trait WithOkPayProcessor {
+    protected def reusePersistenceId: Boolean = false
     def pollingInterval = 3.seconds.dilated
     val propertyCheckTimeout = PatienceConfiguration.Timeout(2.seconds)
     val amount = 100.USD
@@ -193,21 +218,35 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       override def build(): OkPayClient = client
       override def shutdown(): Unit = {}
     }
-    val fundsRegistry = new MockSupervisedActor()
-    val processorProps = Props(new OkPayProcessorActor(
-      clientFactory, fundsRegistry.props(), pollingInterval))
+    protected val registry = new BlockedFiatRegistryImpl()
+    private val persistenceId = {
+      if (!reusePersistenceId) {
+        currentPersistenceId += 1
+      }
+      currentPersistenceId.toString
+    }
+    val processorProps = Props(new OkPayProcessorActor(persistenceId,
+      clientFactory, registry, pollingInterval))
     val eventsProbe, requester = TestProbe()
     system.eventStream.subscribe(
       eventsProbe.ref, classOf[PaymentProcessorActor.FundsAvailabilityEvent])
 
     def givenPaymentProcessorCreated(): Unit = {
       processor = system.actorOf(processorProps)
+      watch(processor)
     }
 
     def givenStartedPaymentProcessor(): Unit = {
       givenPaymentProcessorCreated()
       requester.send(processor, Service.Start {})
       requester.expectMsg(Service.Started)
+    }
+
+    def givenStoppedPaymentProcessor(): Unit = {
+      requester.send(processor, Service.Stop)
+      requester.expectMsg(Service.Stopped)
+      system.stop(processor)
+      expectTerminated(processor)
     }
 
     def givenAccountBalance(balance: FiatAmount): Unit = {
@@ -254,16 +293,25 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       client.givenAccountExistence(accountId, AccountExistence.CannotCheck)
     }
 
+    def givenFundsAreBlocked(amount: FiatAmount): Unit = {
+      givenFundsAreBlocked(funds, amount)
+    }
+
+    def givenFundsAreBlocked(funds: ExchangeId, amount: FiatAmount): Unit = {
+      whenFundsBlockingIsRequested(funds, amount)
+      expectFundsAreBlocked(funds)
+    }
+
     def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
       requester.send(processor, PaymentProcessorActor.RetrieveBalance(currency))
     }
 
-    def whenFundsBlockingIsRequested(request: PaymentProcessorActor.BlockFunds): Unit = {
-      requester.send(processor, request)
+    def whenFundsBlockingIsRequested(funds: ExchangeId, amount: FiatAmount): Unit = {
+      requester.send(processor, PaymentProcessorActor.BlockFunds(funds, amount))
     }
 
-    def whenFundsUnblockingIsRequested(request: PaymentProcessorActor.UnblockFunds): Unit = {
-      requester.send(processor, request)
+    def whenFundsUnblockingIsRequested(funds: ExchangeId): Unit = {
+      requester.send(processor, PaymentProcessorActor.UnblockFunds(funds))
     }
 
     def whenPaymentIsRequested(amount: FiatAmount): Unit = {
@@ -276,9 +324,12 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         processor, PaymentProcessorActor.FindPayment(FindPaymentCriterion.ById(payment.paymentId)))
     }
 
-    def expectRegistryIsInitialized(): Unit = {
-      fundsRegistry.expectCreation()
-      fundsRegistry.expectMsgType[BlockedFiatRegistryActor.AccountUpdate]
+    def expectFundsAreBlocked(funds: ExchangeId): Unit = {
+      requester.expectMsg(PaymentProcessorActor.BlockedFunds(funds))
+    }
+
+    def expectFundsAreUnblocked(funds: ExchangeId): Unit = {
+      requester.expectMsg(PaymentProcessorActor.UnblockFunds(funds))
     }
 
     def expectBalancePropertyUpdated(
@@ -303,44 +354,18 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       }
     }
 
-    def expectRetrieveBlockedFunds(funds: FiatAmount): Unit = {
-      fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistryActor.RetrieveTotalBlockedFunds =>
-          BlockedFiatRegistryActor.TotalBlockedFunds(FiatAmounts.fromAmounts(funds))
-      }
-    }
-
-    def expectRetrieveBlockedFunds(currency: FiatCurrency): Unit = {
-      expectRetrieveBlockedFunds(currency(0))
-    }
-
-    def expectRegistryMarksUsed(amount: FiatAmount): Unit = {
-      fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistryActor.MarkUsed(`funds`, `amount`) =>
-          BlockedFiatRegistryActor.FundsMarkedUsed(funds, amount)
-      }
-    }
-
-    def expectRegistryCannotMarkUsed(): Unit = {
-      fundsRegistry.expectAskWithReply {
-        case BlockedFiatRegistryActor.MarkUsed(_, requested) =>
-          BlockedFiatRegistryActor.CannotMarkUsed(funds, requested, "not enough!")
-      }
-    }
-
-    def expectRegistryMarksUnused(amount: FiatAmount): Unit = {
-      fundsRegistry.expectMsg(BlockedFiatRegistryActor.UnmarkUsed(funds, amount))
-    }
-
     def expectBalanceRetrieved(balance: FiatAmount, blocked: FiatAmount): Unit = {
+      whenBalanceIsRequested(UsDollar)
       requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(balance, blocked))
     }
 
     def expectBalanceRetrieved(): Unit = {
+      whenBalanceIsRequested(UsDollar)
       requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved]
     }
 
     def expectBalanceRetrievalFailure(currency: FiatCurrency): Unit = {
+      whenBalanceIsRequested(UsDollar)
       requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(currency, cause))
     }
 
@@ -377,19 +402,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         PaymentProcessorActor.FindPaymentFailed(FindPaymentCriterion.ById(payment.paymentId), cause))
     }
 
-    def expectForwardedToRegistry(request: Any): Unit = {
-      fundsRegistry.expectForward(request, requester.ref)
-    }
-
     def expectAccountExistence(
         accountId: AccountId, expectedExistence: AccountExistence): Unit = {
       requester.send(processor, CheckAccountExistence(accountId))
       requester.expectMsg(expectedExistence)
     }
-  }
-
-  private trait WithReadyOkPayProcessor extends WithOkPayProcessor {
-    givenStartedPaymentProcessor()
-    expectRegistryIsInitialized()
   }
 }
