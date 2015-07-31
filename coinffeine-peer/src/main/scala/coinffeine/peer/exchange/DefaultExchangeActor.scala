@@ -170,14 +170,19 @@ class DefaultExchangeActor(
       txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
       context.become(waitingForFinalTransaction(runningExchange, successTx))
 
-    case DepositSpent(broadcastTx, CompletedChannel) =>
-      log.info("Finishing exchange '{}' successfully", exchange.id)
-      finishWith(ExchangeSuccess(runningExchange.complete(DateTime.now())))
-
     case MicroPaymentChannelActor.ChannelFailure(step, cause) =>
       log.error(cause, "Finishing exchange '{}' with a failure in step {}", exchange.id, step)
       txBroadcasterRef.get ! TransactionBroadcaster.PublishBestTransaction
       context.become(failingAtStep(runningExchange, step))
+
+    case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
+      log.info("Counterpart of {} has broadcast her refund transaction {} while in micropayment channel",
+        exchange.id, broadcastTx)
+      context.become(recoveringRefund(runningExchange))
+
+    case DepositSpent(broadcastTx, CompletedChannel) =>
+      log.info("Finishing exchange '{}' successfully", exchange.id)
+      finishWith(ExchangeSuccess(runningExchange.complete(DateTime.now())))
 
     case DepositSpent(broadcastTx, _) =>
       finishWith(ExchangeFailure(runningExchange.panicked(broadcastTx, DateTime.now())))
@@ -197,6 +202,9 @@ class DefaultExchangeActor(
     case DepositSpent(tx, DepositRefund | ChannelAtStep(_)) =>
       finishWith(ExchangeFailure(abortingExchange.broadcast(tx, DateTime.now())))
 
+    case DepositSpent(tx, CounterpartDepositRefund) =>
+      log.info("While aborting {}, counterpart broadcast her refund transaction {}", abortingExchange.id, tx)
+
     case DepositSpent(tx, _) =>
       log.error("When aborting {} and unexpected transaction was broadcast: {}",
         abortingExchange.id, tx)
@@ -204,6 +212,11 @@ class DefaultExchangeActor(
   }
 
   private def failingAtStep(runningExchange: RunningExchange, step: Int): Receive = {
+    case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
+      log.info("Counterpart of {} has broadcast her refund transaction {} while failing at step {}",
+        exchange.id, broadcastTx, step)
+      context.become(recoveringRefund(runningExchange))
+
     case DepositSpent(tx, destination) =>
       val expectedDestination = ChannelAtStep(step)
       if (destination != expectedDestination) {
@@ -219,10 +232,25 @@ class DefaultExchangeActor(
     case DepositSpent(_, CompletedChannel) =>
       finishWith(ExchangeSuccess(runningExchange.complete(DateTime.now())))
 
+    case DepositSpent(broadcastTx, CounterpartDepositRefund) =>
+      log.info("Counterpart of {} has broadcast her refund transaction {} while waiting for final transaction",
+        exchange.id, broadcastTx)
+      context.become(recoveringRefund(runningExchange))
+
     case DepositSpent(broadcastTx, destination) =>
       log.error("{} ({}) was unexpectedly broadcast for exchange {}", broadcastTx,
         destination, exchange.id)
       finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(broadcastTx, DateTime.now())))
+  }
+
+  private def recoveringRefund(runningExchange: RunningExchange): Receive = {
+    case DepositSpent(tx, DepositRefund) =>
+      finishWith(ExchangeFailure(runningExchange.panicked(tx, DateTime.now())))
+
+    case DepositSpent(tx, _) =>
+      log.error("When aborting {} and unexpected transaction was broadcast: {}",
+        runningExchange.id, tx)
+      finishWith(ExchangeFailure(runningExchange.unexpectedBroadcast(tx, DateTime.now())))
   }
 
   private def finishWith(result: ExchangeResult): Unit = {
