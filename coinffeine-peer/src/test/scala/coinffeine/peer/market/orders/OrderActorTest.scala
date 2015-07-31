@@ -11,18 +11,22 @@ import org.scalatest.Inside
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
-import coinffeine.common.akka.event.EventProbe
+import coinffeine.common.akka.event.{CoinffeineEventBusExtension, EventProbe}
 import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.model.exchange.ActiveExchange.DepositAmounts
 import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange._
 import coinffeine.model.market._
 import coinffeine.model.order._
+import coinffeine.model.util.Cached
 import coinffeine.peer.amounts.AmountsCalculatorStub
+import coinffeine.peer.events.bitcoin.BitcoinBalanceChanged
+import coinffeine.peer.events.fiat.FiatBalanceChanged
 import coinffeine.peer.events.network.OrderChanged
 import coinffeine.peer.exchange.ExchangeActor
 import coinffeine.peer.exchange.test.CoinffeineClientTest.BuyerPerspective
@@ -34,6 +38,7 @@ import coinffeine.peer.properties.operations.DefaultOperationsProperties
 import coinffeine.protocol.gateway.MockGateway
 import coinffeine.protocol.messages.brokerage.OrderMatch
 import coinffeine.protocol.messages.handshake.ExchangeRejection
+import coinffeine.protocol.messages.handshake.ExchangeRejection.Cause
 
 abstract class OrderActorTest extends AkkaSpec
     with SampleExchange with BuyerPerspective with CoinffeineUnitTestNetwork.Component
@@ -116,6 +121,7 @@ abstract class OrderActorTest extends AkkaSpec
         archiveProbe.ref)
     ))
     var actor: ActorRef = _
+    givenEnoughBalances()
 
     def startOrder(): Unit = {
       actor = system.actorOf(props)
@@ -130,6 +136,17 @@ abstract class OrderActorTest extends AkkaSpec
       system.stop(actor)
       expectTerminated(actor)
       startOrder()
+    }
+
+    private def givenEnoughBalances(): Unit = {
+      val bus = CoinffeineEventBusExtension.lookup()(system)
+      bus.publish(FiatBalanceChanged.Topic, FiatBalanceChanged(Cached.fresh(FiatBalance(
+        amounts = FiatAmounts.fromAmounts(1500.EUR, 1500.USD),
+        blockedAmounts = FiatAmounts.empty,
+        remainingLimits = FiatAmounts.empty
+      ))))
+      bus.publish(BitcoinBalanceChanged.Topic,
+        BitcoinBalanceChanged(BitcoinBalance.singleOutput(15.BTC)))
     }
 
     def givenInitializedOrder(): Unit = {
@@ -149,7 +166,7 @@ abstract class OrderActorTest extends AkkaSpec
       expectProperty { _ shouldBe 'inMarket }
     }
 
-    def shouldRejectAnOrderMatch(cause: ExchangeRejection.Cause): Unit = {
+    def shouldRejectAnOrderMatch(cause: Cause): Unit = {
       val otherExchangeId = ExchangeId.random()
       gatewayProbe.relayMessageFromBroker(orderMatch.copy(exchangeId = otherExchangeId))
       gatewayProbe.expectForwardingToBroker(ExchangeRejection(otherExchangeId, cause))
