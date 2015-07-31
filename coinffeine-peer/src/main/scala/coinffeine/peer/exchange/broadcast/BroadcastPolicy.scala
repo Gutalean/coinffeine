@@ -7,8 +7,7 @@ private trait BroadcastPolicy {
   def invalidateOffers(): Unit
   def requestPublication(): Unit
   def updateHeight(currentHeight: Long): Unit
-  def bestTransaction: ImmutableTransaction
-  def shouldBroadcast: Boolean
+  def transactionToBroadcast: Option[ImmutableTransaction]
 }
 
 private object BroadcastPolicy {
@@ -60,9 +59,9 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
 
   override def updateHeight(currentHeight: Long): Unit = { height = currentHeight }
 
-  override def bestTransaction: ImmutableTransaction = offer.best getOrElse refund
+  override def transactionToBroadcast = if (shouldBroadcast) offer.best orElse Some(refund) else None
 
-  override def shouldBroadcast: Boolean = shouldBroadcastLastOffer || canBroadcastRefund
+  private def shouldBroadcast: Boolean = shouldBroadcastLastOffer || canBroadcastRefund
 
   private def shouldBroadcastLastOffer = offer.best.isDefined && (panicked || publicationRequested)
   private def canBroadcastRefund = height >= refundBlock

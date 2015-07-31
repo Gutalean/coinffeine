@@ -61,12 +61,11 @@ class BroadcastPolicyTest extends UnitTest {
     val policy = new BroadcastPolicyImpl(refund, safetyBlocks)
 
     def expectNotBroadcasting(): Unit = {
-      policy.shouldBroadcast shouldBe false
+      policy.transactionToBroadcast shouldBe 'empty
     }
 
     def expectBroadcasting(tx: ImmutableTransaction): Unit = {
-      policy.shouldBroadcast shouldBe true
-      policy.bestTransaction shouldBe tx
+      policy.transactionToBroadcast shouldBe Some(tx)
     }
 
     def buildOffer() = ImmutableTransaction {

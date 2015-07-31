@@ -122,6 +122,7 @@ class TransactionBroadcasterTest extends CoinffeineClientTest("txBroadcastTest")
     givenSuccessfulBroadcast(someLastOffer)
 
     instance ! PublishRefundTransaction
+    givenHeightNotification(refundLockTime)
 
     givenSuccessfulBroadcast(refundTx)
     givenSuccessfulBroadcast(refundTx)

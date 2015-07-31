@@ -103,27 +103,25 @@ private class TransactionBroadcaster(
     case PublishRefundTransaction =>
       persist(RefundPublicationRequested) { _ =>
         onRefundPublicationRequested()
-        broadcast("requested refund publication")
+        broadcastIfNeeded("requested refund publication")
       }
 
     case BlockchainActor.BlockchainHeightReached(height) =>
       policy.updateHeight(height)
       broadcastIfNeeded(s"$height reached")
 
-    case ResubmitTimeout => broadcast("resubmission")
+    case ResubmitTimeout => broadcastIfNeeded("resubmission")
 
     case TransactionNotPublished(_, ex) => log.error(ex, "Cannot publish transaction")
   }
 
   private def broadcastIfNeeded(trigger: String): Unit = {
-    if (policy.shouldBroadcast) {
-      broadcast(trigger)
-    }
+    policy.transactionToBroadcast.foreach(tx => broadcast(tx, trigger))
   }
 
-  private def broadcast(trigger: String): Unit = {
-    log.info("Broadcasting {}: {}", policy.bestTransaction, trigger)
-    collaborators.bitcoinPeer ! PublishTransaction(policy.bestTransaction)
+  private def broadcast(tx: ImmutableTransaction, trigger: String): Unit = {
+    log.info("Broadcasting {}: {}", policy.transactionToBroadcast, trigger)
+    collaborators.bitcoinPeer ! PublishTransaction(tx)
     resubmitTimer.reset()
   }
 
