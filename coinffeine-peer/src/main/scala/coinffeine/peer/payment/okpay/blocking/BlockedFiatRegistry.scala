@@ -5,11 +5,15 @@ import scalaz.Validation.FlatMap._
 import scalaz.syntax.std.option._
 import scalaz.syntax.validation._
 
+import org.joda.time.DateTime
+
+import coinffeine.common.akka.persistence.PersistentEvent
 import coinffeine.model.currency.{FiatAmounts, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.ExchangeId
-import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistryActor.BlockedFundsInfo
 
 private[okpay] trait BlockedFiatRegistry {
+
+  import BlockedFiatRegistry._
 
   def updateTransientAmounts(newBalances: FiatAmounts, newRemainingLimits: FiatAmounts): Unit
 
@@ -31,7 +35,25 @@ private[okpay] trait BlockedFiatRegistry {
   def unmarkUsed(fundsId: ExchangeId, amount: FiatAmount): Unit
 }
 
+private[okpay] object BlockedFiatRegistry {
+
+  // Persistent messages stuck here because of binary compatibility
+  sealed trait StateEvent extends PersistentEvent
+  case class FundsBlockedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  case class FundsMarkedUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  case class FundsUnmarkedUsedEvent(fundsId: ExchangeId, amount: FiatAmount) extends StateEvent
+  case class FundsUnblockedEvent(fundsId: ExchangeId) extends StateEvent
+
+  case class Snapshot(funds: Map[ExchangeId, BlockedFundsInfo]) extends PersistentEvent
+  case class BlockedFundsInfo(id: ExchangeId, remainingAmount: FiatAmount) {
+    val timestamp = DateTime.now()
+    def canUseFunds(amount: FiatAmount): Boolean = amount <= remainingAmount
+  }
+}
+
 private[okpay] class BlockedFiatRegistryImpl extends BlockedFiatRegistry {
+  import BlockedFiatRegistry._
+
   // Transient information
   private var balances = FiatAmounts.empty
   private var remainingLimits = FiatAmounts.empty
