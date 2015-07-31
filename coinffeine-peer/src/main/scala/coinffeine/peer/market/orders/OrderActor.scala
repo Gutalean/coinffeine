@@ -39,7 +39,7 @@ class OrderActor(
   private val orderId = initialOrder.id
   override val persistenceId: String = s"order-${orderId.value}"
   private val currency = initialOrder.price.currency
-  private val publisher = new OrderPublisher(collaborators.submissionSupervisor, this)
+  private val publisher = new OrderPublisher(orderId, collaborators.submissionSupervisor, this)
 
   override def preStart(): Unit = {
     log.info("Order actor initialized for {}", orderId)
@@ -219,8 +219,8 @@ class OrderActor(
   }
 
   private def updatePublisher(order: ActiveOrder): Unit = {
-    if (order.shouldBeOnMarket) publisher.keepPublishing(order.pendingOrderBookEntry)
-    else publisher.stopPublishing()
+    if (order.shouldBeOnMarket) publisher.setEntry(order.pendingOrderBookEntry)
+    else publisher.unsetEntry()
   }
 
   private def rejectOrderMatch(

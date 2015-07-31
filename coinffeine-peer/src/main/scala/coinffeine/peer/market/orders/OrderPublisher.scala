@@ -3,29 +3,37 @@ package coinffeine.peer.market.orders
 import akka.actor.{Actor, ActorContext, ActorRef}
 
 import coinffeine.model.market._
+import coinffeine.model.order.OrderId
 import coinffeine.peer.market.submission.SubmissionSupervisor._
 
 private[orders] class OrderPublisher(
+    orderId: OrderId,
     submissionActor: ActorRef,
-    listener: OrderPublisher.Listener)(implicit context: ActorContext) {
+    listener: OrderPublisher.Listener,
+    policy: SubmissionPolicy = new SubmissionPolicyImpl)(implicit context: ActorContext) {
 
   private implicit val sender = context.self
-  private var pendingEntry: Option[OrderBookEntry] = None
 
-  def keepPublishing(entry: OrderBookEntry): Unit = {
-    pendingEntry = Some(entry)
-    submissionActor ! KeepSubmitting(entry)
+  def setEntry(entry: OrderBookEntry): Unit = {
+    policy.setEntry(entry)
+    updateSubmissionRequest()
   }
 
-  def stopPublishing(): Unit = {
-    pendingEntry.foreach { entry =>
-      submissionActor ! StopSubmitting(entry.id)
-    }
+  def unsetEntry(): Unit = {
+    policy.unsetEntry()
+    updateSubmissionRequest()
+  }
+
+  def updateSubmissionRequest(): Unit = {
+    val message = policy.entryToSubmit.fold[Any](StopSubmitting(orderId))(KeepSubmitting.apply)
+    submissionActor ! message
   }
 
   val receiveSubmissionEvents: Actor.Receive = {
-    case InMarket(entryInMarket) if pendingEntry.contains(entryInMarket) => listener.inMarket()
-    case Offline(entryInMarket) if pendingEntry.contains(entryInMarket) => listener.offline()
+    case InMarket(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
+      listener.inMarket()
+    case Offline(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
+      listener.offline()
   }
 }
 
