@@ -15,6 +15,7 @@ private[orders] class OrderPublisher(
     policy: SubmissionPolicy = new SubmissionPolicyImpl)(implicit context: ActorContext) {
 
   private implicit val sender = context.self
+  private var lastSubmissionMessage: Any = StopSubmitting(orderId)
 
   def setEntry(entry: OrderBookEntry): Unit = {
     policy.setEntry(entry)
@@ -28,7 +29,10 @@ private[orders] class OrderPublisher(
 
   def updateSubmissionRequest(): Unit = {
     val message = policy.entryToSubmit.fold[Any](StopSubmitting(orderId))(KeepSubmitting.apply)
-    submissionActor ! message
+    if (lastSubmissionMessage != message) {
+      lastSubmissionMessage = message
+      submissionActor ! message
+    }
   }
 
   val topics: Seq[String] = Seq(FiatBalanceChanged.Topic, BitcoinBalanceChanged.Topic)
