@@ -63,19 +63,20 @@ class SubmissionPolicyImpl(
 
   private def canAffordMarketPriceOrder(entry: OrderBookEntry): Boolean = {
     availableAmounts(
-      bitcoinRequired = entry.orderType match {
+      requiredBitcoin = entry.orderType match {
         case Bid => SubmissionPolicyImpl.MinimumBuyerDeposit
         case Ask => entry.amount
       },
-      fiatRequired = entry.orderType match {
+      requiredFiat = entry.orderType match {
         case Bid => entry.price.currency.fromUnits(1)
         case Ask => entry.price.currency.zero
       }
     )
   }
 
-  private def availableAmounts(bitcoinRequired: BitcoinAmount, fiatRequired: FiatAmount): Boolean = {
-    availableBitcoin >= bitcoinRequired && availableFiat(fiatRequired.currency) >= fiatRequired
+  private def availableAmounts(
+      requiredBitcoin: BitcoinAmount, requiredFiat: FiatAmount): Boolean = {
+    availableBitcoin >= requiredBitcoin && availableFiat(requiredFiat.currency) >= requiredFiat
   }
 
   private def availableBitcoin: BitcoinAmount =
