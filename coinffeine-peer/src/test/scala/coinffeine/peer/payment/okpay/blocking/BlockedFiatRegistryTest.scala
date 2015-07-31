@@ -230,7 +230,7 @@ class BlockedFiatRegistryTest extends UnitTest {
     }
 
     protected def currentTotalBlockedFunds(currency: FiatCurrency): FiatAmount = {
-      registry.blockedFundsByCurrency.get(currency).getOrElse(currency.zero)
+      registry.blockedFundsByCurrency.getOrZero(currency)
     }
   }
 }

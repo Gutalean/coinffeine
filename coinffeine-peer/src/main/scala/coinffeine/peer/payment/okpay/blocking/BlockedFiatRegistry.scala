@@ -153,7 +153,7 @@ private[okpay] class BlockedFiatRegistryImpl extends BlockedFiatRegistry {
   }
 
   private def transferableBalance(currency: FiatCurrency): FiatAmount = {
-    val availableBalance = balances.get(currency).getOrElse(currency.zero)
+    val availableBalance = balances.getOrZero(currency)
     val remainingLimit = remainingLimits.get(currency)
     remainingLimit.fold(availableBalance)(_ min availableBalance)
   }

@@ -141,13 +141,10 @@ class OkPayWebServiceClient(
     })
 
   private def remainingLimit(limit: FiatAmount, usage: FiatAmounts): FiatAmount =
-    decreaseAmount(limit, usageFor(usage, limit.currency))
+    decreaseAmount(limit, usage.getOrZero(limit.currency))
 
   private def decreaseAmount(amount: FiatAmount, delta: FiatAmount): FiatAmount =
     (amount - delta) max amount.currency.zero
-
-  private def usageFor(usage: FiatAmounts, currency: FiatCurrency): FiatAmount =
-    usage.get(currency).getOrElse(currency.zero)
 
   private def currentPeriodUsage(): Future[FiatAmounts] = {
     val currentInterval = Month.containing(DateTime.now(DateTimeZone.UTC))

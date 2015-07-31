@@ -33,6 +33,10 @@ class FiatAmountsTest extends UnitTest {
     a [NoSuchElementException] shouldBe thrownBy { amounts(UsDollar) }
   }
 
+  it should "have accessor with default value of 0" in {
+    FiatAmounts.empty.getOrZero(Euro) shouldBe 0.EUR
+  }
+
   it should "increment the amount for a given currency" in {
     val amounts = FiatAmounts.fromAmounts(1.EUR).increment(1.EUR)
     amounts(Euro) shouldBe 2.EUR
