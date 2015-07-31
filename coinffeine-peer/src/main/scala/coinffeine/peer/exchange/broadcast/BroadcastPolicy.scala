@@ -1,6 +1,7 @@
 package coinffeine.peer.exchange.broadcast
 
 import coinffeine.model.bitcoin.ImmutableTransaction
+import coinffeine.peer.exchange.broadcast.BroadcastPolicy.OfferPublicationTrigger
 
 private trait BroadcastPolicy {
   def addOfferTransaction(tx: ImmutableTransaction): Unit
@@ -35,17 +36,37 @@ private object BroadcastPolicy {
     override def invalidate = this
     override def best = None
   }
+
+  sealed trait OfferPublicationTrigger {
+    def shouldPublish: Boolean
+    def publicationRequested: OfferPublicationTrigger
+    def heightReached(currentHeight: Long): OfferPublicationTrigger
+  }
+
+  object OfferPublicationTrigger {
+    case class WaitingForHeight(panicHeight: Long) extends OfferPublicationTrigger {
+      override val shouldPublish = false
+      override def publicationRequested = PublishImmediately
+      override def heightReached(currentHeight: Long) = if (currentHeight >= panicHeight) PublishImmediately else this
+    }
+
+    case object PublishImmediately extends OfferPublicationTrigger {
+      override val shouldPublish = true
+      override def publicationRequested = this
+      override def heightReached(currentHeight: Long) = this
+    }
+  }
 }
 
 /** Keep the transactions related to an exchange and determine what should be broadcast */
 private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBlockCount: Int) extends BroadcastPolicy {
 
-  private var offer: BroadcastPolicy.Offer = BroadcastPolicy.NoOffer
-  private var publicationRequested: Boolean = false
-  private var height: Long = 0L
-
   private val refundBlock = refund.get.getLockTime
   private val panicBlock = refundBlock - refundSafetyBlockCount
+
+  private var offer: BroadcastPolicy.Offer = BroadcastPolicy.NoOffer
+  private var offerPublicationTrigger: OfferPublicationTrigger = OfferPublicationTrigger.WaitingForHeight(panicBlock)
+  private var height: Long = 0L
 
   override def addOfferTransaction(tx: ImmutableTransaction): Unit = {
     offer = offer.add(tx)
@@ -55,15 +76,19 @@ private class BroadcastPolicyImpl(refund: ImmutableTransaction, refundSafetyBloc
     offer = offer.invalidate
   }
 
-  override def requestPublication(): Unit = { publicationRequested = true }
+  override def requestPublication(): Unit = { 
+    offerPublicationTrigger = offerPublicationTrigger.publicationRequested
+  }
 
-  override def updateHeight(currentHeight: Long): Unit = { height = currentHeight }
+  override def updateHeight(currentHeight: Long): Unit = {
+    height = currentHeight
+    offerPublicationTrigger = offerPublicationTrigger.heightReached(currentHeight)
+  }
 
   override def transactionToBroadcast = if (shouldBroadcast) offer.best orElse Some(refund) else None
 
   private def shouldBroadcast: Boolean = shouldBroadcastLastOffer || canBroadcastRefund
 
-  private def shouldBroadcastLastOffer = offer.best.isDefined && (panicked || publicationRequested)
+  private def shouldBroadcastLastOffer = offer.best.isDefined && offerPublicationTrigger.shouldPublish
   private def canBroadcastRefund = height >= refundBlock
-  private def panicked = height >= panicBlock
 }
