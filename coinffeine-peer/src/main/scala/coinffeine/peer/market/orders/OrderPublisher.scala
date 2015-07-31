@@ -42,10 +42,10 @@ private[orders] class OrderPublisher(
       policy.setBitcoinBalance(balance)
       updateSubmissionRequest()
 
-    case InMarket(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
+    case InMarket(entryInMarket) if policy.entry.contains(entryInMarket) =>
       listener.inMarket()
 
-    case Offline(entryInMarket) if policy.currentEntry.contains(entryInMarket) =>
+    case Offline(entryInMarket) if policy.entry.contains(entryInMarket) =>
       listener.offline()
   }
 }
