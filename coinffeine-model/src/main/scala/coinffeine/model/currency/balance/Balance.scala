@@ -13,6 +13,11 @@ case class BitcoinBalance(
 
 object BitcoinBalance {
 
+  val empty = BitcoinBalance(
+    estimated = Bitcoin.zero,
+    available = Bitcoin.zero,
+    minOutput = None)
+
   def singleOutput(amount: BitcoinAmount) = BitcoinBalance(
     estimated = amount,
     available = amount,
