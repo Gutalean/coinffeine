@@ -13,6 +13,11 @@ case class BitcoinBalance(
 
 object BitcoinBalance {
 
+  val empty = BitcoinBalance(
+    estimated = Bitcoin.zero,
+    available = Bitcoin.zero,
+    minOutput = None)
+
   def singleOutput(amount: BitcoinAmount) = BitcoinBalance(
     estimated = amount,
     available = amount,
@@ -21,8 +26,9 @@ object BitcoinBalance {
 
 case class FiatBalance(
     amounts: FiatAmounts,
+    blockedAmounts: FiatAmounts,
     remainingLimits: FiatAmounts)
 
 object FiatBalance {
-  val empty = FiatBalance(FiatAmounts.empty, FiatAmounts.empty)
+  val empty = FiatBalance(FiatAmounts.empty, FiatAmounts.empty, FiatAmounts.empty)
 }

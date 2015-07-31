@@ -96,6 +96,7 @@ class AvailableFundsValidationTest extends UnitTest with Inside {
 
     private def freshBalance(amount: FiatAmount) = Cached.fresh(FiatBalance(
       amounts = FiatAmounts.fromAmounts(amount),
+      blockedAmounts = FiatAmounts.empty,
       remainingLimits = FiatAmounts.empty
     ))
   }

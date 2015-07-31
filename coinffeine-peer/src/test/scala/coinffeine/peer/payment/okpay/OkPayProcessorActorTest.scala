@@ -87,11 +87,13 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     givenAccountBalance(amountPlusFee)
     givenStartedPaymentProcessor()
     givenFundsAreBlocked(amountPlusFee)
+    expectBalancePropertyUpdated(balance = amountPlusFee, blocked = Some(amountPlusFee))
 
     whenPaymentIsRequested(amount)
 
     expectPaymentFailed()
-    expectBalanceRetrieved(amountPlusFee, amountPlusFee)
+    expectBalanceRetrieved(balance = amountPlusFee, blocked = amountPlusFee)
+    expectBalancePropertyUpdated(balance = amountPlusFee, blocked = Some(amountPlusFee))
   }
 
   it should "be able to retrieve an existing payment" in new WithOkPayProcessor {
@@ -135,13 +137,17 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     givenStartedPaymentProcessor()
 
     givenAccountRemainingLimits(300.EUR)
-    expectBalancePropertyUpdated(100.EUR, Some(300.EUR))
+    expectBalancePropertyUpdated(100.EUR, remainingLimit = Some(300.EUR))
 
     givenAccountRemainingLimits(280.EUR)
-    expectBalancePropertyUpdated(100.EUR, Some(280.EUR))
+    expectBalancePropertyUpdated(100.EUR, remainingLimit = Some(280.EUR))
 
     givenRemainingLimitsRetrievalFailure()
-    expectBalancePropertyUpdated(100.EUR, Some(280.EUR), cacheStatus = CacheStatus.Stale)
+    expectBalancePropertyUpdated(
+      balance = 100.EUR,
+      remainingLimit = Some(280.EUR),
+      cacheStatus = CacheStatus.Stale
+    )
   }
 
   it should "check that an account actually exists" in new WithOkPayProcessor {
@@ -334,6 +340,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
     def expectBalancePropertyUpdated(
         balance: FiatAmount,
+        blocked: Option[FiatAmount] = None,
         remainingLimit: Option[FiatAmount] = None,
         cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
       expectPropertyUpdated(
@@ -341,6 +348,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
         expectedValue = Cached(
           FiatBalance(
             amounts = FiatAmounts.fromAmounts(balance),
+            blockedAmounts = FiatAmounts.fromAmounts(blocked.toSeq: _*),
             remainingLimits = FiatAmounts.fromAmounts(remainingLimit.toSeq: _*)
           ),
           cacheStatus

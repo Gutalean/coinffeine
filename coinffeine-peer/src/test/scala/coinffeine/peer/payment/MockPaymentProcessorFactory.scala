@@ -44,7 +44,7 @@ class MockPaymentProcessorFactory(initialPayments: List[Payment] = List.empty) {
         case income if income.receiverId == fiatAddress => income.netAmount
         case charge if charge.senderId == fiatAddress => -charge.grossAmount
       }
-      val initial = initialBalances.get(currency).getOrElse(currency.zero)
+      val initial = initialBalances.getOrZero(currency)
       val balance = initial + currency.sum(deltas)
       requester ! PaymentProcessorActor.BalanceRetrieved(balance, currency.zero)
     }
