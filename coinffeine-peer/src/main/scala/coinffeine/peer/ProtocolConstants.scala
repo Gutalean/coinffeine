@@ -19,24 +19,29 @@ import scala.language.postfixOps
   * @param orderAcknowledgeTimeout Time to wait for an order publication acknowledge
   * @param orderAcknowledgeRetries Number of retries to perform when publishing orders
   * @param refundLockTime         The number of blocks to wait for the refund transactions to be
-  *                               valid
+  *                               valid. Default value rationale: 173 blocks take at least 24h
+  *                               with a confidence of 99%:
+  *                               {{{
+  *                               > scipy.stats.gamma.ppf(0.99, 144)
+  *                               173.37735310843905
+  *                               }}}
   * @param refundSafetyBlockCount The number of blocks before the refund can be broadcast where we
   *                               want to finish the exchange forcefully.
   * @param transactionRepublicationInterval Time to wait before retrying transaction publication
   */
 case class ProtocolConstants(
-  commitmentConfirmations: Int = 1,
-  resubmitHandshakeMessagesTimeout: FiniteDuration = 10.seconds,
-  refundSignatureAbortTimeout: FiniteDuration = 5.minutes,
-  commitmentAbortTimeout: FiniteDuration = 5.minutes,
-  microPaymentChannelResubmitTimeout: FiniteDuration = 3.seconds,
-  orderExpirationInterval: FiniteDuration = 1.minute,
-  orderResubmitInterval: FiniteDuration = 30.seconds,
-  orderAcknowledgeTimeout: FiniteDuration = 5.seconds,
-  orderAcknowledgeRetries: Int = 2,
-  refundLockTime: Int = 18,
-  refundSafetyBlockCount: Int = 2,
-  transactionRepublicationInterval: FiniteDuration = 10.minutes
+    commitmentConfirmations: Int = 1,
+    resubmitHandshakeMessagesTimeout: FiniteDuration = 10.seconds,
+    refundSignatureAbortTimeout: FiniteDuration = 5.minutes,
+    commitmentAbortTimeout: FiniteDuration = 5.minutes,
+    microPaymentChannelResubmitTimeout: FiniteDuration = 3.seconds,
+    orderExpirationInterval: FiniteDuration = 1.minute,
+    orderResubmitInterval: FiniteDuration = 30.seconds,
+    orderAcknowledgeTimeout: FiniteDuration = 5.seconds,
+    orderAcknowledgeRetries: Int = 2,
+    refundLockTime: Int = 173,
+    refundSafetyBlockCount: Int = 2,
+    transactionRepublicationInterval: FiniteDuration = 10.minutes
 )
 
 object ProtocolConstants {
