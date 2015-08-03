@@ -5,6 +5,8 @@ v0.11.0:
  - Forward compatible change in the application data
  - Check existence of counterparts OKPay account before accepting a handshake
  - Make currency text fields indicate typing errors
+ - Don't submit orders to the market unless there is enough funds to back a
+   perfect match
  - Bug fixing
    * Consider only relevant exchanges when order average price is calculated
    * Support relative paths on --data-path
