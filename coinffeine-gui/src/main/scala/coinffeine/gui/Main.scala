@@ -1,5 +1,6 @@
 package coinffeine.gui
 
+import java.net.URI
 import scala.util.{Failure, Success}
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
@@ -17,7 +18,7 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
 
   override def commandLineArgs = parameters.raw.toList
 
-  private val issueReportingResource = "https://github.com/coinffeine/coinffeine/issues"
+  private val issueReportingResource = URI.create("http://support.coinffeine.com/")
 
   stage = new PrimaryStage
   launchApp(stage).onComplete {
@@ -39,8 +40,7 @@ object Main extends JFXApp with ProductionCoinffeineComponent with AppLauncher w
         headerText =
           "An unexpected error was thrown while starting Coinffeine app"
         contentText =
-          s"""If the error persists, please report in:
-            | $issueReportingResource
+          s"""If the error persists, please report it at $issueReportingResource
             |
             | $exception""".stripMargin
       }.showAndWait()
