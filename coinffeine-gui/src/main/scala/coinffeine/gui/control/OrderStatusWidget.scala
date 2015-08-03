@@ -15,7 +15,7 @@ class OrderStatusWidget extends VBox {
   import OrderStatusWidget._
 
   /** Property representing the status or an order */
-  val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Submitting)
+  val status = new ObjectProperty[OrderStatusWidget.Status](this, "status", Offline)
 
   /** Property representing lack of connectivity with the Coinffeine network */
   val online = new BooleanProperty(this, "online", true)
@@ -30,7 +30,6 @@ class OrderStatusWidget extends VBox {
       styleClass += s"section${index + 1}"
     }
   }
-  sections.head.children.add(spinner)
 
   styleClass += "order-status"
   visible <== status.delegate.map(_ != Completed).toBool.and(online)
@@ -95,7 +94,7 @@ object OrderStatusWidget {
       order.exchanges.values.filterNot(_.isCompleted)
 
     private def submittingStatus(order: Order) =
-      if (!order.inMarket) Submitting else InMarket
+      if (!order.inMarket) Offline else InMarket
 
     private def isWaitingForConfirmation(exchange: Exchange): Boolean =
       exchange.exchangedBitcoin.buyer == exchange.progress.bitcoinsTransferred.buyer
@@ -104,9 +103,9 @@ object OrderStatusWidget {
       !exchange.isCompleted && exchange.progress.bitcoinsTransferred.buyer.isPositive
   }
 
-  case object Submitting extends Status {
-    override val message = "Submitting"
-    override val spinnerSection = Some(0)
+  case object Offline extends Status {
+    override val message = "Offline"
+    override val spinnerSection = None
   }
 
   case object InMarket extends Status {

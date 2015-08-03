@@ -15,8 +15,8 @@ import coinffeine.peer.exchange.protocol.FakeExchangeProtocol
 
 class OrderStatusWidgetTest extends UnitTest with SampleExchange {
 
-  "Order status" should "be submitting for not started offline orders" in {
-    Status.fromOrder(randomOrder(1.BTC)) shouldBe Submitting
+  "Order status" should "be offline for not started offline orders" in {
+    Status.fromOrder(randomOrder(1.BTC)) shouldBe Offline
   }
 
   it should "be in market for not started in market orders" in {
@@ -46,7 +46,7 @@ class OrderStatusWidgetTest extends UnitTest with SampleExchange {
     val order = randomOrder(1.BTC)
       .withExchange(randomCompletedExchange(0.5.BTC))
       .becomeOffline
-    Status.fromOrder(order) shouldBe Submitting
+    Status.fromOrder(order) shouldBe Offline
   }
 
   it should "be completed for successfully completed orders" in {
