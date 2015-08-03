@@ -10,6 +10,7 @@ v0.11.0:
  - Bug fixing
    * Consider only relevant exchanges when order average price is calculated
    * Support relative paths on --data-path
+   * Update support url shown on startup failure
 
 v0.10.1:
  - Disable _new order_ button when OKPay account balance is not available
