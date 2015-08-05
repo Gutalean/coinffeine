@@ -84,7 +84,7 @@ private class OkPayProcessorActor(
 
     case FindPayment(criterion) => findPayment(sender(), criterion)
     case RetrieveBalance(currency) => currentBalance(sender(), currency)
-    case PollBalances => pollAccountState()
+    case RefreshBalances => pollAccountState()
     case PollResult(newBalances, newRemainingLimits) =>
       updateCachedInformation(newBalances, newRemainingLimits)
     case CheckAccountExistence(accountId) => checkAccountExistence(accountId)
@@ -98,7 +98,7 @@ private class OkPayProcessorActor(
       initialDelay = pollingInterval,
       interval = pollingInterval,
       receiver = self,
-      message = PollBalances
+      message = RefreshBalances
     )
     context.become(started)
     sender() ! Service.Started
@@ -290,9 +290,6 @@ object OkPayProcessorActor {
 
   /** Self-message to signal that the payment has failed and the funds should be unmarked */
   private case class UnmarkFundsUsed(funds: ExchangeId, amount: FiatAmount)
-
-  /** Self-message sent to trigger OKPay API polling. */
-  private case object PollBalances
 
   /** Self-message sent to update to the latest balances and remaining limits */
   private case class PollResult(balances: Try[FiatAmounts], remainingLimits: Try[FiatAmounts])

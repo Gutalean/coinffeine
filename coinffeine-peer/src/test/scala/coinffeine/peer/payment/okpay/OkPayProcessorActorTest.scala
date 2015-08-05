@@ -116,6 +116,15 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     expectFindPaymentFailed(payment)
   }
 
+  it should "refresh balance when requested" in new WithOkPayProcessor {
+    override def pollingInterval = 100.second
+    givenAccountBalance(100.EUR)
+    givenStartedPaymentProcessor()
+    givenAccountBalance(120.EUR)
+    whenRefreshIsRequested()
+    eventually { expectBalancePropertyUpdated(120.EUR) }
+  }
+
   it should "poll for EUR balance periodically" in new WithOkPayProcessor {
     override def pollingInterval = 1.second
     givenAccountBalance(100.EUR)
@@ -306,6 +315,10 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     def givenFundsAreBlocked(funds: ExchangeId, amount: FiatAmount): Unit = {
       whenFundsBlockingIsRequested(funds, amount)
       expectFundsAreBlocked(funds)
+    }
+
+    def whenRefreshIsRequested(): Unit = {
+      requester.send(processor, PaymentProcessorActor.RefreshBalances)
     }
 
     def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
