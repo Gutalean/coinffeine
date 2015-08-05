@@ -102,6 +102,7 @@ class PaymentProcessorSettingsDialog(
     val verificationStatus =
       VerificationStatus.fromBoolean(verificationStatusField.selected.value)
     saveSettings(credentials.value, verificationStatus)
+    paymentProcessor.refreshBalances()
     formStage.close()
   }
 
