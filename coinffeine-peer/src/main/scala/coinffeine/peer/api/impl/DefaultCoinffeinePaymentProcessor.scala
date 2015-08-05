@@ -38,4 +38,6 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
         logger.error("Cannot retrieve current balance", cause)
         None
     })
+
+  override def refreshBalances() = { peer ! RefreshBalances }
 }
