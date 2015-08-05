@@ -16,7 +16,7 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
     lookupAccountId: () => Option[AccountId],
     peer: ActorRef,
     properties: PaymentProcessorProperties)
-  extends CoinffeinePaymentProcessor with PeerActorWrapper with LazyLogging {
+  extends CoinffeinePaymentProcessor with DefaultAwaitConfig with LazyLogging {
 
   override val accountId: Option[AccountId] = lookupAccountId()
 

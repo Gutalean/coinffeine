@@ -13,7 +13,7 @@ import coinffeine.peer.api.CoinffeineOperations
 
 class DefaultCoinffeineOperations(properties: OperationsProperties,
                                   peer: ActorRef)
-  extends CoinffeineOperations with PeerActorWrapper {
+  extends CoinffeineOperations with DefaultAwaitConfig {
 
   override val orders: PropertyMap[OrderId, Order] = properties.orders
 

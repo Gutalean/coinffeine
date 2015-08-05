@@ -13,7 +13,7 @@ import coinffeine.peer.api.MarketStats
 import coinffeine.protocol.messages.brokerage._
 
 private[impl] class DefaultMarketStats(peer: ActorRef)
-  extends MarketStats with PeerActorWrapper {
+  extends MarketStats with DefaultAwaitConfig {
 
   implicit protected override val timeout = Timeout(20.seconds)
 
