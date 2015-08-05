@@ -14,6 +14,7 @@ import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextSty
 import coinffeine.model.currency._
 import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.model.util.Cached
+import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
@@ -27,13 +28,14 @@ class ApplicationScene(
     balances: ApplicationScene.Balances,
     views: Seq[ApplicationView],
     statusBarWidgets: Seq[Node],
-    settingsProvider: SettingsProvider) extends CoinffeineScene(
+    settingsProvider: SettingsProvider,
+    paymentProcessor: CoinffeinePaymentProcessor) extends CoinffeineScene(
   Stylesheets.Operations, Stylesheets.Stats, Stylesheets.Wallet, Stylesheets.Alarms) {
 
   require(views.nonEmpty, "At least one view is required")
 
   private val currentView = new ObjectProperty[ApplicationView](this, "currentView", views.head)
-  private val settingsForm = new PaymentProcessorSettingsDialog(settingsProvider)
+  private val settingsForm = new PaymentProcessorSettingsDialog(settingsProvider, paymentProcessor)
 
   private val viewSelector: Seq[ToggleButton] = {
     val group = new ToggleGroup
