@@ -12,7 +12,7 @@ import coinffeine.peer.CoinffeinePeerActor.{CancelOrder, OpenOrder, OrderOpened}
 import coinffeine.peer.api.CoinffeineOperations
 
 class DefaultCoinffeineOperations(properties: OperationsProperties,
-                                  override val peer: ActorRef)
+                                  peer: ActorRef)
   extends CoinffeineOperations with PeerActorWrapper {
 
   override val orders: PropertyMap[OrderId, Order] = properties.orders
@@ -20,7 +20,7 @@ class DefaultCoinffeineOperations(properties: OperationsProperties,
   override def submitOrder(order: OrderRequest) =
     AskPattern(peer, OpenOrder(order))
       .withReply[OrderOpened]()
-      .map(_.order.asInstanceOf[ActiveOrder])
+      .map(_.order)
 
   override def cancelOrder(order: OrderId): Unit = {
     peer ! CancelOrder(order)
