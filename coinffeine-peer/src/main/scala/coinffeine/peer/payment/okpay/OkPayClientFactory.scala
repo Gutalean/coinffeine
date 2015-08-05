@@ -28,6 +28,10 @@ class OkPayClientFactory(lookupSettings: () => OkPaySettings)
     }
   }
 
+  override def refresh(): Unit = {
+    tokenCache.set(None)
+  }
+
   override def shutdown(): Unit = {
     okPay.httpClient.shutdown()
   }

@@ -231,6 +231,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     val properties = new DefaultPaymentProcessorProperties
     private val clientFactory = new ClientFactory {
       override def build(): OkPayClient = client
+      override def refresh(): Unit = {}
       override def shutdown(): Unit = {}
     }
     protected val registry = new BlockedFiatRegistryImpl()
