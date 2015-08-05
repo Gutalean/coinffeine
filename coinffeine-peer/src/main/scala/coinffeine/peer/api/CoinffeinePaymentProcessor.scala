@@ -11,6 +11,9 @@ trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
 
   /** Get the current balance if possible */
   def currentBalance(): Option[CoinffeinePaymentProcessor.Balance]
+
+  /** Request the payment processor to refresh the balances. */
+  def refreshBalances(): Unit
 }
 
 object CoinffeinePaymentProcessor {

@@ -14,9 +14,9 @@ import coinffeine.peer.payment.PaymentProcessorProperties
 
 private[impl] class DefaultCoinffeinePaymentProcessor(
     lookupAccountId: () => Option[AccountId],
-    override val peer: ActorRef,
+    peer: ActorRef,
     properties: PaymentProcessorProperties)
-  extends CoinffeinePaymentProcessor with PeerActorWrapper with LazyLogging {
+  extends CoinffeinePaymentProcessor with DefaultAwaitConfig with LazyLogging {
 
   override val accountId: Option[AccountId] = lookupAccountId()
 
@@ -38,4 +38,6 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
         logger.error("Cannot retrieve current balance", cause)
         None
     })
+
+  override def refreshBalances() = { peer ! RefreshBalances }
 }

@@ -94,6 +94,9 @@ object PaymentProcessorActor {
       criterion: FindPaymentCriterion,
       error: Throwable) extends FindPaymentResponse
 
+  /** A message sent to the payment processor to request refresh the balances. */
+  case object RefreshBalances
+
   /** A message sent to the payment processor to retrieve the current balance
     * in the given currency.
     * */

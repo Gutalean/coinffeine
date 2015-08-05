@@ -15,10 +15,13 @@ import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.gui.wizard.Wizard
 import coinffeine.model.payment.okpay.VerificationStatus
+import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
 import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPaySettings}
 
-class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends LazyLogging {
+class PaymentProcessorSettingsDialog(
+    settingsProvider: SettingsProvider,
+    paymentProcessor: CoinffeinePaymentProcessor) extends LazyLogging {
 
   private val walletIdField = new TextField
   private val seedTokenField = new TextField
@@ -99,6 +102,7 @@ class PaymentProcessorSettingsDialog(settingsProvider: SettingsProvider) extends
     val verificationStatus =
       VerificationStatus.fromBoolean(verificationStatusField.selected.value)
     saveSettings(credentials.value, verificationStatus)
+    paymentProcessor.refreshBalances()
     formStage.close()
   }
 

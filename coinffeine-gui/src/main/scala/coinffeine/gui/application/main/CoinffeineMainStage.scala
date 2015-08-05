@@ -39,7 +39,8 @@ class CoinffeineMainStage(
         properties.wallet)
     ),
     statusBarWidgets = Seq(new ConnectionStatusWidget(properties.connectionStatusProperty)),
-    settingsProvider = configProvider
+    settingsProvider = configProvider,
+    paymentProcessor = app.paymentProcessor
   )
   icons.add(new Image(this.getClass.getResourceAsStream("/graphics/logo-256x256.png")))
 

@@ -84,6 +84,10 @@ private class OkPayProcessorActor(
 
     case FindPayment(criterion) => findPayment(sender(), criterion)
     case RetrieveBalance(currency) => currentBalance(sender(), currency)
+    case RefreshBalances =>
+      log.info("Refreshing account state by request...")
+      clientFactory.refresh()
+      pollAccountState()
     case PollBalances => pollAccountState()
     case PollResult(newBalances, newRemainingLimits) =>
       updateCachedInformation(newBalances, newRemainingLimits)
@@ -280,6 +284,7 @@ object OkPayProcessorActor {
 
   trait ClientFactory {
     def build(): OkPayClient
+    def refresh(): Unit
     def shutdown(): Unit
   }
 
