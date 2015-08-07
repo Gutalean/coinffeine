@@ -38,6 +38,7 @@ object OkPayFault extends Enumeration {
   val UnsupportedCurrency = Value("Currency_Not_Supported")
 
   // Client Verification
+  val AccountNotFound = Value("Account_Not_Found")
   val ClientNotFound = Value("Client_Not_Found")
   val ImageNotFound = Value("Image_Not_Found")
   val ClientAccessDenied = Value("Client_Access_Denied")
