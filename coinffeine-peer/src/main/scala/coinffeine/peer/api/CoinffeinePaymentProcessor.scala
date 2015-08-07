@@ -20,7 +20,7 @@ trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
   def refreshBalances(): Unit
 
   /** Check if the given credentials can be used to access the API. */
-  def testCredentials(credentials: OkPayApiCredentials): Future[TestResult] = ???
+  def testCredentials(credentials: OkPayApiCredentials): Future[TestResult]
 }
 
 object CoinffeinePaymentProcessor {

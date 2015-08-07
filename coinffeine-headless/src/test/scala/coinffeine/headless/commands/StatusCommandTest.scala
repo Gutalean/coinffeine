@@ -2,14 +2,15 @@ package coinffeine.headless.commands
 
 import scala.concurrent.Future
 
-import coinffeine.common.properties.{MutableProperty, Property}
+import coinffeine.common.properties.MutableProperty
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.util.Cached
 import coinffeine.peer.api._
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 
 class StatusCommandTest extends CommandTest {
 
@@ -69,6 +70,7 @@ class StatusCommandTest extends CommandTest {
       override def accountId: Option[AccountId] = ???
       override val balances = new MutableProperty(Cached.fresh(FiatBalance.empty))
       override def refreshBalances() = {}
+      override def testCredentials(credentials: OkPayApiCredentials) = ???
     }
     override def alarms = ???
     override def start(): Future[Unit] = ???

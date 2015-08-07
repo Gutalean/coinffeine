@@ -13,6 +13,7 @@ import coinffeine.peer.api.CoinffeinePaymentProcessor.Balance
 import coinffeine.peer.api._
 import coinffeine.peer.api.mock.MockCoinffeineOperations
 import coinffeine.peer.payment.MockPaymentProcessorFactory
+import coinffeine.peer.payment.okpay.OkPayApiCredentials
 import coinffeine.peer.properties.bitcoin.DefaultNetworkProperties
 import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 
@@ -40,6 +41,7 @@ class MockCoinffeineApp extends AkkaSpec("testSystem") with CoinffeineApp {
     override def currentBalance() = Some(Balance(500.EUR, 10.EUR))
     override val balances = new MutableProperty(Cached.fresh(FiatBalance.empty))
     override def refreshBalances() = {}
+    override def testCredentials(credentials: OkPayApiCredentials) = ???
   }
 
   override def utils = new CoinffeineUtils {

@@ -9,7 +9,6 @@ import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.common.akka.Service
 import coinffeine.model.bitcoin.{BitcoinFeeCalculator, TransactionSizeFeeCalculator}
-import coinffeine.model.payment.PaymentProcessor._
 import coinffeine.peer.CoinffeinePeerActor
 import coinffeine.peer.amounts.{AmountsCalculator, DefaultAmountsCalculator}
 import coinffeine.peer.api._
@@ -21,12 +20,12 @@ import coinffeine.peer.properties.operations.DefaultOperationsProperties
 import coinffeine.protocol.properties.DefaultCoinffeineNetworkProperties
 
 /** Implements the coinffeine application API as an actor system. */
-class DefaultCoinffeineApp(name: String,
-                           lookupAccountId: () => Option[AccountId],
-                           peerProps: Props,
-                           amountsCalculator: AmountsCalculator,
-                           bitcoinFeeCalculator: BitcoinFeeCalculator,
-                           configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
+class DefaultCoinffeineApp(
+    name: String,
+    peerProps: Props,
+    amountsCalculator: AmountsCalculator,
+    bitcoinFeeCalculator: BitcoinFeeCalculator,
+    configProvider: ConfigProvider) extends CoinffeineApp with LazyLogging {
 
   private implicit val system = ActorSystem(name, configProvider.enrichedConfig)
   private val peerRef = system.actorOf(peerProps, "peer")
@@ -42,7 +41,7 @@ class DefaultCoinffeineApp(name: String,
   override val marketStats = new DefaultMarketStats(peerRef)
 
   override val paymentProcessor = new DefaultCoinffeinePaymentProcessor(
-    lookupAccountId, peerRef, new DefaultPaymentProcessorProperties)
+    configProvider, peerRef, new DefaultPaymentProcessorProperties)
 
   override val utils = new DefaultCoinffeineUtils(amountsCalculator, bitcoinFeeCalculator)
 
@@ -80,12 +79,12 @@ object DefaultCoinffeineApp {
   trait Component extends CoinffeineAppComponent {
     this: CoinffeinePeerActor.Component with ConfigComponent =>
 
-    private def accountId() = configProvider.okPaySettings().userAccount
-
     override lazy val app = {
-      val name = SystemName.choose(accountId())
-      new DefaultCoinffeineApp(name, accountId, peerProps, new DefaultAmountsCalculator(),
+      val name = SystemName.choose(systemName)
+      new DefaultCoinffeineApp(name, peerProps, new DefaultAmountsCalculator(),
         TransactionSizeFeeCalculator, configProvider)
     }
+
+    private def systemName = configProvider.okPaySettings().userAccount
   }
 }
