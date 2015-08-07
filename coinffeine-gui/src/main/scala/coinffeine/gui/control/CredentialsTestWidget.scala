@@ -3,8 +3,8 @@ package coinffeine.gui.control
 import scala.util.{Failure, Success}
 import scalafx.Includes._
 import scalafx.beans.property.ObjectProperty
-import scalafx.scene.control.{Button, Label}
-import scalafx.scene.layout.{Priority, StackPane, HBox}
+import scalafx.scene.control.Button
+import scalafx.scene.layout.HBox
 
 import com.typesafe.scalalogging.LazyLogging
 
@@ -28,31 +28,30 @@ class CredentialsTestWidget(paymentProcessor: CoinffeinePaymentProcessor)
 
   private val state = new ObjectProperty[State](this, "state", State.Idle)
 
-  private val button = new Button("Test") {
+  private val button = new Button {
     styleClass += "action-button"
-    disable <== state.delegate.map(_.isBusy).toBool
-        .or(_credentials.delegate.map(_ == OkPayApiCredentials.empty).toBool)
-    onAction = startTesting _
+
+    text <== state.delegate.map(_.description).toStr
+
+    disable <== _credentials.delegate.map(_ == OkPayApiCredentials.empty).toBool
+
+    graphic <== state.delegate.map { state =>
+      if (state.isBusy) spinner.delegate else null
+    }
+
+    onAction = () => {
+      if (!state.value.isBusy) {
+        startTesting()
+      }
+    }
   }
 
   private val spinner = new Spinner(autoPlay = true) {
     visible <== state.delegate.map(_.isBusy).toBool
   }
 
-  private val description = new Label {
-    styleClass += "description"
-    text <== state.delegate.map(_.description)
-  }
-
   styleClass += "credentials-test"
-  children = new HBox {
-    styleClass += "content"
-    children = Seq(button, new StackPane() {
-      styleClass += "results"
-      hgrow = Priority.Always
-      children = Seq(spinner, description)
-    })
-  }
+  children = Seq(button)
 
   private def startTesting(): Unit = {
     val credentialsToTest = _credentials.value
@@ -70,21 +69,24 @@ class CredentialsTestWidget(paymentProcessor: CoinffeinePaymentProcessor)
 private object CredentialsTestWidget {
   sealed trait State {
     def isBusy: Boolean = false
-    def description: String = ""
+    def description: String
   }
 
   object State {
-    case object Idle extends State
+    case object Idle extends State {
+      override def description = "Test"
+    }
 
     case object Testing extends State {
       override def isBusy = true
+      override def description = "Testing..."
     }
 
     case class Tested(result: TestResult) extends State {
       override def description: String = result match {
-        case TestResult.Valid => "OK"
-        case TestResult.Invalid => "Invalid credentials"
-        case TestResult.CannotConnect => "Couldn't connect"
+        case TestResult.Valid => "Valid, test again"
+        case TestResult.Invalid => "Invalid credentials, test again"
+        case TestResult.CannotConnect => "Couldn't connect, test again"
       }
     }
   }
