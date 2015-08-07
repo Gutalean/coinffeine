@@ -7,13 +7,10 @@ import scala.util.{Failure, Success}
 import coinffeine.common.ScalaFutureImplicits._
 import coinffeine.model.currency.FiatAmounts
 import coinffeine.peer.api.CoinffeinePaymentProcessor.TestResult
-import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.payment.okpay.OkPayClient.{AuthenticationFailed, ClientNotFound}
-import coinffeine.peer.payment.okpay.{OkPaySettings, OkPayApiCredentials, OkPayClientFactory}
+import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPayClientFactory, OkPaySettings}
 
 class OkPayApiCredentialsTester(lookupSettings: () => OkPaySettings) {
-
-  def this(configProvider: ConfigProvider) = this(configProvider.okPaySettings _)
 
   def test(credentials: OkPayApiCredentials): Future[TestResult] = {
     def patchedSettings() = {

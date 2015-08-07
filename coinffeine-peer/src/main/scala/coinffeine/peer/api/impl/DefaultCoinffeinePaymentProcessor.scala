@@ -20,7 +20,7 @@ private[impl] class DefaultCoinffeinePaymentProcessor(
     properties: PaymentProcessorProperties)
   extends CoinffeinePaymentProcessor with DefaultAwaitConfig with LazyLogging {
 
-  private val credentialsTester = new OkPayApiCredentialsTester(configProvider)
+  private val credentialsTester = new OkPayApiCredentialsTester(configProvider.okPaySettings)
 
   override def accountId: Option[AccountId] = configProvider.okPaySettings().userAccount
 
