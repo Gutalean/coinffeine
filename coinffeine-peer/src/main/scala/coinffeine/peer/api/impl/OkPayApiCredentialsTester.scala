@@ -9,13 +9,15 @@ import coinffeine.model.currency.FiatAmounts
 import coinffeine.peer.api.CoinffeinePaymentProcessor.TestResult
 import coinffeine.peer.config.ConfigProvider
 import coinffeine.peer.payment.okpay.OkPayClient.{AuthenticationFailed, ClientNotFound}
-import coinffeine.peer.payment.okpay.{OkPayApiCredentials, OkPayClientFactory}
+import coinffeine.peer.payment.okpay.{OkPaySettings, OkPayApiCredentials, OkPayClientFactory}
 
-class OkPayApiCredentialsTester(configProvider: ConfigProvider) {
+class OkPayApiCredentialsTester(lookupSettings: () => OkPaySettings) {
+
+  def this(configProvider: ConfigProvider) = this(configProvider.okPaySettings _)
 
   def test(credentials: OkPayApiCredentials): Future[TestResult] = {
     def patchedSettings() = {
-      configProvider.okPaySettings().withApiCredentials(credentials)
+      lookupSettings().withApiCredentials(credentials)
     }
 
     val factory = new OkPayClientFactory(patchedSettings)
