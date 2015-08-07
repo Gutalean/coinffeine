@@ -174,3 +174,22 @@
 .support-icon:hover {
     -fx-cursor: hand;
 }
+
+.credentials-test {
+    -fx-alignment: center;
+    -fx-min-height: 40;
+}
+.credentials-test .content {
+    -fx-alignment: center;
+}
+.credentials-test .results {
+    -fx-padding: 0 0 0 10;
+}
+.credentials-test .spinner {
+    -fx-alignment: center-left;
+    -fx-color: -cf-gray1;
+}
+.credentials-test .description {
+    -fx-min-width: 300;
+    -fx-text-alignment: left;
+}
