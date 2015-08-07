@@ -44,9 +44,13 @@ object WalletActivity {
     )
 
     def spendsDeposit(tx: MutableTransaction): Option[ExchangeId] = {
-      val spentTransactions = tx.getInputs.asScala.map(_.getOutpoint.getHash).toSet
+      val spentCandidates = tx.getInputs.asScala
+        .map(_.getOutpoint)
+        .filter(_.getIndex == 0) // only output #0 spends deposit; others are change outputs
+        .map(_.getHash)
+        .toSet
       deposits.collectFirst {
-        case (deposit, id) if spentTransactions.contains(deposit) => id
+        case (deposit, id) if spentCandidates.contains(deposit) => id
       }
     }
 
