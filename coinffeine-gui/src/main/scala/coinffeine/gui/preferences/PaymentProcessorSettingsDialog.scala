@@ -9,7 +9,7 @@ import scalafx.stage.{Modality, Stage, StageStyle}
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.SupportWidget
+import coinffeine.gui.control.{CredentialsTestWidget, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.gui.setup.SetupWizard
@@ -64,6 +64,9 @@ class PaymentProcessorSettingsDialog(
         description,
         labelledField("Account ID", walletIdField),
         labelledField("Token", seedTokenField),
+        new CredentialsTestWidget(paymentProcessor) {
+          credentials <== PaymentProcessorSettingsDialog.this.credentials
+        },
         field(
           new HBox(verificationStatusField, new SupportWidget("setup-verification")),
           new Label("Unverified accounts cannot transfer more than 300EUR/month") {

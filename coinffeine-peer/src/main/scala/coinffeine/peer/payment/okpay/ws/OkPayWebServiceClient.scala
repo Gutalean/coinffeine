@@ -283,7 +283,8 @@ class OkPayWebServiceClient(
 
     def mapSoapFault(specificFaultMapper: SoapFaultMapper = Map.empty): Future[A] = {
       val generalFaultMapper: SoapFaultMapper = {
-        case OkPayFault(OkPayFault.ClientNotFound) => ClientNotFound(accountId, _)
+        case OkPayFault(OkPayFault.ClientNotFound | OkPayFault.AccountNotFound) =>
+          ClientNotFound(accountId, _)
         case OkPayFault(OkPayFault.AuthenticationFailed) => (cause: Throwable) => {
           expireToken()
           AuthenticationFailed(accountId, cause)

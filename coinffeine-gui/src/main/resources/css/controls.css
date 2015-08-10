@@ -174,3 +174,10 @@
 .support-icon:hover {
     -fx-cursor: hand;
 }
+
+.credentials-test {
+    -fx-alignment: center;
+}
+.credentials-test .spinner {
+    -fx-color: white;
+}
