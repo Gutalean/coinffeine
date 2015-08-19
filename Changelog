@@ -3,6 +3,10 @@ Changelog
 
 v0.12.0:
 
+ - Bug fixing
+   * Force file encoding to UTF-8 to avoid issues when system is configured
+   with a different default encoding
+
 v0.11.0:
  - Forward compatible change in the application data
  - Check existence of counterparts OKPay account before accepting a handshake

@@ -43,6 +43,8 @@ JFX.title := "Coinffeine"
 
 JFX.nativeBundles := "all"
 
+JFX.properties += "file.encoding" -> "UTF-8"
+
 JFX.pkgResourcesDir := Seq(
   baseDirectory.value / "src" / "deploy",
   crossTarget.value / "deploy"
