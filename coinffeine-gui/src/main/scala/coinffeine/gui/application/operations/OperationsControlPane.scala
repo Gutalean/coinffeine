@@ -18,7 +18,9 @@ import coinffeine.model.order.{OrderRequest, Price}
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.protocol.messages.brokerage.Quote
 
-private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneStyles.Centered {
+private class OperationsControlPane(app: CoinffeineApp, market: Market)
+    extends VBox with PaneStyles.Centered {
+
   id = "operations-control-pane"
 
   private val validation = new DefaultOrderValidation(app)
@@ -28,18 +30,18 @@ private class OperationsControlPane(app: CoinffeineApp) extends VBox with PaneSt
 
     private val currentPrice = PollingBean(OperationsControlPane.BitcoinPricePollingInterval) {
       implicit val executor = FxExecutor.asContext
-      app.marketStats.currentQuote(Market(Euro)).map(quote => OperationsControlPane.summarize(quote))
+      app.marketStats.currentQuote(market).map(OperationsControlPane.summarize)
     }
 
     val prelude = new Label("1 BTC = ")
 
     val amount = new Label with TextStyles.CurrencyAmount {
       text <== currentPrice.map {
-        case Some(Some(p)) => p.of(1.BTC).format(Currency.NoSymbol)
-        case _ => Euro.formatMissingAmount(Currency.NoSymbol)
+        case Some(Some(price)) => price.of(1.BTC).format(Currency.NoSymbol)
+        case _ => market.currency.formatMissingAmount(Currency.NoSymbol)
       }.toStr
     }
-    val symbol = new Label(Euro.toString) with TextStyles.CurrencySymbol
+    val symbol = new Label(market.currency.toString) with TextStyles.CurrencySymbol
 
     children = Seq(prelude, amount, symbol)
   }
