@@ -16,10 +16,24 @@ class StatusCommandTest extends CommandTest {
 
   "The status command" should "print the available and blocked fiat" in new Fixture {
     commandOutput() should include("FIAT: --")
-    app.fiatBalance.set(Some(FiatBalance(0.05.EUR, 0.EUR)))
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(0.05.EUR),
+      FiatAmounts.fromAmounts(0.EUR),
+      FiatAmounts.fromAmounts()
+    )))
     commandOutput() should include("FIAT: 0.05EUR")
-    app.fiatBalance.set(Some(FiatBalance(123.45.EUR, 20.3.EUR)))
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(123.45.EUR),
+      FiatAmounts.fromAmounts(20.3.EUR),
+      FiatAmounts.fromAmounts()
+    )))
     commandOutput() should include("FIAT: 123.45EUR (20.30EUR blocked)")
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(123.45.EUR, 40.USD),
+      FiatAmounts.fromAmounts(20.3.EUR),
+      FiatAmounts.fromAmounts()
+    )))
+    commandOutput() should include("FIAT: 123.45EUR (20.30EUR blocked) 40.00USD")
   }
 
   it should "print the bitcoin wallet balances" in new Fixture {
@@ -49,7 +63,7 @@ class StatusCommandTest extends CommandTest {
   }
 
   class MockCoinffeineApp extends CoinffeineApp {
-    val fiatBalance = new MutableProperty[Option[FiatBalance]](None)
+    val fiatBalances = new MutableProperty[Cached[FiatBalances]](Cached.stale(FiatBalances.empty))
     val btcBalance = new MutableProperty[Option[BitcoinBalance]](None)
     val primaryAddress = new MutableProperty[Option[Address]](None)
 
@@ -66,9 +80,9 @@ class StatusCommandTest extends CommandTest {
       override val primaryAddress = MockCoinffeineApp.this.primaryAddress
     }
     override def paymentProcessor = new CoinffeinePaymentProcessor {
-      override def currentBalance(): Option[FiatBalance] = fiatBalance.get
+      override def currentBalance(): Option[FiatBalance] = None
       override def accountId: Option[AccountId] = ???
-      override val balances = new MutableProperty(Cached.fresh(FiatBalances.empty))
+      override val balances = fiatBalances
       override def refreshBalances() = {}
       override def testCredentials(credentials: OkPayApiCredentials) = ???
     }

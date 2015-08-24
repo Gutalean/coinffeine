@@ -34,6 +34,8 @@ case class FiatBalances(
     blockedAmount = blockedAmounts.getOrZero(currency),
     remainingLimit = remainingLimits.get(currency)
   )
+
+  def currencies: Set[FiatCurrency] = amounts.currencies ++ blockedAmounts.currencies
 }
 
 object FiatBalances {
