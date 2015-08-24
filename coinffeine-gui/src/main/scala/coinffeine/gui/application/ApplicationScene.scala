@@ -79,7 +79,7 @@ class ApplicationScene(
           new Label with TextStyles.CurrencyAmount {
             text <== properties.wallet.balance.delegate.map {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
-              case None => Euro.formatMissingAmount(Currency.NoSymbol)
+              case None => Bitcoin.formatMissingAmount(Currency.NoSymbol)
             }.toStr
           },
           new Label("BTC") with TextStyles.CurrencySymbol)
