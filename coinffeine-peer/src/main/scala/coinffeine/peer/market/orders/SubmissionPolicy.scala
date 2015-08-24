@@ -1,7 +1,7 @@
 package coinffeine.peer.market.orders
 
 import coinffeine.model.bitcoin.TransactionSizeFeeCalculator
-import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalances}
 import coinffeine.model.currency.{Bitcoin, BitcoinAmount, FiatAmount, FiatCurrency}
 import coinffeine.model.exchange.Role
 import coinffeine.model.market.{OrderBookEntry, Spread}
@@ -14,7 +14,7 @@ trait SubmissionPolicy {
   def setEntry(entry: OrderBookEntry): Unit
   def unsetEntry(): Unit
   def setBitcoinBalance(balance: BitcoinBalance): Unit
-  def setFiatBalance(balance: Cached[FiatBalance]): Unit
+  def setFiatBalances(balances: Cached[FiatBalances]): Unit
   def entryToSubmit: Option[OrderBookEntry]
 }
 
@@ -23,7 +23,7 @@ class SubmissionPolicyImpl(
 
   private var _entry: Option[OrderBookEntry] = None
   private var bitcoinBalance = BitcoinBalance.empty
-  private var fiatBalance = Cached.stale(FiatBalance.empty)
+  private var fiatBalance = Cached.stale(FiatBalances.empty)
 
   override def entry = _entry
 
@@ -39,7 +39,7 @@ class SubmissionPolicyImpl(
     bitcoinBalance = balance
   }
 
-  override def setFiatBalance(balance: Cached[FiatBalance]): Unit = {
+  override def setFiatBalances(balance: Cached[FiatBalances]): Unit = {
     fiatBalance = balance
   }
 
@@ -87,10 +87,10 @@ class SubmissionPolicyImpl(
     case Cached(balance, CacheStatus.Fresh) => availableFiat(currency, balance)
   }
 
-  private def availableFiat(currency: FiatCurrency, balance: FiatBalance): FiatAmount = {
+  private def availableFiat(currency: FiatCurrency, balances: FiatBalances): FiatAmount = {
     val notBlocked =
-      balance.amounts.getOrZero(currency) - balance.blockedAmounts.getOrZero(currency)
-    val maybeLimit = balance.remainingLimits.get(currency)
+      balances.amounts.getOrZero(currency) - balances.blockedAmounts.getOrZero(currency)
+    val maybeLimit = balances.remainingLimits.get(currency)
     maybeLimit.fold(notBlocked)(_ min notBlocked)
   }
 

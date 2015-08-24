@@ -39,7 +39,7 @@ private[orders] class OrderPublisher(
 
   val receiveSubmissionEvents: Actor.Receive = {
     case FiatBalanceChanged(balance) =>
-      policy.setFiatBalance(balance)
+      policy.setFiatBalances(balance)
       updateSubmissionRequest()
 
     case BitcoinBalanceChanged(balance) =>

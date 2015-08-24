@@ -12,7 +12,7 @@ import coinffeine.gui.preferences.PaymentProcessorSettingsDialog
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalances}
 import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
@@ -118,10 +118,10 @@ class ApplicationScene(
   }
 
   private def findAmount(
-      currency: FiatCurrency, balance: Cached[FiatBalance]): Option[FiatAmount] =
+      currency: FiatCurrency, balances: Cached[FiatBalances]): Option[FiatAmount] =
     for {
-      amount <- balance.cached.amounts.get(currency)
-      if balance.isFresh
+      amount <- balances.cached.amounts.get(currency)
+      if balances.isFresh
     } yield amount
 
   private def formatOptionalAmount(currency: FiatCurrency, maybeAmount: Option[FiatAmount]) =
@@ -134,6 +134,6 @@ object ApplicationScene {
 
   case class Balances(
     bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
-    fiat: ReadOnlyObjectProperty[Cached[FiatBalance]]
+    fiat: ReadOnlyObjectProperty[Cached[FiatBalances]]
   )
 }

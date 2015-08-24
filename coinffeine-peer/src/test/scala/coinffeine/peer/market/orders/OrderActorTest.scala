@@ -17,7 +17,7 @@ import coinffeine.common.akka.test.{AkkaSpec, MockSupervisedActor}
 import coinffeine.model.Both
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalances}
 import coinffeine.model.exchange.ActiveExchange.DepositAmounts
 import coinffeine.model.exchange.Exchange.Progress
 import coinffeine.model.exchange._
@@ -140,7 +140,7 @@ abstract class OrderActorTest extends AkkaSpec
 
     private def givenEnoughBalances(): Unit = {
       val bus = CoinffeineEventBusExtension.lookup()(system)
-      bus.publish(FiatBalanceChanged.Topic, FiatBalanceChanged(Cached.fresh(FiatBalance(
+      bus.publish(FiatBalanceChanged.Topic, FiatBalanceChanged(Cached.fresh(FiatBalances(
         amounts = FiatAmounts.fromAmounts(1500.EUR, 1500.USD),
         blockedAmounts = FiatAmounts.empty,
         remainingLimits = FiatAmounts.empty

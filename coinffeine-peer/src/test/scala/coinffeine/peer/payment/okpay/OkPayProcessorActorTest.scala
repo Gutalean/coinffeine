@@ -13,7 +13,7 @@ import coinffeine.common.akka.persistence.PeriodicSnapshot
 import coinffeine.common.akka.test.AkkaSpec
 import coinffeine.common.properties.Property
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.FiatBalance
+import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
@@ -360,7 +360,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       expectPropertyUpdated(
         property = properties.balances,
         expectedValue = Cached(
-          FiatBalance(
+          FiatBalances(
             amounts = FiatAmounts.fromAmounts(balance),
             blockedAmounts = FiatAmounts.fromAmounts(blocked.toSeq: _*),
             remainingLimits = FiatAmounts.fromAmounts(remainingLimit.toSeq: _*)
