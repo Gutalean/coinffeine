@@ -80,7 +80,6 @@ class StatusCommandTest extends CommandTest {
       override val primaryAddress = MockCoinffeineApp.this.primaryAddress
     }
     override def paymentProcessor = new CoinffeinePaymentProcessor {
-      override def currentBalance(): Option[FiatBalance] = None
       override def accountId: Option[AccountId] = ???
       override val balances = fiatBalances
       override def refreshBalances() = {}
