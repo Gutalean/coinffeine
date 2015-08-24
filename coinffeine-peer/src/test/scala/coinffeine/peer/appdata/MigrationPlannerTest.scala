@@ -1,12 +1,19 @@
 package coinffeine.peer.appdata
 
 import coinffeine.common.test.UnitTest
+import coinffeine.model.currency.Euro
 import coinffeine.peer.appdata.Migration.{Context, Result}
 import coinffeine.peer.config.GeneralSettings
 
 class MigrationPlannerTest extends UnitTest {
 
   val currentVersion = DataVersion(5)
+  val baseSettings = GeneralSettings(
+    licenseAccepted = false,
+    currency = Euro,
+    dataVersion = None,
+    serviceStartStopTimeout = null
+  )
 
   abstract class DummyMigration extends Migration {
     override def apply(context: Context): Result = ???
@@ -22,21 +29,13 @@ class MigrationPlannerTest extends UnitTest {
   )
 
   "Migration planner" should "plan no migration when versions match" in {
-    val upToDateSettings = GeneralSettings(
-      licenseAccepted = true,
-      dataVersion = Some(currentVersion),
-      serviceStartStopTimeout = null
-    )
+    val upToDateSettings = settingsForVersion(currentVersion.value)
     new MigrationPlanner(sampleMigrations)
       .plan(currentVersion, upToDateSettings) should not be 'needed
   }
 
   it should "plan no migration when version and license settings are blank" in {
-    val firstRunSettings = GeneralSettings(
-      licenseAccepted = false,
-      dataVersion = None,
-      serviceStartStopTimeout = null
-    )
+    val firstRunSettings = baseSettings.copy(licenseAccepted = false)
     new MigrationPlanner(sampleMigrations)
       .plan(currentVersion, firstRunSettings) should not be 'needed
   }
@@ -47,11 +46,7 @@ class MigrationPlannerTest extends UnitTest {
   }
 
   it should "plan a migration from pre-0.9 saved settings" in {
-    val settingsWithoutExplicitVersion = GeneralSettings(
-      licenseAccepted = true,
-      dataVersion = None,
-      serviceStartStopTimeout = null
-    )
+    val settingsWithoutExplicitVersion = baseSettings.copy(licenseAccepted = true)
     val actualPlan = new MigrationPlanner(sampleMigrations)
         .plan(DataVersion(2), settingsWithoutExplicitVersion)
     actualPlan shouldBe SequentialPlan(Seq(Migration1))
@@ -68,9 +63,8 @@ class MigrationPlannerTest extends UnitTest {
         .plan(currentVersion, futureVersionSettings) shouldBe FailToDowngradePlan
   }
 
-  def settingsForVersion(savedVersion: Int) = GeneralSettings(
+  def settingsForVersion(savedVersion: Int) = baseSettings.copy(
     licenseAccepted = true,
-    dataVersion = Some(DataVersion(savedVersion)),
-    serviceStartStopTimeout = null
+    dataVersion = Some(DataVersion(savedVersion))
   )
 }
