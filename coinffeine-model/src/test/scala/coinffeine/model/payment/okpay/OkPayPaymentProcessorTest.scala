@@ -35,7 +35,7 @@ class OkPayPaymentProcessorTest extends UnitTest {
   it should "reject unsupported currencies" in {
     object InventedCurrency extends FiatCurrency {
       override val javaCurrency = Currency.getInstance("XXX")
-      override val precision = 2
+      override lazy val precision = 2
     }
     an [IllegalArgumentException] shouldBe thrownBy {
       OkPayPaymentProcessor.calculateFee(InventedCurrency(3))
