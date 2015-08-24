@@ -28,8 +28,7 @@ class CoinffeineMainStage(
   minWidth = 1024
   minHeight = 600
   scene = new ApplicationScene(
-    balances =
-        ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalancesProperty),
+    properties = properties,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
       new StatsView(app),
