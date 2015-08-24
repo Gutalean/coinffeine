@@ -13,13 +13,14 @@ import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.{CurrencyTextField, GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.{StepPane, StepPaneEvent}
-import coinffeine.model.currency.{Bitcoin, Euro}
+import coinffeine.model.currency.Bitcoin
 import coinffeine.model.market._
 import coinffeine.model.order._
 import coinffeine.peer.amounts.AmountsCalculator
 import coinffeine.peer.api.MarketStats
 
 class OrderAmountsStep(
+    market: Market,
     marketStats: MarketStats,
     amountsCalculator: AmountsCalculator,
     data: CollectedData,
@@ -34,7 +35,7 @@ class OrderAmountsStep(
     new ObjectProperty[OrderValidation.Result](this, "validation", OrderValidation.Ok)
 
   private val currentQuote = PollingBean(OrderAmountsStep.CurrentQuotePollingInterval) {
-    marketStats.currentQuote(Market(Euro))
+    marketStats.currentQuote(market)
   }
 
   private val action = new Label {
@@ -45,7 +46,7 @@ class OrderAmountsStep(
     styleClass += "btc-input"
   }
 
-  private val fiatAmount = new CurrencyTextField(Euro.zero) {
+  private val fiatAmount = new CurrencyTextField(market.currency.zero) {
     styleClass += "fiat-input"
   }
 
@@ -81,7 +82,7 @@ class OrderAmountsStep(
           styleClass += "disclaimer"
           children = Seq(
             new Label {
-              val maxFiat = amountsCalculator.maxFiatPerExchange(Euro)
+              val maxFiat = amountsCalculator.maxFiatPerExchange(market.currency)
               text = s"(Maximum allowed fiat per order is $maxFiat)"
             },
             new SupportWidget("limit-price")
@@ -180,13 +181,13 @@ class OrderAmountsStep(
     data.bitcoinAmount <== btcAmount.currencyValue
 
     data.price <==
-        MarketSelection.group.selectedToggle.delegate.zip(fiatAmount.currencyValue) {
-          (sel, price) => Option(sel) match {
-            case Some(MarketSelection.limitButton) if price.isPositive => LimitPrice(price)
-            case Some(MarketSelection.marketPriceButton) => MarketPrice(Euro)
-            case _ => null
-          }
+      MarketSelection.group.selectedToggle.delegate.zip(fiatAmount.currencyValue) {
+        (sel, price) => Option(sel) match {
+          case Some(MarketSelection.limitButton) if price.isPositive => LimitPrice(price)
+          case Some(MarketSelection.marketPriceButton) => MarketPrice(market.currency)
+          case _ => null
         }
+      }
   }
 }
 

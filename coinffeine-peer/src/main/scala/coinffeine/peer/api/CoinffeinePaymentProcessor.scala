@@ -2,7 +2,6 @@ package coinffeine.peer.api
 
 import scala.concurrent.Future
 
-import coinffeine.model.currency.Euro
 import coinffeine.model.payment.PaymentProcessor
 import coinffeine.peer.payment.PaymentProcessorProperties
 import coinffeine.peer.payment.okpay.OkPayApiCredentials
@@ -12,10 +11,6 @@ trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
   import CoinffeinePaymentProcessor._
 
   def accountId: Option[PaymentProcessor.AccountId]
-
-  /** Get the current balance if possible */
-  @deprecated("use balances instead")
-  def currentBalance(): Option[CoinffeinePaymentProcessor.Balance]
 
   /** Request the payment processor to refresh the balances. */
   def refreshBalances(): Unit
@@ -31,9 +26,5 @@ object CoinffeinePaymentProcessor {
     case object Valid extends TestResult
     case object Invalid extends TestResult
     case object CannotConnect extends TestResult
-  }
-
-  case class Balance(totalFunds: Euro.Amount, blockedFunds: Euro.Amount = Euro.zero) {
-    val availableFunds = totalFunds - blockedFunds
   }
 }

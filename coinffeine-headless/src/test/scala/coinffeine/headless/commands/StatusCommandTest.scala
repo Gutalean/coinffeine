@@ -6,7 +6,7 @@ import coinffeine.common.properties.MutableProperty
 import coinffeine.model.bitcoin.test.CoinffeineUnitTestNetwork
 import coinffeine.model.bitcoin.{Address, Hash, KeyPair}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalances}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance, FiatBalances}
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.util.Cached
 import coinffeine.peer.api._
@@ -16,10 +16,24 @@ class StatusCommandTest extends CommandTest {
 
   "The status command" should "print the available and blocked fiat" in new Fixture {
     commandOutput() should include("FIAT: --")
-    app.fiatBalance.set(Some(CoinffeinePaymentProcessor.Balance(0.05.EUR)))
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(0.05.EUR),
+      FiatAmounts.fromAmounts(0.EUR),
+      FiatAmounts.fromAmounts()
+    )))
     commandOutput() should include("FIAT: 0.05EUR")
-    app.fiatBalance.set(Some(CoinffeinePaymentProcessor.Balance(123.45.EUR, 20.3.EUR)))
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(123.45.EUR),
+      FiatAmounts.fromAmounts(20.3.EUR),
+      FiatAmounts.fromAmounts()
+    )))
     commandOutput() should include("FIAT: 123.45EUR (20.30EUR blocked)")
+    app.fiatBalances.set(Cached.fresh(FiatBalances(
+      FiatAmounts.fromAmounts(123.45.EUR, 40.USD),
+      FiatAmounts.fromAmounts(20.3.EUR),
+      FiatAmounts.fromAmounts()
+    )))
+    commandOutput() should include("FIAT: 123.45EUR (20.30EUR blocked) 40.00USD")
   }
 
   it should "print the bitcoin wallet balances" in new Fixture {
@@ -49,7 +63,7 @@ class StatusCommandTest extends CommandTest {
   }
 
   class MockCoinffeineApp extends CoinffeineApp {
-    val fiatBalance = new MutableProperty[Option[CoinffeinePaymentProcessor.Balance]](None)
+    val fiatBalances = new MutableProperty[Cached[FiatBalances]](Cached.stale(FiatBalances.empty))
     val btcBalance = new MutableProperty[Option[BitcoinBalance]](None)
     val primaryAddress = new MutableProperty[Option[Address]](None)
 
@@ -66,9 +80,8 @@ class StatusCommandTest extends CommandTest {
       override val primaryAddress = MockCoinffeineApp.this.primaryAddress
     }
     override def paymentProcessor = new CoinffeinePaymentProcessor {
-      override def currentBalance(): Option[CoinffeinePaymentProcessor.Balance] = fiatBalance.get
       override def accountId: Option[AccountId] = ???
-      override val balances = new MutableProperty(Cached.fresh(FiatBalances.empty))
+      override val balances = fiatBalances
       override def refreshBalances() = {}
       override def testCredentials(credentials: OkPayApiCredentials) = ???
     }

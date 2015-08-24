@@ -33,6 +33,11 @@ class CachedTest extends UnitTest {
     composeGreeting(freshGreet, staleName) shouldBe Cached.stale("hello Joe!")
   }
 
+  it should "be converted to option" in {
+    freshName.toOption shouldBe Some("Joe")
+    staleName.toOption shouldBe 'empty
+  }
+
   private def composeGreeting(greet: Cached[String], name: Cached[String]) = for {
     greet <- greet
     name <- name

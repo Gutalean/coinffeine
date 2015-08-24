@@ -10,6 +10,8 @@ case class Cached[A](cached: A, status: CacheStatus) {
   def staled: Cached[A] = if (status.isFresh) copy(status = CacheStatus.Stale) else this
 
   def isFresh: Boolean = status.isFresh
+
+  def toOption: Option[A] = if (isFresh) Some(cached) else None
 }
 
 object Cached {

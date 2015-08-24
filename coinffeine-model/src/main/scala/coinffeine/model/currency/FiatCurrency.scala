@@ -8,6 +8,7 @@ trait FiatCurrency extends Currency {
   val javaCurrency: JavaCurrency
   override lazy val preferredSymbolPosition = Currency.SymbolSuffixed
   override lazy val symbol = javaCurrency.getCurrencyCode
+  override lazy val precision = javaCurrency.getDefaultFractionDigits
   override lazy val toString = symbol
 
   override def fromUnits(units: Long) = FiatAmount(units, this)
@@ -29,5 +30,34 @@ object FiatCurrency {
     throw new IllegalArgumentException(
       s"cannot convert $javaCurrency into a known Coinffeine fiat currency"))
 
-  val supported: Set[FiatCurrency] = Set(Euro, UsDollar)
+  val supported: Set[FiatCurrency] = Set(
+    Euro,
+    UsDollar,
+    PoundSterling,
+    HongKongDollar,
+    SwissFranc,
+    AustralianDollar,
+    PolishZloty,
+    Yen,
+    SwedishKrona,
+    DenmarkKroner,
+    CanadianDollar,
+    RussianRouble,
+    Koruny,
+    CroatianKuna,
+    HungarianForint,
+    NorwegianKrone,
+    NewZealandDollar,
+    RomanianNewLeu,
+    TurkishLira,
+    SouthAfricanRand,
+    PhilippinePeso,
+    SingaporeDollar,
+    MalaysianRinggit,
+    TaiwanNewDollar,
+    IsraeliNewSheqel,
+    MexicanPeso,
+    YuanRenminbi,
+    NigerianNairas
+  )
 }

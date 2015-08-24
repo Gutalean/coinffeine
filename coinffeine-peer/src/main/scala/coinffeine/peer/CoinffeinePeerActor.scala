@@ -21,7 +21,7 @@ import coinffeine.peer.market._
 import coinffeine.peer.market.orders.archive.OrderArchive
 import coinffeine.peer.market.orders.{OrderActor, OrderSupervisor}
 import coinffeine.peer.market.submission.SubmissionSupervisor
-import coinffeine.peer.payment.PaymentProcessorActor.{RefreshBalances, RetrieveBalance}
+import coinffeine.peer.payment.PaymentProcessorActor.RefreshBalances
 import coinffeine.peer.payment.okpay.OkPayProcessorActor
 import coinffeine.protocol.gateway.MessageGateway
 import coinffeine.protocol.messages.brokerage
@@ -101,8 +101,6 @@ class CoinffeinePeerActor(
           .recover { case NonFatal(ex) => WalletFundsWithdrawFailure(amount, to, ex) }
           .pipeTo(sender())
 
-    case message@RetrieveBalance(_) =>
-      paymentProcessorRef forward message
     case message@RefreshBalances =>
       paymentProcessorRef forward message
 

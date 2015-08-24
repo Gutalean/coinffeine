@@ -14,24 +14,25 @@ import coinffeine.gui.application.{ApplicationProperties, ApplicationScene}
 import coinffeine.gui.control.ConnectionStatusWidget
 import coinffeine.gui.scene.CoinffeineAlert
 import coinffeine.gui.util.FxExecutor
+import coinffeine.model.market.Market
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.peer.config.ConfigProvider
 
 class CoinffeineMainStage(
     app: CoinffeineApp, configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
-  private val properties = new ApplicationProperties(app, FxExecutor.asContext)
+  private val properties = new ApplicationProperties(
+    app, configProvider.generalSettings().currency, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
   minWidth = 1024
   minHeight = 600
   scene = new ApplicationScene(
-    balances =
-        ApplicationScene.Balances(properties.wallet.balance, properties.fiatBalancesProperty),
+    properties = properties,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
-      new StatsView(app),
+      new StatsView(app, Market(properties.currencyProperty.get)),
       new WalletView(
         configProvider.bitcoinSettings().network,
         app.wallet,

@@ -1,6 +1,6 @@
 package coinffeine.gui.application
 
-import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
+import scalafx.beans.property.ObjectProperty
 import scalafx.event.ActionEvent
 import scalafx.scene.Node
 import scalafx.scene.control._
@@ -12,20 +12,20 @@ import coinffeine.gui.preferences.PaymentProcessorSettingsDialog
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{NodeStyles, PaneStyles, Stylesheets, TextStyles}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalances}
+import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
 
 /** Main scene of the application.
   *
-  * @param balances The balances to be shown in the scene.
+  * @param properties All application properties.
   * @param views  Available application views. The first one is visible at application start.
   * @param statusBarWidgets  Widgets displayed on the status bar at the bottom of the window
   * @param settingsProvider An object that provides the application settings
   */
 class ApplicationScene(
-    balances: ApplicationScene.Balances,
+    properties: ApplicationProperties,
     views: Seq[ApplicationView],
     statusBarWidgets: Seq[Node],
     settingsProvider: SettingsProvider,
@@ -64,19 +64,22 @@ class ApplicationScene(
         styleClass += "currency"
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
-            text <== balances.fiat.delegate.map { cachedBalance =>
-              formatOptionalAmount(Euro, findAmount(Euro, cachedBalance))
+            text <== properties.fiatBalancesProperty.delegate.zip(properties.currencyProperty) {
+              case (cachedBalance, currency) =>
+                formatOptionalAmount(currency, findAmount(currency, cachedBalance))
             }.toStr
           },
-          new Label("EUR") with TextStyles.CurrencySymbol)
+          new Label with TextStyles.CurrencySymbol {
+            text <== properties.currencyProperty.delegate.map(_.symbol).toStr
+          })
       },
       new HBox {
         styleClass += "currency"
         children = Seq(
           new Label with TextStyles.CurrencyAmount {
-            text <== balances.bitcoin.delegate.map {
+            text <== properties.wallet.balance.delegate.map {
               case Some(b) => b.estimated.format(Currency.NoSymbol)
-              case None => Euro.formatMissingAmount(Currency.NoSymbol)
+              case None => Bitcoin.formatMissingAmount(Currency.NoSymbol)
             }.toStr
           },
           new Label("BTC") with TextStyles.CurrencySymbol)
@@ -118,22 +121,14 @@ class ApplicationScene(
   }
 
   private def findAmount(
-      currency: FiatCurrency, balances: Cached[FiatBalances]): Option[FiatAmount] =
+      currency: FiatCurrency, cachedBalances: Cached[FiatBalances]): Option[FiatAmount] =
     for {
-      amount <- balances.cached.amounts.get(currency)
-      if balances.isFresh
+      balances <- cachedBalances.toOption
+      amount <- balances.amounts.get(currency)
     } yield amount
 
   private def formatOptionalAmount(currency: FiatCurrency, maybeAmount: Option[FiatAmount]) =
     maybeAmount.fold(currency.formatMissingAmount(Currency.NoSymbol)) {
       amount => amount.format(Currency.NoSymbol)
     }
-}
-
-object ApplicationScene {
-
-  case class Balances(
-    bitcoin: ReadOnlyObjectProperty[Option[BitcoinBalance]],
-    fiat: ReadOnlyObjectProperty[Cached[FiatBalances]]
-  )
 }

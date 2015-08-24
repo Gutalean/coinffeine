@@ -16,7 +16,7 @@ import coinffeine.peer.CoinffeinePeerActor._
 import coinffeine.peer.bitcoin.BitcoinPeerActor
 import coinffeine.peer.bitcoin.wallet.WalletActor
 import coinffeine.peer.market.MarketInfoActor.{RequestOpenOrders, RequestQuote}
-import coinffeine.peer.payment.PaymentProcessorActor.{RefreshBalances, RetrieveBalance}
+import coinffeine.peer.payment.PaymentProcessorActor.RefreshBalances
 import coinffeine.protocol.messages.brokerage.{OpenOrdersRequest, QuoteRequest}
 
 class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
@@ -34,10 +34,6 @@ class CoinffeinePeerActorTest extends AkkaSpec(ActorSystem("PeerActorTest")) {
 
   it must "delegate order cancellation" in new StartedFixture {
     shouldForwardMessage(CancelOrder(OrderId.random()), orders)
-  }
-
-  it must "delegate fiat balance requests" in new StartedFixture {
-    shouldForwardMessage(RetrieveBalance(UsDollar), paymentProcessor)
   }
 
   it must "delegate balances refresh" in new StartedFixture {
