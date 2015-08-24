@@ -11,12 +11,15 @@ import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, Wall
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeineApp
 
-class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
-    extends PropertyBindings {
+class ApplicationProperties(
+    app: CoinffeineApp,
+    fiatCurrency: FiatCurrency,
+    executor: ExecutionContext) extends PropertyBindings {
 
   import ApplicationProperties._
   import coinffeine.gui.util.FxExecutor.asContext
@@ -32,6 +35,9 @@ class ApplicationProperties(app: CoinffeineApp, executor: ExecutionContext)
     app.paymentProcessor.balances.onNewValue(property.set)
     property
   }
+
+  val currencyProperty: ReadOnlyObjectProperty[FiatCurrency] =
+    new ObjectProperty(this, "currency", fiatCurrency)
 
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus

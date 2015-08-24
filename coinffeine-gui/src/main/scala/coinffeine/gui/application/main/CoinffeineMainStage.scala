@@ -20,7 +20,8 @@ import coinffeine.peer.config.ConfigProvider
 class CoinffeineMainStage(
     app: CoinffeineApp, configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
-  private val properties = new ApplicationProperties(app, FxExecutor.asContext)
+  private val properties = new ApplicationProperties(
+    app, configProvider.generalSettings().currency, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
