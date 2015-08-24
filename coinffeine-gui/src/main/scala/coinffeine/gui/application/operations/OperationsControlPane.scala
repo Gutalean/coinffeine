@@ -53,7 +53,7 @@ private class OperationsControlPane(app: CoinffeineApp, market: Market)
 
   private def submitNewOrder(): Unit = {
     val wizard = new OrderSubmissionWizard(
-      app.marketStats, app.utils.exchangeAmountsCalculator, validation)
+      market, app.marketStats, app.utils.exchangeAmountsCalculator, validation)
     Try(wizard.run(Option(delegate.getScene.getWindow))).foreach { data =>
       val request = OrderRequest(data.orderType.value, data.bitcoinAmount.value, data.price.value)
       app.operations.submitOrder(request)
