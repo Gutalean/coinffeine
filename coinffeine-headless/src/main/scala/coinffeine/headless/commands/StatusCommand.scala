@@ -3,8 +3,8 @@ package coinffeine.headless.commands
 import java.io.PrintWriter
 
 import coinffeine.headless.shell.Command
-import coinffeine.model.currency.balance.BitcoinBalance
-import coinffeine.peer.api.{CoinffeineApp, CoinffeinePaymentProcessor}
+import coinffeine.model.currency.balance.{BitcoinBalance, FiatBalance}
+import coinffeine.peer.api.CoinffeineApp
 
 class StatusCommand(app: CoinffeineApp) extends Command {
 
@@ -25,10 +25,10 @@ class StatusCommand(app: CoinffeineApp) extends Command {
     output.format("Wallet address: %s%n", app.wallet.primaryAddress.get.getOrElse("--"))
   }
 
-  private def formatFiatBalance(balance: CoinffeinePaymentProcessor.Balance): String = {
+  private def formatFiatBalance(balance: FiatBalance): String = {
     val blockedFunds =
-      if (balance.blockedFunds.isPositive) s" (${balance.blockedFunds} blocked)" else ""
-    balance.totalFunds + blockedFunds
+      if (balance.blockedAmount.isPositive) s" (${balance.blockedAmount} blocked)" else ""
+    balance.amount + blockedFunds
   }
 
   private def formatBitcoinBalance(balance: BitcoinBalance): String = {

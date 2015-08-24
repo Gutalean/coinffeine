@@ -43,9 +43,11 @@ object FiatBalances {
 case class FiatBalance(
     amount: FiatAmount,
     blockedAmount: FiatAmount,
-    remainingLimit: Option[FiatAmount]) {
+    remainingLimit: Option[FiatAmount] = None) {
 
   require(currenciesNumber == 1, s"Balance with mixed currencies: $this")
+
+  def availableAmount: FiatAmount = amount - blockedAmount
 
   private def currenciesNumber: Int =
     (Set(amount.currency, blockedAmount.currency) ++ remainingLimit.map(_.currency)).size
