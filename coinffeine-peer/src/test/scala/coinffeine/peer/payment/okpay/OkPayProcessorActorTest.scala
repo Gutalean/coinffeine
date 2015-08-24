@@ -27,27 +27,7 @@ import coinffeine.peer.properties.fiat.DefaultPaymentProcessorProperties
 
 class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
 
-  "OKPayProcessor" should "be able to get the current balance" in new WithOkPayProcessor {
-    givenAccountBalance(amount)
-    givenStartedPaymentProcessor()
-    expectBalanceRetrieved(amount, 0.USD)
-  }
-
-  it should "update properties when asked to get the current balance" in new WithOkPayProcessor {
-    givenAccountBalance(amount)
-    givenStartedPaymentProcessor()
-    givenAccountBalance(amount * 2)
-    whenBalanceIsRequested(UsDollar)
-    expectBalancePropertyUpdated(amount * 2)
-  }
-
-  it should "report failure to get the current balance" in new WithOkPayProcessor {
-    givenBalanceRetrievalFailure()
-    givenStartedPaymentProcessor()
-    expectBalanceRetrievalFailure(UsDollar)
-  }
-
-  it should "block funds" in new WithOkPayProcessor {
+  "OKPayProcessor" should "block funds" in new WithOkPayProcessor {
     givenAccountBalance(amount)
     givenStartedPaymentProcessor()
     whenFundsBlockingIsRequested(funds, amount / 2)
@@ -92,7 +72,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     whenPaymentIsRequested(amount)
 
     expectPaymentFailed()
-    expectBalanceRetrieved(balance = amountPlusFee, blocked = amountPlusFee)
     expectBalancePropertyUpdated(balance = amountPlusFee, blocked = Some(amountPlusFee))
   }
 
@@ -191,7 +170,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     override protected def reusePersistenceId = true
     givenAccountBalance(100.USD)
     givenStartedPaymentProcessor()
-    expectBalanceRetrieved(100.USD, 50.USD)
+    expectBalancePropertyUpdated(balance = 100.USD, blocked = Some(50.USD))
   }
 
   it should "persist its state in a snapshot" in new WithOkPayProcessor {
@@ -206,7 +185,7 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
     override protected def reusePersistenceId = true
     givenAccountBalance(100.USD)
     givenStartedPaymentProcessor()
-    expectBalanceRetrieved(100.USD, 50.USD)
+    expectBalancePropertyUpdated(balance = 100.USD, blocked = Some(50.USD))
   }
 
   private var currentPersistenceId = 1
@@ -322,10 +301,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       requester.send(processor, PaymentProcessorActor.RefreshBalances)
     }
 
-    def whenBalanceIsRequested(currency: FiatCurrency): Unit = {
-      requester.send(processor, PaymentProcessorActor.RetrieveBalance(currency))
-    }
-
     def whenFundsBlockingIsRequested(funds: ExchangeId, amount: FiatAmount): Unit = {
       requester.send(processor, PaymentProcessorActor.BlockFunds(funds, amount))
     }
@@ -374,21 +349,6 @@ class OkPayProcessorActorTest extends AkkaSpec("OkPayTest") with Eventually {
       eventually(propertyCheckTimeout) {
         property.get shouldBe expectedValue
       }
-    }
-
-    def expectBalanceRetrieved(balance: FiatAmount, blocked: FiatAmount): Unit = {
-      whenBalanceIsRequested(UsDollar)
-      requester.expectMsg(PaymentProcessorActor.BalanceRetrieved(balance, blocked))
-    }
-
-    def expectBalanceRetrieved(): Unit = {
-      whenBalanceIsRequested(UsDollar)
-      requester.expectMsgType[PaymentProcessorActor.BalanceRetrieved]
-    }
-
-    def expectBalanceRetrievalFailure(currency: FiatCurrency): Unit = {
-      whenBalanceIsRequested(UsDollar)
-      requester.expectMsg(PaymentProcessorActor.BalanceRetrievalFailed(currency, cause))
     }
 
     def expectPaymentSuccess(amount: FiatAmount): Unit = {

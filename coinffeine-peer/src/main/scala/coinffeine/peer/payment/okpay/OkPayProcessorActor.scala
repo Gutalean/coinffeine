@@ -22,7 +22,6 @@ import coinffeine.model.payment.okpay.OkPayPaymentProcessor
 import coinffeine.model.util.Cached
 import coinffeine.peer.events.fiat.FiatBalanceChanged
 import coinffeine.peer.payment.PaymentProcessorActor._
-import coinffeine.peer.payment._
 import coinffeine.peer.payment.okpay.blocking.BlockedFiatRegistry._
 import coinffeine.peer.payment.okpay.blocking.{BlockedFiatRegistry, BlockedFiatRegistryImpl}
 
@@ -83,7 +82,6 @@ private class OkPayProcessorActor(
       }
 
     case FindPayment(criterion) => findPayment(sender(), criterion)
-    case RetrieveBalance(currency) => currentBalance(sender(), currency)
     case RefreshBalances =>
       log.info("Refreshing account state by request...")
       clientFactory.refresh()
@@ -200,20 +198,6 @@ private class OkPayProcessorActor(
       case Success(None) => requester ! PaymentNotFound(criterion)
       case Failure(error) => requester ! FindPaymentFailed(criterion, error)
     }
-  }
-
-  private def currentBalance(requester: ActorRef, currency: FiatCurrency): Unit = {
-    val pollResult = pollAccountState()
-    val blockedAmount = blockedFundsForCurrency(currency)
-    val completeBalance = for {
-      accountState <- pollResult
-      balances <- Future.fromTry(accountState.balances)
-      totalAmount = balances.get(currency).getOrElse(throw new PaymentProcessorException(
-        s"No balance in $currency"))
-    } yield BalanceRetrieved(totalAmount, blockedAmount)
-    completeBalance.recover {
-      case NonFatal(error) => BalanceRetrievalFailed(currency, error)
-    }.pipeTo(requester)
   }
 
   private def blockedFundsForCurrency(currency: FiatCurrency): FiatAmount =

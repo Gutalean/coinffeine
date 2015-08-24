@@ -4,7 +4,7 @@ import scala.concurrent.duration._
 
 import akka.util.Timeout
 
-import coinffeine.model.currency.{FiatAmount, FiatCurrency}
+import coinffeine.model.currency.FiatAmount
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.Payment
 import coinffeine.model.payment.PaymentProcessor._
@@ -96,26 +96,6 @@ object PaymentProcessorActor {
 
   /** A message sent to the payment processor to request refresh the balances. */
   case object RefreshBalances
-
-  /** A message sent to the payment processor to retrieve the current balance
-    * in the given currency.
-    * */
-  case class RetrieveBalance(currency: FiatCurrency)
-
-  sealed trait RetrieveBalanceResponse
-
-  /** A message sent by the payment processor reporting the current balance in the
-    * given currency.
-    * */
-  case class BalanceRetrieved(
-      balance: FiatAmount,
-      blockedFunds: FiatAmount) extends RetrieveBalanceResponse
-
-  /** A message sent by the payment processor reporting that the current balance in the
-    * given currency cannot be retrieved.
-    */
-  case class BalanceRetrievalFailed(currency: FiatCurrency, error: Throwable)
-      extends RetrieveBalanceResponse
 
   /** A message sent to the payment processor to check for the existence of an account. */
   case class CheckAccountExistence(accountId: AccountId)
