@@ -2,7 +2,7 @@ package coinffeine.peer.market.orders
 
 import coinffeine.common.test.UnitTest
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.{FiatBalance, BitcoinBalance}
+import coinffeine.model.currency.balance.{FiatBalances, BitcoinBalance}
 import coinffeine.model.market.OrderBookEntry
 import coinffeine.model.order.{Ask, LimitPrice, Bid, MarketPrice}
 import coinffeine.model.util.{CacheStatus, Cached}
@@ -146,12 +146,12 @@ class SubmissionPolicyTest extends UnitTest {
         blocked: Option[FiatAmount] = None,
         remainingLimit: Option[FiatAmount] = None,
         cacheStatus: CacheStatus = CacheStatus.Fresh): Unit = {
-      val balance = FiatBalance(
+      val balance = FiatBalances(
         amounts = FiatAmounts.fromAmounts(amount),
         blockedAmounts = FiatAmounts(blocked.toSeq),
         remainingLimits = FiatAmounts(remainingLimit.toSeq)
       )
-      policy.setFiatBalance(Cached(balance, cacheStatus))
+      policy.setFiatBalances(Cached(balance, cacheStatus))
     }
 
     protected def givenEnoughBitcoinBalance(): Unit = {

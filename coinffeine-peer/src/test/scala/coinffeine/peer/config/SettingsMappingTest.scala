@@ -30,6 +30,7 @@ class SettingsMappingTest extends UnitTest with OptionValues {
     val baseConfig = makeConfig("coinffeine.serviceStartStopTimeout" -> "30s")
     val baseSettings = fromConfig[GeneralSettings](baseConfig)
     baseSettings.licenseAccepted shouldBe false
+    baseSettings.currency shouldBe Euro
     baseSettings.dataVersion shouldBe 'empty
     baseSettings.serviceStartStopTimeout shouldBe 30.seconds
 
@@ -40,16 +41,21 @@ class SettingsMappingTest extends UnitTest with OptionValues {
 
     fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.dataVersion" -> "42"))
       .dataVersion shouldBe Some(DataVersion(42))
+
+    fromConfig[GeneralSettings](amendConfig(baseConfig, "coinffeine.currency" -> "USD"))
+      .currency shouldBe UsDollar
   }
 
   it should "map to config" in {
     val settings = GeneralSettings(
       licenseAccepted = false,
+      currency = Euro,
       dataVersion = Some(DataVersion(42)),
       serviceStartStopTimeout = 30.seconds
     )
     val cfg = SettingsMapping.toConfig(settings)
     cfg.hasPath("coinffeine.licenseAccepted") shouldBe false
+    cfg.getString("coinffeine.currency") shouldBe "EUR"
     cfg.getString("coinffeine.dataVersion") shouldBe "42"
     cfg.getDuration("coinffeine.serviceStartStopTimeout", TimeUnit.SECONDS) shouldBe 30
 

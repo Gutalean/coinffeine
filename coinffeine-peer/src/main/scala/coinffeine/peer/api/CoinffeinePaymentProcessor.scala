@@ -14,6 +14,7 @@ trait CoinffeinePaymentProcessor extends PaymentProcessorProperties {
   def accountId: Option[PaymentProcessor.AccountId]
 
   /** Get the current balance if possible */
+  @deprecated("use balances instead")
   def currentBalance(): Option[CoinffeinePaymentProcessor.Balance]
 
   /** Request the payment processor to refresh the balances. */

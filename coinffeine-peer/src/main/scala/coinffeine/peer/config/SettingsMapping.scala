@@ -10,6 +10,7 @@ import scalaz.syntax.std.boolean._
 import com.typesafe.config._
 
 import coinffeine.common.config.TypesafeConfigImplicits
+import coinffeine.model.currency.{Euro, FiatCurrency}
 import coinffeine.model.network.PeerId
 import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.overlay.relay.DefaultRelaySettings
@@ -44,6 +45,8 @@ object SettingsMapping extends TypesafeConfigImplicits {
 
     override def fromConfig(configPath: File, config: Config) = GeneralSettings(
       licenseAccepted = config.getBooleanOpt("coinffeine.licenseAccepted").getOrElse(false),
+      currency = config.getStringOpt("coinffeine.currency")
+        .fold[FiatCurrency](Euro)(FiatCurrency.apply),
       dataVersion = config.getIntOpt("coinffeine.dataVersion").map(DataVersion.apply),
       serviceStartStopTimeout = config.getSeconds("coinffeine.serviceStartStopTimeout")
     )
@@ -51,6 +54,7 @@ object SettingsMapping extends TypesafeConfigImplicits {
     override def toConfig(settings: GeneralSettings, config: Config) = config
       .withOptValue("coinffeine.licenseAccepted",
         settings.licenseAccepted.option(configValue(true)))
+      .withValue("coinffeine.currency", configValue(settings.currency.symbol))
       .withOptValue("coinffeine.dataVersion",
         settings.dataVersion.map(v => configValue(v.value)))
       .withValue("coinffeine.serviceStartStopTimeout",

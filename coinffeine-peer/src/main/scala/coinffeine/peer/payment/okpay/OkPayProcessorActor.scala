@@ -15,7 +15,7 @@ import coinffeine.common.akka.Service
 import coinffeine.common.akka.event.CoinffeineEventProducer
 import coinffeine.common.akka.persistence.{PeriodicSnapshot, PersistentEvent}
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.FiatBalance
+import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.exchange.ExchangeId
 import coinffeine.model.payment.PaymentProcessor.AccountId
 import coinffeine.model.payment.okpay.OkPayPaymentProcessor
@@ -252,7 +252,7 @@ private class OkPayProcessorActor(
     publish(FiatBalanceChanged(for {
       cachedAmounts <- balances
       cachedRemainingLimits <- remainingLimits
-    } yield FiatBalance(cachedAmounts, registry.blockedFundsByCurrency, cachedRemainingLimits)))
+    } yield FiatBalances(cachedAmounts, registry.blockedFundsByCurrency, cachedRemainingLimits)))
   }
 
   private def checkAccountExistence(accountId: AccountId): Unit = {

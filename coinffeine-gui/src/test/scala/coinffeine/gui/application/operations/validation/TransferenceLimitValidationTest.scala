@@ -8,7 +8,7 @@ import coinffeine.common.properties.MutableProperty
 import coinffeine.common.test.UnitTest
 import coinffeine.gui.application.operations.validation.OrderValidation._
 import coinffeine.model.currency._
-import coinffeine.model.currency.balance.FiatBalance
+import coinffeine.model.currency.balance.FiatBalances
 import coinffeine.model.market._
 import coinffeine.model.order.{Ask, Bid, LimitPrice, OrderRequest}
 import coinffeine.model.util.Cached
@@ -78,7 +78,7 @@ class TransferenceLimitValidationTest extends UnitTest with Inside {
 
     private def balanceWithoutLimits = balanceWithLimits()
 
-    private def balanceWithLimits(limits: FiatAmount*) = Cached.fresh(FiatBalance(
+    private def balanceWithLimits(limits: FiatAmount*) = Cached.fresh(FiatBalances(
       amounts = FiatAmounts.fromAmounts(300.EUR),
       blockedAmounts = FiatAmounts.empty,
       remainingLimits = FiatAmounts(limits))
