@@ -27,5 +27,5 @@ class HttpConfigProvider extends ConfigVersionChecker.ConfigProvider {
 }
 
 object HttpConfigProvider {
-  val FileLocation = "http://www.coinffeine.com/version/current"
+  val FileLocation = "https://www.coinffeine.com/version/current"
 }
