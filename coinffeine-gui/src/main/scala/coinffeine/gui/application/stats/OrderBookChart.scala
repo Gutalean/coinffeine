@@ -6,16 +6,18 @@ import javafx.util.Duration
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 import scalafx.Includes
+import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.chart.{AreaChart, NumberAxis, XYChart}
 
 import com.typesafe.scalalogging.LazyLogging
 
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.util.FxExecutor
 import coinffeine.model.market._
 import coinffeine.model.order.{Ask, Bid, OrderType}
 import coinffeine.peer.api.MarketStats
 
-class OrderBookChart(stats: MarketStats, market: Market) extends AreaChart[Number, Number](
+class OrderBookChart(stats: MarketStats, market: ReadOnlyObjectProperty[Market]) extends AreaChart[Number, Number](
     OrderBookChart.xAxis(market), OrderBookChart.yAxis()) with Includes with LazyLogging {
 
   private val reloader = new Timeline(new KeyFrame(
@@ -34,7 +36,7 @@ class OrderBookChart(stats: MarketStats, market: Market) extends AreaChart[Numbe
   private def reloadData(): Unit = {
     implicit val executor = FxExecutor.asContext
     logger.debug("Reloading order book chart data... ")
-    stats.openOrders(market).onComplete {
+    stats.openOrders(market.value).onComplete {
       case Success(entries) =>
         data().clear()
         data() += toSeries(entries, Bid)
@@ -67,12 +69,15 @@ object OrderBookChart {
 
   val UpdateInterval = 20.seconds
 
-  private def xAxis(market: Market) = new NumberAxis {
-    autoRanging = true
-    forceZeroInRange = false
-    label = s"Price (${market.currency}/BTC)"
-    tickLabelFormatter = NumberAxis.DefaultFormatter(
-      this, "", market.currency.javaCurrency.getSymbol)
+  private def xAxis(market: ReadOnlyObjectProperty[Market]) = {
+    val axis = new NumberAxis {
+      autoRanging = true
+      forceZeroInRange = false
+    }
+    axis.label <== market.delegate.map(m => s"Price (${m.currency}/BTC)").toStr
+    axis.tickLabelFormatter <== market.delegate.map(m =>
+      NumberAxis.DefaultFormatter(axis, "", m.currency.javaCurrency.getSymbol).delegate)
+    axis
   }
 
   private def yAxis() = new NumberAxis {

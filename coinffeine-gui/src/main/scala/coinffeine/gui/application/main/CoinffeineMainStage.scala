@@ -32,7 +32,7 @@ class CoinffeineMainStage(
     properties = properties,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
-      new StatsView(app, Market(properties.currencyProperty.get)),
+      new StatsView(app, properties.marketProperty),
       new WalletView(
         configProvider.bitcoinSettings().network,
         app.wallet,
