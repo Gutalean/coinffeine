@@ -22,7 +22,7 @@ class CoinffeineMainStage(
     app: CoinffeineApp, configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
   private val properties = new ApplicationProperties(
-    app, configProvider.generalSettings().currency, FxExecutor.asContext)
+    app, configProvider, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
