@@ -112,7 +112,8 @@ class PaymentProcessorSettingsDialog(
 
   private def rerunWizard(): Unit = {
     try {
-      val result = SetupWizard.okPaySetup.run(Some(formScene.window.value))
+      val result = SetupWizard.okPaySetup(settingsProvider.generalSettings().currency)
+        .run(Some(formScene.window.value))
       val credentials = result.okPayWalletAccess.value.getOrElse(OkPayApiCredentials.empty)
       val verificationStatus =
         result.okPayVerificationStatus.value.getOrElse(VerificationStatus.NotVerified)

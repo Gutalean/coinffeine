@@ -1,10 +1,10 @@
 package coinffeine.gui.setup
 
-import scalafx.scene.control.{Label, PasswordField, TextField}
+import scalafx.scene.control._
 import scalafx.scene.layout.{HBox, VBox}
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{GlyphIcon, SupportWidget}
+import coinffeine.gui.control.{FiatCurrencyChooser, GlyphIcon, SupportWidget}
 import coinffeine.gui.wizard.StepPane
 
 class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
@@ -14,7 +14,7 @@ class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
 
   private val title = new Label("Configure your OKPay account") { styleClass += "title" }
 
-  private val subtitle = new HBox {
+  private val credentialsSubtitle = new HBox {
     styleClass += "subtitle"
     children = Seq(
       new Label("We will use this credentials once to create an API token that will be " +
@@ -30,7 +30,7 @@ class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
 
   private val passwordField = new PasswordField()
 
-  private val dataPane = new VBox {
+  private val credentialsPane = new VBox {
     styleClass += "data"
     children = Seq(
       new Label("Your email"),
@@ -40,16 +40,31 @@ class OkPayCredentialsStepPane(data: SetupConfig, stepNumber: Int)
     )
   }
 
+  private val currencySubtitle = new HBox {
+    styleClass += "subtitle"
+    children = Seq(new Label("Select the currency you want to operate with"))
+  }
+
+  private val currencyChooser = new FiatCurrencyChooser(data.currency.get)
+
+  private val currencyPane = new HBox {
+    styleClass += "data"
+    children = Seq(new Label("Currency"), currencyChooser)
+  }
+
   children = new VBox {
     styleClass += "okpay-pane"
-    children = Seq(title, subtitle, dataPane)
+    children = Seq(title, credentialsSubtitle, credentialsPane, currencySubtitle, currencyPane)
   }
 
   data.okPayCredentials <==
     emailField.text.delegate.zip(passwordField.text)(OkPayCredentials.apply)
 
+  data.currency <== currencyChooser.currency
+
   canContinue <== emailField.text.delegate.map(validEmail).toBool and
-    passwordField.text.isEmpty.not
+    passwordField.text.isEmpty.not and
+    currencyChooser.currency.delegate.map(_.isDefined).toBool
 
   private def validEmail(email: String): Boolean =
     email.matches("""^[\w-\.]+@([\w-]+\.)+\w+$""")
