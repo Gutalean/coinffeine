@@ -2,14 +2,17 @@ package coinffeine.peer.config.user
 
 import java.io.File
 import scala.collection.JavaConversions._
+import scala.concurrent.duration._
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.Eventually
 
-import coinffeine.common.test.{TempDir, UnitTest}
-import coinffeine.peer.config.{InMemoryConfigStore, ConfigProvider, SettingsMapping}
+import coinffeine.common.test.UnitTest
+import coinffeine.peer.bitcoin.BitcoinSettings
+import coinffeine.peer.config.{ConfigProvider, InMemoryConfigStore, SettingsMapping}
 
-class ConfigProviderTest extends UnitTest with BeforeAndAfterAll {
+class ConfigProviderTest extends UnitTest with BeforeAndAfterAll with Eventually {
 
   "User file config provider" should "retrieve fresh user config file" in new Fixture {
     provider.userConfig shouldBe ConfigFactory.empty()
@@ -57,6 +60,12 @@ class ConfigProviderTest extends UnitTest with BeforeAndAfterAll {
     provider.userConfig.getString("foobar.potato") shouldBe "Mr. Potato"
     provider.userConfig.getInt(sampleRefConfigItem.getKey) shouldBe 123456
     provider.userConfig.hasPath(otherSampleRefConfigItem.getKey) shouldBe false
+  }
+
+  it should "make settings react to config updates" in new Fixture {
+    val settings = provider.generalSettings().copy(serviceStartStopTimeout = 5.days)
+    provider.saveUserSettings(settings)
+    eventually { provider.generalSettingsProperty.get.serviceStartStopTimeout shouldBe 5.days }
   }
 
   trait Fixture {

@@ -1,5 +1,6 @@
 package coinffeine.peer.config
 
+import coinffeine.common.properties.Property
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
@@ -7,21 +8,17 @@ import coinffeine.protocol.MessageGatewaySettings
 
 trait SettingsProvider {
 
-  /** Retrieve application-wise settings. */
-  def generalSettings(): GeneralSettings
+  def generalSettingsProperty: Property[GeneralSettings]
+  def bitcoinSettingsProperty: Property[BitcoinSettings]
+  def messageGatewaySettingsProperty: Property[MessageGatewaySettings]
+  def relaySettingsProperty: Property[RelaySettings]
+  def okPaySettingsProperty: Property[OkPaySettings]
 
-  /** Retrieve the settings of the Bitcoin network. */
-  def bitcoinSettings(): BitcoinSettings
+  def generalSettings(): GeneralSettings = generalSettingsProperty.get
+  def bitcoinSettings(): BitcoinSettings = bitcoinSettingsProperty.get
+  def messageGatewaySettings(): MessageGatewaySettings = messageGatewaySettingsProperty.get
+  def relaySettings(): RelaySettings = relaySettingsProperty.get
+  def okPaySettings(): OkPaySettings = okPaySettingsProperty.get
 
-  /** Retrieve the message gateway settings. */
-  def messageGatewaySettings(): MessageGatewaySettings
-
-  /** Retrieve the relay server settings. */
-  def relaySettings(): RelaySettings
-
-  /** Retrieve the OKPay settings. */
-  def okPaySettings(): OkPaySettings
-
-  /** Save the given user settings. */
   def saveUserSettings[A : SettingsMapping](settings: A): Unit
 }
