@@ -49,7 +49,10 @@ class RunWizardAction(configProvider: ConfigProvider, window: Window, network: =
 
   private def persistSetupConfiguration(setupConfig: SetupConfig): Unit = {
     configProvider.saveUserSettings(
-      configProvider.generalSettings().copy(licenseAccepted = true))
+      configProvider.generalSettings().copy(
+        licenseAccepted = true,
+        currency = setupConfig.currency.value.get
+      ))
 
     val access = setupConfig.okPayWalletAccess.value
     val okPaySettings = configProvider.okPaySettings()

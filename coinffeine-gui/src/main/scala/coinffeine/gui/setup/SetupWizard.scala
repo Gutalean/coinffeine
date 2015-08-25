@@ -5,6 +5,7 @@ import scalafx.stage.WindowEvent
 
 import coinffeine.gui.scene.styles.Stylesheets
 import coinffeine.gui.wizard.{StepPane, Wizard}
+import coinffeine.model.currency.FiatCurrency
 
 /** Wizard to collect the initial configuration settings */
 class SetupWizard private (
@@ -30,8 +31,9 @@ object SetupWizard {
     new SetupWizard(panes, data, ExitPolicy.Confirmed)
   }
 
-  def okPaySetup: SetupWizard = {
+  def okPaySetup(currency: FiatCurrency): SetupWizard = {
     val data = new SetupConfig
+    data.currency.value = Some(currency)
     val panes = Seq(
       new OkPayCredentialsStepPane(data, 1),
       new OkPayProfileConfiguratorPane(data, 2)

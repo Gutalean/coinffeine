@@ -14,6 +14,7 @@ import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.gui.wizard.Wizard
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
@@ -104,7 +105,7 @@ class PaymentProcessorSettingsDialog(
   private def applyAndClose(): Unit = {
     val verificationStatus =
       VerificationStatus.fromBoolean(verificationStatusField.selected.value)
-    saveSettings(credentials.value, verificationStatus)
+    saveSettings(credentials.value, verificationStatus, currency = None)
     paymentProcessor.refreshBalances()
     formStage.close()
   }
@@ -115,7 +116,7 @@ class PaymentProcessorSettingsDialog(
       val credentials = result.okPayWalletAccess.value.getOrElse(OkPayApiCredentials.empty)
       val verificationStatus =
         result.okPayVerificationStatus.value.getOrElse(VerificationStatus.NotVerified)
-      saveSettings(credentials, verificationStatus)
+      saveSettings(credentials, verificationStatus, result.currency.value)
     } catch {
       case _: Wizard.CancelledByUser => logger.info("OKPay wizard was cancelled by the user")
     }
@@ -123,11 +124,17 @@ class PaymentProcessorSettingsDialog(
   }
 
   private def saveSettings(
-      credentials: OkPayApiCredentials, verificationStatus: VerificationStatus): Unit = {
+      credentials: OkPayApiCredentials,
+      verificationStatus: VerificationStatus,
+      currency: Option[FiatCurrency]): Unit = {
     settingsProvider.saveUserSettings(
       settingsProvider.okPaySettings()
           .withApiCredentials(credentials)
           .copy(verificationStatus = Some(verificationStatus)))
+    currency.foreach { newCurrency =>
+      settingsProvider.saveUserSettings(
+        settingsProvider.generalSettings().copy(currency = newCurrency))
+    }
   }
 
   private def validWalletId(walletId: String): Boolean =
