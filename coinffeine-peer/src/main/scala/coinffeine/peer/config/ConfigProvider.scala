@@ -1,11 +1,11 @@
 package coinffeine.peer.config
 
 import java.io.File
-import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConverters._
 
 import com.typesafe.config.{Config, ConfigFactory}
 
+import coinffeine.common.properties.MutableProperty
 import coinffeine.overlay.relay.settings.RelaySettings
 import coinffeine.peer.bitcoin.BitcoinSettings
 import coinffeine.peer.payment.okpay.OkPaySettings
@@ -14,15 +14,10 @@ import coinffeine.protocol.MessageGatewaySettings
 /** Provide application settings based on a Typesafe Config source */
 trait ConfigProvider extends SettingsProvider {
 
-  private val _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
+  private lazy val _userConfig: MutableProperty[Config] = new MutableProperty(readConfig())
 
   /** Retrieve the raw user configuration. */
-  def userConfig: Config = {
-    if (_userConfig.get.isEmpty) {
-      _userConfig.compareAndSet(None, Some(readConfig()))
-    }
-    _userConfig.get.get
-  }
+  def userConfig: Config = _userConfig.get
 
   /** Get the application configuration path. */
   def dataPath: File
@@ -36,7 +31,7 @@ trait ConfigProvider extends SettingsProvider {
   def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit = {
     val config = if (dropReferenceValues) diff(userConfig, referenceConfig) else userConfig
     writeConfig(config)
-    _userConfig.set(None)
+    _userConfig.set(config)
   }
 
   /** Retrieve the reference configuration obtained from the app bundle. */
