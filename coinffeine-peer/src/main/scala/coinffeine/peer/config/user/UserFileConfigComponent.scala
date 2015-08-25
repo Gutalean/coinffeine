@@ -9,7 +9,7 @@ trait UserFileConfigComponent extends ConfigComponent {
 
   def commandLineArgs: List[String]
 
-  lazy val configProvider: ConfigProvider = new UserFileConfigProvider(dataPath)
+  lazy val configProvider: ConfigProvider = new ConfigProvider(new UserFileConfigStore(dataPath))
 
   def dataPath: File = {
     val defaultPath = Platform.detect().userSettingsPath().toAbsolutePath.toFile
