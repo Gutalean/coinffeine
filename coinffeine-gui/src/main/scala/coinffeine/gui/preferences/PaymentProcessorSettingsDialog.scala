@@ -9,11 +9,12 @@ import scalafx.stage.{Modality, Stage, StageStyle}
 import com.typesafe.scalalogging.LazyLogging
 
 import coinffeine.gui.beans.Implicits._
-import coinffeine.gui.control.{CredentialsTestWidget, SupportWidget}
+import coinffeine.gui.control.{CredentialsTestWidget, FiatCurrencyChooser, SupportWidget}
 import coinffeine.gui.scene.CoinffeineScene
 import coinffeine.gui.scene.styles.{Stylesheets, TextStyles}
 import coinffeine.gui.setup.SetupWizard
 import coinffeine.gui.wizard.Wizard
+import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.payment.okpay.VerificationStatus
 import coinffeine.peer.api.CoinffeinePaymentProcessor
 import coinffeine.peer.config.SettingsProvider
@@ -25,6 +26,7 @@ class PaymentProcessorSettingsDialog(
 
   private val walletIdField = new TextField
   private val seedTokenField = new TextField
+  private val currencyField = new FiatCurrencyChooser()
   private val verificationStatusField = new CheckBox("Verified account")
 
   private val credentials =
@@ -73,9 +75,11 @@ class PaymentProcessorSettingsDialog(
             styleClass += "explanation"
           }
         ),
+        labelledField("Currency", currencyField),
         new HBox {
           styleClass += "footer"
-          disable <== walletIdField.text.delegate.map(text => !validWalletId(text)).toBool
+          disable <== walletIdField.text.delegate.map(text => !validWalletId(text)).toBool or
+            currencyField.currency.delegate.map(_.isEmpty).toBool
           children = new Button("Apply") {
             styleClass += "action-button"
             onAction = applyAndClose _
@@ -104,18 +108,19 @@ class PaymentProcessorSettingsDialog(
   private def applyAndClose(): Unit = {
     val verificationStatus =
       VerificationStatus.fromBoolean(verificationStatusField.selected.value)
-    saveSettings(credentials.value, verificationStatus)
+    saveSettings(credentials.value, verificationStatus, currency = currencyField.currency.get)
     paymentProcessor.refreshBalances()
     formStage.close()
   }
 
   private def rerunWizard(): Unit = {
     try {
-      val result = SetupWizard.okPaySetup.run(Some(formScene.window.value))
+      val result = SetupWizard.okPaySetup(settingsProvider.generalSettings().currency)
+        .run(Some(formScene.window.value))
       val credentials = result.okPayWalletAccess.value.getOrElse(OkPayApiCredentials.empty)
       val verificationStatus =
         result.okPayVerificationStatus.value.getOrElse(VerificationStatus.NotVerified)
-      saveSettings(credentials, verificationStatus)
+      saveSettings(credentials, verificationStatus, result.currency.value)
     } catch {
       case _: Wizard.CancelledByUser => logger.info("OKPay wizard was cancelled by the user")
     }
@@ -123,11 +128,17 @@ class PaymentProcessorSettingsDialog(
   }
 
   private def saveSettings(
-      credentials: OkPayApiCredentials, verificationStatus: VerificationStatus): Unit = {
+      credentials: OkPayApiCredentials,
+      verificationStatus: VerificationStatus,
+      currency: Option[FiatCurrency]): Unit = {
     settingsProvider.saveUserSettings(
       settingsProvider.okPaySettings()
           .withApiCredentials(credentials)
           .copy(verificationStatus = Some(verificationStatus)))
+    currency.foreach { newCurrency =>
+      settingsProvider.saveUserSettings(
+        settingsProvider.generalSettings().copy(currency = newCurrency))
+    }
   }
 
   private def validWalletId(walletId: String): Boolean =
@@ -140,11 +151,12 @@ class PaymentProcessorSettingsDialog(
   }
 
   private def resetFieldsToCurrentSettings(): Unit = {
-    val currentSettings = settingsProvider.okPaySettings()
+    val currentOkPaySettings = settingsProvider.okPaySettings()
     resetCredentialFields(
-      currentSettings.apiCredentials.getOrElse(OkPayApiCredentials.empty))
+      currentOkPaySettings.apiCredentials.getOrElse(OkPayApiCredentials.empty))
     resetVerificationStatusField(
-      currentSettings.verificationStatus.getOrElse(VerificationStatus.NotVerified))
+      currentOkPaySettings.verificationStatus.getOrElse(VerificationStatus.NotVerified))
+    resetCurrencyField()
   }
 
   private def resetCredentialFields(credentials: OkPayApiCredentials): Unit = {
@@ -154,5 +166,9 @@ class PaymentProcessorSettingsDialog(
 
   private def resetVerificationStatusField(verificationStatus: VerificationStatus): Unit = {
     verificationStatusField.selected = verificationStatus == VerificationStatus.Verified
+  }
+
+  private def resetCurrencyField(): Unit = {
+    currencyField.value = settingsProvider.generalSettings().currency
   }
 }

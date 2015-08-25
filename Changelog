@@ -3,6 +3,7 @@ Changelog
 
 v0.12.0:
 
+ - Support for all the OKPay-supported currencies, one at a time.
  - Bug fixing
    * Force file encoding to UTF-8 to avoid issues when system is configured
    with a different default encoding
