@@ -1,6 +1,7 @@
 package coinffeine.peer.config
 
 import java.io.File
+import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConverters._
 
 import com.typesafe.config.{Config, ConfigFactory}
@@ -13,8 +14,15 @@ import coinffeine.protocol.MessageGatewaySettings
 /** Provide application settings based on a Typesafe Config source */
 trait ConfigProvider extends SettingsProvider {
 
+  private val _userConfig: AtomicReference[Option[Config]] = new AtomicReference(None)
+
   /** Retrieve the raw user configuration. */
-  def userConfig: Config
+  def userConfig: Config = {
+    if (_userConfig.get.isEmpty) {
+      _userConfig.compareAndSet(None, Some(readConfig()))
+    }
+    _userConfig.get.get
+  }
 
   /** Get the application configuration path. */
   def dataPath: File
@@ -25,10 +33,18 @@ trait ConfigProvider extends SettingsProvider {
     * The `dropReferenceValues` flag indicates whether those config items that does not
     * override the reference config must be drop away so they are not included in user config.
     */
-  def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit
+  def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit = {
+    val config = if (dropReferenceValues) diff(userConfig, referenceConfig) else userConfig
+    writeConfig(config)
+    _userConfig.set(None)
+  }
 
   /** Retrieve the reference configuration obtained from the app bundle. */
   def referenceConfig: Config = defaultPathConfiguration.withFallback(ConfigFactory.load())
+
+  protected def readConfig(): Config
+
+  protected def writeConfig(config: Config): Unit
 
   private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
     "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
@@ -68,4 +84,14 @@ trait ConfigProvider extends SettingsProvider {
     */
   override def saveUserSettings[A : SettingsMapping](settings: A): Unit =
     saveUserConfig(SettingsMapping.toConfig(settings, userConfig), dropReferenceValues = true)
+
+
+  private def diff(c1: Config, c2: Config): Config = {
+    val c1Items = c1.entrySet().asScala.map(entry => entry.getKey -> entry.getValue)
+    val c2Items = c2.entrySet().asScala.map(entry => entry.getKey -> entry.getValue)
+    val c3Items = c1Items.diff(c2Items)
+    c3Items.foldLeft(ConfigFactory.empty()) { case (conf, (key, value)) =>
+      conf.withValue(key, value)
+    }
+  }
 }
