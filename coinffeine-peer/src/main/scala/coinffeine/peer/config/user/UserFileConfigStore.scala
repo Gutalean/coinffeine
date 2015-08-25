@@ -5,11 +5,11 @@ import java.nio.charset.Charset
 
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
 
-import coinffeine.peer.config.ConfigProvider
+import coinffeine.peer.config.ConfigStore
 
-class UserFileConfigProvider(
+class UserFileConfigStore(
     override val dataPath: File,
-    filename: String = UserFileConfigProvider.DefaultUserSettingsFilename) extends ConfigProvider {
+    filename: String = UserFileConfigStore.DefaultUserSettingsFilename) extends ConfigStore {
 
   private val configRenderOpts = ConfigRenderOptions.defaults()
     .setComments(true)
@@ -19,9 +19,9 @@ class UserFileConfigProvider(
 
   private val userConfigFile = new File(dataPath, filename)
 
-  override protected def readConfig() = ConfigFactory.parseFile(userConfigFile)
+  override def readConfig() = ConfigFactory.parseFile(userConfigFile)
 
-  override protected def writeConfig(config: Config) = {
+  override def writeConfig(config: Config) = {
     val rendered = config.root().render(configRenderOpts)
     ensureUserConfigExists()
     val file = new FileOutputStream(userConfigFile)
@@ -41,6 +41,6 @@ class UserFileConfigProvider(
   }
 }
 
-private object UserFileConfigProvider {
+private object UserFileConfigStore {
   val DefaultUserSettingsFilename = "user-settings.conf"
 }

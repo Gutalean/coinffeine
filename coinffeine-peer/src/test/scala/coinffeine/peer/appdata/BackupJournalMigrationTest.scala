@@ -8,7 +8,7 @@ import org.scalatest.{Inside, Outcome}
 
 import coinffeine.common.test.{FixtureUnitTest, TempDir}
 import coinffeine.peer.config.ConfigProvider
-import coinffeine.peer.config.user.UserFileConfigProvider
+import coinffeine.peer.config.user.UserFileConfigStore
 
 class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
 
@@ -64,7 +64,7 @@ class BackupJournalMigrationTest extends FixtureUnitTest with Inside {
     private var userApproves = false
     private var approvalRequested = false
 
-    override val config: ConfigProvider = new UserFileConfigProvider(dataDir)
+    override val config: ConfigProvider = new ConfigProvider(new UserFileConfigStore(dataDir))
 
     private val eventSourcingDirectories = Seq(
       "akka.persistence.journal.leveldb.dir",

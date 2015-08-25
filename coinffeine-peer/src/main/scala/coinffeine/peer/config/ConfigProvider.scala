@@ -12,15 +12,15 @@ import coinffeine.peer.payment.okpay.OkPaySettings
 import coinffeine.protocol.MessageGatewaySettings
 
 /** Provide application settings based on a Typesafe Config source */
-trait ConfigProvider extends SettingsProvider {
+class ConfigProvider(store: ConfigStore) extends SettingsProvider {
 
-  private lazy val _userConfig: MutableProperty[Config] = new MutableProperty(readConfig())
+  private lazy val _userConfig: MutableProperty[Config] = new MutableProperty(store.readConfig())
 
   /** Retrieve the raw user configuration. */
   def userConfig: Config = _userConfig.get
 
   /** Get the application configuration path. */
-  def dataPath: File
+  def dataPath: File = store.dataPath
 
   /** Save the given user config using this provider.
     *
@@ -30,16 +30,12 @@ trait ConfigProvider extends SettingsProvider {
     */
   def saveUserConfig(userConfig: Config, dropReferenceValues: Boolean = true): Unit = {
     val config = if (dropReferenceValues) diff(userConfig, referenceConfig) else userConfig
-    writeConfig(config)
+    store.writeConfig(config)
     _userConfig.set(config)
   }
 
   /** Retrieve the reference configuration obtained from the app bundle. */
   def referenceConfig: Config = defaultPathConfiguration.withFallback(ConfigFactory.load())
-
-  protected def readConfig(): Config
-
-  protected def writeConfig(config: Config): Unit
 
   private def defaultPathConfiguration = ConfigFactory.parseMap(Map(
     "akka.persistence.journal.leveldb.dir" -> configPath("journal"),
