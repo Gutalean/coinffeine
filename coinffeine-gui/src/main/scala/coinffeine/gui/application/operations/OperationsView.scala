@@ -23,7 +23,6 @@ import coinffeine.gui.control.{GlyphIcon, GlyphLabel, OrderStatusWidget}
 import coinffeine.gui.pane.PagePane
 import coinffeine.gui.scene.styles.{ButtonStyles, OperationStyles, PaneStyles}
 import coinffeine.gui.util.ElapsedTimePrinter
-import coinffeine.model.market.Market
 import coinffeine.model.order.{Ask, Bid}
 import coinffeine.peer.api.CoinffeineApp
 
@@ -136,7 +135,7 @@ class OperationsView(
   }
 
   override lazy val controlPane: Pane =
-    new OperationsControlPane(app, Market(props.currencyProperty.get))
+    new OperationsControlPane(app, props.marketProperty)
 }
 
 object OperationsView {

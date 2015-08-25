@@ -8,17 +8,20 @@ import scalafx.beans.property.{ObjectProperty, ReadOnlyObjectProperty}
 import org.joda.time.DateTime
 
 import coinffeine.gui.application.properties.{PeerOrders, PropertyBindings, WalletProperties}
+import coinffeine.gui.beans.Implicits._
 import coinffeine.gui.beans.PollingBean
 import coinffeine.gui.control.ConnectionStatus
 import coinffeine.model.bitcoin.BlockchainStatus
 import coinffeine.model.currency.FiatCurrency
 import coinffeine.model.currency.balance.FiatBalances
+import coinffeine.model.market.Market
 import coinffeine.model.util.Cached
 import coinffeine.peer.api.CoinffeineApp
+import coinffeine.peer.config.SettingsProvider
 
 class ApplicationProperties(
     app: CoinffeineApp,
-    fiatCurrency: FiatCurrency,
+    settings: SettingsProvider,
     executor: ExecutionContext) extends PropertyBindings {
 
   import ApplicationProperties._
@@ -36,8 +39,17 @@ class ApplicationProperties(
     property
   }
 
-  val currencyProperty: ReadOnlyObjectProperty[FiatCurrency] =
-    new ObjectProperty(this, "currency", fiatCurrency)
+  val currencyProperty: ReadOnlyObjectProperty[FiatCurrency] = {
+    val property = new ObjectProperty(this, "currency", settings.generalSettings().currency)
+    settings.generalSettingsProperty.onNewValue(settings => property.set(settings.currency))
+    property
+  }
+
+  val marketProperty: ReadOnlyObjectProperty[Market] = {
+    val property = new ObjectProperty(this, "currency", Market(currencyProperty.value))
+    property <== currencyProperty.delegate.map(Market.apply)
+    property
+  }
 
   def connectionStatusProperty: ReadOnlyObjectProperty[ConnectionStatus] =
     _connectionStatus

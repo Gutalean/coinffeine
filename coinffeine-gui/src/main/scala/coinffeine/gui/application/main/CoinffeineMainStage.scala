@@ -22,7 +22,7 @@ class CoinffeineMainStage(
     app: CoinffeineApp, configProvider: ConfigProvider) extends Stage(StageStyle.DECORATED) {
 
   private val properties = new ApplicationProperties(
-    app, configProvider.generalSettings().currency, FxExecutor.asContext)
+    app, configProvider, FxExecutor.asContext)
   private val orderValidator = new DefaultOrderValidation(app)
 
   title = "Coinffeine"
@@ -32,7 +32,7 @@ class CoinffeineMainStage(
     properties = properties,
     views = Seq(
       new OperationsView(app, properties, orderValidator),
-      new StatsView(app, Market(properties.currencyProperty.get)),
+      new StatsView(app, properties.marketProperty),
       new WalletView(
         configProvider.bitcoinSettings().network,
         app.wallet,

@@ -3,6 +3,7 @@ package coinffeine.gui.application.operations
 import scala.concurrent.duration._
 import scala.util.Try
 import scalafx.Includes._
+import scalafx.beans.property.ReadOnlyObjectProperty
 import scalafx.scene.control._
 import scalafx.scene.layout._
 
@@ -18,7 +19,7 @@ import coinffeine.model.order.{OrderRequest, Price}
 import coinffeine.peer.api.CoinffeineApp
 import coinffeine.protocol.messages.brokerage.Quote
 
-private class OperationsControlPane(app: CoinffeineApp, market: Market)
+private class OperationsControlPane(app: CoinffeineApp, market: ReadOnlyObjectProperty[Market])
     extends VBox with PaneStyles.Centered {
 
   id = "operations-control-pane"
@@ -30,18 +31,20 @@ private class OperationsControlPane(app: CoinffeineApp, market: Market)
 
     private val currentPrice = PollingBean(OperationsControlPane.BitcoinPricePollingInterval) {
       implicit val executor = FxExecutor.asContext
-      app.marketStats.currentQuote(market).map(OperationsControlPane.summarize)
+      app.marketStats.currentQuote(market.value).map(OperationsControlPane.summarize)
     }
 
     val prelude = new Label("1 BTC = ")
 
     val amount = new Label with TextStyles.CurrencyAmount {
-      text <== currentPrice.map {
-        case Some(Some(price)) => price.of(1.BTC).format(Currency.NoSymbol)
-        case _ => market.currency.formatMissingAmount(Currency.NoSymbol)
+      text <== currentPrice.zip(market) {
+        case (Some(Some(price)), _) => price.of(1.BTC).format(Currency.NoSymbol)
+        case (_, currentMarket) => currentMarket.currency.formatMissingAmount(Currency.NoSymbol)
       }.toStr
     }
-    val symbol = new Label(market.currency.toString) with TextStyles.CurrencySymbol
+    val symbol = new Label with TextStyles.CurrencySymbol {
+      text <== market.delegate.map(_.currency.toString).toStr
+    }
 
     children = Seq(prelude, amount, symbol)
   }
@@ -53,7 +56,7 @@ private class OperationsControlPane(app: CoinffeineApp, market: Market)
 
   private def submitNewOrder(): Unit = {
     val wizard = new OrderSubmissionWizard(
-      market, app.marketStats, app.utils.exchangeAmountsCalculator, validation)
+      market.value, app.marketStats, app.utils.exchangeAmountsCalculator, validation)
     Try(wizard.run(Option(delegate.getScene.getWindow))).foreach { data =>
       val request = OrderRequest(data.orderType.value, data.bitcoinAmount.value, data.price.value)
       app.operations.submitOrder(request)
