@@ -38,7 +38,8 @@ private class OperationsControlPane(app: CoinffeineApp, market: ReadOnlyObjectPr
 
     val amount = new Label with TextStyles.CurrencyAmount {
       text <== currentPrice.zip(market) {
-        case (Some(Some(price)), _) => price.of(1.BTC).format(Currency.NoSymbol)
+        case (Some(Some(price)), Market(currency)) if price.currency == currency =>
+          price.of(1.BTC).format(Currency.NoSymbol)
         case (_, currentMarket) => currentMarket.currency.formatMissingAmount(Currency.NoSymbol)
       }.toStr
     }
