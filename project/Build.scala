@@ -19,17 +19,10 @@ object Build extends sbt.Build {
     gui,
     headless,
     model,
-    okpaymock,
     overlay,
     peer,
     protocol,
-    server,
     tools
-  )
-
-  lazy val server = (subModule("server")
-    settings(Assembly.settings("coinffeine.server.main.Main"): _*)
-    dependsOn(peer % "compile->compile;test->test", commonTest % "test->compile")
   )
 
   lazy val peer = (subModule("peer")
@@ -86,44 +79,6 @@ object Build extends sbt.Build {
     configs IntegrationTest
     settings(Defaults.itSettings: _*)
     dependsOn(peer % "compile->compile;test,it->test", commonTest)
-  )
-
-  lazy val test = subModule("test").dependsOn(
-    commonAkka % "compile->compile;test->test",
-    commonTest % "compile->compile;test->compile",
-    okpaymock,
-    peer % "compile->compile;test->test",
-    server
-  )
-
-  lazy val okpaymock = (subModule("okpaymock")
-    settings(CxfWsdl2JavaPlugin.cxf.settings: _*)
-    settings(Assembly.settings("coinffeine.okpaymock.main.Main"): _*)
-    settings(
-      sourceGenerators in Compile <+= wsdl2java in Compile,
-      wsdls := Seq(
-        Wsdl((resourceDirectory in Compile).value / "okpay.wsdl",
-          Seq("-p", "coinffeine.okpaymock.generated", "-server", "-impl"),
-          "generated-sources-okpaymock"
-        )
-      )
-    )
-    dependsOn(
-      common % "compile->compile;test->test",
-      commonAkka % "compile->compile;test->test",
-      commonTest % "test->compile",
-      model,
-      peer
-    )
-  )
-
-  lazy val benchmark = (subModule("benchmark")
-    dependsOn(
-      commonAkka % "compile->compile;test->test",
-      commonTest % "test->compile",
-      peer % "compile->compile;test->test"
-    )
-    enablePlugins GatlingPlugin
   )
 
   lazy val tools = subModule("tools").dependsOn(

@@ -59,8 +59,6 @@ aggregate in release := false
 release := {
   val moduleOutputs = Seq(
     (release in Build.headless).value,
-    (release in Build.okpaymock).value,
-    (release in Build.server).value,
     (release in Build.gui).value
   )
   val releaseDir = target.value / "release" / version.value
